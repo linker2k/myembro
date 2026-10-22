@@ -14,6 +14,7 @@ import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -309,7 +310,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 val saved = withContext(Dispatchers.IO) {
                     val pattern = snapshot.flatten()
                     require(pattern.stitchCount > 0) { getApplication<Application>().getString(R.string.editor_empty_export) }
-                    val bytes = PesWriter.write(pattern)
+                    val bytes = PesWriter.write(pattern, SettingsPreferences(getApplication()).read().writeSettings)
                     val dir = File(getApplication<Application>().filesDir, "designs").apply { mkdirs() }
                     val name = PesExport.uniqueName("myembro-${System.currentTimeMillis()}.pes") { File(dir, it).exists() }
                     val target = File(dir, name)

@@ -14,6 +14,7 @@ import android.provider.DocumentsContract
 import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import io.github.linker2k.myembro.engine.io.PesExport
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import java.io.File
 
 /**
@@ -63,7 +64,7 @@ class UsbExporter(private val context: Context) {
     }
 
     /** Writes each design as PES into [tree]. Blocking: call from a background dispatcher. */
-    fun export(tree: Uri, designs: List<File>): Report {
+    fun export(tree: Uri, designs: List<File>, settings: PesWriteSettings = PesWriteSettings()): Report {
         val folder = DocumentFile.fromTreeUri(context, tree) ?: error("Cannot open the USB folder")
         val existing = folder.listFiles().mapNotNull { it.name }.toMutableSet()
         val exported = mutableListOf<String>()
@@ -71,7 +72,7 @@ class UsbExporter(private val context: Context) {
         var converted = 0
         for (design in designs) {
             runCatching {
-                val prepared = PesExport.prepare(design.readBytes(), design.name)
+                val prepared = PesExport.prepare(design.readBytes(), design.name, settings)
                 val name = PesExport.uniqueName(prepared.fileName) { it in existing }
                 // octet-stream keeps the exact file name; a PES MIME type would let providers rename it.
                 val doc = folder.createFile("application/octet-stream", name)

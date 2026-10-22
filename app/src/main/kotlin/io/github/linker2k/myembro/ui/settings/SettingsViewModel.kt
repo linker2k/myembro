@@ -12,6 +12,8 @@ import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
+import io.github.linker2k.myembro.engine.io.PesVersion
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 
 enum class ThreadBrand(val labelRes: Int) {
     BROTHER(R.string.settings_brand_brother),
@@ -23,7 +25,10 @@ data class EmbroiderySettings(
     val machineModel: String = MachineProfiles.default.displayName,
     val defaultHoop: Hoop = Hoop.H100,
     val threadBrand: ThreadBrand = ThreadBrand.BROTHER,
+    /** v1 stays the default until a v6 file is confirmed on a real SE400 (docs/machines.md). */
+    val pesVersion: PesVersion = PesVersion.V1,
 ) {
+    val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val availableViewerHoops: List<Hoop> get() =
         machineProfile?.let { profile -> Hoop.entries.filter(profile::supports) } ?: Hoop.entries
@@ -43,6 +48,8 @@ class SettingsPreferences(context: Context) {
         defaultHoop = Hoop.entries.firstOrNull { it.name == preferences.getString("default_hoop", null) } ?: Hoop.H100,
         threadBrand = ThreadBrand.entries.firstOrNull { it.name == preferences.getString("thread_brand", null) }
             ?: ThreadBrand.BROTHER,
+        pesVersion = PesVersion.entries.firstOrNull { it.name == preferences.getString("pes_version", null) }
+            ?: PesVersion.V1,
     ).validated()
 
     fun setMachineModel(model: String) {
@@ -58,6 +65,10 @@ class SettingsPreferences(context: Context) {
 
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.edit().putString("thread_brand", brand.name).apply()
+    }
+
+    fun setPesVersion(version: PesVersion) {
+        preferences.edit().putString("pes_version", version.name).apply()
     }
 
     /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
@@ -96,5 +107,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.setThreadBrand(brand)
         settings = settings.copy(threadBrand = brand)
+    }
+
+    fun setPesVersion(version: PesVersion) {
+        preferences.setPesVersion(version)
+        settings = settings.copy(pesVersion = version)
     }
 }

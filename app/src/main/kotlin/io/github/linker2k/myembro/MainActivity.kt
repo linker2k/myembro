@@ -16,11 +16,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.export.PreflightDialog
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.LibraryScreen
@@ -90,6 +92,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            // Save/share run only after the machine check; warnings let the user continue or cancel.
+            var preflight by remember { mutableStateOf<Pair<List<String>, () -> Unit>?>(null) }
+            val checked = { action: () -> Unit ->
+                val warnings = viewer.preflight()
+                if (warnings.isEmpty()) action() else preflight = warnings to action
+            }
             val back: () -> Unit = {
                 if (stack.removeLastOrNull() == Screen.EDITOR) library.refresh()
             }
@@ -145,15 +153,17 @@ class MainActivity : ComponentActivity() {
                         viewer,
                         onOpenFile = { openDocument.launch(arrayOf("*/*")) },
                         onSaveFile = {
-                            viewer.prepareSave()?.let { name ->
-                                try {
-                                    saveDocument.launch(name)
-                                } catch (error: Exception) {
-                                    viewer.savePickerFailed(error)
+                            checked {
+                                viewer.prepareSave()?.let { name ->
+                                    try {
+                                        saveDocument.launch(name)
+                                    } catch (error: Exception) {
+                                        viewer.savePickerFailed(error)
+                                    }
                                 }
                             }
                         },
-                        onShareFile = viewer::share,
+                        onShareFile = { checked(viewer::share) },
                         onEdit = openPath?.let { path ->
                             {
                                 editor.editDesign(File(path))
@@ -170,6 +180,13 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+                }
+                val machine = settings.settings.machineModel
+                preflight?.let { (warnings, action) ->
+                    PreflightDialog(machine, warnings, onContinue = { preflight = null; action() }, onCancel = { preflight = null })
+                }
+                library.preflightWarnings?.let { warnings ->
+                    PreflightDialog(machine, warnings, onContinue = library::confirmPreflight, onCancel = library::cancelPreflight)
                 }
             }
         }
