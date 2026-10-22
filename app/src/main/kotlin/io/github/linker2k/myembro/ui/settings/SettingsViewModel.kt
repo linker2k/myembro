@@ -12,6 +12,8 @@ import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
+import io.github.linker2k.myembro.ui.theme.ThemeMode
+import io.github.linker2k.myembro.ui.theme.applyPlatformThemeMode
 
 enum class ThreadBrand(val labelRes: Int) {
     BROTHER(R.string.settings_brand_brother),
@@ -23,6 +25,7 @@ data class EmbroiderySettings(
     val machineModel: String = MachineProfiles.default.displayName,
     val defaultHoop: Hoop = Hoop.H100,
     val threadBrand: ThreadBrand = ThreadBrand.BROTHER,
+    val themeMode: ThemeMode = ThemeMode.LIGHT,
 ) {
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val availableViewerHoops: List<Hoop> get() =
@@ -35,6 +38,7 @@ data class EmbroiderySettings(
 
 /** Shared preference access for integration code; opening this screen is not required to read defaults. */
 class SettingsPreferences(context: Context) {
+    private val appContext = context.applicationContext
     private val preferences = context.applicationContext.getSharedPreferences("myembro_settings", Context.MODE_PRIVATE)
 
     fun read(): EmbroiderySettings = EmbroiderySettings(
@@ -43,6 +47,7 @@ class SettingsPreferences(context: Context) {
         defaultHoop = Hoop.entries.firstOrNull { it.name == preferences.getString("default_hoop", null) } ?: Hoop.H100,
         threadBrand = ThreadBrand.entries.firstOrNull { it.name == preferences.getString("thread_brand", null) }
             ?: ThreadBrand.BROTHER,
+        themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
     ).validated()
 
     fun setMachineModel(model: String) {
@@ -58,6 +63,11 @@ class SettingsPreferences(context: Context) {
 
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.edit().putString("thread_brand", brand.name).apply()
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        preferences.edit().putString("theme_mode", mode.name).apply()
+        appContext.applyPlatformThemeMode(mode)
     }
 
     /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
@@ -96,5 +106,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.setThreadBrand(brand)
         settings = settings.copy(threadBrand = brand)
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        preferences.setThemeMode(mode)
+        settings = preferences.read()
     }
 }

@@ -8,4 +8,5 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:fontFamily">@font/myembro_sans</item>
     </style>
+    <style name="Theme.Myembro.Starting" parent="Theme.Myembro.Starting.Dark" />
 </resources>

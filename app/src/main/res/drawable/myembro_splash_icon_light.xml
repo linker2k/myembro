@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:name="hoop" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="@color/myembro_light_hoop" android:pathData="M51,24 L57,24 L57,31 L51,31 Z" />
+        <path android:strokeColor="@color/myembro_light_hoop" android:strokeWidth="3"
+            android:strokeLineCap="round" android:pathData="M48,26 L60,26" />
+        <path android:strokeColor="@color/myembro_light_hoop" android:strokeWidth="5"
+            android:pathData="M54,30 A26,26 0,1 1,54,82 A26,26 0,1 1,54,30 Z" />
+        <path android:name="thread" android:strokeColor="@color/myembro_light_primary"
+            android:strokeWidth="6.5" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:trimPathEnd="1"
+            android:pathData="M37,63 C39,63 39,47 43,47 C47,47 46,63 49,63 C52,63 52,47 55,47 C59,47 58,63 61,63 C64,63 64,47 67,47 C70,47 69,63 71,63" />
+    </group>
+</vector>

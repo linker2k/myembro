@@ -1,34 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Downloading open-source fonts from the curated catalog (assets/fonts/catalog.json). -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.Myembro">
-        <provider
-            android:name=".PesFileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+    <application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/Theme.Myembro">
+        <provider android:name=".PesFileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
-        <activity
-            android:name=".MainActivity"
-            android:theme="@style/Theme.Myembro.Starting"
-            android:exported="true"
-            android:launchMode="singleTask">
+        <activity android:name=".MainActivity" android:theme="@style/Theme.Myembro.Content.Starting" android:exported="true" android:launchMode="singleTask" />
+        <activity android:name=".ui.theme.LightThemeLauncherActivity" android:theme="@style/Theme.Myembro.Starting.Light" android:exported="true" android:noHistory="true" android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Open with" for embroidery files shared by file managers and messengers. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -37,7 +19,62 @@
                 <data android:mimeType="application/x-pes" />
                 <data android:mimeType="application/vnd.brother.pes" />
             </intent-filter>
-            <!-- EXTRA_STREAM/ClipData carry content URIs; do not require a data scheme here. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/vnd.brother.pes" />
+                <data android:mimeType="application/x-pec" />
+                <data android:mimeType="application/x-dst" />
+                <data android:mimeType="application/vnd.tajima.dst" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.theme.DarkThemeLauncherActivity" android:theme="@style/Theme.Myembro.Starting.Dark" android:exported="true" android:noHistory="true" android:enabled="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/vnd.brother.pes" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/vnd.brother.pes" />
+                <data android:mimeType="application/x-pec" />
+                <data android:mimeType="application/x-dst" />
+                <data android:mimeType="application/vnd.tajima.dst" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.theme.SystemThemeLauncherActivity" android:theme="@style/Theme.Myembro.Starting" android:exported="true" android:noHistory="true" android:enabled="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/vnd.brother.pes" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />

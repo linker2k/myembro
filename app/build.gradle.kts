@@ -15,12 +15,27 @@ val generateMyembroBrandColors by tasks.registering {
         fun color(name: String): String = "#" + requireNotNull(
             Regex("const val $name: Long = 0xFF([0-9A-Fa-f]{6})").find(source),
         ) { "Missing launch color token $name" }.groupValues[1]
-        for ((folder, prefix) in listOf("values" to "Light", "values-night" to "Dark")) {
-            val primary = when (colorway) {
-                "BOTANICAL" -> "${prefix}SecondaryArgb"
-                "INK" -> if (prefix == "Dark") "DarkTertiaryArgb" else "LightInkArgb"
-                else -> "${prefix}PrimaryArgb"
+        fun primary(prefix: String): String = when (colorway) {
+            "BOTANICAL" -> "${prefix}SecondaryArgb"
+            "INK" -> if (prefix == "Dark") "DarkTertiaryArgb" else "LightInkArgb"
+            else -> "${prefix}PrimaryArgb"
+        }
+        val explicit = buildString {
+            append("<resources>\n")
+            for (prefix in listOf("Light", "Dark")) {
+                val key = prefix.lowercase()
+                for ((role, token) in listOf("background" to "Background", "primary" to "Primary", "ink" to "Ink", "hoop" to "Hoop")) {
+                    val name = if (role == "primary") primary(prefix) else "${prefix}${token}Argb"
+                    append("    <color name=\"myembro_${key}_${role}\">${color(name)}</color>\n")
+                }
             }
+            append("</resources>\n")
+        }
+        brandColorsDirectory.get().file("values/myembro_explicit.xml").asFile.apply {
+            parentFile.mkdirs(); writeText(explicit)
+        }
+        for ((folder, prefix) in listOf("values" to "Light", "values-night" to "Dark")) {
+            val primary = primary(prefix)
             val output = brandColorsDirectory.get().file("$folder/myembro_brand.xml").asFile
             output.parentFile.mkdirs()
             output.writeText("""
