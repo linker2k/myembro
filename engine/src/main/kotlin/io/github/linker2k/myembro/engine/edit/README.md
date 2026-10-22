@@ -47,3 +47,11 @@ Custom codecs are consulted before built-in stitch/text encoding. Registration i
 save/load uses one immutable registry snapshot. `unregisterCodec(codec)` removes only that
 exact instance for scoped usage. Missing codecs fail explicitly instead of flattening text
 and silently losing editability. The version-1 stitch JSON schema remains compatible.
+
+Hoop boundary geometry is shared through `HoopSpec.sewingArea`: a rectangular area
+inset by `HOOP_SAFETY_MARGIN_MM` (1 mm). `contains`, overflow warnings, statistics,
+and editor boundary snaps all use it. Warnings compare the integer needle positions
+from `placedPattern()` with `HOOP_BOUNDARY_TOLERANCE_MM` (0.05 mm) tolerance.
+Snaps use inward-rounded `sewingArea.snapBounds`; the rounded decorative hoop is
+not the sewing boundary. The editor suppresses overflow warnings during gestures
+and evaluates the final snapshot after pointer-up.

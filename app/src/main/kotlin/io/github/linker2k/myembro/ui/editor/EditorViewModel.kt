@@ -30,6 +30,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var selectedIds by mutableStateOf<Set<String>>(emptySet())
         private set
+    val hoopOverflowVisible: Boolean get() = session.showsHoopOverflow
     val selectedId: String? get() = selectedIds.lastOrNull()
     val selected: DesignObject? get() = selectedId?.let(project::find)
     var selectionMode by mutableStateOf(false)

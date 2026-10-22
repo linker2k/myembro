@@ -4,7 +4,6 @@ package io.github.linker2k.myembro.ui.editor
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.engine.edit.densityWarning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,8 +74,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 if (vm.message == message) vm.message = null
             }
         }
-        val outside = remember(vm.project) {
-            vm.project.exceedsHoop()
+        val outside = remember(vm.project, vm.gestureInProgress) {
+            vm.hoopOverflowVisible
         }
         val densityWarning = remember(vm.project) { vm.project.objects.any { it.visible && it.densityWarning } }
         val controlsEnabled = !vm.busy && !vm.gestureInProgress

@@ -59,15 +59,43 @@ internal fun Project.snapTargets(ids: Set<String>): SnapTargets {
 /** Use the unsnapped draft so a series of small motions can escape a magnet. */
 internal fun Project.snapSelection(ids: Set<String>, targets: SnapTargets, tolerance: Double): SnappedSelection {
     val b = selectionBounds(ids) ?: return SnappedSelection(this, SnapGuides())
-    fun nearest(anchors: List<Double>, lines: List<Double>): Pair<Double, Double>? =
-        lines.flatMap { line -> anchors.map { anchor -> (line - anchor) to line } }
-            .filter { abs(it.first) <= tolerance }.minByOrNull { abs(it.first) }
-    val x = nearest(listOf((b.minX.toDouble() + b.maxX) / 2, b.minX.toDouble(), b.maxX.toDouble()), targets.xs)
-    val y = nearest(listOf((b.minY.toDouble() + b.maxY) / 2, b.minY.toDouble(), b.maxY.toDouble()), targets.ys)
-    return SnappedSelection(copy(objects = objects.map { obj ->
+    val area = hoop.sewingArea
+    val edge = area.snapBounds
+    fun nearest(anchors: List<Double>, lines: List<Double>, min: Int, max: Int,
+        innerMin: Int, innerMax: Int, fits: (Double, Double) -> Boolean): Pair<Double, Double>? {
+        // Hoop boundaries match the same-side edge only; matching the opposite edge would
+        // put the entire design outside. Object/center magnets must also leave it inside.
+        val candidates = listOf((innerMin.toDouble() - min) to innerMin.toDouble(),
+            (innerMax.toDouble() - max) to innerMax.toDouble()) +
+            lines.flatMap { line -> anchors.map { anchor -> (line - anchor) to line } }
+        return candidates.filter { abs(it.first) <= tolerance && fits(min + it.first, max + it.first) }
+            .minByOrNull { abs(it.first) }
+    }
+    val x = nearest(listOf((b.minX.toDouble() + b.maxX) / 2, b.minX.toDouble(), b.maxX.toDouble()),
+        targets.xs, b.minX, b.maxX, edge.minX, edge.maxX, area::containsX)
+    val y = nearest(listOf((b.minY.toDouble() + b.maxY) / 2, b.minY.toDouble(), b.maxY.toDouble()),
+        targets.ys, b.minY, b.maxY, edge.minY, edge.maxY, area::containsY)
+    fun translated(dx: Double, dy: Double) = copy(objects = objects.map { obj ->
         if (obj.id !in ids || !obj.visible) obj else obj.withTransform(obj.transform.copy(
-            x = obj.transform.x + (x?.first ?: 0.0), y = obj.transform.y + (y?.first ?: 0.0)))
-    }), SnapGuides(x?.second, y?.second))
+            x = obj.transform.x + dx, y = obj.transform.y + dy))
+    })
+    val dx = x?.first ?: 0.0
+    val dy = y?.first ?: 0.0
+    val placed = translated(dx, dy)
+    val rounded = placed.selectionBounds(ids) ?: return SnappedSelection(placed, SnapGuides())
+    // A half-unit object-center snap may round again on placement. Correct only snapped
+    // axes inward; a free drag outside must remain outside and warn after pointer-up.
+    fun inward(min: Int, max: Int, low: Int, high: Int): Double = when {
+        max.toLong() - min > high.toLong() - low -> 0.0
+        min < low -> (low.toDouble() - min)
+        max > high -> (high.toDouble() - max)
+        else -> 0.0
+    }
+    val cx = if (x != null) inward(rounded.minX, rounded.maxX, edge.minX, edge.maxX) else 0.0
+    val cy = if (y != null) inward(rounded.minY, rounded.maxY, edge.minY, edge.maxY) else 0.0
+    val gx = if (cx == 0.0) x?.second else if (cx > 0) edge.minX.toDouble() else edge.maxX.toDouble()
+    val gy = if (cy == 0.0) y?.second else if (cy > 0) edge.minY.toDouble() else edge.maxY.toDouble()
+    return SnappedSelection(if (cx == 0.0 && cy == 0.0) placed else translated(dx + cx, dy + cy), SnapGuides(gx, gy))
 }
 
 /** UI uses millimeters and positive percentages; mirror signs are retained separately. */

@@ -30,7 +30,7 @@ class ProjectStatisticsTest {
     }
 
     @Test fun transformedOutputDeterminesHoopOverflow() {
-        val p = Project(objects = listOf(rectangle(x = 450.0)))
+        val p = Project(objects = listOf(rectangle(x = 440.0)))
         assertFalse(p.statistics().exceedsHoop)
         assertTrue(p.scaleBy("a", 1.2).statistics().exceedsHoop)
         assertFalse(p.scaleBy("a", 1.2).update("a") { it.withVisible(false) }.statistics().exceedsHoop)

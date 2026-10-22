@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui.editor
 
 import io.github.linker2k.myembro.engine.edit.History
 import io.github.linker2k.myembro.engine.edit.Project
+import io.github.linker2k.myembro.engine.edit.exceedsHoop
 
 /** Gesture previews stay outside engine History until pointer-up: one gesture, one commit. */
 internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
@@ -11,6 +12,7 @@ internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
         private set
     var isGesturing = false
         private set
+    val showsHoopOverflow get() = !isGesturing && project.exceedsHoop()
     val canUndo get() = history.canUndo
     val canRedo get() = history.canRedo
     fun beginGesture() { isGesturing = true }
