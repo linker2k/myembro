@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">myembro</string>
+    <string name="open_file">Open file</string>
+    <string name="open_sample">Open sample</string>
+    <string name="empty_title">No design open</string>
+    <string name="empty_body">Open a Brother PES (or PEC / DST) file to preview its stitches.</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="fit">Fit to screen</string>
+    <string name="show_jumps">Show jumps</string>
+    <string name="stat_stitches">Stitches</string>
+    <string name="stat_size">Size</string>
+    <string name="stat_colors">Colors</string>
+    <string name="stat_trims">Trims</string>
+    <string name="stat_time">Est. time</string>
+    <string name="hoop">Hoop</string>
+    <string name="hoop_too_small">Design is larger than this hoop</string>
+    <string name="load_failed">Could not open file: %1$s</string>
+    <string name="speed">Speed</string>
+</resources>

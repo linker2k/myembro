@@ -1,0 +1,19 @@
+<resources>
+    <string name="open_file">파일 열기</string>
+    <string name="open_sample">샘플 열기</string>
+    <string name="empty_title">열린 도안이 없습니다</string>
+    <string name="empty_body">브라더 PES(또는 PEC / DST) 파일을 열어 바늘땀을 미리 보세요.</string>
+    <string name="play">재생</string>
+    <string name="pause">일시정지</string>
+    <string name="fit">화면에 맞추기</string>
+    <string name="show_jumps">점프 표시</string>
+    <string name="stat_stitches">땀 수</string>
+    <string name="stat_size">크기</string>
+    <string name="stat_colors">색상</string>
+    <string name="stat_trims">트림</string>
+    <string name="stat_time">예상 시간</string>
+    <string name="hoop">후프</string>
+    <string name="hoop_too_small">도안이 후프보다 큽니다</string>
+    <string name="load_failed">파일을 열 수 없습니다: %1$s</string>
+    <string name="speed">속도</string>
+</resources>
