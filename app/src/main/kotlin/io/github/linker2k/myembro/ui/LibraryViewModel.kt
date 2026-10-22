@@ -106,7 +106,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() { unwatch(); stopObservingSettings() }
 
     /** Unknown custom-machine compatibility stays unknown instead of inheriting SE400 limits. */
-    fun fitsMachine(item: Item): Boolean? = item.bounds?.let { settings.machineProfile?.fits(it) }
+    fun fitsMachine(item: Item): Boolean? = item.bounds?.let { bounds ->
+        settings.defaultFrame.fits(bounds.width, bounds.height) && settings.machineProfile?.fits(bounds) != false
+    }
 
     fun refreshDrives() {
         drives = usb.drives()

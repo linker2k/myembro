@@ -137,7 +137,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 ) {
                     SettingRow(
                         Icons.Default.Settings, stringResource(R.string.settings_machine),
-                        settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
+                        if (settings.machineProfile?.id == "free") stringResource(R.string.settings_machine_free) else settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
                     ) { machineDialog = true }
                     MachineDetails(settings.machineProfile)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -149,7 +149,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(Hoop.entries, key = { it.name }) { hoop ->
-                            val selected = settings.defaultHoop == hoop
+                            val selected = settings.defaultFrame.preset == hoop
                             val supported = settings.machineProfile?.supports(hoop) == true
                             Surface(
                                 Modifier.width(180.dp).selectable(selected, role = Role.RadioButton,
@@ -174,6 +174,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                         }
                     }
                 }
+                CustomFramesSection(vm)
                 SectionHeading(Icons.Default.Palette, stringResource(R.string.settings_threads_title))
                 Card(
                     shape = MyembroShapes.Card,
@@ -242,7 +243,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
 private fun MachineDetails(profile: MachineProfile?) {
     Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (profile == null) {
+        if (profile == null || profile.id == "free") {
             Text(stringResource(R.string.machine_unverified), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
@@ -306,7 +307,7 @@ private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (St
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
                 machinePresets.forEach { model ->
-                    RadioOption(model, !custom && selected == model) { selected = model; custom = false }
+                    RadioOption(if (model == MachineProfiles.FREE.displayName) stringResource(R.string.settings_machine_free) else model, !custom && selected == model) { selected = model; custom = false }
                 }
                 RadioOption(stringResource(R.string.settings_machine_custom), custom) { custom = true; selected = null }
                 if (custom) OutlinedTextField(

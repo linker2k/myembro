@@ -58,4 +58,14 @@
     <string name="settings_theme_dark">어둡게</string>
     <string name="settings_theme_system">시스템 설정 따르기</string>
     <string name="machine_positions_unverified">재배치 후프 · 위치 개수·오프셋 미확인. 자동 분할 전 실제 위치를 확인하세요.</string>
+    <string name="settings_custom_frames">사용자 정의 프레임</string>
+    <string name="settings_frame_name">프레임 이름</string>
+    <string name="settings_frame_width">가로</string>
+    <string name="settings_frame_height">세로</string>
+    <string name="settings_frame_validation">이름과 양수 치수(0.1~10,000mm)를 입력하세요. 0.1mm 단위로 저장합니다.</string>
+    <string name="settings_add_frame">사용자 정의 프레임 추가</string>
+    <string name="settings_edit_frame">프레임 편집</string>
+    <string name="settings_delete_frame">프레임 삭제</string>
+    <string name="settings_delete_frame_confirm">%1$s 프레임을 삭제할까요? 기존 프로젝트의 크기는 유지됩니다.</string>
+    <string name="settings_machine_free">기타(자유)</string>
 </resources>

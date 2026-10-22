@@ -37,6 +37,7 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.format.dimensions
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.ui.settings.SettingsViewModel
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
@@ -53,6 +54,7 @@ fun NewProjectSheet(
     hoops: List<Hoop> = listOf(Hoop.H100),
     letteringAvailable: Boolean = false,
     modifier: Modifier = Modifier,
+    onBlankFrame: ((HoopSpec) -> Unit)? = null,
 ) {
     val settings: SettingsViewModel = viewModel()
     val orderedHoops = hoops.distinct().sortedBy { it != settings.settings.defaultHoop }
@@ -74,7 +76,7 @@ fun NewProjectSheet(
                     style = MaterialTheme.typography.headlineSmall)
                 if (choosingHoop) {
                     orderedHoops.forEach { hoop ->
-                        Surface(onClick = { choose { onBlank(hoop) } }, enabled = !actionTaken,
+                        Surface(onClick = { choose { if (onBlankFrame != null) onBlankFrame(settings.settings.frames.first { it.preset == hoop }.spec) else onBlank(hoop) } }, enabled = !actionTaken,
                             shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
@@ -89,6 +91,18 @@ fun NewProjectSheet(
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Icon(Icons.Default.ChevronRight, null)
+                            }
+                        }
+                    }
+                    if (onBlankFrame != null) settings.settings.frames.filter { it.preset == null }.forEach { frame ->
+                        Surface(onClick = { choose { onBlankFrame(frame.spec) } }, enabled = !actionTaken,
+                            shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                                Text(frame.spec.name, style = MaterialTheme.typography.titleSmall)
+                                Text(frame.dimensions, style = MaterialTheme.typography.bodyMedium)
+                                if (settings.settings.machineProfile?.supports(frame.spec) != true) Text(stringResource(R.string.machine_hoop_unsupported),
+                                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }

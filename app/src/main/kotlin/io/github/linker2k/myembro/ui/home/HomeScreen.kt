@@ -75,6 +75,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.format.dimensions
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
@@ -98,6 +100,7 @@ fun HomeScreen(
     onCreateFromDesign: () -> Unit = onOpenLibrary,
     letteringAvailable: Boolean = false,
     onFreeDesigns: (() -> Unit)? = null,
+    onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -105,7 +108,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame)
     }
 }
 
@@ -119,6 +122,7 @@ private fun HomeContent(
     supportedHoops: List<Hoop> = listOf(Hoop.H100), defaultHoop: Hoop = Hoop.H100,
     onCreateFromDesign: () -> Unit = onOpenLibrary, letteringAvailable: Boolean = false,
     onFreeDesigns: (() -> Unit)? = null,
+    defaultFrame: FrameOption? = null, onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -157,7 +161,7 @@ private fun HomeContent(
                     }
                 }
                 item(key = "new_project", span = { GridItemSpan(if (columns == 3) 2 else 1) }) {
-                    NewProjectCard(defaultHoop) { showNewProject = true }
+                    NewProjectCard(defaultHoop, defaultFrame) { showNewProject = true }
                 }
                 if (expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns, stacked = true) }
                 item(key = "recent_heading", span = { GridItemSpan(maxLineSpan) }) {
@@ -202,12 +206,12 @@ private fun HomeContent(
     if (showNewProject) NewProjectSheet(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
-        hoops = supportedHoops, letteringAvailable = letteringAvailable,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame,
     )
 }
 
 @Composable
-private fun NewProjectCard(hoop: Hoop, onCreate: () -> Unit) {
+private fun NewProjectCard(hoop: Hoop, frame: FrameOption? = null, onCreate: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -225,7 +229,7 @@ private fun NewProjectCard(hoop: Hoop, onCreate: () -> Unit) {
                     }
                     Image(painterResource(R.drawable.empty_state), null, Modifier.size(artSize))
                 }
-                Text(stringResource(R.string.new_project_default_hoop, hoop.dimensions()),
+                Text(stringResource(R.string.new_project_default_hoop, frame?.let { if (it.preset == null) "${it.spec.name} · ${it.dimensions}" else it.dimensions } ?: hoop.dimensions()),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = onCreate, modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Button,
                     contentPadding = PaddingValues(14.dp)) {

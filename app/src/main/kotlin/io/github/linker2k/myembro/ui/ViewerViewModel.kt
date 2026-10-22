@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
@@ -46,17 +47,20 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingSave: ExportRequest? = null
     private val settingsPreferences = SettingsPreferences(app)
     private var settings by mutableStateOf(settingsPreferences.read())
-    private var selectedHoop by mutableStateOf(settings.defaultHoop)
+    private var selectedFrameId by mutableStateOf(settings.defaultFrame.id)
     val machineProfile get() = settings.machineProfile
     val availableHoops: List<Hoop> get() = settings.availableViewerHoops
-    /** Profile-aware setter also protects callers outside this screen. */
+    val availableFrames: List<FrameOption> get() = settings.frames
+    val frame: FrameOption get() = availableFrames.firstOrNull { it.id == selectedFrameId } ?: settings.defaultFrame
+    fun selectFrame(id: String) { if (availableFrames.any { it.id == id }) selectedFrameId = id }
+    /** Legacy host accessor. Native precision is available through frame.spec. */
     var hoop: Hoop
-        get() = selectedHoop
-        set(value) { selectedHoop = settings.constrainHoop(value) }
+        get() = frame.preset ?: Hoop.H100
+        set(value) { selectedFrameId = value.name }
     private val stopObservingSettings = settingsPreferences.observe {
         val next = settingsPreferences.read()
-        if (next.machineModel != settings.machineModel || next.defaultHoop != settings.defaultHoop) {
-            selectedHoop = next.defaultHoop
+        if (next.machineModel != settings.machineModel || next.defaultFrame.id != settings.defaultFrame.id) {
+            selectedFrameId = next.defaultFrame.id
         }
         settings = next
     }
