@@ -1,0 +1,292 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.linker2k.myembro.ui.settings
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.pm.PackageInfoCompat
+import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.theme.MyembroShapes
+import io.github.linker2k.myembro.ui.EmbroideryTheme
+import io.github.linker2k.myembro.ui.Hoop
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+private val machinePresets = listOf("Brother PE800", "Brother PE900", "Brother Innov-is NV880E")
+
+/** Standalone settings destination; the host supplies navigation and owns its ViewModel. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+    var machineDialog by rememberSaveable { mutableStateOf(false) }
+    var hoopDialog by rememberSaveable { mutableStateOf(false) }
+    var brandDialog by rememberSaveable { mutableStateOf(false) }
+    var licenseAsset by rememberSaveable { mutableStateOf<String?>(null) }
+    val settings = vm.settings
+    val context = LocalContext.current
+    @Suppress("DEPRECATION")
+    val version = remember(context) { context.packageManager.getPackageInfo(context.packageName, 0) }
+
+    EmbroideryTheme {
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.settings_title)) },
+                    navigationIcon = {
+                        if (onBack != null) IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.settings_back))
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Column(
+                Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(stringResource(R.string.settings_defaults_title), style = MaterialTheme.typography.titleSmall)
+                Card(
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    SettingRow(
+                        Icons.Default.Settings, stringResource(R.string.settings_machine),
+                        settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
+                    ) { machineDialog = true }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingRow(Icons.Default.Straighten, stringResource(R.string.settings_default_hoop),
+                        stringResource(R.string.settings_hoop_size, settings.defaultHoop.label)) { hoopDialog = true }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingRow(Icons.Default.Palette, stringResource(R.string.settings_thread_brand),
+                        stringResource(settings.threadBrand.labelRes)) { brandDialog = true }
+                }
+                Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.settings_about_title), style = MaterialTheme.typography.titleSmall)
+                Card(
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(14.dp))
+                        Column {
+                            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.settings_version, version.versionName.orEmpty(),
+                                PackageInfoCompat.getLongVersionCode(version)), style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.settings_app_description), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingRow(Icons.Default.Description, stringResource(R.string.settings_app_license),
+                        stringResource(R.string.settings_gpl)) { licenseAsset = "LICENSE" }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingRow(Icons.Default.Description, stringResource(R.string.settings_open_source),
+                        stringResource(R.string.settings_notices_description)) { licenseAsset = "THIRD_PARTY_NOTICES.md" }
+                }
+            }
+        }
+        if (machineDialog) MachineDialog(settings.machineModel, onDismiss = { machineDialog = false }) {
+            vm.setMachineModel(it)
+            machineDialog = false
+        }
+        if (hoopDialog) ChoiceDialog(
+            title = stringResource(R.string.settings_default_hoop),
+            options = Hoop.entries,
+            selected = settings.defaultHoop,
+            label = { stringResource(R.string.settings_hoop_size, it.label) },
+            onDismiss = { hoopDialog = false },
+        ) { vm.setDefaultHoop(it); hoopDialog = false }
+        if (brandDialog) ChoiceDialog(
+            title = stringResource(R.string.settings_thread_brand),
+            options = ThreadBrand.entries,
+            selected = settings.threadBrand,
+            label = { stringResource(it.labelRes) },
+            onDismiss = { brandDialog = false },
+        ) { vm.setThreadBrand(it); brandDialog = false }
+        licenseAsset?.let { LicenseDialog(it) { licenseAsset = null } }
+    }
+}
+
+@Composable
+private fun SettingRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
+    Surface(onClick = onClick, color = Color.Transparent) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var selected by rememberSaveable { mutableStateOf(current.takeIf { it in machinePresets }) }
+    var custom by rememberSaveable { mutableStateOf(current.isNotBlank() && current !in machinePresets) }
+    var text by rememberSaveable { mutableStateOf(if (custom) current else "") }
+    val value = if (custom) text.trim() else selected.orEmpty()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_machine)) },
+        text = {
+            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
+                machinePresets.forEach { model ->
+                    RadioOption(model, !custom && selected == model) { selected = model; custom = false }
+                }
+                RadioOption(stringResource(R.string.settings_machine_custom), custom) { custom = true; selected = null }
+                if (custom) OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.take(120) },
+                    label = { Text(stringResource(R.string.settings_machine_model)) },
+                    placeholder = { Text(stringResource(R.string.settings_machine_example)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(value) }, enabled = value.isNotBlank()) {
+            Text(stringResource(R.string.settings_save))
+        } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } },
+    )
+}
+
+@Composable
+private fun <T> ChoiceDialog(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onDismiss: () -> Unit,
+    onSelect: (T) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
+                options.forEach { option -> RadioOption(label(option), selected == option) { onSelect(option) } }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_close)) } },
+    )
+}
+
+@Composable
+private fun RadioOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().selectable(selected, role = Role.RadioButton, onClick = onClick).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Spacer(Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun LicenseDialog(asset: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val result by produceState<Result<String>?>(null, asset) {
+        value = try {
+            Result.success(withContext(Dispatchers.IO) { context.assets.open(asset).bufferedReader().use { it.readText() } })
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize().padding(20.dp), shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(if (asset == "LICENSE") R.string.settings_app_license else R.string.settings_open_source),
+                    style = MaterialTheme.typography.titleLarge)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    val loaded = result
+                    when {
+                        loaded == null -> CircularProgressIndicator()
+                        loaded.isFailure -> Text(stringResource(R.string.settings_license_error))
+                        else -> SelectionContainer {
+                            Text(loaded.getOrThrow(), Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text(stringResource(R.string.settings_close))
+                }
+            }
+        }
+    }
+}

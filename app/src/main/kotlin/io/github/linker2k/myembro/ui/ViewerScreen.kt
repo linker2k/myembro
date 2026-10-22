@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
@@ -79,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.engine.model.EmbPattern
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -187,9 +187,9 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
             )
         }
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onOpenFile) { Text(stringResource(R.string.open_file)) }
+        Button(onClick = onOpenFile, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_file)) }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onOpenSample) { Text(stringResource(R.string.open_sample)) }
+        OutlinedButton(onClick = onOpenSample, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_sample)) }
     }
 }
 
@@ -219,13 +219,13 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
                     showJumps = vm.showJumps,
                     fitRequest = fitRequest,
                     modifier = Modifier.fillMaxSize(),
-                    backgroundColor = EmbroideryLinen.toArgb(),
-                    hoopColor = 0xFF9A7859.toInt(),
+                    backgroundColor = MaterialTheme.colorScheme.background.toArgb(),
+                    hoopColor = MaterialTheme.colorScheme.outline.toArgb(),
                 )
                 IconButton(
                     onClick = { fitRequest++ },
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                        .background(Color(0xEFFFFCF7), RoundedCornerShape(14.dp)),
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), MyembroShapes.Button),
                 ) { Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.fit)) }
             }
             Column(
@@ -235,8 +235,8 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
             ) {
                 StatsRow(pattern, vm.hoop)
                 Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Column(Modifier.padding(12.dp)) {
@@ -257,8 +257,8 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop) {
     val b = pattern.bounds
     val seconds = pattern.estimatedSeconds()
     Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+        shape = MyembroShapes.Card,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -300,12 +300,12 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
             val active = progress >= block.start && progress < block.end
             Row(
                 Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (active) MaterialTheme.colorScheme.primaryContainer else EmbroideryLinen)
+                    .clip(MyembroShapes.Chip)
+                    .background(if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.background)
                     .border(
                         if (active) 2.dp else 1.dp,
                         if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                        RoundedCornerShape(16.dp),
+                        MyembroShapes.Chip,
                     )
                     .semantics { selected = active }
                     .clickable { onSeek(block.end - 1) }

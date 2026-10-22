@@ -4,12 +4,11 @@ package io.github.linker2k.myembro.ui.editor
 import io.github.linker2k.myembro.engine.edit.DesignObject
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Transform
+import io.github.linker2k.myembro.engine.edit.contains
 import io.github.linker2k.myembro.engine.model.Bounds
 import kotlin.math.abs
 
-internal fun Bounds.outside(hoop: HoopSpec): Boolean =
-    minX < -hoop.width / 2.0 || maxX > hoop.width / 2.0 ||
-        minY < -hoop.height / 2.0 || maxY > hoop.height / 2.0
+internal fun Bounds.outside(hoop: HoopSpec): Boolean = !hoop.contains(this)
 
 /** Hit test in local coordinates, including mirrored and rotated designs. */
 internal fun DesignObject.contains(x: Double, y: Double, tolerance: Double): Boolean {

@@ -1,0 +1,29 @@
+<resources>
+    <string name="home_greeting">안녕하세요</string>
+    <string name="home_workshop">나의 자수 작업실</string>
+    <string name="home_welcome">오늘의 아이디어를 한 땀씩 만들어 보세요.</string>
+    <string name="home_new_project">새 프로젝트</string>
+    <string name="home_new_hint">후프를 고르고 빈 도안에서 시작해 보세요.</string>
+    <string name="home_hoop">후프 프리셋 · mm</string>
+    <string name="home_create">새 프로젝트 시작</string>
+    <string name="home_recent">최근 프로젝트</string>
+    <string name="home_view_all">모두 보기</string>
+    <string name="home_recent_empty">저장한 도안과 프로젝트가 여기에 표시됩니다.</string>
+    <string name="home_gallery">샘플·템플릿</string>
+    <string name="home_flower_sample">꽃 도안</string>
+    <string name="home_sample">기본 PES 샘플</string>
+    <string name="home_square_template">정사각 캔버스</string>
+    <string name="home_portrait_template">세로형 캔버스</string>
+    <string name="home_template_size">%1$s mm · 빈 템플릿</string>
+    <string name="home_quick_start">빠른 시작</string>
+    <string name="home_import">도안 가져오기</string>
+    <string name="home_lettering">글자 넣기</string>
+    <string name="home_photo">사진→자수</string>
+    <string name="home_coming_soon">준비 중</string>
+    <string name="home_tab_home">홈</string>
+    <string name="home_tab_library">도안</string>
+    <string name="home_tab_create">만들기</string>
+    <string name="home_settings">설정</string>
+    <string name="home_load_failed">최근 프로젝트를 불러오지 못했습니다.</string>
+    <string name="home_retry">다시 시도</string>
+</resources>

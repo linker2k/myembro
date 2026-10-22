@@ -40,15 +40,18 @@ class DesignLibrary(private val context: Context) {
         if (file.parentFile == dir) file.delete()
     }
 
-    /** Puts the bundled sample in an empty library so first launch has something to show. */
+    /** Installs the whole pack once, including upgrades from the former single-flower demo.
+     * Deleted samples stay deleted after installation; user files are never overwritten.
+     */
     fun seedSampleIfEmpty() {
-        if (list().isNotEmpty()) return
-        context.assets.open("samples/flower.pes").use { input ->
-            File(dir, "flower.pes").outputStream().use { input.copyTo(it) }
+        SampleInstaller(dir).install(context.assets.list("samples").orEmpty().toList()) { name ->
+            context.assets.open("samples/$name")
         }
     }
 
     companion object {
+        fun isSample(file: File): Boolean = file.name.startsWith("sample_")
+
         val SUPPORTED = setOf("pes", "pec", "dst")
     }
 }

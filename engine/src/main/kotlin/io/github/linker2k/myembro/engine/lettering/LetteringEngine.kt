@@ -74,7 +74,9 @@ object LetteringEngine {
      *
      * Curves must already be flattened (e.g. Android Path.approximate). Nearly collinear
      * short segments are merged within [mergeToleranceMm], preserving contour endpoints
-     * and sharp corners. The final sewn bounds are centered on (0, 0).
+     * and sharp corners. Set [simplify] to false to keep all input vertices. Optional
+     * [minSegmentMm] merges short edges within the same geometric tolerance. Closed
+     * loops and open endpoints remain intact. The final sewn bounds are centered on (0, 0).
      */
     fun fromContours(
         contours: List<List<Pair<Double, Double>>>,
@@ -86,6 +88,8 @@ object LetteringEngine {
         baseline: Double = 0.0,
         sourceHeight: Double? = null,
         mergeToleranceMm: Double = 0.05,
+        simplify: Boolean = true,
+        minSegmentMm: Double = 0.0,
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         require(baseline.isFinite()) { "baseline must be finite" }
@@ -94,8 +98,9 @@ object LetteringEngine {
         require(contours.all { contour -> contour.all { (x, y) -> x.isFinite() && y.isFinite() } }) {
             "Contour coordinates must be finite"
         }
+        require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
         val paths = contours.filter { it.size >= 2 }
-        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm)
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm)
         if (paths.isEmpty()) return builder.finish(thread)
         val points = paths.flatten()
         val minX = points.minOf { it.first }
@@ -148,10 +153,11 @@ object LetteringEngine {
 private class RunningStitches(
     stitchLengthMm: Double,
     private val trimBetweenStrokes: Boolean,
-    mergeToleranceMm: Double = 0.05,
+    private val mergeToleranceMm: Double = 0.05,
+    private val simplifyPaths: Boolean = true,
+    private val minSegmentMm: Double = 0.0,
 ) {
     private val maxLength = stitchLengthMm * 10
-    private val tolerance = mergeToleranceMm * 10
     private val stitches = arrayListOf<Stitch>()
 
     private fun quantize(x: Double, y: Double): Stitch {
@@ -162,7 +168,13 @@ private class RunningStitches(
     }
 
     fun stroke(points: List<Pair<Double, Double>>) {
-        val sampled = simplify(points, tolerance).map { (x, y) -> quantize(x, y) }
+        val reduced = if (simplifyPaths) {
+            // Public simplification works in mm; this builder receives 0.1 mm units.
+            ContourSimplifier.simplify(
+                listOf(points.map { (x, y) -> x / 10 to y / 10 }), mergeToleranceMm, minSegmentMm,
+            ).single().map { (x, y) -> x * 10 to y * 10 }
+        } else points
+        val sampled = reduced.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return
         if (stitches.isNotEmpty() && trimBetweenStrokes) stitches += stitches.last().copy(command = Command.TRIM)
         stitches += sampled.first().copy(command = Command.JUMP)
@@ -199,35 +211,4 @@ private class RunningStitches(
         return EmbPattern(stitches.toList(), if (last == null) emptyList() else listOf(thread), metadata, warnings)
     }
 
-    /** Iterative Ramer-Douglas-Peucker; endpoints also preserve closure of closed contours. */
-    private fun simplify(points: List<Pair<Double, Double>>, epsilon: Double): List<Pair<Double, Double>> {
-        if (points.size <= 2 || epsilon == 0.0) return points
-        val keep = BooleanArray(points.size)
-        keep[0] = true
-        keep[points.lastIndex] = true
-        val pending = ArrayDeque<Pair<Int, Int>>()
-        pending.add(0 to points.lastIndex)
-        while (pending.isNotEmpty()) {
-            val (start, end) = pending.removeLast()
-            val (ax, ay) = points[start]
-            val (bx, by) = points[end]
-            val dx = bx - ax
-            val dy = by - ay
-            val lengthSquared = dx * dx + dy * dy
-            var farthest = -1
-            var distance = epsilon
-            for (i in start + 1 until end) {
-                val (px, py) = points[i]
-                val t = if (lengthSquared == 0.0) 0.0 else (((px - ax) * dx + (py - ay) * dy) / lengthSquared).coerceIn(0.0, 1.0)
-                val d = hypot(px - (ax + t * dx), py - (ay + t * dy))
-                if (d > distance) { distance = d; farthest = i }
-            }
-            if (farthest >= 0) {
-                keep[farthest] = true
-                pending.add(start to farthest)
-                pending.add(farthest to end)
-            }
-        }
-        return points.filterIndexed { index, _ -> keep[index] }
-    }
 }

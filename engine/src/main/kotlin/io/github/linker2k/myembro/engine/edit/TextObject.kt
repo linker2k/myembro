@@ -37,6 +37,7 @@ data class TextObject(
     }
 
     override fun localPattern(): EmbPattern = pattern
+    override fun withId(id: String): TextObject = copy(id = id)
     override fun withTransform(t: Transform): TextObject = copy(transform = t)
     override fun withVisible(v: Boolean): TextObject = copy(visible = v)
 }

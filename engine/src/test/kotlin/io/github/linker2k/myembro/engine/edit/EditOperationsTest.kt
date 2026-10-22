@@ -42,10 +42,10 @@ class EditOperationsTest {
     }
 
     @Test fun placedBoundsCenterAndHoopOverflow() {
-        val p = Project(objects = listOf(rectangle(x = 450.0), rectangle("b", -200.0, 100.0)))
-        assertEquals(Bounds(-250, -20, 500, 120), p.placedBounds())
-        assertFalse(p.exceedsHoop()) // touching the edge fits
-        val outside = p.update("a") { it.withTransform(it.transform.copy(x = 451.0)) }
+        val p = Project(objects = listOf(rectangle(x = 440.0), rectangle("b", -200.0, 100.0)))
+        assertEquals(Bounds(-250, -20, 490, 120), p.placedBounds())
+        assertFalse(p.exceedsHoop()) // touching the inset sewing edge fits
+        val outside = p.update("a") { it.withTransform(it.transform.copy(x = 441.0)) }
         assertTrue(outside.exceedsHoop())
         assertEquals(listOf("a"), outside.objectsOutsideHoop().map { it.id })
         assertFalse(outside.update("a") { it.withVisible(false) }.exceedsHoop())

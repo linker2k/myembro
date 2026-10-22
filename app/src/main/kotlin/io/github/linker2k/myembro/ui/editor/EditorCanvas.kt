@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -30,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
+import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.ui.RenderData
 import kotlin.math.abs
 
@@ -52,19 +54,26 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val renders = vm.project.objects.filter { it.visible }.map { obj ->
         key(obj.id) { remember(obj) { obj.id to RenderData(obj.placedPattern()) } }
     }
-    val selectedBounds = renders.firstOrNull { it.first == vm.selectedId }?.second?.pattern?.bounds
+    val selectedBounds = remember(renders, vm.selectedIds) {
+        val boxes = renders.filter { it.first in vm.selectedIds }.mapNotNull { it.second.pattern.bounds }
+        if (boxes.isEmpty()) null else Bounds(boxes.minOf { it.minX }, boxes.minOf { it.minY },
+            boxes.maxOf { it.maxX }, boxes.maxOf { it.maxY })
+    }
+    val snapDistance = with(density) { 8.dp.toPx() }
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
 
     Canvas(modifier.semantics { contentDescription = description }
         .pointerInput(hoop, fitRequest) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                if (vm.busy) return@awaitEachGesture
                 val fit = minOf(size.width.toFloat() / hoop.width, size.height.toFloat() / hoop.height) * 0.82f
                 val scaleAtStart = fit * zoom
                 val center = Offset(size.width / 2f, size.height / 2f)
                 fun toWorld(point: Offset) = (point - center - pan) / (fit * zoom)
+                val selecting = vm.selectionMode
                 val selected = vm.selected?.takeIf { it.visible }
-                val bounds = selected?.placedPattern()?.bounds
+                val bounds = if (selecting) null else vm.project.selectionBounds(vm.selectedIds)
                 val corner = bounds?.corners()?.firstOrNull {
                     (it * scaleAtStart + center + pan - down.position).getDistance() <= handleTouch
                 }
@@ -72,9 +81,10 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 val hit = if (corner != null) selected else vm.project.objects.asReversed().firstOrNull {
                     it.visible && it.contains(point.x.toDouble(), point.y.toDouble(), handleTouch / scaleAtStart / 2.0)
                 }
-                vm.select(hit?.id)
+                if (!selecting) vm.selectForGesture(hit?.id)
                 val editing = hit != null
                 var started = false
+                var completed = false
                 var travel = Offset.Zero
                 var handlePosition = down.position
                 try {
@@ -82,7 +92,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                         val event = awaitPointerEvent()
                         if (event.changes.any { it.isConsumed }) break
                         val pressed = event.changes.count { it.pressed }
-                        if (pressed == 0) break
+                        if (pressed == 0) { completed = true; break }
                         val delta = event.calculatePan()
                         val zoomChange = event.calculateZoom()
                         val rotation = event.calculateRotation()
@@ -90,26 +100,26 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                         if (!started && (travel.getDistance() > viewConfiguration.touchSlop ||
                                 (pressed > 1 && (abs(zoomChange - 1f) > 0.001f || abs(rotation) > 0.1f)))) {
                             started = true
-                            if (editing) vm.beginGesture()
+                            if (editing) {
+                                if (selecting) vm.selectForGesture(hit?.id)
+                                vm.beginGesture()
+                            }
                         }
                         if (started) {
                             if (editing) {
-                                val t = vm.selected?.transform ?: break
-                                val next = if (corner != null && pressed == 1) {
-                                    // Uniform scaling around the object's origin keeps rotation and mirroring intact.
-                                    val origin = Offset(t.x.toFloat(), t.y.toFloat()) * (fit * zoom) + center + pan
+                                if (corner != null && pressed == 1) {
+                                    val group = vm.project.selectionBounds(vm.selectedIds) ?: break
+                                    val pivot = Offset((group.minX + group.maxX) / 2f, (group.minY + group.maxY) / 2f)
+                                    val origin = pivot * (fit * zoom) + center + pan
                                     val oldDistance = (handlePosition - origin).getDistance().coerceAtLeast(1f)
                                     handlePosition += delta
                                     val newDistance = (handlePosition - origin).getDistance().coerceAtLeast(1f)
-                                    t.scaled((newDistance / oldDistance).toDouble())
+                                    vm.transformBy(0.0, 0.0, (newDistance / oldDistance).toDouble(), 0.0, 0.0)
                                 } else {
-                                    t.scaled(zoomChange.toDouble()).copy(
-                                        x = (t.x + delta.x / (fit * zoom)).coerceIn(-100000.0, 100000.0),
-                                        y = (t.y + delta.y / (fit * zoom)).coerceIn(-100000.0, 100000.0),
-                                        rotationDeg = (t.rotationDeg + rotation) % 360,
-                                    )
+                                    vm.transformBy((delta.x / (fit * zoom)).toDouble(), (delta.y / (fit * zoom)).toDouble(),
+                                        zoomChange.toDouble(), rotation.toDouble(),
+                                        if (pressed == 1) (snapDistance / (fit * zoom)).toDouble() else 0.0)
                                 }
-                                vm.transformSelection(next)
                             } else {
                                 val centroid = event.changes.filter { it.pressed && it.previousPressed }
                                     .map { it.previousPosition }.let { points ->
@@ -125,6 +135,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 } finally {
                     if (editing && started) vm.endGesture()
                 }
+                if (selecting && !started && completed && hit != null) vm.toggleSelection(hit.id)
             }
         }) {
         drawRect(Color(0xFFF6F0E6))
@@ -144,6 +155,11 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
         drawLine(Color(0x302B2420), screen(Offset(-20f, 0f)), screen(Offset(20f, 0f)), 1.dp.toPx())
         drawLine(Color(0x302B2420), screen(Offset(0f, -20f)), screen(Offset(0f, 20f)), 1.dp.toPx())
         drawRoundRect(Color(0xFF806B5C), topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), style = Stroke(2.dp.toPx()))
+        // The inset rectangle is the actual snap/warning boundary; the ring is decorative.
+        val area = hoop.sewingArea.snapBounds
+        drawRect(Color(0x66806B5C), screen(Offset(area.minX.toFloat(), area.minY.toFloat())),
+            Size(area.width * scale, area.height * scale),
+            style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
         drawIntoCanvas { c ->
             val canvas = c.nativeCanvas
             canvas.save()
@@ -157,6 +173,21 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 }
             }
             canvas.restore()
+        }
+        val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 4.dp.toPx()))
+        vm.snapGuides.x?.let { x ->
+            val px = screen(Offset(x.toFloat(), 0f)).x
+            drawLine(accent, Offset(px, 0f), Offset(px, size.height), 1.5.dp.toPx(), pathEffect = dash)
+        }
+        vm.snapGuides.y?.let { y ->
+            val py = screen(Offset(0f, y.toFloat())).y
+            drawLine(accent, Offset(0f, py), Offset(size.width, py), 1.5.dp.toPx(), pathEffect = dash)
+        }
+        if (vm.selectedIds.size > 1) renders.filter { it.first in vm.selectedIds }.forEach { (_, data) ->
+            data.pattern.bounds?.let { b ->
+                val a = screen(Offset(b.minX.toFloat(), b.minY.toFloat()))
+                drawRect(accent.copy(alpha = 0.5f), a, Size(maxOf(1f, b.width * scale), maxOf(1f, b.height * scale)), style = Stroke(1.dp.toPx()))
+            }
         }
         selectedBounds?.let { b ->
             val a = screen(Offset(b.minX.toFloat(), b.minY.toFloat()))
