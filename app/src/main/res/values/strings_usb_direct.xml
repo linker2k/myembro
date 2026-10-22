@@ -1,0 +1,12 @@
+<resources>
+    <string name="usb_direct_drive">SE400 direct connection · %1$s</string>
+    <string name="usb_direct_notice">Connect the powered-on SE400 USB-B port to the phone using USB/OTG, then allow USB access. Android may not show this RAM disk in the folder picker; use SE400 direct connection. PES names are converted to unique uppercase 8.3 names. Files disappear when the machine is powered off. Only FAT12 is supported; the app never formats the device.</string>
+    <string name="usb_direct_disconnected">The direct USB device was disconnected. Reconnect it and try again.</string>
+    <string name="usb_direct_permission_denied">USB access was not granted. Allow access to export directly.</string>
+    <string name="usb_direct_exported">Saved and read-back verified %1$d PES file(s): %2$s. Files disappear when the SE400 is powered off.</string>
+    <string name="usb_direct_space_title">Not enough space — choose PES files to delete</string>
+    <string name="usb_direct_space_body">Needed: %1$d bytes; free: %2$d bytes. Root entries needed: %3$d; free: %4$d. Only the files you select below will be deleted.</string>
+    <string name="usb_direct_space_empty">There are no writable PES files to delete. Cancel and export fewer designs.</string>
+    <string name="usb_direct_delete_export">Delete selected files and export</string>
+    <string name="usb_direct_short_hint">Uppercase 8.3 names · files disappear when powered off</string>
+</resources>

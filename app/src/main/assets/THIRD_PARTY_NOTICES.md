@@ -422,3 +422,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   and intersections. SVG parsing and running/tatami generation are original myembro
   GPL-3.0-or-later code implementing the referenced W3C syntax and basic geometry;
   see docs/geometry.md for algorithm sources and limitations.
+
+
+## libaums core
+
+- Dependency: `me.jahnen.libaums:core:0.10.0`, unmodified published AAR (including its
+  native USB/errno helpers). Copyright (C) 2014–2019 Magnus Jahnen and contributors;
+  project contributors include Davide Depau.
+- Project/source: https://github.com/magnusja/libaums . Pinned source archive:
+  https://repo.maven.apache.org/maven2/me/jahnen/libaums/core/0.10.0/core-0.10.0-sources.jar .
+- License: Apache License, Version 2.0. Full upstream license is bundled at
+  `app/src/main/assets/licenses/libaums_APACHE-2.0.txt`.
+- Used for USB BOT / SCSI block access (LUN 0) with Android USB host permission.
+  The optional `libusbcommunication` module is not included. No libaums filesystem
+  factory is invoked. `engine/fat12` is an independent GPL-3.0-or-later Kotlin
+  implementation; the app adapts sector I/O and handles explicit deletion consent.

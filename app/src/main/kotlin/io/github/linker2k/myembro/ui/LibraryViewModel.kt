@@ -20,6 +20,7 @@ import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
+import io.github.linker2k.myembro.usb.DirectUsbExporter
 import io.github.linker2k.myembro.export.ExportChecks
 import java.io.File
 import java.util.Locale
@@ -104,7 +105,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         refreshDrives()
     }
 
-    override fun onCleared() { unwatch(); stopObservingSettings() }
+    override fun onCleared() { cancelUsbPermission?.invoke(); unwatch(); stopObservingSettings() }
 
     /** Unknown custom-machine compatibility stays unknown instead of inheriting SE400 limits. */
     fun fitsMachine(item: Item): Boolean? = item.bounds?.let { bounds ->
@@ -113,6 +114,17 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refreshDrives() {
         drives = usb.drives()
+        permissionDrive?.let { waiting ->
+            if (drives.none { it.uuid == waiting.uuid }) {
+                usbPermissionEpoch++
+                cancelUsbPermission?.invoke(); cancelUsbPermission = null; permissionDrive = null
+                pendingExport = emptyList(); busy = false
+                message = getApplication<Application>().getString(R.string.usb_direct_disconnected)
+            }
+        }
+        directSpaceRequest?.let { waiting ->
+            if (drives.none { it.uuid == waiting.drive.uuid }) directSpaceRequest = null
+        }
     }
 
     /** Picks up designs saved elsewhere, e.g. by the editor. */
@@ -212,22 +224,31 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
      * Designs are first checked against the machine in settings.
      */
     fun exportToUsb(files: List<File> = selection.toList()) {
-        if (files.isEmpty() || busy) return
+        if (files.isEmpty() || busy || directSpaceRequest != null || driveChoice != null || accessRequest != null || preflightWarnings != null) return
+        val requested = files.toList()
+        busy = true
         viewModelScope.launch {
-            val settings = SettingsPreferences(getApplication()).read()
-            val warnings = withContext(Dispatchers.IO) {
-                files.flatMap { file ->
-                    val pattern = runCatching { PatternReader.read(file.readBytes(), file.name) }.getOrNull()
-                        ?: return@flatMap emptyList()
-                    val name = "${file.nameWithoutExtension}.pes"
-                    ExportChecks.check(pattern, name, settings, files.size).map { "$name: $it" }
+            val shown = try {
+                val settings = SettingsPreferences(getApplication()).read()
+                val warnings = withContext(Dispatchers.IO) {
+                    requested.flatMap { file ->
+                        val pattern = runCatching { PatternReader.read(file.readBytes(), file.name) }.getOrNull()
+                            ?: return@flatMap emptyList()
+                        val name = "${file.nameWithoutExtension}.pes"
+                        ExportChecks.check(pattern, name, settings, requested.size).map { "$name: $it" }
+                    }
                 }
+                val batch = warnings.map { it.substringAfter(": ") }.groupingBy { it }.eachCount()
+                    .filterValues { it == requested.size && requested.size > 1 }.keys
+                batch.toList() + warnings.filterNot { it.substringAfter(": ") in batch }
+            } catch (e: Exception) {
+                busy = false
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                message = getApplication<Application>().getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName)
+                return@launch
             }
-            // The batch-size warning repeats for every file; keep one copy without the file prefix.
-            val batch = warnings.map { it.substringAfter(": ") }.groupingBy { it }.eachCount()
-                .filterValues { it == files.size && files.size > 1 }.keys
-            val shown = batch.toList() + warnings.filterNot { it.substringAfter(": ") in batch }
-            if (shown.isEmpty()) startUsbExport(files) else { preflightFiles = files; preflightWarnings = shown }
+            busy = false
+            if (shown.isEmpty()) startUsbExport(requested) else { preflightFiles = requested; preflightWarnings = shown }
         }
     }
 
@@ -261,6 +282,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun exportTo(drive: UsbExporter.Drive, files: List<File>) {
+        if (drive.isDirect) { exportDirect(drive, files); return }
         val folder = usb.grantedFolder(drive)
         if (folder == null) {
             pendingExport = files
@@ -282,6 +304,73 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 pendingExport = emptyList()
             }
             else -> write(drive, tree, pendingExport)
+        }
+    }
+
+    internal data class DirectSpaceRequest(val drive: UsbExporter.Drive, val plan: DirectUsbExporter.SpacePlan)
+    internal var directSpaceRequest by mutableStateOf<DirectSpaceRequest?>(null)
+        private set
+    private var permissionDrive: UsbExporter.Drive? = null
+    private var cancelUsbPermission: (() -> Unit)? = null
+    private var usbPermissionEpoch = 0L
+
+    private fun exportDirect(drive: UsbExporter.Drive, files: List<File>) {
+        val target = drive.direct ?: return
+        if (usb.directAccess.hasPermission(target)) { writeDirect(drive, files); return }
+        pendingExport = files
+        permissionDrive = drive
+        busy = true
+        val epoch = ++usbPermissionEpoch
+        try {
+            cancelUsbPermission = usb.directAccess.requestPermission(target) { granted ->
+                if (epoch != usbPermissionEpoch) return@requestPermission
+                cancelUsbPermission?.invoke(); cancelUsbPermission = null; permissionDrive = null
+                val pending = pendingExport
+                pendingExport = emptyList()
+                busy = false
+                if (granted) writeDirect(drive, pending)
+                else message = getApplication<Application>().getString(R.string.usb_direct_permission_denied)
+            }
+        } catch (e: Exception) {
+            permissionDrive = null; pendingExport = emptyList(); busy = false
+            message = getApplication<Application>().getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName)
+        }
+    }
+
+    internal fun cancelDirectSpace() { directSpaceRequest = null }
+    internal fun confirmDirectDelete(names: Set<String>) {
+        val request = directSpaceRequest ?: return
+        if (busy || !request.plan.canProceed(names)) return
+        directSpaceRequest = null
+        writeDirect(request.drive, emptyList(), request.plan, names.toSet())
+    }
+
+    private fun writeDirect(drive: UsbExporter.Drive, files: List<File>,
+        plan: DirectUsbExporter.SpacePlan? = null, deleteNames: Set<String> = emptySet()) {
+        val target = drive.direct ?: return
+        pendingExport = emptyList()
+        busy = true
+        viewModelScope.launch {
+            val res = getApplication<Application>().resources
+            val writeSettings = SettingsPreferences(getApplication()).read().writeSettings
+            try {
+                when (val result = withContext(Dispatchers.IO) {
+                    if (plan == null) usb.directExporter.export(target, files, writeSettings)
+                    else usb.directExporter.resume(target, plan, deleteNames)
+                }) {
+                    is DirectUsbExporter.Result.NeedSpace -> directSpaceRequest = DirectSpaceRequest(drive, result.plan)
+                    is DirectUsbExporter.Result.Complete -> {
+                        val report = result.report
+                        message = if (report.failures.isEmpty()) res.getString(R.string.usb_direct_exported,
+                            report.exported.size, report.exported.joinToString())
+                        else res.getString(R.string.usb_partial, report.exported.size, report.failures.size,
+                            "${report.failures.first().first}: ${report.failures.first().second}")
+                        selection.clear()
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { message = res.getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName) }
+            finally { busy = false }
         }
     }
 

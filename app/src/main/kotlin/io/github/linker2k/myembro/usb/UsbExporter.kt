@@ -13,12 +13,15 @@ import android.os.storage.StorageVolume
 import android.provider.DocumentsContract
 import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
+import io.github.linker2k.myembro.R
+import android.hardware.usb.UsbManager
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import java.io.File
 
 /**
- * Exports designs to a removable drive (USB OTG stick) through the Storage Access Framework.
+ * Exports through SAF when mounted volumes exist, otherwise exposes a permission-gated
+ * USB BOT/SCSI route for the SE400 FAT12 RAM disk.
  *
  * Android only lets apps write to a USB drive after the user grants a folder on it once; the
  * grant is persisted per volume UUID so later exports go straight through.
@@ -27,14 +30,26 @@ class UsbExporter(private val context: Context) {
     private val storage = context.getSystemService(StorageManager::class.java)
     private val prefs = context.getSharedPreferences("usb_grants", Context.MODE_PRIVATE)
 
-    /** A mounted removable volume: label for the UI, uuid for remembering its grant. */
-    data class Drive(val label: String, val uuid: String?, internal val volume: StorageVolume)
+    internal val directAccess = DirectUsbAccess(context)
+    internal val directExporter = DirectUsbExporter(directAccess)
+
+    /** SAF volume or an unmounted BOT/SCSI target; direct IDs never persist a folder grant. */
+    data class Drive(val label: String, val uuid: String?, internal val volume: StorageVolume?,
+        internal val direct: DirectUsbTarget? = null) {
+        val isDirect: Boolean get() = direct != null
+    }
 
     class Report(val exported: List<String>, val converted: Int, val failures: List<Pair<String, String>>)
 
-    fun drives(): List<Drive> = storage.storageVolumes
-        .filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
-        .map { Drive(it.getDescription(context), it.uuid, it) }
+    fun drives(): List<Drive> {
+        val mounted = storage.storageVolumes.filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
+            .map { Drive(it.getDescription(context), it.uuid, it) }
+        if (mounted.isNotEmpty()) return mounted
+        return directAccess.devices().map { target ->
+            Drive(context.getString(R.string.usb_direct_drive, target.device.productName ?: "USB ${target.device.vendorId}:${target.device.productId}"),
+                target.id, null, target)
+        }
+    }
 
     /** The folder previously granted on [drive], if the permission is still held. */
     fun grantedFolder(drive: Drive): Uri? {
@@ -45,7 +60,7 @@ class UsbExporter(private val context: Context) {
 
     /** Intent asking the user to pick (and thereby grant) a folder; opens at the drive's root on Android 10+. */
     fun accessIntent(drive: Drive): Intent =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) drive.volume.createOpenDocumentTreeIntent()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) requireNotNull(drive.volume).createOpenDocumentTreeIntent()
         else Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
 
     /**
@@ -100,6 +115,14 @@ class UsbExporter(private val context: Context) {
             addDataScheme("file")
         }
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        return { context.unregisterReceiver(receiver) }
+        val usbReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) = onChange()
+        }
+        val usbFilter = IntentFilter().apply {
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        ContextCompat.registerReceiver(context, usbReceiver, usbFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        return { context.unregisterReceiver(receiver); context.unregisterReceiver(usbReceiver) }
     }
 }

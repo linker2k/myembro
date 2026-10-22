@@ -252,7 +252,8 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
             icon = { Icon(Icons.Default.Usb, null) },
             title = { Text(stringResource(R.string.library_usb_help_title)) },
             text = {
-                Text(stringResource(if (vm.machineProfile?.id == "se400") R.string.machine_transfer_se400
+                Text(stringResource(if (vm.drives.any { it.isDirect }) R.string.usb_direct_notice
+                    else if (vm.machineProfile?.id == "se400") R.string.machine_transfer_se400
                     else R.string.library_usb_help_body))
             },
             confirmButton = {
@@ -268,6 +269,8 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
             },
         )
     }
+
+    DirectUsbSpaceDialog(vm)
 
     vm.driveChoice?.let { choices ->
         AlertDialog(
@@ -307,7 +310,8 @@ private fun UsbStatus(vm: LibraryViewModel, onClick: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(stringResource(R.string.library_usb_hint), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(if (vm.drives.firstOrNull()?.isDirect == true) R.string.usb_direct_short_hint
+                    else R.string.library_usb_hint), style = MaterialTheme.typography.bodySmall)
             }
             Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
         }

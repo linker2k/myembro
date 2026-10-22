@@ -33,7 +33,7 @@
     <string name="export_sheet_share">PES 파일 공유</string>
     <string name="export_sheet_share_hint">다른 앱으로 도안 사본 보내기</string>
     <string name="export_sheet_usb">USB로 내보내기</string>
-    <string name="export_sheet_usb_hint">OTG로 USB를 연결하고 저장 폴더 선택</string>
+    <string name="export_sheet_usb_hint">USB/OTG 연결: 저장 폴더 선택 또는 SE400 직접 연결 권한 허용</string>
     <string name="settings_studio">나의 자수 작업실</string>
     <string name="settings_studio_hint">내 미싱에 맞게 준비하세요.</string>
     <string name="settings_threads_title">실과 색상</string>
@@ -44,7 +44,7 @@
     <string name="machine_hoop_unsupported">이 미싱에서 지원하지 않음 — 수놓기 전 확인</string>
     <string name="machine_unverified">직접 입력한 미싱: 자수 영역·호환 후프·전송 방법·제한은 미확인입니다. 크기를 직접 확인하세요.</string>
     <string name="machine_area_format">최대 자수 영역 %1$s · 내보내기 %2$s</string>
-    <string name="machine_transfer_se400">PC에 USB 케이블로 연결하면 이동식 디스크로 표시됩니다. PES를 디스크 최상위에 복사하세요. 안드로이드 폰/OTG 인식은 미확인입니다. USB 메모리를 미싱에 꽂는 방식이 아닙니다.</string>
+    <string name="machine_transfer_se400">USB-B 케이블: Windows에서는 이동식 디스크입니다. 폴드7에서는 Android/SAF가 램디스크를 마운트하지 않으므로 SE400 직접 연결에서 USB 접근을 허용하세요. 대문자 8.3 파일명으로 저장하며 미싱 전원을 끄면 지워집니다. 직접 쓰기는 SE400 실기 확인이 필요합니다.</string>
     <string name="machine_transfer_se600">호환 USB 메모리에 PES를 복사한 뒤 미싱에 꽂고 도안을 불러오세요.</string>
     <string name="machine_transfer_se700">호환 USB 메모리를 사용하거나 Design Database Transfer(Windows)·PE-DESIGN 11·Artspira로 무선 전송하세요. myembro의 직접 무선 전송은 구현되지 않았습니다.</string>
     <string name="machine_optional_hoops_small">확인된 후프: 100×100mm, 별매 60×20mm. 앱의 프로젝트 후프는 현재 100×100mm를 제공합니다.</string>
