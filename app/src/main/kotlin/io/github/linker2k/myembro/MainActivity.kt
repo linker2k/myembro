@@ -133,6 +133,15 @@ class MainActivity : ComponentActivity() {
                                 stack += Screen.EDITOR
                             }
                         },
+                        // The USB flow (access prompt, drive choice, result) lives on the library screen.
+                        onExportUsb = openPath?.let { path ->
+                            {
+                                library.clearSelection()
+                                library.toggle(File(path))
+                                stack += Screen.LIBRARY
+                                library.exportToUsb()
+                            }
+                        },
                     )
                 }
             }
