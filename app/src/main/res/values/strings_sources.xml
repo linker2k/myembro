@@ -1,0 +1,18 @@
+<resources>
+    <string name="sources_title">Find free designs</string>
+    <string name="sources_back">Back</string>
+    <string name="sources_import_hint">Download a PES, then Share → myembro to add it to your design library.</string>
+    <string name="sources_link_only">Download on the designer’s site. PES, PEC, DST and ZIP are supported. Use each design under that site’s terms.</string>
+    <string name="sources_open">Open website</string>
+    <string name="sources_terms">Read usage terms</string>
+    <string name="sources_pes_available">PES available</string>
+    <string name="sources_no_pes">No PES</string>
+    <string name="sources_personal_only">Personal use only</string>
+    <string name="sources_finished_sales">Finished-item sales (conditions apply)</string>
+    <string name="sources_account_required">Account / checkout required</string>
+    <string name="sources_no_account">No account needed</string>
+    <string name="sources_formats">Formats: %1$s</string>
+    <string name="sources_verified">%1$s · Checked %2$s</string>
+    <string name="sources_browser_missing">Install a browser to open this website.</string>
+    <string name="sources_load_error">Could not load the design source list.</string>
+</resources>

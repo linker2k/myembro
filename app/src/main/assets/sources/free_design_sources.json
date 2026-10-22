@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "verifiedOn": "2026-10-22",
+  "sources": [
+    {
+      "id": "brother_sewingcraft",
+      "name": "Brother Sewingcraft",
+      "description": {
+        "ko": "브라더 공식 월별 무료 도안. PES를 바로 받아 개인 작품에 활용하세요.",
+        "en": "Official monthly Brother patterns with direct PES downloads for personal projects."
+      },
+      "url": "https://sewingcraft.brother.eu/en/inspiration-and-events/projects-and-free-patterns",
+      "formats": [
+        "PES"
+      ],
+      "includesPes": true,
+      "conditions": {
+        "ko": "개인용 도안입니다. 도안 파일 재배포와 판매용 사용은 허용되지 않습니다.",
+        "en": "Private use only; no redistribution of files or use for sale."
+      },
+      "personalUse": true,
+      "commercialUse": "not_allowed",
+      "registration": "not_required",
+      "redistribution": "not_allowed",
+      "languages": [
+        "en"
+      ],
+      "verifiedOn": "2026-10-22",
+      "termsUrls": [
+        "https://sewingcraft.brother.eu/en/terms-of-use"
+      ],
+      "evidenceUrls": [
+        "https://sewingcraft.brother.eu/en/inspiration-and-events/projects-and-free-patterns",
+        "https://sewingcraft.brother.eu/en/terms-of-use"
+      ]
+    },
+    {
+      "id": "embroidery_library",
+      "name": "Embroidery Library",
+      "description": {
+        "ko": "계절·생활 소품 등 현재 제공되는 무료 머신 자수 도안을 찾아보세요.",
+        "en": "Browse current free machine embroidery designs for seasonal and everyday projects."
+      },
+      "url": "https://emblibrary.com/pages/free-embroidery-designs",
+      "formats": [
+        "ART",
+        "DST",
+        "EXP",
+        "HUS",
+        "JEF",
+        "PCS",
+        "PES",
+        "SEW",
+        "VIP",
+        "VP3",
+        "XXX"
+      ],
+      "includesPes": true,
+      "conditions": {
+        "ko": "직접 수놓은 완제품의 소규모 판매는 가능하지만 대량 생산과 도안 파일 공유는 금지됩니다. 계정에서 ZIP을 받습니다.",
+        "en": "Limited sales of items you embroider are allowed; mass production and digital file sharing are prohibited. Download ZIPs from your account."
+      },
+      "personalUse": true,
+      "commercialUse": "finished_items_limited",
+      "registration": "required",
+      "redistribution": "not_allowed",
+      "languages": [
+        "en"
+      ],
+      "verifiedOn": "2026-10-22",
+      "termsUrls": [
+        "https://emblibrary.com/pages/licensing"
+      ],
+      "evidenceUrls": [
+        "https://emblibrary.com/pages/free-embroidery-designs",
+        "https://emblibrary.com/blogs/help/find-embroidery-file-formats",
+        "https://emblibrary.com/blogs/help/download-embroidery-design-files"
+      ]
+    },
+    {
+      "id": "urban_threads",
+      "name": "Urban Threads",
+      "description": {
+        "ko": "개성 있는 무료 머신 자수 도안과 레이스 패턴을 살펴보세요.",
+        "en": "Explore distinctive free machine embroidery and lace patterns."
+      },
+      "url": "https://urbanthreads.com/pages/free-embroidery-designs",
+      "formats": [
+        "ART",
+        "DST",
+        "EXP",
+        "HUS",
+        "JEF",
+        "PCS",
+        "PES",
+        "SEW",
+        "VIP",
+        "VP3",
+        "XXX"
+      ],
+      "includesPes": true,
+      "conditions": {
+        "ko": "직접 수놓은 완제품의 소규모 판매는 가능하지만 대량 생산과 도안 파일 공유는 금지됩니다. 계정 주문 내역에서 받습니다.",
+        "en": "Limited sales of items you embroider are allowed; mass production and digital file sharing are prohibited. Download from your account order history."
+      },
+      "personalUse": true,
+      "commercialUse": "finished_items_limited",
+      "registration": "required",
+      "redistribution": "not_allowed",
+      "languages": [
+        "en"
+      ],
+      "verifiedOn": "2026-10-22",
+      "termsUrls": [
+        "https://urbanthreads.com/pages/licensing"
+      ],
+      "evidenceUrls": [
+        "https://urbanthreads.com/pages/free-embroidery-designs",
+        "https://urbanthreads.com/products/i-heart-ut",
+        "https://urbanthreads.com/blogs/help/downloading-instructions"
+      ]
+    },
+    {
+      "id": "designs_by_juju",
+      "name": "Designs by JuJu",
+      "description": {
+        "ko": "무료 글귀·아플리케·소품 도안 모음. 구매 조건부 사은품과 별도의 무료 목록입니다.",
+        "en": "A dedicated free collection of sayings, applique and projects, separate from purchase-conditional gifts."
+      },
+      "url": "https://www.designsbyjuju.com/free-designs",
+      "formats": [
+        "ART",
+        "DST",
+        "EXP",
+        "HUS",
+        "JEF",
+        "PCS",
+        "PES",
+        "SEW",
+        "VIP",
+        "VP3",
+        "XXX"
+      ],
+      "includesPes": true,
+      "conditions": {
+        "ko": "무료 도안은 개인용만 가능합니다. 판매할 완제품에 사용하려면 해당 도안을 구매해야 합니다. 도안 파일 공유는 금지됩니다.",
+        "en": "Freebies cannot be used on items for sale; purchase the design for that use. Digital file sharing is prohibited."
+      },
+      "personalUse": true,
+      "commercialUse": "not_allowed",
+      "registration": "required",
+      "redistribution": "not_allowed",
+      "languages": [
+        "en"
+      ],
+      "verifiedOn": "2026-10-22",
+      "termsUrls": [
+        "https://www.designsbyjuju.com/terms-of-use"
+      ],
+      "evidenceUrls": [
+        "https://www.designsbyjuju.com/free-designs",
+        "https://www.designsbyjuju.com/terms-of-use",
+        "https://www.designsbyjuju.com/knowledge-base"
+      ]
+    },
+    {
+      "id": "kreative_kiwi",
+      "name": "Kreative Kiwi",
+      "description": {
+        "ko": "뉴질랜드 제작자의 무료 ITH·아플리케·퀼트 도안. 각 상품의 후프 크기를 확인하세요.",
+        "en": "Free in-the-hoop, applique and quilt designs from New Zealand. Check the hoop size on each product."
+      },
+      "url": "https://www.kreativekiwiembroidery.co.nz/Download-Free-In-the-hoop-Embroidery-Designs",
+      "formats": [
+        "DST",
+        "EXP",
+        "HUS",
+        "JEF",
+        "PES",
+        "VIP",
+        "VP3",
+        "XXX"
+      ],
+      "includesPes": true,
+      "conditions": {
+        "ko": "직접 만든 완제품 판매는 가능하며 대량 판매는 별도 상업 라이선스 문의가 필요합니다. 파일 재배포는 금지되고 무료 주문 절차가 있습니다.",
+        "en": "Selling items you make is allowed; mass marketing requires a separate commercial-license discussion. No file redistribution; use the free checkout process."
+      },
+      "personalUse": true,
+      "commercialUse": "finished_items_limited",
+      "registration": "required",
+      "redistribution": "not_allowed",
+      "languages": [
+        "en"
+      ],
+      "verifiedOn": "2026-10-22",
+      "termsUrls": [
+        "https://www.kreativekiwiembroidery.co.nz/copy-right"
+      ],
+      "evidenceUrls": [
+        "https://www.kreativekiwiembroidery.co.nz/Download-Free-In-the-hoop-Embroidery-Designs",
+        "https://www.kreativekiwiembroidery.co.nz/product/free-embroidery-addict-",
+        "https://www.kreativekiwiembroidery.co.nz/blog/How-to-Download-our-Free-Embroidery-Designs.html"
+      ]
+    }
+  ]
+}
