@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Pause
@@ -74,7 +75,13 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit, onSaveFile: () -> Unit, onShareFile: () -> Unit) {
+fun ViewerScreen(
+    vm: ViewerViewModel,
+    onOpenFile: () -> Unit,
+    onSaveFile: () -> Unit,
+    onShareFile: () -> Unit,
+    onEdit: (() -> Unit)?,
+) {
     val snackbar = remember { SnackbarHostState() }
     val message = vm.exportMessage
     LaunchedEffect(message) {
@@ -96,6 +103,11 @@ fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit, onSaveFile: () -> 
                     )
                 },
                 actions = {
+                    if (onEdit != null) {
+                        IconButton(onClick = onEdit, enabled = vm.render != null && !vm.loading) {
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.viewer_edit))
+                        }
+                    }
                     IconButton(onClick = onOpenFile, enabled = !vm.loading && !vm.exporting) {
                         Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.open_file))
                     }

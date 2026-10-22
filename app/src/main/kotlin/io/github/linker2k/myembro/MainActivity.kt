@@ -28,19 +28,26 @@ import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
 import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
+import io.github.linker2k.myembro.ui.editor.EditorScreen
+import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewer: ViewerViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
+    private val editor: EditorViewModel by viewModels()
 
     /** Path of the design open in the viewer, or null while the list is showing. */
     private var openPath by mutableStateOf<String?>(null)
+
+    /** The editor covers the list and the viewer; back returns to the list. */
+    private var editing by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
+        editing = savedInstanceState?.getBoolean(KEY_EDITING) ?: false
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val dark = isSystemInDarkTheme()
@@ -75,11 +82,26 @@ class MainActivity : ComponentActivity() {
                 }
             }
             MaterialTheme(colorScheme = colors) {
-                if (openPath == null) {
-                    LibraryScreen(library, onOpen = { file ->
-                        openPath = file.path
-                        viewer.openFile(file)
-                    })
+                val closeEditor = {
+                    editing = false
+                    openPath = null
+                    library.refresh()
+                }
+                if (editing) {
+                    BackHandler(onBack = closeEditor)
+                    EditorScreen(editor, onBack = closeEditor)
+                } else if (openPath == null) {
+                    LibraryScreen(
+                        library,
+                        onOpen = { file ->
+                            openPath = file.path
+                            viewer.openFile(file)
+                        },
+                        onCreate = {
+                            editor.newProject()
+                            editing = true
+                        },
+                    )
                 } else {
                     BackHandler { openPath = null }
                     // PES files have no registered MIME type, so allow any file and let the reader decide.
@@ -96,6 +118,12 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onShareFile = viewer::share,
+                        onEdit = openPath?.let { path ->
+                            {
+                                editor.editDesign(java.io.File(path))
+                                editing = true
+                            }
+                        },
                     )
                 }
             }
@@ -105,6 +133,7 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_OPEN, openPath)
+        outState.putBoolean(KEY_EDITING, editing)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -127,5 +156,6 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val KEY_OPEN = "open_path"
+        const val KEY_EDITING = "editing"
     }
 }

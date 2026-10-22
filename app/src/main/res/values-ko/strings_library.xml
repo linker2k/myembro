@@ -1,5 +1,7 @@
 <resources>
     <string name="library_title">도안 목록</string>
+    <string name="library_create">만들기</string>
+    <string name="viewer_edit">편집</string>
     <string name="library_selected">%1$d개 선택됨</string>
     <string name="library_select_all">모두 선택</string>
     <string name="library_delete">삭제</string>

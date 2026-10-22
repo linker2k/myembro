@@ -1,5 +1,7 @@
 <resources>
     <string name="library_title">Designs</string>
+    <string name="library_create">Create</string>
+    <string name="viewer_edit">Edit</string>
     <string name="library_selected">%1$d selected</string>
     <string name="library_select_all">Select all</string>
     <string name="library_delete">Delete</string>

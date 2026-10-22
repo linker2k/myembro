@@ -66,6 +66,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         drives = usb.drives()
     }
 
+    /** Picks up designs saved elsewhere, e.g. by the editor. */
+    fun refresh() {
+        viewModelScope.launch { reload() }
+    }
+
     private suspend fun reload() {
         val files = withContext(Dispatchers.IO) { library.list() }
         val cached = items.associateBy { it.file }
