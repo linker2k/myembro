@@ -74,7 +74,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
         .pointerInput(hoop, fitRequest, navigationOnly) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
-                if (vm.busy) return@awaitEachGesture
+                if (vm.interactionBlocked) return@awaitEachGesture
                 val fit = minOf(size.width.toFloat() / hoop.width, size.height.toFloat() / hoop.height) * 0.82f
                 val scaleAtStart = fit * zoom
                 val center = Offset(size.width / 2f, size.height / 2f)

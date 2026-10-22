@@ -32,7 +32,7 @@ import io.github.linker2k.myembro.ui.theme.MyembroTheme
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
-        BackHandler(onBack = onBack)
+        BackHandler(onBack = { vm.leave(onBack) })
         var showDesigns by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
@@ -48,7 +48,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
         var showJumps by rememberSaveable { mutableStateOf(false) }
         var preview by remember { mutableFloatStateOf(1f) }
         var exportName by remember { mutableStateOf("myembro") }
-        val enabled = !vm.busy && !vm.gestureInProgress
+        val enabled = !vm.interactionBlocked && !vm.gestureInProgress
         val addDesign = { vm.refreshDesigns(); showDesigns = true }
         val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) { vm.openProject(uri); fitRequest++; preview = 1f }
@@ -72,11 +72,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                         Column {
                             Text(stringResource(R.string.editor_title), maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleMedium)
-                            Text(vm.selected?.name ?: stringResource(R.string.editor_composition), maxLines = 1,
+                            Text((if (vm.dirty) "• " else "") + (vm.selected?.name ?: stringResource(R.string.editor_composition)), maxLines = 1,
                                 overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                         }
                     }, colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
-                        navigationIcon = { IconButton(onClick = onBack) {
+                        navigationIcon = { IconButton(onClick = { vm.leave(onBack) }, enabled = enabled) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
                         } }, actions = {
                             EditorHistoryButton(vm, redo = false)
@@ -96,11 +96,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box {
-                            SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled,
+                            SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
                                 label = { Text(stringResource(R.string.editor_hoop_size, vm.project.hoop.name)) },
                                 icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                                HoopSpec.ALL.forEach { hoop -> DropdownMenuItem(text = { Text("${hoop.name} mm") },
+                                vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text("${hoop.name} mm") },
                                     onClick = { vm.setHoop(hoop); hoopMenu = false }) }
                             }
                         }
@@ -174,6 +174,32 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 }
             }
         }
+        if (vm.replacementRequested) AlertDialog(
+            onDismissRequest = { if (!vm.busy) vm.cancelReplacement() },
+            title = { Text(stringResource(R.string.editor_unsaved_title)) },
+            text = { Text(stringResource(R.string.editor_unsaved_body)) },
+            confirmButton = { TextButton(onClick = vm::saveAndContinue, enabled = !vm.busy) {
+                Text(stringResource(R.string.editor_unsaved_save))
+            } },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = vm::discardAndContinue, enabled = !vm.busy) { Text(stringResource(R.string.editor_discard)) }
+                    TextButton(onClick = vm::cancelReplacement, enabled = !vm.busy) { Text(stringResource(R.string.editor_cancel)) }
+                }
+            })
+        if (vm.recoveryProject != null) AlertDialog(
+            onDismissRequest = onBack,
+            title = { Text(stringResource(R.string.editor_restore_title)) },
+            text = { Text(stringResource(R.string.editor_restore_body)) },
+            confirmButton = { TextButton(onClick = vm::restoreDraft) { Text(stringResource(R.string.editor_restore)) } },
+            dismissButton = { TextButton(onClick = vm::discardDraft) { Text(stringResource(R.string.editor_discard)) } })
+        vm.exportProblems?.let { problems -> AlertDialog(
+            onDismissRequest = vm::dismissExportProblems,
+            title = { Text(stringResource(R.string.editor_export_blocked)) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                problems.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            } },
+            confirmButton = { TextButton(onClick = vm::dismissExportProblems) { Text(stringResource(R.string.editor_apply)) } }) }
         if (showDesigns) ModalBottomSheet(onDismissRequest = { showDesigns = false }) {
             Text(stringResource(R.string.editor_add), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
