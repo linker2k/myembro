@@ -12,14 +12,14 @@ import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesWriter
 import kotlin.test.*
 
-class EditorHistoryTest {
+class EditorSessionTest {
     private fun obj(id: String = "a") = StitchObject(id, id, EmbPattern(listOf(
         Stitch(-100, -50, Command.STITCH), Stitch(100, 50, Command.STITCH),
         Stitch(100, 50, Command.END)), emptyList()))
 
     @Test fun `one undo restores all frames in a gesture and redo restores the final frame`() {
         val initial = Project(objects = listOf(obj()))
-        val h = EditorHistory(initial)
+        val h = EditorSession(initial)
         h.beginGesture()
         repeat(60) { frame ->
             h.updateGesture(initial.update("a") { it.withTransform(Transform(x = frame.toDouble())) })
@@ -35,7 +35,7 @@ class EditorHistoryTest {
     }
 
     @Test fun `new edit after undo clears redo but tap and no-op do not`() {
-        val h = EditorHistory()
+        val h = EditorSession()
         val added = Project(objects = listOf(obj()))
         h.commit(added)
         h.undo()
@@ -48,7 +48,7 @@ class EditorHistoryTest {
 
     @Test fun `history is bounded and layer reorder is one transaction`() {
         val initial = Project(objects = listOf(obj("a"), obj("b"), obj("c")))
-        val h = EditorHistory(initial, limit = 2)
+        val h = EditorSession(initial, limit = 2)
         h.beginGesture()
         h.updateGesture(h.project.reorder("a", 1))
         h.updateGesture(h.project.reorder("a", 2))
