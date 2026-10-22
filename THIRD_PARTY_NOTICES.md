@@ -8,9 +8,13 @@ derived from the following projects, whose notices are reproduced as their licen
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)
 - Ported files: `engine/.../io/PesReader.kt` (PesReader.py, PecReader.py),
   `engine/.../io/DstReader.kt` (DstReader.py), `engine/.../io/PecThreads.kt` (EmbThreadPec.py),
+  `engine/.../io/PecWriter.kt` (PecWriter.py, PecGraphics.py, EmbThread.py),
+  `engine/.../io/PesWriter.kt` (PesWriter.py, minimal/truncated v1 path),
   `PatternBuilder.interpolateTrims` / `interpolateDuplicateColorAsStop` (EmbPattern.py).
 - Changes: translated to Kotlin; bounded PEC block parsing, truncation warnings, streaming
-  trim interpolation (see git history).
+  trim interpolation; deterministic exact-first unique PEC palette allocation, explicit trim
+  preservation, integer move splitting, fixed-width labels and a two-byte PEC END;
+  minimal PES v1 output (see docs/writers.md and git history).
 
 ```
 MIT License

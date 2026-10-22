@@ -23,6 +23,9 @@ data class EmbThread(
     val blue: Int get() = color and 0xFF
     val hex: String get() = "#%06x".format(color and 0xFFFFFF)
 
+    /** Same RGB (alpha ignored), regardless of metadata — e.g. matching a fixed palette. */
+    fun sameColor(other: EmbThread): Boolean = (color and 0xFFFFFF) == (other.color and 0xFFFFFF)
+
     /**
      * pyembroidery's thread equality: same RGB (alpha ignored) and same identifying metadata.
      * Two catalog threads that happen to share an RGB value are still different threads.
