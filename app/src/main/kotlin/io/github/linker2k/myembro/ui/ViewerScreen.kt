@@ -2,20 +2,25 @@
 package io.github.linker2k.myembro.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -23,13 +28,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +54,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -66,6 +74,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,7 +83,25 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit, onSaveFile: () -> Unit, onShareFile: () -> Unit) {
+fun ViewerScreen(
+    vm: ViewerViewModel,
+    onOpenFile: () -> Unit,
+    onSaveFile: () -> Unit,
+    onShareFile: () -> Unit,
+    onEdit: (() -> Unit)? = null,
+) {
+    EmbroideryTheme { ViewerContent(vm, onOpenFile, onSaveFile, onShareFile, onEdit) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ViewerContent(
+    vm: ViewerViewModel,
+    onOpenFile: () -> Unit,
+    onSaveFile: () -> Unit,
+    onShareFile: () -> Unit,
+    onEdit: (() -> Unit)?,
+) {
     val snackbar = remember { SnackbarHostState() }
     val message = vm.exportMessage
     LaunchedEffect(message) {
@@ -96,6 +123,14 @@ fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit, onSaveFile: () -> 
                     )
                 },
                 actions = {
+                    TextButton(
+                        onClick = { onEdit?.invoke() },
+                        enabled = onEdit != null && vm.render != null && !vm.loading && !vm.exporting,
+                    ) {
+                        Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.viewer_edit))
+                    }
                     IconButton(onClick = onOpenFile, enabled = !vm.loading && !vm.exporting) {
                         Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.open_file))
                     }
@@ -173,32 +208,47 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            StitchCanvas(
-                data = data,
-                progress = vm.progress,
-                hoop = vm.hoop,
-                showJumps = vm.showJumps,
-                fitRequest = fitRequest,
-                modifier = Modifier.fillMaxSize(),
-                backgroundColor = MaterialTheme.colorScheme.surfaceVariant.toArgb(),
-                hoopColor = 0xFF8D6E63.toInt(),
-            )
-            IconButton(
-                onClick = { fitRequest++ },
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-            ) { Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.fit)) }
-        }
-        Surface(tonalElevation = 2.dp) {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val maxPanelHeight = maxHeight * 0.56f
+        Column(Modifier.fillMaxSize()) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                StitchCanvas(
+                    data = data,
+                    progress = vm.progress,
+                    hoop = vm.hoop,
+                    showJumps = vm.showJumps,
+                    fitRequest = fitRequest,
+                    modifier = Modifier.fillMaxSize(),
+                    backgroundColor = EmbroideryLinen.toArgb(),
+                    hoopColor = 0xFF9A7859.toInt(),
+                )
+                IconButton(
+                    onClick = { fitRequest++ },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
+                        .background(Color(0xEFFFFCF7), RoundedCornerShape(14.dp)),
+                ) { Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.fit)) }
+            }
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = maxPanelHeight)
+                    .verticalScroll(rememberScrollState()).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 StatsRow(pattern, vm.hoop)
-                Spacer(Modifier.height(4.dp))
-                ColorBlocks(pattern, vm.progress) { vm.playing = false; vm.progress = it }
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(stringResource(R.string.viewer_color_order), style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.height(8.dp))
+                        ColorBlocks(pattern, vm.progress) { vm.playing = false; vm.progress = it }
+                    }
+                }
                 PlaybackRow(vm, pattern)
                 OptionsRow(vm, pattern)
-            }
-        }
+                }
+    }
     }
 }
 
@@ -206,29 +256,38 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
 private fun StatsRow(pattern: EmbPattern, hoop: Hoop) {
     val b = pattern.bounds
     val seconds = pattern.estimatedSeconds()
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount))
-        Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f mm".format(it.width / 10f, it.height / 10f) } ?: "-")
-        Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString())
-        Stat(stringResource(R.string.stat_trims), pattern.trimCount.toString())
-        Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60))
-    }
-    for (warning in pattern.warnings) {
-        Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-    }
-    if (b != null && !hoop.fits(b.width, b.height)) {
-        Text(
-            stringResource(R.string.hoop_too_small),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.labelSmall,
-        )
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.viewer_design_stats), style = MaterialTheme.typography.labelLarge)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount), Modifier.weight(1f))
+                Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f mm".format(it.width / 10f, it.height / 10f) } ?: "-", Modifier.weight(1.5f))
+                Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString(), Modifier.weight(1f))
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Stat(stringResource(R.string.stat_trims), pattern.trimCount.toString(), Modifier.weight(1f))
+                Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60), Modifier.weight(1f))
+            }
+            for (warning in pattern.warnings) {
+                Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+            }
+            if (b != null && !hoop.fits(b.width, b.height)) {
+                Text(stringResource(R.string.hoop_too_small), color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall)
+            }
+        }
     }
 }
 
 @Composable
-private fun Stat(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+private fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -242,11 +301,13 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
             Row(
                 Modifier
                     .clip(RoundedCornerShape(16.dp))
+                    .background(if (active) MaterialTheme.colorScheme.primaryContainer else EmbroideryLinen)
                     .border(
                         if (active) 2.dp else 1.dp,
                         if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                         RoundedCornerShape(16.dp),
                     )
+                    .semantics { selected = active }
                     .clickable { onSeek(block.end - 1) }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -254,8 +315,11 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
                 Box(Modifier.size(14.dp).background(Color(block.thread.color), CircleShape))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "${i + 1}. ${block.thread.description ?: block.thread.hex}",
+                    stringResource(R.string.viewer_color_chip, i + 1, block.thread.description ?: block.thread.hex),
                     style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.widthIn(max = 180.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -287,7 +351,8 @@ private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
     var hoopMenu by remember { mutableStateOf(false) }
     var speedMenu by remember { mutableStateOf(false) }
     val speeds = listOf(100, 400, 1500, 5000)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box {
             TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.hoop.label}") }
             DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
