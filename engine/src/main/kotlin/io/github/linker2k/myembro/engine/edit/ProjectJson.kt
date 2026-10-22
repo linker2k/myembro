@@ -21,12 +21,14 @@ interface ProjectObjectCodec {
  * PES is only used at machine export time. Optional original import bytes are kept as Base64.
  * Codecs may be passed per call or registered once at startup; registration applies to both
  * encode/decode and Project.toJson(). Explicit/registered codecs precede the built-in fallback.
- * Use TypedProjectObjectCodec to share placement/id handling with the built-in stitch codec.
+ * StitchObject and TextObject work without registration. Use TypedProjectObjectCodec to share
+ * placement/id handling for additional types. Custom codecs take precedence over built-ins.
  */
 object ProjectJson {
     const val VERSION = 1
     const val EXTENSION = "myembro"
     private val json = Json { prettyPrint = true }
+    private val builtInCodecs: List<ProjectObjectCodec> = listOf(TextObjectCodec)
     @Volatile private var registeredCodecs: List<ProjectObjectCodec> = emptyList()
 
     /** Register once at application startup. Re-registering the same instance is harmless. */
@@ -51,7 +53,8 @@ object ProjectJson {
     private fun effectiveCodecs(codecs: List<ProjectObjectCodec>): List<ProjectObjectCodec> {
         val combined = registeredCodecs.toMutableList()
         codecs.forEach { codec -> if (combined.none { it === codec }) combined += codec }
-        return validateCodecs(combined)
+        val custom = validateCodecs(combined)
+        return custom + builtInCodecs.filter { builtIn -> custom.none { it.type == builtIn.type } }
     }
 
     fun encode(project: Project, codecs: List<ProjectObjectCodec> = emptyList()): String {
