@@ -38,7 +38,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
-        LaunchedEffect(vm.project.hoop, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
+        LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
