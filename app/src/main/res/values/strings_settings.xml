@@ -68,4 +68,5 @@
     <string name="settings_delete_frame">Delete frame</string>
     <string name="settings_delete_frame_confirm">Delete %1$s? Projects already using this frame keep their dimensions.</string>
     <string name="settings_machine_free">Other (free)</string>
+    <string name="machine_free_hint">Free setup applies no machine limits. Check the actual sewing area, frame compatibility and transfer method before sewing.</string>
 </resources>

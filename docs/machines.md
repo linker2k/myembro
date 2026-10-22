@@ -213,3 +213,14 @@ PC 전송의 파일 용량에 512KB를 적용하지 않습니다. 미확인 색�
 
 최신 main 통합 후 `export/ExportChecks`도 `settings.exportProfile()`을 사용하도록 연결했습니다.
 목록·뷰어의 기존 내보내기 경로에 선택 프레임 치수가 반영됩니다. 편집기 프로젝트 자체의 후프 전달은 위 통합 계약을 사용하세요.
+
+### QA 후 통합 상태 (2026-10-22)
+
+MainActivity의 `onNewProjectFrame` 및 레터링 `defaultFrame.spec` 연결, ProjectJson의 positions
+왕복이 최신 main에 반영되었습니다. **embro-editor의 후속 변경이 필요합니다**:
+현재 `EditorViewModel.constrainHoop`는 `editorHoops(profile)` 목록에 없는 요청을 첫 후프로 바꾸고,
+`editorExportProblems`는 미지원 프레임을 차단합니다. 이는 ‘미지원 프레임도 경고와 함께 선택’ 정책과
+맞지 않습니다. 메뉴는 `settings.availableEditorHoops`를 사용하고 요청한 사용자 프레임은 그대로
+유지해야 합니다. 지원 여부는 경고로만 표시하고 실제 프로젝트 경계/기종 영역의 Preflight 결과와
+구분하세요. 자유 기종의 빈 공식 후프 목록도 100×100으로 보정하는 근거가 아닙니다.
+편집기 담당 파일은 직접 수정하지 않았습니다.
