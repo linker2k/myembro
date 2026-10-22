@@ -132,6 +132,7 @@ class MainActivity : ComponentActivity() {
                         onCreateFromDesign = { stack += Screen.PICK_DESIGN },
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
+                        onNewProjectFrame = { spec -> newProject(spec) },
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
                     Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
@@ -145,7 +146,8 @@ class MainActivity : ComponentActivity() {
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {
-                        val hoop = settings.settings.defaultHoop.spec()
+                        // Exact selected frame, including custom sizes (not just the integer-mm presets).
+                        val hoop = settings.settings.defaultFrame.spec
                         // The font library is drawn over the lettering screen, which keeps what was typed.
                         var showFonts by rememberSaveable { mutableStateOf(false) }
                         Box {

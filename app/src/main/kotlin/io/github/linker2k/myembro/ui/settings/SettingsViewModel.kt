@@ -10,6 +10,10 @@ import androidx.lifecycle.AndroidViewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.ui.machines.CustomFrame
+import io.github.linker2k.myembro.ui.machines.CustomFrameCodec
+import io.github.linker2k.myembro.ui.machines.FrameCatalog
+import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
 import io.github.linker2k.myembro.engine.io.PesVersion
@@ -30,13 +34,18 @@ data class EmbroiderySettings(
     /** v1 stays the default until a v6 file is confirmed on a real SE400 (docs/machines.md). */
     val pesVersion: PesVersion = PesVersion.V1,
     val themeMode: ThemeMode = ThemeMode.LIGHT,
+    val customFrames: List<CustomFrame> = emptyList(),
+    val defaultFrameId: String? = null,
 ) {
     val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
+    val frames: List<FrameOption> get() = FrameCatalog.options(customFrames)
+    val defaultFrame: FrameOption get() = frames.firstOrNull { it.id == defaultFrameId }
+        ?: frames.first { it.id == defaultHoop.name }
     val availableViewerHoops: List<Hoop> get() =
         Hoop.entries
     // Selection is unrestricted; machine compatibility remains a separate warning.
-    val availableEditorHoops: List<HoopSpec> get() = availableViewerHoops.map { HoopSpec(it.label, it.widthMm * 10, it.heightMm * 10) }
+    val availableEditorHoops: List<HoopSpec> get() = frames.map { it.spec }
     fun constrainHoop(hoop: Hoop): Hoop = hoop.takeIf { it in availableViewerHoops } ?: Hoop.H100
     fun validated(): EmbroiderySettings = copy(defaultHoop = constrainHoop(defaultHoop))
 }
@@ -55,17 +64,19 @@ class SettingsPreferences(context: Context) {
         pesVersion = PesVersion.entries.firstOrNull { it.name == preferences.getString("pes_version", null) }
             ?: PesVersion.V1,
         themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
+        customFrames = CustomFrameCodec.decode(preferences.getString("custom_frames", null)),
+        defaultFrameId = preferences.getString("default_frame_id", null),
     ).validated()
 
     fun setMachineModel(model: String) {
         val name = model.trim().take(120).ifBlank { MachineProfiles.default.displayName }
-        val edit = preferences.edit().putString("machine_model", name)
+        val edit = preferences.edit().putString("machine_model", name).remove("default_frame_id")
         if (MachineProfiles.find(name) != null) edit.putString("default_hoop", Hoop.H100.name)
         edit.apply()
     }
 
     fun setDefaultHoop(hoop: Hoop) {
-        preferences.edit().putString("default_hoop", read().constrainHoop(hoop).name).apply()
+        preferences.edit().putString("default_hoop", read().constrainHoop(hoop).name).putString("default_frame_id", hoop.name).apply()
     }
 
     fun setThreadBrand(brand: ThreadBrand) {
@@ -84,9 +95,26 @@ class SettingsPreferences(context: Context) {
     /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
     fun machineProfile(): MachineProfile? = read().machineProfile
     fun editorHoops(): List<HoopSpec> = read().availableEditorHoops
-    fun defaultEditorHoop(): HoopSpec = read().defaultHoop.let { selected ->
-        machineProfile()?.projectHoops?.firstOrNull { it.width == selected.widthMm * 10 && it.height == selected.heightMm * 10 }
-            ?: HoopSpec(selected.label, selected.widthMm * 10, selected.heightMm * 10)
+    fun defaultEditorHoop(): HoopSpec = read().defaultFrame.spec
+
+    fun setDefaultFrame(id: String) {
+        val frame = read().frames.firstOrNull { it.id == id } ?: return
+        val edit = preferences.edit().putString("default_frame_id", id)
+        frame.preset?.let { edit.putString("default_hoop", it.name) }
+        edit.apply()
+    }
+
+    fun saveCustomFrame(frame: CustomFrame) {
+        val frames = read().customFrames.filterNot { it.id == frame.id } + frame
+        require(frames.size <= 100)
+        preferences.edit().putString("custom_frames", CustomFrameCodec.encode(frames)).apply()
+    }
+
+    fun deleteCustomFrame(id: String) {
+        val current = read()
+        val edit = preferences.edit().putString("custom_frames", CustomFrameCodec.encode(current.customFrames.filterNot { it.id == id }))
+        if (current.defaultFrameId == id) edit.remove("default_frame_id").putString("default_hoop", Hoop.H100.name)
+        edit.apply()
     }
 
     /** Strongly held listener until the returned disposer is called by the owning ViewModel. */
@@ -116,6 +144,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         preferences.setDefaultHoop(hoop)
         settings = preferences.read()
     }
+
+    fun setDefaultFrame(id: String) { preferences.setDefaultFrame(id); settings = preferences.read() }
+    fun saveCustomFrame(frame: CustomFrame) { preferences.saveCustomFrame(frame); settings = preferences.read() }
+    fun deleteCustomFrame(id: String) { preferences.deleteCustomFrame(id); settings = preferences.read() }
 
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.setThreadBrand(brand)

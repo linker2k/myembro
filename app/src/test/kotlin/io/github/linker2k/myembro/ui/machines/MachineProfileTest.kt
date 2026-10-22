@@ -21,7 +21,7 @@ class MachineProfileTest {
     }
 
     @Test fun `unsupported frames remain selectable without claiming compatibility`() {
-        for (profile in MachineProfiles.all) {
+        for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600, MachineProfiles.SE700)) {
             val settings = EmbroiderySettings(profile.displayName, Hoop.H160).validated()
             assertEquals(Hoop.H160, settings.defaultHoop)
             assertTrue(Hoop.H130 in settings.availableViewerHoops)
@@ -35,7 +35,7 @@ class MachineProfileTest {
     }
 
     @Test fun `100mm boundary uses tenths of a millimeter and survives extreme coordinates`() {
-        for (profile in MachineProfiles.all) {
+        for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600, MachineProfiles.SE700)) {
             assertTrue(profile.fits(Bounds(-500, -500, 500, 500)))
             assertTrue(profile.fits(Bounds(100, 200, 1100, 1200)))
             assertFalse(profile.fits(Bounds(-500, -500, 501, 500)))
@@ -67,7 +67,7 @@ class MachineProfileTest {
         assertEquals(StorageScope.INTERNAL_MEMORY, internal.scope)
         assertEquals(20, internal.maxPatterns)
         assertEquals(100_000, internal.maxStitchesPerPattern)
-        for (profile in MachineProfiles.all) {
+        for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600, MachineProfiles.SE700)) {
             assertNull(profile.maxFilenameCharacters)
             assertNull(profile.androidOtgCableVerified)
         }

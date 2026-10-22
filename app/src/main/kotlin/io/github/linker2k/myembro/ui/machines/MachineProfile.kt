@@ -35,7 +35,7 @@ data class MachineProfile(
 ) {
     /** SA434 is a planning frame; a single machine file remains limited to maximumArea. */
     val projectHoops: List<HoopSpec> = hoops.map { it.coverage }.distinct()
-    val defaultHoop: HoopSpec get() = projectHoops.first()
+    val defaultHoop: HoopSpec get() = projectHoops.firstOrNull() ?: HoopSpec.H100
 
     fun supports(hoop: HoopSpec): Boolean = projectHoops.any { it.width == hoop.width && it.height == hoop.height }
     fun supports(hoop: Hoop): Boolean = supports(HoopSpec(hoop.label, hoop.widthMm * 10, hoop.heightMm * 10))
@@ -97,12 +97,14 @@ object MachineProfiles {
         listOf(StorageLimit(StorageScope.INTERNAL_MEMORY, 20, 100_000)),
         listOf(SE700_MANUAL, SE700_WIRELESS, SE700_PRODUCT, SE700_ACCESSORIES),
     )
-    val all = listOf(SE400, SE600, SE700)
+    val FREE = MachineProfile("free", "Other (free)", HoopSpec("Unrestricted", Int.MAX_VALUE, Int.MAX_VALUE),
+        emptyList(), emptySet(), sourceUrls = emptyList())
+    val all = listOf(SE400, SE600, SE700, FREE)
     val default: MachineProfile get() = SE400
 
     /** Exact model aliases only; an arbitrary custom machine never inherits SE400 capabilities. */
     fun find(model: String): MachineProfile? {
         val key = model.trim().replace(Regex("(?i)^Brother\\s+"), "").replace("-", "")
-        return all.firstOrNull { it.id.equals(key, ignoreCase = true) }
+        return all.firstOrNull { it.id.equals(key, ignoreCase = true) || it.displayName.equals(model.trim(), ignoreCase = true) }
     }
 }

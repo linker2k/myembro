@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.model.Bounds
 
 /** Rendered thread width in 0.1 mm; real 40wt thread is about 0.4 mm. */
@@ -38,6 +39,7 @@ fun StitchCanvas(
     modifier: Modifier = Modifier,
     backgroundColor: Int,
     hoopColor: Int,
+    frame: HoopSpec? = null,
 ) {
     val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
@@ -84,8 +86,8 @@ fun StitchCanvas(
                 detectTapGestures(onDoubleTap = { zoom = 1f; pan = Offset.Zero })
             },
     ) {
-        val hoopW = hoop.widthMm * 10f
-        val hoopH = hoop.heightMm * 10f
+        val hoopW = frame?.width?.toFloat() ?: (hoop.widthMm * 10f)
+        val hoopH = frame?.height?.toFloat() ?: (hoop.heightMm * 10f)
         val viewW = maxOf(hoopW, bounds.width.toFloat())
         val viewH = maxOf(hoopH, bounds.height.toFloat())
         val fit = minOf(size.width / viewW, size.height / viewH) * 0.92f

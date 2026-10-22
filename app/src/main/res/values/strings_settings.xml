@@ -58,4 +58,14 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">Follow system</string>
     <string name="machine_positions_unverified">Repositioning frame · position count and offsets unverified. Verify actual positions before splitting.</string>
+    <string name="settings_custom_frames">Custom frames</string>
+    <string name="settings_frame_name">Frame name</string>
+    <string name="settings_frame_width">Width</string>
+    <string name="settings_frame_height">Height</string>
+    <string name="settings_frame_validation">Enter a name and positive dimensions (0.1–10,000mm). Saved to 0.1mm precision.</string>
+    <string name="settings_add_frame">Add custom frame</string>
+    <string name="settings_edit_frame">Edit frame</string>
+    <string name="settings_delete_frame">Delete frame</string>
+    <string name="settings_delete_frame_confirm">Delete %1$s? Projects already using this frame keep their dimensions.</string>
+    <string name="settings_machine_free">Other (free)</string>
 </resources>

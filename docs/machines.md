@@ -178,3 +178,35 @@ PC 전송의 파일 용량에 512KB를 적용하지 않습니다. 미확인 색�
 **embro-model**: 확인된 위치만 SewingPosition으로 변환하고 ProjectJson의 위치 왕복을 연결하세요.
 현재 SA434의 위치 목록은 비어 있으며 이 값으로 자동 분할하지 마세요. 기존 프로젝트 API와 생성자는
 기본값으로 호환됩니다. 위치 분할 로직과 편집기 파일은 이 커밋에서 수정하지 않았습니다.
+
+## 사용자 정의 프레임과 자유 기종 (추가)
+
+설정에서 프레임 이름·가로·세로를 mm/in으로 입력하고 저장·편집·삭제할 수 있습니다.
+인치 입력도 **25.4mm/in**, 0.1mm HALF_UP으로 저장합니다. UI 입력 범위(0.1~10,000mm)는
+기종 사양이 아닌 입력 오류 방지 범위입니다. 설정 저장소는 ID로 기본 프레임을 참조하며 삭제하면
+100×100으로 복귀합니다. 기존 `.myembro` 프로젝트에 저장된 크기는 변경하지 않습니다.
+
+`MachineProfiles.FREE`는 ‘기타(자유)’입니다. 미확인 기능을 지원한다고 주장하지 않으며 기종의
+면적·땀수·파일 수 제한을 강제하지 않습니다. 선택한 실제 프레임 경계와 호환 미확인 경고는 유지합니다.
+사용자 정의 프레임과 미지원 프리셋은 모두 선택할 수 있으며, 알려진 기종의 봉제 영역은 늘리지 않습니다.
+
+### 통합 담당에게: 정밀 프레임 경로
+
+- `SettingsPreferences.defaultEditorHoop()`는 사용자 정의 프레임을 포함한 **선택 크기 그대로의 HoopSpec**을 반환합니다.
+- `editorHoops()`는 사용자 프레임까지 포함한 모든 선택 프레임입니다. `machineProfile()?.supports(spec)`는 경고 판정이며 선택을 막는 조건이 아닙니다.
+- `HomeScreen(onNewProjectFrame = { spec -> newProject(spec) })`를 연결하세요. NewProjectSheet에도
+  `onBlankFrame: ((HoopSpec) -> Unit)?`를 추가했습니다. 기존 `(Hoop)->Unit` 콜백은 유지합니다.
+  **기존 호스트가 새 콜백을 제공하기 전에는 생성 시트의 사용자 정의 행은 노출되지 않습니다.**
+  정밀 크기를 100×100이나 정수 mm 프리셋으로 바꾸어 잘못 시작하지 않기 위한 호환 처리입니다.
+- MainActivity의 레터링 초기 후프도 `settings.preferences.defaultEditorHoop()` 또는
+  `settings.settings.defaultFrame.spec`로 받으세요. 기존 `defaultHoop.spec()`는 프리셋 전용입니다.
+- 내보내기 전 `settings.checkFrameExport(pattern, filename, project.hoop)` 또는
+  `Preflight.check(pattern, filename, settings.exportProfile(project.hoop))`를 사용하세요.
+  알려진 기종에서는 `min(선택 프레임, 기종 최대 단일 영역)`으로 검사하고 자유/미확인 기종은
+  프레임 크기 그대로 검사합니다. SE400의 검증된 제한만 SE400에 적용합니다.
+- 뷰어와 도안 목록은 사용자 정의 프레임 크기를 이미 직접 사용합니다. 편집기·MainActivity 및
+  엔진 Preflight 소스는 이 변경에서 수정하지 않았습니다. 위 세 호스트 연결은 통합 담당 작업입니다.
+
+`CustomFrameTest`는 mm/in 입력, 정밀도, 손상 저장값 복구, 편집·삭제시 선택 크기, 자유 기종과
+확인 기종의 Preflight 크기 계약을 검사합니다. 확장 브라더 사양표는 아직 전달되지 않아 임의 기종을
+추가하지 않았습니다. 공식 표의 ‘확인’ 값 수신 후 별도 프로필로 추가합니다.
