@@ -225,9 +225,12 @@ object PecWriter {
             val scale = min((48.0 - buffer) / maxOf(1, maxX - minX), (38.0 - buffer) / maxOf(1, maxY - minY))
             val cx = (maxX.toDouble() + minX) / 2
             val cy = (maxY.toDouble() + minY) / 2
+            // Keep upstream operation order: reassociation can shift an exact pixel boundary.
+            val translateX = -cx * scale + 24
+            val translateY = -cy * scale + 19
             for (s in points) {
-                val gx = floor((s.x - cx) * scale + 24).toInt()
-                val gy = floor((s.y - cy) * scale + 19).toInt()
+                val gx = floor(s.x * scale + translateX).toInt()
+                val gy = floor(s.y * scale + translateY).toInt()
                 if (gx in 0..47 && gy in 0..37) {
                     val index = gy * GRAPHIC_STRIDE + gx / 8
                     image[index] = (image[index].toInt() or (1 shl (gx % 8))).toByte()

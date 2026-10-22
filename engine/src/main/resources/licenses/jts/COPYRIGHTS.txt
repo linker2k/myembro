@@ -1,0 +1,27 @@
+JTS Core 1.20.0 source copyright notices (upstream source JAR).
+Distributed under Eclipse Distribution License 1.0; see LICENSE_EDLv1.txt.
+
+Copyright (c) 1995  by  INRIA Prisme Project
+Copyright (c) 2016 Martin Davis.
+Copyright (c) 2016 Vivid Solutions, and others.
+Copyright (c) 2016 Vivid Solutions.
+Copyright (c) 2017 Jia Yu.
+Copyright (c) 2018 Contributors to the Eclipse Foundation
+Copyright (c) 2018 Felix Obermaier
+Copyright (c) 2018 Vivid Solutions
+Copyright (c) 2019 Martin Davis.
+Copyright (c) 2019 martin Davis
+Copyright (c) 2020 Martin Davis
+Copyright (c) 2020 Martin Davis, and others
+Copyright (c) 2020 Martin Davis, and others.
+Copyright (c) 2020 Martin Davis.
+Copyright (c) 2021 Felix Obermaier.
+Copyright (c) 2021 Martin Davis
+Copyright (c) 2021 Martin Davis.
+Copyright (c) 2022 Martin Davis.
+Copyright (c) 2023 Martin Davis.
+Copyright (c) 2024 Martin Davis.
+
+INRIA Prisme Project, BP 93 06902 Sophia Antipolis Cedex, France.
+All rights reserved. RobustDeterminant: original author Olivier Devillers;
+relicensed under EDL and EPL with permission from Olivier Devillers.
