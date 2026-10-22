@@ -5,6 +5,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,6 +29,17 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val projectDir get() = File(getApplication<Application>().filesDir, "projects")
     var project by mutableStateOf(session.project)
         private set
+    var letteringOpen by mutableStateOf(false)
+        private set
+    var letteringTargetId by mutableStateOf<String?>(null)
+        private set
+    val letteringObject: TextObject? get() = letteringTargetId?.let { project.find(it) as? TextObject }
+    var undoSteps by mutableIntStateOf(0)
+        private set
+    var redoSteps by mutableIntStateOf(0)
+        private set
+    val undoEnabled get() = canUndo && !busy && !gestureInProgress && !letteringOpen
+    val redoEnabled get() = canRedo && !busy && !gestureInProgress && !letteringOpen
     var selectedIds by mutableStateOf<Set<String>>(emptySet())
         private set
     val hoopOverflowVisible: Boolean get() = session.showsHoopOverflow
@@ -68,6 +80,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         gestureInProgress = session.isGesturing
         canUndo = session.canUndo
         canRedo = session.canRedo
+        undoSteps = session.history.undoCount
+        redoSteps = session.history.redoCount
         selectedIds = selectedIds.filterTo(linkedSetOf()) { project.find(it)?.visible == true }
     }
     fun newProject(hoop: HoopSpec = HoopSpec.H100) {
@@ -75,6 +89,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         gestureDraft = null
         selectedIds = emptySet()
         selectionMode = false
+        dismissLettering()
         snapGuides = SnapGuides()
         sync()
     }
@@ -132,8 +147,33 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun clearSelection() { if (gestureInProgress) return; selectedIds = emptySet() }
     fun toggleSnap() { if (gestureInProgress) return; snapEnabled = !snapEnabled; snapGuides = SnapGuides() }
     fun setHoop(hoop: HoopSpec) = edit(project.copy(hoop = hoop))
-    fun undo() { if (busy || gestureInProgress) return; session.undo(); sync() }
-    fun redo() { if (busy || gestureInProgress) return; session.redo(); sync() }
+    fun undo(): Boolean {
+        val changed = session.stepHistory(redo = false, blocked = busy || letteringOpen)
+        sync()
+        return changed
+    }
+    fun redo(): Boolean {
+        val changed = session.stepHistory(redo = true, blocked = busy || letteringOpen)
+        sync()
+        return changed
+    }
+    fun openLettering(id: String? = null) {
+        if (busy || gestureInProgress || (id != null && (project.find(id) !is TextObject || project.find(id)?.visible != true))) return
+        letteringTargetId = id
+        letteringOpen = true
+    }
+    fun dismissLettering() { letteringOpen = false; letteringTargetId = null }
+    fun commitLettering(obj: TextObject): Boolean {
+        if (busy || gestureInProgress || !letteringOpen) return false
+        val target = letteringTargetId
+        val next = project.withLettering(obj, target)
+        if (target != null && next === project) return false
+        edit(next)
+        selectedIds = setOf(target ?: next.objects.last().id)
+        selectionMode = false
+        dismissLettering()
+        return true
+    }
     fun beginGesture() {
         if (gestureDraft != null) return
         session.beginGesture()

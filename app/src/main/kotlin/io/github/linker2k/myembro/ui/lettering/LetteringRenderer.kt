@@ -6,12 +6,14 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.FontKind
+import io.github.linker2k.myembro.engine.edit.contains
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.FontQuality
 import io.github.linker2k.myembro.engine.lettering.FontQualityReport
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.lettering.SvgFont
+import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.fonts.CatalogFont
@@ -38,7 +40,17 @@ internal data class LetteringResult(
 /** Called on Dispatchers.Default; no font parsing or quality scanning on the Compose UI thread. */
 internal fun renderLettering(
     context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec,
+    initialObject: TextObject? = null,
 ): LetteringResult {
+    // Reuse saved contours for size/curve/color edits, even when the source font is offline.
+    val saved = initialObject?.let { reuseSavedLettering(it, settings, thread) }
+    if (saved != null) {
+        val adjusted = saved
+        val pattern = adjusted.placedPattern()
+        val paths = listOf(listOf(pattern.stitches.filter { it.command == Command.STITCH }.map { it.x / 10.0 to it.y / 10.0 }))
+        val quality = FontQuality.analyze(paths, settings.heightMm, outline = adjusted.fontKind == FontKind.OUTLINE)
+        return LetteringResult(adjusted, pattern, quality, false, pattern.bounds?.let { !hoop.contains(it) } ?: false)
+    }
     val text = Normalizer.normalize(settings.text, Normalizer.Form.NFC).replace("\r\n", "\n")
         .replace('\r', '\n').replace("\t", "    ")
     val repo = FontRepository(context)
@@ -104,7 +116,8 @@ internal fun renderLettering(
         heightMm = settings.heightMm, spacing = settings.spacingMm, arcDeg = settings.arcDeg,
         thread = thread, fontKind = FontKind.OUTLINE, contours = contours, contourSourceHeight = reference,
     )
-    val placed = placeLettering(objectData, hoop, settings.alignment)
+    val placed = if (initialObject == null) placeLettering(objectData, hoop, settings.alignment)
+        else objectData.copy(id = initialObject.id, transform = initialObject.transform, visible = initialObject.visible)
     val pattern = placed.placedPattern()
     val unique = text.codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }
     val normalizedGlyphs = unique.map { code ->
@@ -122,7 +135,6 @@ internal fun renderLettering(
         }
     }
     val b = pattern.bounds
-    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 ||
-        b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
+    val outside = b != null && !hoop.contains(b)
     return LetteringResult(placed, pattern, quality, unsupported, outside)
 }

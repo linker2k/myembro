@@ -17,12 +17,23 @@ internal data class LetteringSettings(
     val curved: Boolean,
     val curve: LetteringCurve,
     val curvature: Double,
+    val arcDirection: Double = 1.0,
+    val arcOverride: Double? = null,
 ) {
-    val arcDeg: Double get() = when {
+    val arcDeg: Double get() = arcOverride ?: (when {
         !curved || curve == LetteringCurve.STRAIGHT -> 0.0
         curve == LetteringCurve.CIRCLE -> 180.0 + curvature.coerceIn(0.0, 100.0) * 1.8
         else -> curvature.coerceIn(0.0, 100.0) * 1.8
-    }
+    }) * arcDirection
+}
+
+internal fun TextObject.letteringSettings(): LetteringSettings {
+    val magnitude = kotlin.math.abs(arcDeg)
+    val circle = magnitude > 180
+    return LetteringSettings(text, fontId, heightMm, spacing, LetteringAlignment.CENTER, magnitude > 0,
+        if (circle) LetteringCurve.CIRCLE else LetteringCurve.ARCH,
+        (if (circle) (magnitude - 180) / 1.8 else magnitude / 1.8).coerceIn(0.0, 100.0),
+        if (arcDeg < 0) -1.0 else 1.0, arcDeg)
 }
 
 /** Extra offset for lines shorter than the longest one; inputs share the same font units. */
@@ -42,4 +53,13 @@ internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: Letteri
         LetteringAlignment.RIGHT -> room
     }
     return text.copy(transform = Transform(x = x))
+}
+
+/** Saved paths can be reused without loading a font when character layout is unchanged. */
+internal fun reuseSavedLettering(original: TextObject, settings: LetteringSettings,
+    thread: io.github.linker2k.myembro.engine.model.EmbThread): TextObject? {
+    if (settings.text != original.text || settings.fontId != original.fontId ||
+        settings.spacingMm != original.spacing || settings.alignment != LetteringAlignment.CENTER) return null
+    if (settings.heightMm == original.heightMm && settings.arcDeg == original.arcDeg && thread == original.thread) return original
+    return original.copy(heightMm = settings.heightMm, arcDeg = settings.arcDeg, thread = thread)
 }

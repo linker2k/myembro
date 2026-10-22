@@ -65,6 +65,8 @@ import kotlinx.coroutines.withContext
  * Standalone lettering route. The host adds [onAdd]'s object to its editor/history and
  * closes the route. [backgroundPattern] can show the current project in the hoop.
  * Return a picked installed font through [initialFontId]; no font download happens here.
+ * [initialObject] opens an existing editable text object with its size, spacing, curve,
+ * saved contours, thread identity and placement intact. Omitting it preserves add mode.
  */
 @Composable
 fun LetteringScreen(
@@ -76,9 +78,10 @@ fun LetteringScreen(
     initialFontId: String = "gowun-batang",
     backgroundPattern: EmbPattern? = null,
     onOpenFonts: (() -> Unit)? = null,
+    initialObject: TextObject? = null,
 ) {
     MyembroTheme {
-        LetteringContent(onBack, onAdd, modifier, hoop, initialText, initialFontId, backgroundPattern, onOpenFonts)
+        LetteringContent(onBack, onAdd, modifier, hoop, initialText, initialFontId, backgroundPattern, onOpenFonts, initialObject)
     }
 }
 
@@ -87,39 +90,44 @@ fun LetteringScreen(
 private fun LetteringContent(
     onBack: () -> Unit, onAdd: (TextObject) -> Unit, modifier: Modifier,
     hoop: HoopSpec, initialText: String, initialFontId: String,
-    backgroundPattern: EmbPattern?, onOpenFonts: (() -> Unit)?,
+    backgroundPattern: EmbPattern?, onOpenFonts: (() -> Unit)?, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
-    var text by rememberSaveable { mutableStateOf(initialText) }
-    var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
-    var height by rememberSaveable { mutableFloatStateOf(18f) }
-    var spacing by rememberSaveable { mutableFloatStateOf(1.2f) }
+    val originalSettings = remember(initialObject) { initialObject?.letteringSettings() }
+    var curveEdited by rememberSaveable { mutableStateOf(false) }
+    var text by rememberSaveable { mutableStateOf(initialObject?.text ?: initialText) }
+    var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialObject?.fontId ?: initialFontId) }
+    var height by rememberSaveable { mutableFloatStateOf(initialObject?.heightMm?.toFloat() ?: 18f) }
+    var spacing by rememberSaveable { mutableFloatStateOf(initialObject?.spacing?.toFloat() ?: 1.2f) }
     var alignmentIndex by rememberSaveable { mutableIntStateOf(1) }
-    var curved by rememberSaveable { mutableStateOf(false) }
-    var curveIndex by rememberSaveable { mutableIntStateOf(1) }
-    var curvature by rememberSaveable { mutableFloatStateOf(35f) }
-    var threadIndex by rememberSaveable { mutableIntStateOf(0) }
+    var curved by rememberSaveable { mutableStateOf(originalSettings?.curved ?: false) }
+    var curveIndex by rememberSaveable { mutableIntStateOf(originalSettings?.curve?.ordinal ?: 1) }
+    var curvature by rememberSaveable { mutableFloatStateOf(originalSettings?.curvature?.toFloat() ?: 35f) }
+    var threadIndex by rememberSaveable { mutableIntStateOf(if (initialObject == null) 0 else -1) }
     var fitText by rememberSaveable { mutableStateOf(false) }
     var showFonts by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(true) }
     val alignment = LetteringAlignment.entries[alignmentIndex]
-    val settings = LetteringSettings(text, fontId, height.toDouble(), spacing.toDouble(), alignment,
-        curved, LetteringCurve.entries[curveIndex], curvature.toDouble())
+    val settings = LetteringSettings(text, fontId,
+        initialObject?.heightMm?.takeIf { it.toFloat() == height } ?: height.toDouble(),
+        initialObject?.spacing?.takeIf { it.toFloat() == spacing } ?: spacing.toDouble(), alignment,
+        curved, LetteringCurve.entries[curveIndex], curvature.toDouble(), originalSettings?.arcDirection ?: 1.0,
+        originalSettings?.arcOverride?.takeIf { !curveEdited })
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
-    val thread = EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
-    val threadColor = swatches[threadIndex]
+    val thread = if (threadIndex < 0) checkNotNull(initialObject).thread else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
+    val threadColor = Color(thread.color)
     // Stale results are never submitted while a newer generation is pending.
-    val generationKey = settings to thread.color
-    var renderedKey by remember { mutableStateOf<Pair<LetteringSettings, Int>?>(null) }
+    val generationKey = settings to thread
+    var renderedKey by remember { mutableStateOf<Pair<LetteringSettings, EmbThread>?>(null) }
     val ready = !busy && renderedKey == generationKey && text.isNotBlank() && error == null &&
         result?.pattern?.bounds != null && result?.unsupported != true && result?.outsideHoop != true
     val add = {
-        if (ready) result?.let { onAdd(it.textObject.copy(id = UUID.randomUUID().toString())) }
+        if (ready) result?.let { onAdd(it.textObject.copy(id = initialObject?.id ?: UUID.randomUUID().toString())) }
         Unit
     }
     BackHandler(onBack = onBack)
@@ -133,7 +141,7 @@ private fun LetteringContent(
         } else {
             try {
                 delay(100)
-                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop) }
+                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop, initialObject) }
                 renderedKey = generationKey
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -153,7 +161,7 @@ private fun LetteringContent(
                 title = { Text(stringResource(R.string.lettering_title), style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
                 actions = { Button(onClick = add, enabled = ready, contentPadding = PaddingValues(horizontal = 18.dp)) {
-                    Text(stringResource(R.string.lettering_done))
+                    Text(stringResource(if (initialObject == null) R.string.lettering_done else R.string.editor_apply))
                 } },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),
             )
@@ -176,7 +184,7 @@ private fun LetteringContent(
                     if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = colors.onPrimary, strokeWidth = 2.dp)
                     else Icon(Icons.Default.Add, null, Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(if (busy) R.string.lettering_preparing else R.string.lettering_add), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(if (busy) R.string.lettering_preparing else if (initialObject == null) R.string.lettering_add else R.string.editor_apply), style = MaterialTheme.typography.titleSmall)
                 }
                 }
             }
@@ -226,8 +234,8 @@ private fun LetteringContent(
                     style = MaterialTheme.typography.labelMedium, color = colors.primary)
             }
             LetteringCard {
-                SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm") { height = it }
-                SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
+                SettingSlider(stringResource(R.string.lettering_height), height, minOf(5f, initialObject?.heightMm?.toFloat() ?: 5f)..maxOf(50f, initialObject?.heightMm?.toFloat() ?: 50f), 1f, "mm") { height = it }
+                SettingSlider(stringResource(R.string.lettering_spacing), spacing, minOf(0f, initialObject?.spacing?.toFloat() ?: 0f)..maxOf(6f, initialObject?.spacing?.toFloat() ?: 6f), 0.1f, "mm") { spacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.lettering_align), style = MaterialTheme.typography.titleSmall)
                     ChoiceRow(listOf(stringResource(R.string.lettering_left), stringResource(R.string.lettering_center), stringResource(R.string.lettering_right)),
@@ -239,14 +247,14 @@ private fun LetteringContent(
             LetteringCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel(stringResource(R.string.lettering_curved), Modifier.weight(1f))
-                    Switch(curved, onCheckedChange = { curved = it }, modifier = Modifier.semantics {
+                    Switch(curved, onCheckedChange = { curved = it; curveEdited = true }, modifier = Modifier.semantics {
                         contentDescription = context.getString(R.string.lettering_curved)
                     })
                 }
                 if (curved) {
                     ChoiceRow(listOf(stringResource(R.string.lettering_straight), stringResource(R.string.lettering_arch), stringResource(R.string.lettering_circle)),
-                        curveIndex, Modifier.fillMaxWidth()) { curveIndex = it }
-                    if (curveIndex != 0) SettingSlider(stringResource(R.string.lettering_curvature), curvature, 0f..100f, 5f, "%") { curvature = it }
+                        curveIndex, Modifier.fillMaxWidth()) { curveIndex = it; curveEdited = true }
+                    if (curveIndex != 0) SettingSlider(stringResource(R.string.lettering_curvature), curvature, 0f..100f, 5f, "%") { curvature = it; curveEdited = true }
                 }
             }
             LetteringCard {
