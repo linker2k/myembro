@@ -40,6 +40,7 @@ data class FontQualitySummary(
     val reasons: List<String>,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
+        put("version", ANALYSIS_VERSION)
         put("grade", grade.name)
         put("recommendedMinHeightMm", recommendedMinHeightMm)
         at10?.let { put("at10", it.toJson()) }
@@ -49,6 +50,8 @@ data class FontQualitySummary(
 
     companion object {
         const val SAMPLE = "가나다 ABC 자수"
+        /** Bump when the analysis changes; older stored reports are recomputed. */
+        const val ANALYSIS_VERSION = 2
 
         fun fromJson(o: JSONObject) = FontQualitySummary(
             grade = QualityGrade.valueOf(o.getString("grade")),
@@ -93,7 +96,11 @@ data class FontQualitySummary(
         )
 
         fun read(fontFile: File): FontQualitySummary? =
-            qualityFile(fontFile).takeIf { it.isFile }?.let { runCatching { fromJson(JSONObject(it.readText())) }.getOrNull() }
+            qualityFile(fontFile).takeIf { it.isFile }?.let { f ->
+                runCatching { JSONObject(f.readText()) }.getOrNull()
+                    ?.takeIf { it.optInt("version") == ANALYSIS_VERSION }
+                    ?.let { runCatching { fromJson(it) }.getOrNull() }
+            }
 
         fun write(fontFile: File, summary: FontQualitySummary) = qualityFile(fontFile).writeText(summary.toJson().toString(2))
 
@@ -165,6 +172,25 @@ class LetterFontGeometry(context: Context) {
                 }
             }
         }
+
+    /** One line of [text] as polylines (+y down, the font's own units) for small font-card previews. */
+    fun previewStrokes(font: LetterFont, text: String): List<List<Pair<Double, Double>>> {
+        val line = text.lineSequence().firstOrNull().orEmpty()
+        return when (font.kind) {
+            LetterFont.Kind.OUTLINE -> AndroidGlyphOutlines.extract(line, typeface(font))
+            LetterFont.Kind.SINGLE_LINE_SVG -> svgFont(font).layout(line).map { s -> s.map { it.x to -it.y } }
+            LetterFont.Kind.HERSHEY -> {
+                val hershey = HersheyFont.load(font.id)
+                var cursor = 0.0
+                line.flatMap { c ->
+                    val g = hershey[c] ?: hershey['?'] ?: return@flatMap emptyList()
+                    val x0 = cursor - g.left
+                    cursor += g.advance
+                    g.strokes.map { s -> s.map { (x0 + it.x) to it.y.toDouble() } }
+                }
+            }
+        }
+    }
 
     fun textObject(
         font: LetterFont, id: String, text: String, heightMm: Double, spacing: Double, arcDeg: Double,

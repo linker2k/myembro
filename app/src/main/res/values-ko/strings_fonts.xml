@@ -52,9 +52,6 @@
     <string name="lettering_text">텍스트</string>
     <string name="lettering_font">글꼴</string>
     <string name="lettering_more_fonts">글꼴 더 받기</string>
-    <string name="lettering_height">높이 %1$smm</string>
-    <string name="lettering_spacing">자간 %1$smm</string>
-    <string name="lettering_arc">원호 %1$s°</string>
     <string name="lettering_add">도안에 추가</string>
     <string name="lettering_too_small">이 글꼴의 권장 높이 %1$smm보다 작아요. 글자가 뭉개지거나 붙을 수 있어요.</string>
     <string name="lettering_fit_recommended">권장 크기로 맞추기</string>
@@ -64,4 +61,16 @@
     <string name="lettering_use_anyway">그래도 사용</string>
     <string name="lettering_failed">글자를 만들지 못했어요: %1$s</string>
     <string name="editor_text">글자</string>
+    <string name="lettering_char_count">%1$d글자</string>
+    <string name="lettering_size">글자 크기</string>
+    <string name="lettering_height_label">높이</string>
+    <string name="lettering_spacing_label">자간</string>
+    <string name="lettering_curve">곡선 배치</string>
+    <string name="lettering_arc_straight">직선</string>
+    <string name="lettering_arc_arch">아치</string>
+    <string name="lettering_arc_smile">아래 아치</string>
+    <string name="lettering_curvature">곡률</string>
+    <string name="lettering_decrease">%1$s 줄이기</string>
+    <string name="lettering_increase">%1$s 늘리기</string>
+    <string name="fonts_size_kb">%1$dKB</string>
 </resources>

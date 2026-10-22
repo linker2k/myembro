@@ -4,7 +4,7 @@ package io.github.linker2k.myembro.ui.fonts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,17 +23,17 @@ import java.util.Locale
 /** Grade badge: green / amber / red-brown, each with text so color is never the only signal. */
 @Composable
 fun QualityBadge(grade: QualityGrade, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.colorScheme
     val (bg, fg, label) = when (grade) {
-        QualityGrade.GOOD -> Triple(Color(0xFFE3EFE0), Color(0xFF1F4D28), R.string.fonts_grade_good)
-        QualityGrade.CAUTION -> Triple(Color(0xFFFBEBC8), Color(0xFF6B4A00), R.string.fonts_grade_caution)
-        QualityGrade.UNSUITABLE -> Triple(Color(0xFFFBE3D8), Color(0xFF8A2E12), R.string.fonts_grade_unsuitable)
+        QualityGrade.GOOD -> Triple(c.secondaryContainer, c.onSecondaryContainer, R.string.fonts_grade_good)
+        QualityGrade.CAUTION -> Triple(c.tertiaryContainer, c.onTertiaryContainer, R.string.fonts_grade_caution)
+        QualityGrade.UNSUITABLE -> Triple(c.errorContainer, c.onErrorContainer, R.string.fonts_grade_unsuitable)
     }
     Text(
         stringResource(label),
         color = fg,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier.background(bg, RoundedCornerShape(6.dp)).padding(horizontal = 7.dp, vertical = 3.dp),
+        style = MaterialTheme.typography.labelSmall,
+        modifier = modifier.background(bg, MaterialTheme.shapes.extraSmall).padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
 
@@ -54,8 +54,8 @@ fun mm(value: Double): String = String.format(Locale.ROOT, "%.1f", value).remove
 @Composable
 fun QualityDetails(summary: FontQualitySummary, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(stringResource(R.string.fonts_min_height, mm(summary.recommendedMinHeightMm)), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        summary.reasons.forEach { Text("• " + reasonText(it), fontSize = 12.sp) }
+        Text(stringResource(R.string.fonts_min_height, mm(summary.recommendedMinHeightMm)), style = MaterialTheme.typography.titleSmall)
+        summary.reasons.forEach { Text("• " + reasonText(it), style = MaterialTheme.typography.bodySmall) }
         listOfNotNull(summary.at10?.let { 10 to it }, summary.at20?.let { 20 to it }).forEach { (h, r) -> SampleLine(h, r) }
     }
 }
@@ -64,7 +64,7 @@ fun QualityDetails(summary: FontQualitySummary, modifier: Modifier = Modifier) {
 private fun SampleLine(heightMm: Int, r: QualityReport) {
     Text(
         stringResource(R.string.fonts_sample_report, heightMm, mm(r.minStrokeMm), r.stitchCount, r.jumpCount, r.tightSpots),
-        fontSize = 11.sp,
-        color = Color(0xFF6B5C4E),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

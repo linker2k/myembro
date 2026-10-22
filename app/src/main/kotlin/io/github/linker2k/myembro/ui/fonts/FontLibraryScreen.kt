@@ -74,7 +74,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
-import io.github.linker2k.myembro.engine.lettering.Polyline
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
 import io.github.linker2k.myembro.fonts.FontQualitySummary
@@ -83,25 +82,21 @@ import io.github.linker2k.myembro.fonts.LetterFont
 import io.github.linker2k.myembro.fonts.LetterFontGeometry
 import io.github.linker2k.myembro.fonts.QualityReasons
 import io.github.linker2k.myembro.fonts.UserFontException
+import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import androidx.compose.material3.MaterialTheme
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val Linen = Color(0xFFF6F0E6)
-private val Ink = Color(0xFF2B2420)
-private val Terracotta = Color(0xFFC4552D)
-private val Muted = Color(0xFF6B5C4E)
-private val Line = Color(0xFFEADFCF)
-private val Thread = Color(0xFF1F4E8C)
 
 enum class FontFilter { KOREAN, LATIN, SINGLE_LINE, OUTLINE }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
     data class Outline(val typeface: Typeface) : FontPreview
-    data class Strokes(val strokes: List<Polyline>) : FontPreview
+    data class Strokes(val strokes: List<List<Pair<Double, Double>>>) : FontPreview
 }
 
 class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
@@ -131,8 +126,11 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             val ids = withContext(Dispatchers.IO) { repo.installedIds() }
             fonts.forEach { installed[it.id] = it.id in ids }
             fonts.filter { it.id in ids }.forEach { font ->
-                withContext(Dispatchers.IO) { repo.letterFont(font).quality }?.let { qualities[font.id] = it }
                 loadPreview(font)
+                // Missing or outdated reports are recomputed; quality is advisory, so failures are ignored.
+                withContext(Dispatchers.IO) {
+                    runCatching { repo.letterFont(font).quality ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
+                }?.let { qualities[font.id] = it }
             }
             userFonts += withContext(Dispatchers.IO) { repo.userFonts() }
             userFonts.forEach { loadUserPreview(it) }
@@ -182,7 +180,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         val preview = withContext(Dispatchers.IO) {
             runCatching {
                 when (font.kind) {
-                    LetterFont.Kind.SINGLE_LINE_SVG -> FontPreview.Strokes(geometry.svgFont(font).layout(font.name))
+                    LetterFont.Kind.SINGLE_LINE_SVG -> FontPreview.Strokes(geometry.svgFont(font).layout(font.name).map { st -> st.map { p -> p.x to -p.y } })
                     else -> FontPreview.Outline(geometry.typeface(font))
                 }
             }.getOrNull()
@@ -252,7 +250,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         val preview = withContext(Dispatchers.IO) {
             when (font.kind) {
                 CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(font)?.let { FontPreview.Outline(it) }
-                CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name)) }
+                CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name).map { st -> st.map { p -> p.x to -p.y } }) }
             }
         }
         if (preview != null) previews[font.id] = preview
@@ -265,7 +263,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
+fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = MyembroTheme {
     val vm: FontLibraryViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
     var licenseFor by remember { mutableStateOf<CatalogFont?>(null) }
@@ -292,11 +290,11 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
     }
 
     Scaffold(
-        containerColor = Linen,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.fonts_title), fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.fonts_title), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.fonts_back))
@@ -304,12 +302,12 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                 },
                 actions = {
                     TextButton(onClick = { askUserLicense = true }, enabled = !vm.importing) {
-                        Icon(Icons.Filled.Add, contentDescription = null, tint = Terracotta, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.size(4.dp))
-                        Text(stringResource(R.string.fonts_add_own), color = Terracotta, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.fonts_add_own), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Linen, titleContentColor = Ink, navigationIconContentColor = Ink),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background, titleContentColor = MaterialTheme.colorScheme.onSurface, navigationIconContentColor = MaterialTheme.colorScheme.onSurface),
             )
         },
     ) { padding ->
@@ -326,22 +324,22 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
             }
             Text(
                 stringResource(R.string.fonts_network_note),
-                color = Muted,
-                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
             )
             if (vm.importing) {
                 Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(color = Terracotta, trackColor = Line, modifier = Modifier.weight(1f))
+                    LinearProgressIndicator(color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.weight(1f))
                     Spacer(Modifier.size(8.dp))
-                    Text(stringResource(R.string.fonts_importing), color = Muted, fontSize = 12.sp)
+                    Text(stringResource(R.string.fonts_importing), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
             }
             val list = vm.visible
             val userList = vm.visibleUserFonts
             if (list.isEmpty() && userList.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.fonts_empty), color = Muted)
+                    Text(stringResource(R.string.fonts_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -388,12 +386,12 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
             text = {
                 Text(
                     text ?: fallback,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.height(360.dp).verticalScroll(rememberScrollState()),
                 )
             },
             confirmButton = { TextButton(onClick = { licenseFor = null }) { Text(stringResource(R.string.fonts_close)) } },
-            containerColor = Linen,
+            containerColor = MaterialTheme.colorScheme.background,
         )
     }
 
@@ -409,7 +407,7 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                 }) { Text(stringResource(R.string.fonts_user_license_confirm)) }
             },
             dismissButton = { TextButton(onClick = { askUserLicense = false }) { Text(stringResource(R.string.fonts_cancel)) } },
-            containerColor = Linen,
+            containerColor = MaterialTheme.colorScheme.background,
         )
     }
 
@@ -426,37 +424,37 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                 }
             },
             confirmButton = { TextButton(onClick = { vm.imported = null }) { Text(stringResource(R.string.fonts_close)) } },
-            containerColor = Linen,
+            containerColor = MaterialTheme.colorScheme.background,
         )
     }
 }
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+    Text(text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
 }
 
 @Composable
 private fun UserFontCard(font: LetterFont, preview: FontPreview?, onDelete: () -> Unit, onUse: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     Column(
-        Modifier.fillMaxWidth().background(Color.White, shape).border(1.dp, Line, shape).padding(14.dp),
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PreviewBox(font.name, preview)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(font.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+            Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             font.quality?.let { QualityBadge(it.grade) }
         }
         val kind = stringResource(if (font.kind == LetterFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline)
-        Text(kind, color = Muted, fontSize = 12.sp)
+        Text(kind, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         font.quality?.let { QualityDetails(it) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = Muted)
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Button(onClick = onUse, colors = ButtonDefaults.buttonColors(containerColor = Terracotta)) {
+            Button(onClick = onUse, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                 Text(stringResource(R.string.fonts_use))
             }
         }
@@ -466,7 +464,7 @@ private fun UserFontCard(font: LetterFont, preview: FontPreview?, onDelete: () -
 @Composable
 private fun PreviewBox(label: String, preview: FontPreview?) {
     Box(
-        Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFFBF8F2), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().height(64.dp).background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         when (preview) {
@@ -474,12 +472,12 @@ private fun PreviewBox(label: String, preview: FontPreview?) {
                 label,
                 fontFamily = FontFamily(preview.typeface),
                 fontSize = 30.sp,
-                color = Ink,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            is FontPreview.Strokes -> StrokePreview(preview.strokes, Modifier.fillMaxSize())
-            null -> Text(stringResource(R.string.fonts_preview_hint), color = Muted, fontSize = 13.sp)
+            is FontPreview.Strokes -> StrokeText(preview.strokes, Modifier.fillMaxSize())
+            null -> Text(stringResource(R.string.fonts_preview_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -491,10 +489,10 @@ private fun FontChip(label: String, selected: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         label = { Text(label) },
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = Color.White,
-            labelColor = Ink,
-            selectedContainerColor = Ink,
-            selectedLabelColor = Linen,
+            containerColor = MaterialTheme.colorScheme.surface,
+            labelColor = MaterialTheme.colorScheme.onSurface,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
         ),
     )
 }
@@ -513,13 +511,13 @@ private fun FontCard(
 ) {
     val shape = RoundedCornerShape(16.dp)
     Column(
-        Modifier.fillMaxWidth().background(Color.White, shape).border(1.dp, Line, shape).padding(14.dp),
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PreviewBox(font.nameKo ?: font.name, preview)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(font.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
                 val kind = stringResource(
                     if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline,
                 )
@@ -527,11 +525,12 @@ private fun FontCard(
                     if (font.korean) add(stringResource(R.string.fonts_filter_korean))
                     if (font.latin) add(stringResource(R.string.fonts_filter_latin))
                 }.joinToString("·")
-                val mb = String.format(Locale.ROOT, "%.1f", font.size / 1_048_576.0)
+                val size = if (font.size < 1_048_576) stringResource(R.string.fonts_size_kb, ((font.size + 1023) / 1024).toInt())
+                else stringResource(R.string.fonts_size_mb, String.format(Locale.ROOT, "%.1f", font.size / 1_048_576.0))
                 Text(
-                    "$kind · $scripts · ${font.license} · ${stringResource(R.string.fonts_size_mb, mb)}",
-                    color = Muted,
-                    fontSize = 12.sp,
+                    "$kind · $scripts · ${font.license} · $size",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
             quality?.let {
@@ -539,67 +538,42 @@ private fun FontCard(
                 Spacer(Modifier.size(6.dp))
             }
             if (installed) {
-                Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = Color(0xFF2F6B3A), modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
             }
         }
         quality?.takeIf { installed }?.let {
-            Text(stringResource(R.string.fonts_min_height, mm(it.recommendedMinHeightMm)), color = Muted, fontSize = 12.sp)
+            Text(stringResource(R.string.fonts_min_height, mm(it.recommendedMinHeightMm)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         if (progress != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LinearProgressIndicator(
                     progress = { progress },
-                    color = Terracotta,
-                    trackColor = Line,
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant,
                     modifier = Modifier.weight(1f),
                 )
-                Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = Muted, fontSize = 12.sp)
+                Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onLicense) { Text(stringResource(R.string.fonts_license), color = Muted) }
+            TextButton(onClick = onLicense) { Text(stringResource(R.string.fonts_license), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Spacer(Modifier.weight(1f))
             when {
                 progress != null -> Unit
                 installed -> {
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = Muted)
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Button(onClick = onUse, colors = ButtonDefaults.buttonColors(containerColor = Terracotta)) {
+                    Button(onClick = onUse, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
                         Text(stringResource(R.string.fonts_use))
                     }
                 }
                 else -> OutlinedButton(onClick = onDownload) {
-                    Icon(Icons.Filled.Download, contentDescription = null, tint = Ink, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.fonts_download), color = Ink)
+                    Text(stringResource(R.string.fonts_download), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
-    }
-}
-
-/** Draws single-line glyph strokes (font units, y up) scaled to fit, left-aligned. */
-@Composable
-private fun StrokePreview(strokes: List<Polyline>, modifier: Modifier) {
-    Canvas(modifier) {
-        val pts = strokes.flatten()
-        if (pts.isEmpty()) return@Canvas
-        val minX = pts.minOf { it.x }
-        val maxX = pts.maxOf { it.x }
-        val minY = pts.minOf { it.y }
-        val maxY = pts.maxOf { it.y }
-        val w = (maxX - minX).coerceAtLeast(1.0)
-        val h = (maxY - minY).coerceAtLeast(1.0)
-        val scale = minOf(size.width / w, size.height / h).toFloat()
-        val top = (size.height - h.toFloat() * scale) / 2
-        val path = Path()
-        for (stroke in strokes) {
-            stroke.forEachIndexed { i, p ->
-                val o = Offset(((p.x - minX) * scale).toFloat(), top + ((maxY - p.y) * scale).toFloat())
-                if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y)
-            }
-        }
-        drawPath(path, Thread, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }

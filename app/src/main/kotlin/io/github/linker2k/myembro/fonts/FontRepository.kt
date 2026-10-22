@@ -152,7 +152,12 @@ class FontRepository(context: Context) {
                 LetterFont(
                     id = USER_PREFIX + o.getString("id"), name = o.getString("name"),
                     kind = LetterFont.Kind.valueOf(o.getString("kind")), file = file,
-                    quality = FontQualitySummary.read(file), userAdded = true,
+                    quality = FontQualitySummary.read(file) ?: runCatching {
+                        LetterFontGeometry(appContext).analyze(LetterFont(USER_PREFIX + o.getString("id"), o.getString("name"),
+                            LetterFont.Kind.valueOf(o.getString("kind")), file, null, userAdded = true))
+                            .also { FontQualitySummary.write(file, it) }
+                    }.getOrNull(),
+                    userAdded = true,
                 ) to o.optLong("addedAt")
             }.getOrNull()
         }

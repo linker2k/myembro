@@ -198,7 +198,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(24.dp))
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
-        if (showLettering) LetteringSheet(onDismiss = { showLettering = false }, onAdd = vm::addText)
+        if (showLettering) LetteringSheet(hoop = vm.project.hoop, onDismiss = { showLettering = false }, onAdd = vm::addText)
         if (showProperties && vm.selectedIds.size == 1) ObjectProperties(vm) { showProperties = false }
         if (showSaveProject) SaveProjectDialog(onDismiss = { showSaveProject = false },
             onSave = { name -> vm.saveProject(name); showSaveProject = false },

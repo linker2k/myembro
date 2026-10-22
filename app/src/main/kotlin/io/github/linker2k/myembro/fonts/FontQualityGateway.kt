@@ -62,6 +62,8 @@ internal object InterimFontQuality : FontQualityAnalyzer {
     private const val STEP_MM = 0.4
     private const val STITCH_MM = 2.5
     private const val MIN_RECOMMENDED_MM = 4.0
+    /** A stroke end this close to another stroke is joined to it. */
+    private const val JUNCTION_MM = 0.25
 
     private class Sample(val x: Double, val y: Double, val contour: Int, val arc: Double)
 
@@ -70,7 +72,10 @@ internal object InterimFontQuality : FontQualityAnalyzer {
     ): QualityReport {
         val good = if (outline) OUTLINE_GOOD_MM else LINE_GOOD_MM
         val caution = if (outline) OUTLINE_CAUTION_MM else LINE_CAUTION_MM
-        val contours = glyphContours.flatten().filter { it.size >= 2 }
+        // Glyphs are measured independently: each arrives at its own origin, so letters overlap in space.
+        val glyphOf = ArrayList<Int>()
+        val contours = ArrayList<List<Pair<Double, Double>>>()
+        glyphContours.forEachIndexed { gi, glyph -> glyph.filter { it.size >= 2 }.forEach { contours += it; glyphOf += gi } }
         if (contours.isEmpty()) {
             return QualityReport(0.0, heightMm, 0, 0, 0, QualityGrade.UNSUITABLE, listOf(QualityReasons.TINY_DETAILS))
         }
@@ -104,6 +109,28 @@ internal object InterimFontQuality : FontQualityAnalyzer {
         fun key(ix: Int, iy: Int) = (ix.toLong() shl 32) xor (iy.toLong() and 0xffffffffL)
         samples.forEachIndexed { i, s -> grid.getOrPut(key(floor(s.x / cell).toInt(), floor(s.y / cell).toInt())) { ArrayList() } += i }
 
+        // Junctions: an open stroke ending on another stroke (Hershey "A" apex, "T" bar). Points near a
+        // junction are close because the strokes are joined, like the two arms of a corner.
+        val junctions = HashMap<Long, MutableList<Pair<Double, Double>>>() // (contour pair) -> (arc on lower, arc on higher)
+        fun pairKey(a: Int, b: Int) = (min(a, b).toLong() shl 32) or max(a, b).toLong()
+        contours.forEachIndexed { ci, c ->
+            if (c.first() == c.last()) return@forEachIndexed
+            for ((ex, ey, earc) in listOf(Triple(c.first().first, c.first().second, 0.0), Triple(c.last().first, c.last().second, lengths[ci]))) {
+                val ix = floor(ex / cell).toInt()
+                val iy = floor(ey / cell).toInt()
+                val nearest = HashMap<Int, Pair<Double, Double>>() // other contour -> (distance, arc)
+                for (dx in -1..1) for (dy in -1..1) for (j in grid[key(ix + dx, iy + dy)].orEmpty()) {
+                    val s = samples[j]
+                    if (s.contour == ci || glyphOf[s.contour] != glyphOf[ci]) continue
+                    val d = hypot(s.x - ex, s.y - ey)
+                    if (d <= JUNCTION_MM && d < (nearest[s.contour]?.first ?: Double.MAX_VALUE)) nearest[s.contour] = d to s.arc
+                }
+                for ((other, hit) in nearest) {
+                    junctions.getOrPut(pairKey(ci, other)) { ArrayList() } += if (ci < other) earc to hit.second else hit.second to earc
+                }
+            }
+        }
+
         var minDist = Double.MAX_VALUE
         val tight = BooleanArray(samples.size)
         samples.forEachIndexed { i, a ->
@@ -115,6 +142,7 @@ internal object InterimFontQuality : FontQualityAnalyzer {
                 for (j in bucket) {
                     if (j == i) continue
                     val b = samples[j]
+                    if (glyphOf[b.contour] != glyphOf[a.contour]) continue
                     val d = hypot(a.x - b.x, a.y - b.y)
                     if (d >= best) continue
                     if (a.contour == b.contour) {
@@ -123,6 +151,13 @@ internal object InterimFontQuality : FontQualityAnalyzer {
                         val arcDist = if (closed) min(along, lengths[a.contour] - along) else along
                         // Neighbours along the same line, including both arms of a corner.
                         if (arcDist < 4 * d + STEP_MM * 1.5) continue
+                    } else {
+                        val joins = junctions[pairKey(a.contour, b.contour)]
+                        if (joins != null) {
+                            val (lo, hi) = if (a.contour < b.contour) a to b else b to a
+                            // Path length through the junction, judged like a corner.
+                            if (joins.any { (arcLo, arcHi) -> Math.abs(lo.arc - arcLo) + Math.abs(hi.arc - arcHi) < 4 * d + STEP_MM * 1.5 }) continue
+                        }
                     }
                     best = d
                 }

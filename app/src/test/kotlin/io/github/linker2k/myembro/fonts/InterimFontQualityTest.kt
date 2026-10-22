@@ -77,6 +77,34 @@ class InterimFontQualityTest {
     }
 
     @Test
+    fun joinedStrokesAreNotGaps() {
+        // "T": the stem ends on the bar's middle; "A"-like apex where two strokes start together.
+        val t = listOf(listOf(0.0 to 0.0, 8.0 to 0.0), listOf(4.0 to 0.0, 4.0 to 10.0))
+        val apex = listOf(listOf(5.0 to 0.0, 0.0 to 10.0), listOf(5.0 to 0.0, 10.0 to 10.0))
+        val r = q.analyze(listOf(t, apex), 10.0, outline = false)
+        assertEquals(QualityGrade.GOOD, r.grade, "reasons: ${r.reasons}, min ${r.minStrokeMm}")
+    }
+
+    @Test
+    fun realHersheySansIsGoodAtTenMillimetres() {
+        // Glyph paths from Hershey Sans 1-stroke (oskay/svg-fonts @ 8c71f2d9), font units, y up.
+        val paths = listOf(
+            "M 378 662 L 126 0 M 378 662 L 630 0 M 220 220 L 536 220",
+            "M 220 662 L 220 0 M 220 662 L 504 662 L 598 630 L 630 598 L 662 536 L 662 472 L 630 410 L 598 378 L 504 346 " +
+                "M 220 346 L 504 346 L 598 315 L 630 284 L 662 220 L 662 126 L 630 63 L 598 31.5 L 504 0 L 220 0",
+            "M 662 504 L 630 567 L 567 630 L 504 662 L 378 662 L 315 630 L 252 567 L 220 504 L 189 410 L 189 252 L 220 158 " +
+                "L 252 94.5 L 315 31.5 L 378 0 L 504 0 L 567 31.5 L 630 94.5 L 662 158",
+        )
+        val scale = 10.0 / 662 // cap height → 10 mm
+        val glyphs = paths.map { d ->
+            io.github.linker2k.myembro.engine.lettering.SvgPath.toPolylines(d, 1.0).map { s -> s.map { it.x * scale to -it.y * scale } }
+        }
+        val r = q.analyze(glyphs, 10.0, outline = false)
+        assertEquals(QualityGrade.GOOD, r.grade, "reasons: ${r.reasons}, min ${r.minStrokeMm}")
+        assertEquals(0, r.tightSpots)
+    }
+
+    @Test
     fun emptyInputIsUnsuitable() {
         assertEquals(QualityGrade.UNSUITABLE, q.analyze(emptyList(), 10.0, outline = true).grade)
     }

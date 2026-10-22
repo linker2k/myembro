@@ -52,9 +52,6 @@
     <string name="lettering_text">Text</string>
     <string name="lettering_font">Font</string>
     <string name="lettering_more_fonts">More fonts</string>
-    <string name="lettering_height">Height %1$s mm</string>
-    <string name="lettering_spacing">Letter spacing %1$s mm</string>
-    <string name="lettering_arc">Arc %1$s°</string>
     <string name="lettering_add">Add to design</string>
     <string name="lettering_too_small">Below the recommended %1$s mm for this font: letters may blur or merge.</string>
     <string name="lettering_fit_recommended">Use recommended size</string>
@@ -64,4 +61,16 @@
     <string name="lettering_use_anyway">Use anyway</string>
     <string name="lettering_failed">Could not create the text: %1$s</string>
     <string name="editor_text">Text</string>
+    <string name="lettering_char_count">%1$d characters</string>
+    <string name="lettering_size">Size</string>
+    <string name="lettering_height_label">Letter height</string>
+    <string name="lettering_spacing_label">Letter spacing</string>
+    <string name="lettering_curve">Curve</string>
+    <string name="lettering_arc_straight">Straight</string>
+    <string name="lettering_arc_arch">Arch</string>
+    <string name="lettering_arc_smile">Smile</string>
+    <string name="lettering_curvature">Curvature</string>
+    <string name="lettering_decrease">Decrease %1$s</string>
+    <string name="lettering_increase">Increase %1$s</string>
+    <string name="fonts_size_kb">%1$d KB</string>
 </resources>
