@@ -1,0 +1,21 @@
+<resources>
+    <string name="library_title">도안 목록</string>
+    <string name="library_selected">%1$d개 선택됨</string>
+    <string name="library_select_all">모두 선택</string>
+    <string name="library_delete">삭제</string>
+    <string name="library_import">도안 가져오기</string>
+    <string name="library_summary">%1$s · %2$,d땀 · %3$d색</string>
+    <string name="library_imported">도안 %1$d개를 가져왔습니다</string>
+    <string name="library_import_failed">가져오기 실패: %1$s</string>
+    <string name="cancel">취소</string>
+    <string name="usb_connected">USB: %1$s</string>
+    <string name="usb_not_connected">연결된 USB 없음</string>
+    <string name="usb_export_n">USB로 %1$d개 내보내기</string>
+    <string name="usb_export">USB로 내보내기</string>
+    <string name="usb_choose">USB 저장장치 선택</string>
+    <string name="usb_none">휴대폰에 USB 저장장치(OTG)를 연결한 뒤 다시 시도하세요</string>
+    <string name="usb_wrong_folder">%1$s 안의 폴더를 선택해 주세요</string>
+    <string name="usb_exported">도안 %1$d개를 %2$s에 내보냈습니다. 분리 전에 꺼내기를 해 주세요.</string>
+    <string name="usb_partial">%1$d개 내보냄, %2$d개 실패 (%3$s)</string>
+    <string name="usb_failed">USB 내보내기 실패: %1$s</string>
+</resources>

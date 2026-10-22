@@ -1,0 +1,21 @@
+<resources>
+    <string name="library_title">Designs</string>
+    <string name="library_selected">%1$d selected</string>
+    <string name="library_select_all">Select all</string>
+    <string name="library_delete">Delete</string>
+    <string name="library_import">Import designs</string>
+    <string name="library_summary">%1$s · %2$,d stitches · %3$d colors</string>
+    <string name="library_imported">Imported %1$d design(s)</string>
+    <string name="library_import_failed">Import failed: %1$s</string>
+    <string name="cancel">Cancel</string>
+    <string name="usb_connected">USB: %1$s</string>
+    <string name="usb_not_connected">No USB drive connected</string>
+    <string name="usb_export_n">Export %1$d to USB</string>
+    <string name="usb_export">Export to USB</string>
+    <string name="usb_choose">Choose a USB drive</string>
+    <string name="usb_none">Connect a USB drive to the phone (OTG) and try again</string>
+    <string name="usb_wrong_folder">Please choose a folder on %1$s</string>
+    <string name="usb_exported">Exported %1$d design(s) to %2$s. Eject the drive before unplugging it.</string>
+    <string name="usb_partial">Exported %1$d, failed %2$d (%3$s)</string>
+    <string name="usb_failed">USB export failed: %1$s</string>
+</resources>

@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.linker2k.myembro.engine
+
+import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.engine.io.PesExport
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class PesExportTest {
+    private fun resource(path: String): ByteArray =
+        requireNotNull(javaClass.getResource("/fixtures/$path")) { "missing fixture $path" }.readBytes()
+
+    @Test
+    fun pesIsCopiedUnchanged() {
+        val original = resource("flower.v6.pes")
+        val result = PesExport.prepare(original, "flower.v6.pes")
+        assertFalse(result.converted)
+        assertContentEquals(original, result.bytes)
+        assertEquals("flower.v6.pes", result.fileName)
+    }
+
+    @Test
+    fun dstIsConvertedToReadablePes() {
+        val dst = resource("flower.dst")
+        val result = PesExport.prepare(dst, "flower.dst")
+        assertTrue(result.converted)
+        assertEquals("flower.pes", result.fileName)
+        val back = PatternReader.read(result.bytes, result.fileName)
+        assertEquals(PatternReader.read(dst, "flower.dst").stitchCount, back.stitchCount)
+    }
+
+    @Test
+    fun uniqueNameAvoidsExistingFiles() {
+        val existing = setOf("rose.pes", "rose (1).pes")
+        assertEquals("rose (2).pes", PesExport.uniqueName("rose.pes") { it in existing })
+        assertEquals("tulip.pes", PesExport.uniqueName("tulip.pes") { it in existing })
+    }
+}

@@ -48,6 +48,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Opens a design stored in the library. */
+    fun openFile(file: java.io.File) = load { file.name to file.readBytes() }
+
     fun openSample() = load {
         "flower.pes" to getApplication<Application>().assets.open("samples/flower.pes").use { it.readBytes() }
     }
