@@ -109,4 +109,10 @@
     <string name="editor_machine_unknown">지원 범위를 확인하지 못한 기종입니다. 설정에서 지원 기종을 선택한 후 PES로 내보내 주세요.</string>
     <string name="editor_hoop_unsupported">선택한 기종에서 한 번에 봉제할 수 없는 후프입니다. 지원 후프로 바꾼 후 PES로 내보내 주세요.</string>
     <string name="editor_export_blocked">PES 저장을 차단했습니다</string>
+    <string name="editor_multi_frame">%1$s mm · 멀티포지션</string>
+    <string name="editor_positions_unconfirmed">고정 위치가 확인되면 봉제 영역을 표시합니다. 위치 정보와 내보내기 연결 전에는 저장할 수 없습니다.</string>
+    <string name="editor_positions_count">봉제 위치 %1$d개 · 프레임의 영역 번호를 확인하세요</string>
+    <string name="editor_positions_spanning">객체 %1$d개가 단일 봉제 위치에 들어가지 않아 분할이 필요합니다.</string>
+    <string name="editor_split_export">위치별 분할 내보내기</string>
+    <string name="editor_split_instructions">프레임을 번호 순서대로 고정해 봉제하세요. 각 파일은 선택한 기종의 제한을 확인한 후 내보냅니다.</string>
 </resources>

@@ -9,10 +9,11 @@ import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 
 /** Read the actual profile hoops, including accessories absent from HoopSpec.ALL (e.g. SA431). */
-internal fun editorHoops(profile: MachineProfile?): List<HoopSpec> = profile?.hoops.orEmpty()
-    .map { it.sewingArea }
-    .filter { it.width <= profile!!.maximumArea.width && it.height <= profile.maximumArea.height }
-    .distinctBy { it.width to it.height }
+internal fun editorHoops(profile: MachineProfile?): List<HoopSpec> = profile?.let { machine ->
+    machine.hoops.map { it.sewingArea }
+        .filter { it.width <= machine.maximumArea.width && it.height <= machine.maximumArea.height }
+        .distinctBy { it.width to it.height }
+}.orEmpty()
 
 internal fun HoopSpec.sameArea(other: HoopSpec) = width == other.width && height == other.height
 

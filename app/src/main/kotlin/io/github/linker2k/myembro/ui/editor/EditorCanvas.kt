@@ -167,6 +167,19 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
         }
         drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), screen(Offset(-20f, 0f)), screen(Offset(20f, 0f)), 1.dp.toPx())
         drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), screen(Offset(0f, -20f)), screen(Offset(0f, 20f)), 1.dp.toPx())
+        // Position centers are supplied by the verified machine setup, never guessed from frame size.
+        vm.sewingPositions.forEachIndexed { index, position ->
+            val origin = screen(Offset(position.originX - position.width / 2f, position.originY - position.height / 2f))
+            val areaSize = Size(position.width * scale, position.height * scale)
+            val shade = listOf(colors.secondary, colors.tertiary, colors.primary)[index % 3]
+            drawRect(shade.copy(alpha = 0.12f), origin, areaSize)
+            drawRect(shade.copy(alpha = 0.65f), origin, areaSize, style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 5f))))
+            drawIntoCanvas { canvas ->
+                paint.color = colors.onSurface.toArgb(); paint.textSize = textSize; paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                canvas.nativeCanvas.drawText("${index + 1} · ${position.name}", origin.x + 8.dp.toPx(), origin.y + 18.dp.toPx(), paint)
+                paint.typeface = android.graphics.Typeface.DEFAULT
+            }
+        }
         drawRoundRect(colors.outline, topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), style = Stroke(5.dp.toPx()))
         // The inset rectangle is the actual snap/warning boundary; the ring is decorative.
         val area = hoop.sewingArea.snapBounds

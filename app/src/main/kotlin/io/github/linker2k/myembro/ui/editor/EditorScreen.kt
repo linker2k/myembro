@@ -23,16 +23,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.edit.Project
+import io.github.linker2k.myembro.engine.edit.SewingPosition
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 
 /** Standalone entry point. Brand, dark mode, typography and surfaces come from MyembroTheme. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
+fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
+    multiPositionPositions: List<SewingPosition> = emptyList(),
+    onMultiPositionExport: ((Project, List<SewingPosition>) -> Unit)? = null,
+) {
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
+        LaunchedEffect(vm.project.hoop, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
+        var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
@@ -64,7 +71,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 if (vm.message == message) vm.message = null
             }
         }
-        val outside = remember(vm.project, vm.gestureInProgress) { vm.hoopOverflowVisible }
+        val outside = remember(vm.project, vm.gestureInProgress, vm.sewingPositions) { vm.hoopOverflowVisible }
         Scaffold(containerColor = colors.background, snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 Column {
@@ -102,6 +109,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
                                 vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text("${hoop.name} mm") },
                                     onClick = { vm.setHoop(hoop); hoopMenu = false }) }
+                                vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.editor_multi_frame, frame.coverage.name)) },
+                                    onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
                             }
                         }
                         Spacer(Modifier.weight(1f))
@@ -109,6 +119,22 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                         FilledTonalIconButton(onClick = vm::save, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
                             Icon(Icons.Default.Save, stringResource(R.string.editor_save), Modifier.size(20.dp))
+                        }
+                    }
+                    if (vm.multiPositionFrame != null) {
+                        val fit = remember(vm.project, vm.sewingPositions, vm.gestureInProgress) {
+                            if (vm.gestureInProgress) EditorPositionFit(emptySet(), emptySet()) else vm.positionFit
+                        }
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                            Text(stringResource(if (vm.sewingPositions.isEmpty()) R.string.editor_positions_unconfirmed else R.string.editor_positions_count,
+                                vm.sewingPositions.size), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                            if (!vm.gestureInProgress && fit.spanningIds.isNotEmpty()) Text(
+                                stringResource(R.string.editor_positions_spanning, fit.spanningIds.size),
+                                style = MaterialTheme.typography.labelSmall, color = colors.error)
+                            TextButton(onClick = { vm.prepareMultiPositionExport { splitPreview = it } },
+                                enabled = enabled && vm.sewingPositions.isNotEmpty() && onMultiPositionExport != null) {
+                                Text(stringResource(R.string.editor_split_export))
+                            }
                         }
                     }
                     if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -174,6 +200,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 }
             }
         }
+        splitPreview?.let { ready -> EditorSplitDialog(ready, onCancel = { splitPreview = null }, onExport = {
+            splitPreview = null
+            onMultiPositionExport?.invoke(ready.project, ready.positions)
+        }) }
         if (vm.replacementRequested) AlertDialog(
             onDismissRequest = { if (!vm.busy) vm.cancelReplacement() },
             title = { Text(stringResource(R.string.editor_unsaved_title)) },
@@ -187,12 +217,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                     TextButton(onClick = vm::cancelReplacement, enabled = !vm.busy) { Text(stringResource(R.string.editor_cancel)) }
                 }
             })
-        if (vm.recoveryProject != null) AlertDialog(
-            onDismissRequest = onBack,
-            title = { Text(stringResource(R.string.editor_restore_title)) },
-            text = { Text(stringResource(R.string.editor_restore_body)) },
-            confirmButton = { TextButton(onClick = vm::restoreDraft) { Text(stringResource(R.string.editor_restore)) } },
-            dismissButton = { TextButton(onClick = vm::discardDraft) { Text(stringResource(R.string.editor_discard)) } })
+        EditorRecoveryDialog(vm, onDismiss = onBack)
         vm.exportProblems?.let { problems -> AlertDialog(
             onDismissRequest = vm::dismissExportProblems,
             title = { Text(stringResource(R.string.editor_export_blocked)) },

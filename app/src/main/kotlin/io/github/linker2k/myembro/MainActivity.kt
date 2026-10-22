@@ -31,6 +31,7 @@ import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
 import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
+import io.github.linker2k.myembro.ui.editor.EditorRecoveryDialog
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import io.github.linker2k.myembro.ui.fonts.FontLibraryScreen
@@ -198,6 +199,12 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+                }
+                // After a process restart, offer the editor's autosaved draft on Home once per session;
+                // dismissing keeps the draft (the editor offers it again on entry).
+                var recoveryDismissed by rememberSaveable { mutableStateOf(false) }
+                if (stack.isEmpty() && !recoveryDismissed) {
+                    EditorRecoveryDialog(editor, onRestored = { stack += Screen.EDITOR }, onDismiss = { recoveryDismissed = true })
                 }
                 val machine = settings.settings.machineModel
                 preflight?.let { (warnings, action) ->
