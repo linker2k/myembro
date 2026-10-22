@@ -30,24 +30,29 @@ import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
+import io.github.linker2k.myembro.ui.settings.SettingsScreen
+import io.github.linker2k.myembro.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewer: ViewerViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
     private val editor: EditorViewModel by viewModels()
+    private val settings: SettingsViewModel by viewModels()
 
     /** Path of the design open in the viewer, or null while the list is showing. */
     private var openPath by mutableStateOf<String?>(null)
 
     /** The editor covers the list and the viewer; back returns to the list. */
     private var editing by mutableStateOf(false)
+    private var settingsOpen by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
         editing = savedInstanceState?.getBoolean(KEY_EDITING) ?: false
+        settingsOpen = savedInstanceState?.getBoolean(KEY_SETTINGS) ?: false
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val dark = isSystemInDarkTheme()
@@ -87,7 +92,10 @@ class MainActivity : ComponentActivity() {
                     openPath = null
                     library.refresh()
                 }
-                if (editing) {
+                if (settingsOpen) {
+                    BackHandler { settingsOpen = false }
+                    SettingsScreen(settings, onBack = { settingsOpen = false })
+                } else if (editing) {
                     BackHandler(onBack = closeEditor)
                     EditorScreen(editor, onBack = closeEditor)
                 } else if (openPath == null) {
@@ -101,6 +109,7 @@ class MainActivity : ComponentActivity() {
                             editor.newProject()
                             editing = true
                         },
+                        onSettings = { settingsOpen = true },
                     )
                 } else {
                     BackHandler { openPath = null }
@@ -134,6 +143,7 @@ class MainActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_OPEN, openPath)
         outState.putBoolean(KEY_EDITING, editing)
+        outState.putBoolean(KEY_SETTINGS, settingsOpen)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -157,5 +167,6 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val KEY_OPEN = "open_path"
         const val KEY_EDITING = "editing"
+        const val KEY_SETTINGS = "settings"
     }
 }

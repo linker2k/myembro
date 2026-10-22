@@ -1,0 +1,37 @@
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_defaults_title">Machine and embroidery</string>
+    <string name="settings_machine">Machine model</string>
+    <string name="settings_machine_unset">Choose a model</string>
+    <string name="settings_machine_custom">Other / enter model</string>
+    <string name="settings_machine_model">Model name</string>
+    <string name="settings_machine_example">Enter the model shown on your machine</string>
+    <string name="settings_default_hoop">Default hoop</string>
+    <string name="settings_hoop_size">%1$s mm</string>
+    <string name="settings_thread_brand">Thread brand</string>
+    <string name="settings_brand_brother">Brother</string>
+    <string name="settings_brand_madeira">Madeira</string>
+    <string name="settings_brand_isacord">Isacord</string>
+    <string name="settings_defaults_hint">Choose the hoop and thread brand you normally use. Check your machine’s sewing area before exporting.</string>
+    <string name="settings_about_title">About</string>
+    <string name="settings_version">Version %1$s (%2$d)</string>
+    <string name="settings_app_description">Open-source embroidery viewer for Android</string>
+    <string name="settings_app_license">App license</string>
+    <string name="settings_gpl">GPL-3.0-or-later</string>
+    <string name="settings_open_source">Open-source licenses</string>
+    <string name="settings_notices_description">Third-party notices and acknowledgements</string>
+    <string name="settings_license_error">Could not load the license text.</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_close">Close</string>
+    <string name="export_sheet_title">Export design</string>
+    <string name="export_sheet_busy">Preparing export…</string>
+    <string name="export_sheet_no_design">Open or select a design to export.</string>
+    <string name="export_sheet_save">Save as PES</string>
+    <string name="export_sheet_save_hint">Choose a folder on your phone or connected storage</string>
+    <string name="export_sheet_share">Share PES file</string>
+    <string name="export_sheet_share_hint">Send a copy using another app</string>
+    <string name="export_sheet_usb">Export to USB</string>
+    <string name="export_sheet_usb_hint">Connect a drive using OTG and choose its folder</string>
+</resources>
