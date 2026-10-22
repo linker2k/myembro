@@ -12,6 +12,7 @@ import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.ui.RenderData
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,12 @@ data class HomeProject(val file: File, val thumbnail: Bitmap? = null)
 
 /** Local content only; the home screen never fabricates recent files or downloads templates. */
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
+    private val preferences = SettingsPreferences(app)
+    var settings by mutableStateOf(preferences.read())
+        private set
+    private val stopObserving = preferences.observe { settings = preferences.read() }
+
+    override fun onCleared() { stopObserving() }
     var recent by mutableStateOf<List<HomeProject>>(emptyList())
         private set
     var sample by mutableStateOf<HomeProject?>(null)

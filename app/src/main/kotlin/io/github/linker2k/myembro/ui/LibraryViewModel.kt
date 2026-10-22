@@ -14,6 +14,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.engine.model.Bounds
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
@@ -28,6 +30,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val library = DesignLibrary(app)
     private val usb = UsbExporter(app)
     private val unwatch = usb.watch { refreshDrives() }
+    private val settingsPreferences = SettingsPreferences(app)
+    private var settings by mutableStateOf(settingsPreferences.read())
+    private val stopObservingSettings = settingsPreferences.observe { settings = settingsPreferences.read() }
+    val machineProfile get() = settings.machineProfile
 
     /** One design in the list; [summary] and [thumbnail] fill in after parsing in the background. */
     data class Item(
@@ -38,6 +44,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val fits100: Boolean? = null,
         val stitchCount: Int? = null,
         val modifiedAt: Long = file.lastModified(),
+        val bounds: Bounds? = null,
     )
 
     enum class Filter { ALL, FITS_100, PES, RECENT, FAVORITES }
@@ -95,7 +102,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         refreshDrives()
     }
 
-    override fun onCleared() = unwatch()
+    override fun onCleared() { unwatch(); stopObservingSettings() }
+
+    /** Unknown custom-machine compatibility stays unknown instead of inheriting SE400 limits. */
+    fun fitsMachine(item: Item): Boolean? = item.bounds?.let { settings.machineProfile?.fits(it) }
 
     fun refreshDrives() {
         drives = usb.drives()
@@ -135,6 +145,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             file, summary, Thumbnails.render(data, 320),
             fits100 = p.bounds?.let { Hoop.H100.fits(it.width, it.height) },
             stitchCount = p.stitchCount,
+            bounds = p.bounds,
         )
     }.getOrElse { Item(file, error = it.message ?: it.javaClass.simpleName) }
 

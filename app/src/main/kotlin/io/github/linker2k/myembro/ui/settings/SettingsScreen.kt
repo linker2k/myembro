@@ -72,11 +72,13 @@ import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
 import io.github.linker2k.myembro.ui.Hoop
+import io.github.linker2k.myembro.ui.machines.MachineProfile
+import io.github.linker2k.myembro.ui.machines.MachineProfiles
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val machinePresets = listOf("Brother PE800", "Brother PE900", "Brother Innov-is NV880E")
+private val machinePresets = MachineProfiles.all.map { it.displayName }
 
 /** Standalone settings destination; the host supplies navigation and owns its ViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,7 +115,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(72.dp))
+                        Image(painterResource(R.drawable.myembro_splash_icon), null, Modifier.size(72.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(R.string.settings_studio), style = MaterialTheme.typography.headlineSmall)
@@ -132,6 +134,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                         Icons.Default.Settings, stringResource(R.string.settings_machine),
                         settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
                     ) { machineDialog = true }
+                    MachineDetails(settings.machineProfile)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     Text(stringResource(R.string.settings_default_hoop), Modifier.padding(start = 16.dp, top = 16.dp),
                         style = MaterialTheme.typography.titleSmall)
@@ -142,11 +145,13 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     ) {
                         items(Hoop.entries, key = { it.name }) { hoop ->
                             val selected = settings.defaultHoop == hoop
+                            val supported = hoop in settings.availableViewerHoops
                             Surface(
-                                Modifier.width(108.dp).selectable(selected, role = Role.RadioButton,
+                                Modifier.width(108.dp).selectable(selected, enabled = supported, role = Role.RadioButton,
                                     onClick = { vm.setDefaultHoop(hoop) }),
                                 shape = MyembroShapes.Button,
                                 color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (supported) 1f else .5f),
                                 border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                             ) {
                                 Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -157,6 +162,8 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                                     }
                                     Text(stringResource(R.string.settings_hoop_size, hoop.label),
                                         style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                    if (!supported) Text(stringResource(R.string.machine_hoop_unsupported),
+                                        style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
@@ -212,6 +219,35 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             onDismiss = { brandDialog = false },
         ) { vm.setThreadBrand(it); brandDialog = false }
         licenseAsset?.let { LicenseDialog(it) { licenseAsset = null } }
+    }
+}
+
+@Composable
+private fun MachineDetails(profile: MachineProfile?) {
+    Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (profile == null) {
+            Text(stringResource(R.string.machine_unverified), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Text(stringResource(R.string.machine_area_format, profile.maximumArea.name, profile.exportFormats.joinToString()),
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(when (profile.id) {
+                "se400" -> R.string.machine_transfer_se400
+                "se600" -> R.string.machine_transfer_se600
+                else -> R.string.machine_transfer_se700
+            }), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(if (profile.id == "se700") R.string.machine_optional_hoops_small
+                else R.string.machine_optional_hoops_repositionable),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(when (profile.id) {
+                "se400" -> R.string.machine_limits_se400
+                "se600" -> R.string.machine_limits_se600
+                else -> R.string.machine_limits_se700
+            }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.machine_filename_hint), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

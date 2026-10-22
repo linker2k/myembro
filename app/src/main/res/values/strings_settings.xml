@@ -41,4 +41,16 @@
     <string name="export_sheet_destination">Choose how to export</string>
     <string name="export_sheet_usb_library_hint">USB export is available in Designs</string>
     <string name="export_sheet_compatibility">Check the design size against your machine’s embroidery area before stitching.</string>
+    <string name="machine_hoop_unsupported">Not supported by this machine</string>
+    <string name="machine_unverified">Custom machine: embroidery area, compatible hoops, transfer methods and limits are unverified. Choose sizes manually.</string>
+    <string name="machine_area_format">Maximum %1$s mm · Export %2$s</string>
+    <string name="machine_transfer_se400">Connect to a PC with a USB cable and copy PES files to the root of the machine’s Removable Disk. Android phone/OTG recognition is unverified. This is not a USB flash-drive connection.</string>
+    <string name="machine_transfer_se600">Copy PES files to a compatible USB flash drive, then insert it into the machine and retrieve the design.</string>
+    <string name="machine_transfer_se700">Use a compatible USB flash drive, or Brother’s wireless transfer through Design Database Transfer (Windows), PE-DESIGN 11 or Artspira. Direct wireless transfer from myembro is not implemented.</string>
+    <string name="machine_optional_hoops_small">Confirmed hoops: 100×100 mm; optional 60×20 mm. This app currently offers 100×100 mm projects.</string>
+    <string name="machine_optional_hoops_repositionable">Confirmed hoops: 100×100 mm; optional 60×20 mm and repositionable 100×170 mm. A single design remains limited to 100×100 mm. The app does not automate repositioning.</string>
+    <string name="machine_limits_se400">Temporary USB disk: up to 12 designs, root folder only. Numeric PES stitch limit: unverified.</string>
+    <string name="machine_limits_se600">Numeric design-count and PES stitch limits: unverified.</string>
+    <string name="machine_limits_se700">Internal memory: up to 20 designs / 1024 KB, up to 100,000 stitches per design. USB drive design-count and stitch limits: unverified.</string>
+    <string name="machine_filename_hint">PES filename length limit: unverified. Brother recommends letters A–Z/a–z, digits, hyphen and underscore.</string>
 </resources>
