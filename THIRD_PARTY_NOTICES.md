@@ -9,12 +9,14 @@ derived from the following projects, whose notices are reproduced as their licen
 - Ported files: `engine/.../io/PesReader.kt` (PesReader.py, PecReader.py),
   `engine/.../io/DstReader.kt` (DstReader.py), `engine/.../io/PecThreads.kt` (EmbThreadPec.py),
   `engine/.../io/PecWriter.kt` (PecWriter.py, PecGraphics.py, EmbThread.py),
-  `engine/.../io/PesWriter.kt` (PesWriter.py, minimal/truncated v1 path),
+  `engine/.../io/PesWriter.kt`, `engine/.../io/PesV6Writer.kt` (PesWriter.py,
+  minimal/truncated v1 and full v6 header/CEmbOne/CSewSeg/addendum paths),
   `PatternBuilder.interpolateTrims` / `interpolateDuplicateColorAsStop` (EmbPattern.py).
 - Changes: translated to Kotlin; bounded PEC block parsing, truncation warnings, streaming
   trim interpolation; deterministic exact-first unique PEC palette allocation, explicit trim
   preservation, integer move splitting, fixed-width labels and a two-byte PEC END;
-  minimal PES v1 output (see docs/writers.md and git history).
+  minimal PES v1 and full PES v6 output, UTF-8 byte-length strings, checked/split v6
+  sewing sections (see docs/writers.md and git history).
 
 ```
 MIT License

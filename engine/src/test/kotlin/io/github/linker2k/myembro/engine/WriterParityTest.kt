@@ -102,7 +102,7 @@ class WriterParityTest {
     }
 
     private fun export(output: File, name: String, source: EmbPattern, expected: List<Stitch>, colors: List<Int>) {
-        for ((extension, write) in listOf("pec" to PecWriter::write, "pes" to PesWriter::write)) {
+        for ((extension, write) in listOf("pec" to PecWriter::write, "pes" to { p: EmbPattern -> PesWriter.write(p) })) {
             val data = write(source)
             val reread = PesReader.read(data)
             assertTrue(reread.warnings.isEmpty(), "$name.$extension: ${reread.warnings}")
