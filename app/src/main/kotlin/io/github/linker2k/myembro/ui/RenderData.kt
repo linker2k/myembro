@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui
 
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.model.Stitch
 
 /**
  * A pattern flattened into line segments for Canvas.drawLines. Segments are ordered by sewing
@@ -33,25 +34,28 @@ class RenderData(val pattern: EmbPattern) {
         val runList = mutableListOf<Run>()
         var block = 0
         var runStart = 0
-        for (i in 1 until stitches.size) {
-            val a = stitches[i - 1]
-            val b = stitches[i]
+        // Like pyembroidery's stitch blocks: thread is drawn only between consecutive needle
+        // penetrations, so the first STITCH after a jump, trim or color change starts a new path.
+        var prev: Stitch? = null
+        for ((i, b) in stitches.withIndex()) {
+            val a = prev
             when (b.command) {
-                Command.STITCH -> {
+                Command.STITCH -> if (a != null && a.command == Command.STITCH) {
                     lines.add(a.x.toFloat(), a.y.toFloat(), b.x.toFloat(), b.y.toFloat())
                     ends.add(i)
                 }
-                Command.JUMP -> if (a.x != b.x || a.y != b.y) {
+                Command.JUMP -> if (a != null && (a.x != b.x || a.y != b.y)) {
                     jumps.add(a.x.toFloat(), a.y.toFloat(), b.x.toFloat(), b.y.toFloat())
                     jumpEnds.add(i)
                 }
-                Command.COLOR_CHANGE, Command.STOP -> {
+                Command.COLOR_CHANGE -> {
                     if (ends.size > runStart) runList += Run(pattern.threadAt(block).color, runStart, ends.size)
                     runStart = ends.size
                     block++
                 }
                 else -> {}
             }
+            prev = b
         }
         if (ends.size > runStart) runList += Run(pattern.threadAt(block).color, runStart, ends.size)
         stitchLines = lines.toArray()

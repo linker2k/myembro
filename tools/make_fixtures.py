@@ -6,7 +6,7 @@ For each sample design this writes PES v1, PES v6, PEC and DST files, then reads
 file back with pyembroidery and stores the decoded stitches as JSON. The Kotlin reader
 tests must produce exactly the same stitches.
 
-    pip install pyembroidery
+    pip install pyembroidery==1.5.1
     python3 tools/make_fixtures.py engine/src/test/resources/fixtures
 """
 import json
@@ -81,6 +81,24 @@ def long_moves():
     return p
 
 
+def stops():
+    """A STOP is written to PES/PEC as a change to the same color and must read back as STOP."""
+    p = pe.EmbPattern()
+    p.add_thread({"color": 0xD32F2F, "description": "Red"})
+    p.add_thread({"color": 0x1976D2, "description": "Blue"})
+    p.metadata("name", "stops")
+    for i in range(10):
+        p.add_stitch_absolute(pe.STITCH, i * 20, 0)
+    p.stop()
+    for i in range(10):
+        p.add_stitch_absolute(pe.STITCH, 200 - i * 20, 40)
+    p.color_change()
+    for i in range(10):
+        p.add_stitch_absolute(pe.STITCH, i * 20, 80)
+    p.end()
+    return p
+
+
 def dump(pattern):
     return {
         "stitches": [[int(s[0]), int(s[1]), CMD_NAMES.get(s[2] & pe.COMMAND_MASK, str(s[2]))]
@@ -91,7 +109,9 @@ def dump(pattern):
 
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    designs = {"flower": flower(), "long_moves": long_moves()}
+    designs = {"flower": flower(), "long_moves": long_moves(), "stops": stops()}
+    with open(os.path.join(out_dir, "ORACLE.txt"), "w") as fp:
+        fp.write(f"pyembroidery {getattr(pe, '__version__', None) or pe_version()}\n")
     for name, pattern in designs.items():
         for ext, settings in (("v1.pes", {"version": 1}), ("v6.pes", {"version": 6}),
                               ("pec", None), ("dst", None)):
@@ -101,6 +121,11 @@ def main(out_dir):
             with open(path + ".json", "w") as fp:
                 json.dump(dump(reread), fp)
             print(f"{path}: {len(reread.stitches)} stitches, {len(reread.threadlist)} threads")
+
+
+def pe_version():
+    from importlib.metadata import version
+    return version("pyembroidery")
 
 
 if __name__ == "__main__":

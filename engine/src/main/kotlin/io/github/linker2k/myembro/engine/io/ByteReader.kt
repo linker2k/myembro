@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.io
 
-/** Seekable little/big-endian reader over an in-memory file. Reads past the end return null. */
-class ByteReader(private val data: ByteArray) {
+/**
+ * Seekable little/big-endian reader over an in-memory file. Reads at or past [limit] return
+ * null, so a section parser cannot run into the data that follows it.
+ */
+class ByteReader(private val data: ByteArray, var limit: Int = data.size) {
     var position: Int = 0
     val size: Int get() = data.size
+
+    /** Bytes left before [limit]. */
+    val remaining: Int get() = (limit - position).coerceAtLeast(0)
 
     fun seek(pos: Int) { position = pos }
     fun skip(n: Int) { position += n }
 
-    fun u8(): Int? = if (position in data.indices) data[position++].toInt() and 0xFF else { position++; null }
+    fun u8(): Int? =
+        if (position in 0 until minOf(limit, data.size)) data[position++].toInt() and 0xFF else { position++; null }
 
     fun u16le(): Int? {
         val a = u8() ?: return null
@@ -38,8 +45,9 @@ class ByteReader(private val data: ByteArray) {
     }
 
     fun bytes(n: Int): ByteArray {
-        val from = position.coerceIn(0, data.size)
-        val to = (position + n).coerceIn(from, data.size)
+        val end = minOf(limit, data.size)
+        val from = position.coerceIn(0, end)
+        val to = (position + n).coerceIn(from, end)
         position += n
         return data.copyOfRange(from, to)
     }

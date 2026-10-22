@@ -31,8 +31,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     var progress by mutableIntStateOf(0)
     var playing by mutableStateOf(false)
 
-    /** Stitches advanced per second while playing. */
+    /** Machine commands (stitches, jumps, trims…) advanced per second while playing. */
     var speed by mutableIntStateOf(400)
+    private var pending = 0f
     var showJumps by mutableStateOf(false)
 
     fun open(uri: Uri) {
@@ -75,13 +76,18 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     fun togglePlay() {
         val data = render ?: return
         if (!playing && progress >= data.pattern.stitches.lastIndex) progress = 0
+        pending = 0f
         playing = !playing
     }
 
     /** Advance playback by [seconds] of wall time; stops at the end. */
     fun tick(seconds: Float) {
         val last = render?.pattern?.stitches?.lastIndex ?: return
-        progress = (progress + (speed * seconds).toInt().coerceAtLeast(1)).coerceAtMost(last)
+        // Carry the fractional part so slow speeds stay accurate at any frame rate.
+        pending += speed * seconds
+        val steps = pending.toInt()
+        pending -= steps
+        progress = (progress + steps).coerceAtMost(last)
         if (progress == last) playing = false
     }
 }

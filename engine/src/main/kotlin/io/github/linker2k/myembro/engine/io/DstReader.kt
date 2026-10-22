@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.io
 
-import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.model.PatternBuilder
@@ -26,23 +25,28 @@ object DstReader {
         )
 
     fun read(data: ByteArray, trimAt: Int = 3): EmbPattern {
+        if (data.size < 512) throw EmbFormatException("DST file is shorter than its 512-byte header")
         val f = ByteReader(data)
         val out = PatternBuilder()
         readHeader(f.bytes(512), out)
-        while (true) {
-            val b0 = f.u8() ?: break
-            val b1 = f.u8() ?: break
-            val b2 = f.u8() ?: break
+        var ended = false
+        var sequins = false
+        while (f.remaining >= 3) {
+            val b0 = f.u8()!!
+            val b1 = f.u8()!!
+            val b2 = f.u8()!!
             val dx = decodeDx(b0, b1, b2)
             val dy = decodeDy(b0, b1, b2)
             when {
-                b2 and 0b11110011 == 0b11110011 -> break
+                b2 and 0b11110011 == 0b11110011 -> { ended = true; break }
                 b2 and 0b11000011 == 0b11000011 -> out.colorChange(dx, dy)
-                b2 and 0b01000011 == 0b01000011 -> out.add(Command.JUMP, dx, dy) // sequin mode toggle
+                b2 and 0b01000011 == 0b01000011 -> { sequins = true; out.move(dx, dy) } // sequin mode toggle
                 b2 and 0b10000011 == 0b10000011 -> out.move(dx, dy)
                 else -> out.stitch(dx, dy)
             }
         }
+        if (!ended) out.warnings += "Stitch data is truncated; showing the part that could be read"
+        if (sequins) out.warnings += "Sequin commands are not supported and are shown as jumps"
         out.end()
         out.interpolateTrims(trimAt, null, clipping = true)
         return out.build()

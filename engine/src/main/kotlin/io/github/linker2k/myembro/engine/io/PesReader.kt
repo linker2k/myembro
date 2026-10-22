@@ -20,24 +20,41 @@ object PesReader {
     fun read(data: ByteArray): EmbPattern {
         val f = ByteReader(data)
         val out = PatternBuilder()
-        val chart = mutableListOf<EmbThread>()
         val magic = f.string(8)
         if (magic == "#PEC0001") {
+            readPec(f, out, mutableListOf())
+        } else {
+            if (!magic.startsWith("#PES")) throw EmbFormatException("Not a PES file (magic '$magic')")
+            val pecBlockPosition = f.s32le() ?: throw EmbFormatException("Truncated PES header")
+            if (pecBlockPosition !in 12 until data.size) {
+                throw EmbFormatException("PEC block offset $pecBlockPosition is outside the file")
+            }
+            val version = magic.substring(4)
+            out.metadata["version"] = version
+            // The optional header may not run into the PEC block, and is applied only if it
+            // parses completely: a malformed header must not stop us from reading the stitches.
+            val header = ByteReader(data, limit = pecBlockPosition).apply { seek(12) }
+            val headerMeta = LinkedHashMap<String, String>()
+            val chart = mutableListOf<EmbThread>()
+            try {
+                readHeader(version, header, headerMeta, chart)
+                out.metadata += headerMeta
+            } catch (e: TruncatedException) {
+                chart.clear()
+                out.warnings += "PES header is incomplete; using PEC colors"
+            }
+            f.seek(pecBlockPosition)
             readPec(f, out, chart)
-            return out.build()
         }
-        if (!magic.startsWith("#PES")) throw EmbFormatException("Not a PES file (magic '$magic')")
-        val pecBlockPosition = f.s32le() ?: throw EmbFormatException("Truncated PES header")
-        val version = magic.substring(4)
-        out.metadata["version"] = version
-        // A malformed optional header must not stop us from reading the stitches.
-        runCatching { readHeader(version, f, out, chart) }
-        f.seek(pecBlockPosition)
-        readPec(f, out, chart)
+        out.interpolateDuplicateColorAsStop()
         return out.build()
     }
 
-    private fun readHeader(version: String, f: ByteReader, out: PatternBuilder, chart: MutableList<EmbThread>) {
+    private class TruncatedException : Exception()
+
+    private fun <T> need(v: T?): T = v ?: throw TruncatedException()
+
+    private fun readHeader(version: String, f: ByteReader, out: MutableMap<String, String>, chart: MutableList<EmbThread>) {
         when (version) {
             "0100" -> headerV9V10(f, out, chart, afterHoop = 38)
             "0090" -> headerV9V10(f, out, chart, afterHoop = 30)
@@ -48,24 +65,26 @@ object PesReader {
         }
     }
 
+    /** Length-prefixed string; null when empty. Throws if the header ends mid-string. */
     private fun pesString(f: ByteReader): String? {
-        val length = f.u8() ?: return null
+        val length = need(f.u8())
         if (length == 0) return null
+        if (f.remaining < length) throw TruncatedException()
         return f.string(length)
     }
 
-    private fun putIfPresent(out: PatternBuilder, key: String, value: String?) {
-        if (!value.isNullOrEmpty()) out.metadata[key] = value
+    private fun putIfPresent(out: MutableMap<String, String>, key: String, value: String?) {
+        if (!value.isNullOrEmpty()) out[key] = value
     }
 
-    private fun readMetadata(f: ByteReader, out: PatternBuilder) {
+    private fun readMetadata(f: ByteReader, out: MutableMap<String, String>) {
         for (key in listOf("name", "category", "author", "keywords", "comments")) {
             putIfPresent(out, key, pesString(f))
         }
     }
 
     private fun headerV5toV8(
-        f: ByteReader, out: PatternBuilder, chart: MutableList<EmbThread>, beforeImage: Int, afterImage: Int,
+        f: ByteReader, out: MutableMap<String, String>, chart: MutableList<EmbThread>, beforeImage: Int, afterImage: Int,
     ) {
         f.skip(4)
         readMetadata(f, out)
@@ -75,7 +94,7 @@ object PesReader {
         readThreadList(f, chart)
     }
 
-    private fun headerV9V10(f: ByteReader, out: PatternBuilder, chart: MutableList<EmbThread>, afterHoop: Int) {
+    private fun headerV9V10(f: ByteReader, out: MutableMap<String, String>, chart: MutableList<EmbThread>, afterHoop: Int) {
         f.skip(4)
         readMetadata(f, out)
         f.skip(14)
@@ -88,11 +107,11 @@ object PesReader {
 
     /** Thread list follows three counts; if any are non-zero the layout is too complex to skip. */
     private fun readThreadList(f: ByteReader, chart: MutableList<EmbThread>) {
-        repeat(3) { if (f.u16le() != 0) return }
-        val count = f.u16le() ?: return
+        repeat(3) { if (need(f.u16le()) != 0) return }
+        val count = need(f.u16le())
         repeat(count) {
             val catalog = pesString(f)
-            val rgb = f.u24be() ?: return
+            val rgb = need(f.u24be())
             f.skip(5)
             chart += EmbThread(
                 color = (0xFF shl 24) or rgb,
@@ -111,12 +130,23 @@ object PesReader {
         f.skip(0xF)
         f.skip(2) // graphic stride, graphic height
         f.skip(0xC)
+        val colorCountPos = f.position
         val colorChanges = f.u8() ?: throw EmbFormatException("Truncated PEC header")
-        val colorBytes = f.bytes(colorChanges + 1).map { it.toInt() and 0xFF }
+        // The count is "color changes", i.e. colors - 1; 0xFF encodes a design with no colors.
+        val colorCount = if (colorChanges == 0xFF) 0 else colorChanges + 1
+        val colorBytes = f.bytes(colorCount).map { it.toInt() and 0xFF }
+        if (colorBytes.size < colorCount) throw EmbFormatException("Truncated PEC color table")
         mapPecColors(colorBytes, out, chart)
-        f.skip(0x1D0 - colorChanges)
-        f.skip(3) // stitch block length
+        f.seek(colorCountPos + 0x1D2)
+        // Block length counts from 5 bytes before the end of this field.
+        val blockLength = f.u24le() ?: throw EmbFormatException("Truncated PEC header")
+        val blockEnd = f.position - 5 + blockLength
         f.skip(0x0B)
+        if (blockEnd > f.position && blockEnd <= f.size) {
+            f.limit = blockEnd
+        } else {
+            out.warnings += "PEC stitch block length is invalid; reading until the end marker"
+        }
         readPecStitches(f, out)
     }
 
@@ -146,12 +176,14 @@ object PesReader {
     private fun signed7(b: Int): Int = if (b > 63) b - 128 else b
 
     private fun readPecStitches(f: ByteReader, out: PatternBuilder) {
+        // 0xFF in the first byte is the end marker: no valid long-form coordinate sets bit 6.
+        var ended = false
         while (true) {
             val val1 = f.u8() ?: break
+            if (val1 == 0xFF) { ended = true; break }
             var val2 = f.u8() ?: break
-            if (val1 == 0xFF && val2 == 0x00) break
             if (val1 == 0xFE && val2 == 0xB0) {
-                f.skip(1)
+                f.u8() ?: break // color index, unused: colors come from the color table
                 out.colorChange()
                 continue
             }
@@ -181,6 +213,7 @@ object PesReader {
                 else -> out.stitch(x, y)
             }
         }
+        if (!ended) out.warnings += "Stitch data is truncated; showing the part that could be read"
         out.end()
     }
 }

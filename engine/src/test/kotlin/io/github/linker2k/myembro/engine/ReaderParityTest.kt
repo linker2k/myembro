@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
  * decoded from it (see tools/make_fixtures.py). Our readers must agree exactly.
  */
 class ReaderParityTest {
-    private val fixtures = listOf("flower", "long_moves").flatMap { name ->
+    private val fixtures = listOf("flower", "long_moves", "stops").flatMap { name ->
         listOf("v1.pes", "v6.pes", "pec", "dst").map { "$name.$it" }
     }
 

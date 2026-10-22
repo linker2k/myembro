@@ -173,6 +173,9 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop) {
         Stat(stringResource(R.string.stat_trims), pattern.trimCount.toString())
         Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60))
     }
+    for (warning in pattern.warnings) {
+        Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+    }
     if (b != null && !hoop.fits(b.width, b.height)) {
         Text(
             stringResource(R.string.hoop_too_small),
