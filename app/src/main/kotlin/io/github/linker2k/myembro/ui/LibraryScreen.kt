@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -62,7 +61,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -73,7 +71,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,37 +78,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import java.io.File
 import java.util.Locale
 
-internal val EmbroideryLinen = Color(0xFFF6F0E6)
-internal val EmbroideryInk = Color(0xFF2B2420)
-internal val EmbroideryTerracotta = Color(0xFFC4552D)
-
-/** Local palette shared by the library and viewer; the app/editor theme stays independent. */
+/** Compatibility entry point while the host adopts MyembroTheme. */
 @Composable
-internal fun EmbroideryTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = EmbroideryTerracotta,
-            onPrimary = Color.White,
-            primaryContainer = Color(0xFFF5DED1),
-            onPrimaryContainer = EmbroideryInk,
-            secondary = Color(0xFF78614E),
-            secondaryContainer = Color(0xFFEEE3D5),
-            onSecondaryContainer = EmbroideryInk,
-            background = EmbroideryLinen,
-            onBackground = EmbroideryInk,
-            surface = EmbroideryLinen,
-            onSurface = EmbroideryInk,
-            surfaceVariant = Color(0xFFEEE3D5),
-            onSurfaceVariant = Color(0xFF72645A),
-            outline = Color(0xFF9A8878),
-            outlineVariant = Color(0xFFDFD2C2),
-        ),
-        content = content,
-    )
-}
+internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(content = content)
 
 /**
  * Design list: tap to open, long-press to start selecting, then export the selection to a
@@ -191,6 +165,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onCreat
             if (selecting) {
                 Surface(tonalElevation = 3.dp) {
                     Button(
+                        shape = MyembroShapes.Button,
                         onClick = { vm.exportToUsb() },
                         enabled = !vm.busy,
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -287,7 +262,7 @@ private fun UsbStatus(vm: LibraryViewModel, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = MyembroShapes.Button,
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -324,7 +299,7 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(18.dp),
+        shape = MyembroShapes.Card,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
     )
@@ -400,10 +375,10 @@ private fun DesignCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = MyembroShapes.Card
     Card(
         shape = shape,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(if (selected) 2.dp else 1.dp,
             if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
@@ -422,8 +397,8 @@ private fun DesignCard(
             }
             Surface(
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                shape = RoundedCornerShape(6.dp),
-                color = Color(0xEEFFFCF7),
+                shape = MaterialTheme.shapes.extraSmall,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
             ) {
                 Text(item.file.extension.uppercase(Locale.ROOT), Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
@@ -431,7 +406,7 @@ private fun DesignCard(
             if (item.fits100 == false) {
                 Surface(
                     modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary,
                 ) {

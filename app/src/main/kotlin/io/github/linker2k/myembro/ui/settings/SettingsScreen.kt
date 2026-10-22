@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -65,6 +64,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.pm.PackageInfoCompat
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
 import io.github.linker2k.myembro.ui.Hoop
 import kotlinx.coroutines.CancellationException
@@ -106,8 +106,8 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             ) {
                 Text(stringResource(R.string.settings_defaults_title), style = MaterialTheme.typography.titleSmall)
                 Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     SettingRow(
@@ -125,8 +125,8 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.settings_about_title), style = MaterialTheme.typography.titleSmall)
                 Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF7)),
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -267,7 +267,7 @@ private fun LicenseDialog(asset: String, onDismiss: () -> Unit) {
         }
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxSize().padding(20.dp), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+        Surface(Modifier.fillMaxSize().padding(20.dp), shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(if (asset == "LICENSE") R.string.settings_app_license else R.string.settings_open_source),
                     style = MaterialTheme.typography.titleLarge)

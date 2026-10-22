@@ -1,3 +1,3 @@
 <resources>
-    <color name="ic_launcher_background">#FFF5EDDF</color>
+    <color name="ic_launcher_background">@color/myembro_brand_background</color>
 </resources>

@@ -1,0 +1,29 @@
+<resources>
+    <string name="home_greeting">Welcome back</string>
+    <string name="home_workshop">Your embroidery studio</string>
+    <string name="home_welcome">Bring today’s ideas to life, one stitch at a time.</string>
+    <string name="home_new_project">New project</string>
+    <string name="home_new_hint">Pick a hoop and start with a fresh canvas.</string>
+    <string name="home_hoop">Hoop preset · mm</string>
+    <string name="home_create">Start a new project</string>
+    <string name="home_recent">Recent projects</string>
+    <string name="home_view_all">View all</string>
+    <string name="home_recent_empty">Your saved designs and projects will appear here.</string>
+    <string name="home_gallery">Samples and templates</string>
+    <string name="home_flower_sample">Flower stitches</string>
+    <string name="home_sample">Bundled PES sample</string>
+    <string name="home_square_template">Square canvas</string>
+    <string name="home_portrait_template">Portrait canvas</string>
+    <string name="home_template_size">%1$s mm · blank template</string>
+    <string name="home_quick_start">Quick start</string>
+    <string name="home_import">Import design</string>
+    <string name="home_lettering">Add lettering</string>
+    <string name="home_photo">Photo to embroidery</string>
+    <string name="home_coming_soon">Coming soon</string>
+    <string name="home_tab_home">Home</string>
+    <string name="home_tab_library">Designs</string>
+    <string name="home_tab_create">Create</string>
+    <string name="home_settings">Settings</string>
+    <string name="home_load_failed">Could not load local projects.</string>
+    <string name="home_retry">Try again</string>
+</resources>
