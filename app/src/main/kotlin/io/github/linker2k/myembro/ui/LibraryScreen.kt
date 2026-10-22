@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -97,13 +98,13 @@ internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(con
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit) {
-    EmbroideryTheme { LibraryContent(vm, onOpen) }
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)? = null) {
+    EmbroideryTheme { LibraryContent(vm, onOpen, onFreeDesigns) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit) {
+private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
     val visible = vm.visibleItems
@@ -151,6 +152,11 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit) {
                             Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(stringResource(R.string.library_import))
+                        }
+                        if (onFreeDesigns != null) {
+                            IconButton(onClick = onFreeDesigns) {
+                                Icon(Icons.Default.TravelExplore, stringResource(R.string.sources_title))
+                            }
                         }
                     }
                 },

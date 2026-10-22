@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -88,13 +89,15 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onCreateFromDesign: () -> Unit = onOpenLibrary,
     letteringAvailable: Boolean = false,
+    onFreeDesigns: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
     MyembroTheme {
         HomeContent(vm.recent, vm.sample, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
-            vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable)
+            vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
+            onFreeDesigns)
     }
 }
 
@@ -107,6 +110,7 @@ private fun HomeContent(
     onSettings: () -> Unit, modifier: Modifier = Modifier,
     supportedHoops: List<Hoop> = listOf(Hoop.H100), defaultHoop: Hoop = Hoop.H100,
     onCreateFromDesign: () -> Unit = onOpenLibrary, letteringAvailable: Boolean = false,
+    onFreeDesigns: (() -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -182,6 +186,7 @@ private fun HomeContent(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     QuickAction(Icons.Default.FileOpen, stringResource(R.string.home_import), Modifier.weight(1f), onClick = onImport)
                     if (letteringAvailable) QuickAction(Icons.Default.TextFields, stringResource(R.string.home_lettering), Modifier.weight(1f), onClick = onLettering)
+                    if (onFreeDesigns != null) QuickAction(Icons.Default.TravelExplore, stringResource(R.string.sources_title), Modifier.weight(1f), onClick = onFreeDesigns)
                     QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.weight(1f),
                         enabled = false, onClick = {})
                 }

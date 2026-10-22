@@ -3,6 +3,7 @@ package io.github.linker2k.myembro
 
 import android.content.ClipData
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -17,8 +18,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
@@ -30,10 +33,14 @@ import io.github.linker2k.myembro.ui.home.HomeScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.settings.SettingsScreen
 import io.github.linker2k.myembro.ui.settings.SettingsViewModel
+import io.github.linker2k.myembro.ui.sources.FreeDesignSourcesScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.installMyembroSplashScreen
-import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val viewer: ViewerViewModel by viewModels()
@@ -42,7 +49,7 @@ class MainActivity : ComponentActivity() {
     private val settings: SettingsViewModel by viewModels()
 
     /** [PICK_DESIGN] is the library opened from the new-project sheet: a tap starts a project. */
-    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING }
+    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -60,7 +67,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                uri?.let(::importAndView)
+                uri?.let { importUris(listOf(it)) }
             }
             val saveDocument = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -109,8 +116,10 @@ class MainActivity : ComponentActivity() {
                         onSettings = { stack += Screen.SETTINGS },
                         onCreateFromDesign = { stack += Screen.PICK_DESIGN },
                         letteringAvailable = true,
+                        onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                     )
-                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign)
+                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
+                    Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
                     Screen.PICK_DESIGN -> LibraryScreen(library, onOpen = { file ->
                         editor.editDesign(file)
                         stack[stack.lastIndex] = Screen.EDITOR
@@ -174,7 +183,30 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_VIEW) intent.data?.let(::importAndView)
+        when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.data?.let { uri ->
+                if (uri.scheme == "content") {
+                    importUris(listOf(uri))
+                } else {
+                    openPath = null
+                    viewer.open(uri)
+                    showViewer()
+                }
+            }
+            Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> importUris(sharedUris(intent))
+        }
+    }
+
+    /** Streams from a share, plus clip data some apps use instead; links in text are never fetched. */
+    private fun sharedUris(intent: Intent): List<Uri> {
+        val uris = mutableListOf<Uri>()
+        if (intent.action == Intent.ACTION_SEND) {
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(uris::add)
+        } else {
+            IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(uris::addAll)
+        }
+        intent.clipData?.let { clip -> for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let(uris::add) }
+        return uris.filter { it.scheme == "content" }.distinct()
     }
 
     private fun Hoop.spec() = HoopSpec(label, widthMm * 10, heightMm * 10)
@@ -189,16 +221,34 @@ class MainActivity : ComponentActivity() {
         showViewer()
     }
 
-    /** Files opened from outside go into the library first, so they can be exported later. */
-    private fun importAndView(uri: android.net.Uri) {
+    /**
+     * Copies designs (or ZIPs of them) into the library, each URI on its own so one failure keeps
+     * the others. A single design opens in the viewer; anything else lands on the library with a
+     * summary message.
+     */
+    private fun importUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
         lifecycleScope.launch {
-            runCatching { library.importForViewing(uri) }
-                .onSuccess(::openDesign)
-                .onFailure {
-                    openPath = null
-                    viewer.open(uri)
-                    showViewer()
+            val imported = mutableListOf<File>()
+            val failures = mutableListOf<String>()
+            for (uri in uris) {
+                try {
+                    imported += withContext(Dispatchers.IO) { DesignLibrary(applicationContext).importShared(uri) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    val name = uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
+                    failures += getString(R.string.library_shared_failed, name, e.message ?: e.javaClass.simpleName)
                 }
+            }
+            library.refresh()
+            if (imported.size == 1 && failures.isEmpty()) {
+                openDesign(imported.single())
+                return@launch
+            }
+            val summary = if (imported.isEmpty()) emptyList() else listOf(getString(R.string.library_shared_imported, imported.size))
+            library.message = (summary + failures).joinToString("\n")
+            if (stack.lastOrNull() != Screen.LIBRARY) stack += Screen.LIBRARY
         }
     }
 

@@ -36,6 +36,18 @@ class DesignLibrary(private val context: Context) {
         return target
     }
 
+    /** Shared download/ZIP entry point. Run on Dispatchers.IO; may return several designs. */
+    fun importShared(uri: Uri): List<File> {
+        require(uri.scheme == "content") { "Only shared content URIs are accepted" }
+        val resolver = context.contentResolver
+        val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+            ?: uri.lastPathSegment?.substringAfterLast('/') ?: "design.pes"
+        return resolver.openInputStream(uri)?.use { input ->
+            DesignFileImporter(dir).import(input, name, resolver.getType(uri))
+        } ?: error("Cannot read $name")
+    }
+
     fun delete(file: File) {
         if (file.parentFile == dir) file.delete()
     }

@@ -53,4 +53,6 @@
     <string name="viewer_thread_stitches">%1$,d stitches</string>
     <string name="viewer_restart">Back to start</string>
     <string name="viewer_finish">Show completed design</string>
+    <string name="library_shared_imported">Imported %1$d designs</string>
+    <string name="library_shared_failed">Could not import %1$s: %2$s</string>
 </resources>

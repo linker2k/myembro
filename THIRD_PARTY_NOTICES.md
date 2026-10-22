@@ -376,3 +376,12 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
+
+## AndroidX Browser
+
+- Dependency: `androidx.browser:browser:1.8.0`, Android Open Source Project contributors.
+- Used for opening external design-source/terms URLs in Custom Tabs; no remote website
+  code or design assets are bundled by this directory.
+- License: Apache License 2.0, full text packaged in
+  `app/src/main/assets/licenses/androidx_browser_APACHE-2.0.txt`.
+- Source/release: https://developer.android.com/jetpack/androidx/releases/browser#1.8.0

@@ -1,0 +1,18 @@
+<resources>
+    <string name="sources_title">무료 도안 찾기</string>
+    <string name="sources_back">뒤로</string>
+    <string name="sources_import_hint">받은 PES를 공유 → myembro로 보내면 도안 목록에 추가됩니다.</string>
+    <string name="sources_link_only">도안은 제작자 사이트에서 직접 받으세요. PES·PEC·DST·ZIP을 지원하며, 각 사이트의 이용 조건이 적용됩니다.</string>
+    <string name="sources_open">사이트 열기</string>
+    <string name="sources_terms">이용 조건 보기</string>
+    <string name="sources_pes_available">PES 제공</string>
+    <string name="sources_no_pes">PES 없음</string>
+    <string name="sources_personal_only">개인용만</string>
+    <string name="sources_finished_sales">완제품 판매 · 조건 있음</string>
+    <string name="sources_account_required">계정·주문 절차 필요</string>
+    <string name="sources_no_account">회원가입 불필요</string>
+    <string name="sources_formats">형식: %1$s</string>
+    <string name="sources_verified">%1$s · 확인일 %2$s</string>
+    <string name="sources_browser_missing">사이트를 열려면 브라우저를 설치해 주세요.</string>
+    <string name="sources_load_error">도안 사이트 목록을 불러올 수 없습니다.</string>
+</resources>
