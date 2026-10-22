@@ -6,12 +6,11 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import io.github.linker2k.myembro.ui.RenderData
 
-/** Renders a whole design, fitted and centered, onto a square fabric-colored bitmap. */
+/** Renders a whole design onto a transparent square so the surrounding theme supplies fabric. */
 object Thumbnails {
     fun render(data: RenderData, sizePx: Int): Bitmap {
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(0xFFFAF7F0.toInt())
         val bounds = data.pattern.bounds ?: return bitmap
         val margin = sizePx * 0.08f
         val scale = minOf(

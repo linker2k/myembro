@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
 import java.io.IOException
 import java.util.UUID
@@ -43,8 +44,24 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
     private var pendingSave: ExportRequest? = null
-    /** 100×100 is the default; oversized designs show a warning rather than switching hoops. */
-    var hoop by mutableStateOf(Hoop.H100)
+    private val settingsPreferences = SettingsPreferences(app)
+    private var settings by mutableStateOf(settingsPreferences.read())
+    private var selectedHoop by mutableStateOf(settings.defaultHoop)
+    val machineProfile get() = settings.machineProfile
+    val availableHoops: List<Hoop> get() = settings.availableViewerHoops
+    /** Profile-aware setter also protects callers outside this screen. */
+    var hoop: Hoop
+        get() = selectedHoop
+        set(value) { selectedHoop = settings.constrainHoop(value) }
+    private val stopObservingSettings = settingsPreferences.observe {
+        val next = settingsPreferences.read()
+        if (next.machineModel != settings.machineModel || next.defaultHoop != settings.defaultHoop) {
+            selectedHoop = next.defaultHoop
+        }
+        settings = next
+    }
+
+    override fun onCleared() { stopObservingSettings() }
 
     /** Index into the pattern's stitch list that has been sewn so far. */
     var progress by mutableIntStateOf(0)

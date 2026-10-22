@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lettering_title">레터링</string>
+    <string name="lettering_back">뒤로</string>
+    <string name="lettering_done">완료</string>
+    <string name="lettering_add">도안에 추가</string>
+    <string name="lettering_preparing">스티치 만드는 중…</string>
+    <string name="lettering_preview">후프와 레터링 스티치 미리보기</string>
+    <string name="lettering_fit">후프 맞춤과 글자 맞춤 전환</string>
+    <string name="lettering_text">문구</string>
+    <string name="lettering_placeholder">실로 수놓을 문구</string>
+    <string name="lettering_character_count">%1$d글자</string>
+    <string name="lettering_fonts">자수 폰트</string>
+    <string name="lettering_all_fonts">전체 보기</string>
+    <string name="lettering_height">글자 크기</string>
+    <string name="lettering_spacing">자간</string>
+    <string name="lettering_align">정렬</string>
+    <string name="lettering_left">왼쪽</string>
+    <string name="lettering_center">가운데</string>
+    <string name="lettering_right">오른쪽</string>
+    <string name="lettering_curved">곡선 배치</string>
+    <string name="lettering_straight">직선</string>
+    <string name="lettering_arch">아치</string>
+    <string name="lettering_circle">원형</string>
+    <string name="lettering_curvature">곡률</string>
+    <string name="lettering_thread">실 색상</string>
+    <string name="lettering_thread_count">4색</string>
+    <string name="lettering_terracotta">테라코타</string>
+    <string name="lettering_ivory">아이보리</string>
+    <string name="lettering_sage">세이지</string>
+    <string name="lettering_gold">골드</string>
+    <string name="lettering_close">닫기</string>
+    <string name="lettering_unsupported">이 폰트에 없는 글자가 있어요. 다른 폰트를 선택해 주세요.</string>
+    <string name="lettering_outside">글자가 후프를 벗어났어요. 크기나 자간을 줄여 주세요.</string>
+    <string name="lettering_quality_height">권장 최소 글자 높이: %1$s mm</string>
+    <string name="lettering_quality_check">가늘거나 맞닿은 획을 확인해 주세요.</string>
+    <string name="lettering_quality_hint">가는 획은 자수에서 뭉칠 수 있어요. 크기를 키우거나 굵은 폰트를 골라 보세요.</string>
+    <string name="lettering_stats">%1$d땀 · 점프 %2$d회</string>
+    <string name="lettering_failed">레터링을 만들 수 없어요. 다른 폰트나 짧은 문구로 다시 시도해 주세요.</string>
+</resources>

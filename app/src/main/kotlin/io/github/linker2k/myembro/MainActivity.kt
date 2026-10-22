@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
 import io.github.linker2k.myembro.ui.ViewerScreen
@@ -26,6 +27,7 @@ import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import io.github.linker2k.myembro.ui.home.HomeScreen
+import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.settings.SettingsScreen
 import io.github.linker2k.myembro.ui.settings.SettingsViewModel
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
@@ -39,7 +41,8 @@ class MainActivity : ComponentActivity() {
     private val editor: EditorViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
-    private enum class Screen { LIBRARY, VIEWER, EDITOR, SETTINGS }
+    /** [PICK_DESIGN] is the library opened from the new-project sheet: a tap starts a project. */
+    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -90,7 +93,7 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
-                        onNewProject = { hoop -> newProject(HoopSpec(hoop.label, hoop.widthMm * 10, hoop.heightMm * 10)) },
+                        onNewProject = { hoop -> newProject(hoop.spec()) },
                         onOpenRecent = { file ->
                             if (file.extension == "myembro") {
                                 editor.openProject(file)
@@ -101,19 +104,30 @@ class MainActivity : ComponentActivity() {
                         },
                         // PES files have no registered MIME type, so allow any file and let the reader decide.
                         onImport = { openDocument.launch(arrayOf("*/*")) },
-                        // Lettering lives in the editor; until it has a text tool this opens an empty project.
-                        onLettering = { newProject(HoopSpec.H100) },
+                        onLettering = { stack += Screen.LETTERING },
                         onOpenLibrary = { stack += Screen.LIBRARY },
                         onSettings = { stack += Screen.SETTINGS },
+                        onCreateFromDesign = { stack += Screen.PICK_DESIGN },
+                        letteringAvailable = true,
                     )
-                    Screen.LIBRARY -> LibraryScreen(
-                        library,
-                        onOpen = ::openDesign,
-                        onCreate = { newProject(HoopSpec.H100) },
-                        onSettings = { stack += Screen.SETTINGS },
-                    )
+                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign)
+                    Screen.PICK_DESIGN -> LibraryScreen(library, onOpen = { file ->
+                        editor.editDesign(file)
+                        stack[stack.lastIndex] = Screen.EDITOR
+                    })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
+                    Screen.LETTERING -> {
+                        val hoop = settings.settings.defaultHoop.spec()
+                        LetteringScreen(
+                            onBack = back,
+                            onAdd = { text ->
+                                editor.startWith(text, hoop)
+                                stack[stack.lastIndex] = Screen.EDITOR
+                            },
+                            hoop = hoop,
+                        )
+                    }
                     Screen.VIEWER -> ViewerScreen(
                         viewer,
                         onOpenFile = { openDocument.launch(arrayOf("*/*")) },
@@ -131,6 +145,15 @@ class MainActivity : ComponentActivity() {
                             {
                                 editor.editDesign(File(path))
                                 stack += Screen.EDITOR
+                            }
+                        },
+                        // The USB flow (access prompt, drive choice, result) lives on the library screen.
+                        onExportUsb = openPath?.let { path ->
+                            {
+                                library.clearSelection()
+                                library.toggle(File(path))
+                                stack += Screen.LIBRARY
+                                library.exportToUsb()
                             }
                         },
                     )
@@ -153,6 +176,8 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == Intent.ACTION_VIEW) intent.data?.let(::importAndView)
     }
+
+    private fun Hoop.spec() = HoopSpec(label, widthMm * 10, heightMm * 10)
 
     private fun showViewer() {
         if (stack.lastOrNull() != Screen.VIEWER) stack += Screen.VIEWER

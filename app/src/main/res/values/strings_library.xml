@@ -1,6 +1,5 @@
 <resources>
     <string name="library_title">Designs</string>
-    <string name="library_create">Create</string>
     <string name="library_selected">%1$d selected</string>
     <string name="library_select_all">Select all visible designs</string>
     <string name="library_delete">Delete</string>
@@ -44,4 +43,14 @@
     <string name="usb_exported">Exported %1$d design(s) to %2$s. Eject the drive before unplugging it.</string>
     <string name="usb_partial">Exported %1$d, failed %2$d (%3$s)</string>
     <string name="usb_failed">USB export failed: %1$s</string>
+    <string name="library_studio">My embroidery studio</string>
+    <string name="library_studio_hint">What story will you stitch today?</string>
+    <string name="library_filter_favorites">Favorites</string>
+    <string name="library_favorite">Add to favorites</string>
+    <string name="library_unfavorite">Remove from favorites</string>
+    <string name="viewer_export_summary">%1$,d stitches · %2$d colors</string>
+    <string name="viewer_trims_size_note">Size in mm · %1$d trims</string>
+    <string name="viewer_thread_stitches">%1$,d stitches</string>
+    <string name="viewer_restart">Back to start</string>
+    <string name="viewer_finish">Show completed design</string>
 </resources>

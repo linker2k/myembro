@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui.editor
 
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -18,7 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -34,6 +35,8 @@ import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.ui.RenderData
 import kotlin.math.abs
+import kotlin.math.roundToInt
+import java.util.Locale
 
 private fun Bounds.corners() = listOf(
     Offset(minX.toFloat(), minY.toFloat()), Offset(maxX.toFloat(), minY.toFloat()),
@@ -42,14 +45,17 @@ private fun Bounds.corners() = listOf(
 
 /** The gesture target is fixed at pointer-down: object/handle edits, empty fabric navigates. */
 @Composable
-internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifier = Modifier) {
+internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifier = Modifier,
+    navigationOnly: Boolean = false, showJumps: Boolean = false, preview: Float = 1f) {
     val hoop = vm.project.hoop
     var zoom by remember(hoop, fitRequest) { mutableFloatStateOf(1f) }
     var pan by remember(hoop, fitRequest) { mutableStateOf(Offset.Zero) }
     val density = LocalDensity.current
     val handleRadius = with(density) { 7.dp.toPx() }
     val handleTouch = with(density) { 24.dp.toPx() }
-    val accent = Color(0xFFC4552D)
+    val colors = MaterialTheme.colorScheme
+    val accent = colors.primary
+    val textSize = with(density) { MaterialTheme.typography.labelSmall.fontSize.toPx() }
     val description = stringResource(R.string.editor_canvas_description)
     val renders = vm.project.objects.filter { it.visible }.map { obj ->
         key(obj.id) { remember(obj) { obj.id to RenderData(obj.placedPattern()) } }
@@ -63,7 +69,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
 
     Canvas(modifier.semantics { contentDescription = description }
-        .pointerInput(hoop, fitRequest) {
+        .pointerInput(hoop, fitRequest, navigationOnly) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 if (vm.busy) return@awaitEachGesture
@@ -73,15 +79,15 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 fun toWorld(point: Offset) = (point - center - pan) / (fit * zoom)
                 val selecting = vm.selectionMode
                 val selected = vm.selected?.takeIf { it.visible }
-                val bounds = if (selecting) null else vm.project.selectionBounds(vm.selectedIds)
+                val bounds = if (selecting || navigationOnly) null else vm.project.selectionBounds(vm.selectedIds)
                 val corner = bounds?.corners()?.firstOrNull {
                     (it * scaleAtStart + center + pan - down.position).getDistance() <= handleTouch
                 }
                 val point = toWorld(down.position)
-                val hit = if (corner != null) selected else vm.project.objects.asReversed().firstOrNull {
+                val hit = if (navigationOnly) null else if (corner != null) selected else vm.project.objects.asReversed().firstOrNull {
                     it.visible && it.contains(point.x.toDouble(), point.y.toDouble(), handleTouch / scaleAtStart / 2.0)
                 }
-                if (!selecting) vm.selectForGesture(hit?.id)
+                if (!selecting && !navigationOnly) vm.selectForGesture(hit?.id)
                 val editing = hit != null
                 var started = false
                 var completed = false
@@ -138,26 +144,30 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 if (selecting && !started && completed && hit != null) vm.toggleSelection(hit.id)
             }
         }) {
-        drawRect(Color(0xFFF6F0E6))
+        drawRect(colors.background)
+        // Fine woven lines stay quiet at any zoom; they are UI chrome, not stitch data.
+        val weave = colors.outline.copy(alpha = 0.12f)
+        for (x in 0..size.width.toInt() step maxOf(1, 4.dp.toPx().toInt())) drawLine(weave, Offset(x.toFloat(), 0f), Offset(x.toFloat(), size.height))
+        for (y in 0..size.height.toInt() step maxOf(1, 4.dp.toPx().toInt())) drawLine(weave, Offset(0f, y.toFloat()), Offset(size.width, y.toFloat()))
         val scale = minOf(size.width / hoop.width, size.height / hoop.height) * 0.82f * zoom
         val origin = center + pan
         fun screen(p: Offset) = origin + p * scale
         val topLeft = screen(Offset(-hoop.width / 2f, -hoop.height / 2f))
         val hoopSize = Size(hoop.width * scale, hoop.height * scale)
-        drawRoundRect(Color(0xFFFFFCF6), topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
+        drawRoundRect(colors.surface, topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
         // A quiet 10 mm grid gives users a sense of the real sewing dimensions.
         for (x in (-hoop.width / 2)..(hoop.width / 2) step 100) {
-            drawLine(Color(0x142B2420), screen(Offset(x.toFloat(), -hoop.height / 2f)), screen(Offset(x.toFloat(), hoop.height / 2f)))
+            drawLine(colors.outline.copy(alpha = 0.35f), screen(Offset(x.toFloat(), -hoop.height / 2f)), screen(Offset(x.toFloat(), hoop.height / 2f)))
         }
         for (y in (-hoop.height / 2)..(hoop.height / 2) step 100) {
-            drawLine(Color(0x142B2420), screen(Offset(-hoop.width / 2f, y.toFloat())), screen(Offset(hoop.width / 2f, y.toFloat())))
+            drawLine(colors.outline.copy(alpha = 0.35f), screen(Offset(-hoop.width / 2f, y.toFloat())), screen(Offset(hoop.width / 2f, y.toFloat())))
         }
-        drawLine(Color(0x302B2420), screen(Offset(-20f, 0f)), screen(Offset(20f, 0f)), 1.dp.toPx())
-        drawLine(Color(0x302B2420), screen(Offset(0f, -20f)), screen(Offset(0f, 20f)), 1.dp.toPx())
-        drawRoundRect(Color(0xFF806B5C), topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), style = Stroke(2.dp.toPx()))
+        drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), screen(Offset(-20f, 0f)), screen(Offset(20f, 0f)), 1.dp.toPx())
+        drawLine(colors.onSurfaceVariant.copy(alpha = 0.35f), screen(Offset(0f, -20f)), screen(Offset(0f, 20f)), 1.dp.toPx())
+        drawRoundRect(colors.outline, topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), style = Stroke(5.dp.toPx()))
         // The inset rectangle is the actual snap/warning boundary; the ring is decorative.
         val area = hoop.sewingArea.snapBounds
-        drawRect(Color(0x66806B5C), screen(Offset(area.minX.toFloat(), area.minY.toFloat())),
+        drawRect(colors.onSurfaceVariant.copy(alpha = 0.5f), screen(Offset(area.minX.toFloat(), area.minY.toFloat())),
             Size(area.width * scale, area.height * scale),
             style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
         drawIntoCanvas { c ->
@@ -166,10 +176,22 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             canvas.translate(origin.x, origin.y)
             canvas.scale(scale, scale)
             paint.strokeWidth = maxOf(3f, 1f / scale)
+            val progress = (renders.sumOf { it.second.pattern.stitches.size } * preview.coerceIn(0f, 1f)).toInt()
+            var offset = 0
             for ((_, data) in renders) {
+                val cutoff = progress - offset
+                offset += data.pattern.stitches.size
+                val sewn = data.segmentsUpTo(data.stitchLineEnds, cutoff)
                 for (run in data.runs) {
+                    val end = minOf(run.end, sewn)
+                    if (end <= run.start) continue
                     paint.color = run.color
-                    canvas.drawLines(data.stitchLines, run.start * 4, (run.end - run.start) * 4, paint)
+                    canvas.drawLines(data.stitchLines, run.start * 4, (end - run.start) * 4, paint)
+                }
+                if (showJumps) {
+                    paint.color = colors.onSurfaceVariant.copy(alpha = 0.3f).toArgb()
+                    val jumps = data.segmentsUpTo(data.jumpLineEnds, cutoff)
+                    if (jumps > 0) canvas.drawLines(data.jumpLines, 0, jumps * 4, paint)
                 }
             }
             canvas.restore()
@@ -193,10 +215,53 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             val a = screen(Offset(b.minX.toFloat(), b.minY.toFloat()))
             val z = screen(Offset(b.maxX.toFloat(), b.maxY.toFloat()))
             drawRect(accent, a, Size(maxOf(1f, z.x - a.x), maxOf(1f, z.y - a.y)), style = Stroke(2.dp.toPx()))
+            val dimensionGap = 14.dp.toPx()
+            val dimY = (z.y + dimensionGap).coerceIn(0f, size.height)
+            val dimX = (z.x + dimensionGap).coerceIn(0f, size.width)
+            drawLine(accent, Offset(a.x, dimY), Offset(z.x, dimY), 1.dp.toPx())
+            drawLine(accent, Offset(dimX, a.y), Offset(dimX, z.y), 1.dp.toPx())
+            listOf(a.x, z.x).forEach { x -> drawLine(accent, Offset(x, dimY - 3.dp.toPx()), Offset(x, dimY + 3.dp.toPx()), 1.dp.toPx()) }
+            listOf(a.y, z.y).forEach { y -> drawLine(accent, Offset(dimX - 3.dp.toPx(), y), Offset(dimX + 3.dp.toPx(), y), 1.dp.toPx()) }
+            drawIntoCanvas { c ->
+                val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.textSize = textSize; color = colors.onPrimary.toArgb() }
+                val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent.toArgb() }
+                fun pill(text: String, x: Float, y: Float) {
+                    val w = label.measureText(text) + 12.dp.toPx()
+                    val h = 22.dp.toPx()
+                    val cx = x.coerceIn(w / 2 + 2.dp.toPx(), maxOf(w / 2 + 2.dp.toPx(), size.width - w / 2 - 2.dp.toPx()))
+                    val cy = y.coerceIn(h / 2 + 2.dp.toPx(), maxOf(h / 2 + 2.dp.toPx(), size.height - h / 2 - 2.dp.toPx()))
+                    c.nativeCanvas.drawRoundRect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, 6.dp.toPx(), 6.dp.toPx(), fill)
+                    c.nativeCanvas.drawText(text, cx - label.measureText(text) / 2, cy - (label.ascent() + label.descent()) / 2, label)
+                }
+                pill(String.format(Locale.getDefault(), "%.1f mm", b.width / 10f), (a.x + z.x) / 2, dimY + 15.dp.toPx())
+                pill(String.format(Locale.getDefault(), "%.1f mm", b.height / 10f), dimX + 27.dp.toPx(), (a.y + z.y) / 2)
+            }
             b.corners().forEach { corner ->
-                drawCircle(Color.White, handleRadius, screen(corner))
+                drawCircle(colors.surface, handleRadius, screen(corner))
                 drawCircle(accent, handleRadius, screen(corner), style = Stroke(2.dp.toPx()))
             }
+        }
+        val ruler = 24.dp.toPx()
+        drawRect(colors.background.copy(alpha = 0.96f), size = Size(size.width, ruler))
+        drawRect(colors.background.copy(alpha = 0.96f), size = Size(ruler, size.height))
+        drawIntoCanvas { c ->
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.onSurfaceVariant.toArgb(); this.textSize = textSize * 0.85f; strokeWidth = 1.dp.toPx() }
+            c.nativeCanvas.drawText("mm", 3.dp.toPx(), 14.dp.toPx(), p)
+            for (x in (-hoop.width / 2)..(hoop.width / 2) step 50) {
+                val px = screen(Offset(x.toFloat(), 0f)).x
+                if (px < ruler || px > size.width) continue
+                val major = (x + hoop.width / 2) % 100 == 0
+                c.nativeCanvas.drawLine(px, ruler - (if (major) 6 else 3).dp.toPx(), px, ruler, p)
+                if (major) c.nativeCanvas.drawText("${(x + hoop.width / 2) / 10}", px + 2.dp.toPx(), 12.dp.toPx(), p)
+            }
+            for (y in (-hoop.height / 2)..(hoop.height / 2) step 50) {
+                val py = screen(Offset(0f, y.toFloat())).y
+                if (py < ruler || py > size.height) continue
+                val major = (y + hoop.height / 2) % 100 == 0
+                c.nativeCanvas.drawLine(ruler - (if (major) 6 else 3).dp.toPx(), py, ruler, py, p)
+                if (major) c.nativeCanvas.drawText("${(y + hoop.height / 2) / 10}", 2.dp.toPx(), py - 2.dp.toPx(), p)
+            }
+            c.nativeCanvas.drawText("${(zoom * 100).roundToInt()}%", 32.dp.toPx(), size.height - 10.dp.toPx(), p)
         }
     }
 }
