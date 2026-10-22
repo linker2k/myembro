@@ -1,5 +1,7 @@
 # myembro
 
+![myembro — Open-source embroidery viewer for Android](docs/images/readme-banner.png)
+
 **Open-source embroidery app for Android** — view, simulate and (soon) digitize machine
 embroidery designs on your phone. Brother **PES** first.
 
