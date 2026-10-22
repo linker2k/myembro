@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
+import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.ui.RenderData
 import kotlin.math.abs
 
@@ -154,6 +155,11 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
         drawLine(Color(0x302B2420), screen(Offset(-20f, 0f)), screen(Offset(20f, 0f)), 1.dp.toPx())
         drawLine(Color(0x302B2420), screen(Offset(0f, -20f)), screen(Offset(0f, 20f)), 1.dp.toPx())
         drawRoundRect(Color(0xFF806B5C), topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), style = Stroke(2.dp.toPx()))
+        // The inset rectangle is the actual snap/warning boundary; the ring is decorative.
+        val area = hoop.sewingArea.snapBounds
+        drawRect(Color(0x66806B5C), screen(Offset(area.minX.toFloat(), area.minY.toFloat())),
+            Size(area.width * scale, area.height * scale),
+            style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
         drawIntoCanvas { c ->
             val canvas = c.nativeCanvas
             canvas.save()

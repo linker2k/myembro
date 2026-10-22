@@ -15,7 +15,7 @@
     <string name="editor_fit">후프를 화면에 맞추기</string>
     <string name="editor_composition">나의 자수 구성</string>
     <string name="editor_object_count">객체 %1$d개</string>
-    <string name="editor_outside">도안이 후프를 벗어났습니다. 자수 전에 위치나 크기를 조절하세요.</string>
+    <string name="editor_outside">도안이 봉제 가능 영역을 벗어났습니다. 자수 전에 위치나 크기를 조절하세요.</string>
     <string name="editor_navigation_hint">도안을 탭해 선택하세요. 빈 천을 드래그하면 화면 이동, 두 손가락으로 확대·축소합니다.</string>
     <string name="editor_selection_hint">드래그로 이동, 두 손가락으로 회전·크기 조절, 모서리 핸들로 크기를 조절합니다.</string>
     <string name="editor_canvas_description">자수 후프. 도안을 탭해 선택하고 드래그로 이동, 두 손가락으로 크기와 회전을 조절합니다. 빈 천에서는 화면을 확대하거나 이동합니다.</string>

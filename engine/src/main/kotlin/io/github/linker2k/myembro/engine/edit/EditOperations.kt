@@ -23,9 +23,8 @@ internal fun List<Bounds>.unionBounds(): Bounds? = if (isEmpty()) null else Boun
     minOf { it.minX }, minOf { it.minY }, maxOf { it.maxX }, maxOf { it.maxY },
 )
 
-fun HoopSpec.contains(bounds: Bounds): Boolean =
-    bounds.minX >= -width / 2.0 && bounds.maxX <= width / 2.0 &&
-        bounds.minY >= -height / 2.0 && bounds.maxY <= height / 2.0
+/** Shared inset sewing area, with 0.05 mm tolerance on rounded stitch coordinates. */
+fun HoopSpec.contains(bounds: Bounds): Boolean = sewingArea.contains(bounds)
 
 /** Hidden and empty objects do not contribute to export bounds or hoop overflow. */
 fun Project.objectsOutsideHoop(): List<DesignObject> = objects.filter {
