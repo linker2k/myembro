@@ -41,7 +41,8 @@ class MainActivity : ComponentActivity() {
     private val editor: EditorViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
-    private enum class Screen { LIBRARY, VIEWER, EDITOR, SETTINGS, LETTERING }
+    /** [PICK_DESIGN] is the library opened from the new-project sheet: a tap starts a project. */
+    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -106,12 +107,14 @@ class MainActivity : ComponentActivity() {
                         onLettering = { stack += Screen.LETTERING },
                         onOpenLibrary = { stack += Screen.LIBRARY },
                         onSettings = { stack += Screen.SETTINGS },
+                        onCreateFromDesign = { stack += Screen.PICK_DESIGN },
+                        letteringAvailable = true,
                     )
-                    Screen.LIBRARY -> LibraryScreen(
-                        library,
-                        onOpen = ::openDesign,
-                        onSettings = { stack += Screen.SETTINGS },
-                    )
+                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign)
+                    Screen.PICK_DESIGN -> LibraryScreen(library, onOpen = { file ->
+                        editor.editDesign(file)
+                        stack[stack.lastIndex] = Screen.EDITOR
+                    })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {

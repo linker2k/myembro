@@ -9,6 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.Hoop
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.ui.machines.MachineProfile
+import io.github.linker2k.myembro.ui.machines.MachineProfiles
 
 enum class ThreadBrand(val labelRes: Int) {
     BROTHER(R.string.settings_brand_brother),
@@ -17,32 +20,56 @@ enum class ThreadBrand(val labelRes: Int) {
 }
 
 data class EmbroiderySettings(
-    val machineModel: String = "",
+    val machineModel: String = MachineProfiles.default.displayName,
     val defaultHoop: Hoop = Hoop.H100,
     val threadBrand: ThreadBrand = ThreadBrand.BROTHER,
-)
+) {
+    val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
+    val availableViewerHoops: List<Hoop> get() =
+        machineProfile?.let { profile -> Hoop.entries.filter(profile::supports) } ?: Hoop.entries
+    // Custom machines have unknown capabilities; the host must offer a manual setup instead.
+    val availableEditorHoops: List<HoopSpec> get() = machineProfile?.projectHoops.orEmpty()
+    fun constrainHoop(hoop: Hoop): Hoop = hoop.takeIf { it in availableViewerHoops } ?: Hoop.H100
+    fun validated(): EmbroiderySettings = copy(defaultHoop = constrainHoop(defaultHoop))
+}
 
 /** Shared preference access for integration code; opening this screen is not required to read defaults. */
 class SettingsPreferences(context: Context) {
     private val preferences = context.applicationContext.getSharedPreferences("myembro_settings", Context.MODE_PRIVATE)
 
     fun read(): EmbroiderySettings = EmbroiderySettings(
-        machineModel = preferences.getString("machine_model", "").orEmpty(),
+        machineModel = preferences.getString("machine_model", null).orEmpty()
+            .ifBlank { MachineProfiles.default.displayName },
         defaultHoop = Hoop.entries.firstOrNull { it.name == preferences.getString("default_hoop", null) } ?: Hoop.H100,
         threadBrand = ThreadBrand.entries.firstOrNull { it.name == preferences.getString("thread_brand", null) }
             ?: ThreadBrand.BROTHER,
-    )
+    ).validated()
 
     fun setMachineModel(model: String) {
-        preferences.edit().putString("machine_model", model.trim().take(120)).apply()
+        val name = model.trim().take(120).ifBlank { MachineProfiles.default.displayName }
+        val edit = preferences.edit().putString("machine_model", name)
+        if (MachineProfiles.find(name) != null) edit.putString("default_hoop", Hoop.H100.name)
+        edit.apply()
     }
 
     fun setDefaultHoop(hoop: Hoop) {
-        preferences.edit().putString("default_hoop", hoop.name).apply()
+        preferences.edit().putString("default_hoop", read().constrainHoop(hoop).name).apply()
     }
 
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.edit().putString("thread_brand", brand.name).apply()
+    }
+
+    /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
+    fun machineProfile(): MachineProfile? = read().machineProfile
+    fun editorHoops(): List<HoopSpec> = read().availableEditorHoops
+    fun defaultEditorHoop(): HoopSpec? = machineProfile()?.defaultHoop
+
+    /** Strongly held listener until the returned disposer is called by the owning ViewModel. */
+    fun observe(onChange: () -> Unit): () -> Unit {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> onChange() }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        return { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 }
 
@@ -51,16 +78,19 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val preferences = SettingsPreferences(app)
     var settings by mutableStateOf(preferences.read())
         private set
+    private val stopObserving = preferences.observe { settings = preferences.read() }
+
+    override fun onCleared() { stopObserving() }
 
     fun setMachineModel(model: String) {
         val name = model.trim().take(120)
         preferences.setMachineModel(name)
-        settings = settings.copy(machineModel = name)
+        settings = preferences.read()
     }
 
     fun setDefaultHoop(hoop: Hoop) {
         preferences.setDefaultHoop(hoop)
-        settings = settings.copy(defaultHoop = hoop)
+        settings = preferences.read()
     }
 
     fun setThreadBrand(brand: ThreadBrand) {

@@ -272,7 +272,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
                     .verticalScroll(rememberScrollState()).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                StatsRow(pattern, vm.hoop)
+                StatsRow(pattern, vm.hoop, vm.machineProfile)
                 Card(
                     shape = MyembroShapes.Card,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -305,7 +305,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
 }
 
 @Composable
-private fun StatsRow(pattern: EmbPattern, hoop: Hoop) {
+private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?) {
     val b = pattern.bounds
     val seconds = pattern.estimatedSeconds()
     Card(
@@ -325,7 +325,7 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop) {
             for (warning in pattern.warnings) {
                 Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
             }
-            if (b != null && !hoop.fits(b.width, b.height)) {
+            if (b != null && (!hoop.fits(b.width, b.height) || machine?.fits(b) == false)) {
                 Text(stringResource(R.string.hoop_too_small), color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelSmall)
             }
@@ -416,7 +416,7 @@ private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
             TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.hoop.label}") }
             DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
                 val b = pattern.bounds
-                Hoop.entries.forEach { h ->
+                vm.availableHoops.forEach { h ->
                     val fits = b == null || h.fits(b.width, b.height)
                     DropdownMenuItem(
                         text = { Text(h.label + if (fits) "" else " ⚠") },

@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -98,17 +97,13 @@ internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(con
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onSettings: () -> Unit) {
-    EmbroideryTheme { LibraryContent(vm, onOpen, onSettings) }
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit) {
+    EmbroideryTheme { LibraryContent(vm, onOpen) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun LibraryContent(
-    vm: LibraryViewModel,
-    onOpen: (File) -> Unit,
-    onSettings: () -> Unit,
-) {
+private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
     val visible = vm.visibleItems
@@ -156,9 +151,6 @@ private fun LibraryContent(
                             Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(stringResource(R.string.library_import))
-                        }
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, stringResource(R.string.settings_title))
                         }
                     }
                 },
@@ -211,7 +203,7 @@ private fun LibraryContent(
                 }
             } else LazyVerticalGrid(
                 columns = GridCells.Adaptive(150.dp),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize(),
@@ -222,6 +214,7 @@ private fun LibraryContent(
                         selecting = selecting,
                         selected = item.file in vm.selection,
                         favorite = vm.isFavorite(item.file),
+                        exceedsMachine = vm.fitsMachine(item) == false,
                         onFavorite = { vm.toggleFavorite(item.file) },
                         onClick = { if (selecting) vm.toggle(item.file) else onOpen(item.file) },
                         onLongClick = { vm.toggle(item.file) },
@@ -236,7 +229,10 @@ private fun LibraryContent(
             onDismissRequest = { showUsbHelp = false },
             icon = { Icon(Icons.Default.Usb, null) },
             title = { Text(stringResource(R.string.library_usb_help_title)) },
-            text = { Text(stringResource(R.string.library_usb_help_body)) },
+            text = {
+                Text(stringResource(if (vm.machineProfile?.id == "se400") R.string.machine_transfer_se400
+                    else R.string.library_usb_help_body))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showUsbHelp = false
@@ -412,6 +408,7 @@ private fun DesignCard(
     selecting: Boolean,
     selected: Boolean,
     favorite: Boolean,
+    exceedsMachine: Boolean,
     onFavorite: () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -447,7 +444,7 @@ private fun DesignCard(
                     Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
-            if (item.fits100 == false) {
+            if (exceedsMachine) {
                 Surface(
                     modifier = Modifier.align(Alignment.TopStart).padding(top = 12.dp, start = 8.dp, end = 48.dp),
                     shape = MaterialTheme.shapes.extraSmall,
