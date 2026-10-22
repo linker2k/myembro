@@ -119,7 +119,63 @@ val pattern = LetteringEngine.fromContours(
 재배포 권한을 추정하지 않았다. 현재 한글 지원은 출처가 명확한
 [Google Fonts Jua와 OFL 원문](https://github.com/google/fonts/tree/69d2493f8b919292a9c4b530081934877093c038/ofl/jua)을 사용한다.
 
-## 검증
+## 임의 폰트 품질 분석 API
+
+`FontQuality.analyze(glyphContours, heightMm, outline)`는 글리프별 외곽선/획을
+분석한다. 바깥 리스트는 독립 글리프, 다음 리스트는 윤곽/획, 안쪽은 점이다.
+입력 좌표는 **이미 현재 글자 높이로 정규화한 mm**이며 재스케일하지 않는다.
+Android 어댑터의 원시 픽셀을 바로 넘기지 말고 기준 높이에 맞춰 mm로 변환한다.
+글리프 사이의 거리는 측정하지 않으므로 샘플 글자를 모두 원점에 놓아도 된다.
+
+```kotlin
+val report = FontQuality.analyze(
+    glyphContours = listOf(firstGlyphContoursMm, secondGlyphContoursMm),
+    heightMm = 15.0,
+    outline = true,
+)
+// report.grade: Grade.GOOD / CAUTION / UNSUITABLE
+// report.reasons: 화면에 표시할 한국어 설명
+```
+
+- 외곽선 모드는 0.25mm 이하로 나눈 구간의 마주보는 면을 비교한다. 접선의
+  내적 절댓값이 0.95 이상이고 연결선이 두 구간의 법선 방향에 가까운 쌍을 사용한다.
+  같은 원본 선분 및 바로 이웃 선분(닫힌 윤곽의 시작/끝 포함)은 제외한다.
+  안쪽 구멍의 방향이 뒤집혀도 측정한다. `minStrokeMm`에는 얇은 두께뿐 아니라
+  서로 다른 윤곽 사이의 좁은 틈도 반영한다.
+- 단선 모드는 서로 다른 획 사이의 최소 간격을 측정한다. 의도한 획 교차도
+  간격 0으로 보고한다. 기하 정보만으로 의도한 접점과 결함을 구별할 수 없으므로
+  교차가 있는 단선 폰트의 경고는 미리보기와 함께 해석해야 한다.
+- 최소 거리는 후보 구간끼리의 선분 거리를 사용한다. 0.05mm부터 2배씩 커지는
+  공간 격자와 셀당 최대 16개 결정적 reservoir 대표를 사용해 전수 쌍 비교를 피한다.
+  n개 샘플, 글리프 범위 D에서 시간은 `O(n log(D/0.05))`, 추가 메모리는 `O(n)`이다.
+  샘플링·방향 필터·셀 대표 선택 때문에 정확한 최소값을 보장하지 않는 근사 분석이다.
+- `recommendedMinHeightMm = heightMm × 1.2 / minStrokeMm`. 확대만으로 해결할 수
+  없는 간격 0은 권장 높이 `+Infinity`다. 측정할 쌍이 없으면 최소 간격 `+Infinity`,
+  권장 높이 0이며, 외곽선은 판단 불가 CAUTION, 독립 단선은 간격 제한 없음 GOOD이다.
+  빈 글리프만 있으면 UNSUITABLE, 최소 두께 0, 권장 높이 `+Infinity`다.
+  호출자는 이 특수값을 숫자 대신 안내 문구로 표시할 수 있다.
+- `tightSpots`는 1mm 미만으로 가까운 **0.25mm 호 길이 구간**의 개수다.
+  같은 구간이 여러 격자/상대 구간에서 발견되어도 한 번만 세고, 가까운 양쪽
+  획의 구간은 각각 센다. 글리프별로 합산하며 물리적 결함의 개수는 아니다.
+- 등급은 최소 두께·간격 **1.2mm 이상 GOOD**, **0.6~1.2mm CAUTION**,
+  **0.6mm 미만 UNSUITABLE**이다. 1mm 경계 자체는 tightSpots에 포함하지 않는다.
+  이는 앱의 기하 휴리스틱이며 원단·실·바늘에 대한 실제 봉제 품질 보증은 아니다.
+- `stitchCount`, `jumpCount`는 각 글리프에
+  `LetteringEngine.fromContours(..., sourceHeight = heightMm)`를 적용해 합산한다.
+  기본 땀 길이 2.5mm·단순화 설정을 사용하며 글리프 사이 배치용 점프는 제외한다.
+
+`ContourSimplifier.simplify(contoursMm, toleranceMm, minSegmentMm)`는 mm 좌표에
+Douglas-Peucker를 적용한 뒤 짧은 구간을 병합한다. 열린 끝점과 닫힌 윤곽/구멍을
+보존한다. 최소 구간 길이는 목표값이며, 허용 오차 밖으로 급한 모서리를 깎아야
+하는 경우에는 짧은 구간을 남긴다. 큰 허용 오차로도 폐곡선을 선으로 축소하지 않는다.
+각 패스의 값을 0으로 주면 해당 패스를 끌 수 있다.
+
+`LetteringEngine.fromContours`에는 기존 인자 뒤에 `simplify: Boolean = true`,
+`minSegmentMm: Double = 0.0`이 추가되었다. `mergeToleranceMm`가 DP 허용 오차이며,
+기본값은 기존과 같은 0.05mm다. `simplify = false`면 두 단순화 패스를 모두 건너뛴다.
+좌표 정수화·땀 길이 상한에 따른 재분할은 그대로 적용한다.
+
+## 품질 분석 검증
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:assembleDebug
@@ -129,3 +185,7 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:assemble
 양·음 원호, 정수화 후 땀 길이, 윤곽·구멍의 분리와 폐쇄, 짧은 구간 병합,
 기준선/기준 높이, TextObject 배치와 PES 저장·재읽기를 검증한다.
 Android 그래픽 API의 실제 글리프 생성은 JVM 엔진 테스트의 대상이 아니다.
+품질 분석 테스트는 굵은/가는 합성 글리프 등급, 0.6/1/1.2mm 경계, 구멍과 반전
+방향, 원형 곡선, 고밀도 입력, 독립 글리프, 획 교차, 권장 높이와 실제 엔진의
+땀·점프 수를 검증한다. 단순화 테스트는 최소 구간 병합, 모서리·폐곡선 보존과
+`fromContours(simplify = false)`를 검증한다.
