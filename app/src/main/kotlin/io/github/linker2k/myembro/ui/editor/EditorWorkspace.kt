@@ -65,11 +65,11 @@ private fun RailButton(icon: ImageVector, label: Int, selected: Boolean, enabled
 
 @Composable
 internal fun EditorToolTabs(enabled: Boolean, activeTool: Int,
-    onSelect: () -> Unit, onAdd: () -> Unit, onTransform: () -> Unit, onColors: () -> Unit, onLayers: () -> Unit) {
+    onSelect: () -> Unit, onAdd: () -> Unit, onTransform: () -> Unit, onText: () -> Unit, onLayers: () -> Unit) {
     val entries = listOf(Triple(Icons.Default.NearMe, R.string.editor_select_tool, onSelect),
         Triple(Icons.Default.AddCircleOutline, R.string.editor_design_tab, onAdd),
         Triple(Icons.Default.Tune, R.string.editor_transform_tab, onTransform),
-        Triple(Icons.Default.Palette, R.string.editor_color_tab, onColors),
+        Triple(Icons.Default.TextFields, R.string.editor_text_tool, onText),
         Triple(Icons.Default.Layers, R.string.editor_layers, onLayers))
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
         entries.forEachIndexed { index, (icon, label, action) ->
@@ -96,7 +96,10 @@ internal fun MiniLayerPanel(vm: EditorViewModel, enabled: Boolean, onAdd: () -> 
             }
             vm.project.objects.take(3).forEachIndexed { index, obj ->
                 Row(Modifier.fillMaxWidth().background(if (obj.id in vm.selectedIds) colors.primaryContainer else colors.surface)
-                    .clickable(enabled = enabled) { vm.select(obj.id) }.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    .clickable(enabled = enabled) {
+                        vm.select(obj.id)
+                        if (obj is TextObject && obj.visible && !vm.selectionMode) vm.openLettering(obj.id)
+                    }.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(28.dp)) {
                         LayerThumbnail(obj, Modifier.fillMaxSize())
                         Text("${index + 1}", Modifier.align(Alignment.BottomStart).background(colors.surface.copy(alpha = 0.9f)),
@@ -143,13 +146,14 @@ private fun LayerThumbnail(obj: DesignObject, modifier: Modifier) {
 @Composable
 internal fun EditorInspector(vm: EditorViewModel, tab: Int, onTab: (Int) -> Unit, expanded: Boolean,
     onExpand: () -> Unit, showJumps: Boolean, onJumps: (Boolean) -> Unit, preview: Float, onPreview: (Float) -> Unit,
-    onProperties: () -> Unit, modifier: Modifier) {
+    onProperties: () -> Unit, modifier: Modifier, docked: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     val enabled = !vm.busy && !vm.gestureInProgress
     val obj = vm.selected?.takeIf { vm.selectedIds.size == 1 }
-    Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = colors.surface, shadowElevation = 6.dp) {
+    Surface(modifier, shape = if (docked) MaterialTheme.shapes.large else MaterialTheme.shapes.extraLarge,
+        color = colors.surface, shadowElevation = if (docked) 0.dp else 6.dp) {
         Column {
-            Box(Modifier.fillMaxWidth().height(16.dp).clickable(enabled = enabled, onClick = onExpand), contentAlignment = Alignment.Center) {
+            if (!docked) Box(Modifier.fillMaxWidth().height(16.dp).clickable(enabled = enabled, onClick = onExpand), contentAlignment = Alignment.Center) {
                 HorizontalDivider(Modifier.width(32.dp), thickness = 3.dp, color = colors.outline)
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -161,7 +165,10 @@ internal fun EditorInspector(vm: EditorViewModel, tab: Int, onTab: (Int) -> Unit
                         Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall,
                         color = colors.onSecondaryContainer)
                 }
-                IconButton(onClick = onExpand, enabled = enabled, modifier = Modifier.size(40.dp)) {
+                if (obj is TextObject) IconButton(onClick = { vm.openLettering(obj.id) }, enabled = enabled, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Default.TextFields, stringResource(R.string.editor_edit_text), Modifier.size(20.dp))
+                }
+                if (!docked) IconButton(onClick = onExpand, enabled = enabled, modifier = Modifier.size(40.dp)) {
                     Icon(if (expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
                         stringResource(if (expanded) R.string.editor_collapse_properties else R.string.editor_expand_properties), Modifier.size(20.dp))
                 }

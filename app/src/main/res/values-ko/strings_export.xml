@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_pes_version">PES 출력 버전</string>
+    <string name="settings_pes_v1">v1 최소 (기본)</string>
+    <string name="settings_pes_v6">v6 호환 (실 이름·색 정보 포함, PE-DESIGN 방식)</string>
+    <string name="preflight_title">자수 전에 확인하세요</string>
+    <string name="preflight_intro">%1$s 기준으로 확인했습니다:</string>
+    <string name="preflight_continue">그래도 내보내기</string>
+    <string name="preflight_cancel">취소</string>
+</resources>

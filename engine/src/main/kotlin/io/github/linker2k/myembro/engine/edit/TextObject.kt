@@ -5,6 +5,7 @@ import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.engine.lettering.SatinOptions
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 
@@ -38,6 +39,7 @@ data class TextObject(
     /** Also true for imported single-line SVGs stored as precomputed contours. */
     val singleLine: Boolean = fontKind == FontKind.HERSHEY,
     val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.RUNNING,
+    val satinOptions: SatinOptions = SatinOptions(),
 ) : DesignObject {
     init {
         require(lineSpacing.isFinite() && lineSpacing >= 1.0)
@@ -52,12 +54,13 @@ data class TextObject(
     private val pattern: EmbPattern by lazy {
         when (fontKind) {
             FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
-                lineSpacing = lineSpacing, alignment = alignment, arcRadiusMm = arcRadiusMm, characterThreads = characterThreads, stitchStyle = stitchStyle)
+                lineSpacing = lineSpacing, alignment = alignment, arcRadiusMm = arcRadiusMm, characterThreads = characterThreads,
+                stitchStyle = stitchStyle, satinOptions = satinOptions)
             FontKind.OUTLINE -> LetteringEngine.fromContours(
                 contours, heightMm, arcDeg = arcDeg, thread = thread,
                 baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
                 contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
-                contourBaselines = contourBaselines, stitchStyle = stitchStyle,
+                contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = satinOptions,
             )
         }
     }

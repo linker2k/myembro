@@ -13,6 +13,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.export.ExportChecks
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
@@ -162,6 +163,13 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         exportMessage = app.getString(R.string.export_failed, error.message ?: app.getString(R.string.export_unknown_error))
     }
 
+    /** Machine warnings for the file save/share would produce; empty when nothing to check. */
+    fun preflight(): List<String> {
+        val request = exportRequest() ?: return emptyList()
+        val pattern = render?.pattern ?: return emptyList()
+        return ExportChecks.check(pattern, request.fileName, settingsPreferences.read())
+    }
+
     private fun exportRequest(): ExportRequest? {
         if (!canExport) return null
         val source = sourceBytes ?: return null
@@ -181,7 +189,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 val result = withContext(Dispatchers.IO) {
                     // Normalize/encode before opening the destination, so validation errors
                     // cannot truncate an existing document. Encoding and all writes run on IO.
-                    write(PesExport.prepare(request.source, request.sourceName).bytes)
+                    val settings = settingsPreferences.read().writeSettings
+                    write(PesExport.prepare(request.source, request.sourceName, settings).bytes)
                 }
                 onSuccess(result)
             } catch (cancelled: CancellationException) {

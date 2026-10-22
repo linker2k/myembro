@@ -16,6 +16,8 @@ import io.github.linker2k.myembro.ui.machines.FrameCatalog
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
+import io.github.linker2k.myembro.engine.io.PesVersion
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.ui.theme.ThemeMode
 import io.github.linker2k.myembro.ui.theme.applyPlatformThemeMode
 
@@ -29,10 +31,13 @@ data class EmbroiderySettings(
     val machineModel: String = MachineProfiles.default.displayName,
     val defaultHoop: Hoop = Hoop.H100,
     val threadBrand: ThreadBrand = ThreadBrand.BROTHER,
+    /** v1 stays the default until a v6 file is confirmed on a real SE400 (docs/machines.md). */
+    val pesVersion: PesVersion = PesVersion.V1,
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val customFrames: List<CustomFrame> = emptyList(),
     val defaultFrameId: String? = null,
 ) {
+    val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val frames: List<FrameOption> get() = FrameCatalog.options(customFrames)
     val defaultFrame: FrameOption get() = frames.firstOrNull { it.id == defaultFrameId }
@@ -56,6 +61,8 @@ class SettingsPreferences(context: Context) {
         defaultHoop = Hoop.entries.firstOrNull { it.name == preferences.getString("default_hoop", null) } ?: Hoop.H100,
         threadBrand = ThreadBrand.entries.firstOrNull { it.name == preferences.getString("thread_brand", null) }
             ?: ThreadBrand.BROTHER,
+        pesVersion = PesVersion.entries.firstOrNull { it.name == preferences.getString("pes_version", null) }
+            ?: PesVersion.V1,
         themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
         customFrames = CustomFrameCodec.decode(preferences.getString("custom_frames", null)),
         defaultFrameId = preferences.getString("default_frame_id", null),
@@ -74,6 +81,10 @@ class SettingsPreferences(context: Context) {
 
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.edit().putString("thread_brand", brand.name).apply()
+    }
+
+    fun setPesVersion(version: PesVersion) {
+        preferences.edit().putString("pes_version", version.name).apply()
     }
 
     fun setThemeMode(mode: ThemeMode) {
@@ -141,6 +152,11 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setThreadBrand(brand: ThreadBrand) {
         preferences.setThreadBrand(brand)
         settings = settings.copy(threadBrand = brand)
+    }
+
+    fun setPesVersion(version: PesVersion) {
+        preferences.setPesVersion(version)
+        settings = settings.copy(pesVersion = version)
     }
 
     fun setThemeMode(mode: ThemeMode) {

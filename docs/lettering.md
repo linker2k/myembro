@@ -328,3 +328,88 @@ val singleLine = LetteringEngine.fromContours(
 
 검증은 콩땀의 앞·뒤·앞 좌표와 땀 수, 원호·다색 윤곽의 분리 및 땀 길이,
 양 스타일의 프로젝트 왕복, 이전 파일 기본값, PES 저장·재읽기 좌표를 포함한다.
+
+## Phase 3b: 기본 새틴 컬럼
+
+`SatinColumn.generate(leftRail, rightRail, options, thread)`는 순수 Kotlin API다.
+두 폴리라인은 **mm**, +y 아래 좌표이며 출력은 중심 정렬한 0.1mm `EmbPattern`이다.
+같은 방향의 레일을 정규화된 호 길이로 짝짓고, 열린 레일의 방향이 반대면 끝점 거리로
+자동 반전한다. 레일의 점 수나 샘플링 간격이 같을 필요는 없다.
+
+```kotlin
+val options = SatinOptions(
+    widthMm = 3.0,                 // 단선 → 새틴 변환의 폭
+    densityMm = 0.4,
+    maxStitchLengthMm = 7.0,
+    pullCompensationMm = 0.2,
+    centerUnderlay = true,
+    zigzagUnderlay = true,
+)
+val column = SatinColumn.generate(
+    leftRail = listOf(0.0 to 0.0, 0.0 to 10.0),
+    rightRail = listOf(3.0 to 0.0, 3.0 to 10.0),
+    options = options,
+)
+val curvedStroke = SatinColumn.strokeToSatin(centerlineMm, widthMm = 3.0, options = options)
+val lettering = LetteringEngine.generate("Name", stitchStyle = StitchStyle.SATIN, satinOptions = options)
+val editable = TextObject("label", text = "Name", stitchStyle = StitchStyle.SATIN, satinOptions = options)
+```
+
+- 밀도는 **같은 쪽 레일의 땀 사이 간격**이다. 기본 0.4mm이며 반 주기씩 번갈아
+  찍고 마지막 레일 쌍을 포함한다. 두 레일 중 긴 쪽의 길이로 주기 수를 정하므로
+  짧은 쪽은 더 촘촘해질 수 있다. 10mm 직선·4mm 폭은 본 새틴 52땀이다.
+- 폭은 두 레일 사이 거리이며 `widthMm`은 `strokeToSatin`/레터링의 중심선 오프셋에
+  사용한다. 직접 두 레일을 전달할 때는 그 레일이 폭을 결정한다.
+  당김 보정은 본 새틴의 **양쪽에 각각** 더한다(3mm 폭 + 0.2mm 보정 → 3.4mm).
+- 최대 땀 길이는 기본 7mm, 설정 범위 0.2~7mm다. 폭뿐 아니라 대각 이동까지
+  검사해 긴 땀을 균등 분할하고, 정수화 오차가 상한을 넘으면 다시 나눈다.
+  SATIN에서는 `stitchLengthMm` 대신 `satinOptions.maxStitchLengthMm`를 사용한다.
+- 센터 언더레이는 중심선을 왕복한다. 지그재그 언더레이는 원래 폭의 60%, 기본
+  1.5mm 간격으로 수놓고 중심선으로 복귀한다. 언더레이의 목표 땀 길이는 2.5mm다.
+  두 언더레이와 본 새틴은 한 컬럼 안에서 점프·트림 없이 연결한다.
+  서로 다른 글자 획 사이의 trim/jump 및 글자별 실 변경은 기존 계약을 유지한다.
+- 곡선은 미리 평탄화된 중심선의 법선을 따라 레일을 만든다. 꼭짓점은 miter로
+  연결하고 급각에서 반폭의 2배로 제한한다. 열린 끝은 butt 형태, 닫힌 선은
+  레일의 시작/끝을 닫는다. 복잡한 교차·아주 작은 곡률의 오프셋 겹침 제거,
+  수동 rung 방향 제어·단축 땀·자동 새틴 라우팅은 이 기본 구현에 포함하지 않는다.
+- 단선 SVG는 `TextObject(singleLine = true, fontKind = OUTLINE, contours = ...)`에
+  SATIN과 옵션을 지정한다. `fromContours(..., stitchStyle = SATIN)`도 각 경로를
+  **중심선**으로 해석한다. 외곽선 글꼴의 내부를 채우는 기능은 아니다.
+- 새 텍스트의 기본값은 여전히 BEAN이며 새틴은 명시적으로 선택한다.
+  `TextObject.satinOptions`의 모든 값은 `.myembro`에 보존되고, 이전 파일에는
+  기본 옵션을 적용한다. 이 단계는 엔진 API이며 새틴 조절 UI는 추가하지 않았다.
+
+개념 참고: [Ink/Stitch 공식 새틴 컬럼 문서](https://inkstitch.org/docs/stitches/satin-column/).
+출처·라이선스 및 독립 구현 범위는 `THIRD_PARTY_NOTICES.md`에 기록했다.
+
+### SA431 소형 후프 검증
+
+후프는 크기를 하드코딩하지 않고 `HoopSpec`의 실제 좌표를 사용한다. SA431의
+약 60×20mm 가로 배치(`HoopSpec("SA431", 600, 200)`)와 20×60mm 세로 배치를
+테스트했다. 미리보기의 점선 사각형은 실제 봉제 영역이며 비율을 유지한다.
+글자 맞춤 확대는 좌/우 배치된 글자의 경계 중심도 따라가므로 화면 밖으로 밀리지 않는다.
+후프 초과 판단은 표시 배율과 무관하게 실제 스티치 좌표로 수행한다.
+
+높이 10mm, 두께 0.5mm 합성 글리프는 소형 후프 안에 들어가도 품질 UNSUITABLE과
+권장 높이 24mm를 그대로 보고한다. 권장 높이를 후프 크기에 맞춰 낮추지 않는다.
+24mm로 키우면 가로 배치의 20mm 높이를 초과하며, 세로 배치에서는 들어가는 것도
+검증했다. 권장 높이 경고는 품질 기준이며 실제 후프 초과 안내와 별도로 표시한다.
+
+## 폰트 라이브러리 연결
+
+`글꼴 더 보기`는 `MainActivity`에서 `FontLibraryScreen(onBack, onPick)`을 레터링 화면 **위에 겹쳐**
+연다(레터링 입력 상태 유지). `onPick`의 ID는 `initialFontId`로 돌아간다. 카탈로그 ID 또는
+사용자 폰트 `user:<uuid>`이며, `LetteringRenderer.loadFont`는 `FontRepository.find` 다음에
+`FontRepository.userFont`를 찾는다. 사용자 폰트의 캐시 revision은 파일 크기·수정 시각이다.
+다운로드·삭제·사용자 폰트 삭제 시 `FontQualityCache.Shared.invalidate(id)`를 호출한다.
+
+- 카탈로그: `assets/fonts/catalog.json` 15종, 고정 커밋 URL, 다운로드 바이트의 SHA-256·크기를
+  검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로 함께 저장한다(https만, 32MB 상한).
+- 내 폰트: SAF로 TTF/OTF/SVG를 `filesDir/fonts/user/`에 복사하고 파싱·글리프 검사 후
+  `가나다 ABC 자수` 10/20mm 품질 결과를 `<파일>.quality.json`(분석 버전 4)에 저장한다.
+- 품질: 앱의 `FontQualityGateway`가 엔진 `FontQuality.analyze`를 감싼다. 외곽선은 그대로 넘긴다.
+  단선은 의도한 교차·이음·되짚기를 엔진이 0mm 간격으로 보므로, 다른 획과 글자 높이의 2.5% 안으로
+  닿는 지점 주변(높이의 20%)을 잘라낸 뒤 측정한다. 땀·점프 수는 자르지 않은 획 기준이다.
+  같은 획의 조각끼리는 비교하지 않도록 닿는 조각과 닫힌 고리를 처리한다. 두 비율이 높이에 비례하므로
+  권장 높이가 측정 높이와 무관하다(Hershey Sans 전체 영숫자 10mm: 12.1mm, 20mm: 12.2mm).
+  권장 높이가 300mm를 넘으면(겹친 윤곽의 µm 간격) "확대로 해결 불가"로 표시한다.

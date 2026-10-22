@@ -5,6 +5,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +14,10 @@ import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
+import io.github.linker2k.myembro.ui.machines.MachineHoop
+import io.github.linker2k.myembro.export.ExportChecks
+import kotlinx.coroutines.channels.Channel
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -21,16 +26,88 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
-    private var session = EditorSession()
+    private val documents = EditorDocuments()
+    private val session get() = documents.session
+    private val preferences = SettingsPreferences(app)
+    var settings by mutableStateOf(preferences.read())
+        private set
+    private val stopObserving = preferences.observe { settings = preferences.read() }
+    val availableHoops get() = editorHoops(settings.machineProfile)
+    val multiPositionFrames get() = settings.machineProfile?.hoops.orEmpty().filter { it.requiresRepositioning }
+    val multiPositionFrame get() = multiPositionFrames.firstOrNull { it.coverage.sameArea(project.hoop) }
+    var sewingPositions by mutableStateOf<List<SewingPosition>>(emptyList())
+        private set
+    internal val positionFit get() = if (sewingPositions.isEmpty()) EditorPositionFit(emptySet(), emptySet()) else project.positionFit(sewingPositions)
+    fun configureSewingPositions(positions: List<SewingPosition>) {
+        sewingPositions = positions.takeIf { multiPositionFrame != null && validEditorPositions(project.hoop, it) }?.toList().orEmpty()
+    }
+    fun setMultiPositionFrame(frame: MachineHoop) {
+        if (interactionBlocked || gestureInProgress) return
+        val supported = multiPositionFrames.firstOrNull { it == frame } ?: return
+        if (project.hoop.sameArea(supported.coverage)) return
+        sewingPositions = emptyList()
+        edit(project.copy(hoop = supported.coverage))
+    }
+    internal fun prepareMultiPositionExport(onReady: (EditorSplitPreview) -> Unit) {
+        if (interactionBlocked || gestureInProgress || multiPositionFrame == null || sewingPositions.isEmpty()) return
+        val snapshot = project
+        val positions = sewingPositions.toList()
+        busy = true
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val split = MultiPositionSplitter.split(snapshot, positions)
+                    if (split.errors.isNotEmpty()) throw EditorExportBlocked(split.errors.take(8).map { it.message })
+                    val problems = split.parts.flatMap { part ->
+                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read())
+                    }
+                    if (problems.isNotEmpty()) throw EditorExportBlocked(problems.distinct())
+                    require(split.parts.isNotEmpty()) { getApplication<Application>().getString(R.string.editor_empty_export) }
+                    split
+                }
+                onReady(EditorSplitPreview(snapshot, positions, result))
+            } catch (e: CancellationException) { throw e
+            } catch (e: EditorExportBlocked) { exportProblems = e.problems
+            } catch (e: Exception) { report(R.string.editor_save_failed, e)
+            } finally { busy = false }
+        }
+    }
+    val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null
+    private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"))
+    private val draftWrites = Channel<Project?>(Channel.CONFLATED)
+    private var draftLoading by mutableStateOf(true)
+    private var deferredEntry: (() -> Unit)? = null
+    private var lastDraft: Project? = null
+    private var draftQueued = false
+    var recoveryProject by mutableStateOf<Project?>(null)
+        private set
+    var dirty by mutableStateOf(false)
+        private set
+    var replacementRequested by mutableStateOf(false)
+        private set
+    var exportProblems by mutableStateOf<List<String>?>(null)
+        private set
     private var gestureDraft: Project? = null
     private var targets = SnapTargets(emptyList(), emptyList())
     private val library = DesignLibrary(app)
     private val projectDir get() = File(getApplication<Application>().filesDir, "projects")
     var project by mutableStateOf(session.project)
         private set
+    var letteringOpen by mutableStateOf(false)
+        private set
+    var letteringTargetId by mutableStateOf<String?>(null)
+        private set
+    val letteringObject: TextObject? get() = letteringTargetId?.let { project.find(it) as? TextObject }
+    var undoSteps by mutableIntStateOf(0)
+        private set
+    var redoSteps by mutableIntStateOf(0)
+        private set
+    val undoEnabled get() = canUndo && !interactionBlocked && !gestureInProgress && !letteringOpen
+    val redoEnabled get() = canRedo && !interactionBlocked && !gestureInProgress && !letteringOpen
     var selectedIds by mutableStateOf<Set<String>>(emptySet())
         private set
-    val hoopOverflowVisible: Boolean get() = session.showsHoopOverflow
+    val hoopOverflowVisible: Boolean get() = !gestureInProgress &&
+        (session.showsHoopOverflow || (multiPositionFrame != null && positionFit.outsideIds.isNotEmpty()))
     val selectedId: String? get() = selectedIds.lastOrNull()
     val selected: DesignObject? get() = selectedId?.let(project::find)
     var selectionMode by mutableStateOf(false)
@@ -55,7 +132,84 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     var lastSavedFile by mutableStateOf<File?>(null)
         private set
 
-    init { refreshDesigns() }
+    init {
+        refreshDesigns()
+        // A single writer serializes saves/deletes; an older write cannot resurrect a discarded draft.
+        viewModelScope.launch(Dispatchers.IO) {
+            for (snapshot in draftWrites) {
+                try { draftStore.write(snapshot) }
+                catch (e: Exception) { withContext(Dispatchers.Main) { report(R.string.editor_draft_failed, e) } }
+            }
+        }
+        viewModelScope.launch {
+            try { recoveryProject = withContext(Dispatchers.IO) { draftStore.read() } }
+            catch (e: Exception) { report(R.string.editor_draft_failed, e) }
+            finally {
+                draftLoading = false
+                if (recoveryProject == null) resumeDeferredEntry()
+            }
+        }
+    }
+    override fun onCleared() { stopObserving(); draftWrites.close() }
+
+    private fun queueDraft() {
+        if (draftLoading || recoveryProject != null || session.isGesturing) return
+        val snapshot = project.takeIf { documents.dirty }
+        if (!draftQueued || snapshot != lastDraft) {
+            draftQueued = true
+            lastDraft = snapshot
+            draftWrites.trySend(snapshot)
+        }
+    }
+    private fun resumeDeferredEntry() {
+        val action = deferredEntry
+        deferredEntry = null
+        action?.let(::requestReplacement)
+    }
+    private fun requestReplacement(action: () -> Unit) {
+        if (busy || gestureInProgress || replacementRequested) return
+        if (draftLoading || recoveryProject != null) { deferredEntry = action; return }
+        documents.requestReplacement(action)
+        replacementRequested = documents.needsDecision
+    }
+    fun leave(onBack: () -> Unit) = requestReplacement {
+        replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)), savedOnDisk = true)
+        onBack()
+    }
+    fun cancelReplacement() { documents.cancelReplacement(); replacementRequested = false }
+    fun discardAndContinue() {
+        if (busy || gestureInProgress) return
+        replacementRequested = false
+        documents.continueReplacement()
+    }
+    fun saveAndContinue() {
+        if (!replacementRequested) return
+        saveProject("myembro-${System.currentTimeMillis()}", afterSave = ::discardAndContinue)
+    }
+    fun restoreDraft() {
+        val recovered = recoveryProject ?: return
+        deferredEntry = null // Recovery takes precedence over an incoming empty/new design request.
+        recoveryProject = null
+        replaceSession(recovered, savedOnDisk = false)
+    }
+    fun discardDraft() {
+        recoveryProject = null
+        draftQueued = false
+        queueDraft()
+        resumeDeferredEntry()
+    }
+    fun dismissExportProblems() { exportProblems = null }
+    private fun replaceSession(loaded: Project, savedOnDisk: Boolean, selection: Set<String> = emptySet()) {
+        documents.replaceAfterRead(savedOnDisk) { loaded }
+        gestureDraft = null
+        selectedIds = selection
+        selectionMode = false
+        dismissLettering()
+        snapGuides = SnapGuides()
+        sync()
+    }
+    private fun supportedHoop(requested: HoopSpec) =
+        availableHoops.firstOrNull { it.sameArea(requested) } ?: availableHoops.firstOrNull() ?: HoopSpec.H100
 
     fun refreshDesigns() {
         viewModelScope.launch { designs = withContext(Dispatchers.IO) { library.list() } }
@@ -68,46 +222,39 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         gestureInProgress = session.isGesturing
         canUndo = session.canUndo
         canRedo = session.canRedo
+        undoSteps = session.history.undoCount
+        redoSteps = session.history.redoCount
         selectedIds = selectedIds.filterTo(linkedSetOf()) { project.find(it)?.visible == true }
+        dirty = documents.dirty
+        replacementRequested = documents.needsDecision
+        queueDraft()
     }
-    fun newProject(hoop: HoopSpec = HoopSpec.H100) {
-        session = EditorSession(Project(hoop = hoop))
-        gestureDraft = null
-        selectedIds = emptySet()
-        selectionMode = false
-        snapGuides = SnapGuides()
-        sync()
+    fun newProject(hoop: HoopSpec = HoopSpec.H100) = requestReplacement {
+        replaceSession(Project(hoop = supportedHoop(hoop)), savedOnDisk = true)
     }
-    /** Lettering entry point: like [editDesign], the object is the baseline, not an undoable add. */
-    fun startWith(obj: DesignObject, hoop: HoopSpec) {
-        if (busy || gestureInProgress) return
-        newProject(hoop)
-        session = EditorSession(Project(hoop = hoop).add(obj))
-        selectedIds = setOf(obj.id)
-        sync()
+    /** Imported lettering is an unsaved baseline, while its History starts with zero undo steps. */
+    fun startWith(obj: DesignObject, hoop: HoopSpec) = requestReplacement {
+        replaceSession(Project(hoop = supportedHoop(hoop)).add(obj), savedOnDisk = false, selection = setOf(obj.id))
     }
 
     private fun importObject(file: File) = StitchObject.fromBytes(UUID.randomUUID().toString(),
         file.nameWithoutExtension, file.readBytes(), file.name)
 
     /** Viewer entry point: its initial object is the baseline, not an undoable import. */
-    fun editDesign(file: File) {
-        if (busy || gestureInProgress) return
-        newProject()
+    fun editDesign(file: File) = requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
                 val obj = withContext(Dispatchers.IO) { importObject(file) }
-                session = EditorSession(Project().add(obj))
-                selectedIds = setOf(obj.id)
-                sync()
+                replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)).add(obj),
+                    savedOnDisk = false, selection = setOf(obj.id))
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_load_failed, e)
             } finally { busy = false }
         }
     }
     private fun edit(next: Project) {
-        if (gestureInProgress) return
+        if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return
         session.commit(next)
         sync()
     }
@@ -131,11 +278,42 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun selectAll() { if (gestureInProgress) return; selectedIds = project.objects.filter { it.visible }.mapTo(linkedSetOf()) { it.id } }
     fun clearSelection() { if (gestureInProgress) return; selectedIds = emptySet() }
     fun toggleSnap() { if (gestureInProgress) return; snapEnabled = !snapEnabled; snapGuides = SnapGuides() }
-    fun setHoop(hoop: HoopSpec) = edit(project.copy(hoop = hoop))
-    fun undo() { if (busy || gestureInProgress) return; session.undo(); sync() }
-    fun redo() { if (busy || gestureInProgress) return; session.redo(); sync() }
+    fun setHoop(hoop: HoopSpec) {
+        if (interactionBlocked || gestureInProgress) return
+        val supported = availableHoops.firstOrNull { it.sameArea(hoop) } ?: return
+        if (project.hoop.sameArea(supported)) return
+        sewingPositions = emptyList()
+        edit(project.copy(hoop = supported))
+    }
+    fun undo(): Boolean {
+        val changed = session.stepHistory(redo = false, blocked = interactionBlocked || letteringOpen)
+        sync()
+        return changed
+    }
+    fun redo(): Boolean {
+        val changed = session.stepHistory(redo = true, blocked = interactionBlocked || letteringOpen)
+        sync()
+        return changed
+    }
+    fun openLettering(id: String? = null) {
+        if (interactionBlocked || gestureInProgress || (id != null && (project.find(id) !is TextObject || project.find(id)?.visible != true))) return
+        letteringTargetId = id
+        letteringOpen = true
+    }
+    fun dismissLettering() { letteringOpen = false; letteringTargetId = null }
+    fun commitLettering(obj: TextObject): Boolean {
+        if (busy || gestureInProgress || !letteringOpen) return false
+        val target = letteringTargetId
+        val next = project.withLettering(obj, target)
+        if (target != null && next === project) return false
+        edit(next)
+        selectedIds = setOf(target ?: next.objects.last().id)
+        selectionMode = false
+        dismissLettering()
+        return true
+    }
     fun beginGesture() {
-        if (gestureDraft != null) return
+        if (interactionBlocked || gestureDraft != null) return
         session.beginGesture()
         gestureDraft = project
         targets = project.snapTargets(selectedIds)
@@ -200,7 +378,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         if (duringGesture) { session.updateGesture(next); sync() } else edit(next)
     }
     fun addDesign(file: File) {
-        if (busy || gestureInProgress) return
+        if (interactionBlocked || gestureInProgress) return
         busy = true
         viewModelScope.launch {
             try {
@@ -220,26 +398,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         getApplication<Application>().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
             ?: error(getApplication<Application>().getString(R.string.editor_project_read_error))
     }
-    private fun loadProject(read: () -> String) {
-        if (busy || gestureInProgress) return
+    private fun loadProject(read: () -> String) = requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
                 val loaded = withContext(Dispatchers.IO) { ProjectJson.decode(read()) }
-                edit(loaded) // Opening is reversible, so an existing composition is never lost.
-                selectedIds = emptySet()
-                selectionMode = false
+                replaceSession(loaded, savedOnDisk = true)
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_open_failed, e)
             } finally { busy = false }
         }
     }
-    fun saveProject(name: String, uri: Uri? = null) {
+    fun saveProject(name: String, uri: Uri? = null, afterSave: (() -> Unit)? = null) {
         if (busy || gestureInProgress) return
         endGesture()
         val snapshot = project
         busy = true
         viewModelScope.launch {
+            var savedSuccessfully = false
             try {
                 val savedName = withContext(Dispatchers.IO) {
                     if (uri == null) saveProjectSnapshot(projectDir, name, snapshot).name
@@ -251,16 +427,20 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 projectFiles = withContext(Dispatchers.IO) { listProjectFiles(projectDir) }
+                documents.markSaved(snapshot)
+                sync()
                 message = getApplication<Application>().getString(R.string.editor_project_saved, savedName)
+                savedSuccessfully = true
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_save_failed, e)
             } finally { busy = false }
+            if (savedSuccessfully) afterSave?.invoke()
         }
     }
 
     /** Exports a snapshot atomically, without overwriting any library design. */
     fun save() {
-        if (busy || gestureInProgress || project.objects.none { it.visible }) return
+        if (interactionBlocked || gestureInProgress || project.objects.none { it.visible }) return
         endGesture()
         val snapshot = project
         viewModelScope.launch {
@@ -269,7 +449,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 val saved = withContext(Dispatchers.IO) {
                     val pattern = snapshot.flatten()
                     require(pattern.stitchCount > 0) { getApplication<Application>().getString(R.string.editor_empty_export) }
-                    val bytes = PesWriter.write(pattern)
+                    val exportSettings = preferences.read() // Re-read immediately before writing.
+                    val problems = editorExportProblems(snapshot, exportSettings, "myembro.pes")
+                    if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
+                    val bytes = PesWriter.write(pattern, exportSettings.writeSettings)
                     val dir = File(getApplication<Application>().filesDir, "designs").apply { mkdirs() }
                     val name = PesExport.uniqueName("myembro-${System.currentTimeMillis()}.pes") { File(dir, it).exists() }
                     val target = File(dir, name)
@@ -284,9 +467,21 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 designs = withContext(Dispatchers.IO) { library.list() }
                 message = getApplication<Application>().getString(R.string.editor_saved, saved.name)
             } catch (e: CancellationException) { throw e
+            } catch (e: EditorExportBlocked) {
+                exportProblems = e.problems.map { problem ->
+                    val resource = when (problem) {
+                        "machine_unknown" -> R.string.editor_machine_unknown
+                        "hoop_unsupported" -> R.string.editor_hoop_unsupported
+                        "hoop_overflow" -> R.string.editor_outside
+                        else -> null
+                    }
+                    resource?.let { getApplication<Application>().getString(it) } ?: problem
+                }
             } catch (e: Exception) {
                 message = getApplication<Application>().getString(R.string.editor_save_failed, e.localizedMessage.orEmpty())
             } finally { busy = false }
         }
     }
 }
+
+private class EditorExportBlocked(val problems: List<String>) : Exception()

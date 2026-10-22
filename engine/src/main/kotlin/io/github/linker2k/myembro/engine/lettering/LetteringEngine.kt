@@ -23,6 +23,8 @@ object LetteringEngine {
      * angle magnitude with a physical radius, retaining the angle's direction.
      * [characterThreads] indices count code points after CR/LF and tab normalization.
      * Single-line Hershey defaults to [StitchStyle.BEAN]; select RUNNING for one pass.
+     * SATIN offsets each bent stroke by [satinOptions]' width; its separate maximum
+     * stitch length replaces [stitchLengthMm] for this style only.
      * Unsupported Unicode code points become '?' and are reported in warnings.
      */
     fun generate(
@@ -39,6 +41,7 @@ object LetteringEngine {
         arcRadiusMm: Double? = null,
         characterThreads: Map<Int, EmbThread> = emptyMap(),
         stitchStyle: StitchStyle = StitchStyle.BEAN,
+        satinOptions: SatinOptions = SatinOptions(),
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         require(spacing.isFinite() && spacing >= 0) { "spacing must be finite and non-negative" }
@@ -48,7 +51,7 @@ object LetteringEngine {
         val font = HersheyFont.load(fontId)
         val scale = heightMm * 10 / font.capHeight
         val gap = spacing * 10
-        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes)
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, stitchStyle = stitchStyle, satinOptions = satinOptions)
         val missing = linkedSetOf<Int>()
         val lines = text.replace("\r\n", "\n").replace('\r', '\n').split('\n')
         val allGlyphs = lines.map { line -> line.replace("\t", "    ").codePoints().toArray().map { code ->
@@ -105,6 +108,8 @@ object LetteringEngine {
      * contour count; baselines preserve line offsets after bending each line separately.
      * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
      * [stitchStyle] defaults to RUNNING for outlines; use BEAN for imported single-line paths.
+     * SATIN treats each supplied contour as a centerline, using [satinOptions]. It does
+     * not infer centerlines or fill the inside of an outline font.
      */
     fun fromContours(
         contours: List<List<Pair<Double, Double>>>,
@@ -122,6 +127,7 @@ object LetteringEngine {
         contourThreads: List<EmbThread> = emptyList(),
         contourBaselines: List<Double> = emptyList(),
         stitchStyle: StitchStyle = StitchStyle.RUNNING,
+        satinOptions: SatinOptions = SatinOptions(),
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         validateRadius(arcRadiusMm)
@@ -136,7 +142,7 @@ object LetteringEngine {
         }
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
         val paths = contours.filter { it.size >= 2 }
-        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm)
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
         if (paths.isEmpty()) return builder.finish(thread)
         val points = paths.flatten()
         val minX = points.minOf { it.first }
@@ -194,14 +200,16 @@ object LetteringEngine {
 }
 
 /** Shared machine-coordinate sampler, keeping jumps separate from sewn segments. */
-private class RunningStitches(
+internal class RunningStitches(
     stitchLengthMm: Double,
     private val trimBetweenStrokes: Boolean,
     private val mergeToleranceMm: Double = 0.05,
     private val simplifyPaths: Boolean = true,
     private val minSegmentMm: Double = 0.0,
+    private val stitchStyle: StitchStyle = StitchStyle.RUNNING,
+    private val satinOptions: SatinOptions = SatinOptions(),
 ) {
-    private val maxLength = stitchLengthMm * 10
+    private val maxLength = (if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm) * 10
     private val stitches = arrayListOf<Stitch>()
     private val threads = arrayListOf<EmbThread>()
 
@@ -219,7 +227,11 @@ private class RunningStitches(
                 listOf(points.map { (x, y) -> x / 10 to y / 10 }), mergeToleranceMm, minSegmentMm,
             ).single().map { (x, y) -> x * 10 to y * 10 }
         } else points
-        val sampled = reduced.map { (x, y) -> quantize(x, y) }
+        val path = if (stitchStyle == StitchStyle.SATIN) {
+            SatinColumn.strokePoints(reduced.map { (x, y) -> x / 10 to y / 10 }, satinOptions)
+                .map { (x, y) -> x * 10 to y * 10 }
+        } else reduced
+        val sampled = path.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return
         val changesColor = thread != null && threads.isNotEmpty() && !threads.last().sameThread(thread)
         if (stitches.isNotEmpty() && (trimBetweenStrokes || changesColor)) stitches += stitches.last().copy(command = Command.TRIM)

@@ -20,6 +20,7 @@ import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
+import io.github.linker2k.myembro.export.ExportChecks
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -201,8 +202,47 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Starts exporting [files] (default: the selection) to a USB drive, asking for access if needed. */
+    /** Machine warnings waiting for the user before a USB export; the host shows them. */
+    var preflightWarnings by mutableStateOf<List<String>?>(null)
+        private set
+    private var preflightFiles: List<File> = emptyList()
+
+    /**
+     * Starts exporting [files] (default: the selection) to a USB drive, asking for access if needed.
+     * Designs are first checked against the machine in settings.
+     */
     fun exportToUsb(files: List<File> = selection.toList()) {
+        if (files.isEmpty() || busy) return
+        viewModelScope.launch {
+            val settings = SettingsPreferences(getApplication()).read()
+            val warnings = withContext(Dispatchers.IO) {
+                files.flatMap { file ->
+                    val pattern = runCatching { PatternReader.read(file.readBytes(), file.name) }.getOrNull()
+                        ?: return@flatMap emptyList()
+                    val name = "${file.nameWithoutExtension}.pes"
+                    ExportChecks.check(pattern, name, settings, files.size).map { "$name: $it" }
+                }
+            }
+            // The batch-size warning repeats for every file; keep one copy without the file prefix.
+            val batch = warnings.map { it.substringAfter(": ") }.groupingBy { it }.eachCount()
+                .filterValues { it == files.size && files.size > 1 }.keys
+            val shown = batch.toList() + warnings.filterNot { it.substringAfter(": ") in batch }
+            if (shown.isEmpty()) startUsbExport(files) else { preflightFiles = files; preflightWarnings = shown }
+        }
+    }
+
+    fun confirmPreflight() {
+        val files = preflightFiles
+        cancelPreflight()
+        startUsbExport(files)
+    }
+
+    fun cancelPreflight() {
+        preflightWarnings = null
+        preflightFiles = emptyList()
+    }
+
+    private fun startUsbExport(files: List<File>) {
         if (files.isEmpty()) return
         refreshDrives()
         val res = getApplication<Application>().resources
@@ -250,7 +290,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             busy = true
             val res = getApplication<Application>().resources
-            message = runCatching { withContext(Dispatchers.IO) { usb.export(folder, files) } }.fold(
+            val settings = SettingsPreferences(getApplication()).read().writeSettings
+            message = runCatching { withContext(Dispatchers.IO) { usb.export(folder, files, settings) } }.fold(
                 onSuccess = { r ->
                     when {
                         r.failures.isEmpty() -> res.getString(R.string.usb_exported, r.exported.size, drive.label)

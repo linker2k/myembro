@@ -13,6 +13,7 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.FontRepository
+import io.github.linker2k.myembro.fonts.LetterFont
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -78,16 +79,22 @@ private fun loadFont(context: Context, id: String): LoadedFont {
     val bundled = bundledLetteringFonts.firstOrNull { it.id == id }
     val repo = FontRepository(context)
     val installed = if (bundled == null) repo.find(id) else null
+    val user = if (bundled == null && installed == null) repo.userFont(id) else null
     val face = when {
         bundled != null -> context.resources.getFont(bundled.resource)
         installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(installed)
+        user?.kind == LetterFont.Kind.OUTLINE -> repo.userTypeface(user)
         else -> null
     }
-    val svg = if (installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG) repo.svgFont(installed) else null
+    val svg = when {
+        installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(installed)
+        user?.kind == LetterFont.Kind.SINGLE_LINE_SVG -> repo.userSvgFont(user)
+        else -> null
+    }
     val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
     check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
-    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: "bundled-v1") + ":glyph-extractor-v2",
-        bundled?.name ?: installed?.nameKo ?: installed?.name ?: if (hershey != null) "Hershey Futural" else id)
+    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: user?.let(repo::userRevision) ?: "bundled-v1") + ":glyph-extractor-v2",
+        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id)
 }
 
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
@@ -149,7 +156,6 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val pattern = placed.placedPattern()
     val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
     val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
-    val b = pattern.bounds
-    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 || b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
+    val outside = letteringOutsideHoop(pattern, hoop)
     return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
 }

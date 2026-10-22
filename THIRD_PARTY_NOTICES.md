@@ -3,6 +3,17 @@
 myembro is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). It contains code
 derived from the following projects, whose notices are reproduced as their licenses require.
 
+## Ink/Stitch satin-column conceptual reference
+
+- Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),
+  consulted 2026-10-22: paired rails, same-rail zigzag spacing, per-side pull compensation,
+  maximum-length split stitches, center-walk and zigzag underlay.
+- Project/source: https://github.com/inkstitch/inkstitch;
+  [upstream GPL v3 license](https://github.com/inkstitch/inkstitch/blob/main/LICENSE).
+- `engine/.../lettering/SatinColumn.kt` is an independent Kotlin implementation under
+  this repository's GPL-3.0-or-later license. No Ink/Stitch source code, images, font
+  data, or other assets were copied or bundled; no remote code was executed.
+
 ## pyembroidery
 
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)
@@ -387,3 +398,23 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - License: Apache License 2.0, full text packaged in
   `app/src/main/assets/licenses/androidx_browser_APACHE-2.0.txt`.
 - Source/release: https://developer.android.com/jetpack/androidx/releases/browser#1.8.0
+
+
+## JTS Topology Suite (core)
+
+- Dependency: `org.locationtech.jts:jts-core:1.20.0`, unmodified JVM library.
+- Source: https://github.com/locationtech/jts/tree/1.20.0 (tag commit `6e95fe8`).
+- Upstream offers EPL-2.0 OR EDL-1.0. myembro selects **EDL-1.0**, the revised
+  BSD-style alternative, for this dependency; see the upstream licensing FAQ:
+  https://github.com/locationtech/jts/blob/1.20.0/FAQ-LICENSING.md .
+- Copyright (c) 2007, Eclipse Foundation, Inc. and its licensors. All rights reserved.
+  Source notices include Vivid Solutions, Martin Davis, other JTS contributors and
+  INRIA Prisme Project (RobustDeterminant, relicensed with Olivier Devillers' permission).
+- Full EDL text, upstream licensing overview and source copyright inventory are packaged
+  in the engine JAR/APK at `licenses/jts/LICENSE_EDLv1.txt`, `licenses/jts/LICENSES.md`,
+  and `licenses/jts/COPYRIGHTS.txt`. Source data/licenses were read; no downloaded
+  source code or scripts were executed. Gradle uses the published JTS core binary.
+- Used by `engine/geometry/Geometry.kt` for noding, polygonization, overlays, buffer
+  and intersections. SVG parsing and running/tatami generation are original myembro
+  GPL-3.0-or-later code implementing the referenced W3C syntax and basic geometry;
+  see docs/geometry.md for algorithm sources and limitations.

@@ -81,6 +81,7 @@ import io.github.linker2k.myembro.ui.machines.MachineProfiles
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.linker2k.myembro.engine.io.PesVersion
 
 private val machinePresets = MachineProfiles.all.map { it.displayName }
 
@@ -90,6 +91,7 @@ private val machinePresets = MachineProfiles.all.map { it.displayName }
 fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     var machineDialog by rememberSaveable { mutableStateOf(false) }
     var brandDialog by rememberSaveable { mutableStateOf(false) }
+    var pesDialog by rememberSaveable { mutableStateOf(false) }
     var themeDialog by rememberSaveable { mutableStateOf(false) }
     var licenseAsset by rememberSaveable { mutableStateOf<String?>(null) }
     val settings = vm.settings
@@ -183,6 +185,9 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 ) {
                     SettingRow(Icons.Default.Palette, stringResource(R.string.settings_thread_brand),
                         stringResource(settings.threadBrand.labelRes)) { brandDialog = true }
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingRow(Icons.Default.Description, stringResource(R.string.settings_pes_version),
+                        pesVersionLabel(settings.pesVersion)) { pesDialog = true }
                 }
                 Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -230,6 +235,13 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             label = { stringResource(it.labelRes) },
             onDismiss = { brandDialog = false },
         ) { vm.setThreadBrand(it); brandDialog = false }
+        if (pesDialog) ChoiceDialog(
+            title = stringResource(R.string.settings_pes_version),
+            options = PesVersion.entries,
+            selected = settings.pesVersion,
+            label = { pesVersionLabel(it) },
+            onDismiss = { pesDialog = false },
+        ) { vm.setPesVersion(it); pesDialog = false }
         if (themeDialog) ChoiceDialog(
             title = stringResource(R.string.settings_theme), options = ThemeMode.entries,
             selected = settings.themeMode, label = { stringResource(themeLabel(it)) },
@@ -326,6 +338,11 @@ private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (St
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } },
     )
 }
+
+@Composable
+private fun pesVersionLabel(version: PesVersion): String = stringResource(
+    if (version == PesVersion.V6) R.string.settings_pes_v6 else R.string.settings_pes_v1,
+)
 
 @Composable
 private fun <T> ChoiceDialog(

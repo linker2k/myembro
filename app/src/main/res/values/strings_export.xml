@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_pes_version">PES output version</string>
+    <string name="settings_pes_v1">v1 minimal (default)</string>
+    <string name="settings_pes_v6">v6 compatible (thread names and colors, PE-DESIGN style)</string>
+    <string name="preflight_title">Check before sewing</string>
+    <string name="preflight_intro">Checked against %1$s:</string>
+    <string name="preflight_continue">Export anyway</string>
+    <string name="preflight_cancel">Cancel</string>
+</resources>
