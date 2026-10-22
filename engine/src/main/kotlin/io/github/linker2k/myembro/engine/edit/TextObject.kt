@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.lettering.LetteringEngine
+import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 
@@ -25,13 +26,34 @@ data class TextObject(
     val contours: List<List<Pair<Double, Double>>> = emptyList(),
     val contourBaseline: Double = 0.0,
     val contourSourceHeight: Double? = null,
+    val lineSpacing: Double = 1.5,
+    val alignment: TextAlignment = TextAlignment.CENTER,
+    val arcRadiusMm: Double? = null,
+    /** Code-point indices in NFC/normalized text, including spaces and newlines. */
+    val characterThreads: Map<Int, EmbThread> = emptyMap(),
+    val contourCharacters: List<Int> = emptyList(),
+    /** Source-unit baseline for each contour, allowing independent multiline arcs. */
+    val contourBaselines: List<Double> = emptyList(),
 ) : DesignObject {
+    init {
+        require(lineSpacing.isFinite() && lineSpacing >= 1.0)
+        require(arcRadiusMm == null || arcRadiusMm.isFinite() && arcRadiusMm > 0)
+        require(characterThreads.keys.all { it >= 0 })
+        require(contourCharacters.isEmpty() || contourCharacters.size == contours.size)
+        require(contourCharacters.all { it >= 0 })
+        require(contourBaselines.isEmpty() || contourBaselines.size == contours.size)
+        require(contourBaselines.all { it.isFinite() })
+        require(fontKind != FontKind.OUTLINE || characterThreads.isEmpty() || contourCharacters.size == contours.size)
+    }
     private val pattern: EmbPattern by lazy {
         when (fontKind) {
-            FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread)
+            FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
+                lineSpacing = lineSpacing, alignment = alignment, arcRadiusMm = arcRadiusMm, characterThreads = characterThreads)
             FontKind.OUTLINE -> LetteringEngine.fromContours(
                 contours, heightMm, arcDeg = arcDeg, thread = thread,
-                baseline = contourBaseline, sourceHeight = contourSourceHeight,
+                baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
+                contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
+                contourBaselines = contourBaselines,
             )
         }
     }

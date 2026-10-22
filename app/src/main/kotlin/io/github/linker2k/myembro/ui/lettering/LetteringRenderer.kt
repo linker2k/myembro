@@ -8,53 +8,48 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.FontKind
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
-import io.github.linker2k.myembro.engine.lettering.FontQuality
-import io.github.linker2k.myembro.engine.lettering.FontQualityReport
-import io.github.linker2k.myembro.engine.lettering.HersheyFont
-import io.github.linker2k.myembro.engine.lettering.SvgFont
+import io.github.linker2k.myembro.engine.lettering.*
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
-import java.text.Normalizer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal data class LetteringFont(val id: String, val name: String, val resource: Int = 0)
-
 internal val bundledLetteringFonts = listOf(
     LetteringFont("gowun-batang", "고운바탕", R.font.gowun_batang),
     LetteringFont("jua", "둥근고딕", R.font.jua_regular),
     LetteringFont("noto-sans-kr", "담백한 고딕", R.font.noto_sans_kr),
 )
-
 internal data class LetteringResult(
-    val textObject: TextObject,
-    val pattern: EmbPattern,
-    val quality: FontQualityReport,
-    val unsupported: Boolean,
-    val outsideHoop: Boolean,
+    val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport,
+    val unsupported: Boolean, val outsideHoop: Boolean,
 )
 
-/** Called on Dispatchers.Default; no font parsing or quality scanning on the Compose UI thread. */
-internal fun renderLettering(
-    context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec,
-): LetteringResult {
-    val text = Normalizer.normalize(settings.text, Normalizer.Form.NFC).replace("\r\n", "\n")
-        .replace('\r', '\n').replace("\t", "    ")
-    val repo = FontRepository(context)
-    val bundled = bundledLetteringFonts.firstOrNull { it.id == settings.fontId }
-    val installed = if (bundled == null) repo.find(settings.fontId) else null
-    val face: Typeface? = when {
-        bundled != null -> context.resources.getFont(bundled.resource)
-        installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(installed)
-        else -> null
+/** Catalog-card bridge: call after download, on a worker via this suspending API. No download UI here. */
+object LetteringFontQuality {
+    suspend fun analyze(
+        context: Context, fontId: String, text: String = "자수봄날Aa012", heightMm: Double = 18.0,
+    ): FontQualityReport = withContext(Dispatchers.Default) {
+        val source = loadFont(context.applicationContext, fontId)
+        qualityFor(source, fontId, text, heightMm)
     }
-    val svg: SvgFont? = if (installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG) repo.svgFont(installed) else null
-    val hershey = if (settings.fontId == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
-    check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다. 폰트 보관함을 확인해 주세요." }
+    fun invalidate(fontId: String) = FontQualityCache.Shared.invalidate(fontId)
+}
+
+private class LoadedFont(
+    val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String,
+) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
+    fun advance(character: String): Double = when {
+        paint != null -> paint.measureText(character).toDouble()
+        svg != null -> svg.advance(character)
+        else -> (character.singleOrNull()?.let { hershey?.get(it) } ?: hershey?.get('?'))!!.advance.toDouble()
+    }
     fun glyph(character: String): List<List<Pair<Double, Double>>> = when {
-        face != null -> AndroidGlyphOutlines.extract(character, face)
+        face != null -> AndroidGlyphOutlines.extract(character, face).map { path -> path.map { (x, y) -> x + advance(character) / 2 to y } }
         svg != null -> svg.layout(character).map { path -> path.map { it.x to -it.y } }
         else -> {
             val font = checkNotNull(hershey)
@@ -62,67 +57,75 @@ internal fun renderLettering(
             g.strokes.map { path -> path.map { (it.x - g.left).toDouble() to (it.y - font.baseline).toDouble() } }
         }
     }
-    val reference = when {
-        face != null -> glyph(if (paint?.hasGlyph("자") == true) "자" else "H").flatten().let { points ->
-            if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
-        }
-        svg != null -> svg.unitsPerEm.coerceAtLeast(1.0)
-        else -> 21.0
-    }
-    val extra = settings.spacingMm / settings.heightMm * reference
-    paint?.letterSpacing = (extra / 1000).toFloat()
-    fun characters(line: String) = line.codePoints().toArray().map { String(Character.toChars(it)) }
-    fun advance(character: String): Double = when {
-        paint != null -> paint.measureText(character).toDouble()
-        svg != null -> svg.advance(character)
-        else -> (character.singleOrNull()?.let { hershey?.get(it) } ?: hershey?.get('?'))!!.advance.toDouble()
-    }
-    val lines = text.split('\n')
-    fun width(line: String): Double = if (paint != null) paint.measureText(line).toDouble() else
-        characters(line).sumOf(::advance) + (characters(line).size - 1).coerceAtLeast(0) * extra
-    val widths = lines.map(::width)
-    val maximum = widths.maxOrNull() ?: 0.0
-    val contours = arrayListOf<List<Pair<Double, Double>>>()
-    lines.forEachIndexed { index, line ->
-        val offset = lineOffset(widths[index], maximum, settings.alignment)
-        val paths = when {
-            face != null -> AndroidGlyphOutlines.extract(line, face, spacing = extra.toFloat())
-            svg != null -> svg.layout(line, extra).map { path -> path.map { (it.x - widths[index] / 2) to -it.y } }
-            else -> {
-                var cursor = -widths[index] / 2
-                characters(line).flatMap { character ->
-                    val paths = glyph(character).map { path -> path.map { (x, y) -> x + cursor to y } }
-                    cursor += advance(character) + extra
-                    paths
-                }
+    val reference: Double by lazy {
+        when {
+            face != null -> glyph(if (paint?.hasGlyph("자") == true) "자" else "H").flatten().let { points ->
+                if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
             }
+            svg != null -> svg.unitsPerEm.coerceAtLeast(1.0)
+            else -> 21.0
         }
-        contours += paths.map { path -> path.map { (x, y) -> x + offset to y + index * reference * 1.5 } }
     }
+    fun supports(code: Int): Boolean = when {
+        paint != null -> paint.hasGlyph(String(Character.toChars(code)))
+        svg != null -> String(Character.toChars(code)) in svg.glyphs
+        else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
+    }
+}
+
+private fun loadFont(context: Context, id: String): LoadedFont {
+    val bundled = bundledLetteringFonts.firstOrNull { it.id == id }
+    val repo = FontRepository(context)
+    val installed = if (bundled == null) repo.find(id) else null
+    val face = when {
+        bundled != null -> context.resources.getFont(bundled.resource)
+        installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(installed)
+        else -> null
+    }
+    val svg = if (installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG) repo.svgFont(installed) else null
+    val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
+    check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
+    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: "bundled-v1") + ":glyph-extractor-v2")
+}
+
+private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
+    val codes = normalizedLetteringText(text).codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }.sorted()
+    val sample = codes.joinToString("") { String(Character.toChars(it)) }
+    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null)) {
+        codes.map { code -> source.glyph(String(Character.toChars(code))).map { path ->
+            path.map { (x, y) -> x * heightMm / source.reference to y * heightMm / source.reference }
+        } }
+    }
+}
+
+/** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
+internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec): LetteringResult {
+    val text = normalizedLetteringText(settings.text)
+    val source = loadFont(context, settings.fontId)
+    val lines = arrayListOf(mutableListOf<LayoutGlyph>())
+    text.codePoints().toArray().forEachIndexed { index, code ->
+        if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
+        else {
+            val character = String(Character.toChars(code))
+            lines.last() += LayoutGlyph(index, source.advance(character), source.glyph(character))
+        }
+    }
+    val layout = layoutGlyphs(lines, source.reference, settings)
     val objectData = TextObject(
         id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
         heightMm = settings.heightMm, spacing = settings.spacingMm, arcDeg = settings.arcDeg,
-        thread = thread, fontKind = FontKind.OUTLINE, contours = contours, contourSourceHeight = reference,
+        thread = thread, fontKind = FontKind.OUTLINE, contours = layout.contours, contourSourceHeight = source.reference,
+        lineSpacing = 1 + settings.lineSpacingMm / settings.heightMm,
+        alignment = TextAlignment.valueOf(settings.alignment.name),
+        arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
+        characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
+        contourCharacters = layout.characters, contourBaselines = layout.baselines,
     )
     val placed = placeLettering(objectData, hoop, settings.alignment)
     val pattern = placed.placedPattern()
-    val unique = text.codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }
-    val normalizedGlyphs = unique.map { code ->
-        glyph(String(Character.toChars(code))).map { path ->
-            path.map { (x, y) -> x * settings.heightMm / reference to y * settings.heightMm / reference }
-        }
-    }
-    val quality = FontQuality.analyze(normalizedGlyphs, settings.heightMm, outline = face != null)
-    val unsupported = unique.any { code ->
-        val character = String(Character.toChars(code))
-        when {
-            paint != null -> !paint.hasGlyph(character)
-            svg != null -> character !in svg.glyphs
-            else -> code > Char.MAX_VALUE.code || hershey?.supports(code.toChar()) != true
-        }
-    }
+    val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
+    val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
     val b = pattern.bounds
-    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 ||
-        b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
+    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 || b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
     return LetteringResult(placed, pattern, quality, unsupported, outside)
 }

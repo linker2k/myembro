@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui.lettering
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -47,11 +48,10 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.Grade
-import io.github.linker2k.myembro.engine.lettering.HersheyFont
+import io.github.linker2k.myembro.engine.lettering.FontQualityReport
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
-import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.MyembroThreadColors
 import java.util.Locale
@@ -64,7 +64,8 @@ import kotlinx.coroutines.withContext
 /**
  * Standalone lettering route. The host adds [onAdd]'s object to its editor/history and
  * closes the route. [backgroundPattern] can show the current project in the hoop.
- * Return a picked installed font through [initialFontId]; no font download happens here.
+ * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only.
+ * Download/import UI stays with the host; a null callback disables the more-fonts button.
  */
 @Composable
 fun LetteringScreen(
@@ -98,16 +99,20 @@ private fun LetteringContent(
     var alignmentIndex by rememberSaveable { mutableIntStateOf(1) }
     var curved by rememberSaveable { mutableStateOf(false) }
     var curveIndex by rememberSaveable { mutableIntStateOf(1) }
-    var curvature by rememberSaveable { mutableFloatStateOf(35f) }
+    var lineSpacing by rememberSaveable { mutableFloatStateOf(9f) }
+    var radius by rememberSaveable { mutableFloatStateOf(45f) }
+    var selectedCharacter by rememberSaveable { mutableIntStateOf(-1) }
+    var characterColors by rememberSaveable { mutableStateOf(hashMapOf<Int, Int>()) }
+    var fontReports by remember { mutableStateOf<Map<String, FontQualityReport>>(emptyMap()) }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
     var fitText by rememberSaveable { mutableStateOf(false) }
-    var showFonts by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(true) }
     val alignment = LetteringAlignment.entries[alignmentIndex]
     val settings = LetteringSettings(text, fontId, height.toDouble(), spacing.toDouble(), alignment,
-        curved, LetteringCurve.entries[curveIndex], curvature.toDouble())
+        curved, if (curveIndex == 1) LetteringCurve.ARCH else LetteringCurve.BELOW, 35.0,
+        lineSpacing.toDouble(), radius.coerceAtLeast(height).toDouble(), characterColors.toMap())
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
@@ -144,6 +149,17 @@ private fun LetteringContent(
                 busy = false
             }
         }
+    }
+    LaunchedEffect(text, height) {
+        fontReports = emptyMap()
+        delay(150)
+        val reports = mutableMapOf<String, FontQualityReport>()
+        for (font in bundledLetteringFonts) {
+            try { reports[font.id] = LetteringFontQuality.analyze(context, font.id, text.ifBlank { "자수봄날Aa012" }, height.toDouble()) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Unavailable cards retain the pending label. */ }
+        }
+        fontReports = reports
     }
     Scaffold(
         modifier = modifier,
@@ -201,8 +217,12 @@ private fun LetteringContent(
             LetteringCard {
                 SectionLabel(stringResource(R.string.lettering_text))
                 OutlinedTextField(value = text, onValueChange = {
-                    if (it.codePointCount(0, it.length) <= 80) text = it
-                }, modifier = Modifier.fillMaxWidth(), maxLines = 3,
+                    if (it.codePointCount(0, it.length) <= 80) {
+                        characterColors = remapCharacterColors(text, it, characterColors)
+                        selectedCharacter = -1
+                        text = it
+                    }
+                }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 5,
                     placeholder = { Text(stringResource(R.string.lettering_placeholder)) },
                     trailingIcon = { Text(stringResource(R.string.lettering_character_count, text.codePointCount(0, text.length)),
                         Modifier.padding(end = 12.dp), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant) },
@@ -211,7 +231,7 @@ private fun LetteringContent(
             LetteringCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel(stringResource(R.string.lettering_fonts), Modifier.weight(1f))
-                    TextButton(onClick = { if (onOpenFonts != null) onOpenFonts() else showFonts = true },
+                    TextButton(onClick = { onOpenFonts?.invoke() }, enabled = onOpenFonts != null,
                         contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(stringResource(R.string.lettering_all_fonts), style = MaterialTheme.typography.labelMedium)
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
@@ -219,7 +239,7 @@ private fun LetteringContent(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     bundledLetteringFonts.forEach { font ->
-                        FontChoice(font, text, fontId == font.id, Modifier.weight(1f)) { fontId = font.id }
+                        FontChoice(font, text, fontId == font.id, Modifier.weight(1f), fontReports[font.id]) { fontId = font.id }
                     }
                 }
                 if (bundledLetteringFonts.none { it.id == fontId }) Text(fontId,
@@ -228,6 +248,7 @@ private fun LetteringContent(
             LetteringCard {
                 SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm") { height = it }
                 SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
+                SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.lettering_align), style = MaterialTheme.typography.titleSmall)
                     ChoiceRow(listOf(stringResource(R.string.lettering_left), stringResource(R.string.lettering_center), stringResource(R.string.lettering_right)),
@@ -244,9 +265,9 @@ private fun LetteringContent(
                     })
                 }
                 if (curved) {
-                    ChoiceRow(listOf(stringResource(R.string.lettering_straight), stringResource(R.string.lettering_arch), stringResource(R.string.lettering_circle)),
+                    ChoiceRow(listOf(stringResource(R.string.lettering_arc_below), stringResource(R.string.lettering_arc_above)),
                         curveIndex, Modifier.fillMaxWidth()) { curveIndex = it }
-                    if (curveIndex != 0) SettingSlider(stringResource(R.string.lettering_curvature), curvature, 0f..100f, 5f, "%") { curvature = it }
+                    SettingSlider(stringResource(R.string.lettering_radius), radius.coerceAtLeast(height), height.coerceAtLeast(15f)..150f, 5f, "mm") { radius = it }
                 }
             }
             LetteringCard {
@@ -254,9 +275,25 @@ private fun LetteringContent(
                     SectionLabel(stringResource(R.string.lettering_thread), Modifier.weight(1f))
                     Text(stringResource(R.string.lettering_thread_count), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
                 }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(selected = selectedCharacter == -1, onClick = { selectedCharacter = -1 },
+                        label = { Text(stringResource(R.string.lettering_all_characters)) })
+                    normalizedLetteringText(text).codePoints().toArray().forEachIndexed { index, code ->
+                        if (!Character.isWhitespace(code)) FilterChip(selected = selectedCharacter == index,
+                            onClick = { selectedCharacter = index },
+                            label = { Text("${index + 1} · ${String(Character.toChars(code))}") },
+                            leadingIcon = { Box(Modifier.size(10.dp).background(Color(characterColors[index] ?: thread.color), CircleShape)) })
+                    }
+                }
+                Text(stringResource(if (selectedCharacter < 0) R.string.lettering_apply_all else R.string.lettering_apply_character),
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     swatches.forEachIndexed { index, color ->
-                        ThreadChip(color, threadNames[index], threadIndex == index) { threadIndex = index }
+                        val selectedColor = if (selectedCharacter < 0) thread.color else characterColors[selectedCharacter] ?: thread.color
+                        ThreadChip(color, threadNames[index], selectedColor == color.toArgb()) {
+                            if (selectedCharacter < 0) { threadIndex = index; characterColors = hashMapOf() }
+                            else characterColors = HashMap(characterColors).apply { put(selectedCharacter, color.toArgb()) }
+                        }
                     }
                 }
             }
@@ -271,23 +308,6 @@ private fun LetteringContent(
             }
             Spacer(Modifier.height(4.dp))
         }
-    }
-    if (showFonts) {
-        var fonts by remember { mutableStateOf(bundledLetteringFonts + LetteringFont(HersheyFont.DEFAULT_ID, "Hershey 단선 · ABC")) }
-        LaunchedEffect(Unit) {
-            val installed = withContext(Dispatchers.IO) {
-                val repo = FontRepository(context)
-                repo.catalog.filter(repo::isInstalled).map { LetteringFont(it.id, it.nameKo ?: it.name) }
-            }
-            fonts = fonts + installed
-        }
-        AlertDialog(onDismissRequest = { showFonts = false }, title = { Text(stringResource(R.string.lettering_fonts)) },
-            text = { Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
-                fonts.forEach { font -> TextButton(onClick = { fontId = font.id; showFonts = false }, modifier = Modifier.fillMaxWidth()) {
-                    if (font.id == fontId) Icon(Icons.Default.Check, null, Modifier.size(18.dp))
-                    Text(font.name, Modifier.weight(1f).padding(start = 8.dp))
-                } }
-            } }, confirmButton = { TextButton(onClick = { showFonts = false }) { Text(stringResource(R.string.lettering_close)) } })
     }
 }
 
@@ -304,10 +324,10 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FontChoice(font: LetteringFont, sample: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun FontChoice(font: LetteringFont, sample: String, selected: Boolean, modifier: Modifier, quality: FontQualityReport?, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
-    Column(modifier.height(104.dp).clip(shape).background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
+    Column(modifier.height(140.dp).clip(shape).background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
         .border(if (selected) 1.5.dp else 1.dp, if (selected) colors.primary else colors.outlineVariant, shape)
         .selectable(selected, role = Role.RadioButton, onClick = onClick).padding(9.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -319,6 +339,34 @@ private fun FontChoice(font: LetteringFont, sample: String, selected: Boolean, m
             Modifier.align(Alignment.CenterHorizontally), style = MaterialTheme.typography.headlineMedium,
             fontFamily = remember(font.resource) { FontFamily(Font(font.resource)) }, color = colors.primary,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (quality != null) FontQualityBadge(quality) else Text(stringResource(R.string.lettering_quality_pending),
+            style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+    }
+}
+
+/** Reusable catalog/installed-font card badge; reports come from LetteringFontQuality or FontQualityCache. */
+@Composable
+fun FontQualityBadge(report: FontQualityReport, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val label = stringResource(when (report.grade) {
+        Grade.GOOD -> R.string.lettering_grade_good
+        Grade.CAUTION -> R.string.lettering_grade_caution
+        Grade.UNSUITABLE -> R.string.lettering_grade_unsuitable
+    })
+    val minimum = if (report.recommendedMinHeightMm.isFinite() && report.recommendedMinHeightMm > 0)
+        stringResource(R.string.lettering_card_minimum, decimal(report.recommendedMinHeightMm)) else ""
+    Surface(modifier, shape = MaterialTheme.shapes.extraSmall, color = when (report.grade) {
+        Grade.GOOD -> colors.secondaryContainer
+        Grade.CAUTION -> colors.tertiaryContainer
+        Grade.UNSUITABLE -> colors.errorContainer
+    }) {
+        Text(listOf(label, minimum).filter { it.isNotEmpty() }.joinToString(" · "), Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            color = when (report.grade) {
+                Grade.GOOD -> colors.onSecondaryContainer
+                Grade.CAUTION -> colors.onTertiaryContainer
+                Grade.UNSUITABLE -> colors.onErrorContainer
+            })
     }
 }
 
@@ -435,16 +483,18 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             val scale = minOf(radius * 1.75f / fitWidth, radius * 1.75f / fitHeight)
             fun drawPattern(p: EmbPattern, color: Color?) {
                 var previous = p.stitches.firstOrNull() ?: return
+                var colorIndex = 0
                 for (s in p.stitches.drop(1)) {
+                    if (s.command == Command.COLOR_CHANGE) colorIndex++
                     if (s.command == Command.STITCH && previous.command == Command.STITCH) {
-                        drawLine(color ?: Color(p.threadAt(0).color), center + Offset(previous.x * scale, previous.y * scale),
+                        drawLine(color ?: Color(p.threadAt(colorIndex).color), center + Offset(previous.x * scale, previous.y * scale),
                             center + Offset(s.x * scale, s.y * scale), maxOf(1.4.dp.toPx(), 3.5f * scale), StrokeCap.Round)
                     }
                     previous = s
                 }
             }
             background?.let { drawPattern(it, colors.secondary.copy(alpha = 0.55f)) }
-            pattern?.let { drawPattern(it, thread) }
+            pattern?.let { drawPattern(it, null) }
             if (curved && b != null) {
                 drawLine(colors.secondary.copy(alpha = 0.6f), center + Offset(b.minX * scale, b.maxY * scale + 10.dp.toPx()),
                     center + Offset(b.maxX * scale, b.maxY * scale + 10.dp.toPx()), 1.dp.toPx(),
