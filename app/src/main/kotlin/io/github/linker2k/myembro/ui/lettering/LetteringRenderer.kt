@@ -149,7 +149,6 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val pattern = placed.placedPattern()
     val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
     val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
-    val b = pattern.bounds
-    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 || b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
+    val outside = letteringOutsideHoop(pattern, hoop)
     return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
 }

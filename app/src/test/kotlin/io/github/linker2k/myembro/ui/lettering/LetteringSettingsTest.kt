@@ -4,12 +4,42 @@ package io.github.linker2k.myembro.ui.lettering
 import io.github.linker2k.myembro.engine.edit.FontKind
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.lettering.FontQuality
+import io.github.linker2k.myembro.engine.lettering.Grade
+import kotlin.test.assertFalse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LetteringSettingsTest {
+    @Test fun sa431PreviewUsesActualAspectRatioAndKeepsQualityHeightIndependentOfHoop() {
+        val hoop = HoopSpec("SA431", 600, 200) // 60 × 20 mm landscape sewing area
+        val thinGlyph = listOf(listOf(0.0 to -10.0, 0.5 to -10.0, 0.5 to 0.0, 0.0 to 0.0, 0.0 to -10.0))
+        val obj = TextObject("small", text = "I", fontKind = FontKind.OUTLINE, contours = thinGlyph,
+            heightMm = 10.0, contourSourceHeight = 10.0)
+        val pattern = obj.localPattern()
+        assertFalse(letteringOutsideHoop(pattern, hoop))
+        val viewport = letteringViewport(300f, pattern, hoop, false)
+        assertEquals(0.5f, viewport.scale)
+        assertEquals(3f, (hoop.width * viewport.scale) / (hoop.height * viewport.scale))
+        val report = FontQuality.analyze(listOf(thinGlyph), 10.0, outline = true)
+        assertEquals(Grade.UNSUITABLE, report.grade)
+        assertEquals(24.0, report.recommendedMinHeightMm, 0.01)
+        assertTrue(letteringOutsideHoop(obj.copy(heightMm = report.recommendedMinHeightMm).localPattern(), hoop))
+        assertTrue(letteringOutsideHoop(obj.copy(heightMm = 21.0).localPattern(), hoop))
+        val vertical = HoopSpec("SA431 portrait", 200, 600)
+        assertFalse(letteringOutsideHoop(obj.copy(heightMm = 24.0).localPattern(), vertical))
+        for (alignment in LetteringAlignment.entries) {
+            val placed = placeLettering(obj, hoop, alignment).placedPattern()
+            assertFalse(letteringOutsideHoop(placed, hoop))
+            val fitted = letteringViewport(300f, placed, hoop, true)
+            val bounds = assertNotNull(placed.bounds)
+            assertEquals((bounds.minX.toDouble() + bounds.maxX) / 2, fitted.centerX)
+            assertEquals((bounds.minY.toDouble() + bounds.maxY) / 2, fitted.centerY)
+        }
+    }
+
     @Test
     fun multilineLayoutKeepsOwnersLineGapsAndAlignment() {
         val shape = listOf(listOf(0.0 to -10.0, 10.0 to 0.0))

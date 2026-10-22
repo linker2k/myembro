@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.engine.edit
 import kotlinx.serialization.json.*
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.engine.lettering.SatinOptions
 
 /** Editable lettering, including cached font outlines for offline reconstruction without Android. */
 object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject::class.java) {
@@ -17,6 +18,16 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         put("fontKind", obj.fontKind.name)
         put("singleLine", obj.singleLine)
         put("stitchStyle", obj.stitchStyle.name)
+        put("satinOptions", buildJsonObject {
+            put("widthMm", obj.satinOptions.widthMm)
+            put("densityMm", obj.satinOptions.densityMm)
+            put("maxStitchLengthMm", obj.satinOptions.maxStitchLengthMm)
+            put("pullCompensationMm", obj.satinOptions.pullCompensationMm)
+            put("centerUnderlay", obj.satinOptions.centerUnderlay)
+            put("zigzagUnderlay", obj.satinOptions.zigzagUnderlay)
+            put("underlayStitchLengthMm", obj.satinOptions.underlayStitchLengthMm)
+            put("underlayDensityMm", obj.satinOptions.underlayDensityMm)
+        })
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
         }))
@@ -59,6 +70,16 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             ?: ((data["fontKind"]?.jsonPrimitive?.content?.let(FontKind::valueOf) ?: FontKind.HERSHEY) == FontKind.HERSHEY),
         // Existing projects used running stitch; opening them must not triple the stitch count.
         stitchStyle = data["stitchStyle"]?.jsonPrimitive?.content?.let(StitchStyle::valueOf) ?: StitchStyle.RUNNING,
+        satinOptions = data["satinOptions"]?.jsonObject?.let { satin -> SatinOptions(
+            widthMm = satin["widthMm"]?.jsonPrimitive?.double ?: 2.0,
+            densityMm = satin["densityMm"]?.jsonPrimitive?.double ?: 0.4,
+            maxStitchLengthMm = satin["maxStitchLengthMm"]?.jsonPrimitive?.double ?: 7.0,
+            pullCompensationMm = satin["pullCompensationMm"]?.jsonPrimitive?.double ?: 0.0,
+            centerUnderlay = satin["centerUnderlay"]?.jsonPrimitive?.boolean ?: false,
+            zigzagUnderlay = satin["zigzagUnderlay"]?.jsonPrimitive?.boolean ?: false,
+            underlayStitchLengthMm = satin["underlayStitchLengthMm"]?.jsonPrimitive?.double ?: 2.5,
+            underlayDensityMm = satin["underlayDensityMm"]?.jsonPrimitive?.double ?: 1.5,
+        ) } ?: SatinOptions(),
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,
     )
