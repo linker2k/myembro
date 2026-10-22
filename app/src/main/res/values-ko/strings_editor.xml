@@ -1,5 +1,5 @@
 <resources>
-    <string name="editor_title">자수 편집기</string>
+    <string name="editor_title">도안 편집</string>
     <string name="editor_back">라이브러리로 돌아가기</string>
     <string name="editor_save">PES 저장</string>
     <string name="editor_hoop_size">후프 %1$s mm</string>
@@ -69,4 +69,26 @@
     <string name="editor_density_warning">크기가 원본 대비 ±20%를 넘었습니다. 땀 밀도가 달라지므로 시험 자수를 권장합니다.</string>
     <string name="editor_apply">적용</string>
     <string name="editor_cancel">취소</string>
+    <string name="editor_select_tool">선택</string>
+    <string name="editor_pan_tool">화면 이동</string>
+    <string name="editor_design_tab">도안</string>
+    <string name="editor_transform_tab">변형</string>
+    <string name="editor_stitch_tab">스티치</string>
+    <string name="editor_color_tab">색상</string>
+    <string name="editor_all_layers">전체 레이어</string>
+    <string name="editor_text_object">레터링</string>
+    <string name="editor_imported_object">자수 도안</string>
+    <string name="editor_collapse_properties">속성 접기</string>
+    <string name="editor_expand_properties">속성 펼치기</string>
+    <string name="editor_inspector_empty">도안을 선택하면 크기·위치·실 색상을 편집할 수 있습니다.</string>
+    <string name="editor_width_mm">가로 (mm)</string>
+    <string name="editor_height_mm">세로 (mm)</string>
+    <string name="editor_lock_aspect">가로세로 비율 고정</string>
+    <string name="editor_rotation_value">회전 %1$s°</string>
+    <string name="editor_sewing_preview">봉제 미리보기</string>
+    <string name="editor_preview_percent">%1$d%%</string>
+    <string name="editor_thread_count">실 색상 (%1$d)</string>
+    <string name="editor_thread_hex">실 색상 RGB</string>
+    <string name="editor_color_select_one">실 색상을 바꾸려면 객체 하나를 선택하세요.</string>
+    <string name="editor_thread_terracotta">테라코타</string>
 </resources>
