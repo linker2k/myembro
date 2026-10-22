@@ -36,3 +36,17 @@ types; changing an existing signature needs a note in the PR/commit message.
 | Lettering | embro-letter | `engine/.../lettering/**`, `engine/.../edit/TextObject.kt`, font assets |
 | Save/share + UI polish | embro-worker | `ViewerScreen`, `LibraryScreen` |
 | Blocking review + mockups | embro-codex | read-only |
+
+## Editor host hooks (2026-10-22)
+
+- `EditorRecoveryDialog(vm, onRestored, onDismiss)` can be placed beside Home after process restart;
+  `onRestored` should navigate to the editor. It only renders when `vm.recoveryProject != null`.
+  The editor also offers recovery on entry. Dismissal keeps the recovery snapshot; Discard deletes it.
+- `EditorScreen(vm, onBack, multiPositionPositions = confirmedPositions,
+  onMultiPositionExport = { project, positions -> ... })` preserves existing two-argument calls.
+  The optional export callback runs after the user accepts the position instructions, and after splitting
+  and engine machine preflight have succeeded for every part. The host writes the actual files.
+- Repositionable profile hoops expose their full coverage in the hoop picker. Confirmed `SewingPosition`
+  coordinates are drawn as numbered translucent windows. No SA434 offset is inferred from frame size;
+  absent/invalid positions or an absent export callback disable position export. Single PES export still
+  rejects a coverage-only hoop. Editable `.myembro` saves preserve unfinished or oversized compositions.

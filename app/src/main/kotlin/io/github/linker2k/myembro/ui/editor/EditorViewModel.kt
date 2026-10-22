@@ -15,6 +15,8 @@ import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
+import io.github.linker2k.myembro.ui.machines.MachineHoop
+import io.github.linker2k.myembro.export.ExportChecks
 import kotlinx.coroutines.channels.Channel
 import java.io.File
 import java.util.UUID
@@ -31,6 +33,44 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         private set
     private val stopObserving = preferences.observe { settings = preferences.read() }
     val availableHoops get() = editorHoops(settings.machineProfile)
+    val multiPositionFrames get() = settings.machineProfile?.hoops.orEmpty().filter { it.requiresRepositioning }
+    val multiPositionFrame get() = multiPositionFrames.firstOrNull { it.coverage.sameArea(project.hoop) }
+    var sewingPositions by mutableStateOf<List<SewingPosition>>(emptyList())
+        private set
+    internal val positionFit get() = if (sewingPositions.isEmpty()) EditorPositionFit(emptySet(), emptySet()) else project.positionFit(sewingPositions)
+    fun configureSewingPositions(positions: List<SewingPosition>) {
+        sewingPositions = positions.takeIf { multiPositionFrame != null && validEditorPositions(project.hoop, it) }.orEmpty()
+    }
+    fun setMultiPositionFrame(frame: MachineHoop) {
+        if (interactionBlocked || gestureInProgress) return
+        val supported = multiPositionFrames.firstOrNull { it == frame } ?: return
+        sewingPositions = emptyList()
+        edit(project.copy(hoop = supported.coverage))
+    }
+    internal fun prepareMultiPositionExport(onReady: (EditorSplitPreview) -> Unit) {
+        if (interactionBlocked || gestureInProgress || multiPositionFrame == null || sewingPositions.isEmpty()) return
+        val snapshot = project
+        val positions = sewingPositions.toList()
+        busy = true
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val split = MultiPositionSplitter.split(snapshot, positions)
+                    if (split.errors.isNotEmpty()) throw EditorExportBlocked(split.errors.take(8).map { it.message })
+                    val problems = split.parts.flatMap { part ->
+                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read())
+                    }
+                    if (problems.isNotEmpty()) throw EditorExportBlocked(problems.distinct())
+                    require(split.parts.isNotEmpty()) { getApplication<Application>().getString(R.string.editor_empty_export) }
+                    split
+                }
+                onReady(EditorSplitPreview(snapshot, positions, result))
+            } catch (e: CancellationException) { throw e
+            } catch (e: EditorExportBlocked) { exportProblems = e.problems
+            } catch (e: Exception) { report(R.string.editor_save_failed, e)
+            } finally { busy = false }
+        }
+    }
     val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null
     private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"))
     private val draftWrites = Channel<Project?>(Channel.CONFLATED)
@@ -65,7 +105,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     val redoEnabled get() = canRedo && !interactionBlocked && !gestureInProgress && !letteringOpen
     var selectedIds by mutableStateOf<Set<String>>(emptySet())
         private set
-    val hoopOverflowVisible: Boolean get() = session.showsHoopOverflow
+    val hoopOverflowVisible: Boolean get() = !gestureInProgress &&
+        (session.showsHoopOverflow || (multiPositionFrame != null && positionFit.outsideIds.isNotEmpty()))
     val selectedId: String? get() = selectedIds.lastOrNull()
     val selected: DesignObject? get() = selectedId?.let(project::find)
     var selectionMode by mutableStateOf(false)
