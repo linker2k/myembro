@@ -25,7 +25,7 @@
 
 | 토큰 (`colorScheme.`) | 역할 | 라이트 | 다크 |
 |---|---|---|---|
-| `primary` | 주 버튼, 선택 상태, 강조 | `#B5492A` ⚠️ | `#EF9A78` |
+| `primary` | 주 버튼, 선택 상태, 강조 | `#B5492A` | `#EF9A78` |
 | `onPrimary` | primary 위 글자 | `#FFFFFF` | `#472314` |
 | `primaryContainer` | 선택된 칩, 탭 알약, 선택 레이어 행 | `#F5DED1` | `#693923` |
 | `onPrimaryContainer` | | `#492516` | `#FFDBC8` |
@@ -51,9 +51,7 @@
 surfaceContainer 단계(라이트 / 다크): Lowest `#FFFFFF`/`#15120F`, Low `#FBF6ED`/`#211C18`,
 기본 `#F2E9DC`/`#2B2520`, High `#ECE1D1`/`#362E28`, Highest `#E5D7C4`/`#413831`.
 
-⚠️ **구현과 다른 점**: 확정 primary는 `#B5492A`다. 2026-10-22 main의 `Color.kt`는 아직
-`LightPrimaryArgb = 0xFFC4552D`(흰 글자 4.48:1, 기준 미달)이므로 테마 담당이 `0xFFB5492A`로 바꿔야
-한다. `#C4552D`는 아래 실 색 팔레트로 옮긴다. 나머지 값은 `Color.kt`와 같다.
+`Color.kt`는 primary `0xFFB5492A`로 맞춰져 있고(흰 글자 대비 기준 충족), 이전 값 `#C4552D`는 실 색 팔레트(`ThreadTerracotta`)로 옮겼다.
 
 ### 실 색 팔레트 (콘텐츠 색, UI 상태에 쓰지 않음)
 
