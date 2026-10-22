@@ -91,4 +91,11 @@
     <string name="editor_thread_hex">Thread RGB</string>
     <string name="editor_color_select_one">Select one object to change its thread colors.</string>
     <string name="editor_thread_terracotta">Terracotta</string>
+    <string name="editor_text_tool">Text</string>
+    <string name="editor_edit_text">Edit lettering</string>
+    <string name="editor_history_dragging">Finish the current gesture first</string>
+    <string name="editor_history_busy">A file operation is in progress</string>
+    <string name="editor_history_steps">%1$d steps available</string>
+    <string name="editor_undo_empty">Nothing to undo</string>
+    <string name="editor_redo_empty">Nothing to redo</string>
 </resources>

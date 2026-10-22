@@ -28,6 +28,12 @@ internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
         history.commit(project)
     }
     fun commit(next: Project) { endGesture(); project = history.commit(next) }
+    /** User toolbar actions never close a pointer gesture; true means haptics may fire. */
+    fun stepHistory(redo: Boolean, blocked: Boolean = false): Boolean {
+        if (blocked || isGesturing || (if (redo) !canRedo else !canUndo)) return false
+        project = if (redo) history.redo() else history.undo()
+        return true
+    }
     fun undo() { endGesture(); project = history.undo() }
     fun redo() { endGesture(); project = history.redo() }
 }

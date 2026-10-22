@@ -66,6 +66,8 @@ import kotlinx.coroutines.withContext
  * closes the route. [backgroundPattern] can show the current project in the hoop.
  * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only.
  * Download/import UI stays with the host; a null callback disables the more-fonts button.
+ * [initialObject] reopens an existing text object with its settings; the host keeps its id
+ * and placement when it replaces the object. Omitting it is add mode.
  */
 @Composable
 fun LetteringScreen(
@@ -77,9 +79,11 @@ fun LetteringScreen(
     initialFontId: String = "gowun-batang",
     backgroundPattern: EmbPattern? = null,
     onOpenFonts: (() -> Unit)? = null,
+    initialObject: TextObject? = null,
 ) {
     MyembroTheme {
-        LetteringContent(onBack, onAdd, modifier, hoop, initialText, initialFontId, backgroundPattern, onOpenFonts)
+        LetteringContent(onBack, onAdd, modifier, hoop, initialObject?.text ?: initialText,
+            initialObject?.fontId ?: initialFontId, backgroundPattern, onOpenFonts, initialObject)
     }
 }
 
@@ -88,24 +92,30 @@ fun LetteringScreen(
 private fun LetteringContent(
     onBack: () -> Unit, onAdd: (TextObject) -> Unit, modifier: Modifier,
     hoop: HoopSpec, initialText: String, initialFontId: String,
-    backgroundPattern: EmbPattern?, onOpenFonts: (() -> Unit)?,
+    backgroundPattern: EmbPattern?, onOpenFonts: (() -> Unit)?, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
-    var height by rememberSaveable { mutableFloatStateOf(18f) }
-    var spacing by rememberSaveable { mutableFloatStateOf(1.2f) }
-    var alignmentIndex by rememberSaveable { mutableIntStateOf(1) }
-    var curved by rememberSaveable { mutableStateOf(false) }
-    var curveIndex by rememberSaveable { mutableIntStateOf(1) }
-    var lineSpacing by rememberSaveable { mutableFloatStateOf(9f) }
-    var radius by rememberSaveable { mutableFloatStateOf(45f) }
+    val initial = initialObject
+    var height by rememberSaveable { mutableFloatStateOf(initial?.heightMm?.toFloat() ?: 18f) }
+    var spacing by rememberSaveable { mutableFloatStateOf(initial?.spacing?.toFloat() ?: 1.2f) }
+    var alignmentIndex by rememberSaveable { mutableIntStateOf(initial?.alignment?.ordinal ?: 1) }
+    var curved by rememberSaveable { mutableStateOf(initial != null && (initial.arcDeg != 0.0 || initial.arcRadiusMm != null)) }
+    var curveIndex by rememberSaveable { mutableIntStateOf(if (initial != null && initial.arcDeg < 0) 0 else 1) }
+    // TextObject stores line spacing as a multiple of the height; the screen edits the gap in mm.
+    var lineSpacing by rememberSaveable { mutableFloatStateOf(initial?.let { ((it.lineSpacing - 1) * it.heightMm).toFloat() } ?: 9f) }
+    var radius by rememberSaveable { mutableFloatStateOf(initial?.arcRadiusMm?.toFloat() ?: 45f) }
     var selectedCharacter by rememberSaveable { mutableIntStateOf(-1) }
-    var characterColors by rememberSaveable { mutableStateOf(hashMapOf<Int, Int>()) }
+    var characterColors by rememberSaveable {
+        mutableStateOf(HashMap(initial?.characterThreads?.mapValues { it.value.color } ?: emptyMap()))
+    }
     var fontReports by remember { mutableStateOf<Map<String, FontQualityReport>>(emptyMap()) }
     var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
-    var stitchStyleName by rememberSaveable(fontId) { mutableStateOf<String?>(null) }
+    var stitchStyleName by rememberSaveable(fontId) {
+        mutableStateOf(initial?.takeIf { it.fontId == fontId }?.stitchStyle?.name)
+    }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
     var fitText by rememberSaveable { mutableStateOf(false) }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
@@ -118,8 +128,11 @@ private fun LetteringContent(
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
-    val thread = EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
-    val threadColor = swatches[threadIndex]
+    // An existing object keeps its own thread unless the user picks a swatch.
+    var keepInitialThread by rememberSaveable { mutableStateOf(initial != null) }
+    val thread = if (keepInitialThread && initial != null) initial.thread
+        else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
+    val threadColor = if (keepInitialThread && initial != null) Color(initial.thread.color) else swatches[threadIndex]
     // Stale results are never submitted while a newer generation is pending.
     val generationKey = settings to thread.color
     var renderedKey by remember { mutableStateOf<Pair<LetteringSettings, Int>?>(null) }
@@ -319,7 +332,7 @@ private fun LetteringContent(
                     swatches.forEachIndexed { index, color ->
                         val selectedColor = if (selectedCharacter < 0) thread.color else characterColors[selectedCharacter] ?: thread.color
                         ThreadChip(color, threadNames[index], selectedColor == color.toArgb()) {
-                            if (selectedCharacter < 0) { threadIndex = index; characterColors = hashMapOf() }
+                            if (selectedCharacter < 0) { threadIndex = index; keepInitialThread = false; characterColors = hashMapOf() }
                             else characterColors = HashMap(characterColors).apply { put(selectedCharacter, color.toArgb()) }
                         }
                     }

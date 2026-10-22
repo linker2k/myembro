@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
+import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.ThreadRendering
 import kotlin.math.abs
@@ -143,6 +144,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                     if (editing && started) vm.endGesture()
                 }
                 if (selecting && !started && completed && hit != null) vm.toggleSelection(hit.id)
+                else if (!selecting && !navigationOnly && !started && completed && vm.selectedIds.size == 1 && hit is TextObject) vm.openLettering(hit.id)
             }
         }) {
         drawRect(colors.background)

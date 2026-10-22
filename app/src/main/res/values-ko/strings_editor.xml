@@ -91,4 +91,11 @@
     <string name="editor_thread_hex">실 색상 RGB</string>
     <string name="editor_color_select_one">실 색상을 바꾸려면 객체 하나를 선택하세요.</string>
     <string name="editor_thread_terracotta">테라코타</string>
+    <string name="editor_text_tool">글자</string>
+    <string name="editor_edit_text">글자 편집</string>
+    <string name="editor_history_dragging">이동·변형을 마친 뒤 사용할 수 있습니다</string>
+    <string name="editor_history_busy">파일 작업 중입니다</string>
+    <string name="editor_history_steps">%1$d단계 가능</string>
+    <string name="editor_undo_empty">실행취소할 작업이 없습니다</string>
+    <string name="editor_redo_empty">다시실행할 작업이 없습니다</string>
 </resources>
