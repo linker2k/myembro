@@ -3,6 +3,8 @@
     <string name="library_selected">%1$d selected</string>
     <string name="library_select_all">Select all visible designs</string>
     <string name="library_delete">Delete</string>
+    <string name="library_delete_title">Delete %1$d designs?</string>
+    <string name="library_delete_message">The selected files will be permanently removed from this library.</string>
     <string name="library_import">Import designs</string>
     <string name="library_search">Search designs by name</string>
     <string name="library_clear_search">Clear search</string>
