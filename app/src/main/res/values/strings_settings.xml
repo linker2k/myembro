@@ -33,7 +33,7 @@
     <string name="export_sheet_share">Share PES file</string>
     <string name="export_sheet_share_hint">Send a copy using another app</string>
     <string name="export_sheet_usb">Export to USB</string>
-    <string name="export_sheet_usb_hint">Connect a drive using OTG and choose its folder</string>
+    <string name="export_sheet_usb_hint">Connect USB/OTG: choose a mounted folder, or allow USB access for SE400 direct connection</string>
     <string name="settings_studio">Your embroidery studio</string>
     <string name="settings_studio_hint">Make yourself at home with your machine.</string>
     <string name="settings_threads_title">Threads</string>
@@ -44,7 +44,7 @@
     <string name="machine_hoop_unsupported">Not supported by this machine — check before sewing</string>
     <string name="machine_unverified">Custom machine: embroidery area, compatible hoops, transfer methods and limits are unverified. Choose sizes manually.</string>
     <string name="machine_area_format">Maximum %1$s · Export %2$s</string>
-    <string name="machine_transfer_se400">Connect to a PC with a USB cable and copy PES files to the root of the machine’s Removable Disk. Android phone/OTG recognition is unverified. This is not a USB flash-drive connection.</string>
+    <string name="machine_transfer_se400">USB-B cable: Windows sees a Removable Disk. On a Galaxy Fold7 the RAM disk is not mounted by Android/SAF; use SE400 direct connection and allow USB access. Files use uppercase 8.3 names and disappear when the machine is powered off. Direct writing still needs confirmation on the actual SE400.</string>
     <string name="machine_transfer_se600">Copy PES files to a compatible USB flash drive, then insert it into the machine and retrieve the design.</string>
     <string name="machine_transfer_se700">Use a compatible USB flash drive, or Brother’s wireless transfer through Design Database Transfer (Windows), PE-DESIGN 11 or Artspira. Direct wireless transfer from myembro is not implemented.</string>
     <string name="machine_optional_hoops_small">Confirmed hoops: 100×100 mm; optional 60×20 mm. This app currently offers 100×100 mm projects.</string>
