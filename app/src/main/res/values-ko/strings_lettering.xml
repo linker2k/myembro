@@ -11,7 +11,7 @@
     <string name="lettering_placeholder">실로 수놓을 문구</string>
     <string name="lettering_character_count">%1$d글자</string>
     <string name="lettering_fonts">자수 폰트</string>
-    <string name="lettering_all_fonts">전체 보기</string>
+    <string name="lettering_all_fonts">글꼴 더 보기</string>
     <string name="lettering_height">글자 크기</string>
     <string name="lettering_spacing">자간</string>
     <string name="lettering_align">정렬</string>
@@ -37,4 +37,16 @@
     <string name="lettering_quality_hint">가는 획은 자수에서 뭉칠 수 있어요. 크기를 키우거나 굵은 폰트를 골라 보세요.</string>
     <string name="lettering_stats">%1$d땀 · 점프 %2$d회</string>
     <string name="lettering_failed">레터링을 만들 수 없어요. 다른 폰트나 짧은 문구로 다시 시도해 주세요.</string>
+    <string name="lettering_line_spacing">줄 간격</string>
+    <string name="lettering_arc_above">위 원호</string>
+    <string name="lettering_arc_below">아래 원호</string>
+    <string name="lettering_radius">반경</string>
+    <string name="lettering_all_characters">전체 글자</string>
+    <string name="lettering_apply_all">실 색을 고르면 모든 글자에 적용해요.</string>
+    <string name="lettering_apply_character">선택한 글자의 실 색을 골라 주세요.</string>
+    <string name="lettering_grade_good">좋음</string>
+    <string name="lettering_grade_caution">주의</string>
+    <string name="lettering_grade_unsuitable">부적합</string>
+    <string name="lettering_card_minimum">권장 ≥ %1$s mm</string>
+    <string name="lettering_quality_pending">분석 중…</string>
 </resources>

@@ -11,7 +11,7 @@
     <string name="lettering_placeholder">Your words, in thread</string>
     <string name="lettering_character_count">%1$d characters</string>
     <string name="lettering_fonts">Embroidery font</string>
-    <string name="lettering_all_fonts">View all</string>
+    <string name="lettering_all_fonts">More fonts</string>
     <string name="lettering_height">Letter height</string>
     <string name="lettering_spacing">Letter spacing</string>
     <string name="lettering_align">Align</string>
@@ -37,4 +37,16 @@
     <string name="lettering_quality_hint">Fine details may merge when sewn. Try a larger size or a bolder font.</string>
     <string name="lettering_stats">%1$d stitches · %2$d jumps</string>
     <string name="lettering_failed">Unable to create lettering. Try another font or a shorter phrase.</string>
+    <string name="lettering_line_spacing">Line gap</string>
+    <string name="lettering_arc_above">Arc above</string>
+    <string name="lettering_arc_below">Arc below</string>
+    <string name="lettering_radius">Radius</string>
+    <string name="lettering_all_characters">All letters</string>
+    <string name="lettering_apply_all">Choose a color to apply it to every letter.</string>
+    <string name="lettering_apply_character">Choose a thread color for the selected letter.</string>
+    <string name="lettering_grade_good">Good</string>
+    <string name="lettering_grade_caution">Caution</string>
+    <string name="lettering_grade_unsuitable">Unsuitable</string>
+    <string name="lettering_card_minimum">≥ %1$s mm</string>
+    <string name="lettering_quality_pending">Analyzing…</string>
 </resources>

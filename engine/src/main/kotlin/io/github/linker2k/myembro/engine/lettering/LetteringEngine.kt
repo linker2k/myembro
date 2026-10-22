@@ -12,12 +12,16 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+enum class TextAlignment { LEFT, CENTER, RIGHT }
+
 /** Public dimensions are mm; EmbPattern coordinates are 0.1 mm, with +y down. */
 object LetteringEngine {
     /**
      * [heightMm] is cap height; [spacing] is extra character spacing in mm. Each line
-     * is centered separately, with baselines 1.5 cap heights apart. [arcDeg] bends the
-     * baseline through the signed angle using the same mapping as [fromContours].
+     * uses [alignment] inside the longest line box. Baselines are [lineSpacing] cap heights
+     * apart (default 1.5). [arcDeg] bends the baseline; [arcRadiusMm], when set, replaces
+     * angle magnitude with a physical radius, retaining the angle's direction.
+     * [characterThreads] indices count code points after CR/LF and tab normalization.
      * Unsupported Unicode code points become '?' and are reported in warnings.
      */
     fun generate(
@@ -29,35 +33,53 @@ object LetteringEngine {
         thread: EmbThread = EmbThread(0xFF000000.toInt(), "Black"),
         stitchLengthMm: Double = 2.5,
         trimBetweenStrokes: Boolean = true,
+        lineSpacing: Double = 1.5,
+        alignment: TextAlignment = TextAlignment.CENTER,
+        arcRadiusMm: Double? = null,
+        characterThreads: Map<Int, EmbThread> = emptyMap(),
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         require(spacing.isFinite() && spacing >= 0) { "spacing must be finite and non-negative" }
+        require(lineSpacing.isFinite() && lineSpacing >= 1.0) { "lineSpacing must be at least 1" }
+        validateRadius(arcRadiusMm)
+        require(characterThreads.keys.all { it >= 0 })
         val font = HersheyFont.load(fontId)
         val scale = heightMm * 10 / font.capHeight
         val gap = spacing * 10
         val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes)
         val missing = linkedSetOf<Int>()
         val lines = text.replace("\r\n", "\n").replace('\r', '\n').split('\n')
-        lines.forEachIndexed { lineIndex, line ->
-            val glyphs = line.replace("\t", "    ").codePoints().toArray().map { code ->
+        val allGlyphs = lines.map { line -> line.replace("\t", "    ").codePoints().toArray().map { code ->
                 val glyph = if (code <= Char.MAX_VALUE.code) font[code.toChar()] else null
                 glyph ?: run {
                     missing += code
                     checkNotNull(font['?']) { "Font has no replacement glyph" }
                 }
             }
-            val width = glyphs.sumOf { it.advance * scale } + gap * (glyphs.size - 1).coerceAtLeast(0)
-            var cursor = -width / 2
-            val lineY = lineIndex * heightMm * 10 * 1.5
+        }
+        val widths = allGlyphs.map { glyphs -> glyphs.sumOf { it.advance * scale } + gap * (glyphs.size - 1).coerceAtLeast(0) }
+        val maximum = widths.maxOrNull() ?: 0.0
+        var characterIndex = 0
+        allGlyphs.forEachIndexed { lineIndex, glyphs ->
+            val width = widths[lineIndex]
+            val offset = when (alignment) {
+                TextAlignment.LEFT -> -(maximum - width) / 2
+                TextAlignment.CENTER -> 0.0
+                TextAlignment.RIGHT -> (maximum - width) / 2
+            }
+            var cursor = -width / 2 + offset
+            val lineY = lineIndex * heightMm * 10 * lineSpacing
             glyphs.forEach { glyph ->
                 glyph.strokes.forEach { stroke ->
                     val points = stroke.map { point ->
                         (cursor + (point.x - glyph.left) * scale) to ((point.y - font.baseline) * scale)
                     }
-                    builder.stroke(bend(points, width, arcDeg).map { (x, y) -> x to (y + lineY) })
+                    builder.stroke(bend(points, maximum, arcDeg, arcRadiusMm).map { (x, y) -> x to (y + lineY) }, characterThreads[characterIndex] ?: thread)
                 }
                 cursor += glyph.advance * scale + gap
+                characterIndex++
             }
+            characterIndex++ // newline occupies one code point
         }
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
@@ -77,6 +99,9 @@ object LetteringEngine {
      * and sharp corners. Set [simplify] to false to keep all input vertices. Optional
      * [minSegmentMm] merges short edges within the same geometric tolerance. Closed
      * loops and open endpoints remain intact. The final sewn bounds are centered on (0, 0).
+     * Optional [contourThreads] and source-unit [contourBaselines] must each match the raw
+     * contour count; baselines preserve line offsets after bending each line separately.
+     * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
      */
     fun fromContours(
         contours: List<List<Pair<Double, Double>>>,
@@ -90,8 +115,15 @@ object LetteringEngine {
         mergeToleranceMm: Double = 0.05,
         simplify: Boolean = true,
         minSegmentMm: Double = 0.0,
+        arcRadiusMm: Double? = null,
+        contourThreads: List<EmbThread> = emptyList(),
+        contourBaselines: List<Double> = emptyList(),
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
+        validateRadius(arcRadiusMm)
+        require(contourThreads.isEmpty() || contourThreads.size == contours.size) { "One thread per contour is required" }
+        require(contourBaselines.isEmpty() || contourBaselines.size == contours.size) { "One baseline per contour is required" }
+        require(contourBaselines.all { it.isFinite() })
         require(baseline.isFinite()) { "baseline must be finite" }
         require(sourceHeight == null || sourceHeight.isFinite() && sourceHeight > 0) { "sourceHeight must be finite and positive" }
         require(mergeToleranceMm.isFinite() && mergeToleranceMm >= 0) { "mergeToleranceMm must be finite and non-negative" }
@@ -112,9 +144,13 @@ object LetteringEngine {
         val centerX = minX / 2 + maxX / 2
         val width = (maxX - minX) * scale
         require(scale.isFinite() && width.isFinite()) { "Contour range is too large" }
-        paths.forEach { contour ->
-            val normalized = contour.map { (x, y) -> (x - centerX) * scale to (y - baseline) * scale }
-            builder.stroke(bend(normalized, width, arcDeg))
+        contours.forEachIndexed { index, contour ->
+            if (contour.size < 2) return@forEachIndexed
+            val lineBaseline = contourBaselines.getOrNull(index) ?: baseline
+            val normalized = contour.map { (x, y) -> (x - centerX) * scale to (y - lineBaseline) * scale }
+            val lineY = (lineBaseline - baseline) * scale
+            builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
+                contourThreads.getOrNull(index) ?: thread)
         }
         return builder.finish(thread)
     }
@@ -127,11 +163,15 @@ object LetteringEngine {
         }
     }
 
+    private fun validateRadius(radius: Double?) {
+        require(radius == null || radius.isFinite() && radius > 0) { "arcRadiusMm must be finite and positive" }
+    }
+
     /** Map baseline x to a circle, with y along its normal. Sample bent edges every 2°. */
-    private fun bend(points: List<Pair<Double, Double>>, width: Double, arcDeg: Double): List<Pair<Double, Double>> {
+    private fun bend(points: List<Pair<Double, Double>>, width: Double, arcDeg: Double, radiusMm: Double? = null): List<Pair<Double, Double>> {
         val radians = Math.toRadians(arcDeg)
         if (abs(radians) < 1e-6 || width <= 0 || points.isEmpty()) return points
-        val radius = width / radians
+        val radius = radiusMm?.let { it * 10 * if (arcDeg < 0) -1 else 1 } ?: (width / radians)
         fun map(point: Pair<Double, Double>): Pair<Double, Double> {
             val (x, y) = point
             val angle = x / radius
@@ -159,6 +199,7 @@ private class RunningStitches(
 ) {
     private val maxLength = stitchLengthMm * 10
     private val stitches = arrayListOf<Stitch>()
+    private val threads = arrayListOf<EmbThread>()
 
     private fun quantize(x: Double, y: Double): Stitch {
         require(x.isFinite() && y.isFinite() && abs(x) < Int.MAX_VALUE / 2.0 && abs(y) < Int.MAX_VALUE / 2.0) {
@@ -167,7 +208,7 @@ private class RunningStitches(
         return Stitch(x.roundToInt(), y.roundToInt(), Command.STITCH)
     }
 
-    fun stroke(points: List<Pair<Double, Double>>) {
+    fun stroke(points: List<Pair<Double, Double>>, thread: EmbThread? = null) {
         val reduced = if (simplifyPaths) {
             // Public simplification works in mm; this builder receives 0.1 mm units.
             ContourSimplifier.simplify(
@@ -176,7 +217,12 @@ private class RunningStitches(
         } else points
         val sampled = reduced.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return
-        if (stitches.isNotEmpty() && trimBetweenStrokes) stitches += stitches.last().copy(command = Command.TRIM)
+        val changesColor = thread != null && threads.isNotEmpty() && !threads.last().sameThread(thread)
+        if (stitches.isNotEmpty() && (trimBetweenStrokes || changesColor)) stitches += stitches.last().copy(command = Command.TRIM)
+        if (thread != null && (threads.isEmpty() || changesColor)) {
+            if (changesColor) stitches += stitches.last().copy(command = Command.COLOR_CHANGE)
+            threads += thread
+        }
         stitches += sampled.first().copy(command = Command.JUMP)
         stitches += sampled.first()
         sampled.drop(1).forEach(::sewTo)
@@ -208,7 +254,7 @@ private class RunningStitches(
         }
         val last = stitches.lastOrNull()
         stitches += Stitch(last?.x ?: 0, last?.y ?: 0, Command.END)
-        return EmbPattern(stitches.toList(), if (last == null) emptyList() else listOf(thread), metadata, warnings)
+        return EmbPattern(stitches.toList(), if (last == null) emptyList() else threads.ifEmpty { listOf(thread) }.toList(), metadata, warnings)
     }
 
 }
