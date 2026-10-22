@@ -30,4 +30,13 @@
     <string name="new_project_from_text_hint">Open the lettering screen</string>
     <string name="new_project_choose_hoop">Choose a hoop</string>
     <string name="new_project_default_hoop">Default hoop · %1$s mm</string>
+    <string name="picker_title">Choose a design</string>
+    <string name="picker_intro">Choose a design to start editing.</string>
+    <string name="picker_mine">My designs</string>
+    <string name="picker_samples">Samples</string>
+    <string name="picker_empty">No designs here yet</string>
+    <string name="picker_empty_hint">You can start with one of the bundled samples.</string>
+    <string name="picker_browse_samples">Browse samples</string>
+    <string name="picker_load_failed">Could not load designs · Try again</string>
+    <string name="picker_unreadable">Cannot use this file</string>
 </resources>
