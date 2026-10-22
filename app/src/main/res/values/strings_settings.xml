@@ -53,4 +53,8 @@
     <string name="machine_limits_se600">Numeric design-count and PES stitch limits: unverified.</string>
     <string name="machine_limits_se700">Internal memory: up to 20 designs / 1024 KB, up to 100,000 stitches per design. USB drive design-count and stitch limits: unverified.</string>
     <string name="machine_filename_hint">PES filename length limit: unverified. Brother recommends letters A–Z/a–z, digits, hyphen and underscore.</string>
+    <string name="settings_theme">Display theme</string>
+    <string name="settings_theme_light">Light (default)</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">Follow system</string>
 </resources>

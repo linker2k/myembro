@@ -14,6 +14,8 @@ import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
 import io.github.linker2k.myembro.engine.io.PesVersion
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
+import io.github.linker2k.myembro.ui.theme.ThemeMode
+import io.github.linker2k.myembro.ui.theme.applyPlatformThemeMode
 
 enum class ThreadBrand(val labelRes: Int) {
     BROTHER(R.string.settings_brand_brother),
@@ -27,6 +29,7 @@ data class EmbroiderySettings(
     val threadBrand: ThreadBrand = ThreadBrand.BROTHER,
     /** v1 stays the default until a v6 file is confirmed on a real SE400 (docs/machines.md). */
     val pesVersion: PesVersion = PesVersion.V1,
+    val themeMode: ThemeMode = ThemeMode.LIGHT,
 ) {
     val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
@@ -40,6 +43,7 @@ data class EmbroiderySettings(
 
 /** Shared preference access for integration code; opening this screen is not required to read defaults. */
 class SettingsPreferences(context: Context) {
+    private val appContext = context.applicationContext
     private val preferences = context.applicationContext.getSharedPreferences("myembro_settings", Context.MODE_PRIVATE)
 
     fun read(): EmbroiderySettings = EmbroiderySettings(
@@ -50,6 +54,7 @@ class SettingsPreferences(context: Context) {
             ?: ThreadBrand.BROTHER,
         pesVersion = PesVersion.entries.firstOrNull { it.name == preferences.getString("pes_version", null) }
             ?: PesVersion.V1,
+        themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
     ).validated()
 
     fun setMachineModel(model: String) {
@@ -69,6 +74,11 @@ class SettingsPreferences(context: Context) {
 
     fun setPesVersion(version: PesVersion) {
         preferences.edit().putString("pes_version", version.name).apply()
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        preferences.edit().putString("theme_mode", mode.name).apply()
+        appContext.applyPlatformThemeMode(mode)
     }
 
     /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
@@ -112,5 +122,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setPesVersion(version: PesVersion) {
         preferences.setPesVersion(version)
         settings = settings.copy(pesVersion = version)
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        preferences.setThemeMode(mode)
+        settings = preferences.read()
     }
 }

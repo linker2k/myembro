@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
@@ -69,6 +70,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.pm.PackageInfoCompat
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.theme.HoopPreview
+import io.github.linker2k.myembro.ui.theme.ThemeMode
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
 import io.github.linker2k.myembro.ui.Hoop
@@ -88,6 +90,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
     var machineDialog by rememberSaveable { mutableStateOf(false) }
     var brandDialog by rememberSaveable { mutableStateOf(false) }
     var pesDialog by rememberSaveable { mutableStateOf(false) }
+    var themeDialog by rememberSaveable { mutableStateOf(false) }
     var licenseAsset by rememberSaveable { mutableStateOf<String?>(null) }
     val settings = vm.settings
     val context = LocalContext.current
@@ -185,6 +188,12 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 }
                 Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Card(shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                    SettingRow(Icons.Default.Brightness6, stringResource(R.string.settings_theme),
+                        stringResource(themeLabel(settings.themeMode))) { themeDialog = true }
+                }
                 SectionHeading(Icons.Default.Info, stringResource(R.string.settings_about_title))
                 Card(
                     shape = MyembroShapes.Card,
@@ -230,6 +239,11 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             label = { pesVersionLabel(it) },
             onDismiss = { pesDialog = false },
         ) { vm.setPesVersion(it); pesDialog = false }
+        if (themeDialog) ChoiceDialog(
+            title = stringResource(R.string.settings_theme), options = ThemeMode.entries,
+            selected = settings.themeMode, label = { stringResource(themeLabel(it)) },
+            onDismiss = { themeDialog = false },
+        ) { themeDialog = false; vm.setThemeMode(it) }
         licenseAsset?.let { LicenseDialog(it) { licenseAsset = null } }
     }
 }
@@ -396,4 +410,10 @@ private fun LicenseDialog(asset: String, onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+private fun themeLabel(mode: ThemeMode): Int = when (mode) {
+    ThemeMode.LIGHT -> R.string.settings_theme_light
+    ThemeMode.DARK -> R.string.settings_theme_dark
+    ThemeMode.SYSTEM -> R.string.settings_theme_system
 }

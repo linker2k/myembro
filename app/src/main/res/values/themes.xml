@@ -8,10 +8,47 @@
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:fontFamily">@font/myembro_sans</item>
     </style>
-    <style name="Theme.Myembro.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/myembro_brand_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/myembro_splash_animated</item>
+    <style name="Theme.Myembro.Starting" parent="Theme.Myembro.Starting.Light" />
+    <style name="Theme.Myembro.Content.Starting" parent="Theme.Myembro.Starting">
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
+    <style name="Theme.Myembro.Light" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/myembro_light_background</item>
+        <item name="android:colorAccent">@color/myembro_light_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/myembro_light_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:fontFamily">@font/myembro_sans</item>
+    </style>
+    <style name="Theme.Myembro.Starting.Light" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/myembro_light_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/myembro_splash_animated_light</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
-        <item name="postSplashScreenTheme">@style/Theme.Myembro</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="postSplashScreenTheme">@style/Theme.Myembro.Light</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+    <style name="Theme.Myembro.Dark" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/myembro_dark_background</item>
+        <item name="android:colorAccent">@color/myembro_dark_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/myembro_dark_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:fontFamily">@font/myembro_sans</item>
+    </style>
+    <style name="Theme.Myembro.Starting.Dark" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/myembro_dark_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/myembro_splash_animated_dark</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="postSplashScreenTheme">@style/Theme.Myembro.Dark</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
     </style>
 </resources>
