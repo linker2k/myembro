@@ -12,11 +12,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.IntentCompat
@@ -31,6 +33,7 @@ import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
+import io.github.linker2k.myembro.ui.fonts.FontLibraryScreen
 import io.github.linker2k.myembro.ui.home.DesignPickerScreen
 import io.github.linker2k.myembro.ui.home.HomeScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
@@ -105,6 +108,8 @@ class MainActivity : ComponentActivity() {
                 editor.newProject(hoop)
                 stack += Screen.EDITOR
             }
+            // Font picked in the font library; the lettering screen starts from it.
+            var letteringFontId by rememberSaveable { mutableStateOf("gowun-batang") }
             MyembroTheme {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 when (stack.lastOrNull()) {
@@ -140,14 +145,27 @@ class MainActivity : ComponentActivity() {
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {
                         val hoop = settings.settings.defaultHoop.spec()
-                        LetteringScreen(
-                            onBack = back,
-                            onAdd = { text ->
-                                editor.startWith(text, hoop)
-                                stack[stack.lastIndex] = Screen.EDITOR
-                            },
-                            hoop = hoop,
-                        )
+                        // The font library is drawn over the lettering screen, which keeps what was typed.
+                        var showFonts by rememberSaveable { mutableStateOf(false) }
+                        Box {
+                            LetteringScreen(
+                                onBack = back,
+                                onAdd = { text ->
+                                    editor.startWith(text, hoop)
+                                    stack[stack.lastIndex] = Screen.EDITOR
+                                },
+                                hoop = hoop,
+                                initialFontId = letteringFontId,
+                                onOpenFonts = { showFonts = true },
+                            )
+                            if (showFonts) {
+                                BackHandler { showFonts = false }
+                                FontLibraryScreen(
+                                    onBack = { showFonts = false },
+                                    onPick = { id -> letteringFontId = id; showFonts = false },
+                                )
+                            }
+                        }
                     }
                     Screen.VIEWER -> ViewerScreen(
                         viewer,

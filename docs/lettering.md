@@ -394,3 +394,22 @@ val editable = TextObject("label", text = "Name", stitchStyle = StitchStyle.SATI
 권장 높이 24mm를 그대로 보고한다. 권장 높이를 후프 크기에 맞춰 낮추지 않는다.
 24mm로 키우면 가로 배치의 20mm 높이를 초과하며, 세로 배치에서는 들어가는 것도
 검증했다. 권장 높이 경고는 품질 기준이며 실제 후프 초과 안내와 별도로 표시한다.
+
+## 폰트 라이브러리 연결
+
+`글꼴 더 보기`는 `MainActivity`에서 `FontLibraryScreen(onBack, onPick)`을 레터링 화면 **위에 겹쳐**
+연다(레터링 입력 상태 유지). `onPick`의 ID는 `initialFontId`로 돌아간다. 카탈로그 ID 또는
+사용자 폰트 `user:<uuid>`이며, `LetteringRenderer.loadFont`는 `FontRepository.find` 다음에
+`FontRepository.userFont`를 찾는다. 사용자 폰트의 캐시 revision은 파일 크기·수정 시각이다.
+다운로드·삭제·사용자 폰트 삭제 시 `FontQualityCache.Shared.invalidate(id)`를 호출한다.
+
+- 카탈로그: `assets/fonts/catalog.json` 15종, 고정 커밋 URL, 다운로드 바이트의 SHA-256·크기를
+  검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로 함께 저장한다(https만, 32MB 상한).
+- 내 폰트: SAF로 TTF/OTF/SVG를 `filesDir/fonts/user/`에 복사하고 파싱·글리프 검사 후
+  `가나다 ABC 자수` 10/20mm 품질 결과를 `<파일>.quality.json`(분석 버전 4)에 저장한다.
+- 품질: 앱의 `FontQualityGateway`가 엔진 `FontQuality.analyze`를 감싼다. 외곽선은 그대로 넘긴다.
+  단선은 의도한 교차·이음·되짚기를 엔진이 0mm 간격으로 보므로, 다른 획과 글자 높이의 2.5% 안으로
+  닿는 지점 주변(높이의 20%)을 잘라낸 뒤 측정한다. 땀·점프 수는 자르지 않은 획 기준이다.
+  같은 획의 조각끼리는 비교하지 않도록 닿는 조각과 닫힌 고리를 처리한다. 두 비율이 높이에 비례하므로
+  권장 높이가 측정 높이와 무관하다(Hershey Sans 전체 영숫자 10mm: 12.1mm, 20mm: 12.2mm).
+  권장 높이가 300mm를 넘으면(겹친 윤곽의 µm 간격) "확대로 해결 불가"로 표시한다.
