@@ -1,0 +1,25 @@
+<resources>
+    <string name="fonts_title">Fonts</string>
+    <string name="fonts_back">Back</string>
+    <string name="fonts_filter_all">All</string>
+    <string name="fonts_filter_korean">Korean</string>
+    <string name="fonts_filter_latin">Latin</string>
+    <string name="fonts_filter_single_line">Single-line</string>
+    <string name="fonts_filter_outline">Outline</string>
+    <string name="fonts_kind_single_line">Single-line (running stitch)</string>
+    <string name="fonts_kind_outline">Outline</string>
+    <string name="fonts_size_mb">%1$s MB</string>
+    <string name="fonts_download">Download</string>
+    <string name="fonts_downloading">%1$d%%</string>
+    <string name="fonts_installed">Installed</string>
+    <string name="fonts_use">Use</string>
+    <string name="fonts_delete">Delete</string>
+    <string name="fonts_license">License</string>
+    <string name="fonts_close">Close</string>
+    <string name="fonts_preview_hint">Download to preview</string>
+    <string name="fonts_empty">No fonts match these filters.</string>
+    <string name="fonts_download_failed">Download failed: %1$s</string>
+    <string name="fonts_checksum_failed">The downloaded file did not match the expected checksum and was discarded.</string>
+    <string name="fonts_license_not_installed">License: %1$s\nDesigner: %2$s\n\nThe full license text is saved with the font when you download it.\n\nSource: %3$s</string>
+    <string name="fonts_network_note">Fonts are downloaded from their open-source repositories and verified before use.</string>
+</resources>

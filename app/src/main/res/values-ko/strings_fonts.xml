@@ -1,0 +1,25 @@
+<resources>
+    <string name="fonts_title">글꼴</string>
+    <string name="fonts_back">뒤로</string>
+    <string name="fonts_filter_all">전체</string>
+    <string name="fonts_filter_korean">한글</string>
+    <string name="fonts_filter_latin">영문</string>
+    <string name="fonts_filter_single_line">단선</string>
+    <string name="fonts_filter_outline">외곽선</string>
+    <string name="fonts_kind_single_line">단선 (러닝 스티치)</string>
+    <string name="fonts_kind_outline">외곽선</string>
+    <string name="fonts_size_mb">%1$s MB</string>
+    <string name="fonts_download">다운로드</string>
+    <string name="fonts_downloading">%1$d%%</string>
+    <string name="fonts_installed">설치됨</string>
+    <string name="fonts_use">사용</string>
+    <string name="fonts_delete">삭제</string>
+    <string name="fonts_license">라이선스</string>
+    <string name="fonts_close">닫기</string>
+    <string name="fonts_preview_hint">다운로드하면 미리 볼 수 있어요</string>
+    <string name="fonts_empty">조건에 맞는 글꼴이 없어요.</string>
+    <string name="fonts_download_failed">다운로드 실패: %1$s</string>
+    <string name="fonts_checksum_failed">받은 파일의 체크섬이 맞지 않아 삭제했어요.</string>
+    <string name="fonts_license_not_installed">라이선스: %1$s\n디자이너: %2$s\n\n라이선스 전문은 글꼴을 다운로드할 때 함께 저장돼요.\n\n출처: %3$s</string>
+    <string name="fonts_network_note">글꼴은 각 오픈소스 저장소에서 받아 검증한 뒤 사용해요.</string>
+</resources>
