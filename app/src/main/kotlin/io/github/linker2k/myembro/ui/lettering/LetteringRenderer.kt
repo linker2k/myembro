@@ -26,6 +26,7 @@ internal val bundledLetteringFonts = listOf(
 internal data class LetteringResult(
     val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport,
     val unsupported: Boolean, val outsideHoop: Boolean,
+    val singleLine: Boolean, val fontName: String,
 )
 
 /** Catalog-card bridge: call after download, on a worker via this suspending API. No download UI here. */
@@ -40,7 +41,7 @@ object LetteringFontQuality {
 }
 
 private class LoadedFont(
-    val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String,
+    val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String, val name: String,
 ) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
     fun advance(character: String): Double = when {
@@ -85,7 +86,8 @@ private fun loadFont(context: Context, id: String): LoadedFont {
     val svg = if (installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG) repo.svgFont(installed) else null
     val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
     check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
-    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: "bundled-v1") + ":glyph-extractor-v2")
+    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: "bundled-v1") + ":glyph-extractor-v2",
+        bundled?.name ?: installed?.nameKo ?: installed?.name ?: if (hershey != null) "Hershey Futural" else id)
 }
 
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
@@ -98,10 +100,24 @@ private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: D
     }
 }
 
-/** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
-internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec): LetteringResult {
+/** Font/catalog cards can request the same real stitches without running quality analysis again. */
+object LetteringFontPreview {
+    suspend fun pattern(
+        context: Context, fontId: String, text: String, heightMm: Double, thread: EmbThread,
+        stitchStyle: StitchStyle? = null,
+    ): EmbPattern = withContext(Dispatchers.Default) {
+        val source = loadFont(context.applicationContext, fontId)
+        val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
+            .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
+        val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle)
+        prepareObject(source, settings, thread).localPattern()
+    }
+}
+
+/** Keep geometry construction shared by main preview, cards, and the added object. */
+private fun prepareObject(source: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
     val text = normalizedLetteringText(settings.text)
-    val source = loadFont(context, settings.fontId)
     val lines = arrayListOf(mutableListOf<LayoutGlyph>())
     text.codePoints().toArray().forEachIndexed { index, code ->
         if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
@@ -111,7 +127,7 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
         }
     }
     val layout = layoutGlyphs(lines, source.reference, settings)
-    val objectData = TextObject(
+    return TextObject(
         id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
         heightMm = settings.heightMm, spacing = settings.spacingMm, arcDeg = settings.arcDeg,
         thread = thread, fontKind = FontKind.OUTLINE, contours = layout.contours, contourSourceHeight = source.reference,
@@ -120,12 +136,20 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
         arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
         characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
+        singleLine = source.face == null,
+        stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
     )
-    val placed = placeLettering(objectData, hoop, settings.alignment)
+}
+
+/** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
+internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec): LetteringResult {
+    val text = normalizedLetteringText(settings.text)
+    val source = loadFont(context, settings.fontId)
+    val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val pattern = placed.placedPattern()
     val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
     val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
     val b = pattern.bounds
     val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 || b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
-    return LetteringResult(placed, pattern, quality, unsupported, outside)
+    return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
 }

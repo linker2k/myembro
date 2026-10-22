@@ -36,6 +36,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -70,6 +71,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.lettering.Polyline
+import io.github.linker2k.myembro.ui.ThreadRendering
+import io.github.linker2k.myembro.ui.lettering.SingleLineFontBadge
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
 import io.github.linker2k.myembro.fonts.FontRepository
@@ -84,14 +87,13 @@ private val Ink = Color(0xFF2B2420)
 private val Terracotta = Color(0xFFC4552D)
 private val Muted = Color(0xFF6B5C4E)
 private val Line = Color(0xFFEADFCF)
-private val Thread = Color(0xFF1F4E8C)
 
 enum class FontFilter { KOREAN, LATIN, SINGLE_LINE, OUTLINE }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
     data class Outline(val typeface: Typeface) : FontPreview
-    data class Strokes(val strokes: List<Polyline>) : FontPreview
+    data class Strokes(val strokes: List<Polyline>, val referenceHeight: Double = 1000.0) : FontPreview
 }
 
 class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
@@ -173,7 +175,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         val preview = withContext(Dispatchers.IO) {
             when (font.kind) {
                 CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(font)?.let { FontPreview.Outline(it) }
-                CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name)) }
+                CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name), it.unitsPerEm) }
             }
         }
         if (preview != null) previews[font.id] = preview
@@ -324,10 +326,11 @@ private fun FontCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                is FontPreview.Strokes -> StrokePreview(preview.strokes, Modifier.fillMaxSize())
+                is FontPreview.Strokes -> StrokePreview(preview.strokes, Modifier.fillMaxSize(), preview.referenceHeight)
                 null -> Text(stringResource(R.string.fonts_preview_hint), color = Muted, fontSize = 13.sp)
             }
         }
+        if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) SingleLineFontBadge()
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -385,7 +388,8 @@ private fun FontCard(
 
 /** Draws single-line glyph strokes (font units, y up) scaled to fit, left-aligned. */
 @Composable
-private fun StrokePreview(strokes: List<Polyline>, modifier: Modifier) {
+private fun StrokePreview(strokes: List<Polyline>, modifier: Modifier, referenceHeight: Double) {
+    val threadColor = MaterialTheme.colorScheme.primary
     Canvas(modifier) {
         val pts = strokes.flatten()
         if (pts.isEmpty()) return@Canvas
@@ -404,6 +408,6 @@ private fun StrokePreview(strokes: List<Polyline>, modifier: Modifier) {
                 if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y)
             }
         }
-        drawPath(path, Thread, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(path, threadColor, style = Stroke(width = ThreadRendering.widthPx((scale * referenceHeight / (18.0 * 10)).toFloat(), 1.dp.toPx()), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }

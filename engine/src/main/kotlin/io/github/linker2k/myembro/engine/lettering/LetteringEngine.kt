@@ -22,6 +22,7 @@ object LetteringEngine {
      * apart (default 1.5). [arcDeg] bends the baseline; [arcRadiusMm], when set, replaces
      * angle magnitude with a physical radius, retaining the angle's direction.
      * [characterThreads] indices count code points after CR/LF and tab normalization.
+     * Single-line Hershey defaults to [StitchStyle.BEAN]; select RUNNING for one pass.
      * Unsupported Unicode code points become '?' and are reported in warnings.
      */
     fun generate(
@@ -37,6 +38,7 @@ object LetteringEngine {
         alignment: TextAlignment = TextAlignment.CENTER,
         arcRadiusMm: Double? = null,
         characterThreads: Map<Int, EmbThread> = emptyMap(),
+        stitchStyle: StitchStyle = StitchStyle.BEAN,
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         require(spacing.isFinite() && spacing >= 0) { "spacing must be finite and non-negative" }
@@ -84,7 +86,7 @@ object LetteringEngine {
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
             missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
-        )
+        ).withStitchStyle(stitchStyle)
     }
 
     /**
@@ -102,6 +104,7 @@ object LetteringEngine {
      * Optional [contourThreads] and source-unit [contourBaselines] must each match the raw
      * contour count; baselines preserve line offsets after bending each line separately.
      * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
+     * [stitchStyle] defaults to RUNNING for outlines; use BEAN for imported single-line paths.
      */
     fun fromContours(
         contours: List<List<Pair<Double, Double>>>,
@@ -118,6 +121,7 @@ object LetteringEngine {
         arcRadiusMm: Double? = null,
         contourThreads: List<EmbThread> = emptyList(),
         contourBaselines: List<Double> = emptyList(),
+        stitchStyle: StitchStyle = StitchStyle.RUNNING,
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         validateRadius(arcRadiusMm)
@@ -152,7 +156,7 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread)
+        return builder.finish(thread).withStitchStyle(stitchStyle)
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {

@@ -49,4 +49,9 @@
     <string name="lettering_grade_unsuitable">부적합</string>
     <string name="lettering_card_minimum">권장 ≥ %1$s mm</string>
     <string name="lettering_quality_pending">분석 중…</string>
+    <string name="lettering_stroke_style">선 굵기</string>
+    <string name="lettering_running">1겹 러닝</string>
+    <string name="lettering_bean">3겹 콩땀</string>
+    <string name="lettering_bean_hint">3겹 콩땀은 같은 선을 세 번 수놓아 또렷하게 표현해요.</string>
+    <string name="lettering_single_line_badge">단선 · 이름 새기기·레드워크에 적합</string>
 </resources>

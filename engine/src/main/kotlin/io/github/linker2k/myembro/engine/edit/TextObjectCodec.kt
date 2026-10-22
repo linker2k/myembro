@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.edit
 
 import kotlinx.serialization.json.*
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
+import io.github.linker2k.myembro.engine.lettering.StitchStyle
 
 /** Editable lettering, including cached font outlines for offline reconstruction without Android. */
 object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject::class.java) {
@@ -14,6 +15,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         put("arcDeg", obj.arcDeg)
         put("thread", ProjectJson.encodeThread(obj.thread))
         put("fontKind", obj.fontKind.name)
+        put("singleLine", obj.singleLine)
+        put("stitchStyle", obj.stitchStyle.name)
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
         }))
@@ -52,6 +55,10 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         characterThreads = data["characterThreads"]?.jsonObject?.map { (key, value) -> key.toInt() to ProjectJson.decodeThread(value.jsonObject) }?.toMap() ?: emptyMap(),
         contourCharacters = data["contourCharacters"]?.jsonArray?.map { it.jsonPrimitive.int } ?: emptyList(),
         contourBaselines = data["contourBaselines"]?.jsonArray?.map { it.jsonPrimitive.double } ?: emptyList(),
+        singleLine = data["singleLine"]?.jsonPrimitive?.boolean
+            ?: ((data["fontKind"]?.jsonPrimitive?.content?.let(FontKind::valueOf) ?: FontKind.HERSHEY) == FontKind.HERSHEY),
+        // Existing projects used running stitch; opening them must not triple the stitch count.
+        stitchStyle = data["stitchStyle"]?.jsonPrimitive?.content?.let(StitchStyle::valueOf) ?: StitchStyle.RUNNING,
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,
     )
