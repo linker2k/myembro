@@ -1,18 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Embroidery hoop with a satin-stitch zigzag inside. -->
+<!--
+    Simplified from docs/images/launcher-icon-artwork.png.
+    All painted geometry fits inside the centered 66dp-diameter safe circle.
+    The open hoop and opaque stitch silhouette also serve as the monochrome layer.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Compact clamp; its top corners remain inside the circular safe zone. -->
     <path
-        android:strokeColor="#FF8D6E63"
+        android:fillColor="#FF916448"
+        android:pathData="M51,24 L57,24 L57,31 L51,31 Z" />
+    <path
+        android:strokeColor="#FF916448"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M48,26 L60,26" />
+    <!-- Transparent center preserves the hoop opening in themed icons. -->
+    <path
+        android:strokeColor="#FF916448"
         android:strokeWidth="5"
-        android:pathData="M54,28a26,26 0,1 0,0.01 0z" />
+        android:pathData="M54,30 A26,26 0,1 1,54,82 A26,26 0,1 1,54,30 Z" />
+    <!-- Three broad satin-stitch arches stay legible at launcher sizes. -->
     <path
-        android:strokeColor="#FFD81B60"
-        android:strokeWidth="2.5"
+        android:strokeColor="#FFBC563E"
+        android:strokeWidth="6.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M38,62 L42,46 L46,62 L50,46 L54,62 L58,46 L62,62 L66,46 L70,62" />
+        android:pathData="M37,63 C39,63 39,47 43,47 C47,47 46,63 49,63 C52,63 52,47 55,47 C59,47 58,63 61,63 C64,63 64,47 67,47 C70,47 69,63 71,63" />
 </vector>
