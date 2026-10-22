@@ -34,6 +34,7 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.ui.RenderData
+import io.github.linker2k.myembro.ui.ThreadRendering
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import java.util.Locale
@@ -175,7 +176,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             canvas.save()
             canvas.translate(origin.x, origin.y)
             canvas.scale(scale, scale)
-            paint.strokeWidth = maxOf(3f, 1f / scale)
+            paint.strokeWidth = ThreadRendering.widthPx(scale, 1.dp.toPx()) / scale
             val progress = (renders.sumOf { it.second.pattern.stitches.size } * preview.coerceIn(0f, 1f)).toInt()
             var offset = 0
             for ((_, data) in renders) {

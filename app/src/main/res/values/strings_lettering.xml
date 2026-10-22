@@ -49,4 +49,9 @@
     <string name="lettering_grade_unsuitable">Unsuitable</string>
     <string name="lettering_card_minimum">≥ %1$s mm</string>
     <string name="lettering_quality_pending">Analyzing…</string>
+    <string name="lettering_stroke_style">Line weight</string>
+    <string name="lettering_running">Single running</string>
+    <string name="lettering_bean">Triple bean</string>
+    <string name="lettering_bean_hint">Triple bean stitches trace the same line three times for a clearer finish.</string>
+    <string name="lettering_single_line_badge">Single line · Great for names and redwork</string>
 </resources>

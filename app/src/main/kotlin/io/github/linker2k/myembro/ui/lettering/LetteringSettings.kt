@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui.lettering
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
+import io.github.linker2k.myembro.engine.lettering.StitchStyle
 
 internal enum class LetteringAlignment { LEFT, CENTER, RIGHT }
 internal enum class LetteringCurve { STRAIGHT, ARCH, CIRCLE, BELOW }
@@ -20,6 +21,7 @@ internal data class LetteringSettings(
     val lineSpacingMm: Double = 9.0,
     val radiusMm: Double = 45.0,
     val characterColors: Map<Int, Int> = emptyMap(),
+    val stitchStyle: StitchStyle? = null,
 ) {
     val arcDeg: Double get() = when {
         !curved || curve == LetteringCurve.STRAIGHT -> 0.0
