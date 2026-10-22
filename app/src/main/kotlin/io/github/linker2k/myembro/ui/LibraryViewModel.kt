@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.model.Bounds
@@ -138,7 +139,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private fun describe(file: File): Item = runCatching {
         val data = RenderData(PatternReader.read(file.readBytes(), file.name))
         val p = data.pattern
-        val size = p.bounds?.let { "%.0f×%.0f mm".format(it.width / 10f, it.height / 10f) } ?: "-"
+        val size = p.bounds?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-"
         val res = getApplication<Application>().resources
         val summary = res.getString(R.string.library_summary, size, p.stitchCount, p.colorBlocks.size)
         Item(

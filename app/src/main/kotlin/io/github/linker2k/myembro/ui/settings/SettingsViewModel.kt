@@ -29,9 +29,9 @@ data class EmbroiderySettings(
 ) {
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val availableViewerHoops: List<Hoop> get() =
-        machineProfile?.let { profile -> Hoop.entries.filter(profile::supports) } ?: Hoop.entries
-    // Custom machines have unknown capabilities; the host must offer a manual setup instead.
-    val availableEditorHoops: List<HoopSpec> get() = machineProfile?.projectHoops.orEmpty()
+        Hoop.entries
+    // Selection is unrestricted; machine compatibility remains a separate warning.
+    val availableEditorHoops: List<HoopSpec> get() = availableViewerHoops.map { HoopSpec(it.label, it.widthMm * 10, it.heightMm * 10) }
     fun constrainHoop(hoop: Hoop): Hoop = hoop.takeIf { it in availableViewerHoops } ?: Hoop.H100
     fun validated(): EmbroiderySettings = copy(defaultHoop = constrainHoop(defaultHoop))
 }
@@ -73,7 +73,10 @@ class SettingsPreferences(context: Context) {
     /** Profile query API for the integration owner; sizes are engine-native 0.1 mm. */
     fun machineProfile(): MachineProfile? = read().machineProfile
     fun editorHoops(): List<HoopSpec> = read().availableEditorHoops
-    fun defaultEditorHoop(): HoopSpec? = machineProfile()?.defaultHoop
+    fun defaultEditorHoop(): HoopSpec = read().defaultHoop.let { selected ->
+        machineProfile()?.projectHoops?.firstOrNull { it.width == selected.widthMm * 10 && it.height == selected.heightMm * 10 }
+            ?: HoopSpec(selected.label, selected.widthMm * 10, selected.heightMm * 10)
+    }
 
     /** Strongly held listener until the returned disposer is called by the owning ViewModel. */
     fun observe(onChange: () -> Unit): () -> Unit {

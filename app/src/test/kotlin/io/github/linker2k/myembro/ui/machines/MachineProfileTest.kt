@@ -12,25 +12,26 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MachineProfileTest {
-    @Test fun `first launch defaults to the user's SE400 and only offers a 100mm project`() {
+    @Test fun `first launch defaults to the user's SE400 and keeps a 100mm default with optional frames`() {
         val settings = EmbroiderySettings()
         assertEquals(MachineProfiles.SE400, settings.machineProfile)
         assertEquals(Hoop.H100, settings.defaultHoop)
-        assertEquals(listOf(Hoop.H100), settings.availableViewerHoops)
-        assertEquals(listOf(HoopSpec.H100), settings.availableEditorHoops)
+        assertEquals(Hoop.entries, settings.availableViewerHoops)
+        assertTrue(settings.availableEditorHoops.any { it.width == 600 && it.height == 200 })
     }
 
-    @Test fun `known models clamp stale large hoops without claiming custom models are supported`() {
+    @Test fun `unsupported frames remain selectable without claiming compatibility`() {
         for (profile in MachineProfiles.all) {
             val settings = EmbroiderySettings(profile.displayName, Hoop.H160).validated()
-            assertEquals(Hoop.H100, settings.defaultHoop)
-            assertFalse(Hoop.H130 in settings.availableViewerHoops)
-            assertFalse(Hoop.H200 in settings.availableViewerHoops)
+            assertEquals(Hoop.H160, settings.defaultHoop)
+            assertTrue(Hoop.H130 in settings.availableViewerHoops)
+            assertFalse(profile.supports(Hoop.H130))
+            assertTrue(Hoop.H200 in settings.availableViewerHoops)
         }
         val custom = EmbroiderySettings("My custom machine", Hoop.H130).validated()
         assertNull(custom.machineProfile)
         assertEquals(Hoop.H130, custom.defaultHoop)
-        assertTrue(custom.availableEditorHoops.isEmpty())
+        assertTrue(custom.availableEditorHoops.isNotEmpty())
     }
 
     @Test fun `100mm boundary uses tenths of a millimeter and survives extreme coordinates`() {
@@ -44,11 +45,14 @@ class MachineProfileTest {
     }
 
     @Test fun `repositionable hoops never expand the continuous sewing area`() {
-        for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600)) {
+        for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600, MachineProfiles.SE700)) {
             val large = profile.hoops.single { it.requiresRepositioning }
             assertEquals(1700, large.coverage.height)
             assertEquals(HoopSpec.H100, large.sewingArea)
-            assertFalse(profile.supports(large.coverage))
+            assertTrue(profile.supports(large.coverage))
+            assertNull(large.positionCount)
+            assertTrue(large.coverage.positions.isEmpty())
+            assertTrue(profile.supports(Hoop.SA431))
             assertFalse(profile.fits(Bounds(0, 0, 1000, 1700)))
         }
     }

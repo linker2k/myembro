@@ -74,6 +74,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
@@ -224,7 +225,7 @@ private fun NewProjectCard(hoop: Hoop, onCreate: () -> Unit) {
                     }
                     Image(painterResource(R.drawable.empty_state), null, Modifier.size(artSize))
                 }
-                Text(stringResource(R.string.new_project_default_hoop, hoop.label),
+                Text(stringResource(R.string.new_project_default_hoop, hoop.dimensions()),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = onCreate, modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Button,
                     contentPadding = PaddingValues(14.dp)) {

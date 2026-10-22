@@ -34,12 +34,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.format.dimensions
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.linker2k.myembro.ui.settings.SettingsViewModel
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 
-/** Shared creation flow. [hoops] must come from the selected machine's supported project hoops. */
+/** Shared creation flow. Unsupported frames stay selectable with a compatibility warning. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewProjectSheet(
@@ -51,6 +54,8 @@ fun NewProjectSheet(
     letteringAvailable: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val settings: SettingsViewModel = viewModel()
+    val orderedHoops = hoops.distinct().sortedBy { it != settings.settings.defaultHoop }
     var choosingHoop by remember { mutableStateOf(false) }
     var actionTaken by remember { mutableStateOf(false) }
     fun choose(action: () -> Unit) {
@@ -68,14 +73,21 @@ fun NewProjectSheet(
                 Text(stringResource(if (choosingHoop) R.string.new_project_choose_hoop else R.string.home_new_project),
                     style = MaterialTheme.typography.headlineSmall)
                 if (choosingHoop) {
-                    hoops.distinct().forEach { hoop ->
+                    orderedHoops.forEach { hoop ->
                         Surface(onClick = { choose { onBlank(hoop) } }, enabled = !actionTaken,
                             shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 HoopPreview(hoop, Modifier.size(48.dp))
-                                Text(stringResource(R.string.settings_hoop_size, hoop.label), Modifier.weight(1f))
+                                Column(Modifier.weight(1f)) {
+                                    Text((if (hoop.name.startsWith("SA")) hoop.name + " · " else "") + hoop.dimensions())
+                                    if (settings.settings.machineProfile?.supports(hoop) != true) Text(
+                                        stringResource(R.string.machine_hoop_unsupported), style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error)
+                                    if (hoop == Hoop.SA434) Text(stringResource(R.string.machine_positions_unverified),
+                                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 Icon(Icons.Default.ChevronRight, null)
                             }
                         }
@@ -85,7 +97,7 @@ fun NewProjectSheet(
                     Text(stringResource(R.string.new_project_intro), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CreationChoice(Icons.Default.Add, stringResource(R.string.new_project_blank),
-                        if (hoops.size == 1) stringResource(R.string.settings_hoop_size, hoops.single().label)
+                        if (hoops.size == 1) hoops.single().dimensions()
                         else stringResource(R.string.new_project_choose_hoop), !actionTaken && hoops.isNotEmpty()) {
                         if (hoops.size == 1) choose { onBlank(hoops.single()) } else choosingHoop = true
                     }

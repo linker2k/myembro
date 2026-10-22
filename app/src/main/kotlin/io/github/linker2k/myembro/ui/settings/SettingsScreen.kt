@@ -73,6 +73,8 @@ import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.ThemeMode
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
+import io.github.linker2k.myembro.ui.format.Dimensions
+import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
@@ -148,13 +150,13 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     ) {
                         items(Hoop.entries, key = { it.name }) { hoop ->
                             val selected = settings.defaultHoop == hoop
-                            val supported = hoop in settings.availableViewerHoops
+                            val supported = settings.machineProfile?.supports(hoop) == true
                             Surface(
-                                Modifier.width(108.dp).selectable(selected, enabled = supported, role = Role.RadioButton,
+                                Modifier.width(180.dp).selectable(selected, role = Role.RadioButton,
                                     onClick = { vm.setDefaultHoop(hoop) }),
                                 shape = MyembroShapes.Button,
                                 color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (supported) 1f else .5f),
+                                contentColor = MaterialTheme.colorScheme.onSurface,
                                 border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                             ) {
                                 Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -163,8 +165,8 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                                         if (selected) Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp).align(Alignment.TopEnd),
                                             tint = MaterialTheme.colorScheme.primary)
                                     }
-                                    Text(stringResource(R.string.settings_hoop_size, hoop.label),
-                                        style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                    Text((if (hoop.name.startsWith("SA")) hoop.name + " · " else "") + hoop.dimensions(),
+                                        style = MaterialTheme.typography.labelSmall, maxLines = 2)
                                     if (!supported) Text(stringResource(R.string.machine_hoop_unsupported),
                                         style = MaterialTheme.typography.labelSmall)
                                 }
@@ -244,15 +246,14 @@ private fun MachineDetails(profile: MachineProfile?) {
             Text(stringResource(R.string.machine_unverified), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            Text(stringResource(R.string.machine_area_format, profile.maximumArea.name, profile.exportFormats.joinToString()),
+            Text(stringResource(R.string.machine_area_format, Dimensions.hoopSize(profile.maximumArea.width / 10, profile.maximumArea.height / 10), profile.exportFormats.joinToString()),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(stringResource(when (profile.id) {
                 "se400" -> R.string.machine_transfer_se400
                 "se600" -> R.string.machine_transfer_se600
                 else -> R.string.machine_transfer_se700
             }), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(if (profile.id == "se700") R.string.machine_optional_hoops_small
-                else R.string.machine_optional_hoops_repositionable),
+            Text(stringResource(R.string.machine_optional_hoops_repositionable),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(stringResource(when (profile.id) {
                 "se400" -> R.string.machine_limits_se400

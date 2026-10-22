@@ -29,7 +29,7 @@
     <string name="new_project_from_text">Start with lettering</string>
     <string name="new_project_from_text_hint">Open the lettering screen</string>
     <string name="new_project_choose_hoop">Choose a hoop</string>
-    <string name="new_project_default_hoop">Default hoop · %1$s mm</string>
+    <string name="new_project_default_hoop">Default hoop · %1$s</string>
     <string name="picker_title">Choose a design</string>
     <string name="picker_intro">Choose a design to start editing.</string>
     <string name="picker_mine">My designs</string>

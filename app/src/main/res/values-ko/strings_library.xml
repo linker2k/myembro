@@ -49,7 +49,7 @@
     <string name="library_favorite">즐겨찾기 추가</string>
     <string name="library_unfavorite">즐겨찾기 해제</string>
     <string name="viewer_export_summary">%1$,d땀 · %2$d색</string>
-    <string name="viewer_trims_size_note">크기 단위 mm · 실 자르기 %1$d회</string>
+    <string name="viewer_trims_size_note">크기 mm/in · 실 자르기 %1$d회</string>
     <string name="viewer_thread_stitches">%1$,d땀</string>
     <string name="viewer_restart">처음으로</string>
     <string name="viewer_finish">완성 도안 보기</string>
