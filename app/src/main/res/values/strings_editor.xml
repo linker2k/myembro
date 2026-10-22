@@ -1,0 +1,34 @@
+<resources>
+    <string name="editor_title">Embroidery editor</string>
+    <string name="editor_back">Back to library</string>
+    <string name="editor_save">Save PES</string>
+    <string name="editor_hoop_size">Hoop %1$s mm</string>
+    <string name="editor_add">Add design</string>
+    <string name="editor_layers">Layers</string>
+    <string name="editor_duplicate">Duplicate</string>
+    <string name="editor_mirror">Mirror</string>
+    <string name="editor_rotate">Rotate 90°</string>
+    <string name="editor_center">Center</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+    <string name="editor_fit">Fit hoop to screen</string>
+    <string name="editor_composition">Your composition</string>
+    <string name="editor_object_count">%1$d objects</string>
+    <string name="editor_outside">Design extends outside the hoop. Move or resize it before sewing.</string>
+    <string name="editor_navigation_hint">Tap a design to select. Drag empty fabric to pan; pinch there to zoom.</string>
+    <string name="editor_selection_hint">Drag to move. Use two fingers to rotate and scale, or drag a corner handle.</string>
+    <string name="editor_canvas_description">Embroidery hoop. Tap to select; drag a design to move, pinch to resize and rotate. Use empty fabric to zoom and pan.</string>
+    <string name="editor_library_empty">No designs yet. Import a PES, PEC or DST file into the library first.</string>
+    <string name="editor_layer_hint">Top to bottom = sewing order. Press and hold a grip, then drag to reorder.</string>
+    <string name="editor_no_layers">Add a design to start your composition.</string>
+    <string name="editor_drag_layer">Hold and drag to change sewing order</string>
+    <string name="editor_layer_earlier">Sew earlier</string>
+    <string name="editor_layer_later">Sew later</string>
+    <string name="editor_hide">Hide layer</string>
+    <string name="editor_show">Show layer</string>
+    <string name="editor_load_failed">Could not add design: %1$s</string>
+    <string name="editor_save_failed">Could not save PES: %1$s</string>
+    <string name="editor_saved">Saved to library: %1$s</string>
+    <string name="editor_empty_export">There are no visible stitches to save.</string>
+</resources>
