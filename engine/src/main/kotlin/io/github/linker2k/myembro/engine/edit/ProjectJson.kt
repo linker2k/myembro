@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.edit
 
+import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -105,14 +106,29 @@ object ProjectJson {
 
     private fun decodeStitch(obj: JsonObject): StitchObject {
         val fields = ProjectObjectFields.fromJson(obj)
+        val sourceBytes = obj["sourceBytes"]?.jsonPrimitive?.content?.let { Base64.getDecoder().decode(it) }
+        val sourceFileName = obj["sourceFileName"]?.jsonPrimitive?.content
+        val stored = decodePattern(obj.getValue("sourcePattern").jsonObject)
         return StitchObject(
             id = fields.id, name = fields.name,
-            source = decodePattern(obj.getValue("sourcePattern").jsonObject),
+            source = sourceBytes?.let { reread(stored, it, sourceFileName) } ?: stored,
             transform = fields.transform,
             visible = fields.visible,
-            sourceBytes = obj["sourceBytes"]?.jsonPrimitive?.content?.let { Base64.getDecoder().decode(it) },
-            sourceFileName = obj["sourceFileName"]?.jsonPrimitive?.content,
+            sourceBytes = sourceBytes,
+            sourceFileName = sourceFileName,
         )
+    }
+
+    /**
+     * Recoloring drops sourceBytes, so while they are present the stored pattern is just what an
+     * older reader made of them. Reading them again lets saved projects pick up reader fixes, such
+     * as PE-Design thread colors (docs/colors.md), as long as the needle positions are unchanged.
+     */
+    private fun reread(stored: EmbPattern, bytes: ByteArray, fileName: String?): EmbPattern? {
+        val fresh = runCatching { PatternReader.read(bytes, fileName) }.getOrNull() ?: return null
+        val samePoints = fresh.stitches.size == stored.stitches.size &&
+            fresh.stitches.indices.all { fresh.stitches[it].x == stored.stitches[it].x && fresh.stitches[it].y == stored.stitches[it].y }
+        return fresh.takeIf { samePoints }
     }
 
     private fun encodePattern(pattern: EmbPattern): JsonObject = buildJsonObject {

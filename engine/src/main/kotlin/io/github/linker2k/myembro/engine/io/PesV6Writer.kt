@@ -152,7 +152,8 @@ internal object PesV6Writer {
         fun string16(value: String) { val bytes = value.toByteArray(Charsets.UTF_8); u16(bytes.size); write(bytes) }
         fun string8(value: String?) {
             val bytes = value?.toByteArray(Charsets.UTF_8) ?: byteArrayOf()
-            var length = minOf(255, bytes.size)
+            // 0xFF is the MFC CArchive escape for longer lengths, so a one-byte length stops at 254.
+            var length = minOf(254, bytes.size)
             while (length > 0 && length < bytes.size && bytes[length].toInt() and 0xC0 == 0x80) length--
             write(length); write(bytes, 0, length)
         }

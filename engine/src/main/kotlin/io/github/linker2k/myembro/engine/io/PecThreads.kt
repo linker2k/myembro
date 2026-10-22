@@ -81,6 +81,17 @@ object PecThreads {
         t(255, 200, 200, "Applique", "64"),
     )
 
+    /** pyembroidery's red-mean color distance (EmbThread.color_distance_red_mean), alpha ignored. */
+    fun distance(a: EmbThread, b: EmbThread): Int = distance(a.color, b.color)
+
+    fun distance(a: Int, b: Int): Int {
+        val ar = (a shr 16) and 0xFF; val ag = (a shr 8) and 0xFF; val ab = a and 0xFF
+        val br = (b shr 16) and 0xFF; val bg = (b shr 8) and 0xFF; val bb = b and 0xFF
+        val mean = Math.rint((ar + br) / 2.0).toInt()
+        val r = ar - br; val g = ag - bg; val bl = ab - bb
+        return (((512 + mean) * r * r) shr 8) + 4 * g * g + (((767 - mean) * bl * bl) shr 8)
+    }
+
     /** Unknown index 0 renders as black, matching Brother machines. */
     fun forIndex(index: Int): EmbThread =
         SET[index % SET.size] ?: EmbThread(0xFF000000.toInt(), "Unknown", "0", "Brother", "Brother")

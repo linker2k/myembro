@@ -154,6 +154,10 @@ Hershey fonts (hershey-fonts/*.jhf) license
   License: https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/LICENSE .
   Original data SHA-256: `4e6ca07e33132787c2211eb676443e8c9fc6629993e37be7b886bde21df3066c`.
   Changes: recentering, running-stitch resampling, explicit trims and PES v6 conversion.
+- Test fixtures (source repository only, not in the APK): `engine/src/test/resources/fixtures/embroidepy/`
+  `random1-brother-v5.pes`, `random1-brother-v6.pes`, `random1-premier-v9.pes` and
+  `random1-wilcom-v6.PES`, unmodified copies from the same EmbroidePy/samples commit, MIT,
+  Copyright (c) 2019 EmbroidePy; the LICENSE file is copied beside them.
   Full original MIT copyright/permission/warranty notice follows and is also packaged:
 
 ```text
