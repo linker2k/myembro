@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
@@ -52,9 +56,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +68,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.pm.PackageInfoCompat
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
 import io.github.linker2k.myembro.ui.Hoop
@@ -78,7 +83,6 @@ private val machinePresets = listOf("Brother PE800", "Brother PE900", "Brother I
 @Composable
 fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     var machineDialog by rememberSaveable { mutableStateOf(false) }
-    var hoopDialog by rememberSaveable { mutableStateOf(false) }
     var brandDialog by rememberSaveable { mutableStateOf(false) }
     var licenseAsset by rememberSaveable { mutableStateOf<String?>(null) }
     val settings = vm.settings
@@ -104,7 +108,21 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(stringResource(R.string.settings_defaults_title), style = MaterialTheme.typography.titleSmall)
+                Card(
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(72.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_studio), style = MaterialTheme.typography.headlineSmall)
+                            Text(stringResource(R.string.settings_studio_hint), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                SectionHeading(Icons.Default.Straighten, stringResource(R.string.settings_defaults_title))
                 Card(
                     shape = MyembroShapes.Card,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -115,15 +133,47 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                         settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
                     ) { machineDialog = true }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    SettingRow(Icons.Default.Straighten, stringResource(R.string.settings_default_hoop),
-                        stringResource(R.string.settings_hoop_size, settings.defaultHoop.label)) { hoopDialog = true }
-                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(stringResource(R.string.settings_default_hoop), Modifier.padding(start = 16.dp, top = 16.dp),
+                        style = MaterialTheme.typography.titleSmall)
+                    LazyRow(
+                        modifier = Modifier.selectableGroup(),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(Hoop.entries, key = { it.name }) { hoop ->
+                            val selected = settings.defaultHoop == hoop
+                            Surface(
+                                Modifier.width(108.dp).selectable(selected, role = Role.RadioButton,
+                                    onClick = { vm.setDefaultHoop(hoop) }),
+                                shape = MyembroShapes.Button,
+                                color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                            ) {
+                                Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box {
+                                        HoopPreview(hoop, Modifier.size(76.dp))
+                                        if (selected) Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp).align(Alignment.TopEnd),
+                                            tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Text(stringResource(R.string.settings_hoop_size, hoop.label),
+                                        style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+                SectionHeading(Icons.Default.Palette, stringResource(R.string.settings_threads_title))
+                Card(
+                    shape = MyembroShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                ) {
                     SettingRow(Icons.Default.Palette, stringResource(R.string.settings_thread_brand),
                         stringResource(settings.threadBrand.labelRes)) { brandDialog = true }
                 }
                 Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(R.string.settings_about_title), style = MaterialTheme.typography.titleSmall)
+                SectionHeading(Icons.Default.Info, stringResource(R.string.settings_about_title))
                 Card(
                     shape = MyembroShapes.Card,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -154,13 +204,6 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             vm.setMachineModel(it)
             machineDialog = false
         }
-        if (hoopDialog) ChoiceDialog(
-            title = stringResource(R.string.settings_default_hoop),
-            options = Hoop.entries,
-            selected = settings.defaultHoop,
-            label = { stringResource(R.string.settings_hoop_size, it.label) },
-            onDismiss = { hoopDialog = false },
-        ) { vm.setDefaultHoop(it); hoopDialog = false }
         if (brandDialog) ChoiceDialog(
             title = stringResource(R.string.settings_thread_brand),
             options = ThreadBrand.entries,
@@ -173,10 +216,21 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
 }
 
 @Composable
+private fun SectionHeading(icon: ImageVector, title: String) {
+    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onBackground)
+        Spacer(Modifier.width(10.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
 private fun SettingRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
-    Surface(onClick = onClick, color = Color.Transparent) {
+    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surface) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+            Surface(shape = MyembroShapes.Chip, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Icon(icon, null, Modifier.padding(10.dp).size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
+            }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
