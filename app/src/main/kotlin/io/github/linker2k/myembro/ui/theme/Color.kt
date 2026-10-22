@@ -14,7 +14,9 @@ val DefaultColorway = MyembroColorway.CRAFT
 // These named ARGB tokens also generate Android launch resources in app/build.gradle.kts.
 const val LightBackgroundArgb: Long = 0xFFF6F0E6
 const val DarkBackgroundArgb: Long = 0xFF1C1815
-const val LightPrimaryArgb: Long = 0xFFC4552D
+const val LightPrimaryArgb: Long = 0xFFB5492A
+// Embroidery thread swatches use the original terracotta; UI actions use LightPrimaryArgb.
+val ThreadTerracotta = Color(0xFFC4552D)
 const val DarkPrimaryArgb: Long = 0xFFEF9A78
 const val LightSecondaryArgb: Long = 0xFF7F9A76
 const val DarkSecondaryArgb: Long = 0xFFA4BC99
