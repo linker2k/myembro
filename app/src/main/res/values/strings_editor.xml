@@ -98,4 +98,15 @@
     <string name="editor_history_steps">%1$d steps available</string>
     <string name="editor_undo_empty">Nothing to undo</string>
     <string name="editor_redo_empty">Nothing to redo</string>
+    <string name="editor_unsaved_title">Save your work?</string>
+    <string name="editor_unsaved_body">This project has unsaved changes. Save an editable .myembro copy in Projects before continuing? Discard replaces it only after the next file opens successfully.</string>
+    <string name="editor_unsaved_save">Save</string>
+    <string name="editor_discard">Discard</string>
+    <string name="editor_restore_title">Restore unfinished work?</string>
+    <string name="editor_restore_body">An automatically saved draft was found. Restore it to continue editing, or discard it to open the requested project.</string>
+    <string name="editor_restore">Restore</string>
+    <string name="editor_draft_failed">Could not update the recovery draft: %1$s</string>
+    <string name="editor_machine_unknown">Machine capabilities are unknown. Select a supported machine in Settings before exporting PES.</string>
+    <string name="editor_hoop_unsupported">This hoop is not a supported single sewing area for the selected machine. Choose a supported hoop before exporting PES.</string>
+    <string name="editor_export_blocked">PES export blocked</string>
 </resources>
