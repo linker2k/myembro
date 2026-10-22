@@ -3,12 +3,17 @@ package io.github.linker2k.myembro.fonts
 
 import android.content.Context
 import android.graphics.Typeface
+import android.net.Uri
+import android.provider.OpenableColumns
+import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.lettering.SvgFont
+import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -30,6 +35,9 @@ data class CatalogFont(
     val licenseSha256: String?,
     /** The license is the font file's own `<metadata>` (Hershey fonts). */
     val licenseInFont: Boolean,
+    /** Optional precomputed quality; otherwise the app analyzes the font after download. */
+    val recommendedMinHeightMm: Double? = null,
+    val qualityGrade: QualityGrade? = null,
 ) {
     enum class Kind(val json: String, val extension: String) {
         SINGLE_LINE_SVG("single-line-svg", "svg"),
@@ -41,6 +49,11 @@ data class CatalogFont(
 }
 
 class ChecksumMismatchException(val fontId: String) : IOException("Checksum mismatch for $fontId")
+
+/** Why a user-picked font file was refused. */
+class UserFontException(val reason: Reason, cause: Throwable? = null) : IOException(reason.name, cause) {
+    enum class Reason { TOO_LARGE, UNSUPPORTED_TYPE, UNREADABLE, NO_GLYPHS }
+}
 
 /**
  * Downloadable font library. Fonts come only from the bundled, curated catalog: each URL is a
@@ -82,7 +95,9 @@ class FontRepository(context: Context) {
                 val licTmp = File(dir, "${font.id}.license.part")
                 try {
                     fetch(font.licenseUrl, licTmp, font.licenseSha256, font.id, null) {}
-                    licTmp.readText()
+                    // EMS fonts ship a generic OFL text; their credits live in the font metadata.
+                    val credits = if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) extractMetadata(tmp.readText()) else null
+                    licTmp.readText() + (credits?.let { "\n\n--- Font metadata ---\n$it\n" } ?: "")
                 } finally {
                     licTmp.delete()
                 }
@@ -106,6 +121,136 @@ class FontRepository(context: Context) {
     fun delete(font: CatalogFont) {
         fontFile(font).delete()
         licenseFile(font).delete()
+        FontQualitySummary.qualityFile(fontFile(font)).delete()
+    }
+
+    // ---- Fonts for lettering: built-ins, installed catalog fonts and user fonts ----
+
+    val userDir: File = File(dir, "user")
+
+    /** Everything the lettering tool can offer, built-ins first. Reads small JSON files: call off the main thread. */
+    fun letterFonts(): List<LetterFont> = builtIns() + catalog.filter(::isInstalled).map(::letterFont) + userFonts()
+
+    fun letterFont(font: CatalogFont): LetterFont {
+        val file = fontFile(font)
+        val precomputed = font.recommendedMinHeightMm?.let { h ->
+            FontQualitySummary(font.qualityGrade ?: QualityGrade.GOOD, h, null, null, emptyList())
+        }
+        return LetterFont(
+            id = font.id, name = font.nameKo ?: font.name,
+            kind = if (font.kind == CatalogFont.Kind.OUTLINE_TTF) LetterFont.Kind.OUTLINE else LetterFont.Kind.SINGLE_LINE_SVG,
+            file = file, quality = FontQualitySummary.read(file) ?: precomputed,
+        )
+    }
+
+    fun userFonts(): List<LetterFont> = userDir.listFiles { f -> f.name.endsWith(META_SUFFIX) }.orEmpty()
+        .mapNotNull { meta ->
+            runCatching {
+                val o = JSONObject(meta.readText())
+                val file = File(userDir, o.getString("file"))
+                if (!file.isFile) return@runCatching null
+                LetterFont(
+                    id = USER_PREFIX + o.getString("id"), name = o.getString("name"),
+                    kind = LetterFont.Kind.valueOf(o.getString("kind")), file = file,
+                    quality = FontQualitySummary.read(file), userAdded = true,
+                ) to o.optLong("addedAt")
+            }.getOrNull()
+        }
+        .sortedBy { it.second }.map { it.first }
+
+    /**
+     * Copies a user-picked TTF/OTF/SVG into `filesDir/fonts/user/`, checks it can be parsed and
+     * stores its 10/20 mm quality analysis. Throws [UserFontException] with the reason on refusal.
+     */
+    suspend fun importUserFont(uri: Uri, geometry: LetterFontGeometry): LetterFont = withContext(Dispatchers.IO) {
+        val resolver = appContext.contentResolver
+        val displayName = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        } ?: uri.lastPathSegment ?: "font"
+        userDir.mkdirs()
+        val uuid = UUID.randomUUID().toString()
+        val tmp = File(userDir, "$uuid.part")
+        var target: File? = null
+        try {
+            val stream = resolver.openInputStream(uri) ?: throw UserFontException(UserFontException.Reason.UNREADABLE)
+            stream.use { input ->
+                tmp.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        total += n
+                        if (total > MAX_USER_BYTES) throw UserFontException(UserFontException.Reason.TOO_LARGE)
+                        out.write(buf, 0, n)
+                    }
+                }
+            }
+            val kind = sniffKind(tmp, displayName) ?: throw UserFontException(UserFontException.Reason.UNSUPPORTED_TYPE)
+            val ext = if (kind == LetterFont.Kind.SINGLE_LINE_SVG) "svg" else displayName.substringAfterLast('.', "ttf").lowercase()
+                .takeIf { it in setOf("ttf", "otf", "ttc") } ?: "ttf"
+            val file = File(userDir, "$uuid.$ext").also { target = it }
+            if (!tmp.renameTo(file)) tmp.copyTo(file, overwrite = true)
+            val name = displayName.substringBeforeLast('.').ifBlank { displayName }
+            val font = LetterFont(USER_PREFIX + uuid, name, kind, file, null, userAdded = true)
+            try {
+                when (kind) {
+                    LetterFont.Kind.SINGLE_LINE_SVG ->
+                        if (geometry.svgFont(font).glyphs.values.none { it.strokes.isNotEmpty() }) throw UserFontException(UserFontException.Reason.NO_GLYPHS)
+                    else -> geometry.typeface(font)
+                }
+            } catch (e: UserFontException) { throw e
+            } catch (e: Exception) { throw UserFontException(UserFontException.Reason.UNREADABLE, e) }
+            val sampleChars = FontQualitySummary.SAMPLE.filterNot(Char::isWhitespace)
+            if (geometry.missing(font, sampleChars).size == sampleChars.toSet().size) {
+                throw UserFontException(UserFontException.Reason.NO_GLYPHS)
+            }
+            val quality = geometry.analyze(font)
+            FontQualitySummary.write(file, quality)
+            File(userDir, uuid + META_SUFFIX).writeText(
+                JSONObject().put("id", uuid).put("name", name).put("originalName", displayName)
+                    .put("kind", kind.name).put("file", file.name).put("addedAt", System.currentTimeMillis()).toString(2),
+            )
+            font.copy(quality = quality)
+        } catch (e: Throwable) {
+            target?.let { FontQualitySummary.qualityFile(it).delete(); it.delete() }
+            File(userDir, uuid + META_SUFFIX).delete()
+            throw e
+        } finally {
+            tmp.delete()
+        }
+    }
+
+    fun deleteUserFont(font: LetterFont) {
+        val file = font.file ?: return
+        if (!font.userAdded || file.parentFile != userDir) return
+        FontQualitySummary.qualityFile(file).delete()
+        File(userDir, font.id.removePrefix(USER_PREFIX) + META_SUFFIX).delete()
+        file.delete()
+    }
+
+    /** Runs and stores the quality analysis of an installed catalog font. */
+    fun analyzeInstalled(font: CatalogFont, geometry: LetterFontGeometry): FontQualitySummary {
+        val summary = geometry.analyze(letterFont(font))
+        FontQualitySummary.write(fontFile(font), summary)
+        return summary
+    }
+
+    private fun builtIns() = listOf(
+        LetterFont(HersheyFont.DEFAULT_ID, "Hershey Futural", LetterFont.Kind.HERSHEY, null, null),
+        LetterFont(AndroidGlyphOutlines.JUA_FONT_ID, "주아 (Jua)", LetterFont.Kind.OUTLINE, null, null),
+    )
+
+    private fun sniffKind(file: File, name: String): LetterFont.Kind? {
+        val head = ByteArray(512)
+        val n = file.inputStream().use { it.read(head) }.coerceAtLeast(0)
+        val magic = String(head, 0, minOf(4, n), Charsets.ISO_8859_1)
+        if (magic == "\u0000\u0001\u0000\u0000" || magic == "OTTO" || magic == "true" || magic == "ttcf") return LetterFont.Kind.OUTLINE
+        val text = String(head, 0, n, Charsets.UTF_8)
+        if (name.endsWith(".svg", ignoreCase = true) || text.contains("<svg") || text.trimStart().startsWith("<?xml")) {
+            return LetterFont.Kind.SINGLE_LINE_SVG
+        }
+        return null
     }
 
     fun licenseText(font: CatalogFont): String? = licenseFile(font).takeIf { it.isFile }?.readText()
@@ -170,7 +315,10 @@ class FontRepository(context: Context) {
 
     companion object {
         const val CATALOG_ASSET = "fonts/catalog.json"
+        const val USER_PREFIX = "user:"
+        private const val META_SUFFIX = ".meta.json"
         private const val MAX_BYTES = 32L * 1024 * 1024
+        private const val MAX_USER_BYTES = 32L * 1024 * 1024
 
         fun parseCatalog(json: String): List<CatalogFont> {
             val fonts = JSONObject(json).getJSONArray("fonts")
@@ -193,6 +341,8 @@ class FontRepository(context: Context) {
                     licenseUrl = o.getString("licenseUrl"),
                     licenseSha256 = o.optString("licenseSha256").ifEmpty { null },
                     licenseInFont = o.optBoolean("licenseInFont"),
+                    recommendedMinHeightMm = o.optDouble("recommendedMinHeightMm").takeUnless { it.isNaN() },
+                    qualityGrade = o.optString("qualityGrade").ifEmpty { null }?.let { QualityGrade.valueOf(it) },
                 )
             }
         }

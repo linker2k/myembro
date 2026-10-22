@@ -3,6 +3,9 @@ package io.github.linker2k.myembro.ui.fonts
 
 import android.app.Application
 import android.graphics.Typeface
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -47,6 +51,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,7 +77,12 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.lettering.Polyline
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
+import io.github.linker2k.myembro.fonts.FontQualitySummary
 import io.github.linker2k.myembro.fonts.FontRepository
+import io.github.linker2k.myembro.fonts.LetterFont
+import io.github.linker2k.myembro.fonts.LetterFontGeometry
+import io.github.linker2k.myembro.fonts.QualityReasons
+import io.github.linker2k.myembro.fonts.UserFontException
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -96,7 +106,15 @@ sealed interface FontPreview {
 
 class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     val repo = FontRepository(app)
+    private val geometry = LetterFontGeometry(app)
     val fonts: List<CatalogFont> = repo.catalog
+    /** Stored or precomputed quality of installed catalog fonts, by catalog id. */
+    val qualities = mutableStateMapOf<String, FontQualitySummary>()
+    val userFonts = mutableStateListOf<LetterFont>()
+    var importing by mutableStateOf(false)
+        private set
+    /** The font just added by the user; the screen shows its quality report, then clears it. */
+    var imported by mutableStateOf<LetterFont?>(null)
 
     var filters by mutableStateOf<Set<FontFilter>>(emptySet())
         private set
@@ -112,8 +130,64 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val ids = withContext(Dispatchers.IO) { repo.installedIds() }
             fonts.forEach { installed[it.id] = it.id in ids }
-            fonts.filter { it.id in ids }.forEach { loadPreview(it) }
+            fonts.filter { it.id in ids }.forEach { font ->
+                withContext(Dispatchers.IO) { repo.letterFont(font).quality }?.let { qualities[font.id] = it }
+                loadPreview(font)
+            }
+            userFonts += withContext(Dispatchers.IO) { repo.userFonts() }
+            userFonts.forEach { loadUserPreview(it) }
         }
+    }
+
+    val visibleUserFonts: List<LetterFont>
+        get() = userFonts.filter { f ->
+            val reasons = f.quality?.reasons.orEmpty()
+            (FontFilter.KOREAN !in filters || QualityReasons.MISSING_HANGUL !in reasons) &&
+                (FontFilter.LATIN !in filters || QualityReasons.MISSING_LATIN !in reasons) &&
+                (FontFilter.SINGLE_LINE !in filters || f.kind == LetterFont.Kind.SINGLE_LINE_SVG) &&
+                (FontFilter.OUTLINE !in filters || f.kind == LetterFont.Kind.OUTLINE)
+        }
+
+    /** Copies, validates and analyzes a user-picked font; [failed] formats the refusal reason. */
+    fun importUserFont(uri: Uri, failed: (UserFontException.Reason?, String) -> String) {
+        if (importing) return
+        importing = true
+        viewModelScope.launch {
+            try {
+                val font = repo.importUserFont(uri, geometry)
+                userFonts += font
+                loadUserPreview(font)
+                imported = font
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: UserFontException) {
+                message = failed(e.reason, e.message.orEmpty())
+            } catch (e: Exception) {
+                message = failed(null, e.message ?: e.javaClass.simpleName)
+            } finally {
+                importing = false
+            }
+        }
+    }
+
+    fun deleteUserFont(font: LetterFont) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { repo.deleteUserFont(font) }
+            userFonts.removeAll { it.id == font.id }
+            previews.remove(font.id)
+        }
+    }
+
+    private suspend fun loadUserPreview(font: LetterFont) {
+        val preview = withContext(Dispatchers.IO) {
+            runCatching {
+                when (font.kind) {
+                    LetterFont.Kind.SINGLE_LINE_SVG -> FontPreview.Strokes(geometry.svgFont(font).layout(font.name))
+                    else -> FontPreview.Outline(geometry.typeface(font))
+                }
+            }.getOrNull()
+        }
+        if (preview != null) previews[font.id] = preview
     }
 
     fun toggle(filter: FontFilter) {
@@ -147,6 +221,10 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 installed[font.id] = true
                 loadPreview(font)
+                // Quality is advisory: a failed analysis must not undo a verified download.
+                withContext(Dispatchers.IO) {
+                    runCatching { repo.letterFont(font).quality ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
+                }?.let { qualities[font.id] = it }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ChecksumMismatchException) {
@@ -164,6 +242,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             withContext(Dispatchers.IO) { repo.delete(font) }
             installed[font.id] = false
             previews.remove(font.id)
+            qualities.remove(font.id)
         }
     }
 
@@ -190,8 +269,20 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
     val vm: FontLibraryViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
     var licenseFor by remember { mutableStateOf<CatalogFont?>(null) }
+    var askUserLicense by remember { mutableStateOf(false) }
     val checksumMessage = stringResource(R.string.fonts_checksum_failed)
     val failedTemplate = stringResource(R.string.fonts_download_failed)
+    val importFailed = stringResource(R.string.fonts_import_failed)
+    val reasonLabels = mapOf(
+        UserFontException.Reason.TOO_LARGE to stringResource(R.string.fonts_error_too_large),
+        UserFontException.Reason.UNSUPPORTED_TYPE to stringResource(R.string.fonts_error_type),
+        UserFontException.Reason.UNREADABLE to stringResource(R.string.fonts_error_unreadable),
+        UserFontException.Reason.NO_GLYPHS to stringResource(R.string.fonts_error_no_glyphs),
+    )
+    // Font MIME types are inconsistent across providers; the repository sniffs the content instead.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { vm.importUserFont(it) { reason, detail -> importFailed.format(reason?.let(reasonLabels::get) ?: detail) } }
+    }
 
     LaunchedEffect(vm.message) {
         vm.message?.let {
@@ -209,6 +300,13 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.fonts_back))
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { askUserLicense = true }, enabled = !vm.importing) {
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = Terracotta, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(4.dp))
+                        Text(stringResource(R.string.fonts_add_own), color = Terracotta, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Linen, titleContentColor = Ink, navigationIconContentColor = Ink),
@@ -232,8 +330,16 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
             )
+            if (vm.importing) {
+                Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    LinearProgressIndicator(color = Terracotta, trackColor = Line, modifier = Modifier.weight(1f))
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.fonts_importing), color = Muted, fontSize = 12.sp)
+                }
+            }
             val list = vm.visible
-            if (list.isEmpty()) {
+            val userList = vm.visibleUserFonts
+            if (list.isEmpty() && userList.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.fonts_empty), color = Muted)
                 }
@@ -242,12 +348,25 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (userList.isNotEmpty()) {
+                        item(key = "user-header") { SectionTitle(stringResource(R.string.fonts_my_fonts)) }
+                        items(userList, key = { it.id }) { font ->
+                            UserFontCard(
+                                font = font,
+                                preview = vm.previews[font.id],
+                                onDelete = { vm.deleteUserFont(font) },
+                                onUse = { onPick(font.id) },
+                            )
+                        }
+                        item(key = "catalog-header") { SectionTitle(stringResource(R.string.fonts_catalog)) }
+                    }
                     items(list, key = { it.id }) { font ->
                         FontCard(
                             font = font,
                             installed = vm.installed[font.id] == true,
                             progress = vm.progress[font.id],
                             preview = vm.previews[font.id],
+                            quality = vm.qualities[font.id],
                             onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
                             onDelete = { vm.delete(font) },
                             onLicense = { licenseFor = font },
@@ -277,6 +396,92 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) {
             containerColor = Linen,
         )
     }
+
+    if (askUserLicense) {
+        AlertDialog(
+            onDismissRequest = { askUserLicense = false },
+            title = { Text(stringResource(R.string.fonts_user_license_title)) },
+            text = { Text(stringResource(R.string.fonts_user_license_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    askUserLicense = false
+                    picker.launch(arrayOf("*/*"))
+                }) { Text(stringResource(R.string.fonts_user_license_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { askUserLicense = false }) { Text(stringResource(R.string.fonts_cancel)) } },
+            containerColor = Linen,
+        )
+    }
+
+    vm.imported?.let { font ->
+        AlertDialog(
+            onDismissRequest = { vm.imported = null },
+            title = { Text(stringResource(R.string.fonts_import_done_title, font.name)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    font.quality?.let { q ->
+                        QualityBadge(q.grade)
+                        QualityDetails(q)
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { vm.imported = null }) { Text(stringResource(R.string.fonts_close)) } },
+            containerColor = Linen,
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun UserFontCard(font: LetterFont, preview: FontPreview?, onDelete: () -> Unit, onUse: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.fillMaxWidth().background(Color.White, shape).border(1.dp, Line, shape).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        PreviewBox(font.name, preview)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(font.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+            font.quality?.let { QualityBadge(it.grade) }
+        }
+        val kind = stringResource(if (font.kind == LetterFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline)
+        Text(kind, color = Muted, fontSize = 12.sp)
+        font.quality?.let { QualityDetails(it) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = Muted)
+            }
+            Button(onClick = onUse, colors = ButtonDefaults.buttonColors(containerColor = Terracotta)) {
+                Text(stringResource(R.string.fonts_use))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewBox(label: String, preview: FontPreview?) {
+    Box(
+        Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFFBF8F2), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        when (preview) {
+            is FontPreview.Outline -> Text(
+                label,
+                fontFamily = FontFamily(preview.typeface),
+                fontSize = 30.sp,
+                color = Ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            is FontPreview.Strokes -> StrokePreview(preview.strokes, Modifier.fillMaxSize())
+            null -> Text(stringResource(R.string.fonts_preview_hint), color = Muted, fontSize = 13.sp)
+        }
+    }
 }
 
 @Composable
@@ -300,6 +505,7 @@ private fun FontCard(
     installed: Boolean,
     progress: Float?,
     preview: FontPreview?,
+    quality: FontQualitySummary?,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onLicense: () -> Unit,
@@ -310,24 +516,7 @@ private fun FontCard(
         Modifier.fillMaxWidth().background(Color.White, shape).border(1.dp, Line, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(
-            Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFFBF8F2), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            val label = font.nameKo ?: font.name
-            when (preview) {
-                is FontPreview.Outline -> Text(
-                    label,
-                    fontFamily = FontFamily(preview.typeface),
-                    fontSize = 30.sp,
-                    color = Ink,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                is FontPreview.Strokes -> StrokePreview(preview.strokes, Modifier.fillMaxSize())
-                null -> Text(stringResource(R.string.fonts_preview_hint), color = Muted, fontSize = 13.sp)
-            }
-        }
+        PreviewBox(font.nameKo ?: font.name, preview)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -345,9 +534,16 @@ private fun FontCard(
                     fontSize = 12.sp,
                 )
             }
+            quality?.let {
+                QualityBadge(it.grade)
+                Spacer(Modifier.size(6.dp))
+            }
             if (installed) {
                 Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = Color(0xFF2F6B3A), modifier = Modifier.size(20.dp))
             }
+        }
+        quality?.takeIf { installed }?.let {
+            Text(stringResource(R.string.fonts_min_height, mm(it.recommendedMinHeightMm)), color = Muted, fontSize = 12.sp)
         }
         if (progress != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

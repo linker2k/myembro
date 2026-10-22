@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.zIndex
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.ui.lettering.LetteringSheet
 
 private val Linen = Color(0xFFF6F0E6)
 private val Ink = Color(0xFF2B2420)
@@ -50,6 +51,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
         BackHandler(onBack = onBack)
         var showDesigns by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
+        var showLettering by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
         val snackbar = remember { SnackbarHostState() }
@@ -108,6 +110,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 Surface(color = Color(0xFFFFFAF2), tonalElevation = 2.dp) {
                     Row(Modifier.navigationBarsPadding().horizontalScroll(rememberScrollState()).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         EditorTool(Icons.Default.Add, R.string.editor_add, enabled = !vm.busy) { vm.refreshDesigns(); showDesigns = true }
+                        EditorTool(Icons.Default.TextFields, R.string.editor_text, enabled = !vm.busy) { showLettering = true }
                         EditorTool(Icons.Default.Layers, R.string.editor_layers) { showLayers = true }
                         EditorTool(Icons.Default.ContentCopy, R.string.editor_duplicate, vm.selected != null, vm::duplicate)
                         EditorTool(Icons.Default.Flip, R.string.editor_mirror, vm.selected != null, vm::mirror)
@@ -150,6 +153,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(24.dp))
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
+        if (showLettering) LetteringSheet(onDismiss = { showLettering = false }, onAdd = vm::addText)
     }
 }
 

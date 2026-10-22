@@ -12,6 +12,7 @@ import io.github.linker2k.myembro.engine.edit.DesignObject
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.StitchObject
+import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
@@ -147,6 +148,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 message = getApplication<Application>().getString(R.string.editor_load_failed, e.localizedMessage.orEmpty())
             } finally { busy = false }
         }
+    }
+
+    /** Adds lettering built by the text tool and selects it. */
+    fun addText(obj: TextObject) {
+        edit(project.add(obj))
+        selectedId = obj.id
     }
 
     /** Exports a snapshot atomically, without overwriting any library design. */
