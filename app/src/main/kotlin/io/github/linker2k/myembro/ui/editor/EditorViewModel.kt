@@ -39,11 +39,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         private set
     internal val positionFit get() = if (sewingPositions.isEmpty()) EditorPositionFit(emptySet(), emptySet()) else project.positionFit(sewingPositions)
     fun configureSewingPositions(positions: List<SewingPosition>) {
-        sewingPositions = positions.takeIf { multiPositionFrame != null && validEditorPositions(project.hoop, it) }.orEmpty()
+        sewingPositions = positions.takeIf { multiPositionFrame != null && validEditorPositions(project.hoop, it) }?.toList().orEmpty()
     }
     fun setMultiPositionFrame(frame: MachineHoop) {
         if (interactionBlocked || gestureInProgress) return
         val supported = multiPositionFrames.firstOrNull { it == frame } ?: return
+        if (project.hoop.sameArea(supported.coverage)) return
         sewingPositions = emptyList()
         edit(project.copy(hoop = supported.coverage))
     }
@@ -278,7 +279,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun clearSelection() { if (gestureInProgress) return; selectedIds = emptySet() }
     fun toggleSnap() { if (gestureInProgress) return; snapEnabled = !snapEnabled; snapGuides = SnapGuides() }
     fun setHoop(hoop: HoopSpec) {
+        if (interactionBlocked || gestureInProgress) return
         val supported = availableHoops.firstOrNull { it.sameArea(hoop) } ?: return
+        if (project.hoop.sameArea(supported)) return
+        sewingPositions = emptyList()
         edit(project.copy(hoop = supported))
     }
     fun undo(): Boolean {
