@@ -221,14 +221,12 @@ private fun NewProjectCard(hoop: Hoop, frame: FrameOption? = null, onCreate: () 
             val artSize = if (maxWidth < 340.dp) 72.dp else 108.dp
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.home_new_project), style = MaterialTheme.typography.headlineSmall)
-                        Spacer(Modifier.height(6.dp))
-                        Text(stringResource(R.string.home_new_hint), style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text(stringResource(R.string.home_new_project), Modifier.weight(1f),
+                        style = MaterialTheme.typography.headlineSmall)
                     Image(painterResource(R.drawable.empty_state), null, Modifier.size(artSize))
                 }
+                Text(stringResource(R.string.home_new_hint), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(stringResource(R.string.new_project_default_hoop, frame?.let { if (it.preset == null) "${it.spec.name} · ${it.dimensions}" else it.dimensions } ?: hoop.dimensions()),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = onCreate, modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Button,

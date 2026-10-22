@@ -57,7 +57,8 @@ fun NewProjectSheet(
     onBlankFrame: ((HoopSpec) -> Unit)? = null,
 ) {
     val settings: SettingsViewModel = viewModel()
-    val orderedHoops = hoops.distinct().sortedBy { it != settings.settings.defaultHoop }
+    val options = settings.settings.frames.filter { frame -> frame.preset in hoops || (frame.preset == null && onBlankFrame != null) }
+        .sortedBy { it.id != settings.settings.defaultFrame.id }
     var choosingHoop by remember { mutableStateOf(false) }
     var actionTaken by remember { mutableStateOf(false) }
     fun choose(action: () -> Unit) {
@@ -75,34 +76,24 @@ fun NewProjectSheet(
                 Text(stringResource(if (choosingHoop) R.string.new_project_choose_hoop else R.string.home_new_project),
                     style = MaterialTheme.typography.headlineSmall)
                 if (choosingHoop) {
-                    orderedHoops.forEach { hoop ->
-                        Surface(onClick = { choose { if (onBlankFrame != null) onBlankFrame(settings.settings.frames.first { it.preset == hoop }.spec) else onBlank(hoop) } }, enabled = !actionTaken,
+                    options.forEach { frame ->
+                        Surface(onClick = { choose {
+                            if (onBlankFrame != null) onBlankFrame(frame.spec) else frame.preset?.let(onBlank)
+                        } }, enabled = !actionTaken,
                             shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                HoopPreview(hoop, Modifier.size(48.dp))
+                                frame.preset?.let { HoopPreview(it, Modifier.size(48.dp)) }
                                 Column(Modifier.weight(1f)) {
-                                    Text((if (hoop.name.startsWith("SA")) hoop.name + " · " else "") + hoop.dimensions())
-                                    if (settings.settings.machineProfile?.supports(hoop) != true) Text(
+                                    Text((if (frame.preset == null || frame.id.startsWith("SA")) frame.spec.name + " · " else "") + frame.dimensions)
+                                    if (settings.settings.machineProfile?.supports(frame.spec) != true) Text(
                                         stringResource(R.string.machine_hoop_unsupported), style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.error)
-                                    if (hoop == Hoop.SA434) Text(stringResource(R.string.machine_positions_unverified),
+                                    if (frame.preset == Hoop.SA434) Text(stringResource(R.string.machine_positions_unverified),
                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Icon(Icons.Default.ChevronRight, null)
-                            }
-                        }
-                    }
-                    if (onBlankFrame != null) settings.settings.frames.filter { it.preset == null }.forEach { frame ->
-                        Surface(onClick = { choose { onBlankFrame(frame.spec) } }, enabled = !actionTaken,
-                            shape = MyembroShapes.Card, color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                            Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                                Text(frame.spec.name, style = MaterialTheme.typography.titleSmall)
-                                Text(frame.dimensions, style = MaterialTheme.typography.bodyMedium)
-                                if (settings.settings.machineProfile?.supports(frame.spec) != true) Text(stringResource(R.string.machine_hoop_unsupported),
-                                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -111,9 +102,11 @@ fun NewProjectSheet(
                     Text(stringResource(R.string.new_project_intro), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CreationChoice(Icons.Default.Add, stringResource(R.string.new_project_blank),
-                        if (hoops.size == 1) hoops.single().dimensions()
-                        else stringResource(R.string.new_project_choose_hoop), !actionTaken && hoops.isNotEmpty()) {
-                        if (hoops.size == 1) choose { onBlank(hoops.single()) } else choosingHoop = true
+                        if (options.size == 1) options.single().dimensions
+                        else stringResource(R.string.new_project_choose_hoop), !actionTaken && options.isNotEmpty()) {
+                        if (options.size == 1) choose {
+                            if (onBlankFrame != null) onBlankFrame(options.single().spec) else options.single().preset?.let(onBlank)
+                        } else choosingHoop = true
                     }
                     CreationChoice(Icons.Default.CollectionsBookmark, stringResource(R.string.new_project_from_design),
                         stringResource(R.string.new_project_from_design_hint), !actionTaken) { choose(onFromDesign) }

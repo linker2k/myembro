@@ -68,4 +68,5 @@
     <string name="settings_delete_frame">프레임 삭제</string>
     <string name="settings_delete_frame_confirm">%1$s 프레임을 삭제할까요? 기존 프로젝트의 크기는 유지됩니다.</string>
     <string name="settings_machine_free">기타(자유)</string>
+    <string name="machine_free_hint">기종 제한을 적용하지 않는 자유 설정입니다. 수놓기 전에 실제 봉제 영역·프레임 호환·전송 방법을 확인하세요.</string>
 </resources>

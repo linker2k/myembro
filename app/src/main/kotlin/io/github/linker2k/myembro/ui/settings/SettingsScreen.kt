@@ -256,7 +256,7 @@ private fun MachineDetails(profile: MachineProfile?) {
     Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (profile == null || profile.id == "free") {
-            Text(stringResource(R.string.machine_unverified), style = MaterialTheme.typography.bodySmall,
+            Text(stringResource(if (profile?.id == "free") R.string.machine_free_hint else R.string.machine_unverified), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             Text(stringResource(R.string.machine_area_format, Dimensions.hoopSize(profile.maximumArea.width / 10, profile.maximumArea.height / 10), profile.exportFormats.joinToString()),
