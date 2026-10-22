@@ -5,11 +5,12 @@ import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.Stitch
 
-enum class StitchStyle { RUNNING, BEAN }
+enum class StitchStyle { RUNNING, BEAN, SATIN }
 
 /** Expand only sewn movements A→B into A→B→A→B, after quantization/subdivision. */
 internal fun EmbPattern.withStitchStyle(style: StitchStyle): EmbPattern {
-    if (style == StitchStyle.RUNNING) return this
+    // SATIN is constructed from geometry before sampling, never from sewn movements.
+    if (style != StitchStyle.BEAN) return this
     val result = ArrayList<Stitch>()
     var previous: Stitch? = null
     for (stitch in stitches) {

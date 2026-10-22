@@ -5,6 +5,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.engine.model.EmbPattern
 
 internal enum class LetteringAlignment { LEFT, CENTER, RIGHT }
 internal enum class LetteringCurve { STRAIGHT, ARCH, CIRCLE, BELOW }
@@ -48,6 +49,25 @@ internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: Letteri
         LetteringAlignment.RIGHT -> room
     }
     return text.copy(transform = Transform(x = x))
+}
+
+/** The preview and Add guard use the same real sewing area, including small rectangular hoops. */
+internal fun letteringOutsideHoop(pattern: EmbPattern, hoop: HoopSpec): Boolean {
+    val bounds = pattern.bounds ?: return false
+    return bounds.minX < -hoop.width / 2.0 || bounds.maxX > hoop.width / 2.0 ||
+        bounds.minY < -hoop.height / 2.0 || bounds.maxY > hoop.height / 2.0
+}
+
+internal data class LetteringViewport(val scale: Float, val centerX: Double, val centerY: Double)
+
+/** Fit the physical aspect ratio; text zoom follows placed text rather than the hoop origin. */
+internal fun letteringViewport(availablePx: Float, pattern: EmbPattern?, hoop: HoopSpec, fitText: Boolean): LetteringViewport {
+    val bounds = pattern?.bounds?.takeIf { fitText }
+    val width = bounds?.let { (it.width * 1.4f).coerceAtLeast(200f) } ?: hoop.width.toFloat()
+    val height = bounds?.let { (it.height * 1.8f).coerceAtLeast(200f) } ?: hoop.height.toFloat()
+    return LetteringViewport(minOf(availablePx / width, availablePx / height),
+        bounds?.let { (it.minX.toDouble() + it.maxX) / 2 } ?: 0.0,
+        bounds?.let { (it.minY.toDouble() + it.maxY) / 2 } ?: 0.0)
 }
 
 internal fun normalizedLetteringText(text: String): String = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC)

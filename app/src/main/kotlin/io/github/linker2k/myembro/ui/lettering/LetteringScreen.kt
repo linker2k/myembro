@@ -513,17 +513,21 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             var y = center.y - radius
             while (y < center.y + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(center.x - radius, y), Offset(center.x + radius, y), 0.5.dp.toPx()); y += grid }
             val b = pattern?.bounds
-            val fitWidth = if (fitText && b != null) (b.width * 1.4f).coerceAtLeast(200f) else hoop.width.toFloat()
-            val fitHeight = if (fitText && b != null) (b.height * 1.8f).coerceAtLeast(200f) else hoop.height.toFloat()
-            val scale = minOf(radius * 1.75f / fitWidth, radius * 1.75f / fitHeight)
+            val viewport = letteringViewport(radius * 1.35f, pattern, hoop, fitText)
+            val scale = viewport.scale
+            fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
+            // Decorative round frame and the actual rectangular sewing area are distinct.
+            drawRect(colors.outline, point(-hoop.width / 2.0, -hoop.height / 2.0),
+                Size(hoop.width * scale, hoop.height * scale),
+                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))))
             fun drawPattern(p: EmbPattern, color: Color?) {
                 var previous = p.stitches.firstOrNull() ?: return
                 var colorIndex = 0
                 for (s in p.stitches.drop(1)) {
                     if (s.command == Command.COLOR_CHANGE) colorIndex++
                     if (s.command == Command.STITCH && previous.command == Command.STITCH) {
-                        drawLine(color ?: Color(p.threadAt(colorIndex).color), center + Offset(previous.x * scale, previous.y * scale),
-                            center + Offset(s.x * scale, s.y * scale), ThreadRendering.widthPx(scale, 1.dp.toPx()), StrokeCap.Round)
+                        drawLine(color ?: Color(p.threadAt(colorIndex).color), point(previous.x.toDouble(), previous.y.toDouble()),
+                            point(s.x.toDouble(), s.y.toDouble()), ThreadRendering.widthPx(scale, 1.dp.toPx()), StrokeCap.Round)
                     }
                     previous = s
                 }
@@ -531,8 +535,8 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             background?.let { drawPattern(it, colors.secondary.copy(alpha = 0.55f)) }
             pattern?.let { drawPattern(it, null) }
             if (curved && b != null) {
-                drawLine(colors.secondary.copy(alpha = 0.6f), center + Offset(b.minX * scale, b.maxY * scale + 10.dp.toPx()),
-                    center + Offset(b.maxX * scale, b.maxY * scale + 10.dp.toPx()), 1.dp.toPx(),
+                drawLine(colors.secondary.copy(alpha = 0.6f), point(b.minX.toDouble(), b.maxY.toDouble()) + Offset(0f, 10.dp.toPx()),
+                    point(b.maxX.toDouble(), b.maxY.toDouble()) + Offset(0f, 10.dp.toPx()), 1.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())))
             }
         }
