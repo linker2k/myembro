@@ -241,6 +241,9 @@ super.onCreate(savedInstanceState)
 
 ### 홈 화면 연결
 
+> **2026-10-22 IA 확정으로 바뀐 점**(위 "화면 동선 (IA)"이 우선): 정사각·세로형 빈 프로젝트 템플릿은 갤러리에서 빼고,
+> `onNewProject`와 만들기 탭은 `NewProjectSheet`를 연다. `onLettering`은 레터링 화면이 생기기 전까지 숨긴다.
+
 ```kotlin
 HomeScreen(
     onNewProject = { hoop -> /* convert ui.Hoop to the editor model; create project */ },
