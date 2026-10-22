@@ -69,8 +69,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         canRedo = session.canRedo
         selectedIds = selectedIds.filterTo(linkedSetOf()) { project.find(it)?.visible == true }
     }
-    fun newProject() {
-        session = EditorSession()
+    fun newProject(hoop: HoopSpec = HoopSpec.H100) {
+        session = EditorSession(Project(hoop = hoop))
         gestureDraft = null
         selectedIds = emptySet()
         selectionMode = false

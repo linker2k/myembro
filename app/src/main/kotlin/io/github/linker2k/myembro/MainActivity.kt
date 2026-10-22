@@ -3,7 +3,6 @@ package io.github.linker2k.myembro
 
 import android.content.ClipData
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -12,26 +11,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
 import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
+import io.github.linker2k.myembro.ui.home.HomeScreen
 import io.github.linker2k.myembro.ui.settings.SettingsScreen
 import io.github.linker2k.myembro.ui.settings.SettingsViewModel
+import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.theme.installMyembroSplashScreen
+import java.io.File
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -40,29 +39,23 @@ class MainActivity : ComponentActivity() {
     private val editor: EditorViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
-    /** Path of the design open in the viewer, or null while the list is showing. */
+    private enum class Screen { LIBRARY, VIEWER, EDITOR, SETTINGS }
+
+    /** Screens above home; back pops one. Home is always the root. */
+    private val stack = mutableStateListOf<Screen>()
+
+    /** Library path of the design in the viewer, or null for a file read without importing. */
     private var openPath by mutableStateOf<String?>(null)
 
-    /** The editor covers the list and the viewer; back returns to the list. */
-    private var editing by mutableStateOf(false)
-    private var settingsOpen by mutableStateOf(false)
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        installMyembroSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
-        editing = savedInstanceState?.getBoolean(KEY_EDITING) ?: false
-        settingsOpen = savedInstanceState?.getBoolean(KEY_SETTINGS) ?: false
+        savedInstanceState?.getStringArrayList(KEY_STACK)?.let { names -> stack += names.map(Screen::valueOf) }
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
-            val dark = isSystemInDarkTheme()
             val context = LocalContext.current
-            val colors = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-                    if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-                dark -> darkColorScheme()
-                else -> lightColorScheme()
-            }
             val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 uri?.let(::importAndView)
             }
@@ -86,35 +79,42 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            MaterialTheme(colorScheme = colors) {
-                val closeEditor = {
-                    editing = false
-                    openPath = null
-                    library.refresh()
-                }
-                if (settingsOpen) {
-                    BackHandler { settingsOpen = false }
-                    SettingsScreen(settings, onBack = { settingsOpen = false })
-                } else if (editing) {
-                    BackHandler(onBack = closeEditor)
-                    EditorScreen(editor, onBack = closeEditor)
-                } else if (openPath == null) {
-                    LibraryScreen(
-                        library,
-                        onOpen = { file ->
-                            openPath = file.path
-                            viewer.openFile(file)
+            val back: () -> Unit = {
+                if (stack.removeLastOrNull() == Screen.EDITOR) library.refresh()
+            }
+            val newProject = { hoop: HoopSpec ->
+                editor.newProject(hoop)
+                stack += Screen.EDITOR
+            }
+            MyembroTheme {
+                BackHandler(enabled = stack.isNotEmpty(), onBack = back)
+                when (stack.lastOrNull()) {
+                    null -> HomeScreen(
+                        onNewProject = { hoop -> newProject(HoopSpec(hoop.label, hoop.widthMm * 10, hoop.heightMm * 10)) },
+                        onOpenRecent = { file ->
+                            if (file.extension == "myembro") {
+                                editor.openProject(file)
+                                stack += Screen.EDITOR
+                            } else {
+                                openDesign(file)
+                            }
                         },
-                        onCreate = {
-                            editor.newProject()
-                            editing = true
-                        },
-                        onSettings = { settingsOpen = true },
+                        // PES files have no registered MIME type, so allow any file and let the reader decide.
+                        onImport = { openDocument.launch(arrayOf("*/*")) },
+                        // Lettering lives in the editor; until it has a text tool this opens an empty project.
+                        onLettering = { newProject(HoopSpec.H100) },
+                        onOpenLibrary = { stack += Screen.LIBRARY },
+                        onSettings = { stack += Screen.SETTINGS },
                     )
-                } else {
-                    BackHandler { openPath = null }
-                    // PES files have no registered MIME type, so allow any file and let the reader decide.
-                    ViewerScreen(
+                    Screen.LIBRARY -> LibraryScreen(
+                        library,
+                        onOpen = ::openDesign,
+                        onCreate = { newProject(HoopSpec.H100) },
+                        onSettings = { stack += Screen.SETTINGS },
+                    )
+                    Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
+                    Screen.EDITOR -> EditorScreen(editor, onBack = back)
+                    Screen.VIEWER -> ViewerScreen(
                         viewer,
                         onOpenFile = { openDocument.launch(arrayOf("*/*")) },
                         onSaveFile = {
@@ -129,8 +129,8 @@ class MainActivity : ComponentActivity() {
                         onShareFile = viewer::share,
                         onEdit = openPath?.let { path ->
                             {
-                                editor.editDesign(java.io.File(path))
-                                editing = true
+                                editor.editDesign(File(path))
+                                stack += Screen.EDITOR
                             }
                         },
                     )
@@ -142,8 +142,7 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_OPEN, openPath)
-        outState.putBoolean(KEY_EDITING, editing)
-        outState.putBoolean(KEY_SETTINGS, settingsOpen)
+        outState.putStringArrayList(KEY_STACK, ArrayList(stack.map { it.name }))
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -155,18 +154,31 @@ class MainActivity : ComponentActivity() {
         if (intent?.action == Intent.ACTION_VIEW) intent.data?.let(::importAndView)
     }
 
+    private fun showViewer() {
+        if (stack.lastOrNull() != Screen.VIEWER) stack += Screen.VIEWER
+    }
+
+    private fun openDesign(file: File) {
+        openPath = file.path
+        viewer.openFile(file)
+        showViewer()
+    }
+
     /** Files opened from outside go into the library first, so they can be exported later. */
     private fun importAndView(uri: android.net.Uri) {
         lifecycleScope.launch {
             runCatching { library.importForViewing(uri) }
-                .onSuccess { openPath = it.path; viewer.openFile(it) }
-                .onFailure { viewer.open(uri) }
+                .onSuccess(::openDesign)
+                .onFailure {
+                    openPath = null
+                    viewer.open(uri)
+                    showViewer()
+                }
         }
     }
 
     private companion object {
         const val KEY_OPEN = "open_path"
-        const val KEY_EDITING = "editing"
-        const val KEY_SETTINGS = "settings"
+        const val KEY_STACK = "screen_stack"
     }
 }
