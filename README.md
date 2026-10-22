@@ -24,10 +24,11 @@ See [PLAN.md](PLAN.md) (Korean). In short:
 
 1. ✅ Engine core: pattern model, PES/PEC/DST readers verified against pyembroidery
 2. 🚧 Viewer / simulator
-3. Digitizing engine — running, satin, tatami fill, underlay, pull compensation (ported from Ink/Stitch)
-4. SVG import, freehand drawing, lettering
-5. Photo → embroidery wizard
-6. Editor, PES writer, export to USB / share
+3. 🚧 Output: PEC / PES v1 writer, checked on a real machine before any digitizing
+4. Geometry foundation, minimal project model, small SVG import
+5. Digitizing engine — running, satin, fill, tatami (ported from Ink/Stitch), sewn out at every step
+6. Editor with project save / reopen, lettering
+7. Photo → embroidery wizard
 
 ## Project layout
 
@@ -52,7 +53,7 @@ The engine tests compare our readers stitch-by-stitch with
 [pyembroidery](https://github.com/EmbroidePy/pyembroidery):
 
 ```bash
-pip install pyembroidery
+pip install pyembroidery==1.5.1
 python3 tools/make_fixtures.py engine/src/test/resources/fixtures
 ```
 

@@ -107,11 +107,16 @@ def dump(pattern):
     }
 
 
+ORACLE_VERSION = "1.5.1"
+
+
 def main(out_dir):
+    if pe_version() != ORACLE_VERSION:
+        sys.exit(f"pyembroidery {ORACLE_VERSION} required (found {pe_version()}); fixtures must not drift")
     os.makedirs(out_dir, exist_ok=True)
     designs = {"flower": flower(), "long_moves": long_moves(), "stops": stops()}
     with open(os.path.join(out_dir, "ORACLE.txt"), "w") as fp:
-        fp.write(f"pyembroidery {getattr(pe, '__version__', None) or pe_version()}\n")
+        fp.write(f"pyembroidery {ORACLE_VERSION}\n")
     for name, pattern in designs.items():
         for ext, settings in (("v1.pes", {"version": 1}), ("v6.pes", {"version": 6}),
                               ("pec", None), ("dst", None)):

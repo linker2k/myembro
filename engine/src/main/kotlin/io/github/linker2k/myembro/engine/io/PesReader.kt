@@ -142,11 +142,11 @@ object PesReader {
         val blockLength = f.u24le() ?: throw EmbFormatException("Truncated PEC header")
         val blockEnd = f.position - 5 + blockLength
         f.skip(0x0B)
-        if (blockEnd > f.position && blockEnd <= f.size) {
-            f.limit = blockEnd
-        } else {
-            out.warnings += "PEC stitch block length is invalid; reading until the end marker"
+        // Without a trustworthy block end we could decode the thumbnails as stitches.
+        if (blockEnd <= f.position || blockEnd > f.size) {
+            throw EmbFormatException("PEC stitch block length $blockLength is invalid")
         }
+        f.limit = blockEnd
         readPecStitches(f, out)
     }
 

@@ -23,8 +23,14 @@ data class EmbThread(
     val blue: Int get() = color and 0xFF
     val hex: String get() = "#%06x".format(color and 0xFFFFFF)
 
-    /** Same color, ignoring alpha and metadata — pyembroidery's thread equality. */
-    fun sameColor(other: EmbThread): Boolean = (color and 0xFFFFFF) == (other.color and 0xFFFFFF)
+    /**
+     * pyembroidery's thread equality: same RGB (alpha ignored) and same identifying metadata.
+     * Two catalog threads that happen to share an RGB value are still different threads.
+     */
+    fun sameThread(other: EmbThread): Boolean =
+        (color and 0xFFFFFF) == (other.color and 0xFFFFFF) &&
+            description == other.description && catalogNumber == other.catalogNumber &&
+            brand == other.brand && chart == other.chart
 }
 
 data class Bounds(val minX: Int, val minY: Int, val maxX: Int, val maxY: Int) {
@@ -211,7 +217,7 @@ class PatternBuilder {
                 Command.STITCH -> if (initColor) {
                     if (threadIndex >= threads.size) return
                     if (lastChange >= 0 && threadIndex != 0 &&
-                        threads[threadIndex - 1].sameColor(threads[threadIndex])
+                        threads[threadIndex - 1].sameThread(threads[threadIndex])
                     ) {
                         threads.removeAt(threadIndex)
                         stitches[lastChange] = stitches[lastChange].copy(command = Command.STOP)
