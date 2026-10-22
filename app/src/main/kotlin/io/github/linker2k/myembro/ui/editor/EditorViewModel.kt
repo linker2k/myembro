@@ -78,6 +78,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         snapGuides = SnapGuides()
         sync()
     }
+    /** Lettering entry point: like [editDesign], the object is the baseline, not an undoable add. */
+    fun startWith(obj: DesignObject, hoop: HoopSpec) {
+        if (busy || gestureInProgress) return
+        newProject(hoop)
+        session = EditorSession(Project(hoop = hoop).add(obj))
+        selectedIds = setOf(obj.id)
+        sync()
+    }
+
     private fun importObject(file: File) = StitchObject.fromBytes(UUID.randomUUID().toString(),
         file.nameWithoutExtension, file.readBytes(), file.name)
 
