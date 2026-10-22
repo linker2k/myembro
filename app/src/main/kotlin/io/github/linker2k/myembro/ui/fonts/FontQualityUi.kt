@@ -37,25 +37,33 @@ fun QualityBadge(grade: QualityGrade, modifier: Modifier = Modifier) {
     )
 }
 
+/** App keys are localized; the engine's reasons are already sentences. */
 @Composable
 fun reasonText(key: String): String = when (key) {
-    QualityReasons.THIN_STROKES -> stringResource(R.string.fonts_reason_thin_strokes)
-    QualityReasons.TIGHT_SPOTS -> stringResource(R.string.fonts_reason_tight_spots)
-    QualityReasons.MANY_JUMPS -> stringResource(R.string.fonts_reason_many_jumps)
-    QualityReasons.TINY_DETAILS -> stringResource(R.string.fonts_reason_tiny_details)
     QualityReasons.MISSING_HANGUL -> stringResource(R.string.fonts_reason_missing_hangul)
     QualityReasons.MISSING_LATIN -> stringResource(R.string.fonts_reason_missing_latin)
+    QualityReasons.NOT_SCALABLE -> stringResource(R.string.fonts_reason_not_scalable)
     else -> key
 }
 
-fun mm(value: Double): String = String.format(Locale.ROOT, "%.1f", value).removeSuffix(".0")
+fun mm(value: Double): String = if (value.isFinite()) String.format(Locale.ROOT, "%.1f", value).removeSuffix(".0") else "—"
+
+/** "Recommended height" line: null when any height works, a warning when scaling cannot help. */
+@Composable
+fun minHeightText(recommendedMm: Double): String? = when {
+    recommendedMm <= 0.0 -> null
+    !recommendedMm.isFinite() -> stringResource(R.string.fonts_min_height_unfixable)
+    else -> stringResource(R.string.fonts_min_height, mm(recommendedMm))
+}
 
 /** Recommended height, reasons and the per-size sample numbers. */
 @Composable
 fun QualityDetails(summary: FontQualitySummary, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(stringResource(R.string.fonts_min_height, mm(summary.recommendedMinHeightMm)), style = MaterialTheme.typography.titleSmall)
-        summary.reasons.forEach { Text("• " + reasonText(it), style = MaterialTheme.typography.bodySmall) }
+        minHeightText(summary.recommendedMinHeightMm)?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
+        // The heading already says when scaling cannot help.
+        summary.reasons.filterNot { it == QualityReasons.NOT_SCALABLE }
+            .forEach { Text("• " + reasonText(it), style = MaterialTheme.typography.bodySmall) }
         listOfNotNull(summary.at10?.let { 10 to it }, summary.at20?.let { 20 to it }).forEach { (h, r) -> SampleLine(h, r) }
     }
 }

@@ -1,225 +1,157 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.fonts
 
+import io.github.linker2k.myembro.engine.lettering.FontQuality
+import io.github.linker2k.myembro.engine.lettering.FontQualityReport
+import io.github.linker2k.myembro.engine.lettering.Grade
+import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
-import kotlin.math.min
 
 /*
- * App-side wrapper around the shared lettering contract (engine/.../lettering/FontQuality.kt,
- * implemented by embro-letter). Until that lands, [InterimFontQuality] provides the same
- * signatures; after the merge, point [FontQualityGateway.analyzer] at an adapter over the engine
- * objects and delete the interim code. Coordinates are mm, normalized to the requested height.
+ * App-side wrapper around the engine's FontQuality (docs/lettering.md, "임의 폰트 품질 분석 API").
+ * Coordinates are mm, normalized to the requested height; one inner list per glyph.
  */
 
-enum class QualityGrade { GOOD, CAUTION, UNSUITABLE }
+typealias QualityGrade = Grade
+typealias QualityReport = FontQualityReport
 
-/** Mirrors the engine's FontQualityReport field for field. */
-data class QualityReport(
-    val minStrokeMm: Double,
-    val recommendedMinHeightMm: Double,
-    val stitchCount: Int,
-    val jumpCount: Int,
-    val tightSpots: Int,
-    val grade: QualityGrade,
-    /** Reason keys (see [QualityReasons]); unknown keys are shown verbatim. */
-    val reasons: List<String>,
-)
-
+/** Reason keys the app adds itself; the engine's reasons are display sentences shown as-is. */
 object QualityReasons {
-    const val THIN_STROKES = "thin_strokes"
-    const val TIGHT_SPOTS = "tight_spots"
-    const val MANY_JUMPS = "many_jumps"
-    const val TINY_DETAILS = "tiny_details"
-    /** Added by the app when the sample has characters the font lacks. */
     const val MISSING_HANGUL = "missing_hangul"
     const val MISSING_LATIN = "missing_latin"
-}
-
-interface FontQualityAnalyzer {
-    fun analyze(glyphContours: List<List<List<Pair<Double, Double>>>>, heightMm: Double, outline: Boolean): QualityReport
-    fun simplify(contours: List<List<Pair<Double, Double>>>, toleranceMm: Double, minSegmentMm: Double): List<List<Pair<Double, Double>>>
+    /** Strokes touch or overlap, so a larger height does not help. */
+    const val NOT_SCALABLE = "not_scalable"
 }
 
 object FontQualityGateway {
-    /** Swap for the engine-backed adapter once FontQuality/ContourSimplifier are merged. */
-    val analyzer: FontQualityAnalyzer = InterimFontQuality
-}
+    /**
+     * Strokes closer than this fraction of the letter height touch. Font data has small
+     * near-misses (Hershey "A": the bar stops 9/662 short of the legs) that keep their
+     * proportion when the text is scaled, so the tolerance scales too.
+     */
+    const val CONTACT_FRACTION = 0.025
+    /**
+     * Stroke parts closer than this fraction of the letter height to a contact are left out of
+     * the gap measurement. Scaling with the height keeps the result proportional to the height,
+     * which the engine's recommended height assumes: two legs meeting at an angle, or curves
+     * meeting tangentially, then measure the same at every size. At 10 mm this is 2 mm, where
+     * the legs of a 53° apex are still 1.8 mm apart.
+     */
+    const val CLEARANCE_FRACTION = 0.2
+    private const val STEP_MM = 0.1
 
-/**
- * Stand-in heuristics. Running stitch along both edges of an outline needs the edges at least
- * [OUTLINE_GOOD_MM] apart to stay readable; single-line strokes need [LINE_GOOD_MM] between
- * neighbouring strokes. Thickness is measured as the distance between contour samples that are far
- * apart along the contour (so corners do not count as thin).
- */
-internal object InterimFontQuality : FontQualityAnalyzer {
-    const val OUTLINE_GOOD_MM = 1.5
-    const val OUTLINE_CAUTION_MM = 0.9
-    const val LINE_GOOD_MM = 1.0
-    const val LINE_CAUTION_MM = 0.6
-    private const val STEP_MM = 0.4
-    private const val STITCH_MM = 2.5
-    private const val MIN_RECOMMENDED_MM = 4.0
-    /** A stroke end this close to another stroke is joined to it. */
-    private const val JUNCTION_MM = 0.25
+    /**
+     * Outline fonts go to [FontQuality.analyze] unchanged. Single-line strokes that cross, end on
+     * or retrace another stroke are drawn that way on purpose, but the engine measures them as a
+     * 0 mm gap (always unsuitable). So stroke parts near those contacts are cut away before
+     * measuring, while stitch and jump counts still come from the uncut strokes.
+     */
+    fun analyze(glyphContours: List<List<List<Pair<Double, Double>>>>, heightMm: Double, outline: Boolean): QualityReport =
+        capRecommendation(measure(glyphContours, heightMm, outline))
 
-    private class Sample(val x: Double, val y: Double, val contour: Int, val arc: Double)
+    /**
+     * Above this the engine's recommended height fits no hoop: touching or overlapping contours
+     * (common in handwriting fonts) measure as a few micrometres, and "make it 6 m tall" is
+     * reported the way the engine reports an exact 0 mm gap: scaling alone cannot fix it.
+     */
+    const val MAX_USEFUL_HEIGHT_MM = 300.0
 
-    override fun analyze(
-        glyphContours: List<List<List<Pair<Double, Double>>>>, heightMm: Double, outline: Boolean,
-    ): QualityReport {
-        val good = if (outline) OUTLINE_GOOD_MM else LINE_GOOD_MM
-        val caution = if (outline) OUTLINE_CAUTION_MM else LINE_CAUTION_MM
-        // Glyphs are measured independently: each arrives at its own origin, so letters overlap in space.
-        val glyphOf = ArrayList<Int>()
-        val contours = ArrayList<List<Pair<Double, Double>>>()
-        glyphContours.forEachIndexed { gi, glyph -> glyph.filter { it.size >= 2 }.forEach { contours += it; glyphOf += gi } }
-        if (contours.isEmpty()) {
-            return QualityReport(0.0, heightMm, 0, 0, 0, QualityGrade.UNSUITABLE, listOf(QualityReasons.TINY_DETAILS))
-        }
-
-        var stitches = 0
-        var tiny = 0
-        val samples = ArrayList<Sample>()
-        val lengths = DoubleArray(contours.size)
-        contours.forEachIndexed { ci, c ->
-            var arc = 0.0
-            samples += Sample(c[0].first, c[0].second, ci, 0.0)
-            for (k in 1 until c.size) {
-                val (ax, ay) = c[k - 1]
-                val (bx, by) = c[k]
-                val len = hypot(bx - ax, by - ay)
-                stitches += max(1, ceil(len / STITCH_MM).toInt())
-                val n = max(1, ceil(len / STEP_MM).toInt())
-                for (s in 1..n) {
-                    val t = s.toDouble() / n
-                    samples += Sample(ax + (bx - ax) * t, ay + (by - ay) * t, ci, arc + len * t)
-                }
-                arc += len
-            }
-            lengths[ci] = arc
-            if (arc < 1.0) tiny++
-        }
-
-        // Spatial hash so only nearby samples are compared.
-        val cell = good * 2
-        val grid = HashMap<Long, MutableList<Int>>()
-        fun key(ix: Int, iy: Int) = (ix.toLong() shl 32) xor (iy.toLong() and 0xffffffffL)
-        samples.forEachIndexed { i, s -> grid.getOrPut(key(floor(s.x / cell).toInt(), floor(s.y / cell).toInt())) { ArrayList() } += i }
-
-        // Junctions: an open stroke ending on another stroke (Hershey "A" apex, "T" bar). Points near a
-        // junction are close because the strokes are joined, like the two arms of a corner.
-        val junctions = HashMap<Long, MutableList<Pair<Double, Double>>>() // (contour pair) -> (arc on lower, arc on higher)
-        fun pairKey(a: Int, b: Int) = (min(a, b).toLong() shl 32) or max(a, b).toLong()
-        contours.forEachIndexed { ci, c ->
-            if (c.first() == c.last()) return@forEachIndexed
-            for ((ex, ey, earc) in listOf(Triple(c.first().first, c.first().second, 0.0), Triple(c.last().first, c.last().second, lengths[ci]))) {
-                val ix = floor(ex / cell).toInt()
-                val iy = floor(ey / cell).toInt()
-                val nearest = HashMap<Int, Pair<Double, Double>>() // other contour -> (distance, arc)
-                for (dx in -1..1) for (dy in -1..1) for (j in grid[key(ix + dx, iy + dy)].orEmpty()) {
-                    val s = samples[j]
-                    if (s.contour == ci || glyphOf[s.contour] != glyphOf[ci]) continue
-                    val d = hypot(s.x - ex, s.y - ey)
-                    if (d <= JUNCTION_MM && d < (nearest[s.contour]?.first ?: Double.MAX_VALUE)) nearest[s.contour] = d to s.arc
-                }
-                for ((other, hit) in nearest) {
-                    junctions.getOrPut(pairKey(ci, other)) { ArrayList() } += if (ci < other) earc to hit.second else hit.second to earc
-                }
-            }
-        }
-
-        var minDist = Double.MAX_VALUE
-        val tight = BooleanArray(samples.size)
-        samples.forEachIndexed { i, a ->
-            val ix = floor(a.x / cell).toInt()
-            val iy = floor(a.y / cell).toInt()
-            var best = Double.MAX_VALUE
-            for (dx in -1..1) for (dy in -1..1) {
-                val bucket = grid[key(ix + dx, iy + dy)] ?: continue
-                for (j in bucket) {
-                    if (j == i) continue
-                    val b = samples[j]
-                    if (glyphOf[b.contour] != glyphOf[a.contour]) continue
-                    val d = hypot(a.x - b.x, a.y - b.y)
-                    if (d >= best) continue
-                    if (a.contour == b.contour) {
-                        val along = Math.abs(a.arc - b.arc)
-                        val closed = contours[a.contour].first() == contours[a.contour].last()
-                        val arcDist = if (closed) min(along, lengths[a.contour] - along) else along
-                        // Neighbours along the same line, including both arms of a corner.
-                        if (arcDist < 4 * d + STEP_MM * 1.5) continue
-                    } else {
-                        val joins = junctions[pairKey(a.contour, b.contour)]
-                        if (joins != null) {
-                            val (lo, hi) = if (a.contour < b.contour) a to b else b to a
-                            // Path length through the junction, judged like a corner.
-                            if (joins.any { (arcLo, arcHi) -> Math.abs(lo.arc - arcLo) + Math.abs(hi.arc - arcHi) < 4 * d + STEP_MM * 1.5 }) continue
-                        }
-                    }
-                    best = d
-                }
-            }
-            if (best < minDist) minDist = best
-            if (best < caution) tight[i] = true
-        }
-        // Count runs of consecutive tight samples as spots.
-        var spots = 0
-        for (i in samples.indices) if (tight[i] && (i == 0 || !tight[i - 1] || samples[i - 1].contour != samples[i].contour)) spots++
-
-        val minStroke = if (minDist == Double.MAX_VALUE) heightMm else minDist
-        val recommended = max(MIN_RECOMMENDED_MM, ceil(heightMm * good / max(minStroke, 1e-6) * 2) / 2)
-        val jumps = contours.size - 1
-        val reasons = ArrayList<String>()
-        var grade = when {
-            minStroke >= good -> QualityGrade.GOOD
-            minStroke >= caution -> QualityGrade.CAUTION
-            else -> QualityGrade.UNSUITABLE
-        }
-        if (grade != QualityGrade.GOOD) reasons += QualityReasons.THIN_STROKES
-        if (spots > 0) reasons += QualityReasons.TIGHT_SPOTS
-        if (contours.size.toDouble() / glyphContours.count { it.isNotEmpty() }.coerceAtLeast(1) > 8) {
-            reasons += QualityReasons.MANY_JUMPS
-            if (grade == QualityGrade.GOOD) grade = QualityGrade.CAUTION
-        }
-        if (tiny > 0) {
-            reasons += QualityReasons.TINY_DETAILS
-            if (grade == QualityGrade.GOOD) grade = QualityGrade.CAUTION
-        }
-        return QualityReport(minStroke, recommended, stitches, jumps, spots, grade, reasons)
+    private fun capRecommendation(report: QualityReport): QualityReport {
+        if (!report.recommendedMinHeightMm.isFinite() || report.recommendedMinHeightMm <= MAX_USEFUL_HEIGHT_MM) return report
+        // Replaces the engine's "글자 높이를 …mm 이상으로 키워 보세요." sentence.
+        val reasons = report.reasons.filterNot { "글자 높이를" in it && "키워 보세요" in it } + QualityReasons.NOT_SCALABLE
+        return report.copy(recommendedMinHeightMm = Double.POSITIVE_INFINITY, reasons = reasons)
     }
 
-    /** Douglas–Peucker, then drop points closer than [minSegmentMm] (endpoints kept). */
-    override fun simplify(
-        contours: List<List<Pair<Double, Double>>>, toleranceMm: Double, minSegmentMm: Double,
-    ): List<List<Pair<Double, Double>>> = contours.map { c ->
-        if (c.size < 3) return@map c
-        val keep = BooleanArray(c.size).also { it[0] = true; it[c.lastIndex] = true }
-        fun dp(from: Int, to: Int) {
-            if (to <= from + 1) return
-            val (ax, ay) = c[from]
-            val (bx, by) = c[to]
-            val len = hypot(bx - ax, by - ay)
-            var worst = -1.0
-            var at = -1
-            for (k in from + 1 until to) {
-                val (px, py) = c[k]
-                val d = if (len == 0.0) hypot(px - ax, py - ay) else Math.abs((bx - ax) * (ay - py) - (ax - px) * (by - ay)) / len
-                if (d > worst) { worst = d; at = k }
+    private fun measure(glyphContours: List<List<List<Pair<Double, Double>>>>, heightMm: Double, outline: Boolean): QualityReport {
+        if (outline) return FontQuality.analyze(glyphContours, heightMm, outline = true)
+        val drawable = glyphContours.map { glyph -> glyph.filter { it.size >= 2 } }.filter { it.isNotEmpty() }
+        if (drawable.isEmpty()) return FontQuality.analyze(glyphContours, heightMm, outline = false)
+        var stitches = 0
+        var jumps = 0
+        for (glyph in drawable) {
+            val pattern = LetteringEngine.fromContours(glyph, heightMm, sourceHeight = heightMm)
+            stitches += pattern.stitchCount
+            jumps += pattern.jumpCount
+        }
+        val trimmed = drawable.map { trimContacts(it, heightMm * CONTACT_FRACTION, heightMm * CLEARANCE_FRACTION) }
+        val report = FontQuality.analyze(trimmed, heightMm, outline = false)
+        return report.copy(stitchCount = stitches, jumpCount = jumps)
+    }
+
+    /**
+     * Splits each stroke of one glyph around the points where another stroke comes within
+     * [contactMm] of it (crossings, joins, retraced runs), keeping only parts at least
+     * [clearanceMm] away from those points.
+     */
+    internal fun trimContacts(
+        strokes: List<List<Pair<Double, Double>>>, contactMm: Double, clearanceMm: Double,
+    ): List<List<Pair<Double, Double>>> {
+        val dense = strokes.map(::densify)
+        val contacts = List(strokes.size) { mutableListOf<Pair<Double, Double>>() }
+        for (a in strokes.indices) for (b in strokes.indices) {
+            if (a == b) continue
+            val segments = strokes[b].zipWithNext()
+            dense[a].filterTo(contacts[a]) { p -> segments.any { (s, e) -> segmentDistance(p, s, e) < contactMm } }
+        }
+        return strokes.indices.flatMap { i ->
+            var near = contacts[i] + contacts.indices.filter { it != i }.flatMap { j -> contacts[j] }.filter { p ->
+                dense[i].any { hypot(it.first - p.first, it.second - p.second) < contactMm }
             }
-            if (worst > toleranceMm) { keep[at] = true; dp(from, at); dp(at, to) }
+            if (near.isEmpty()) return@flatMap listOf(strokes[i])
+            // The engine never compares a stroke with itself, so its pieces must not touch either:
+            // where they do (a retraced stem, a bowl folding back), that is a contact too.
+            var runs = cut(dense[i], near, contactMm, clearanceMm)
+            repeat(MAX_PASSES) {
+                val touching = runs.withIndex().flatMap { (r, run) ->
+                    run.filter { p -> runs.withIndex().any { (o, other) -> o != r && other.any { hypot(it.first - p.first, it.second - p.second) < contactMm } } }
+                }
+                if (touching.isEmpty()) return@flatMap runs
+                near += touching
+                runs = cut(dense[i], near, contactMm, clearanceMm)
+            }
+            runs
         }
-        dp(0, c.lastIndex)
-        val out = ArrayList<Pair<Double, Double>>()
-        for (k in c.indices) {
-            if (!keep[k]) continue
-            val p = c[k]
-            val last = out.lastOrNull()
-            if (last != null && k != c.lastIndex && hypot(p.first - last.first, p.second - last.second) < minSegmentMm) continue
-            out += p
+    }
+
+    private const val MAX_PASSES = 4
+
+    /** Pieces of [dense] at least [clearanceMm] from every point of [near], with a closed loop kept whole. */
+    private fun cut(
+        dense: List<Pair<Double, Double>>, near: List<Pair<Double, Double>>, contactMm: Double, clearanceMm: Double,
+    ): List<List<Pair<Double, Double>>> {
+        val runs = mutableListOf<MutableList<Pair<Double, Double>>>()
+        var current: MutableList<Pair<Double, Double>>? = null
+        for (p in dense) {
+            if (near.any { hypot(it.first - p.first, it.second - p.second) < clearanceMm }) {
+                current = null
+            } else {
+                if (current == null) current = mutableListOf<Pair<Double, Double>>().also { runs += it }
+                current += p
+            }
         }
-        out
+        val closed = hypot(dense.first().first - dense.last().first, dense.first().second - dense.last().second) < contactMm
+        if (closed && runs.size > 1 && runs.first().first() == dense.first() && runs.last().last() == dense.last()) {
+            runs.last() += runs.removeAt(0)
+        }
+        return runs.filter { it.size >= 2 }
+    }
+
+    private fun densify(stroke: List<Pair<Double, Double>>): List<Pair<Double, Double>> = buildList {
+        add(stroke.first())
+        for ((p, q) in stroke.zipWithNext()) {
+            val n = max(1, ceil(hypot(q.first - p.first, q.second - p.second) / STEP_MM).toInt())
+            for (k in 1..n) add(p.first + (q.first - p.first) * k / n to p.second + (q.second - p.second) * k / n)
+        }
+    }
+
+    private fun segmentDistance(p: Pair<Double, Double>, a: Pair<Double, Double>, b: Pair<Double, Double>): Double {
+        val dx = b.first - a.first
+        val dy = b.second - a.second
+        val len2 = dx * dx + dy * dy
+        val t = if (len2 == 0.0) 0.0 else (((p.first - a.first) * dx + (p.second - a.second) * dy) / len2).coerceIn(0.0, 1.0)
+        return hypot(p.first - (a.first + t * dx), p.second - (a.second + t * dy))
     }
 }

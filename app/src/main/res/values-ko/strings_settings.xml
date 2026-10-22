@@ -34,4 +34,23 @@
     <string name="export_sheet_share_hint">다른 앱으로 도안 사본 보내기</string>
     <string name="export_sheet_usb">USB로 내보내기</string>
     <string name="export_sheet_usb_hint">OTG로 USB를 연결하고 저장 폴더 선택</string>
+    <string name="settings_studio">나의 자수 작업실</string>
+    <string name="settings_studio_hint">내 미싱에 맞게 준비하세요.</string>
+    <string name="settings_threads_title">실과 색상</string>
+    <string name="export_sheet_format">PES · Brother</string>
+    <string name="export_sheet_destination">내보내기 방법</string>
+    <string name="export_sheet_usb_library_hint">USB 내보내기는 도안 목록에서 이용하세요</string>
+    <string name="export_sheet_compatibility">자수를 시작하기 전에 도안 크기와 미싱의 자수 영역을 확인하세요.</string>
+    <string name="machine_hoop_unsupported">이 미싱에서 지원 안 됨</string>
+    <string name="machine_unverified">직접 입력한 미싱: 자수 영역·호환 후프·전송 방법·제한은 미확인입니다. 크기를 직접 확인하세요.</string>
+    <string name="machine_area_format">최대 자수 영역 %1$s mm · 내보내기 %2$s</string>
+    <string name="machine_transfer_se400">PC에 USB 케이블로 연결하면 이동식 디스크로 표시됩니다. PES를 디스크 최상위에 복사하세요. 안드로이드 폰/OTG 인식은 미확인입니다. USB 메모리를 미싱에 꽂는 방식이 아닙니다.</string>
+    <string name="machine_transfer_se600">호환 USB 메모리에 PES를 복사한 뒤 미싱에 꽂고 도안을 불러오세요.</string>
+    <string name="machine_transfer_se700">호환 USB 메모리를 사용하거나 Design Database Transfer(Windows)·PE-DESIGN 11·Artspira로 무선 전송하세요. myembro의 직접 무선 전송은 구현되지 않았습니다.</string>
+    <string name="machine_optional_hoops_small">확인된 후프: 100×100mm, 별매 60×20mm. 앱의 프로젝트 후프는 현재 100×100mm를 제공합니다.</string>
+    <string name="machine_optional_hoops_repositionable">확인된 후프: 100×100mm, 별매 60×20mm·재배치형 100×170mm. 단일 도안은 최대 100×100mm이며 앱은 자동 재배치를 지원하지 않습니다.</string>
+    <string name="machine_limits_se400">임시 이동식 디스크: 도안 최대 12개, 최상위 폴더만 사용. PES 땀수 제한 수치: 미확인.</string>
+    <string name="machine_limits_se600">도안 수·PES 땀수 제한 수치: 미확인.</string>
+    <string name="machine_limits_se700">내부 메모리: 최대 20개·1024KB, 도안당 최대 100,000땀. USB 메모리의 도안 수·땀수 제한 수치: 미확인.</string>
+    <string name="machine_filename_hint">PES 파일명 길이 제한: 미확인. 브라더는 영문·숫자·하이픈·밑줄 사용을 권장합니다.</string>
 </resources>

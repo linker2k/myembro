@@ -189,3 +189,161 @@ Android 그래픽 API의 실제 글리프 생성은 JVM 엔진 테스트의 대�
 방향, 원형 곡선, 고밀도 입력, 독립 글리프, 획 교차, 권장 높이와 실제 엔진의
 땀·점프 수를 검증한다. 단순화 테스트는 최소 구간 병합, 모서리·폐곡선 보존과
 `fromContours(simplify = false)`를 검증한다.
+
+## 따뜻한 크래프트 레터링 화면
+
+`ui/lettering/LetteringScreen.kt`는 `MyembroTheme`의 색·서체·모서리 토큰을 사용한다.
+실 색은 다크 모드에서도 실제 자수 색이 달라지지 않도록 `ui/theme/Thread.kt`의
+고정 실 색 토큰(테라코타 #C4552D·아이보리·세이지·골드)을 사용한다.
+
+```kotlin
+LetteringScreen(
+    onBack = { /* 레터링 경로 닫기 */ },
+    onAdd = { textObject ->
+        // 호스트 편집기의 기존 변경/히스토리 경로에서 project.add(textObject)를 적용한다.
+        // 성공 후 레터링 경로를 닫는다.
+    },
+    hoop = currentProject.hoop,
+    backgroundPattern = currentProject.flatten(),
+    // 선택한 설치 폰트 ID를 initialFontId로 돌려줄 수 있다.
+    onOpenFonts = { /* 별도 폰트 다운로드/선택 경로 열기 */ },
+)
+```
+
+- 후프에는 현재 프로젝트(선택 인자)와 **실제 생성 스티치**를 표시한다. 배경용 꽃이나
+  채움 자수를 임의로 추가하지 않는다. 후프/글자 맞춤을 전환할 수 있다.
+- 문구 입력, 고운바탕·Jua 둥근고딕·Noto Sans KR 카드 3개, 높이·자간 슬라이더와
+  미세 조절 버튼, 왼쪽/가운데/오른쪽 정렬, 곡선 배치 토글·직선/아치/원형·곡률,
+  실 색 칩, 완료/도안에 추가 버튼을 제공한다. 입력과 조절 상태는 구성 변경 시 보존한다. 아래 2차 확장에서는 원호 위/아래·반경으로 제어를 변경했다.
+- 품질 경고와 권장 최소 높이는 추가 버튼 위에 고정한다. 품질 경고는 사용자의 추가를
+  막지 않으며, 지원하지 않는 글자·후프 초과·빈 문구·계산 중인 이전 결과의 추가는 막는다.
+- 글리프 추출·폰트 로딩·품질 분석은 백그라운드에서 수행한다. 입력 변경은 100ms로
+  모으며, 최신 계산이 완료된 결과만 콜백에 전달한다.
+- `onAdd` 결과는 새 UUID, 원문, 폰트 ID, mm 높이·자간·각도, 실, 계산된 폴리라인을
+  가진 편집 가능한 `TextObject`다. 여러 줄 정렬은 윤곽 위치에 반영하고 후프 내 좌우
+  배치는 Transform에 반영한다. 설치 SVG 단선도 열린 폴리라인으로 저장한다.
+- 이 화면은 호스트 콜백을 제공하며 MainActivity/편집기 내비게이션은 수정하지 않는다.
+
+검증: `:app:assembleDebug :app:testDebugUnitTest` 통과. API 35 독립 에뮬레이터에서
+라이트·다크 화면, 폰트 전환, 19mm/1.3mm 조절, 오른쪽 정렬, 곡선 토글과 35% 아치,
+세이지 실 선택을 확인했다. 추가 콜백의 `봄날` Jua 결과는 329땀, PES 1,698바이트로
+저장·재읽기 경계 일치를 확인했다. 검증용 Activity/Manifest는 최종 소스에서 제거했다.
+
+## 레터링 2차: 여러 줄·반경·글자별 실·품질 캐시
+
+- 입력은 여러 줄을 지원하며 빈 줄도 줄 간격에 포함한다. UI의 `줄 간격`은
+  **글자 높이 사이의 추가 mm 간격**이다. 기준선 간격은 `heightMm + lineSpacingMm`이며
+  TextObject에는 배수 `lineSpacing = 1 + lineSpacingMm / heightMm`로 저장한다.
+  좌/중/우 정렬은 가장 긴 줄을 기준으로 짧은 줄을 정렬하고, 전체 도안은 기존처럼
+  후프에서 5mm 여백을 두고 좌/중/우로 배치한다.
+- 곡선 토글 아래 `위 원호` / `아래 원호`와 실제 mm `반경`을 제공한다.
+  반경을 지정하면 `arcDeg`의 크기 대신 그 부호만 사용한다(양수 위, 음수 아래).
+  여러 줄은 각자의 기준선에서 같은 반경으로 구부린 뒤 원래 줄 위치로 이동한다.
+  UI는 안쪽 반전이 생기지 않도록 반경을 글자 높이 이상으로 제한한다.
+- 실 색 영역에서 `전체 글자` 또는 개별 글자를 고른 뒤 칩을 누른다. 전체 적용은
+  기존 개별 색을 지운다. 문구 편집 시 바뀌지 않은 앞/뒤 글자의 색은 이동한 위치로
+  보존하고 교체한 중간 글자의 색만 기본값으로 되돌린다.
+- `characterThreads` 키는 NFC, CR/LF, 탭(공백 네 개) 정규화 후 **코드 포인트 인덱스**다.
+  공백·줄바꿈도 인덱스에 포함하므로 UTF-16 인덱스와 혼동하지 않는다.
+  `contourCharacters`는 각 윤곽의 글자 인덱스, `contourBaselines`는 소스 단위 기준선이다.
+  글자의 모든 윤곽에 같은 실을 적용하고 색이 바뀔 때 trim + COLOR_CHANGE + jump를 쓴다.
+  색이 같은 연속 글자는 색 변경 없이 잇고, A색→B색→A색 순서도 유지한다.
+- TextObject와 `.myembro` 코덱에 `lineSpacing`, `alignment`, `arcRadiusMm`,
+  `characterThreads`, `contourCharacters`, `contourBaselines`를 기본값과 함께 추가했다.
+  과거 파일은 기본값으로 읽고, 새 파일은 개별 실·좌표·기준선으로 폰트 없이 재생성한다.
+  외곽선의 텍스트/줄 간격/정렬 변경 시에는 앱에서 윤곽을 다시 생성해야 한다.
+  Hershey 객체는 엔진에서 줄 간격·정렬·반경·글자별 실을 직접 반영한다.
+
+### 폰트 다운로드 화면 연결 계약
+
+이 화면은 폰트 다운로드/가져오기 UI를 구현하지 않는다. `onOpenFonts: (() -> Unit)?`가
+`글꼴 더 보기`의 유일한 연결부이며 null이면 버튼은 비활성화한다. 선택한 설치 폰트 ID는
+`initialFontId`로 돌려준다. 콜백의 기존 시그니처는 유지했다.
+
+카탈로그 카드가 활용할 수 있는 API:
+
+```kotlin
+// 다운로드가 끝나 FontRepository에서 로드할 수 있는 폰트에 사용한다.
+val report = LetteringFontQuality.analyze(
+    context, fontId = catalogFont.id, text = "자수봄날", heightMm = 18.0,
+)
+// Composable, MyembroTheme 내에서 호출:
+FontQualityBadge(report)  // 등급 + 유한한 권장 최소 높이
+// 폰트를 교체/삭제했을 때:
+LetteringFontQuality.invalidate(catalogFont.id)
+```
+
+`LetteringFontQuality.analyze`는 suspend 함수이며 추출과 분석을 Dispatchers.Default에서
+수행한다. 세 번들 카드도 같은 API로 분석 결과를 표시한다. 폰트 SHA-256(번들은 버전),
+추출기 버전, 정규화한 고유 문자 집합, 글자 높이와 외곽선/단선 모드가 캐시 키에 들어간다.
+색·정렬·줄 간격만 바꿔도 품질을 다시 분석하지 않는다.
+
+Android/카탈로그에 의존하지 않는 엔진 API도 제공한다:
+
+```kotlin
+val key = FontQualityKey(fontId, revision = "sha256:...:extractor-v2", sampleText = "자수", heightMm = 18.0, outline = true)
+val cache = FontQualityCache.Shared // 또는 FontQualityCache(maxEntries = 64)
+val report = cache.getOrAnalyze(key) { normalizedGlyphContoursMm }
+val cached = cache.get(key)
+cache.invalidate(fontId)
+```
+
+공급자 경로는 캐시 미스에서만 실행된다. 키별 보고서를 최대 64개 유지하는 동기화 LRU이며
+동시 조회는 같은 결과를 사용한다. `getOrAnalyze`는 호출 스레드에서 계산하므로
+백그라운드에서 호출한다. 예외는 캐시하지 않는다. 폰트 바이트가 바뀌면 revision을 바꾸거나
+invalidate를 호출해야 한다. `get`, `put`, `clear`, `size`도 제공한다.
+
+## 단선 폰트: 1겹 러닝과 3겹 콩땀
+
+단선 폰트는 이름 새기기·레드워크에 적합하므로 유지한다. 새 Hershey 텍스트와
+설치 SVG 단선 폰트는 **3겹 콩땀**을 기본으로 사용하며, 레터링 화면의 `선 굵기`에서
+`1겹 러닝`으로 바꿀 수 있다. 외곽선 폰트는 기존 1겹 러닝을 기본으로 유지한다.
+
+```kotlin
+val pattern = LetteringEngine.generate("Name", stitchStyle = StitchStyle.BEAN)
+val singleLine = LetteringEngine.fromContours(
+    contours, heightMm = 18.0, stitchStyle = StitchStyle.BEAN,
+)
+```
+
+- `StitchStyle.RUNNING`은 이동 A→B를 한 번 수놓고 `BEAN`은 A→B→A→B로 수놓는다.
+  분할·정수화가 끝난 좌표에서 확장하므로 되돌아가는 땀도 2.5mm 상한을 지킨다.
+  각 획의 첫 고정점은 한 번만 남긴다. 러닝의 needle-down 수 N, 획 수 S라면
+  콩땀은 `S + 3 × (N − S)`개다. 점프·트림·색 변경·END는 복제하지 않는다.
+- 콩땀은 같은 선을 세 번 지나가므로 경계·글자 크기는 그대로다. 선 너비가 세 배로
+  벌어지는 새틴 스티치가 아니며, 실의 겹침으로 더 또렷한 결과를 만든다.
+- `TextObject.singleLine`은 Hershey뿐 아니라 OUTLINE으로 저장된 SVG 단선도 구분한다.
+  `stitchStyle`과 함께 `.myembro`에 직렬화하므로 폰트 없이 같은 땀을 재생성한다.
+  스타일 필드가 없는 과거 파일은 RUNNING으로 읽어 원래 땀 수를 유지한다.
+- 후프 미리보기·실제 스티치 폰트 카드·편집기 캔버스는 **0.4mm** 실 지름을 사용한다.
+  `ThreadRendering.widthPx(unitsToPixels)`는 엔진 0.1mm 좌표의 배율을 받는다.
+  확대 시 너비도 비례하며, 축소 시 보이도록 화면에서는 최소 1dp를 적용한다.
+  네이티브 캔버스가 이미 확대된 경우 반환 너비를 배율로 나눠 paint에 지정한다.
+- 단선 카탈로그/선택 카드에는 `단선 · 이름 새기기·레드워크에 적합` 배지를 표시한다.
+  `SingleLineFontBadge()`를 다른 카드에서도 사용할 수 있다. 실제 스티치 카드가 필요하면
+  suspend `LetteringFontPreview.pattern(context, fontId, text, heightMm, thread)`와
+  `StitchPatternPreview(pattern, modifier)`를 사용한다. 추출은 백그라운드에서 수행한다.
+- 품질 캐시의 `stitchCount`는 폰트 간 비교를 위한 기본 **1겹 러닝** 수를 유지한다.
+  레터링 화면의 실제 땀 수와 콜백 패턴에는 선택한 콩땀/러닝 스타일이 반영된다.
+
+검증은 콩땀의 앞·뒤·앞 좌표와 땀 수, 원호·다색 윤곽의 분리 및 땀 길이,
+양 스타일의 프로젝트 왕복, 이전 파일 기본값, PES 저장·재읽기 좌표를 포함한다.
+
+## 폰트 라이브러리 연결
+
+`글꼴 더 보기`는 `MainActivity`에서 `FontLibraryScreen(onBack, onPick)`을 레터링 화면 **위에 겹쳐**
+연다(레터링 입력 상태 유지). `onPick`의 ID는 `initialFontId`로 돌아간다. 카탈로그 ID 또는
+사용자 폰트 `user:<uuid>`이며, `LetteringRenderer.loadFont`는 `FontRepository.find` 다음에
+`FontRepository.userFont`를 찾는다. 사용자 폰트의 캐시 revision은 파일 크기·수정 시각이다.
+다운로드·삭제·사용자 폰트 삭제 시 `FontQualityCache.Shared.invalidate(id)`를 호출한다.
+
+- 카탈로그: `assets/fonts/catalog.json` 15종, 고정 커밋 URL, 다운로드 바이트의 SHA-256·크기를
+  검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로 함께 저장한다(https만, 32MB 상한).
+- 내 폰트: SAF로 TTF/OTF/SVG를 `filesDir/fonts/user/`에 복사하고 파싱·글리프 검사 후
+  `가나다 ABC 자수` 10/20mm 품질 결과를 `<파일>.quality.json`(분석 버전 4)에 저장한다.
+- 품질: 앱의 `FontQualityGateway`가 엔진 `FontQuality.analyze`를 감싼다. 외곽선은 그대로 넘긴다.
+  단선은 의도한 교차·이음·되짚기를 엔진이 0mm 간격으로 보므로, 다른 획과 글자 높이의 2.5% 안으로
+  닿는 지점 주변(높이의 20%)을 잘라낸 뒤 측정한다. 땀·점프 수는 자르지 않은 획 기준이다.
+  같은 획의 조각끼리는 비교하지 않도록 닿는 조각과 닫힌 고리를 처리한다. 두 비율이 높이에 비례하므로
+  권장 높이가 측정 높이와 무관하다(Hershey Sans 전체 영숫자 10mm: 12.1mm, 20mm: 12.2mm).
+  권장 높이가 300mm를 넘으면(겹친 윤곽의 µm 간격) "확대로 해결 불가"로 표시한다.

@@ -4,26 +4,22 @@ package io.github.linker2k.myembro.ui.editor
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import io.github.linker2k.myembro.engine.edit.densityWarning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,38 +28,39 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
-import io.github.linker2k.myembro.ui.lettering.LetteringSheet
+import io.github.linker2k.myembro.ui.theme.MyembroTheme
 
-private val Linen = Color(0xFFF6F0E6)
-private val Ink = Color(0xFF2B2420)
-private val Terracotta = Color(0xFFC4552D)
-
-/** Standalone editor entry point; the host owns navigation and library refresh on return. */
+/** Standalone entry point. Brand, dark mode, typography and surfaces come from MyembroTheme. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
-    val colors = lightColorScheme(primary = Terracotta, onPrimary = Color.White,
-        background = Linen, onBackground = Ink, surface = Linen, onSurface = Ink,
-        secondaryContainer = Color(0xFFEADACB), onSecondaryContainer = Ink)
-    MaterialTheme(colorScheme = colors) {
+    MyembroTheme {
+        val colors = MaterialTheme.colorScheme
         BackHandler(onBack = onBack)
         var showDesigns by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
-        var showLettering by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
-        var fitRequest by remember { mutableIntStateOf(0) }
         var projectMenu by remember { mutableStateOf(false) }
         var showSaveProject by remember { mutableStateOf(false) }
         var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
+        var fitRequest by remember { mutableIntStateOf(0) }
+        var activeTool by rememberSaveable { mutableIntStateOf(0) }
+        var inspectorTab by rememberSaveable { mutableIntStateOf(0) }
+        var inspectorExpanded by rememberSaveable { mutableStateOf(false) }
+        var navigationOnly by rememberSaveable { mutableStateOf(false) }
+        var showJumps by rememberSaveable { mutableStateOf(false) }
+        var preview by remember { mutableFloatStateOf(1f) }
         var exportName by remember { mutableStateOf("myembro") }
+        val enabled = !vm.busy && !vm.gestureInProgress
+        val addDesign = { vm.refreshDesigns(); showDesigns = true }
         val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) { vm.openProject(uri); fitRequest++ }
+            if (uri != null) { vm.openProject(uri); fitRequest++; preview = 1f }
         }
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
             if (uri != null) vm.saveProject(exportName, uri)
@@ -76,136 +73,117 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
                 if (vm.message == message) vm.message = null
             }
         }
-        val outside = remember(vm.project, vm.gestureInProgress) {
-            vm.hoopOverflowVisible
-        }
-        val densityWarning = remember(vm.project) { vm.project.objects.any { it.visible && it.densityWarning } }
-        val controlsEnabled = !vm.busy && !vm.gestureInProgress
-        Scaffold(containerColor = Linen, snackbarHost = { SnackbarHost(snackbar) },
+        val outside = remember(vm.project, vm.gestureInProgress) { vm.hoopOverflowVisible }
+        Scaffold(containerColor = colors.background, snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 Column {
-                    TopAppBar(title = { Text(stringResource(R.string.editor_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Linen),
-                        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back)) } },
-                        actions = {
-                            TextButton(onClick = vm::save, enabled = controlsEnabled && vm.project.objects.any { it.visible }) {
-                                Icon(Icons.Default.Save, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.editor_save))
-                            }
+                    TopAppBar(title = {
+                        Column {
+                            Text(stringResource(R.string.editor_title), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleMedium)
+                            Text(vm.selected?.name ?: stringResource(R.string.editor_composition), maxLines = 1,
+                                overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                        }
+                    }, colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
+                        navigationIcon = { IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
+                        } }, actions = {
+                            IconButton(onClick = vm::undo, enabled = enabled && vm.canUndo) { Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.editor_undo)) }
+                            IconButton(onClick = vm::redo, enabled = enabled && vm.canRedo) { Icon(Icons.AutoMirrored.Filled.Redo, stringResource(R.string.editor_redo)) }
                             Box {
-                                IconButton(onClick = { projectMenu = true }, enabled = controlsEnabled) {
-                                    Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu))
-                                }
+                                IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
                                 DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
                                         onClick = { projectMenu = false; showSaveProject = true })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
                                         onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
+                                        onClick = { projectMenu = false; vm.save() })
                                 }
                             }
                         })
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) {
-                            OutlinedButton(onClick = { hoopMenu = true }, enabled = controlsEnabled, contentPadding = PaddingValues(horizontal = 10.dp)) {
-                                Text(stringResource(R.string.editor_hoop_size, vm.project.hoop.name),
-                                    Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Icon(Icons.Default.ExpandMore, null, Modifier.size(18.dp))
-                            }
-                            DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                                HoopSpec.ALL.forEach { hoop -> DropdownMenuItem(
-                                    text = { Text("${hoop.name} mm") },
+                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box {
+                            SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled,
+                                label = { Text(stringResource(R.string.editor_hoop_size, vm.project.hoop.name)) },
+                                icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
+                            DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
+                                HoopSpec.ALL.forEach { hoop -> DropdownMenuItem(text = { Text("${hoop.name} mm") },
                                     onClick = { vm.setHoop(hoop); hoopMenu = false }) }
                             }
                         }
-                        Spacer(Modifier.width(4.dp))
-                        IconButton(onClick = vm::undo, enabled = vm.canUndo && controlsEnabled) { Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.editor_undo)) }
-                        IconButton(onClick = vm::redo, enabled = vm.canRedo && controlsEnabled) { Icon(Icons.AutoMirrored.Filled.Redo, stringResource(R.string.editor_redo)) }
-                        IconButton(onClick = { fitRequest++ }, enabled = controlsEnabled) { Icon(Icons.Default.CenterFocusStrong, stringResource(R.string.editor_fit)) }
+                        Spacer(Modifier.weight(1f))
+                        Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
+                            style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                        FilledTonalIconButton(onClick = vm::save, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Default.Save, stringResource(R.string.editor_save), Modifier.size(20.dp))
+                        }
                     }
                     if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (densityWarning) Text(stringResource(R.string.editor_density_warning),
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.bodySmall, color = Terracotta)
-                    if (outside) {
-                        Row(Modifier.fillMaxWidth().background(Color(0xFFF8DED2)).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.WarningAmber, null, tint = Terracotta, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.editor_outside), style = MaterialTheme.typography.bodySmall)
-                        }
+                    if (outside) Row(Modifier.fillMaxWidth().background(colors.errorContainer).padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.WarningAmber, null, tint = colors.onErrorContainer, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.editor_outside), style = MaterialTheme.typography.bodySmall, color = colors.onErrorContainer)
                     }
                 }
-            },
-            bottomBar = {
-                Surface(color = Color(0xFFFFFAF2), tonalElevation = 2.dp) {
-                    Row(Modifier.navigationBarsPadding().horizontalScroll(rememberScrollState()).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        EditorTool(Icons.Default.Add, R.string.editor_add, enabled = controlsEnabled) { vm.refreshDesigns(); showDesigns = true }
-                        EditorTool(Icons.Default.Checklist, R.string.editor_multi_select, enabled = controlsEnabled, onClick = vm::toggleSelectionMode)
-                        EditorTool(Icons.Default.Tune, R.string.editor_properties, vm.selectedIds.size == 1 && controlsEnabled) { showProperties = true }
-                        EditorTool(Icons.Default.TextFields, R.string.editor_text, enabled = controlsEnabled) { showLettering = true }
-                        EditorTool(Icons.Default.Layers, R.string.editor_layers, controlsEnabled) { showLayers = true }
-                        EditorTool(Icons.Default.ContentCopy, R.string.editor_duplicate, vm.selected != null && controlsEnabled, vm::duplicate)
-                        EditorTool(Icons.Default.Flip, R.string.editor_mirror, vm.selected != null && controlsEnabled, vm::mirror)
-                        EditorTool(Icons.AutoMirrored.Filled.RotateRight, R.string.editor_rotate, vm.selected != null && controlsEnabled, vm::rotate90)
-                        EditorTool(Icons.Default.FilterCenterFocus, R.string.editor_center, vm.selected != null && controlsEnabled, vm::center)
-                        EditorTool(Icons.Default.DeleteOutline, R.string.editor_delete, vm.selected != null && controlsEnabled, vm::delete)
-                        EditorTool(Icons.AutoMirrored.Filled.Undo, R.string.editor_undo, vm.canUndo && controlsEnabled, vm::undo)
-                        EditorTool(Icons.AutoMirrored.Filled.Redo, R.string.editor_redo, vm.canRedo && controlsEnabled, vm::redo)
-                    }
-                }
+            }, bottomBar = {
+                EditorToolTabs(enabled, activeTool,
+                    onSelect = { activeTool = 0; navigationOnly = false; vm.toggleSelectionMode() }, onAdd = addDesign,
+                    onTransform = { activeTool = 2; inspectorTab = 0; inspectorExpanded = true },
+                    onColors = { activeTool = 3; inspectorTab = 2; inspectorExpanded = true }, onLayers = { showLayers = true })
             }) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (vm.selectedIds.size > 1) stringResource(R.string.editor_selected_count, vm.selectedIds.size)
-                        else vm.selected?.name ?: stringResource(R.string.editor_composition), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                    Text(stringResource(R.string.editor_object_count, vm.project.objects.size), style = MaterialTheme.typography.labelMedium)
-                }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    FilterChip(enabled = controlsEnabled, selected = vm.selectionMode, onClick = vm::toggleSelectionMode,
-                        label = { Text(stringResource(R.string.editor_multi_select)) })
-                    if (vm.selectionMode) {
-                        TextButton(onClick = vm::selectAll, enabled = controlsEnabled) { Text(stringResource(R.string.editor_select_all)) }
-                        TextButton(onClick = vm::clearSelection, enabled = controlsEnabled) { Text(stringResource(R.string.editor_clear_selection)) }
-                    }
-                    FilterChip(enabled = controlsEnabled, selected = vm.snapEnabled, onClick = vm::toggleSnap,
-                        label = { Text(stringResource(R.string.editor_snap)) })
-                }
-                if (vm.selectedIds.size >= 2) AlignmentTools(vm)
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    EditorCanvas(vm, fitRequest, Modifier.fillMaxSize())
-                    if (vm.project.objects.isEmpty()) {
-                        FilledTonalButton(onClick = { vm.refreshDesigns(); showDesigns = true }, modifier = Modifier.align(Alignment.Center)) {
-                            Icon(Icons.Default.Add, null)
-                            Text(stringResource(R.string.editor_add))
+            BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+                val inspectorHeight = minOf(360.dp, maxHeight * 0.56f)
+                val miniLayerWidth = if (maxWidth < 380.dp) 116.dp else 132.dp
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth().weight(1f)) {
+                        EditorCanvas(vm, fitRequest, Modifier.fillMaxSize(), navigationOnly, showJumps, preview)
+                        EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
+                            onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
+                            onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
+                            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 36.dp))
+                        if (vm.project.objects.isNotEmpty()) MiniLayerPanel(vm, enabled, addDesign, { showLayers = true },
+                            Modifier.align(Alignment.TopEnd).padding(top = 36.dp, end = 12.dp).width(miniLayerWidth))
+                        if (vm.project.objects.isEmpty()) FilledTonalButton(onClick = addDesign, enabled = enabled,
+                            modifier = Modifier.align(Alignment.Center)) {
+                            Icon(Icons.Default.Add, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.editor_add))
+                        }
+                        if (vm.selectionMode) Surface(color = colors.secondaryContainer, shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp)) {
+                                Text(stringResource(R.string.editor_selected_count, vm.selectedIds.size), style = MaterialTheme.typography.labelSmall)
+                                TextButton(onClick = vm::selectAll, enabled = enabled) { Text(stringResource(R.string.editor_select_all)) }
+                                IconButton(onClick = vm::clearSelection, enabled = enabled) { Icon(Icons.Default.Deselect, stringResource(R.string.editor_clear_selection)) }
+                            }
                         }
                     }
+                    EditorInspector(vm, inspectorTab, { inspectorTab = it }, inspectorExpanded,
+                        { inspectorExpanded = !inspectorExpanded }, showJumps, { showJumps = it }, preview, { preview = it },
+                        { showProperties = true }, Modifier.fillMaxWidth().heightIn(max = inspectorHeight))
                 }
-                Text(stringResource(if (vm.selectionMode) R.string.editor_multi_hint else if (vm.selected == null) R.string.editor_navigation_hint else R.string.editor_selection_hint),
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.7f))
             }
         }
-        if (showDesigns) ModalBottomSheet(onDismissRequest = { showDesigns = false }, containerColor = Linen) {
+        if (showDesigns) ModalBottomSheet(onDismissRequest = { showDesigns = false }) {
             Text(stringResource(R.string.editor_add), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
                 items(vm.designs, key = { it.path }) { file ->
                     ListItem(headlineContent = { Text(file.name) }, leadingContent = { Icon(Icons.Default.Gesture, null) },
-                        modifier = Modifier.clickable { vm.addDesign(file); showDesigns = false },
-                        colors = ListItemDefaults.colors(containerColor = Linen))
+                        modifier = Modifier.clickable { vm.addDesign(file); preview = 1f; showDesigns = false })
                 }
             }
             Spacer(Modifier.height(24.dp))
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
-        if (showLettering) LetteringSheet(hoop = vm.project.hoop, onDismiss = { showLettering = false }, onAdd = vm::addText)
         if (showProperties && vm.selectedIds.size == 1) ObjectProperties(vm) { showProperties = false }
         if (showSaveProject) SaveProjectDialog(onDismiss = { showSaveProject = false },
             onSave = { name -> vm.saveProject(name); showSaveProject = false },
             onExport = { name -> exportName = name; showSaveProject = false
                 exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro") })
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
-            onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++ },
+            onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
             onDevice = { showOpenProjects = false; openDocument.launch(arrayOf("*/*")) })
     }
 }
@@ -214,8 +192,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit) {
 internal fun EditorTool(icon: ImageVector, label: Int, enabled: Boolean = true, onClick: () -> Unit) {
     TextButton(onClick = onClick, enabled = enabled, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(23.dp))
-            Spacer(Modifier.height(4.dp))
+            Icon(icon, null, Modifier.size(22.dp)); Spacer(Modifier.height(4.dp))
             Text(stringResource(label), style = MaterialTheme.typography.labelSmall)
         }
     }
@@ -224,10 +201,11 @@ internal fun EditorTool(icon: ImageVector, label: Int, enabled: Boolean = true, 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LayerSheet(vm: EditorViewModel, onDismiss: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val rowHeight = with(LocalDensity.current) { 64.dp.toPx() }
     val earlier = stringResource(R.string.editor_layer_earlier)
     val later = stringResource(R.string.editor_layer_later)
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Linen) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.surface) {
         Text(stringResource(R.string.editor_layers), Modifier.padding(horizontal = 20.dp, vertical = 12.dp), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.editor_layer_hint), Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
         if (vm.project.objects.isEmpty()) Text(stringResource(R.string.editor_no_layers), Modifier.padding(20.dp))
@@ -239,7 +217,7 @@ private fun LayerSheet(vm: EditorViewModel, onDismiss: () -> Unit) {
                 Row(Modifier.fillMaxWidth().height(64.dp)
                     .zIndex(if (dragging) 1f else 0f)
                     .graphicsLayer { translationY = if (dragging) offset else 0f }
-                    .background(if (obj.id in vm.selectedIds) Color(0xFFEADACB) else Linen)
+                    .background(if (obj.id in vm.selectedIds) colors.primaryContainer else colors.surface)
                     .semantics {
                         customActions = listOf(
                             CustomAccessibilityAction(earlier) { vm.reorder(obj.id, index - 1); true },
@@ -269,7 +247,7 @@ private fun LayerSheet(vm: EditorViewModel, onDismiss: () -> Unit) {
                     if (vm.selectionMode) Checkbox(checked = obj.id in vm.selectedIds,
                         onCheckedChange = { vm.toggleSelection(obj.id) }, enabled = obj.visible)
                     Text("${index + 1}", Modifier.width(28.dp), style = MaterialTheme.typography.labelLarge)
-                    Text(obj.name, Modifier.weight(1f), maxLines = 1, color = Ink.copy(alpha = if (obj.visible) 1f else 0.45f))
+                    Text(obj.name, Modifier.weight(1f), maxLines = 1, color = colors.onSurface.copy(alpha = if (obj.visible) 1f else 0.45f))
                     IconButton(onClick = { vm.toggleVisible(obj.id) }) {
                         Icon(if (obj.visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             stringResource(if (obj.visible) R.string.editor_hide else R.string.editor_show))

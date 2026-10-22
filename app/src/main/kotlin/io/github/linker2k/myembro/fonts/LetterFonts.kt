@@ -36,13 +36,13 @@ data class FontQualitySummary(
     val recommendedMinHeightMm: Double,
     val at10: QualityReport?,
     val at20: QualityReport?,
-    /** Reasons for [grade], de-duplicated from both sizes plus missing-script checks. */
+    /** Missing-script keys ([QualityReasons]) followed by the engine's sentences for the 10 mm sample. */
     val reasons: List<String>,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("version", ANALYSIS_VERSION)
         put("grade", grade.name)
-        put("recommendedMinHeightMm", recommendedMinHeightMm)
+        putMm("recommendedMinHeightMm", recommendedMinHeightMm)
         at10?.let { put("at10", it.toJson()) }
         at20?.let { put("at20", it.toJson()) }
         put("reasons", JSONArray(reasons))
@@ -51,11 +51,11 @@ data class FontQualitySummary(
     companion object {
         const val SAMPLE = "가나다 ABC 자수"
         /** Bump when the analysis changes; older stored reports are recomputed. */
-        const val ANALYSIS_VERSION = 2
+        const val ANALYSIS_VERSION = 4
 
         fun fromJson(o: JSONObject) = FontQualitySummary(
             grade = QualityGrade.valueOf(o.getString("grade")),
-            recommendedMinHeightMm = o.getDouble("recommendedMinHeightMm"),
+            recommendedMinHeightMm = o.mm("recommendedMinHeightMm"),
             at10 = o.optJSONObject("at10")?.let(::reportFromJson),
             at20 = o.optJSONObject("at20")?.let(::reportFromJson),
             reasons = o.optJSONArray("reasons")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
@@ -69,15 +69,12 @@ data class FontQualitySummary(
                 else -> QualityGrade.UNSUITABLE
             }
             if (missing.isNotEmpty() && grade == QualityGrade.GOOD) grade = QualityGrade.CAUTION
-            return FontQualitySummary(
-                grade, at10.recommendedMinHeightMm, at10, at20,
-                (missing + at10.reasons + at20.reasons).distinct(),
-            )
+            return FontQualitySummary(grade, at10.recommendedMinHeightMm, at10, at20, missing + at10.reasons)
         }
 
         private fun QualityReport.toJson() = JSONObject().apply {
-            put("minStrokeMm", minStrokeMm)
-            put("recommendedMinHeightMm", recommendedMinHeightMm)
+            putMm("minStrokeMm", minStrokeMm)
+            putMm("recommendedMinHeightMm", recommendedMinHeightMm)
             put("stitchCount", stitchCount)
             put("jumpCount", jumpCount)
             put("tightSpots", tightSpots)
@@ -86,14 +83,19 @@ data class FontQualitySummary(
         }
 
         private fun reportFromJson(o: JSONObject) = QualityReport(
-            minStrokeMm = o.getDouble("minStrokeMm"),
-            recommendedMinHeightMm = o.getDouble("recommendedMinHeightMm"),
+            minStrokeMm = o.mm("minStrokeMm"),
+            recommendedMinHeightMm = o.mm("recommendedMinHeightMm"),
             stitchCount = o.getInt("stitchCount"),
             jumpCount = o.getInt("jumpCount"),
             tightSpots = o.getInt("tightSpots"),
             grade = QualityGrade.valueOf(o.getString("grade")),
             reasons = o.optJSONArray("reasons")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
         )
+
+        // The engine reports "no limit" / "not fixable by scaling" as +Infinity, which JSON cannot hold.
+        private fun JSONObject.putMm(key: String, value: Double) = put(key, if (value.isFinite()) value else JSONObject.NULL)
+
+        private fun JSONObject.mm(key: String) = if (isNull(key)) Double.POSITIVE_INFINITY else getDouble(key)
 
         fun read(fontFile: File): FontQualitySummary? =
             qualityFile(fontFile).takeIf { it.isFile }?.let { f ->
@@ -145,9 +147,8 @@ class LetterFontGeometry(context: Context) {
             if (lacking.any { it in 'A'..'Z' }) add(QualityReasons.MISSING_LATIN)
         }
         val chars = sample.filter { !it.isWhitespace() && it !in lacking }
-        val analyzer = FontQualityGateway.analyzer
-        val at10 = analyzer.analyze(glyphContours(font, chars, 10.0), 10.0, font.outline)
-        val at20 = analyzer.analyze(glyphContours(font, chars, 20.0), 20.0, font.outline)
+        val at10 = FontQualityGateway.analyze(glyphContours(font, chars, 10.0), 10.0, font.outline)
+        val at20 = FontQualityGateway.analyze(glyphContours(font, chars, 20.0), 20.0, font.outline)
         return FontQualitySummary.of(at10, at20, reasons)
     }
 

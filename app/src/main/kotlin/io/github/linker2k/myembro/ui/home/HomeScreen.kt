@@ -5,17 +5,23 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -27,6 +33,7 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,8 +66,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +75,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.Hoop
+import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import java.io.File
@@ -88,32 +94,39 @@ fun HomeScreen(
     onOpenLibrary: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onCreateFromDesign: () -> Unit = onOpenLibrary,
+    letteringAvailable: Boolean = false,
+    onFreeDesigns: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
     MyembroTheme {
-        HomeContent(vm.recent, vm.sample, vm.loading, vm.failed, vm::refresh,
-            onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier)
+        HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
+            onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
+            vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
+            onFreeDesigns)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeContent(
-    recent: List<HomeProject>, sample: HomeProject?, loading: Boolean, failed: Boolean,
+    recent: List<HomeProject>, samples: List<HomeProject>, loading: Boolean, failed: Boolean,
     onRefresh: () -> Unit, onNewProject: (Hoop) -> Unit, onOpenRecent: (File) -> Unit,
     onImport: () -> Unit, onLettering: () -> Unit, onOpenLibrary: () -> Unit,
     onSettings: () -> Unit, modifier: Modifier = Modifier,
+    supportedHoops: List<Hoop> = listOf(Hoop.H100), defaultHoop: Hoop = Hoop.H100,
+    onCreateFromDesign: () -> Unit = onOpenLibrary, letteringAvailable: Boolean = false,
+    onFreeDesigns: (() -> Unit)? = null,
 ) {
-    var hoopName by rememberSaveable { mutableStateOf(Hoop.H100.name) }
-    val hoop = Hoop.entries.firstOrNull { it.name == hoopName } ?: Hoop.H100
+    var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(40.dp))
+                        Image(painterResource(R.drawable.myembro_splash_icon), null, Modifier.size(40.dp))
                         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
                     }
                 },
@@ -122,122 +135,160 @@ private fun HomeContent(
                 } },
             )
         },
-        bottomBar = { HomeTabs({ onNewProject(hoop) }, onOpenLibrary, onSettings) },
+        bottomBar = { HomeTabs({ showNewProject = true }, onOpenLibrary, onSettings) },
     ) { padding ->
-        LazyColumn(
-            Modifier.padding(padding), contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            item {
-                Column(Modifier.padding(horizontal = 20.dp)) {
-                    Text(stringResource(R.string.home_greeting), style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(stringResource(R.string.home_workshop), style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(4.dp))
-                    Text(stringResource(R.string.home_welcome), style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
+            val expanded = maxWidth >= MyembroLayout.ExpandedWidth
+            val columns = if (expanded) MyembroLayout.designColumns(maxWidth) else 1
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
+                modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                item(key = "greeting", span = { GridItemSpan(maxLineSpan) }) {
+                    Column {
+                        Text(stringResource(R.string.home_greeting), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.home_workshop), style = MaterialTheme.typography.headlineLarge)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(R.string.home_welcome), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-            }
-            item { NewProjectCard(hoop, { hoopName = it.name }) { onNewProject(hoop) } }
-            item {
-                SectionTitle(stringResource(R.string.home_recent), onOpenLibrary)
+                item(key = "new_project", span = { GridItemSpan(if (columns == 3) 2 else 1) }) {
+                    NewProjectCard(defaultHoop) { showNewProject = true }
+                }
+                if (expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns, stacked = true) }
+                item(key = "recent_heading", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionTitle(stringResource(R.string.home_recent), onOpenLibrary)
+                }
                 when {
-                    loading && recent.isEmpty() -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 20.dp))
-                    recent.isEmpty() -> Card(
-                        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth(), shape = MyembroShapes.Card,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    ) {
-                        Column(Modifier.padding(20.dp)) {
-                            Text(stringResource(if (failed) R.string.home_load_failed else R.string.home_recent_empty),
-                                style = MaterialTheme.typography.bodyMedium)
-                            TextButton(onClick = if (failed) onRefresh else onImport) {
-                                Text(stringResource(if (failed) R.string.home_retry else R.string.home_import))
+                    recent.isEmpty() -> item(key = "recent_empty", span = { GridItemSpan(maxLineSpan) }) {
+                        if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        else RecentEmpty(failed, if (failed) onRefresh else onImport)
+                    }
+                    expanded -> gridItems(recent, key = { "recent:${it.file.path}" }) { project ->
+                        ProjectCard(project, project.file.nameWithoutExtension,
+                            project.file.extension.uppercase(Locale.ROOT), Modifier.fillMaxWidth()) { onOpenRecent(project.file) }
+                    }
+                    else -> item(key = "recent_row") {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(recent, key = { it.file.path }) { project ->
+                                ProjectCard(project, project.file.nameWithoutExtension,
+                                    project.file.extension.uppercase(Locale.ROOT)) { onOpenRecent(project.file) }
                             }
                         }
                     }
-                    else -> LazyRow(contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(recent, key = { it.file.path }) { project ->
-                            ProjectCard(project, project.file.nameWithoutExtension,
-                                project.file.extension.uppercase(Locale.ROOT)) { onOpenRecent(project.file) }
+                }
+                item(key = "samples_heading", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionTitle(stringResource(R.string.home_gallery))
+                }
+                if (expanded) gridItems(samples, key = { "sample:${it.file.path}" }) { project ->
+                    ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample),
+                        Modifier.fillMaxWidth()) { onOpenRecent(project.file) }
+                } else item(key = "samples_row") {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(samples, key = { it.file.path }) { project ->
+                            ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample)) { onOpenRecent(project.file) }
                         }
                     }
                 }
+                if (!expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns) }
             }
-            item {
-                SectionTitle(stringResource(R.string.home_gallery))
-                LazyRow(contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    sample?.let { project -> item {
-                        ProjectCard(project, stringResource(R.string.home_flower_sample),
-                            stringResource(R.string.home_sample)) { onOpenRecent(project.file) }
-                    } }
-                    item { TemplateCard(Hoop.H100, stringResource(R.string.home_square_template)) { onNewProject(Hoop.H100) } }
-                    item { TemplateCard(Hoop.H130, stringResource(R.string.home_portrait_template)) { onNewProject(Hoop.H130) } }
+        }
+    }
+
+    if (showNewProject) NewProjectSheet(
+        onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
+        onFromDesign = onCreateFromDesign, onFromText = onLettering,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable,
+    )
+}
+
+@Composable
+private fun NewProjectCard(hoop: Hoop, onCreate: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Card,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val artSize = if (maxWidth < 340.dp) 72.dp else 108.dp
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.home_new_project), style = MaterialTheme.typography.headlineSmall)
+                        Spacer(Modifier.height(6.dp))
+                        Text(stringResource(R.string.home_new_hint), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Image(painterResource(R.drawable.empty_state), null, Modifier.size(artSize))
                 }
-            }
-            item {
-                SectionTitle(stringResource(R.string.home_quick_start))
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    QuickAction(Icons.Default.FileOpen, stringResource(R.string.home_import), Modifier.weight(1f), onClick = onImport)
-                    QuickAction(Icons.Default.TextFields, stringResource(R.string.home_lettering), Modifier.weight(1f), onClick = onLettering)
-                    QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.weight(1f),
-                        enabled = false, onClick = {})
+                Text(stringResource(R.string.new_project_default_hoop, hoop.label),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onCreate, modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Button,
+                    contentPadding = PaddingValues(14.dp)) {
+                    Icon(Icons.Default.Add, null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.home_create))
                 }
             }
         }
     }
 }
 
+private fun sampleTitle(project: HomeProject): String =
+    project.file.nameWithoutExtension.removePrefix("sample_").replace('_', ' ')
+
 @Composable
-private fun NewProjectCard(hoop: Hoop, onHoop: (Hoop) -> Unit, onCreate: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp), shape = MyembroShapes.Card,
+private fun RecentEmpty(failed: Boolean, onAction: () -> Unit) {
+    Card(Modifier.fillMaxWidth(), shape = MyembroShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.home_new_project), style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(6.dp))
-                    Text(stringResource(R.string.home_new_hint), style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Image(painterResource(R.drawable.empty_state), null, Modifier.size(108.dp))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+        Column(Modifier.padding(20.dp)) {
+            Text(stringResource(if (failed) R.string.home_load_failed else R.string.home_recent_empty),
+                style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onAction) {
+                Text(stringResource(if (failed) R.string.home_retry else R.string.home_import))
             }
-            Text(stringResource(R.string.home_hoop), style = MaterialTheme.typography.labelLarge)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf(Hoop.H100, Hoop.H130, Hoop.H160, Hoop.H200), key = { it.name }) { candidate ->
-                    val chosen = hoop == candidate
-                    Surface(
-                        onClick = { onHoop(candidate) }, modifier = Modifier.width(70.dp).semantics { selected = chosen },
-                        shape = MyembroShapes.Chip,
-                        color = if (chosen) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.background,
-                        border = BorderStroke(1.dp, if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-                    ) {
-                        Column(Modifier.padding(vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            HoopDrawing(candidate, Modifier.size(36.dp))
-                            Spacer(Modifier.height(5.dp))
-                            Text(candidate.label, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-            Button(onClick = onCreate, modifier = Modifier.fillMaxWidth(), shape = MyembroShapes.Button,
-                contentPadding = PaddingValues(14.dp)) {
-                Icon(Icons.Default.Add, null, Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.home_create))
-            }
+        }
+    }
+}
+
+@Composable
+private fun QuickStart(
+    onImport: () -> Unit,
+    onLettering: () -> Unit,
+    letteringAvailable: Boolean,
+    onFreeDesigns: (() -> Unit)?,
+    stacked: Boolean = false,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle(stringResource(R.string.home_quick_start))
+        if (stacked) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuickAction(Icons.Default.FileOpen, stringResource(R.string.home_import), Modifier.fillMaxWidth(), compact = true,
+                onClick = onImport)
+            if (letteringAvailable) QuickAction(Icons.Default.TextFields, stringResource(R.string.home_lettering),
+                Modifier.fillMaxWidth(), compact = true, onClick = onLettering)
+            if (onFreeDesigns != null) QuickAction(Icons.Default.TravelExplore, stringResource(R.string.sources_title),
+                Modifier.fillMaxWidth(), compact = true, onClick = onFreeDesigns)
+            QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.fillMaxWidth(),
+                enabled = false, compact = true, onClick = {})
+        } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuickAction(Icons.Default.FileOpen, stringResource(R.string.home_import), Modifier.weight(1f), onClick = onImport)
+            if (letteringAvailable) QuickAction(Icons.Default.TextFields, stringResource(R.string.home_lettering),
+                Modifier.weight(1f), onClick = onLettering)
+            if (onFreeDesigns != null) QuickAction(Icons.Default.TravelExplore, stringResource(R.string.sources_title),
+                Modifier.weight(1f), onClick = onFreeDesigns)
+            QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.weight(1f),
+                enabled = false, onClick = {})
         }
     }
 }
 
 @Composable
 private fun SectionTitle(title: String, onMore: (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 8.dp),
+    Row(Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         if (onMore != null) TextButton(onClick = onMore) { Text(stringResource(R.string.home_view_all)) }
@@ -245,8 +296,8 @@ private fun SectionTitle(title: String, onMore: (() -> Unit)? = null) {
 }
 
 @Composable
-private fun ProjectCard(project: HomeProject, title: String, subtitle: String, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.width(164.dp), shape = MyembroShapes.Card,
+private fun ProjectCard(project: HomeProject, title: String, subtitle: String, modifier: Modifier = Modifier.width(164.dp), onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = modifier, shape = MyembroShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
         val thumbnail = project.thumbnail
@@ -255,20 +306,6 @@ private fun ProjectCard(project: HomeProject, title: String, subtitle: String, o
         Column(Modifier.padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun TemplateCard(hoop: Hoop, title: String, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.width(164.dp), shape = MyembroShapes.Card,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-        HoopDrawing(hoop, Modifier.fillMaxWidth().aspectRatio(1.2f).padding(28.dp))
-        Column(Modifier.padding(12.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.home_template_size, hoop.label), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }
@@ -291,13 +328,25 @@ private fun HoopDrawing(hoop: Hoop, modifier: Modifier) {
 }
 
 @Composable
-private fun QuickAction(icon: ImageVector, title: String, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    Surface(onClick = onClick, enabled = enabled, modifier = modifier.height(142.dp), shape = MyembroShapes.Button,
-        color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
+private fun QuickAction(
+    icon: ImageVector, title: String, modifier: Modifier, enabled: Boolean = true,
+    compact: Boolean = false, onClick: () -> Unit,
+) {
+    Surface(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = if (compact) 64.dp else 142.dp),
+        shape = MyembroShapes.Button, color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
+        val tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .5f)
+        if (compact) Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(icon, null, Modifier.size(24.dp), tint = tint)
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.labelLarge)
+                if (!enabled) Text(stringResource(R.string.home_coming_soon), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, Modifier.size(25.dp), tint = if (enabled) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+            Icon(icon, null, Modifier.size(25.dp), tint = tint)
             Text(title, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
             if (!enabled) Text(stringResource(R.string.home_coming_soon), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -327,11 +376,11 @@ private fun HomeTabs(onCreate: () -> Unit, onLibrary: () -> Unit, onSettings: ()
 @Preview(name = "Craft light", showBackground = true, locale = "ko")
 @Composable
 private fun HomeLightPreview() {
-    MyembroTheme(darkTheme = false) { HomeContent(emptyList(), null, false, false, {}, {}, {}, {}, {}, {}, {}) }
+    MyembroTheme(darkTheme = false) { HomeContent(emptyList(), emptyList(), false, false, {}, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(name = "Craft dark", showBackground = true, locale = "ko")
 @Composable
 private fun HomeDarkPreview() {
-    MyembroTheme(darkTheme = true) { HomeContent(emptyList(), null, false, false, {}, {}, {}, {}, {}, {}, {}) }
+    MyembroTheme(darkTheme = true) { HomeContent(emptyList(), emptyList(), false, false, {}, {}, {}, {}, {}, {}, {}) }
 }

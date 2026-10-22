@@ -70,7 +70,7 @@ object PesReader {
         val length = need(f.u8())
         if (length == 0) return null
         if (f.remaining < length) throw TruncatedException()
-        return f.string(length)
+        return String(f.bytes(length), Charsets.UTF_8)
     }
 
     private fun putIfPresent(out: MutableMap<String, String>, key: String, value: String?) {

@@ -5,9 +5,8 @@ import android.content.Context
 import android.graphics.Typeface
 import android.net.Uri
 import android.provider.OpenableColumns
-import io.github.linker2k.myembro.engine.lettering.HersheyFont
+import io.github.linker2k.myembro.engine.lettering.FontQualityCache
 import io.github.linker2k.myembro.engine.lettering.SvgFont
-import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -107,6 +106,7 @@ class FontRepository(context: Context) {
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
             }
+            FontQualityCache.Shared.invalidate(font.id)
             onProgress(1f)
             target
         } catch (e: Throwable) {
@@ -122,14 +122,12 @@ class FontRepository(context: Context) {
         fontFile(font).delete()
         licenseFile(font).delete()
         FontQualitySummary.qualityFile(fontFile(font)).delete()
+        FontQualityCache.Shared.invalidate(font.id)
     }
 
-    // ---- Fonts for lettering: built-ins, installed catalog fonts and user fonts ----
+    // ---- User fonts and lettering lookups ----
 
     val userDir: File = File(dir, "user")
-
-    /** Everything the lettering tool can offer, built-ins first. Reads small JSON files: call off the main thread. */
-    fun letterFonts(): List<LetterFont> = builtIns() + catalog.filter(::isInstalled).map(::letterFont) + userFonts()
 
     fun letterFont(font: CatalogFont): LetterFont {
         val file = fontFile(font)
@@ -232,6 +230,7 @@ class FontRepository(context: Context) {
         FontQualitySummary.qualityFile(file).delete()
         File(userDir, font.id.removePrefix(USER_PREFIX) + META_SUFFIX).delete()
         file.delete()
+        FontQualityCache.Shared.invalidate(font.id)
     }
 
     /** Runs and stores the quality analysis of an installed catalog font. */
@@ -241,10 +240,24 @@ class FontRepository(context: Context) {
         return summary
     }
 
-    private fun builtIns() = listOf(
-        LetterFont(HersheyFont.DEFAULT_ID, "Hershey Futural", LetterFont.Kind.HERSHEY, null, null),
-        LetterFont(AndroidGlyphOutlines.JUA_FONT_ID, "주아 (Jua)", LetterFont.Kind.OUTLINE, null, null),
-    )
+    /** A user font by its `user:` id, without analysis. Null when the id or its files are gone. */
+    fun userFont(id: String): LetterFont? {
+        if (!id.startsWith(USER_PREFIX)) return null
+        val meta = File(userDir, id.removePrefix(USER_PREFIX) + META_SUFFIX)
+        if (meta.parentFile != userDir || !meta.isFile) return null
+        return runCatching {
+            val o = JSONObject(meta.readText())
+            val file = File(userDir, o.getString("file")).takeIf { it.isFile && it.parentFile == userDir } ?: return null
+            LetterFont(id, o.getString("name"), LetterFont.Kind.valueOf(o.getString("kind")), file, FontQualitySummary.read(file), userAdded = true)
+        }.getOrNull()
+    }
+
+    fun userTypeface(font: LetterFont): Typeface? = font.file?.let { runCatching { Typeface.Builder(it).build() }.getOrNull() }
+
+    fun userSvgFont(font: LetterFont): SvgFont? = font.file?.let { runCatching { SvgFont.parse(it.readText()) }.getOrNull() }
+
+    /** Cache key part for lettering quality: changes whenever the user replaces the file. */
+    fun userRevision(font: LetterFont): String = font.file?.let { "user-${it.length()}-${it.lastModified()}" } ?: "user"
 
     private fun sniffKind(file: File, name: String): LetterFont.Kind? {
         val head = ByteArray(512)

@@ -40,6 +40,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -74,6 +75,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.lettering.SingleLineFontBadge
 import io.github.linker2k.myembro.fonts.CatalogFont
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
 import io.github.linker2k.myembro.fonts.FontQualitySummary
@@ -83,7 +85,6 @@ import io.github.linker2k.myembro.fonts.LetterFontGeometry
 import io.github.linker2k.myembro.fonts.QualityReasons
 import io.github.linker2k.myembro.fonts.UserFontException
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
-import androidx.compose.material3.MaterialTheme
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -515,6 +516,7 @@ private fun FontCard(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PreviewBox(font.nameKo ?: font.name, preview)
+        if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) SingleLineFontBadge()
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
@@ -542,7 +544,7 @@ private fun FontCard(
             }
         }
         quality?.takeIf { installed }?.let {
-            Text(stringResource(R.string.fonts_min_height, mm(it.recommendedMinHeightMm)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            minHeightText(it.recommendedMinHeightMm)?.let { line -> Text(line, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
         }
         if (progress != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

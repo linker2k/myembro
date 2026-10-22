@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +19,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -31,15 +34,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,12 +51,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -81,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import java.io.File
 import java.util.Locale
@@ -95,18 +102,13 @@ internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(con
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onCreate: () -> Unit, onSettings: () -> Unit) {
-    EmbroideryTheme { LibraryContent(vm, onOpen, onCreate, onSettings) }
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)? = null) {
+    EmbroideryTheme { LibraryContent(vm, onOpen, onFreeDesigns) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun LibraryContent(
-    vm: LibraryViewModel,
-    onOpen: (File) -> Unit,
-    onCreate: () -> Unit,
-    onSettings: () -> Unit,
-) {
+private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
     val visible = vm.visibleItems
@@ -129,6 +131,7 @@ private fun LibraryContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = {
                     Text(
                         if (selecting) stringResource(R.string.library_selected, vm.selection.size)
@@ -154,23 +157,16 @@ private fun LibraryContent(
                             Spacer(Modifier.width(4.dp))
                             Text(stringResource(R.string.library_import))
                         }
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, stringResource(R.string.settings_title))
+                        if (onFreeDesigns != null) {
+                            IconButton(onClick = onFreeDesigns) {
+                                Icon(Icons.Default.TravelExplore, stringResource(R.string.sources_title))
+                            }
                         }
                     }
                 },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            if (!selecting) {
-                ExtendedFloatingActionButton(
-                    onClick = onCreate,
-                    icon = { Icon(Icons.Default.Draw, null) },
-                    text = { Text(stringResource(R.string.library_create)) },
-                )
-            }
-        },
         bottomBar = {
             if (selecting) {
                 Surface(tonalElevation = 3.dp) {
@@ -189,38 +185,44 @@ private fun LibraryContent(
             }
         },
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            LibraryControls(vm, visible.size)
-            UsbStatus(vm) { vm.refreshDrives(); showUsbHelp = true }
-            if (visible.isEmpty()) {
-                Column(
-                    Modifier.fillMaxSize().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    if (vm.loading) CircularProgressIndicator(Modifier.size(28.dp))
-                    else {
-                        Icon(Icons.Default.Search, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(12.dp))
-                        Text(stringResource(R.string.library_no_results), style = MaterialTheme.typography.titleMedium)
-                        Text(stringResource(R.string.library_no_results_hint), style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { vm.searchQuery = ""; vm.filter = LibraryViewModel.Filter.ALL }) {
-                            Text(stringResource(R.string.library_reset_filters))
+        BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(MyembroLayout.designColumns(maxWidth)),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                item(key = "controls", span = { GridItemSpan(maxLineSpan) }) {
+                    Column {
+                        if (!selecting) {
+                            Text(stringResource(R.string.library_studio), style = MaterialTheme.typography.headlineMedium)
+                            Text(stringResource(R.string.library_studio_hint), Modifier.padding(bottom = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        UsbStatus(vm) { vm.refreshDrives(); showUsbHelp = true }
+                        LibraryControls(vm, visible.size)
+                    }
+                }
+                if (visible.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Column(Modifier.fillMaxWidth().heightIn(min = 200.dp).padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        if (vm.loading) CircularProgressIndicator(Modifier.size(28.dp))
+                        else {
+                            Icon(Icons.Default.Search, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(12.dp))
+                            Text(stringResource(R.string.library_no_results), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.library_no_results_hint), style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { vm.searchQuery = ""; vm.filter = LibraryViewModel.Filter.ALL }) {
+                                Text(stringResource(R.string.library_reset_filters))
+                            }
                         }
                     }
                 }
-            } else LazyVerticalGrid(
-                columns = GridCells.Adaptive(150.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
                 items(visible, key = { it.file.path }) { item ->
                     DesignCard(
-                        item = item,
-                        selecting = selecting,
-                        selected = item.file in vm.selection,
+                        item = item, selecting = selecting, selected = item.file in vm.selection,
+                        favorite = vm.isFavorite(item.file), exceedsMachine = vm.fitsMachine(item) == false,
+                        onFavorite = { vm.toggleFavorite(item.file) },
                         onClick = { if (selecting) vm.toggle(item.file) else onOpen(item.file) },
                         onLongClick = { vm.toggle(item.file) },
                     )
@@ -234,7 +236,10 @@ private fun LibraryContent(
             onDismissRequest = { showUsbHelp = false },
             icon = { Icon(Icons.Default.Usb, null) },
             title = { Text(stringResource(R.string.library_usb_help_title)) },
-            text = { Text(stringResource(R.string.library_usb_help_body)) },
+            text = {
+                Text(stringResource(if (vm.machineProfile?.id == "se400") R.string.machine_transfer_se400
+                    else R.string.library_usb_help_body))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showUsbHelp = false
@@ -271,12 +276,13 @@ private fun UsbStatus(vm: LibraryViewModel, onClick: () -> Unit) {
     val label = vm.drives.firstOrNull()?.label
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = MyembroShapes.Button,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = MyembroShapes.Card,
         color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Usb, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Usb, null, Modifier.size(24.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -300,7 +306,7 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
     OutlinedTextField(
         value = vm.searchQuery,
         onValueChange = { vm.searchQuery = it },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         placeholder = { Text(stringResource(R.string.library_search)) },
         leadingIcon = { Icon(Icons.Default.Search, null) },
         trailingIcon = {
@@ -313,9 +319,11 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
     )
-    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyRow(contentPadding = PaddingValues(0.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             FilterChip(
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
                 selected = vm.filter == LibraryViewModel.Filter.ALL,
                 onClick = { vm.filter = LibraryViewModel.Filter.ALL },
                 label = { Text(stringResource(R.string.library_filter_all, vm.items.size)) },
@@ -323,6 +331,8 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
         }
         item {
             FilterChip(
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
                 selected = vm.filter == LibraryViewModel.Filter.FITS_100,
                 onClick = { vm.filter = LibraryViewModel.Filter.FITS_100 },
                 label = { Text(stringResource(R.string.library_filter_fits)) },
@@ -330,6 +340,8 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
         }
         item {
             FilterChip(
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
                 selected = vm.filter == LibraryViewModel.Filter.PES,
                 onClick = { vm.filter = LibraryViewModel.Filter.PES },
                 label = { Text(stringResource(R.string.library_filter_pes)) },
@@ -337,13 +349,25 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
         }
         item {
             FilterChip(
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
                 selected = vm.filter == LibraryViewModel.Filter.RECENT,
                 onClick = { vm.filter = LibraryViewModel.Filter.RECENT },
                 label = { Text(stringResource(R.string.library_filter_recent)) },
             )
         }
+        item {
+            FilterChip(
+                selected = vm.filter == LibraryViewModel.Filter.FAVORITES,
+                onClick = { vm.filter = LibraryViewModel.Filter.FAVORITES },
+                label = { Text(stringResource(R.string.library_filter_favorites)) },
+                leadingIcon = { Icon(Icons.Default.FavoriteBorder, null, Modifier.size(16.dp)) },
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
+            )
+        }
     }
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             if (vm.filter == LibraryViewModel.Filter.RECENT) stringResource(R.string.library_recent_count, visibleCount)
             else stringResource(R.string.library_result_count, visibleCount),
@@ -370,6 +394,14 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
     }
 }
 
+@Composable
+private fun libraryChipColors() = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.surface,
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
+)
+
 private fun sortLabel(sort: LibraryViewModel.Sort): Int = when (sort) {
     LibraryViewModel.Sort.RECENT -> R.string.library_sort_recent
     LibraryViewModel.Sort.NAME -> R.string.library_sort_name
@@ -382,6 +414,9 @@ private fun DesignCard(
     item: LibraryViewModel.Item,
     selecting: Boolean,
     selected: Boolean,
+    favorite: Boolean,
+    exceedsMachine: Boolean,
+    onFavorite: () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -406,18 +441,19 @@ private fun DesignCard(
                 }
             }
             Surface(
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                shape = MaterialTheme.shapes.extraSmall,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                shape = MyembroShapes.Chip,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ) {
                 Text(item.file.extension.uppercase(Locale.ROOT) +
                     if (DesignLibrary.isSample(item.file)) " · " + stringResource(R.string.library_sample_badge) else "",
                     Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
-            if (item.fits100 == false) {
+            if (exceedsMachine) {
                 Surface(
-                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 12.dp, start = 8.dp, end = 48.dp),
                     shape = MaterialTheme.shapes.extraSmall,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.primary,
@@ -431,6 +467,16 @@ private fun DesignCard(
             }
             if (selecting) {
                 Checkbox(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.align(Alignment.TopEnd))
+            } else {
+                IconToggleButton(
+                    checked = favorite,
+                    onCheckedChange = { onFavorite() },
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    Icon(if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        stringResource(if (favorite) R.string.library_unfavorite else R.string.library_favorite),
+                        tint = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                }
             }
         }
         Column(Modifier.padding(12.dp)) {

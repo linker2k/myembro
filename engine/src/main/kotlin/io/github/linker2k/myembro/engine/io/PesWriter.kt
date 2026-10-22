@@ -3,22 +3,32 @@ package io.github.linker2k.myembro.engine.io
 
 import io.github.linker2k.myembro.engine.model.EmbPattern
 
-/**
- * Minimal PES v1 port of pyembroidery 1.5.1 (MIT) PesWriter.py,
- * write_truncated_version_1:
- * Source: https://github.com/EmbroidePy/pyembroidery (pyembroidery/PesWriter.py).
- * Pinned source distribution: https://pypi.org/project/pyembroidery/1.5.1/
- *
- * A 22-byte v1 container points directly to the embedded PEC payload. This deliberately
- * omits CEmbOne/CSewSeg editor objects, custom RGB threads and PES v6 metadata. Machine
- * recognition still needs hardware validation; reading successfully is not proof of sewing.
+enum class PesVersion { V1, V6 }
+
+/** Per-export settings; keep an instance in application preferences rather than mutable globals. */
+data class PesWriteSettings(val version: PesVersion = PesVersion.V1)
+
+/** PES output based on pyembroidery 1.5.1 PesWriter.py (MIT).
+ * V1 retains the existing 22-byte compact container. V6 includes CEmbOne/CSewSeg,
+ * custom thread RGB/metadata, PEC graphics and the v6 addendum. Neither is hardware-certified.
  */
 object PesWriter {
-    /** Only PES v1 is supported. See [PecWriter.normalize] for normalization and limits. */
-    fun write(pattern: EmbPattern): ByteArray {
+    /** Existing calls keep the same bytes and behavior. */
+    fun write(pattern: EmbPattern): ByteArray = write(pattern, PesWriteSettings())
+
+    fun write(pattern: EmbPattern, settings: PesWriteSettings): ByteArray = when (settings.version) {
+        PesVersion.V1 -> writeV1(pattern)
+        PesVersion.V6 -> writeV6(pattern)
+    }
+
+    fun write(pattern: EmbPattern, version: PesVersion): ByteArray = write(pattern, PesWriteSettings(version))
+
+    fun writeV1(pattern: EmbPattern): ByteArray {
         val header = ByteArray(22)
         "#PES0001".toByteArray(Charsets.US_ASCII).copyInto(header)
-        header[8] = 22 // little-endian PEC offset; remaining header bytes are zero.
+        header[8] = 22
         return header + PecWriter.writePayload(pattern)
     }
+
+    fun writeV6(pattern: EmbPattern): ByteArray = PesV6Writer.write(pattern)
 }

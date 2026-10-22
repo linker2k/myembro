@@ -42,7 +42,12 @@ object PecWriter {
      *
      * Rejects only what PEC cannot represent: oversize bounds, > 64 distinct threads, > 255 blocks.
      */
-    fun normalize(pattern: EmbPattern): EmbPattern {
+    fun normalize(pattern: EmbPattern): EmbPattern = normalizePattern(pattern, quantizeThreads = true)
+
+    /** Shared command normalization, retaining custom thread RGB/identity for the PES v6 chart. */
+    internal fun normalizePreservingThreads(pattern: EmbPattern): EmbPattern = normalizePattern(pattern, quantizeThreads = false)
+
+    private fun normalizePattern(pattern: EmbPattern, quantizeThreads: Boolean): EmbPattern {
         val active = pattern.stitches.takeWhile { it.command != Command.END }.toMutableList()
         pattern.stitches.firstOrNull { it.command == Command.END }?.let { active += it }
         if (active.isNotEmpty()) {
@@ -95,7 +100,7 @@ object PecWriter {
                 canonical += s.copy(command = Command.JUMP)
             }
         }
-        return EmbPattern(canonical, indices.map(PecThreads::forIndex), pattern.metadata.toMap())
+        return EmbPattern(canonical, if (quantizeThreads) indices.map(PecThreads::forIndex) else threads, pattern.metadata.toMap())
     }
 
     /**

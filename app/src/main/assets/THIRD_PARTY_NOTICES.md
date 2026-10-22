@@ -9,12 +9,14 @@ derived from the following projects, whose notices are reproduced as their licen
 - Ported files: `engine/.../io/PesReader.kt` (PesReader.py, PecReader.py),
   `engine/.../io/DstReader.kt` (DstReader.py), `engine/.../io/PecThreads.kt` (EmbThreadPec.py),
   `engine/.../io/PecWriter.kt` (PecWriter.py, PecGraphics.py, EmbThread.py),
-  `engine/.../io/PesWriter.kt` (PesWriter.py, minimal/truncated v1 path),
+  `engine/.../io/PesWriter.kt`, `engine/.../io/PesV6Writer.kt` (PesWriter.py,
+  minimal/truncated v1 and full v6 header/CEmbOne/CSewSeg/addendum paths),
   `PatternBuilder.interpolateTrims` / `interpolateDuplicateColorAsStop` (EmbPattern.py).
 - Changes: translated to Kotlin; bounded PEC block parsing, truncation warnings, streaming
   trim interpolation; deterministic exact-first unique PEC palette allocation, explicit trim
   preservation, integer move splitting, fixed-width labels and a two-byte PEC END;
-  minimal PES v1 output (see docs/writers.md and git history).
+  minimal PES v1 and full PES v6 output, UTF-8 byte-length strings, checked/split v6
+  sewing sections (see docs/writers.md and git history).
 
 ```
 MIT License
@@ -376,3 +378,12 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
+
+## AndroidX Browser
+
+- Dependency: `androidx.browser:browser:1.8.0`, Android Open Source Project contributors.
+- Used for opening external design-source/terms URLs in Custom Tabs; no remote website
+  code or design assets are bundled by this directory.
+- License: Apache License 2.0, full text packaged in
+  `app/src/main/assets/licenses/androidx_browser_APACHE-2.0.txt`.
+- Source/release: https://developer.android.com/jetpack/androidx/releases/browser#1.8.0

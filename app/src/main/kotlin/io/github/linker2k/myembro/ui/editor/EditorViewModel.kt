@@ -78,6 +78,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         snapGuides = SnapGuides()
         sync()
     }
+    /** Lettering entry point: like [editDesign], the object is the baseline, not an undoable add. */
+    fun startWith(obj: DesignObject, hoop: HoopSpec) {
+        if (busy || gestureInProgress) return
+        newProject(hoop)
+        session = EditorSession(Project(hoop = hoop).add(obj))
+        selectedIds = setOf(obj.id)
+        sync()
+    }
+
     private fun importObject(file: File) = StitchObject.fromBytes(UUID.randomUUID().toString(),
         file.nameWithoutExtension, file.readBytes(), file.name)
 
@@ -148,6 +157,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         session.updateGesture(snapped.project)
         sync()
     }
+    fun changeThread(index: Int, thread: io.github.linker2k.myembro.engine.model.EmbThread) {
+        if (busy || gestureInProgress || selectedIds.size != 1) return
+        val obj = selected ?: return
+        edit(project.replace(obj.recolored(index, thread)))
+    }
+
     fun applyProperties(transform: Transform) {
         if (selectedIds.size != 1) return
         val obj = selected ?: return
@@ -241,12 +256,6 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) { report(R.string.editor_project_save_failed, e)
             } finally { busy = false }
         }
-    }
-
-    /** Adds lettering built by the text tool and selects it. */
-    fun addText(obj: TextObject) {
-        edit(project.add(obj))
-        select(obj.id)
     }
 
     /** Exports a snapshot atomically, without overwriting any library design. */

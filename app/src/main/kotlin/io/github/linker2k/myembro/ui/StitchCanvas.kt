@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import io.github.linker2k.myembro.engine.model.Bounds
 
@@ -37,6 +39,9 @@ fun StitchCanvas(
     backgroundColor: Int,
     hoopColor: Int,
 ) {
+    val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
+    val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
+    val needleColor = MaterialTheme.colorScheme.primary.toArgb()
     val bounds = data.pattern.bounds ?: Bounds(0, 0, 1, 1)
     val cx = (bounds.minX + bounds.maxX) / 2f
     val cy = (bounds.minY + bounds.maxY) / 2f
@@ -52,17 +57,17 @@ fun StitchCanvas(
             strokeWidth = THREAD_WIDTH
         }
     }
-    val jumpPaint = remember {
+    val jumpPaint = remember(travelColor) {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 1.5f
-            color = 0x99888888.toInt()
+            color = travelColor
             pathEffect = DashPathEffect(floatArrayOf(8f, 8f), 0f)
         }
     }
     val hoopPaint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE } }
     val fabricPaint = remember { Paint().apply { style = Paint.Style.FILL } }
-    val needlePaint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0xFFE53935.toInt() } }
+    val needlePaint = remember(needleColor) { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = needleColor } }
 
     Canvas(
         modifier
@@ -95,7 +100,7 @@ fun StitchCanvas(
             canvas.translate(-cx, -cy)
 
             // Fabric inside the hoop, then the hoop ring.
-            fabricPaint.color = 0xFFFAF7F0.toInt()
+            fabricPaint.color = fabricColor
             canvas.drawRoundRect(cx - hoopW / 2, cy - hoopH / 2, cx + hoopW / 2, cy + hoopH / 2, 60f, 60f, fabricPaint)
             hoopPaint.color = hoopColor
             hoopPaint.strokeWidth = 3f / scale * 2

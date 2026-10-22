@@ -37,6 +37,21 @@
                 <data android:mimeType="application/x-pes" />
                 <data android:mimeType="application/vnd.brother.pes" />
             </intent-filter>
+            <!-- EXTRA_STREAM/ClipData carry content URIs; do not require a data scheme here. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/vnd.brother.pes" />
+                <data android:mimeType="application/x-pec" />
+                <data android:mimeType="application/x-dst" />
+                <data android:mimeType="application/vnd.tajima.dst" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

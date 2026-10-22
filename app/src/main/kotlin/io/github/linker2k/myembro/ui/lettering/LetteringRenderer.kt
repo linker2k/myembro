@@ -1,0 +1,162 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.linker2k.myembro.ui.lettering
+
+import android.content.Context
+import android.graphics.Paint
+import android.graphics.Typeface
+import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.engine.edit.FontKind
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.lettering.*
+import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.model.EmbThread
+import io.github.linker2k.myembro.fonts.CatalogFont
+import io.github.linker2k.myembro.fonts.FontRepository
+import io.github.linker2k.myembro.fonts.LetterFont
+import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+internal data class LetteringFont(val id: String, val name: String, val resource: Int = 0)
+internal val bundledLetteringFonts = listOf(
+    LetteringFont("gowun-batang", "고운바탕", R.font.gowun_batang),
+    LetteringFont("jua", "둥근고딕", R.font.jua_regular),
+    LetteringFont("noto-sans-kr", "담백한 고딕", R.font.noto_sans_kr),
+)
+internal data class LetteringResult(
+    val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport,
+    val unsupported: Boolean, val outsideHoop: Boolean,
+    val singleLine: Boolean, val fontName: String,
+)
+
+/** Catalog-card bridge: call after download, on a worker via this suspending API. No download UI here. */
+object LetteringFontQuality {
+    suspend fun analyze(
+        context: Context, fontId: String, text: String = "자수봄날Aa012", heightMm: Double = 18.0,
+    ): FontQualityReport = withContext(Dispatchers.Default) {
+        val source = loadFont(context.applicationContext, fontId)
+        qualityFor(source, fontId, text, heightMm)
+    }
+    fun invalidate(fontId: String) = FontQualityCache.Shared.invalidate(fontId)
+}
+
+private class LoadedFont(
+    val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String, val name: String,
+) {
+    val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
+    fun advance(character: String): Double = when {
+        paint != null -> paint.measureText(character).toDouble()
+        svg != null -> svg.advance(character)
+        else -> (character.singleOrNull()?.let { hershey?.get(it) } ?: hershey?.get('?'))!!.advance.toDouble()
+    }
+    fun glyph(character: String): List<List<Pair<Double, Double>>> = when {
+        face != null -> AndroidGlyphOutlines.extract(character, face).map { path -> path.map { (x, y) -> x + advance(character) / 2 to y } }
+        svg != null -> svg.layout(character).map { path -> path.map { it.x to -it.y } }
+        else -> {
+            val font = checkNotNull(hershey)
+            val g = character.singleOrNull()?.let { font[it] } ?: checkNotNull(font['?'])
+            g.strokes.map { path -> path.map { (it.x - g.left).toDouble() to (it.y - font.baseline).toDouble() } }
+        }
+    }
+    val reference: Double by lazy {
+        when {
+            face != null -> glyph(if (paint?.hasGlyph("자") == true) "자" else "H").flatten().let { points ->
+                if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
+            }
+            svg != null -> svg.unitsPerEm.coerceAtLeast(1.0)
+            else -> 21.0
+        }
+    }
+    fun supports(code: Int): Boolean = when {
+        paint != null -> paint.hasGlyph(String(Character.toChars(code)))
+        svg != null -> String(Character.toChars(code)) in svg.glyphs
+        else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
+    }
+}
+
+private fun loadFont(context: Context, id: String): LoadedFont {
+    val bundled = bundledLetteringFonts.firstOrNull { it.id == id }
+    val repo = FontRepository(context)
+    val installed = if (bundled == null) repo.find(id) else null
+    val user = if (bundled == null && installed == null) repo.userFont(id) else null
+    val face = when {
+        bundled != null -> context.resources.getFont(bundled.resource)
+        installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(installed)
+        user?.kind == LetterFont.Kind.OUTLINE -> repo.userTypeface(user)
+        else -> null
+    }
+    val svg = when {
+        installed?.kind == CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(installed)
+        user?.kind == LetterFont.Kind.SINGLE_LINE_SVG -> repo.userSvgFont(user)
+        else -> null
+    }
+    val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
+    check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
+    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: user?.let(repo::userRevision) ?: "bundled-v1") + ":glyph-extractor-v2",
+        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id)
+}
+
+private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
+    val codes = normalizedLetteringText(text).codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }.sorted()
+    val sample = codes.joinToString("") { String(Character.toChars(it)) }
+    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null)) {
+        codes.map { code -> source.glyph(String(Character.toChars(code))).map { path ->
+            path.map { (x, y) -> x * heightMm / source.reference to y * heightMm / source.reference }
+        } }
+    }
+}
+
+/** Font/catalog cards can request the same real stitches without running quality analysis again. */
+object LetteringFontPreview {
+    suspend fun pattern(
+        context: Context, fontId: String, text: String, heightMm: Double, thread: EmbThread,
+        stitchStyle: StitchStyle? = null,
+    ): EmbPattern = withContext(Dispatchers.Default) {
+        val source = loadFont(context.applicationContext, fontId)
+        val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
+            .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
+        val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle)
+        prepareObject(source, settings, thread).localPattern()
+    }
+}
+
+/** Keep geometry construction shared by main preview, cards, and the added object. */
+private fun prepareObject(source: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
+    val text = normalizedLetteringText(settings.text)
+    val lines = arrayListOf(mutableListOf<LayoutGlyph>())
+    text.codePoints().toArray().forEachIndexed { index, code ->
+        if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
+        else {
+            val character = String(Character.toChars(code))
+            lines.last() += LayoutGlyph(index, source.advance(character), source.glyph(character))
+        }
+    }
+    val layout = layoutGlyphs(lines, source.reference, settings)
+    return TextObject(
+        id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
+        heightMm = settings.heightMm, spacing = settings.spacingMm, arcDeg = settings.arcDeg,
+        thread = thread, fontKind = FontKind.OUTLINE, contours = layout.contours, contourSourceHeight = source.reference,
+        lineSpacing = 1 + settings.lineSpacingMm / settings.heightMm,
+        alignment = TextAlignment.valueOf(settings.alignment.name),
+        arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
+        characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
+        contourCharacters = layout.characters, contourBaselines = layout.baselines,
+        singleLine = source.face == null,
+        stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
+    )
+}
+
+/** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
+internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec): LetteringResult {
+    val text = normalizedLetteringText(settings.text)
+    val source = loadFont(context, settings.fontId)
+    val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
+    val pattern = placed.placedPattern()
+    val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
+    val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
+    val b = pattern.bounds
+    val outside = b != null && (b.minX < -hoop.width / 2 || b.maxX > hoop.width / 2 || b.minY < -hoop.height / 2 || b.maxY > hoop.height / 2)
+    return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
+}
