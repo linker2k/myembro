@@ -42,8 +42,9 @@ SOFTWARE.
 
 ## Downloadable fonts
 
-No font files are bundled in the app or this repository. `app/src/main/assets/fonts/catalog.json`
-lists curated open-source fonts that the user may download on demand. Policy:
+In addition to the bundled Hershey and Jua assets documented below,
+`app/src/main/assets/fonts/catalog.json` lists curated open-source fonts that the user
+may download on demand. Policy:
 
 - Only fonts whose license allows redistribution and embedding in derived output (stitch files)
   are listed: SIL Open Font License 1.1, or the Hershey font license.
@@ -121,3 +122,51 @@ Hershey fonts (hershey-fonts/*.jhf) license
 - Bundling/embedding/redistribution is permitted with the copyright and license;
   the font itself cannot be sold alone. Font software remains under OFL; generated
   lettering does not inherit OFL. No remote font code or build scripts were run.
+
+## Bundled sample design pack
+
+- Assets: 26 `app/src/main/assets/samples/sample_*.pes` files; the installed pack is
+  inventoried, checksummed and attributed in `app/src/main/assets/samples/manifest.json`
+  and [samples/LICENSES.md](app/src/main/assets/samples/LICENSES.md), both packaged in the APK.
+- 25 original geometry/layout designs: CC0-1.0, Copyright 2026 myembro contributors;
+  express dedication and full CC0 text are packaged in the samples directory. Generator
+  `tools/make_samples.py` remains GPL-3.0-or-later.
+- The three converted Hershey monograms retain the Hershey acknowledgement/format
+  restriction above and in `samples/LICENSES.md`; their original arrangement is CC0.
+- The two Korean outline designs use the bundled OFL-1.1 Jua font described above.
+  Generated artwork is CC0; the font remains OFL and its full notice remains packaged.
+- `sample_community_spiralbox.pes`: derivative of EmbroidePy/samples `spiralbox.pes`,
+  commit `6e65f1ae8599b1e04d3e082aae1b86abed52ec9e`, MIT, Copyright (c) 2019 EmbroidePy.
+  Source: https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/spiralbox.pes .
+  License: https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/LICENSE .
+  Original data SHA-256: `4e6ca07e33132787c2211eb676443e8c9fc6629993e37be7b886bde21df3066c`.
+  Changes: recentering, running-stitch resampling, explicit trims and PES v6 conversion.
+  Full original MIT copyright/permission/warranty notice follows and is also packaged:
+
+```text
+MIT License
+
+Copyright (c) 2019 EmbroidePy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+Brother and other personal-use-only or unclear-license designs are not bundled;
+see [free design sources](docs/free-design-sources.md). Only source data/licenses
+were downloaded; no upstream code was executed.

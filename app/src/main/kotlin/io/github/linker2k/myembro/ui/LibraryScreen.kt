@@ -81,6 +81,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.R
 import java.io.File
 import java.util.Locale
@@ -434,7 +435,9 @@ private fun DesignCard(
                 shape = RoundedCornerShape(6.dp),
                 color = Color(0xEEFFFCF7),
             ) {
-                Text(item.file.extension.uppercase(Locale.ROOT), Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                Text(item.file.extension.uppercase(Locale.ROOT) +
+                    if (DesignLibrary.isSample(item.file)) " · " + stringResource(R.string.library_sample_badge) else "",
+                    Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
             if (item.fits100 == false) {
