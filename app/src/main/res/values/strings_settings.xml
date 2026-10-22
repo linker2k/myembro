@@ -49,7 +49,7 @@
     <string name="machine_transfer_se700">Use a compatible USB flash drive, or Brother’s wireless transfer through Design Database Transfer (Windows), PE-DESIGN 11 or Artspira. Direct wireless transfer from myembro is not implemented.</string>
     <string name="machine_optional_hoops_small">Confirmed hoops: 100×100 mm; optional 60×20 mm. This app currently offers 100×100 mm projects.</string>
     <string name="machine_optional_hoops_repositionable">Confirmed hoops: 100×100mm (4×4in), SA431 60×20mm (2½×1in), SA434 100×170mm (4×6¾in). SA434 requires repositioning; a single sewing area is still 100×100mm (4×4in).</string>
-    <string name="machine_limits_se400">Temporary USB disk: up to 12 designs, root folder only. Numeric PES stitch limit: unverified.</string>
+    <string name="machine_limits_se400">Temporary USB disk: up to 12 designs, root folder only. Brother’s SE400 FAQ lists a maximum of 30,000 stitches per design.</string>
     <string name="machine_limits_se600">Numeric design-count and PES stitch limits: unverified.</string>
     <string name="machine_limits_se700">Internal memory: up to 20 designs / 1024 KB, up to 100,000 stitches per design. USB drive design-count and stitch limits: unverified.</string>
     <string name="machine_filename_hint">PES filename length limit: unverified. Brother recommends letters A–Z/a–z, digits, hyphen and underscore.</string>

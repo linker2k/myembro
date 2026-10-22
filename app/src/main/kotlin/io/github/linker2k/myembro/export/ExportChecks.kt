@@ -19,15 +19,15 @@ import io.github.linker2k.myembro.engine.export.Preflight
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import io.github.linker2k.myembro.ui.machines.exportProfile
+import io.github.linker2k.myembro.engine.export.MachineProfile as EngineProfile
 
-/** Pre-export checks against the machine and frame chosen in settings (docs/machines.md). */
+/** Pre-export checks against the machine chosen in settings (docs/machines.md). */
 object ExportChecks {
-    /**
-     * The selected frame bounds the area (never beyond a known machine's single sewing area);
-     * SE400's verified limits apply only to SE400.
-     */
+    /** Actual selected frame, capped by verified continuous machine area; free models keep the frame. */
+    fun profile(settings: EmbroiderySettings): EngineProfile = settings.exportProfile()
+
     fun check(pattern: EmbPattern, fileName: String, settings: EmbroiderySettings, patternCount: Int = 1): List<String> =
-        Preflight.check(pattern, fileName, settings.exportProfile(), patternCount = patternCount)
+        Preflight.check(pattern, fileName, profile(settings), patternCount = patternCount)
 }
 
 /** Lists preflight warnings; the user can still export (limits may be unverified for their unit). */

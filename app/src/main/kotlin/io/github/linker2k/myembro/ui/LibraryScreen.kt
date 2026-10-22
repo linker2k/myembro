@@ -111,6 +111,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (
 private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<Set<File>>(emptySet()) }
     val visible = vm.visibleItems
     val snackbar = remember { SnackbarHostState() }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) {
@@ -148,7 +149,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                         IconButton(onClick = vm::selectAll) {
                             Icon(Icons.Default.SelectAll, stringResource(R.string.library_select_all))
                         }
-                        IconButton(onClick = vm::deleteSelected) {
+                        IconButton(onClick = { deleting = vm.selection.toSet() }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.library_delete))
                         }
                     } else {
@@ -229,6 +230,20 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                 }
             }
         }
+    }
+
+    if (deleting.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { deleting = emptySet() },
+            title = { Text(stringResource(R.string.library_delete_title, deleting.size)) },
+            text = { Text(stringResource(R.string.library_delete_message)) },
+            confirmButton = { TextButton(onClick = {
+                // A changed selection must not delete files that were absent from the confirmation.
+                if (vm.selection.toSet() == deleting) vm.deleteSelected()
+                deleting = emptySet()
+            }) { Text(stringResource(R.string.library_delete)) } },
+            dismissButton = { TextButton(onClick = { deleting = emptySet() }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     if (showUsbHelp) {
