@@ -7,11 +7,30 @@
 | --- | --- | --- | --- |
 | SE400 | 100×100mm | 100×100, 별매 60×20, 재배치형 100×170 | USB 케이블 → PC의 이동식 디스크 |
 | SE600 | 100×100mm | 100×100, 별매 60×20, 재배치형 100×170 | USB 메모리 |
-| SE700 | 100×100mm | 100×100, 별매 60×20 | USB 메모리 / 브라더 무선 전송 |
+| SE700 | 100×100mm | 100×100, 별매 SA431 60×20, 재배치형 SA434 100×170 | USB 메모리 / 브라더 무선 전송 |
 
-큰 재배치 후프는 원단을 다시 끼우지 않고 여러 위치에 수놓는 용도입니다. 단일 도안의
-최대 영역을 넓히지 않습니다. 앱은 자동 분할·재배치를 지원하지 않으며 프로젝트 후프는
-세 기종 모두 100×100만 제공합니다. 나머지 홈/설정 프리셋은 선택할 수 없습니다.
+큰 재배치 후프는 원단을 다시 끼우지 않고 여러 위치에 수놓는 용도이며 단일 봉제 영역을
+늘리지 않습니다. 기본 후프는 100×100mm (4×4in)입니다. 모든 프레임을 선택할 수 있으며
+선택 기종에서 확인되지 않은 프레임은 ‘이 미싱에서 지원하지 않음 — 수놓기 전 확인’을 표시합니다.
+
+### SA431·SA434 확인값
+
+앱은 **가로×세로** 순서입니다. 브라더 액세서리 표의 H×W를 그대로 가로×세로로 읽지 않습니다.
+
+| 프레임 | 공식 H×W | 앱 가로×세로 | 공식 인치(호칭) | 호환 확인 | 위치 개수·오프셋 |
+| --- | --- | --- | --- | --- | --- |
+| SA431 / EF61 | 20×60mm | 60×20mm | 2½×1in | SE400·SE600·SE700 | 해당 없음 |
+| SA434 / EF71 | 170×100mm | 100×170mm | 4×6¾in | SE400·SE600·SE700 | **미확인** |
+
+출처: [SA431 공식 제품 페이지](https://www.brother-usa.com/p/hoops-stabilizers/SA431),
+[SA431 공식 2×6cm 표기](https://www.brother.com.br/products/sa431),
+[SA434 공식 제품 페이지](https://www.brother-usa.com/p/hoops-stabilizers/SA434),
+[SE700 공식 액세서리 목록](https://support.brother.com/g/b/sp/colist.aspx?c=us_ot&cao=hfemba&lang=en&prod=hf_se700eus),
+[단일 위치 최대 4×4 공식 안내](https://help.brother-usa.com/app/answers/detail/a_id/72260/~/available-hoop-sizes).
+미국 제품 페이지의 호환 목록에서 SE400·SE600을, SE700 액세서리 목록에서 SA431·SA434를 확인했습니다.
+매뉴얼의 미터법 치수와 인치 호칭은 정확한 환산값이 아닙니다. 예를 들어 20mm를 실제 1in로
+변환하지 않습니다. 공식 후프 이름에는 호칭을, 도안 실측값에는 25.4mm/in의 실제 변환을 씁니다.
+SA434의 ‘보통 3위치’ 또는 ±35mm는 공식 수치로 확인되지 않아 프로필에 넣지 않습니다.
 
 ## 출처와 확인 범위
 
@@ -34,7 +53,7 @@
   [공식 무선 안내](https://support.brother.com/g/b/faqend.aspx?c=us&faqid=faqh00101118_008&lang=en&prod=hf_se700eus)는
   Design Database Transfer(Windows)와 PE-DESIGN 11을 안내하며,
   [공식 제품 페이지](https://www.brother-usa.com/p/sewing-embroidery/SE700)는 Artspira도 안내합니다.
-  myembro 직접 무선 전송은 구현하지 않았습니다. 이 조사에서 대형 재배치 후프 호환은 **미확인**입니다.
+  myembro 직접 무선 전송은 구현하지 않았습니다. SE700 공식 액세서리 목록으로 SA434 호환을 추가 확인했습니다.
 
 세 기종의 **PES 파일명 길이 제한은 미확인**입니다. 매뉴얼은 영문·숫자·하이픈·밑줄 사용을
 권장합니다. DST의 표시 길이를 PES 파일명 제한으로 사용하지 않으며, 파일명을 강제 변환하지 않습니다.
@@ -49,16 +68,14 @@
 val preferences = SettingsPreferences(context)
 val settings = preferences.read()
 val profile = settings.machineProfile      // MachineProfile?; 미확인 기종은 null
-val hoops = preferences.editorHoops()      // List<engine.edit.HoopSpec>; 세 기종은 [H100]
-val initial = preferences.defaultEditorHoop() // HoopSpec?; 미확인 기종은 null
+val hoops = preferences.editorHoops()      // List<engine.edit.HoopSpec>; 경고 선택 가능한 전체 프리셋
+val initial = preferences.defaultEditorHoop() // HoopSpec; 선택한 프레임의 실제 크기
 val dispose = preferences.observe { /* 기종/기본 후프 변경 시 새 목록 조회 */ }
 // 화면 또는 ViewModel 폐기 시 dispose()
 ```
 
-- 기종 변경 시 기본 후프를 100×100으로 함께 저장합니다. 이전 버전의 큰 후프 설정도 읽을 때
-  보정합니다. 미설정/빈 기종은 SE400으로 전환하고 기존의 직접 입력한 기종 이름은 유지합니다.
-- 설정·홈·목록·뷰어는 같은 SharedPreferences 변경을 관찰합니다. 뷰어의 공개 `hoop` setter도
-  지원되지 않는 후프를 보정합니다. 목록 배지는 현재 프로필과 실제 도안 경계를 비교합니다.
+- 기종 변경 시 기본 후프를 100×100으로 함께 저장합니다. 지원하지 않는 프레임도 선택·유지합니다. 미설정/빈 기종은 SE400으로 전환하고 기존의 직접 입력한 기종 이름은 유지합니다.
+- 설정·홈·목록·뷰어는 같은 SharedPreferences 변경을 관찰합니다. 뷰어에서도 지원되지 않는 후프를 경고와 함께 선택할 수 있습니다. 목록 배지는 현재 프로필과 실제 도안 경계를 비교합니다.
 - 목록/뷰어의 `profile.fits(bounds)`는 **도안 크기** 판정입니다. 편집기에서 배치한 오브젝트는
   기존 engine의 `Bounds.outside(project.hoop)`로 위치까지 판정해야 합니다.
 - **통합 담당**: 편집기 후프 메뉴를 `editorHoops()`로 바꾸고 새 프로젝트에 `defaultEditorHoop()`를
@@ -69,7 +86,7 @@ val dispose = preferences.observe { /* 기종/기본 후프 변경 시 새 목�
 ## 생성 동선
 
 - 홈 새 프로젝트 카드와 만들기 탭은 동일한 `NewProjectSheet`를 엽니다. 빈 후프 선택 시
-  지원 후프가 하나면 별도 후프 질문 없이 `onBlank(H100)`으로 시작합니다.
+  선택 가능한 후프가 하나면 별도 후프 질문 없이 `onBlank(H100)`으로 시작합니다.
 - `NewProjectSheet(onBlank, onFromDesign, onFromText, hoops)`는 호스트 콜백을 제공합니다.
   **통합 담당**은 `HomeScreen.onCreateFromDesign`을 도안 선택 → 선택 파일로 편집기 진입에
   연결하세요. 새 전용 `DesignPickerScreen(onSelect, onBack)`의 연결 코드는
@@ -147,3 +164,17 @@ PC 전송의 파일 용량에 512KB를 적용하지 않습니다. 미확인 색�
 같은 작은 100×100 이내 도안을 v1/v6로 각각 전송해 목록 표시·방향·실 순서·STOP·점프·트림을
 확인해야 합니다. 특히 파일 TRIM 명령의 보존이 SE400의 자동 실 자르기 동작을 뜻하지 않습니다.
 실기 확인 전에는 기본 출력 버전을 강제로 v6로 바꾸지 않습니다.
+
+## 인치 포맷터와 위치 데이터 통합 메모
+
+`ui.format.Dimensions.length/size`는 실측 mm→in을 25.4로 환산합니다. 정확한 ¼·½·¾은 분수로,
+나머지는 소수 한 자리 HALF_UP으로 표시합니다. `hoopSize`는 확인된 제조사 호칭을 사용합니다.
+홈·새 프로젝트·설정·뷰어·도안 목록에 적용했으며 `DimensionsTest`가 환산/반올림을 검사합니다.
+**embro-editor**: X/Y에는 `length`, 객체 크기에는 `size`를 사용하세요.
+**embro-letter**: 글자 높이에 `length`를 사용하세요. 이 두 담당 화면 파일은 변경하지 않았습니다.
+
+`engine.edit.HoopSpec.positions: List<Bounds>`만 데이터 계약으로 추가했습니다. 좌표는 프로젝트 중심,
+0.1mm 단위이며 각 Bounds는 위치별 봉제 사각형입니다. 빈 목록은 검증된 위치 배치가 없다는 뜻입니다.
+**embro-model**: 확인된 위치만 SewingPosition으로 변환하고 ProjectJson의 위치 왕복을 연결하세요.
+현재 SA434의 위치 목록은 비어 있으며 이 값으로 자동 분할하지 마세요. 기존 프로젝트 API와 생성자는
+기본값으로 호환됩니다. 위치 분할 로직과 편집기 파일은 이 커밋에서 수정하지 않았습니다.

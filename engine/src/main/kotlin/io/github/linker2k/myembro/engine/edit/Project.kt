@@ -103,7 +103,15 @@ data class Project(
 }
 
 /** Hoop sewing area in 0.1 mm, centered on (0, 0). */
-data class HoopSpec(val name: String, val width: Int, val height: Int) {
+data class HoopSpec(
+    val name: String,
+    val width: Int,
+    val height: Int,
+    /** Per-position rectangles in the frame's centered 0.1 mm coordinates. Empty = no verified layout supplied.
+     * Coverage dimensions alone do not define continuous sewing area. No splitting is performed here.
+     */
+    val positions: List<io.github.linker2k.myembro.engine.model.Bounds> = emptyList(),
+) {
     init { require(width > 0 && height > 0) { "Hoop dimensions must be positive" } }
     companion object {
         val H100 = HoopSpec("100×100", 1000, 1000)

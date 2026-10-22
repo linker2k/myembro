@@ -100,6 +100,8 @@ class RenderData(val pattern: EmbPattern) {
 /** Common Brother hoop sizes in mm (width x height). */
 enum class Hoop(val label: String, val widthMm: Int, val heightMm: Int) {
     H100("100×100", 100, 100),
+    SA431("SA431 60×20", 60, 20),
+    SA434("SA434 100×170", 100, 170),
     H130("130×180", 130, 180),
     H160("160×260", 160, 260),
     H200("200×200", 200, 200),

@@ -84,6 +84,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.linker2k.myembro.ui.format.Dimensions
+import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.export.ExportSheet
 import io.github.linker2k.myembro.library.Thumbnails
@@ -280,7 +282,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
             Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Straighten, null, Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("${vm.hoop.label} mm", style = MaterialTheme.typography.labelMedium)
+                Text(vm.hoop.dimensions(), style = MaterialTheme.typography.labelMedium)
             }
         }
         IconButton(
@@ -338,7 +340,7 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2
             if (compact) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount), Modifier.weight(1f))
-                    Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f".format(it.width / 10f, it.height / 10f) } ?: "-", Modifier.weight(1f))
+                    Stat(stringResource(R.string.stat_size), b?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-", Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString(), Modifier.weight(1f))
@@ -346,10 +348,11 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2
                 }
             } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount), Modifier.weight(1f))
-                Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f".format(it.width / 10f, it.height / 10f) } ?: "-", Modifier.weight(1.5f))
+                
                 Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString(), Modifier.weight(.7f))
                 Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60), Modifier.weight(1f))
             }
+            if (!compact) Stat(stringResource(R.string.stat_size), b?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-", Modifier.fillMaxWidth())
             Text(stringResource(R.string.viewer_trims_size_note, pattern.trimCount),
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             for (warning in pattern.warnings) {
@@ -367,7 +370,7 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2
 private fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis)
+            maxLines = 3, overflow = TextOverflow.Ellipsis)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -443,13 +446,17 @@ private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
     val speeds = listOf(100, 400, 1500, 5000)
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box {
-            TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.hoop.label}") }
+            TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.hoop.dimensions()}") }
             DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
                 val b = pattern.bounds
                 vm.availableHoops.forEach { h ->
                     val fits = b == null || h.fits(b.width, b.height)
                     DropdownMenuItem(
-                        text = { Text(h.label + if (fits) "" else " ⚠") },
+                        text = { Column {
+                            Text((if (h.name.startsWith("SA")) h.name + " · " else "") + h.dimensions() + if (fits) "" else " ⚠")
+                            if (vm.machineProfile?.supports(h) != true) Text(stringResource(R.string.machine_hoop_unsupported),
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                        } },
                         onClick = { vm.hoop = h; hoopMenu = false },
                     )
                 }

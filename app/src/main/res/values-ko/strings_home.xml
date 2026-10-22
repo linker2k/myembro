@@ -29,7 +29,7 @@
     <string name="new_project_from_text">글자로 시작</string>
     <string name="new_project_from_text_hint">레터링 화면에서 글자 만들기</string>
     <string name="new_project_choose_hoop">후프 선택</string>
-    <string name="new_project_default_hoop">기본 후프 · %1$s mm</string>
+    <string name="new_project_default_hoop">기본 후프 · %1$s</string>
     <string name="picker_title">도안 선택</string>
     <string name="picker_intro">편집을 시작할 도안을 선택하세요.</string>
     <string name="picker_mine">내 도안</string>
