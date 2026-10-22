@@ -1,0 +1,233 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.linker2k.myembro.engine.lettering
+
+import io.github.linker2k.myembro.engine.model.Command
+import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.model.EmbThread
+import io.github.linker2k.myembro.engine.model.Stitch
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+/** Public dimensions are mm; EmbPattern coordinates are 0.1 mm, with +y down. */
+object LetteringEngine {
+    /**
+     * [heightMm] is cap height; [spacing] is extra character spacing in mm. Each line
+     * is centered separately, with baselines 1.5 cap heights apart. [arcDeg] bends the
+     * baseline through the signed angle using the same mapping as [fromContours].
+     * Unsupported Unicode code points become '?' and are reported in warnings.
+     */
+    fun generate(
+        text: String,
+        fontId: String = HersheyFont.DEFAULT_ID,
+        heightMm: Double = 10.0,
+        spacing: Double = 1.0,
+        arcDeg: Double = 0.0,
+        thread: EmbThread = EmbThread(0xFF000000.toInt(), "Black"),
+        stitchLengthMm: Double = 2.5,
+        trimBetweenStrokes: Boolean = true,
+    ): EmbPattern {
+        validateOptions(heightMm, stitchLengthMm, arcDeg)
+        require(spacing.isFinite() && spacing >= 0) { "spacing must be finite and non-negative" }
+        val font = HersheyFont.load(fontId)
+        val scale = heightMm * 10 / font.capHeight
+        val gap = spacing * 10
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes)
+        val missing = linkedSetOf<Int>()
+        val lines = text.replace("\r\n", "\n").replace('\r', '\n').split('\n')
+        lines.forEachIndexed { lineIndex, line ->
+            val glyphs = line.replace("\t", "    ").codePoints().toArray().map { code ->
+                val glyph = if (code <= Char.MAX_VALUE.code) font[code.toChar()] else null
+                glyph ?: run {
+                    missing += code
+                    checkNotNull(font['?']) { "Font has no replacement glyph" }
+                }
+            }
+            val width = glyphs.sumOf { it.advance * scale } + gap * (glyphs.size - 1).coerceAtLeast(0)
+            var cursor = -width / 2
+            val lineY = lineIndex * heightMm * 10 * 1.5
+            glyphs.forEach { glyph ->
+                glyph.strokes.forEach { stroke ->
+                    val points = stroke.map { point ->
+                        (cursor + (point.x - glyph.left) * scale) to ((point.y - font.baseline) * scale)
+                    }
+                    builder.stroke(bend(points, width, arcDeg).map { (x, y) -> x to (y + lineY) })
+                }
+                cursor += glyph.advance * scale + gap
+            }
+        }
+        return builder.finish(
+            thread, mapOf("name" to text, "font" to fontId),
+            missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
+        )
+    }
+
+    /**
+     * Converts ordered, already laid out outline polylines into running stitches.
+     * Input coordinates can be pixels or font units; +y is down and [baseline] is in
+     * those units. [sourceHeight] defaults to the overall ink height; supply a font's
+     * reference height to keep character size consistent across strings/multiple lines.
+     * Closed contours must repeat their first point; open contours stay open.
+     *
+     * Curves must already be flattened (e.g. Android Path.approximate). Nearly collinear
+     * short segments are merged within [mergeToleranceMm], preserving contour endpoints
+     * and sharp corners. The final sewn bounds are centered on (0, 0).
+     */
+    fun fromContours(
+        contours: List<List<Pair<Double, Double>>>,
+        heightMm: Double,
+        stitchLengthMm: Double = 2.5,
+        arcDeg: Double = 0.0,
+        thread: EmbThread = EmbThread(0xFF000000.toInt(), "Black"),
+        trimBetweenStrokes: Boolean = true,
+        baseline: Double = 0.0,
+        sourceHeight: Double? = null,
+        mergeToleranceMm: Double = 0.05,
+    ): EmbPattern {
+        validateOptions(heightMm, stitchLengthMm, arcDeg)
+        require(baseline.isFinite()) { "baseline must be finite" }
+        require(sourceHeight == null || sourceHeight.isFinite() && sourceHeight > 0) { "sourceHeight must be finite and positive" }
+        require(mergeToleranceMm.isFinite() && mergeToleranceMm >= 0) { "mergeToleranceMm must be finite and non-negative" }
+        require(contours.all { contour -> contour.all { (x, y) -> x.isFinite() && y.isFinite() } }) {
+            "Contour coordinates must be finite"
+        }
+        val paths = contours.filter { it.size >= 2 }
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm)
+        if (paths.isEmpty()) return builder.finish(thread)
+        val points = paths.flatten()
+        val minX = points.minOf { it.first }
+        val maxX = points.maxOf { it.first }
+        val inkHeight = points.maxOf { it.second } - points.minOf { it.second }
+        // A horizontal line has no ink height; use its width as the reference extent.
+        val reference = sourceHeight ?: inkHeight.takeIf { it > 0 } ?: (maxX - minX).takeIf { it > 0 } ?: 1.0
+        val scale = heightMm * 10 / reference
+        val centerX = minX / 2 + maxX / 2
+        val width = (maxX - minX) * scale
+        require(scale.isFinite() && width.isFinite()) { "Contour range is too large" }
+        paths.forEach { contour ->
+            val normalized = contour.map { (x, y) -> (x - centerX) * scale to (y - baseline) * scale }
+            builder.stroke(bend(normalized, width, arcDeg))
+        }
+        return builder.finish(thread)
+    }
+
+    private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {
+        require(heightMm.isFinite() && heightMm > 0) { "heightMm must be finite and positive" }
+        require(arcDeg.isFinite() && abs(arcDeg) <= 360) { "arcDeg must be within -360..360" }
+        require(stitchLengthMm.isFinite() && stitchLengthMm >= 0.2) {
+            "stitchLengthMm must be finite and at least 0.2 mm (coordinate resolution)"
+        }
+    }
+
+    /** Map baseline x to a circle, with y along its normal. Sample bent edges every 2°. */
+    private fun bend(points: List<Pair<Double, Double>>, width: Double, arcDeg: Double): List<Pair<Double, Double>> {
+        val radians = Math.toRadians(arcDeg)
+        if (abs(radians) < 1e-6 || width <= 0 || points.isEmpty()) return points
+        val radius = width / radians
+        fun map(point: Pair<Double, Double>): Pair<Double, Double> {
+            val (x, y) = point
+            val angle = x / radius
+            return (radius - y) * sin(angle) to (2 * radius * sin(angle / 2) * sin(angle / 2) + y * cos(angle))
+        }
+        val result = arrayListOf(map(points.first()))
+        points.zipWithNext().forEach { (a, b) ->
+            val parts = ceil(abs((b.first - a.first) / radius) / Math.toRadians(2.0)).toInt().coerceAtLeast(1)
+            for (part in 1..parts) {
+                val t = part.toDouble() / parts
+                result += map((a.first + (b.first - a.first) * t) to (a.second + (b.second - a.second) * t))
+            }
+        }
+        return result
+    }
+}
+
+/** Shared machine-coordinate sampler, keeping jumps separate from sewn segments. */
+private class RunningStitches(
+    stitchLengthMm: Double,
+    private val trimBetweenStrokes: Boolean,
+    mergeToleranceMm: Double = 0.05,
+) {
+    private val maxLength = stitchLengthMm * 10
+    private val tolerance = mergeToleranceMm * 10
+    private val stitches = arrayListOf<Stitch>()
+
+    private fun quantize(x: Double, y: Double): Stitch {
+        require(x.isFinite() && y.isFinite() && abs(x) < Int.MAX_VALUE / 2.0 && abs(y) < Int.MAX_VALUE / 2.0) {
+            "Lettering exceeds coordinate range"
+        }
+        return Stitch(x.roundToInt(), y.roundToInt(), Command.STITCH)
+    }
+
+    fun stroke(points: List<Pair<Double, Double>>) {
+        val sampled = simplify(points, tolerance).map { (x, y) -> quantize(x, y) }
+        if (sampled.isEmpty()) return
+        if (stitches.isNotEmpty() && trimBetweenStrokes) stitches += stitches.last().copy(command = Command.TRIM)
+        stitches += sampled.first().copy(command = Command.JUMP)
+        stitches += sampled.first()
+        sampled.drop(1).forEach(::sewTo)
+    }
+
+    private fun sewTo(target: Stitch) {
+        val previous = stitches.last()
+        val distance = hypot((target.x - previous.x).toDouble(), (target.y - previous.y).toDouble())
+        if (distance == 0.0) return
+        val parts = ceil(distance / maxLength).toInt().coerceAtLeast(1)
+        for (part in 1..parts) {
+            val t = part.toDouble() / parts
+            val next = quantize(previous.x + (target.x - previous.x) * t, previous.y + (target.y - previous.y) * t)
+            val last = stitches.last()
+            if (hypot((next.x - last.x).toDouble(), (next.y - last.y).toDouble()) > maxLength) {
+                // Resolve the occasional integer rounding overshoot (min length is 2 units).
+                stitches += quantize((last.x + next.x) / 2.0, (last.y + next.y) / 2.0)
+            }
+            if (stitches.last() != next) stitches += next
+        }
+    }
+
+    fun finish(thread: EmbThread, metadata: Map<String, String> = emptyMap(), warnings: List<String> = emptyList()): EmbPattern {
+        if (stitches.isNotEmpty()) {
+            val sewn = stitches.filter { it.command == Command.STITCH }
+            val cx = (sewn.minOf { it.x } + sewn.maxOf { it.x }) / 2
+            val cy = (sewn.minOf { it.y } + sewn.maxOf { it.y }) / 2
+            for (i in stitches.indices) stitches[i] = stitches[i].let { it.copy(x = it.x - cx, y = it.y - cy) }
+        }
+        val last = stitches.lastOrNull()
+        stitches += Stitch(last?.x ?: 0, last?.y ?: 0, Command.END)
+        return EmbPattern(stitches.toList(), if (last == null) emptyList() else listOf(thread), metadata, warnings)
+    }
+
+    /** Iterative Ramer-Douglas-Peucker; endpoints also preserve closure of closed contours. */
+    private fun simplify(points: List<Pair<Double, Double>>, epsilon: Double): List<Pair<Double, Double>> {
+        if (points.size <= 2 || epsilon == 0.0) return points
+        val keep = BooleanArray(points.size)
+        keep[0] = true
+        keep[points.lastIndex] = true
+        val pending = ArrayDeque<Pair<Int, Int>>()
+        pending.add(0 to points.lastIndex)
+        while (pending.isNotEmpty()) {
+            val (start, end) = pending.removeLast()
+            val (ax, ay) = points[start]
+            val (bx, by) = points[end]
+            val dx = bx - ax
+            val dy = by - ay
+            val lengthSquared = dx * dx + dy * dy
+            var farthest = -1
+            var distance = epsilon
+            for (i in start + 1 until end) {
+                val (px, py) = points[i]
+                val t = if (lengthSquared == 0.0) 0.0 else (((px - ax) * dx + (py - ay) * dy) / lengthSquared).coerceIn(0.0, 1.0)
+                val d = hypot(px - (ax + t * dx), py - (ay + t * dy))
+                if (d > distance) { distance = d; farthest = i }
+            }
+            if (farthest >= 0) {
+                keep[farthest] = true
+                pending.add(start to farthest)
+                pending.add(farthest to end)
+            }
+        }
+        return points.filterIndexed { index, _ -> keep[index] }
+    }
+}
