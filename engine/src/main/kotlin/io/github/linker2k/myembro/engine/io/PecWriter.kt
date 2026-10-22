@@ -31,14 +31,16 @@ object PecWriter {
 
     /**
      * The normalized commands and thread colors represented by [write].
-     * Long motions are split linearly; standalone trims gain a zero-distance jump because
-     * PEC only has a combined trim/jump instruction. The first END terminates the input;
-     * a missing END is appended. Non-motion commands with changed coordinates move first.
      *
-     * Rejects unrepresentable sizes, palette exhaustion and empty color/STOP blocks rather
-     * than silently losing commands in existing PES/PEC readers. Every color/STOP boundary
-     * must have at least one STITCH on each side. Identical consecutive thread colors must
-     * use STOP, since readers interpret duplicate palette entries as STOP.
+     * - Moves longer than a PEC delta are split; only the final part keeps its command, the
+     *   intermediate parts are JUMPs (pyembroidery's default "jump needle" contingency), so a
+     *   long move never punches extra needle holes into empty fabric.
+     * - Standalone trims gain a zero-distance jump because PEC only has a combined trim/jump.
+     * - Color/STOP blocks without any stitch are dropped (with their unused thread) instead of
+     *   rejecting the design; a change to the very same thread becomes a STOP.
+     * - The first END terminates the input; a missing END is appended.
+     *
+     * Rejects only what PEC cannot represent: oversize bounds, > 64 distinct threads, > 255 blocks.
      */
     fun normalize(pattern: EmbPattern): EmbPattern {
         val active = pattern.stitches.takeWhile { it.command != Command.END }.toMutableList()
@@ -61,7 +63,7 @@ object PecWriter {
             for (i in 1..parts) {
                 x = (startX + Math.rint(dx.toDouble() * i / parts).toLong()).toInt()
                 y = (startY + Math.rint(dy.toDouble() * i / parts).toLong()).toInt()
-                out += Stitch(x, y, command)
+                out += Stitch(x, y, if (i == parts) command else Command.JUMP)
             }
         }
         for (s in active) {
@@ -80,44 +82,72 @@ object PecWriter {
             "Normalized PEC bounds exceed unsigned 16-bit dimensions"
         }
 
-        var sewn = false
-        var hasBoundary = false
-        for (s in out) {
-            when (s.command) {
-                Command.STITCH -> sewn = true
-                Command.STOP, Command.COLOR_CHANGE -> {
-                    require(sewn) { "PEC STOP/color changes require non-empty stitch blocks on both sides" }
-                    sewn = false
-                    hasBoundary = true
-                }
-                else -> Unit
-            }
-        }
-        require(!hasBoundary || sewn) { "PEC cannot round-trip a trailing STOP/color change without stitches" }
-
-        val threads = List(1 + out.count { it.command == Command.COLOR_CHANGE }) { pattern.threadAt(it) }
-        require(threads.zipWithNext().none { (a, b) -> a.sameColor(b) }) {
-            "Consecutive identical thread colors must use STOP instead of COLOR_CHANGE"
-        }
+        val (blocks, threadIndices) = dropEmptyBlocks(out, pattern)
+        val threads = threadIndices.map(pattern::threadAt)
         val indices = mapPalette(threads)
-        require(1 + out.count { it.command == Command.STOP || it.command == Command.COLOR_CHANGE } <= 255) {
+        require(1 + blocks.count { it.command == Command.STOP || it.command == Command.COLOR_CHANGE } <= 255) {
             "PEC supports at most 255 color blocks, including STOP duplicates"
         }
-        val canonical = ArrayList<Stitch>(out.size)
-        out.forEachIndexed { i, s ->
+        val canonical = ArrayList<Stitch>(blocks.size)
+        blocks.forEachIndexed { i, s ->
             canonical += s
-            if (s.command == Command.TRIM && out.getOrNull(i + 1)?.command != Command.JUMP) {
+            if (s.command == Command.TRIM && blocks.getOrNull(i + 1)?.command != Command.JUMP) {
                 canonical += s.copy(command = Command.JUMP)
             }
         }
         return EmbPattern(canonical, indices.map(PecThreads::forIndex), pattern.metadata.toMap())
     }
 
+    /**
+     * Removes COLOR_CHANGE/STOP boundaries around blocks that sew nothing (common at the end of
+     * imported designs). Motion commands inside dropped blocks are kept so positions stay right.
+     * Returns the commands and, per remaining color block, the source thread index.
+     */
+    private fun dropEmptyBlocks(commands: List<Stitch>, pattern: EmbPattern): Pair<List<Stitch>, List<Int>> {
+        val segments = mutableListOf(mutableListOf<Stitch>())
+        val boundaries = mutableListOf<Command>()
+        for (s in commands) {
+            if (s.command == Command.COLOR_CHANGE || s.command == Command.STOP) {
+                boundaries += s.command
+                segments += mutableListOf<Stitch>()
+            } else {
+                segments.last() += s
+            }
+        }
+        val segmentThread = IntArray(segments.size)
+        var thread = 0
+        for (i in segments.indices) {
+            segmentThread[i] = thread
+            if (i < boundaries.size && boundaries[i] == Command.COLOR_CHANGE) thread++
+        }
+        val kept = segments.indices.filter { i -> segments[i].any { it.command == Command.STITCH } }.toSet()
+        val result = ArrayList<Stitch>(commands.size)
+        val threads = mutableListOf<Int>()
+        var x = 0
+        var y = 0
+        for (i in segments.indices) {
+            if (i in kept) {
+                val t = segmentThread[i]
+                if (threads.isEmpty()) {
+                    threads += t
+                } else if (pattern.threadAt(threads.last()).sameThread(pattern.threadAt(t))) {
+                    result += Stitch(x, y, Command.STOP)
+                } else {
+                    result += Stitch(x, y, Command.COLOR_CHANGE)
+                    threads += t
+                }
+            }
+            for (s in segments[i]) { result += s; x = s.x; y = s.y }
+        }
+        if (threads.isEmpty()) threads += 0
+        return result to threads
+    }
+
     /** PEC block without #PEC0001, suitable for embedding in a PES container. */
     internal fun writePayload(pattern: EmbPattern): ByteArray {
         val p = normalize(pattern)
         val palette = p.threads.map { thread ->
-            (1 until PecThreads.SET.size).first { PecThreads.forIndex(it).sameColor(thread) }
+            (1 until PecThreads.SET.size).first { PecThreads.forIndex(it) == thread }
         }
         val colorIndices = mutableListOf(palette.first())
         var thread = 0
@@ -218,17 +248,19 @@ object PecWriter {
 
     /** Stable variant of build_unique_palette, using upstream's red-mean distance and ties. */
     private fun mapPalette(threads: List<EmbThread>): List<Int> {
-        val colors = threads.distinctBy { it.color and 0xFFFFFF }
-        require(colors.size <= 64) { "PEC can distinguish at most 64 unique thread colors" }
-        val assigned = LinkedHashMap<Int, Int>()
+        // Keyed by thread identity: two threads that share an RGB value still get different
+        // PEC entries, so a color change between them survives the round trip.
+        fun key(t: EmbThread) = t.copy(color = t.color or (0xFF shl 24))
+        val colors = threads.distinctBy(::key)
+        require(colors.size <= 64) { "PEC can distinguish at most 64 unique threads" }
+        val assigned = LinkedHashMap<EmbThread, Int>()
         val available = (1 until PecThreads.SET.size).toMutableSet()
         for (t in colors) {
             val exact = available.firstOrNull { PecThreads.forIndex(it).sameColor(t) }
-            if (exact != null) { assigned[t.color and 0xFFFFFF] = exact; available.remove(exact) }
+            if (exact != null) { assigned[key(t)] = exact; available.remove(exact) }
         }
         for (t in colors) {
-            val rgb = t.color and 0xFFFFFF
-            if (rgb in assigned) continue
+            if (key(t) in assigned) continue
             var nearest = -1
             var distance = Int.MAX_VALUE
             for (i in available) {
@@ -240,10 +272,10 @@ object PecWriter {
                 val d = (((512 + mean) * r * r) shr 8) + 4 * g * g + (((767 - mean) * b * b) shr 8)
                 if (d <= distance) { distance = d; nearest = i }
             }
-            assigned[rgb] = nearest
+            assigned[key(t)] = nearest
             available.remove(nearest)
         }
-        return threads.map { assigned.getValue(it.color and 0xFFFFFF) }
+        return threads.map { assigned.getValue(key(it)) }
     }
 
     private fun blankGraphic(): ByteArray = ByteArray(GRAPHIC_STRIDE * GRAPHIC_HEIGHT).also { image ->

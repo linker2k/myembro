@@ -62,13 +62,14 @@ class WriterParityTest {
         }
         val long = pattern(s(6141, -6141), s(-2047, 2047, Command.JUMP))
         val longExpected = listOf(
-            s(2047, -2047), s(4094, -4094), s(6141, -6141),
+            // A long move punches no holes on the way: intermediate parts are jumps.
+            s(2047, -2047, Command.JUMP), s(4094, -4094, Command.JUMP), s(6141, -6141),
             s(4094, -4094, Command.JUMP), s(2047, -2047, Command.JUMP),
             s(0, 0, Command.JUMP), s(-2047, 2047, Command.JUMP), s(-2047, 2047, Command.END),
         )
         export(output, "split", long, longExpected, listOf(red.color and 0xFFFFFF))
         export(output, "negative-2048", pattern(s(-2048, 2047)),
-            listOf(s(-1024, 1024), s(-2048, 2047), s(-2048, 2047, Command.END)), listOf(red.color and 0xFFFFFF))
+            listOf(s(-1024, 1024, Command.JUMP), s(-2048, 2047), s(-2048, 2047, Command.END)), listOf(red.color and 0xFFFFFF))
         val stop = pattern(
             s(0, 0), s(0, 0, Command.STOP), s(10, 0), s(10, 0, Command.STOP),
             s(20, 0), s(20, 0, Command.COLOR_CHANGE), s(30, 0), s(30, 0, Command.END),
@@ -134,7 +135,7 @@ class WriterParityTest {
     @Test
     fun negative2048IsSplitWithoutWrapping() {
         val p = pattern(s(-2048, 2047))
-        val expected = listOf(s(-1024, 1024), s(-2048, 2047), s(-2048, 2047, Command.END))
+        val expected = listOf(s(-1024, 1024, Command.JUMP), s(-2048, 2047), s(-2048, 2047, Command.END))
         assertEquals(expected, PesReader.read(PecWriter.write(p)).stitches)
     }
 
@@ -216,12 +217,31 @@ class WriterParityTest {
     }
 
     @Test
-    fun rejectsAmbiguousOrUnsewnColorChanges() {
-        for (p in listOf(
-            pattern(s(0, 0, Command.STOP), s(10, 0)),
-            pattern(s(0, 0), s(0, 0, Command.STOP)),
-            pattern(s(0, 0), s(0, 0, Command.STOP), s(0, 0, Command.STOP), s(10, 0)),
-            pattern(s(0, 0), s(0, 0, Command.COLOR_CHANGE), s(10, 0), threads = listOf(red, red)),
-        )) assertFailsWith<IllegalArgumentException> { PecWriter.write(p) }
+    fun unsewnBlocksAreDroppedAndSameThreadChangesBecomeStops() {
+        val cases = listOf(
+            pattern(s(0, 0, Command.STOP), s(10, 0)) to listOf(s(10, 0), s(10, 0, Command.END)),
+            pattern(s(0, 0), s(0, 0, Command.STOP)) to listOf(s(0, 0), s(0, 0, Command.END)),
+            pattern(s(0, 0), s(10, 0), s(10, 0, Command.COLOR_CHANGE), threads = listOf(red, blue)) to
+                listOf(s(0, 0), s(10, 0), s(10, 0, Command.END)),
+            pattern(s(0, 0), s(0, 0, Command.STOP), s(0, 0, Command.STOP), s(10, 0)) to
+                listOf(s(0, 0), s(0, 0, Command.STOP), s(10, 0), s(10, 0, Command.END)),
+            pattern(s(0, 0), s(0, 0, Command.COLOR_CHANGE), s(10, 0), threads = listOf(red, red)) to
+                listOf(s(0, 0), s(0, 0, Command.STOP), s(10, 0), s(10, 0, Command.END)),
+        )
+        for ((source, expected) in cases) {
+            val reread = PesReader.read(PecWriter.write(source))
+            assertEquals(expected, reread.stitches, "source=${source.stitches}")
+            assertEquals(1, reread.threads.size)
+        }
+    }
+
+    @Test
+    fun sameRgbDifferentThreadsKeepTheirColorChange() {
+        val a = EmbThread(0xFF112233.toInt(), "Thread A", "1")
+        val b = EmbThread(0xFF112233.toInt(), "Thread B", "2")
+        val reread = PesReader.read(PecWriter.write(pattern(s(0, 0), s(0, 0, Command.COLOR_CHANGE), s(10, 0), threads = listOf(a, b))))
+        assertEquals(1, reread.colorChangeCount)
+        assertEquals(0, reread.stopCount)
+        assertEquals(2, reread.threads.size)
     }
 }

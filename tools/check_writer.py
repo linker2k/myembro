@@ -34,7 +34,9 @@ def normalize(source):
             motion = command if command in ("STITCH", "JUMP") else "JUMP"
             dx, dy = tx - x, ty - y
             parts = max(1, (max(abs(dx), abs(dy)) + 2046) // 2047)
-            result.extend([x + round(dx * i / parts), y + round(dy * i / parts), motion]
+            # Only the final part keeps the command: a long move punches no holes on the way.
+            result.extend([x + round(dx * i / parts), y + round(dy * i / parts),
+                           motion if i == parts else "JUMP"]
                           for i in range(1, parts + 1))
             x, y = tx, ty
         if command not in ("STITCH", "JUMP"):
@@ -43,15 +45,47 @@ def normalize(source):
             break
     if not result or result[-1][2] != "END":
         result.append([x, y, "END"])
+    # Blocks that sew nothing are dropped with their boundary; a change back to the same
+    # thread color becomes a STOP. Motion inside dropped blocks is kept.
+    segments, boundaries = [[]], []
+    for stitch in result:
+        if stitch[2] in ("COLOR_CHANGE", "STOP"):
+            boundaries.append(stitch[2])
+            segments.append([])
+        else:
+            segments[-1].append(stitch)
+    segment_thread, thread = [], 0
+    for i in range(len(segments)):
+        segment_thread.append(thread)
+        if i < len(boundaries) and boundaries[i] == "COLOR_CHANGE":
+            thread += 1
+
+    def color(i):
+        return source["threads"][i] if i < len(source["threads"]) else DEFAULT_COLORS[i % 8]
+
+    result, used, x, y = [], [], 0, 0
+    for i, segment in enumerate(segments):
+        if any(s[2] == "STITCH" for s in segment):
+            t = segment_thread[i]
+            if not used:
+                used.append(t)
+            elif color(used[-1]) == color(t):
+                result.append([x, y, "STOP"])
+            else:
+                result.append([x, y, "COLOR_CHANGE"])
+                used.append(t)
+        for s in segment:
+            result.append(s)
+            x, y = s[0], s[1]
+    used = used or [0]
+
     paired = []
     for i, stitch in enumerate(result):
         paired.append(stitch)
         if stitch[2] == "TRIM" and result[i + 1][2] != "JUMP":
             paired.append([*stitch[:2], "JUMP"])
 
-    count = 1 + sum(s[2] == "COLOR_CHANGE" for s in result)
-    colors = [source["threads"][i] if i < len(source["threads"]) else DEFAULT_COLORS[i % 8]
-              for i in range(count)]
+    colors = [color(i) for i in used]
     # Deterministic build_unique_palette: reserve exact colors, then use upstream's
     # red-mean metric and tie breaking on the remaining entries.
     chart = get_thread_set()
