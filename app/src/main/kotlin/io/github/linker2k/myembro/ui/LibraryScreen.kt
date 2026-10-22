@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Usb
@@ -49,7 +48,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -100,8 +98,8 @@ internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(con
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onCreate: () -> Unit, onSettings: () -> Unit) {
-    EmbroideryTheme { LibraryContent(vm, onOpen, onCreate, onSettings) }
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onSettings: () -> Unit) {
+    EmbroideryTheme { LibraryContent(vm, onOpen, onSettings) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -109,7 +107,6 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onCreate: () -> 
 private fun LibraryContent(
     vm: LibraryViewModel,
     onOpen: (File) -> Unit,
-    onCreate: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val selecting = vm.selection.isNotEmpty()
@@ -168,18 +165,6 @@ private fun LibraryContent(
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            if (!selecting) {
-                ExtendedFloatingActionButton(
-                    shape = MyembroShapes.Button,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    onClick = onCreate,
-                    icon = { Icon(Icons.Default.Draw, null) },
-                    text = { Text(stringResource(R.string.library_create)) },
-                )
-            }
-        },
         bottomBar = {
             if (selecting) {
                 Surface(tonalElevation = 3.dp) {

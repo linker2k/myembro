@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
                     Screen.LIBRARY -> LibraryScreen(
                         library,
                         onOpen = ::openDesign,
-                        onCreate = { newProject(HoopSpec.H100) },
                         onSettings = { stack += Screen.SETTINGS },
                     )
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
