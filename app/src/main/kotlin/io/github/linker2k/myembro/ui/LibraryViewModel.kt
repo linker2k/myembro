@@ -5,6 +5,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,6 +17,8 @@ import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
 import java.io.File
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,9 +34,37 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val summary: String? = null,
         val thumbnail: Bitmap? = null,
         val error: String? = null,
+        val fits100: Boolean? = null,
+        val stitchCount: Int? = null,
+        val modifiedAt: Long = file.lastModified(),
     )
 
+    enum class Filter { ALL, FITS_100, PES, RECENT }
+    enum class Sort { RECENT, NAME, STITCHES }
+
     val items = mutableStateListOf<Item>()
+    var searchQuery by mutableStateOf("")
+    var filter by mutableStateOf(Filter.ALL)
+    var sort by mutableStateOf(Sort.RECENT)
+    var loading by mutableStateOf(true)
+        private set
+    val visibleItems: List<Item> by derivedStateOf {
+        val recentCutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7)
+        val filtered = items.filter { item ->
+            item.file.name.contains(searchQuery.trim(), ignoreCase = true) && when (filter) {
+                Filter.ALL -> true
+                Filter.FITS_100 -> item.fits100 == true
+                Filter.PES -> item.file.extension.equals("pes", ignoreCase = true)
+                Filter.RECENT -> item.modifiedAt >= recentCutoff
+            }
+        }
+        val byName = compareBy<Item> { it.file.name.lowercase(Locale.ROOT) }.thenBy { it.file.path }
+        when (sort) {
+            Sort.RECENT -> filtered.sortedWith(compareByDescending<Item> { it.modifiedAt }.then(byName))
+            Sort.NAME -> filtered.sortedWith(byName)
+            Sort.STITCHES -> filtered.sortedWith(compareBy<Item> { it.stitchCount ?: Int.MAX_VALUE }.then(byName))
+        }
+    }
     val selection = mutableStateListOf<File>()
     var drives by mutableStateOf<List<UsbExporter.Drive>>(emptyList())
         private set
@@ -67,16 +98,21 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun reload() {
-        val files = withContext(Dispatchers.IO) { library.list() }
-        val cached = items.associateBy { it.file }
-        items.clear()
-        items += files.map { f -> cached[f]?.takeIf { it.thumbnail != null } ?: Item(f) }
-        selection.retainAll(files.toSet())
-        for (file in files) {
-            if (items.firstOrNull { it.file == file }?.thumbnail != null) continue
-            val loaded = withContext(Dispatchers.Default) { describe(file) }
-            val i = items.indexOfFirst { it.file == file }
-            if (i >= 0) items[i] = loaded
+        loading = true
+        try {
+            val files = withContext(Dispatchers.IO) { library.list() }
+            val cached = items.associateBy { it.file }
+            items.clear()
+            items += files.map { f -> cached[f]?.takeIf { it.thumbnail != null } ?: Item(f) }
+            selection.retainAll(files.toSet())
+            for (file in files) {
+                if (items.firstOrNull { it.file == file }?.thumbnail != null) continue
+                val loaded = withContext(Dispatchers.Default) { describe(file) }
+                val i = items.indexOfFirst { it.file == file }
+                if (i >= 0) items[i] = loaded
+            }
+        } finally {
+            loading = false
         }
     }
 
@@ -86,7 +122,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val size = p.bounds?.let { "%.0f×%.0f mm".format(it.width / 10f, it.height / 10f) } ?: "-"
         val res = getApplication<Application>().resources
         val summary = res.getString(R.string.library_summary, size, p.stitchCount, p.colorBlocks.size)
-        Item(file, summary, Thumbnails.render(data, 320))
+        Item(
+            file, summary, Thumbnails.render(data, 320),
+            fits100 = p.bounds?.let { Hoop.H100.fits(it.width, it.height) },
+            stitchCount = p.stitchCount,
+        )
     }.getOrElse { Item(file, error = it.message ?: it.javaClass.simpleName) }
 
     fun import(uris: List<Uri>) {
@@ -115,7 +155,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectAll() {
         selection.clear()
-        selection += items.map { it.file }
+        selection += visibleItems.map { it.file }
     }
 
     fun clearSelection() = selection.clear()
