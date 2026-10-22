@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro
 
+import android.content.ClipData
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -17,6 +18,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -52,6 +54,26 @@ class MainActivity : ComponentActivity() {
             val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 uri?.let(::importAndView)
             }
+            val saveDocument = rememberLauncherForActivityResult(
+                ActivityResultContracts.CreateDocument("application/octet-stream"),
+            ) { uri -> viewer.save(uri) }
+            val shareUri = viewer.shareUri
+            LaunchedEffect(shareUri) {
+                if (shareUri != null) {
+                    viewer.consumeShare(shareUri)
+                    try {
+                        val send = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/octet-stream"
+                            putExtra(Intent.EXTRA_STREAM, shareUri)
+                            clipData = ClipData.newRawUri(context.getString(R.string.share), shareUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_pes)))
+                    } catch (error: Exception) {
+                        viewer.reportExportFailure(error)
+                    }
+                }
+            }
             MaterialTheme(colorScheme = colors) {
                 if (openPath == null) {
                     LibraryScreen(library, onOpen = { file ->
@@ -61,7 +83,20 @@ class MainActivity : ComponentActivity() {
                 } else {
                     BackHandler { openPath = null }
                     // PES files have no registered MIME type, so allow any file and let the reader decide.
-                    ViewerScreen(viewer, onOpenFile = { openDocument.launch(arrayOf("*/*")) })
+                    ViewerScreen(
+                        viewer,
+                        onOpenFile = { openDocument.launch(arrayOf("*/*")) },
+                        onSaveFile = {
+                            viewer.prepareSave()?.let { name ->
+                                try {
+                                    saveDocument.launch(name)
+                                } catch (error: Exception) {
+                                    viewer.savePickerFailed(error)
+                                }
+                            }
+                        },
+                        onShareFile = viewer::share,
+                    )
                 }
             }
         }

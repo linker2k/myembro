@@ -4,13 +4,20 @@ package io.github.linker2k.myembro.ui
 import android.app.Application
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.engine.io.PesExport
+import java.io.File
+import java.io.IOException
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,6 +31,18 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var loading by mutableStateOf(false)
         private set
+    var exporting by mutableStateOf(false)
+        private set
+    var exportMessage by mutableStateOf<String?>(null)
+        private set
+    var shareUri by mutableStateOf<Uri?>(null)
+        private set
+    val canExport: Boolean get() = render != null && !loading && !exporting && shareUri == null
+
+    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String)
+    /** Bytes of the open design, so PES files can be exported unchanged. */
+    private var sourceBytes: ByteArray? = null
+    private var pendingSave: ExportRequest? = null
     /** 100×100 is the default; oversized designs show a warning rather than switching hoops. */
     var hoop by mutableStateOf(Hoop.H100)
 
@@ -55,6 +74,105 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         "flower.pes" to getApplication<Application>().assets.open("samples/flower.pes").use { it.readBytes() }
     }
 
+    /** Keep the selected design across the document picker and configuration changes. */
+    fun prepareSave(): String? {
+        val request = exportRequest() ?: return null
+        pendingSave = request
+        exporting = true
+        exportMessage = null
+        return request.fileName
+    }
+
+    fun save(uri: Uri?) {
+        val request = pendingSave
+        pendingSave = null
+        if (uri == null) {
+            exporting = false
+            return
+        }
+        if (request == null) {
+            exporting = false
+            // A process recreation may restore the picker result without the design.
+            reportExportFailure(IllegalStateException(getApplication<Application>().getString(R.string.export_no_design)))
+            return
+        }
+        export(request, write = { bytes ->
+            getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                ?: throw IOException(getApplication<Application>().getString(R.string.export_cannot_write))
+        }, onSuccess = {
+            exportMessage = getApplication<Application>().getString(R.string.export_saved)
+        })
+    }
+
+    fun savePickerFailed(error: Exception) {
+        pendingSave = null
+        exporting = false
+        reportExportFailure(error)
+    }
+
+    fun share() {
+        val request = exportRequest() ?: return
+        export(request, write = { bytes ->
+            val app = getApplication<Application>()
+            // Each share keeps its own file so a later share cannot overwrite a recipient's URI.
+            val directory = File(app.cacheDir, "pes_exports/${UUID.randomUUID()}")
+            try {
+                if (!directory.mkdirs()) throw IOException(app.getString(R.string.export_cannot_write))
+                val file = File(directory, request.fileName)
+                file.writeBytes(bytes)
+                FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
+            } catch (error: Exception) {
+                directory.deleteRecursively()
+                throw error
+            }
+        }, onSuccess = { shareUri = it })
+    }
+
+    fun consumeShare(uri: Uri) {
+        if (shareUri == uri) shareUri = null
+    }
+
+    fun dismissExportMessage(message: String) {
+        if (exportMessage == message) exportMessage = null
+    }
+
+    fun reportExportFailure(error: Exception) {
+        val app = getApplication<Application>()
+        exportMessage = app.getString(R.string.export_failed, error.message ?: app.getString(R.string.export_unknown_error))
+    }
+
+    private fun exportRequest(): ExportRequest? {
+        if (!canExport) return null
+        val source = sourceBytes ?: return null
+        val originalName = fileName.orEmpty().substringAfterLast('/').substringAfterLast('\\')
+        val name = originalName.substringBeforeLast('.')
+            .map { if (it.isISOControl() || it in "/\\:*?\"<>|") '_' else it }.joinToString("")
+            .trim().trim('.').take(100)
+            .ifBlank { getApplication<Application>().getString(R.string.export_default_name) }
+        return ExportRequest(source, originalName, "$name.pes")
+    }
+
+    private fun <T> export(request: ExportRequest, write: (ByteArray) -> T, onSuccess: (T) -> Unit) {
+        exporting = true
+        exportMessage = null
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    // Normalize/encode before opening the destination, so validation errors
+                    // cannot truncate an existing document. Encoding and all writes run on IO.
+                    write(PesExport.prepare(request.source, request.sourceName).bytes)
+                }
+                onSuccess(result)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                reportExportFailure(error)
+            } finally {
+                exporting = false
+            }
+        }
+    }
+
     private fun load(source: () -> Pair<String?, ByteArray>) {
         viewModelScope.launch {
             loading = true
@@ -63,10 +181,11 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     val (name, bytes) = source()
-                    name to RenderData(PatternReader.read(bytes, name))
+                    Triple(name, bytes, RenderData(PatternReader.read(bytes, name)))
                 }
-            }.onSuccess { (name, data) ->
+            }.onSuccess { (name, bytes, data) ->
                 fileName = name
+                sourceBytes = bytes
                 render = data
                 progress = data.pattern.stitches.lastIndex
             }.onFailure {

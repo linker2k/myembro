@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +27,8 @@ import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +42,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +62,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,8 +74,18 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit) {
+fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit, onSaveFile: () -> Unit, onShareFile: () -> Unit) {
+    val snackbar = remember { SnackbarHostState() }
+    val message = vm.exportMessage
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbar.showSnackbar(message, withDismissAction = true, duration = SnackbarDuration.Long)
+            vm.dismissExportMessage(message)
+        }
+    }
+    val exportingDescription = stringResource(R.string.export_in_progress)
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {
@@ -75,8 +96,21 @@ fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit) {
                     )
                 },
                 actions = {
-                    IconButton(onClick = onOpenFile) {
+                    IconButton(onClick = onOpenFile, enabled = !vm.loading && !vm.exporting) {
                         Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.open_file))
+                    }
+                    IconButton(onClick = onSaveFile, enabled = vm.canExport) {
+                        if (vm.exporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp).semantics { contentDescription = exportingDescription },
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Icon(Icons.Default.SaveAlt, contentDescription = stringResource(R.string.save_pes))
+                        }
+                    }
+                    IconButton(onClick = onShareFile, enabled = vm.canExport) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share))
                     }
                 },
             )
@@ -96,10 +130,16 @@ fun ViewerScreen(vm: ViewerViewModel, onOpenFile: () -> Unit) {
 @Composable
 private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(32.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Image(
+            painter = painterResource(R.drawable.empty_state),
+            contentDescription = null,
+            modifier = Modifier.size(160.dp),
+        )
+        Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium)

@@ -10,7 +10,7 @@
 | [launcher-icon-artwork.png](launcher-icon-artwork.png) | 1024×1024, RGB PNG | 린넨 위 목재 후프와 굵은 새틴 스티치. 런처 벡터 제작의 원화이며 adaptive icon에 직접 넣는 비트맵은 아닙니다. |
 | [readme-banner.png](readme-banner.png) | 1024×500, RGB PNG | 왼쪽 앱 이름·소개, 오른쪽 후프. 저장소 README 상단에서 사용합니다. |
 | [play-feature-graphic.png](play-feature-graphic.png) | 1024×500, RGB PNG | 왼쪽 후프와 오른쪽 앱 이름·PES 뷰어 소개. Play 스토어 등록용 불투명 피처 그래픽입니다. |
-| [empty-state.png](empty-state.png) | 1024×1024, RGBA PNG | 도안이 없는 빈 린넨 후프와 실타래. 글자가 없고 바깥 배경이 투명한 빈 화면용 일러스트입니다. 기존 `EmptyState`의 제목 위에 약 160dp로 배치할 수 있도록 준비한 에셋입니다. |
+| [empty-state.png](empty-state.png) | 1024×1024, RGBA PNG | 도안이 없는 빈 린넨 후프와 실타래. 글자가 없고 바깥 배경이 투명한 빈 화면용 원본 일러스트입니다. 앱에서는 아래 WebP 파생본을 사용합니다. |
 | [launcher-icon-preview.png](launcher-icon-preview.png) | 960×360, RGB PNG | XML 벡터에서 렌더링한 원형·둥근 사각형·단색·48px 미리보기입니다. 생성형 이미지가 아닌 리소스 검수용 이미지입니다. |
 
 ## 런처 리소스
@@ -31,3 +31,11 @@
 - 원형·둥근 사각형 마스크 및 48px 단색 미리보기 육안 확인.
 
 이 디렉터리의 에셋은 저장소의 GPL-3.0-or-later 라이선스를 따릅니다.
+
+## 앱 빈 화면 파생본
+
+`app/src/main/res/drawable-nodpi/empty_state.webp`는 원본 `empty-state.png`를
+512×512로 Lanczos 리샘플링한 뒤 무손실 WebP로 인코딩한 파일입니다(178,466바이트,
+300KB 이하). 리샘플링된 이미지와 디코딩한 WebP의 알파 채널이 바이트 단위로 같은지
+확인했습니다. `EmptyState`에서 160dp 크기로 표시하며 작은 화면에서는 세로로 스크롤됩니다.
+새 이미지 생성 없이 기존 원화를 변환했습니다.

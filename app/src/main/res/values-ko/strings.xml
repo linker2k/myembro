@@ -1,6 +1,16 @@
 <resources>
     <string name="open_file">파일 열기</string>
     <string name="open_sample">샘플 열기</string>
+    <string name="save_pes">PES로 저장</string>
+    <string name="share">공유</string>
+    <string name="share_pes">PES 파일 공유</string>
+    <string name="export_in_progress">PES 파일 준비 중</string>
+    <string name="export_saved">PES 파일을 저장했습니다</string>
+    <string name="export_failed">PES를 내보낼 수 없습니다: %1$s</string>
+    <string name="export_no_design">도안을 다시 열고 시도해 주세요.</string>
+    <string name="export_cannot_write">이 위치에 파일을 쓸 수 없습니다.</string>
+    <string name="export_unknown_error">알 수 없는 오류</string>
+    <string name="export_default_name">도안</string>
     <string name="empty_title">열린 도안이 없습니다</string>
     <string name="empty_body">브라더 PES(또는 PEC / DST) 파일을 열어 바늘땀을 미리 보세요.</string>
     <string name="play">재생</string>

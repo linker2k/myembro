@@ -2,6 +2,16 @@
     <string name="app_name">myembro</string>
     <string name="open_file">Open file</string>
     <string name="open_sample">Open sample</string>
+    <string name="save_pes">Save as PES</string>
+    <string name="share">Share</string>
+    <string name="share_pes">Share PES file</string>
+    <string name="export_in_progress">Preparing PES file</string>
+    <string name="export_saved">PES file saved</string>
+    <string name="export_failed">Could not export PES: %1$s</string>
+    <string name="export_no_design">Please reopen the design and try again.</string>
+    <string name="export_cannot_write">Cannot write to this location.</string>
+    <string name="export_unknown_error">Unknown error</string>
+    <string name="export_default_name">design</string>
     <string name="empty_title">No design open</string>
     <string name="empty_body">Open a Brother PES (or PEC / DST) file to preview its stitches.</string>
     <string name="play">Play</string>
