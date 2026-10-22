@@ -4,18 +4,21 @@ package io.github.linker2k.myembro.engine.io
 /**
  * Prepares a design file for a Brother machine: PES files are copied byte for byte (a
  * re-encode would drop editor objects and custom threads), anything else is converted to a
- * minimal PES v1 with [PesWriter].
+ * PES with [PesWriter] (minimal v1 by default, full v6 through settings).
  */
 object PesExport {
     class Result(val bytes: ByteArray, val fileName: String, val converted: Boolean)
 
-    fun prepare(data: ByteArray, fileName: String): Result {
+    fun prepare(data: ByteArray, fileName: String): Result = prepare(data, fileName, PesWriteSettings())
+
+    /** Settings select conversion output; existing PES files still pass through unchanged. */
+    fun prepare(data: ByteArray, fileName: String, settings: PesWriteSettings): Result {
         val base = fileName.substringBeforeLast('.', fileName).ifBlank { "design" }
         val isPes = data.size >= 4 && String(data, 0, 4, Charsets.ISO_8859_1) == "#PES"
         return if (isPes) {
             Result(data, "$base.pes", converted = false)
         } else {
-            Result(PesWriter.write(PatternReader.read(data, fileName)), "$base.pes", converted = true)
+            Result(PesWriter.write(PatternReader.read(data, fileName), settings), "$base.pes", converted = true)
         }
     }
 
