@@ -1,3 +1,4 @@
 <resources>
-    <color name="ic_launcher_background">@color/myembro_brand_background</color>
+    <!-- Fixed launcher color: no values-night variant, so the icon looks the same in light and dark themes. -->
+    <color name="ic_launcher_background">#F6F0E6</color>
 </resources>
