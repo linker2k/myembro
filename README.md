@@ -56,7 +56,7 @@ python3 tools/make_fixtures.py engine/src/test/resources/fixtures
 
 ## Credits
 
-- File format readers are ported from [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT).
+- File format readers are ported from [pyembroidery](https://github.com/EmbroidePy/pyembroidery) (MIT) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - Digitizing algorithms will be ported from [Ink/Stitch](https://github.com/inkstitch/inkstitch) (GPL-3.0).
 
 ## License
