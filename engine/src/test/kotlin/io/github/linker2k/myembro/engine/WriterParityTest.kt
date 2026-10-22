@@ -163,6 +163,15 @@ class WriterParityTest {
     }
 
     @Test
+    fun thumbnailUsesUpstreamFloatingOperationOrderAtPixelBoundary() {
+        // pyembroidery draw_scaled: (11,-150) maps to (25,1), not (25,2).
+        // Algebraic reassociation changes floor at this floating-point boundary.
+        val bytes = PecWriter.write(pattern(s(-150, -150), s(150, 100), s(11, -150)))
+        val graphic = 520 + u24(bytes, 522)
+        assertEquals(0, bytes[graphic + 2 * 6 + 25 / 8].toInt() and (1 shl (25 % 8)))
+    }
+
+    @Test
     fun labelsAreFixedWidthAndInputIsNotMutated() {
         val stitches = mutableListOf(s(10, 10), s(10, 10, Command.STOP), s(20, 20), s(20, 20, Command.END))
         val threads = mutableListOf(red)
