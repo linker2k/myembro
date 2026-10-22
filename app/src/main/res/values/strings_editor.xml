@@ -69,4 +69,26 @@
     <string name="editor_density_warning">Scale differs by more than ±20%. Stitch density changes; test sew before use.</string>
     <string name="editor_apply">Apply</string>
     <string name="editor_cancel">Cancel</string>
+    <string name="editor_select_tool">Select</string>
+    <string name="editor_pan_tool">Pan canvas</string>
+    <string name="editor_design_tab">Designs</string>
+    <string name="editor_transform_tab">Transform</string>
+    <string name="editor_stitch_tab">Stitches</string>
+    <string name="editor_color_tab">Colors</string>
+    <string name="editor_all_layers">All layers</string>
+    <string name="editor_text_object">Lettering</string>
+    <string name="editor_imported_object">Stitch design</string>
+    <string name="editor_collapse_properties">Collapse properties</string>
+    <string name="editor_expand_properties">Expand properties</string>
+    <string name="editor_inspector_empty">Select a design to adjust its size, position and thread colors.</string>
+    <string name="editor_width_mm">Width (mm)</string>
+    <string name="editor_height_mm">Height (mm)</string>
+    <string name="editor_lock_aspect">Lock aspect ratio</string>
+    <string name="editor_rotation_value">Rotation %1$s°</string>
+    <string name="editor_sewing_preview">Sewing preview</string>
+    <string name="editor_preview_percent">%1$d%%</string>
+    <string name="editor_thread_count">Thread colors (%1$d)</string>
+    <string name="editor_thread_hex">Thread RGB</string>
+    <string name="editor_color_select_one">Select one object to change its thread colors.</string>
+    <string name="editor_thread_terracotta">Terracotta</string>
 </resources>

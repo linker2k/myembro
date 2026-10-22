@@ -148,6 +148,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         session.updateGesture(snapped.project)
         sync()
     }
+    fun changeThread(index: Int, thread: io.github.linker2k.myembro.engine.model.EmbThread) {
+        if (busy || gestureInProgress || selectedIds.size != 1) return
+        val obj = selected ?: return
+        edit(project.replace(obj.recolored(index, thread)))
+    }
+
     fun applyProperties(transform: Transform) {
         if (selectedIds.size != 1) return
         val obj = selected ?: return
