@@ -34,4 +34,11 @@
     <string name="export_sheet_share_hint">다른 앱으로 도안 사본 보내기</string>
     <string name="export_sheet_usb">USB로 내보내기</string>
     <string name="export_sheet_usb_hint">OTG로 USB를 연결하고 저장 폴더 선택</string>
+    <string name="settings_studio">나의 자수 작업실</string>
+    <string name="settings_studio_hint">내 미싱에 맞게 준비하세요.</string>
+    <string name="settings_threads_title">실과 색상</string>
+    <string name="export_sheet_format">PES · Brother</string>
+    <string name="export_sheet_destination">내보내기 방법</string>
+    <string name="export_sheet_usb_library_hint">USB 내보내기는 도안 목록에서 이용하세요</string>
+    <string name="export_sheet_compatibility">자수를 시작하기 전에 도안 크기와 미싱의 자수 영역을 확인하세요.</string>
 </resources>

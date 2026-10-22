@@ -34,4 +34,11 @@
     <string name="export_sheet_share_hint">Send a copy using another app</string>
     <string name="export_sheet_usb">Export to USB</string>
     <string name="export_sheet_usb_hint">Connect a drive using OTG and choose its folder</string>
+    <string name="settings_studio">Your embroidery studio</string>
+    <string name="settings_studio_hint">Make yourself at home with your machine.</string>
+    <string name="settings_threads_title">Threads</string>
+    <string name="export_sheet_format">PES · Brother</string>
+    <string name="export_sheet_destination">Choose how to export</string>
+    <string name="export_sheet_usb_library_hint">USB export is available in Designs</string>
+    <string name="export_sheet_compatibility">Check the design size against your machine’s embroidery area before stitching.</string>
 </resources>

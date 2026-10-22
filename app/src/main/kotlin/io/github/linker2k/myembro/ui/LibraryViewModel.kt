@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.ui
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -39,10 +40,12 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val modifiedAt: Long = file.lastModified(),
     )
 
-    enum class Filter { ALL, FITS_100, PES, RECENT }
+    enum class Filter { ALL, FITS_100, PES, RECENT, FAVORITES }
     enum class Sort { RECENT, NAME, STITCHES }
 
     val items = mutableStateListOf<Item>()
+    private val preferences = app.getSharedPreferences("myembro_library", Context.MODE_PRIVATE)
+    private var favorites by mutableStateOf(preferences.getStringSet("favorites", emptySet()).orEmpty().toSet())
     var searchQuery by mutableStateOf("")
     var filter by mutableStateOf(Filter.ALL)
     var sort by mutableStateOf(Sort.RECENT)
@@ -56,6 +59,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 Filter.FITS_100 -> item.fits100 == true
                 Filter.PES -> item.file.extension.equals("pes", ignoreCase = true)
                 Filter.RECENT -> item.modifiedAt >= recentCutoff
+                Filter.FAVORITES -> item.file.name in favorites
             }
         }
         val byName = compareBy<Item> { it.file.name.lowercase(Locale.ROOT) }.thenBy { it.file.path }
@@ -158,6 +162,13 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         if (!selection.remove(file)) selection += file
     }
 
+    fun isFavorite(file: File): Boolean = file.name in favorites
+
+    fun toggleFavorite(file: File) {
+        favorites = if (isFavorite(file)) favorites - file.name else favorites + file.name
+        preferences.edit().putStringSet("favorites", favorites).apply()
+    }
+
     fun selectAll() {
         selection.clear()
         selection += visibleItems.map { it.file }
@@ -169,6 +180,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val doomed = selection.toList()
         viewModelScope.launch {
             withContext(Dispatchers.IO) { doomed.forEach(library::delete) }
+            favorites = favorites - doomed.map { it.name }.toSet()
+            preferences.edit().putStringSet("favorites", favorites).apply()
             selection.clear()
             reload()
         }
