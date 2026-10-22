@@ -6,7 +6,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -87,6 +89,7 @@ import io.github.linker2k.myembro.ui.export.ExportSheet
 import io.github.linker2k.myembro.library.Thumbnails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.engine.model.EmbPattern
 
@@ -126,7 +129,7 @@ private fun ViewerContent(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (vm.render != null && !vm.loading) Surface(color = MaterialTheme.colorScheme.background) {
+            if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
                 Button(onClick = { exportSheet = true }, enabled = vm.canExport,
                     shape = MyembroShapes.Button, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Icon(Icons.Default.SaveAlt, null, Modifier.size(20.dp))
@@ -225,7 +228,6 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
 
 @Composable
 private fun Viewer(vm: ViewerViewModel, data: RenderData) {
-    val pattern = data.pattern
     var fitRequest by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(vm.playing) {
@@ -238,74 +240,93 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         }
     }
 
+    val detailsScroll = rememberScrollState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val maxPanelHeight = maxHeight * 0.54f
-        Column(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)
-                .clip(MyembroShapes.Card)) {
-                StitchCanvas(
-                    data = data,
-                    progress = vm.progress,
-                    hoop = vm.hoop,
-                    showJumps = vm.showJumps,
-                    fitRequest = fitRequest,
-                    modifier = Modifier.fillMaxSize(),
-                    backgroundColor = MaterialTheme.colorScheme.background.toArgb(),
-                    hoopColor = MaterialTheme.colorScheme.outline.toArgb(),
-                )
-                Surface(modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
-                    shape = MyembroShapes.Chip, color = MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
-                    Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Straighten, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("${vm.hoop.label} mm", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                IconButton(
-                    onClick = { fitRequest++ },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), MyembroShapes.Button),
-                ) { Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.fit)) }
+        if (maxWidth >= MyembroLayout.ExpandedWidth) {
+            val panelWidth = (maxWidth * .42f).coerceIn(280.dp, 400.dp)
+            Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ViewerCanvas(vm, data, fitRequest, { fitRequest++ }, Modifier.weight(1f).fillMaxSize())
+                ViewerDetails(vm, data,
+                    Modifier.width(panelWidth).fillMaxSize().verticalScroll(detailsScroll).padding(vertical = 12.dp),
+                    compactStats = true)
             }
-            Column(
-                Modifier.fillMaxWidth().heightIn(max = maxPanelHeight)
-                    .verticalScroll(rememberScrollState()).padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                StatsRow(pattern, vm.hoop, vm.machineProfile)
-                Card(
-                    shape = MyembroShapes.Card,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                ) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.viewer_color_order), style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.weight(1f))
-                            Text("${(vm.progress.coerceAtLeast(0) * 100L / pattern.stitches.lastIndex.coerceAtLeast(1)).coerceAtMost(100)}%",
-                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        LinearProgressIndicator(progress = {
-                            vm.progress.toFloat().coerceAtLeast(0f) / pattern.stitches.lastIndex.coerceAtLeast(1)
-                        }, modifier = Modifier.fillMaxWidth())
-                        ColorBlocks(pattern, vm.progress) { vm.playing = false; vm.progress = it }
-                    }
-                }
-                Card(shape = MyembroShapes.Card,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                    Column(Modifier.padding(12.dp)) {
-                        PlaybackRow(vm, pattern)
-                        OptionsRow(vm, pattern)
-                    }
-                }
+        } else {
+            val maxPanelHeight = maxHeight * .54f
+            Column(Modifier.fillMaxSize()) {
+                ViewerCanvas(vm, data, fitRequest, { fitRequest++ },
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp))
+                ViewerDetails(vm, data, Modifier.fillMaxWidth().heightIn(max = maxPanelHeight)
+                    .verticalScroll(detailsScroll).padding(12.dp))
             }
         }
     }
 }
 
 @Composable
-private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?) {
+private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int, onFit: () -> Unit, modifier: Modifier) {
+    Box(modifier.clip(MyembroShapes.Card)) {
+        StitchCanvas(
+            data = data,
+            progress = vm.progress,
+            hoop = vm.hoop,
+            showJumps = vm.showJumps,
+            fitRequest = fitRequest,
+            modifier = Modifier.fillMaxSize(),
+            backgroundColor = MaterialTheme.colorScheme.background.toArgb(),
+            hoopColor = MaterialTheme.colorScheme.outline.toArgb(),
+        )
+        Surface(modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
+            shape = MyembroShapes.Chip, color = MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Straighten, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("${vm.hoop.label} mm", style = MaterialTheme.typography.labelMedium)
+            }
+        }
+        IconButton(
+            onClick = onFit,
+            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), MyembroShapes.Button),
+        ) { Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.fit)) }
+    }
+}
+
+@Composable
+private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modifier, compactStats: Boolean = false) {
+    val pattern = data.pattern
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StatsRow(pattern, vm.hoop, vm.machineProfile, compactStats)
+        Card(
+            shape = MyembroShapes.Card,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.viewer_color_order), style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f))
+                    Text("${(vm.progress.coerceAtLeast(0) * 100L / pattern.stitches.lastIndex.coerceAtLeast(1)).coerceAtMost(100)}%",
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                LinearProgressIndicator(progress = {
+                    vm.progress.toFloat().coerceAtLeast(0f) / pattern.stitches.lastIndex.coerceAtLeast(1)
+                }, modifier = Modifier.fillMaxWidth())
+                ColorBlocks(pattern, vm.progress) { vm.playing = false; vm.progress = it }
+            }
+        }
+        Card(shape = MyembroShapes.Card,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+            Column(Modifier.padding(12.dp)) {
+                PlaybackRow(vm, pattern)
+                OptionsRow(vm, pattern)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?, compact: Boolean = false) {
     val b = pattern.bounds
     val seconds = pattern.estimatedSeconds()
     Card(
@@ -314,7 +335,16 @@ private fun StatsRow(pattern: EmbPattern, hoop: Hoop, machine: io.github.linker2
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (compact) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount), Modifier.weight(1f))
+                    Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f".format(it.width / 10f, it.height / 10f) } ?: "-", Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString(), Modifier.weight(1f))
+                    Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60), Modifier.weight(1f))
+                }
+            } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Stat(stringResource(R.string.stat_stitches), "%,d".format(pattern.stitchCount), Modifier.weight(1f))
                 Stat(stringResource(R.string.stat_size), b?.let { "%.1f×%.1f".format(it.width / 10f, it.height / 10f) } ?: "-", Modifier.weight(1.5f))
                 Stat(stringResource(R.string.stat_colors), pattern.colorBlocks.size.toString(), Modifier.weight(.7f))
@@ -405,13 +435,13 @@ private fun PlaybackRow(vm: ViewerViewModel, pattern: EmbPattern) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
     var hoopMenu by remember { mutableStateOf(false) }
     var speedMenu by remember { mutableStateOf(false) }
     val speeds = listOf(100, 400, 1500, 5000)
-    Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box {
             TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.hoop.label}") }
             DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {

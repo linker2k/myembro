@@ -30,4 +30,13 @@
     <string name="new_project_from_text_hint">레터링 화면에서 글자 만들기</string>
     <string name="new_project_choose_hoop">후프 선택</string>
     <string name="new_project_default_hoop">기본 후프 · %1$s mm</string>
+    <string name="picker_title">도안 선택</string>
+    <string name="picker_intro">편집을 시작할 도안을 선택하세요.</string>
+    <string name="picker_mine">내 도안</string>
+    <string name="picker_samples">샘플</string>
+    <string name="picker_empty">아직 도안이 없습니다</string>
+    <string name="picker_empty_hint">기본 샘플 도안으로 시작할 수 있어요.</string>
+    <string name="picker_browse_samples">샘플 둘러보기</string>
+    <string name="picker_load_failed">도안을 불러오지 못했습니다 · 다시 시도</string>
+    <string name="picker_unreadable">사용할 수 없는 도안</string>
 </resources>

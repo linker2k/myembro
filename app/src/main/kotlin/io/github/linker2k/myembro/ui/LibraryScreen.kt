@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +19,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -84,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.theme.MyembroLayout
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import java.io.File
 import java.util.Locale
@@ -181,46 +185,43 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
             }
         },
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            if (!selecting) {
-                Text(stringResource(R.string.library_studio), Modifier.padding(horizontal = 20.dp),
-                    style = MaterialTheme.typography.headlineMedium)
-                Text(stringResource(R.string.library_studio_hint), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            UsbStatus(vm) { vm.refreshDrives(); showUsbHelp = true }
-            LibraryControls(vm, visible.size)
-            if (visible.isEmpty()) {
-                Column(
-                    Modifier.fillMaxSize().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    if (vm.loading) CircularProgressIndicator(Modifier.size(28.dp))
-                    else {
-                        Icon(Icons.Default.Search, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(12.dp))
-                        Text(stringResource(R.string.library_no_results), style = MaterialTheme.typography.titleMedium)
-                        Text(stringResource(R.string.library_no_results_hint), style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { vm.searchQuery = ""; vm.filter = LibraryViewModel.Filter.ALL }) {
-                            Text(stringResource(R.string.library_reset_filters))
+        BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(MyembroLayout.designColumns(maxWidth)),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                item(key = "controls", span = { GridItemSpan(maxLineSpan) }) {
+                    Column {
+                        if (!selecting) {
+                            Text(stringResource(R.string.library_studio), style = MaterialTheme.typography.headlineMedium)
+                            Text(stringResource(R.string.library_studio_hint), Modifier.padding(bottom = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        UsbStatus(vm) { vm.refreshDrives(); showUsbHelp = true }
+                        LibraryControls(vm, visible.size)
+                    }
+                }
+                if (visible.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Column(Modifier.fillMaxWidth().heightIn(min = 200.dp).padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        if (vm.loading) CircularProgressIndicator(Modifier.size(28.dp))
+                        else {
+                            Icon(Icons.Default.Search, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(12.dp))
+                            Text(stringResource(R.string.library_no_results), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.library_no_results_hint), style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { vm.searchQuery = ""; vm.filter = LibraryViewModel.Filter.ALL }) {
+                                Text(stringResource(R.string.library_reset_filters))
+                            }
                         }
                     }
                 }
-            } else LazyVerticalGrid(
-                columns = GridCells.Adaptive(150.dp),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
                 items(visible, key = { it.file.path }) { item ->
                     DesignCard(
-                        item = item,
-                        selecting = selecting,
-                        selected = item.file in vm.selection,
-                        favorite = vm.isFavorite(item.file),
-                        exceedsMachine = vm.fitsMachine(item) == false,
+                        item = item, selecting = selecting, selected = item.file in vm.selection,
+                        favorite = vm.isFavorite(item.file), exceedsMachine = vm.fitsMachine(item) == false,
                         onFavorite = { vm.toggleFavorite(item.file) },
                         onClick = { if (selecting) vm.toggle(item.file) else onOpen(item.file) },
                         onLongClick = { vm.toggle(item.file) },
@@ -275,7 +276,7 @@ private fun UsbStatus(vm: LibraryViewModel, onClick: () -> Unit) {
     val label = vm.drives.firstOrNull()?.label
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = MyembroShapes.Card,
         color = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -305,7 +306,7 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
     OutlinedTextField(
         value = vm.searchQuery,
         onValueChange = { vm.searchQuery = it },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         placeholder = { Text(stringResource(R.string.library_search)) },
         leadingIcon = { Icon(Icons.Default.Search, null) },
         trailingIcon = {
@@ -318,7 +319,7 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
     )
-    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyRow(contentPadding = PaddingValues(0.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             FilterChip(
                 shape = MyembroShapes.Chip,
@@ -366,7 +367,7 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
             )
         }
     }
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             if (vm.filter == LibraryViewModel.Filter.RECENT) stringResource(R.string.library_recent_count, visibleCount)
             else stringResource(R.string.library_result_count, visibleCount),

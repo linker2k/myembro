@@ -70,10 +70,11 @@ val dispose = preferences.observe { /* 기종/기본 후프 변경 시 새 목�
   지원 후프가 하나면 별도 후프 질문 없이 `onBlank(H100)`으로 시작합니다.
 - `NewProjectSheet(onBlank, onFromDesign, onFromText, hoops)`는 호스트 콜백을 제공합니다.
   **통합 담당**은 `HomeScreen.onCreateFromDesign`을 도안 선택 → 선택 파일로 편집기 진입에
-  연결하세요. 기본 콜백은 기존 `onOpenLibrary`를 사용하므로 미연결 상태에서는 목록으로 이동합니다.
-- 레터링 화면은 아직 없어 시트와 빠른 시작에서 숨깁니다. 실제 레터링 경로가 생기면
-  `HomeScreen(letteringAvailable = true, onLettering = { ... })`로 연결하세요.
+  연결하세요. 새 전용 `DesignPickerScreen(onSelect, onBack)`의 연결 코드는
+  [디자인 시스템의 통합 메모](design-system.md#전용-도안-picker와-펼친-화면)에 있습니다.
+  기본 콜백은 기존 `onOpenLibrary`를 사용하므로 호스트에서 생성 전용 경로를 지정해야 합니다.
+- 레터링 진입점은 `HomeScreen(letteringAvailable = true, onLettering = { ... })`로 실제 화면에
+  연결할 때만 노출합니다. 기본값은 비노출입니다.
 - 홈 갤러리는 실제 PES 샘플만 표시하며 빈 캔버스 템플릿은 제거했습니다.
   샘플은 기존 `onOpenRecent(file)`로 뷰어에서 열고 편집 버튼으로 프로젝트를 만듭니다.
-- 도안 목록은 관리 전용입니다. 만들기 버튼은 제거했으며 기존 `LibraryScreen.onCreate` 인자는
-  MainActivity 소스 호환을 위해 남겨 두었지만 호출하지 않습니다.
+- 도안 목록은 관리 전용입니다. 만들기 버튼은 제거했습니다.

@@ -29,6 +29,7 @@ import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorScreen
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
+import io.github.linker2k.myembro.ui.home.DesignPickerScreen
 import io.github.linker2k.myembro.ui.home.HomeScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.settings.SettingsScreen
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
     private val editor: EditorViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
-    /** [PICK_DESIGN] is the library opened from the new-project sheet: a tap starts a project. */
+    /** [PICK_DESIGN] is "start from my design" in the new-project sheet: a pick starts a project. */
     private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS }
 
     /** Screens above home; back pops one. Home is always the root. */
@@ -120,10 +121,13 @@ class MainActivity : ComponentActivity() {
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
                     Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
-                    Screen.PICK_DESIGN -> LibraryScreen(library, onOpen = { file ->
-                        editor.editDesign(file)
-                        stack[stack.lastIndex] = Screen.EDITOR
-                    })
+                    Screen.PICK_DESIGN -> DesignPickerScreen(
+                        onSelect = { file ->
+                            editor.editDesign(file)
+                            stack[stack.lastIndex] = Screen.EDITOR
+                        },
+                        onBack = back,
+                    )
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {

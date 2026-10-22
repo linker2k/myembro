@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.library.BundledDesigns
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.ui.RenderData
@@ -31,8 +32,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() { stopObserving() }
     var recent by mutableStateOf<List<HomeProject>>(emptyList())
         private set
-    var sample by mutableStateOf<HomeProject?>(null)
+    var samples by mutableStateOf<List<HomeProject>>(emptyList())
         private set
+    val sample: HomeProject? get() = samples.firstOrNull()
     var loading by mutableStateOf(true)
         private set
     var failed by mutableStateOf(false)
@@ -49,17 +51,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     val app = getApplication<Application>()
                     val projects = File(app.filesDir, "projects").listFiles()
                         .orEmpty().filter { it.isFile && it.extension.equals("myembro", ignoreCase = true) }
-                    val files = (projects + DesignLibrary(app).list())
+                    val files = (projects + DesignLibrary(app).list().filterNot(DesignLibrary::isSample))
                         .sortedByDescending { it.lastModified() }.take(6)
-                    val gallery = File(app.cacheDir, "home_samples/flower.pes")
-                    gallery.parentFile?.mkdirs()
-                    if (!gallery.exists()) app.assets.open("samples/flower.pes").use { input ->
-                        gallery.outputStream().use { input.copyTo(it) }
-                    }
-                    files.map(::describe) to describe(gallery)
+                    val gallery = BundledDesigns.files(app).take(6)
+                    files.map(::describe) to gallery.map(::describe)
                 }
                 recent = content.first
-                sample = content.second
+                samples = content.second
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
