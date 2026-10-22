@@ -40,6 +40,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Downloadable fonts
+
+No font files are bundled in the app or this repository. `app/src/main/assets/fonts/catalog.json`
+lists curated open-source fonts that the user may download on demand. Policy:
+
+- Only fonts whose license allows redistribution and embedding in derived output (stitch files)
+  are listed: SIL Open Font License 1.1, or the Hershey font license.
+- Every download URL names a fixed commit, and the file is rejected unless its SHA-256 matches
+  the catalog. The license text is downloaded (also checksum-verified) or, for Hershey fonts,
+  taken from the font's own `<metadata>`, and stored next to the font as `<id>.LICENSE.txt`;
+  the app shows it from the font library.
+- Adding a font: pin the commit, compute `sha256` locally, record license and designer here.
+
+| Fonts | Kind | License | Source (pinned) |
+|---|---|---|---|
+| Hershey Sans 1-stroke, Script 1-stroke, Serif Medium, Gothic English | single-line SVG | Hershey font license (acknowledgement of Dr. A. V. Hershey, U.S. NBS, and James Hurt, Cognition, Inc. must accompany the data; embedded in each file) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
+| EMS Readability, Allure, Tech, Casual Hand, Delight | single-line SVG | OFL-1.1 (derivatives of OFL Google Fonts, by Windell H. Oskay / Evil Mad Scientist) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
+| Relief SingleLine | single-line SVG | OFL-1.1, © 2022 The Relief SingleLine Project Authors | https://github.com/isdat-type/Relief-SingleLine @ `01dfc5779ec1e9e4b288d96c6c96c23bfccbaf9d` |
+| Jua, Do Hyeon (Woowahan Brothers), Gowun Dodum (Yanghee Ryu), Nanum Gothic, Nanum Pen Script (NHN Corporation), Gaegu (JIKJI SOFT) | outline TTF (Korean + Latin) | OFL-1.1 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` |
+
 ## Ink/Stitch (planned)
 
 Digitizing algorithms will be ported from https://github.com/inkstitch/inkstitch
