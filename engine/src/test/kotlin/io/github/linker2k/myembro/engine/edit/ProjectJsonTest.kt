@@ -40,6 +40,19 @@ class ProjectJsonTest {
         assertContentEquals(bytes, (back.find("imported") as StitchObject).sourceBytes)
     }
 
+    @Test fun projectsSavedWithAnOlderReaderGetTheReadersCurrentColors() {
+        val bytes = requireNotNull(javaClass.getResource("/fixtures/embroidepy/random1-brother-v6.pes")).readBytes()
+        val imported = StitchObject.fromBytes("imported", "random", bytes, "random1.pes")
+        // As an older reader might have stored it: right stitches, wrong thread colors.
+        val garbled = imported.source.let { EmbPattern(it.stitches, it.threads.map { t -> t.copy(color = 0xFF6C0079.toInt()) }, it.metadata) }
+        val back = ProjectJson.decode(Project(objects = listOf(imported.copy(source = garbled))).toJson()).objects.single() as StitchObject
+        assertEquals(imported.source.threads, back.source.threads)
+        // Recolored objects drop their source bytes, and their colors stay as the user chose.
+        val recolored = imported.copy(source = garbled, sourceBytes = null)
+        val kept = ProjectJson.decode(Project(objects = listOf(recolored)).toJson()).objects.single() as StitchObject
+        assertEquals(garbled.threads, kept.source.threads)
+    }
+
     @Test fun emptyProjectAndMissingImportBytesRoundTrip() {
         assertEquals(Project(), ProjectJson.decode(Project().toJson()))
         val obj = rectangle()

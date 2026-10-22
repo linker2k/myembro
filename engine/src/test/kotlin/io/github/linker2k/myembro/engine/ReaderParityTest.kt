@@ -60,7 +60,7 @@ class ReaderParityTest {
 }
 
 /** Minimal JSON parser so the engine stays dependency-free. Supports what the fixtures use. */
-private object Json {
+internal object Json {
     fun parse(text: String): Any? = Parser(text).value()
 
     private class Parser(val s: String) {
