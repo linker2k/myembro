@@ -101,14 +101,69 @@ surfaceContainer 단계(라이트 / 다크): Lowest `#FFFFFF`/`#15120F`, Low `#F
 | 필터 칩 | 높이 40, 좌우 16, shape small(12). 선택 `primary`/`onPrimary`, 기본 `surface` + 1dp `outline` |
 | 배지 | 좌우 8, 상하 4, shape extraSmall(8), labelSmall. PES = `secondaryContainer`, 후프 초과 = `errorContainer`, 품질 좋음/주의/부적합 = `secondaryContainer`/`tertiaryContainer`/`errorContainer` + 글자 |
 | 도안 카드 | shape large(20), `surface`, 1dp `outlineVariant` 테두리, 썸네일 높이 176(후프 안 미리보기, `surfaceContainer` 바탕), 본문 패딩 12/14, 제목 titleMedium, 메타 bodySmall `onSurfaceVariant` |
-| 하단 탭 | 높이 80, `surface`, 4개 고정(구현: 홈 · 도안 · 만들기 · 설정). 선택은 64×32 알약 `primaryContainer`, 아이콘·글자 `primary`, labelMedium |
+| 하단 탭 | 높이 80, `surface`, 4개 고정(홈 · 도안 · 만들기 · 설정, 동선은 "화면 동선 (IA)"). 선택은 64×32 알약 `primaryContainer`, 아이콘·글자 `primary`, labelMedium |
 | 바텀시트 | 위 모서리 28, 손잡이 32×4 `outline`, 안쪽 좌우 24, 제목 titleMedium + 탭(변형/스티치/색상), 아래 주 버튼 하나. 뒤 scrim은 `onBackground` 40% |
 | 슬라이더 | 트랙 4, 활성 `primary`, 비활성 `surfaceVariant`, 썸 20. 값은 항상 오른쪽에 숫자+단위 |
 | 세그먼트 | 높이 44, 바탕 `surfaceVariant` + 패딩 4, 선택 `primary`/`onPrimary`, 모서리 12 |
 | 입력칸 | 높이 52, shape medium(16), `surface` + 1dp `outline`, 단위(mm)는 오른쪽 bodyMedium. 오류는 2dp `error` 테두리 + 아래 문구 |
 | 검색창 | 높이 52, 왼쪽 돋보기 20, 오른쪽 필터 버튼 |
 | 상태 배너 | 높이 52 이상, shape medium. USB 연결·후프 맞음 = `secondaryContainer`, 주의 = `tertiaryContainer`, 오류 = `errorContainer`. 아이콘 20 + 문구 |
-| FAB "새 도안" | 높이 56, 원형, `primary`, 아이콘+글자 |
+| 새 프로젝트 시트 | 바텀시트 규격. 제목 "새 프로젝트"(headlineMedium) + 기종 이름, (지원 후프 2개 이상일 때만) 후프 칩 줄, 갈래 3개: 첫째 "빈 후프에서 시작"은 `primary` 채움 카드(높이 76), 나머지는 `surface` + `outline` 카드(높이 72), 왼쪽 44dp 원형 아이콘 |
+
+FAB는 쓰지 않는다. 새로 만들기는 아래 "화면 동선 (IA)"의 단일 흐름만 쓴다.
+
+## 화면 동선 (IA)
+
+2026-10-22 확정. **새 진입점(버튼·카드·탭·링크)은 이 섹션을 기준으로만 추가한다.** 여기에 없는
+진입점이 필요하면 이 표와 그림을 먼저 고친다. 캔버스: "디자인 시스템" 페이지의 "화면 동선 (IA)",
+"새 프로젝트 시트".
+
+### 규칙
+
+1. **새로 만들기는 한 길.** 홈의 "새 프로젝트" 카드와 하단 "만들기" 탭은 같은 `NewProjectSheet`를
+   연다. 시트의 갈래는 셋뿐이다.
+   - **빈 후프에서 시작** → 편집기(빈 프로젝트). 후프 목록은 설정의 기종 프로필 기준이며, 지원 후프가
+     1개인 기종(SE400 등)은 묻지 않고 바로 시작한다. 2개 이상이면 시트 안 후프 칩에서 고른다.
+   - **내 도안으로 시작** → 도안 선택 → 그 도안이 든 프로젝트로 편집기.
+   - **글자로 시작** → 레터링 화면 → "도안에 추가" → 편집기.
+2. **홈 갤러리는 실제 샘플 도안만** 보여 준다(빈 캔버스 템플릿 없음). 샘플 탭 → 뷰어 → "편집" → 편집기.
+3. **도안 목록은 관리 전용**이다(가져오기·검색·정렬·선택·삭제·USB 내보내기). "만들기" 버튼을 두지 않는다.
+   항목 탭 → 뷰어 → "편집" → 편집기.
+4. **홈 "레터링" 빠른 시작**은 레터링 화면이 생기면 그 화면으로 연결하고, 그 전까지는 숨긴다.
+   빈 프로젝트로 보내지 않는다.
+5. 편집기로 들어가는 길은 시트의 세 갈래와 뷰어의 "편집"뿐이다.
+
+### 하단 탭
+
+| 탭 | 화면 | 만들기 관련 동작 |
+|---|---|---|
+| 홈 | 새 프로젝트 카드, 최근 작업, 샘플 갤러리, (레터링 빠른 시작) | 카드 → `NewProjectSheet` |
+| 도안 | 도안 목록(관리 전용) | 없음. 항목 → 뷰어 |
+| 만들기 | 화면이 아니라 `NewProjectSheet`를 연다 | 시트 |
+| 설정 | 기종 프로필(후프 목록의 근거), 실 브랜드, 단위, 앱 정보 | 없음 |
+
+### 화면 전환도
+
+```mermaid
+flowchart LR
+  HomeCard["홈 · 새 프로젝트 카드"] --> Sheet
+  CreateTab["하단 탭 · 만들기"] --> Sheet
+  Sheet{{"NewProjectSheet"}} -->|빈 후프에서 시작<br/>후프 1개면 바로| Editor
+  Sheet -->|내 도안으로 시작| Pick["도안 선택"] --> Editor
+  Sheet -->|글자로 시작| Lettering["레터링 화면"]
+  Lettering -->|도안에 추가| Editor["편집기"]
+  Gallery["홈 · 샘플 갤러리"] --> Viewer["뷰어"]
+  LibraryTab["하단 탭 · 도안 (관리 전용)"] --> Viewer
+  Viewer -->|편집| Editor
+  QuickLetter["홈 · 레터링 빠른 시작<br/>(레터링 화면 전까지 숨김)"] -.-> Lettering
+  Settings["하단 탭 · 설정 · 기종 프로필"] -.->|후프 목록| Sheet
+```
+
+### 없앤 진입점
+
+- 홈 갤러리의 빈 캔버스 템플릿(정사각·세로형) — 갤러리는 샘플 도안만.
+- 도안 목록의 "만들기" 버튼, 목록의 FAB.
+- 홈 빠른 시작에서 빈 프로젝트로 바로 가는 링크(레터링 포함).
 
 ## 화면별 목업
 
@@ -186,6 +241,9 @@ super.onCreate(savedInstanceState)
 참고. MainActivity의 기존 dynamic palette 블록도 통합 시 `MyembroTheme`으로 교체합니다.
 
 ### 홈 화면 연결
+
+> **2026-10-22 IA 확정으로 바뀐 점**(위 "화면 동선 (IA)"이 우선): 정사각·세로형 빈 프로젝트 템플릿은 갤러리에서 빼고,
+> `onNewProject`와 만들기 탭은 `NewProjectSheet`를 연다. `onLettering`은 레터링 화면이 생기기 전까지 숨긴다.
 
 ```kotlin
 HomeScreen(
