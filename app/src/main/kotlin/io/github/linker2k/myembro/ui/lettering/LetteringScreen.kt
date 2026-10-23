@@ -49,6 +49,7 @@ import io.github.linker2k.myembro.engine.lettering.Grade
 import io.github.linker2k.myembro.engine.lettering.FontQualityReport
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.FillOptions
+import io.github.linker2k.myembro.engine.lettering.FillStrategy
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.ThreadRendering
@@ -292,7 +293,12 @@ private fun LetteringContent(
                     Text(stringResource(R.string.lettering_bean_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
                 if (!active.singleLine && style in listOf(StitchStyle.FILL, StitchStyle.SATIN)) {
-                    FillSettingsControls(fillOptions) { fillOptions = it }
+                    val shownOptions = if (style == StitchStyle.SATIN) fillOptions.copy(strategy = FillStrategy.AUTO) else fillOptions
+                    FillSettingsControls(shownOptions, settings.heightMm) {
+                        if (style == StitchStyle.SATIN && it.strategy == FillStrategy.TATAMI)
+                            stitchStyleName = StitchStyle.FILL.name
+                        fillOptions = it
+                    }
                     if (style == StitchStyle.SATIN) Text(stringResource(R.string.lettering_satin_hint),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 } else if (active.singleLine && style == StitchStyle.SATIN) {

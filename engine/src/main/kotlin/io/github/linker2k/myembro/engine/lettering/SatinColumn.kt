@@ -35,6 +35,50 @@ data class SatinOptions(
  * Conceptual reference: Ink/Stitch satin-column documentation (see THIRD_PARTY_NOTICES).
  */
 object SatinColumn {
+    /** Retain the matched normal sections produced by the outline extractor. */
+    internal fun pairedColumnPoints(column: OutlineColumn, densityMm: Double): List<Pair<Double, Double>> {
+        val center = column.centerline
+        val lengths = DoubleArray(center.size)
+        var leftLength = 0.0; var rightLength = 0.0
+        for (i in 1 until center.size) {
+            lengths[i] = lengths[i - 1] + distance(center[i - 1], center[i])
+            leftLength += distance(column.leftRail[i - 1], column.leftRail[i])
+            rightLength += distance(column.rightRail[i - 1], column.rightRail[i])
+        }
+        if (lengths.last() < 1e-9) return emptyList()
+        fun at(t: Double, rail: List<Pair<Double, Double>>): Pair<Double, Double> {
+            val target = t * lengths.last()
+            val found = lengths.binarySearch(target)
+            if (found >= 0) return rail[found]
+            val i = (-found - 1).coerceIn(1, center.lastIndex)
+            val fraction = (target - lengths[i - 1]) / (lengths[i] - lengths[i - 1]).coerceAtLeast(1e-9)
+            return mix(rail[i - 1], rail[i], fraction)
+        }
+        val cycles = ceil(maxOf(leftLength, rightLength) / densityMm).toInt().coerceAtLeast(1)
+        require(cycles <= 1_000_000)
+        val top = buildList {
+            for (i in 0 until cycles) {
+                add(at(i.toDouble() / cycles, column.leftRail))
+                add(at((i + 0.5) / cycles, column.rightRail))
+            }
+            add(column.leftRail.last()); add(column.rightRail.last())
+        }
+        return splitWideMoves(top)
+    }
+
+    private fun splitWideMoves(top: List<Pair<Double, Double>>): List<Pair<Double, Double>> = buildList {
+        if (top.isNotEmpty()) add(top.first())
+        top.zipWithNext().forEachIndexed { row, (p, q) ->
+            val length = distance(p, q)
+            if (length <= 7.0) add(q) else {
+                // Maximum 3.6 mm before machine rounding; stagger interior penetrations.
+                val parts = ceil(length / 3.0).toInt()
+                val phase = when (row % 4) { 0 -> -0.2; 1 -> 0.1; 2 -> 0.2; else -> -0.1 }
+                for (i in 1 until parts) add(mix(p, q, (i + phase) / parts))
+                add(q)
+            }
+        }
+    }
     fun generate(
         leftRail: List<Pair<Double, Double>>,
         rightRail: List<Pair<Double, Double>>,

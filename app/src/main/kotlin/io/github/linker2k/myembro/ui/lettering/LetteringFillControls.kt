@@ -18,8 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal val FillOptionsSaver = listSaver<FillOptions, Any>(
-    save = { listOf(it.densityMm, it.angleDeg, it.pullCompensationMm, it.underlay, it.border.name) },
-    restore = { FillOptions(it[0] as Double, it[1] as Double, it[2] as Double, it[3] as Boolean, FillBorder.valueOf(it[4] as String)) },
+    save = { listOf(it.densityMm, it.angleDeg, it.pullCompensationMm, it.underlay, it.border.name, it.strategy.name, it.autoDensity) },
+    restore = { FillOptions(it[0] as Double, it[1] as Double, it[2] as Double, it[3] as Boolean, FillBorder.valueOf(it[4] as String),
+        (it.getOrNull(5) as? String)?.let(FillStrategy::valueOf) ?: FillStrategy.TATAMI, it.getOrNull(6) as? Boolean ?: false) },
 )
 internal val SatinOptionsSaver = listSaver<SatinOptions, Any>(
     save = { listOf(it.widthMm, it.densityMm, it.maxStitchLengthMm, it.pullCompensationMm, it.centerUnderlay,
@@ -70,18 +71,29 @@ fun LetteringModeSelector(singleLine: Boolean, style: StitchStyle, onChange: (St
 }
 
 @Composable
-internal fun FillSettingsControls(options: FillOptions, onChange: (FillOptions) -> Unit) {
-    SettingSlider(stringResource(R.string.lettering_density), options.densityMm.toFloat(), 0.3f..1f, 0.1f, "mm") {
-        onChange(options.copy(densityMm = it.toDouble().coerceIn(0.3, 1.0)))
+internal fun FillSettingsControls(options: FillOptions, heightMm: Double, onChange: (FillOptions) -> Unit) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FillStrategy.entries.forEach { strategy ->
+            FilterChip(options.strategy == strategy, { onChange(options.copy(strategy = strategy)) }, label = {
+                Text(stringResource(if (strategy == FillStrategy.AUTO) R.string.lettering_auto_fill else R.string.lettering_fixed_tatami))
+            })
+        }
     }
-    SettingSlider(stringResource(R.string.lettering_fill_angle), options.angleDeg.toFloat(), -180f..180f, 15f, "°") {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.lettering_auto_density), style = MaterialTheme.typography.bodyMedium)
+        Switch(options.autoDensity, { onChange(options.copy(autoDensity = it)) })
+    }
+    SettingSlider(stringResource(R.string.lettering_density), options.densityForHeight(heightMm).toFloat(), 0.3f..1f, 0.1f, "mm") {
+        onChange(options.copy(densityMm = it.toDouble().coerceIn(0.3, 1.0), autoDensity = false))
+    }
+    if (options.strategy == FillStrategy.TATAMI) SettingSlider(stringResource(R.string.lettering_fill_angle), options.angleDeg.toFloat(), -180f..180f, 15f, "°") {
         onChange(options.copy(angleDeg = it.toDouble()))
     }
     SettingSlider(stringResource(R.string.lettering_pull), options.pullCompensationMm.toFloat(), 0f..0.8f, 0.05f, "mm") {
         onChange(options.copy(pullCompensationMm = it.toDouble()))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(stringResource(R.string.lettering_underlay), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(if (options.strategy == FillStrategy.AUTO) R.string.lettering_auto_underlay else R.string.lettering_underlay), style = MaterialTheme.typography.bodyMedium)
         Switch(options.underlay, { onChange(options.copy(underlay = it)) })
     }
     Text(stringResource(R.string.lettering_border), style = MaterialTheme.typography.titleSmall)
