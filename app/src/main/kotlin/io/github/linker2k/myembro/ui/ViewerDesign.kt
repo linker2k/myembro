@@ -7,17 +7,23 @@ import io.github.linker2k.myembro.engine.edit.ProjectSourceResolver
 import io.github.linker2k.myembro.engine.edit.contains
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 
-internal data class ViewerDesign(val pattern: EmbPattern, val source: ByteArray, val sourceName: String, val hoop: HoopSpec?)
+internal data class ViewerDesign(val pattern: EmbPattern, val source: ByteArray, val sourceName: String, val hoop: HoopSpec?,
+    val projectSource: ByteArray? = null, val sewingOptions: SewingOptions? = null,
+    val writeSettings: PesWriteSettings? = null)
 
 /** Render project coordinates directly; PES encoding is used for save/share, never for re-centering the preview. */
-internal fun readViewerDesign(bytes: ByteArray, name: String?, resolver: ProjectSourceResolver? = null): ViewerDesign {
+internal fun readViewerDesign(bytes: ByteArray, name: String?, resolver: ProjectSourceResolver? = null,
+    sewingOptions: SewingOptions? = null, writeSettings: PesWriteSettings = PesWriteSettings()): ViewerDesign {
     if (name?.substringAfterLast('.')?.equals("myembro", true) == true) {
         val project = ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), sourceResolver = resolver)
-        val pattern = project.flatten()
-        return ViewerDesign(pattern, PesWriter.write(pattern), name.substringBeforeLast('.') + ".pes", project.hoop)
+        val pattern = project.flatten(sewingOptions)
+        return ViewerDesign(pattern, PesWriter.write(pattern, writeSettings), name.substringBeforeLast('.') + ".pes", project.hoop,
+            projectSource = bytes, sewingOptions = sewingOptions, writeSettings = writeSettings)
     }
     return ViewerDesign(PatternReader.read(bytes, name), bytes, name.orEmpty(), null)
 }

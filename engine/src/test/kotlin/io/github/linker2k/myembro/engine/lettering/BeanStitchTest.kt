@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.edit.*
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.*
@@ -19,11 +20,13 @@ class BeanStitchTest {
     @Test fun everySewnMoveGoesForwardBackForwardWithoutTriplingItsAnchor() {
         val running = straight(StitchStyle.RUNNING)
         val bean = straight(StitchStyle.BEAN)
-        val sewn = bean.stitches.filter { it.command == Command.STITCH }
-        assertEquals(listOf(-25, 0, 25), running.stitches.filter { it.command == Command.STITCH }.map { it.x })
+        val runningBody = generatedBody(running)
+        val beanBody = generatedBody(bean)
+        val sewn = beanBody.stitches.filter { it.command == Command.STITCH }
+        assertEquals(listOf(-25, 0, 25), runningBody.stitches.filter { it.command == Command.STITCH }.map { it.x })
         assertEquals(listOf(-25, 0, -25, 0, 25, 0, 25), sewn.map { it.x })
         assertTrue(sewn.all { it.y == 0 })
-        assertEquals(1 + 3 * (running.stitchCount - 1), bean.stitchCount)
+        assertEquals(1 + 3 * (runningBody.stitchCount - 1), beanBody.stitchCount)
         assertEquals(running.bounds, bean.bounds)
         assertEquals(running.stitches.last(), bean.stitches.last())
     }
@@ -40,13 +43,21 @@ class BeanStitchTest {
         assertEquals(running.stitches.filter { it.command != Command.STITCH }, bean.stitches.filter { it.command != Command.STITCH })
         assertEquals(running.threads, bean.threads)
         assertEquals(running.bounds, bean.bounds)
-        assertEquals(2 + 3 * (running.stitchCount - 2), bean.stitchCount)
+        val runningBody = generatedBody(running)
+        val beanBody = generatedBody(bean)
+        assertEquals(2 + 3 * (runningBody.stitchCount - 2), beanBody.stitchCount)
         bean.stitches.zipWithNext().forEach { (a, b) ->
             if (b.command == Command.STITCH) assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 25.0)
         }
         assertEquals(2, bean.jumpCount)
         assertEquals(1, bean.colorChangeCount)
         assertTrue(bean.trimCount > 0)
+    }
+
+    /** Locks are added once after bean expansion and must never themselves be tripled. */
+    private fun generatedBody(pattern: EmbPattern): EmbPattern {
+        assertFalse(pattern.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY].isNullOrBlank(), "Generated pattern must contain traced locks")
+        return GeneratedPatternProcessor.stripGeneratedLocks(pattern)
     }
 
     @Test fun newSingleLineFontsDefaultToBeanWhileOutlinesKeepRunning() {

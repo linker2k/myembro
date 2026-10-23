@@ -72,7 +72,8 @@ internal class StitchRuns(private val thread: EmbThread) {
     }
     fun finish(metadata: Map<String, String>): EmbPattern {
         val last = stitches.lastOrNull()
-        return EmbPattern(stitches + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END),
-            if (last == null) emptyList() else listOf(thread), metadata)
+        return io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.finish(
+            EmbPattern(stitches + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END),
+                if (last == null) emptyList() else listOf(thread), metadata))
     }
 }

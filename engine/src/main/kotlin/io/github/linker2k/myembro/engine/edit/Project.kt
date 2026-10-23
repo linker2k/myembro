@@ -2,6 +2,9 @@
 package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.ProcessingSummary
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -69,11 +72,18 @@ data class Project(
      * transform applied, a trim + jump between objects, and a color change only where the
      * thread actually changes.
      */
-    fun flatten(): EmbPattern {
+    fun flatten(sewingOptions: SewingOptions? = null): EmbPattern {
+        val resolvedSewingOptions = sewingOptions ?: SewingOptions()
         val stitches = ArrayList<Stitch>()
         val threads = ArrayList<EmbThread>()
+        var summary: ProcessingSummary? = null
         for (obj in objects.filter { it.visible }) {
-            val raw = obj.placedPattern()
+            // Generated objects have already been finished. Imported sewing remains verbatim;
+            // neither kind may be locked again merely because objects are being composed.
+            val source = obj.placedPattern()
+            val generated = source.metadata[GeneratedPatternProcessor.FINISHED_KEY] == "v1"
+            val raw = if (generated) GeneratedPatternProcessor.finish(source, options = resolvedSewingOptions) else source
+            ProcessingSummary.fromPattern(raw)?.let { summary = (summary ?: ProcessingSummary()) + it }
             // END terminates the source, even if malformed input has trailing stitches.
             val placed = EmbPattern(raw.stitches.takeWhile { it.command != Command.END }, raw.threads)
             placed.colorBlocks.forEach { block ->
@@ -98,7 +108,8 @@ data class Project(
         }
         val end = stitches.lastOrNull()
         stitches += Stitch(end?.x ?: 0, end?.y ?: 0, Command.END)
-        return EmbPattern(stitches, threads)
+        val metadata = summary?.let { it.metadata() + (ProcessingSummary.COMPOSITE_KEY to "v1") }.orEmpty()
+        return EmbPattern(stitches, threads, metadata)
     }
 }
 
@@ -163,12 +174,21 @@ sealed interface DesignObject {
 
     /** [localPattern] with [transform] applied, in hoop coordinates. */
     fun placedPattern(): EmbPattern {
-        val local = localPattern()
+        val source = localPattern()
+        val generated = source.metadata.containsKey(GeneratedPatternProcessor.FINISHED_KEY)
+        val gridPreserving = kotlin.math.abs(transform.scaleX) == 1.0 && kotlin.math.abs(transform.scaleY) == 1.0 &&
+            transform.rotationDeg % 90.0 == 0.0 && transform.x % 1.0 == 0.0 && transform.y % 1.0 == 0.0
+        if (generated && gridPreserving) return GeneratedPatternProcessor.mapCoordinates(source) { x, y ->
+            val (px, py) = transform.apply(x.toDouble(), y.toDouble())
+            px.roundToInt() to py.roundToInt()
+        }
+        val local = if (generated) GeneratedPatternProcessor.stripGeneratedLocks(source) else source
         val placed = local.stitches.map { s ->
             val (px, py) = transform.apply(s.x.toDouble(), s.y.toDouble())
             Stitch(px.roundToInt(), py.roundToInt(), s.command)
         }
-        return EmbPattern(placed, local.threads, local.metadata)
+        val output = EmbPattern(placed, local.threads, local.metadata, local.warnings)
+        return if (generated) GeneratedPatternProcessor.finish(output) else output
     }
 }
 
@@ -201,7 +221,7 @@ data class StitchObject(
             val b = p.bounds ?: return p
             val cx = ((b.minX.toLong() + b.maxX) / 2).toInt()
             val cy = ((b.minY.toLong() + b.maxY) / 2).toInt()
-            return EmbPattern(p.stitches.map { it.copy(x = it.x - cx, y = it.y - cy) }, p.threads, p.metadata)
+            return GeneratedPatternProcessor.mapCoordinates(p) { x, y -> x - cx to y - cy }
         }
     }
 }

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkstitch="http://inkstitch.org/namespace" width="70mm" height="45mm" viewBox="0 0 264.566929 170.07874">
+  <!-- Analytic polyline fixture, SVG px at 96 dpi; source parameters use mm. -->
+  <path id="running-fixture" d="M20 20 L100 20 L100 80 L200 80" fill="none" stroke="#B5492A" stroke-width="1" inkstitch:stroke_method="running_stitch" inkstitch:running_stitch_length_mm="2.5" inkstitch:running_stitch_tolerance_mm="0.2" inkstitch:repeats="2" />
+</svg>

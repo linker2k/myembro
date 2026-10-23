@@ -90,7 +90,7 @@ object LetteringEngine {
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
             missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
-        ).withStitchStyle(stitchStyle)
+        ).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)
     }
 
     /**
@@ -151,7 +151,7 @@ object LetteringEngine {
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
         val paths = contours.filter { it.size >= 2 }
         val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
-        if (paths.isEmpty()) return builder.finish(thread)
+        if (paths.isEmpty()) return builder.finish(thread).withStitchStyle(stitchStyle, stitchLengthMm)
         val points = paths.flatten()
         val minX = points.minOf { it.first }
         val maxX = points.maxOf { it.first }
@@ -185,7 +185,7 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread).withStitchStyle(stitchStyle)
+        return builder.finish(thread).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {

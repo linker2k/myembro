@@ -10,6 +10,8 @@ import io.github.linker2k.myembro.engine.model.Stitch
  * order, so "sewn up to stitch N" is always a prefix of each color run.
  */
 class RenderData(val pattern: EmbPattern) {
+    internal val playback = ViewerPlaybackTimeline(pattern)
+
     /** x0,y0,x1,y1 per sewn segment, in 0.1 mm. */
     val stitchLines: FloatArray
 

@@ -45,6 +45,8 @@ import io.github.linker2k.myembro.ui.ThreadRendering
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import io.github.linker2k.myembro.ui.format.Dimensions
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
+import io.github.linker2k.myembro.ui.settings.withSewingDefaults
 
 private fun Bounds.corners() = listOf(
     Offset(minX.toFloat(), minY.toFloat()), Offset(maxX.toFloat(), minY.toFloat()),
@@ -65,7 +67,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val accent = colors.primary
     val textSize = with(density) { MaterialTheme.typography.labelSmall.fontSize.toPx() }
     val description = stringResource(R.string.editor_canvas_description)
-    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible })
+    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing)
     val selectedBounds = remember(renders, vm.selectedIds) {
         val boxes = renders.filter { it.first in vm.selectedIds }.mapNotNull { it.second.pattern.bounds }
         if (boxes.isEmpty()) null else Bounds(boxes.minOf { it.minX }, boxes.minOf { it.minY },
@@ -289,18 +291,16 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
 
 /** A batch can contain hundreds of objects; retain unchanged renders and build new ones off main. */
 @Composable
-private fun rememberObjectRenders(objects: List<DesignObject>): List<Pair<String, RenderData>> {
-    if (objects.size < 20) return objects.map { obj ->
-        key(obj.id) { remember(obj) { obj.id to RenderData(obj.placedPattern()) } }
-    }
-    val cache = remember { mutableMapOf<String, Pair<DesignObject, RenderData>>() }
-    val renders by produceState<List<Pair<String, RenderData>>>(emptyList(), objects) {
+private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: SewingOptions): List<Pair<String, RenderData>> {
+    val cache = remember { mutableMapOf<String, Pair<Pair<DesignObject, SewingOptions>, RenderData>>() }
+    val renders by produceState<List<Pair<String, RenderData>>>(emptyList(), objects, sewingOptions) {
         val previous = cache.toMap()
         val next = withContext(Dispatchers.Default) {
             objects.associate { obj ->
                 currentCoroutineContext().ensureActive()
-                obj.id to (obj to (previous[obj.id]?.takeIf { it.first == obj }?.second
-                    ?: RenderData(obj.placedPattern()).also { it.pattern.bounds }))
+                val cacheKey = obj to sewingOptions
+                obj.id to (cacheKey to (previous[obj.id]?.takeIf { it.first == cacheKey }?.second
+                    ?: RenderData(obj.placedPattern().withSewingDefaults(sewingOptions)).also { it.pattern.bounds }))
             }
         }
         cache.clear(); cache.putAll(next)

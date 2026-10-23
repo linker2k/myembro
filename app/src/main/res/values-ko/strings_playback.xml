@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_title">땀 미리보기</string>
+    <string name="playback_seek">바느질 순서</string>
+    <string name="playback_stitch_count">%1$,d / %2$,d땀</string>
+    <string name="playback_blocker_description">차단 문제를 빨간 원으로 표시: %1$d곳</string>
+    <string name="playback_check_pass">통과</string>
+    <string name="playback_check_blocked">차단</string>
+    <string name="playback_check_blocked_reason">보내기 전에 검증 내용을 확인해 주세요.</string>
+</resources>
