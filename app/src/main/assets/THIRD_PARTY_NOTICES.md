@@ -466,21 +466,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
 
-## Inkex manual cubic-superpath boundary (oracle runner only)
 
-- Project: Inkscape extensions / Inkex, `EXTENSIONS_AT_INKSCAPE_1.4.1`.
-- Fixed source: `2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892`, the Inkex tag pinned by Ink/Stitch v3.3.0's `requirements.txt`.
-- Sources: [inkex/paths/arc.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/paths/arc.py), [inkex/paths/path.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/paths/path.py).
-- Copyright (C) 2018 Martin Owens; Copyright (C) 2023 Jonathan Neuhauser.
-- Original license: **GPL-2.0-or-later**. This compatible later-version option is exercised for distribution of the Kotlin derivative under **GPL-3.0-or-later**; see the repository [LICENSE](LICENSE) for the GPL v3 text.
-- Ported use: `engine/src/oracle/.../ManualCspPath.kt` reproduces the arc-to-CSP sector/node rules and manual subpath closure. It is separate from custom lock paths, which use SVG `Path.end_points` semantics.
-- Only source text was inspected. Inkex/Ink/Stitch modules were not imported or executed and no dependencies were installed.
+## Potrace-derived binary contour and polygon core (engine-only partial port)
 
-The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `beziersplitatt`, `maxdist`) and `inkex/transforms.py` (`DirectedLineSegment.distance_to_point`) at commit `2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892`, under GPL-2.0-or-later with the GPL v3 later-version option exercised here. Additional original notices: Copyright (C) 2005 Aaron Spike; Copyright (C) 2010 Nick Drobchenko; Copyright (C) 2006 Jean-Francois Barraud; Copyright (C) 2010 Alvin Penner. Sources: [bezier.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/bezier.py), [transforms.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/transforms.py). These controls are transformed before fixed 0.1 SVG-px source subdivision; manual node and custom-lock endpoint semantics remain separate.
-
-## Pystitch output boundary and opt-in writer profile
-
-- Source: [inkstitch/pystitch v1.0.1](https://github.com/inkstitch/pystitch/tree/8fc0b113e02ea81d9a507bfad3f7fd624a8895bd), commit `8fc0b113e02ea81d9a507bfad3f7fd624a8895bd`.
-- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
-- License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
-- Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
+- Source: Potrace 1.16, Copyright (C) 2001–2019 Peter Selinger.
+- Official release: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
+- Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
+  (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
+- Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
+  `OptimalPolygon.kt`, `CurveFitter.kt` and `CurveOptimizer.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
+  and `src/auxiliary.h`. Modified 2026 by myembro contributors.
+- License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
+  GPL-3.0-or-later application. Upstream permission is stated in its README;
+  the complete upstream GPL v2 text is packaged as `licenses/potrace/COPYING` in the engine JAR/APK.
+- This is an unfinished, internal algorithm port, not an endorsed or finished Potrace product.
+  No original executable, native library or new dependency is bundled. No application entry point.
+  See `docs/image-pipeline.md` for the exact implemented stages and differences.
