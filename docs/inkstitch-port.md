@@ -134,3 +134,124 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
   `/tmp/myembro-worker-contract-matrix.json`, `/tmp/myembro-worker-contract-gate.json`에 기록한다.
 - 이 판정은 **수동 SVG 어댑터 smoke**만 대상으로 한다. 아직 미연결된 잠금/Stroke/Ripple이나
   모든 폰트 릴리스가 통과했다고 확대 해석하지 않는다.
+
+
+## FillStitch 포트 — embro-model
+
+### 범위와 호출 경계
+
+v3.3.0에서 이전 `auto_fill.py`는 **`lib/stitches/tatami_fill.py`**로 이름이 바뀌었다.
+`stitches.TatamiFill` / `Fill` / `FillRouting`이 이 타타미 경로를 담당한다.
+기존 `digitizing.TatamiFill` 및 `lettering.OutlineFill` 호출은 바꾸지 않는다.
+새 `elements.FillAdapters`는 승인 후 선택적으로 전환하기 위한 어댑터다.
+
+- 모든 JTS 입력과 `FillPoint`는 **SVG px**. 각 저수준 함수의 `*Px` 인수도 px다.
+  `FillParameters`와 방법별 DTO의 `_mm` 속성은 mm, `angle`은 도다.
+  `TatamiFill.fill` / `Fill.intersectRegionWithGrating`의 저수준 `angle`은 원본처럼 라디안이다.
+- `FillGeometry.makeValid`는 JTS GeometryFixer로 자기교차를 수정하고 다각형 성분을 보존한다.
+  `buffer(0)`만 사용해 나비넥타이의 한쪽 면을 버리지 않는다. 구멍은 분리된 외곽선으로 유지한다.
+- `FillParameters.fromSvgAttributes`는 공통 `inkstitch:*` 이름/기본값을 읽는다.
+  방법별 가이드·그라디언트·타탄 리소스는 변환/색 해석이 끝난 typed 입력을 받는다.
+  완전한 SVG 문서/Inkex 객체 트리 파서는 이 채움 엔진의 범위에 포함하지 않는다.
+- `elements.FillStitch.toStitchGroups(previousStitch)`는 underlay→top, 색 순서,
+  시작/끝, 그룹 속성 및 잠금 정의를 공통 계약으로 넘긴다. 실제 필터/명령 생성은
+  embro-worker의 명시적 `StitchPlanBuilder.fromGroups` 호출 책임이다.
+  기본 writer나 가져온 기존 도안을 재생성하는 hook은 없다.
+
+### 원본 기본값
+
+| 속성 | 기본값/원본 처리 |
+|---|---|
+| `fill_method` | `tatami_fill` (`auto_fill`은 호환 별칭) |
+| `row_spacing_mm` / `max_stitch_length_mm` | 0.25 / 4.0, 계산 시 각각 최소 0.1mm |
+| `angle` / `staggers` / `skip_last` / `expand_mm` | 0° / 4 / false / 0mm |
+| `underpath` / `gap_fill_rows` | true / 0 |
+| `running_stitch_length_mm` / `running_stitch_tolerance_mm` | 2.5 / 0.2; 원본 getter의 0.2를 사용(UI 표시 0.1과 다름) |
+| `fill_underlay` / `underlay_underpath` | true / true |
+| `fill_underlay_angle` | 미지정이면 top angle+90°; gradient는 gradient 방향의 음수 |
+| `fill_underlay_row_spacing_mm` | 미지정/0이면 top 간격×3 |
+| `fill_underlay_max_stitch_length_mm` | 미지정/0이면 top 최대 길이 |
+| `fill_underlay_inset_mm` / `fill_underlay_skip_last` | 0 / false |
+| `pull_compensation_mm` / `pull_compensation_percent` | 양쪽 0; 한 값은 양쪽에 적용 |
+| `min_stitch_length_mm` / `min_jump_stitch_length_mm` | null; 공통 후처리 기본값 0.1mm / 3mm |
+| `ties` / `lock_start` / `lock_end` | 0(양끝) / `half_stitch` / `half_stitch` |
+
+### 원본 파일과 테스트 대응
+
+| 기능 | 원본 파일 | Kotlin 검사 |
+|---|---|---|
+| grating·stagger·legacy | `lib/stitches/fill.py` | 원점 기준 행, 음수 modulo/round-even, 끝 간격 변화, 구멍, flip/reverse, raw 시작 중복 태그 |
+| tatami·Euler·underpath·start/end | `lib/stitches/tatami_fill.py` | 모든 행 방문, 결정성, 구멍 우회, 분리 영역 jump, 보정, 경계 절단·중복 간선 방향 회귀 |
+| running·smooth·clamp | `lib/stitches/running_stitch.py`, `lib/utils/{smoothing,clamp_path}.py` | 코너/길이/허용오차, U형 외부 excursion, 구멍 모서리, 끝점 보존 |
+| underlay·요소 파라미터 | `lib/elements/fill_stitch.py` | 여러 각도, inset, spacing/max 상속, collapse fallback, angle tokenizer, top 전 expand 순서 |
+| contour | `lib/stitches/contour_fill.py` | inner/single/double, 방향, 구멍, 분기, bean/repeats, smoothing |
+| guided | `lib/stitches/guided_fill.py`, `lib/stitches/utils/connect_geometries.py` | copy/offset/buffer, 최소 면적 회전 상자, anchor, flexible/stagger, 구멍, smoothing, fallback |
+| circular | `lib/stitches/circular_fill.py` | Fermat, 작은 도형 원본 fallback, 구멍, target/end spacing, start/end, bean/repeats |
+| linear gradient | `lib/stitches/linear_gradient_fill.py` | 제곱근 행 분포, color stop, missing gradient, 구멍, 시작/underlay 연결 길이 |
+| tartan | `lib/stitches/tartan_fill.py`, `lib/tartan/utils.py` | warp/weft, 색 순서, 폭/scale/rotation, running stripes, herringbone, 나비넥타이 연결 길이 |
+| meander | `lib/stitches/meander_fill.py`, `lib/tiles.py`, `lib/utils/prng.py` | 75개 타일 로드, SVG 변환, MST/분기, 연결성, seed, BLAKE2s 알려진 벡터, clip/smooth/zigzag/반복 |
+
+`tests/test_threads_color.py`의 gradient/tartan 입력·색 기대값은 대응 Kotlin 테스트로 옮겼다.
+그 외 원본 `tests/`에는 이들 채움의 좌표 골든 단위 테스트가 없다. 수식·분기에서 읽은
+고정 기대값과 성질 검사는 원본 실행 결과와 대조한 골든이 아니다.
+원본 코드는 읽기만 했으며 실행/의존성 설치를 하지 않았다.
+
+### Fill 차이점
+
+| 위치 | 원본과 차이 | 이유/한계 |
+|---|---|---|
+| Shapely/GEOS | JTS GeometryFixer, buffer/overlay/offset 사용 | 곡선 근사·작은 topology 조각·순서가 GEOS와 수치적으로 다를 수 있음. 동일 바이트 출력이라고 주장하지 않음 |
+| NetworkX 그래프 | Kotlin multigraph/BFS/Dijkstra/Hierholzer + JGraphT 최소 가중 perfect matching | LGPL-2.1-or-later 선택. 동률 matching/이웃 순서가 NetworkX 버전과 다를 수 있음 |
+| 입력/자원 제한 | 유한 수 검증, 최대 행·정점·땀·반복·matching 작업량 상한 | 순수 JVM에서 무제한 메모리/CPU 사용 방지. 큰 입력은 명시적 예외로 거절 |
+| 그래프 정밀도 | 정점을 1e-6px로 정규화, clamp buffer도 1e-6px | 경계 leg 삭제 및 긴 연결땀 방지. 원본 snap/GEOS 정밀도와 미세 차이 |
+| 시작/끝 삽입 | 행이 닿지 않는 독립 링에 가상 채움 간선을 만들지 않음 | 구멍을 가로지르는 인위적 연결 방지 |
+| 도달 불가 travel | 직선 fallback 대신 오류 | 구멍/외부를 무표시 봉제하는 결과를 내지 않음 |
+| travel clamping | 외부 excursion 전체를 가장 짧은 해당 경계 arc로 연결, 양 끝 보존 | 원본 0.01px 경계 buffer 절단 대신 정확 투영. hole-only 교차 및 말단 점 교차 손실 수정 |
+| collinear running sleeve | 거의 0인 분모에서 이전 vertex 사용 | 0 허용오차·거의 평행인 선의 무한/과대 좌표 방지 |
+| 분리 도형/명시 jump | 이전 그룹의 강제 잠금으로 공통 planner에 needle-up 경계 요청 | 3mm collapse 기준보다 가까운 분리 영역도 가로질러 봉제하지 않도록 함 |
+| 임의 길이 땀 | `enable_random_stitch_length=true`는 명시적 미지원 | deterministic fill과 meander seeded 경로는 구현. 랜덤 running-length 분포는 후속 포트 필요 |
+| Guided 최소 회전 상자 | JTS MinimumAreaRectangle 사용, 임의 좌표 perturbation 생략 | 재현 가능한 좌표 유지; 원본 GEOS 회피용 0~0.01px jitter와 다름 |
+| Guided self revisit | 선형 project 한 번 대신 traversal segment별 clipping | 같은 점 재방문 경로 누락 방지 |
+| staggers=0 | guided의 0 나누기 대신 1로 처리 | 유효 출력/명시 검증을 위한 처리 |
+| Tartan/gradient 입력 | typed palette/gradient, 해석된 CSS 색/geometry | SVG 리소스/CSS/JSON 텍스트 해석은 상위 importer 책임 |
+| Tartan herringbone | 한 줄짜리 block을 보존 | 원본의 loop 변수 누출로 단일 행이 사라지는 경우 수정 |
+| Circular 작은 도형 | spacing이 반경보다 크면 원본처럼 clipping 없는 원 반환 | 원본 동작 보존. 경계 초과 가능성이 있어 게이트/후프 검사가 필요 |
+| 어댑터 | native 0.1mm 또는 mm→px 명시 변환. 비균등 row offset/AUTO satin/border는 거절 | 채움의 의미를 조용히 바꾸지 않음. 기존 edge-running underlay를 선택적으로 옮기면 새 tatami underlay와 동작이 다름 |
+
+### 채움 품질 제출 방법/현재 판정
+
+고정 SVG는 `engine/src/test/resources/inkstitch/fill/{rectangle,hole,concave,bowtie}.svg`다.
+공개 자체 fixture만 사용하며 사용자 PES·폰트 자료는 커밋하지 않는다.
+`exportFillQualityFixtures`는 14가지 모드×4도형×12/24mm = **112개**를 선언하고,
+실제 element→공통 후처리→PES v6로 생성한다. 실패한 생성도 matrix에서 빼지 않는다.
+legacy gate schema의 `fonts` 축에는 `방법:도형` ID를 넣는다. 폰트 검증으로 주장하지 않는다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :engine:exportFillQualityFixtures
+/tmp/myembro-quality-gate/check-release --matrix /tmp/myembro-fill-quality/matrix.json \
+  --json /tmp/myembro-fill-quality/release-report.json
+```
+
+첫 외부 게이트 판정은 **BLOCK 112/112**였다. 원본 기본 half_stitch 잠금은 게이트의
+고정 text 시작/잠금 시퀀스와 맞지 않으며, 일부 도형에서 짧은 땀/밀도 기준도 초과한다.
+초기 후보의 생성 실패(odd vertex matching 상한)와 긴 연결땀은 원인을 수정하여 재검증한다.
+게이트/기준/원본 기본값을 바꿔 통과시키지 않는다. 최종 결과는 후속 검증 기록에 추가한다.
+현재 **기존 fill 교체·main 병합 승인 없음**. JVM 단위 테스트 통과와 독립 품질 승인은 별개다.
+
+
+### 2026-10-24 채움 후보 2차 검증
+
+- 공통 후처리 3개 파일(`LockStitches`, `StitchPlanBuilder`, `PathEndPoints`)은 아직
+  main 미병합이다. `/tmp/myembro-fill-preview.gradle`로 embro-worker의 읽기 전용 WIP를
+  compile 입력에 더한 **임시 조합**에서 엔진 테스트 **391개 통과**.
+  정식 `:engine:test` 통과와 구분한다. 이 임시 경로/worker WIP는 커밋하지 않는다.
+- 원본 기본값으로 **112/112 PES 생성·PesReader 재해석 성공**, 생성 오류 0.
+  독립 `check-release`는 **BLOCK 112/112, exit 1**.
+- 게이트 사유: text 시작 시퀀스 112, 시작 잠금 112, 끝 잠금 72,
+  body<0.3mm 비율 38, body<0.27mm 비율 33, 전체 짧은 땀 비율 11,
+  밀도 5, 미설명 zero 1. 여러 사유가 한 파일에 함께 있을 수 있다.
+- **LONG_STITCH 0, 읽기 실패 0**. 최대 봉제 이동 약 4.102mm.
+  버그 수정으로 긴 연결땀/누락 파일은 없어졌지만 전체 품질 통과가 아니다.
+- 결과: `/tmp/myembro-fill-quality/{matrix.json,release-report.json,gate.log}`.
+  전체 생성 연결 API/추가 통합 회귀는 공통 후처리 병합 후 별도 커밋한다.
+  우선 공통 후처리에 독립적인 채움 코어를 기능별 커밋으로 제공한다.

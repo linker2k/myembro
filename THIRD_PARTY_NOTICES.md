@@ -94,11 +94,6 @@ may download on demand. Policy:
 | Playfair Display v1.200 (Claus Eggers Sørensen) | outline TTF (Latin), static Regular | OFL-1.1 | https://github.com/google/fonts @ `d08233f9c581786e8c834a1f0695a4f27869c119` |
 | Oswald, Dancing Script Bold, Fredoka, Baloo 2, Comfortaa Bold, Cinzel, Caveat Bold | outline TTF (Latin), static instances | OFL-1.1 | googlefonts/OswaldFont @ `89795261`, googlefonts/DancingScript @ `291f87c0`, hafontia-zz/Fredoka-One @ `35c584ff`, yanone/Baloo2-Variable @ `da523dfa`, alexeiva/comfortaa @ `4aa21cfb`, NDISCOVER/Cinzel @ `8271e162`, googlefonts/caveat @ `59745e81` (full hashes in `catalog.json`) |
 
-## Ink/Stitch (planned)
-
-Digitizing algorithms will be ported from https://github.com/inkstitch/inkstitch
-(GPL-3.0-or-later). Each ported file will record its upstream path and commit.
-
 ## Hershey Futural single-stroke font data
 
 - Asset: `engine/src/main/resources/lettering/futural.jhf` (unmodified, 96 records).
@@ -469,3 +464,41 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
+- Fill ports cover `lib/stitches/{fill,tatami_fill,contour_fill,guided_fill,circular_fill,
+  linear_gradient_fill,meander_fill,tartan_fill}.py`, fill-travel running stitch helpers,
+  `lib/elements/fill_stitch.py`, `lib/utils/{geometry,smoothing,clamp_path,prng}.py`,
+  `lib/stitches/utils/connect_geometries.py`, `lib/tiles.py` and `lib/tartan/utils.py`.
+  The JTS-backed multigraph, shortest paths and BLAKE2s subset are translated
+  implementations. Weighted perfect matching for Euler augmentation uses JGraphT
+  Blossom V (license selection and transitive dependencies below).
+- Data: 75 original `tiles/*/tile.svg` files are redistributed under GPL-3.0-or-later
+  in `engine/src/main/resources/inkstitch/tiles/`. Source-path notices were added as
+  XML comments; an index and `ORIGIN.txt` record the pinned source. No preview images,
+  fonts, private embroidery files or upstream executable code are bundled with them.
+- Changes and explicit unsupported settings are listed in `docs/inkstitch-port.md`.
+  The previous app fill implementations remain in use until independent quality approval.
+
+
+## JGraphT core and transitive libraries
+
+- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
+  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
+  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
+  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
+  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
+  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
+  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
+  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
+  traversal are Kotlin ports. Public dependency binaries are used; upstream source
+  archives were only read to verify notices.
+- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
+  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
+  source is available from the pinned repository and the published Maven sources JAR.
+- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
+  Dimitrios Michail and contributors. Full license and source notice are packaged at
+  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
+- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
+  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
