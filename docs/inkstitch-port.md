@@ -140,9 +140,11 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
 
 `svg/image/ImagePipeline.trace()`는 `ImageEmbroideryDraft`를 반환한다.
 각 `ImageElement`는 fill 영역 또는 running 중심선 또는 satin의 두 레일과
-`inkstitch:*` 파라미터를 갖는다. `toElements(factory)`는 실제 elements 생성자로 연결하는
-훅이며, `toSvg()`는 mm 단위 viewBox를 갖는 독립 SVG 넘김 경로다.
-공유 elements가 main에 들어오기 전에는 자체 스티치 생성기를 새 계약인 것처럼 노출하지 않는다.
+`inkstitch:*` 파라미터를 갖는다. `toEmbroideryElements(factory)`는
+실제 공유 `EmbroideryElement`를 반환하는 팩토리 훅이다. 팩토리 입력 `ImageSvgElement`의
+좌표는 `Units.mmToPixels(native / 10)`로 변환된 **SVG px**이며 구멍은 even-odd 닫힌 경로로
+보존한다. `toSvg()`는 mm 단위 viewBox를 갖는 독립 SVG 넘김 경로다.
+공유 Stroke/Satin/Fill 생성기와 후처리를 복제하지 않으며 완성된 담당 구현을 팩토리로 연결한다.
 
 | Kotlin | 원본 파일 (위 커밋) | 범위 |
 |---|---|---|

@@ -25,8 +25,8 @@
    폭 ≤0.6mm이면 중심선 running, ≤6mm이면 두 레일 satin을 제안한다.
    중심선/레일 전체가 벡터 영역에 덮여야 한다. 곡선·분기·불명확한 기둥은 fill로 유지하고
    검토 알림을 반환한다. 자동 분류는 사용자 확정 전의 제안이다.
-9. `ImageEmbroideryDraft`의 영역/중심선/레일과 `inkstitch:*` 속성을 elements 팩토리로
-   넘긴다. `toSvg()`도 제공한다. 공유 plan 생성/잠금/단땀 필터/장땀 분할/PES 쓰기는
+9. `ImageEmbroideryDraft.toEmbroideryElements(factory)`가 SVG px로 바꾼 영역/중심선/레일과
+   `inkstitch:*` 속성을 실제 공유 `EmbroideryElement` 팩토리로 넘긴다. `toSvg()`도 제공한다. 공유 plan 생성/잠금/단땀 필터/장땀 분할/PES 쓰기는
    후단 담당자의 기능이며 이미지 전처리에 복제하지 않는다.
 
 ```kotlin
@@ -37,6 +37,10 @@ val draft = ImagePipeline.trace(
         threadPalette = availableThreads),
 )
 val svg = draft.toSvg() // SVG width/height in mm; viewBox makes 1 user unit = 1mm.
+// After the concrete Stroke/Fill/Satin ports are available:
+// val elements: List<EmbroideryElement> = draft.toEmbroideryElements { request ->
+//     elementFactory.create(request.type, request.paths, request.fillRule, request.color, request.parameters)
+// }
 ```
 
 내부 `PolygonRegion`/`Polyline` 좌표는 기존 엔진 단위 **0.1mm**, 원점은 이미지 왼쪽 위,
@@ -96,3 +100,13 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test --tests '*ima
 | 원클릭 단순화 단계 | 섬세/균형/간단의 세 preset을 색 수·최소 면적·경계 허용치 묶음으로 적용. 각 결과에 삭제 면적·색 수·예상 땀 수를 표시. | 같은 사진·크기·설정은 같은 결과. 밀도/잠금/점프 검증을 통과하지 못하면 전송 완료처럼 표시하지 않는다. |
 | 후프/실 미리보기 | 선택 기계의 봉제 영역과 실 색표에 맞춰 최종 mm를 정한 후 영역 타입을 조정. 사진/벡터/실 경로 겹쳐 보기. | resize하면 mm² 제거와 폭 분류부터 재실행한다. 이미 생성한 땀을 무조건 확대/축소하지 않는다. |
 | 온디바이스 작업 | 취소 가능한 백그라운드 작업과 단계별 진행률, 해상도 예산, 원본과 설정의 초안 저장. | OOM/취소 시 반쪽 프로젝트로 기존 편집 세션을 교체하지 않는다. |
+
+## 공유 계약 반영 검증
+
+- main `cef0156`의 실제 `EmbroideryElement`/SVG px 계약을 병합했다.
+- `ImageElementAdapter`는 좌표를 반올림하지 않고 변환하며 `fillRule=EVEN_ODD`를 명시한다.
+  팩토리 구성은 수동이며 호출 시에만 `toStitchGroups(previousStitch)`를 실행한다.
+- 이미지 테스트 **23개** (고정 seed 75개 + 3×3 이진 마스크 512개 포함),
+  엔진/앱 전체 **475개**, `:app:assembleDebug` 통과.
+- 구체적 생성기/plan 후처리는 계약만 병합된 main에 아직 없으므로, 위 7개 PES의
+  **BLOCK 상태는 그대로**다. 통과를 주장하거나 앱 이미지 UI에 연결하지 않는다.

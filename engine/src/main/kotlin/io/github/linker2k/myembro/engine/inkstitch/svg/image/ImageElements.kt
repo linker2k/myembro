@@ -26,9 +26,6 @@ data class ImageElement(
 )
 
 data class ImageEmbroideryDraft(val vector: VectorizedImage, val elements: List<ImageElement>) {
-    /** Integration hook until the shared EmbroideryElement factory is available on main. */
-    fun <T> toElements(factory: (ImageElement) -> T): List<T> = elements.map(factory)
-
     /** Valid SVG handoff, one path per element. viewBox makes one user unit exactly one mm. */
     fun toSvg(): String = buildString {
         append("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkstitch=\"http://inkstitch.org/namespace\"")

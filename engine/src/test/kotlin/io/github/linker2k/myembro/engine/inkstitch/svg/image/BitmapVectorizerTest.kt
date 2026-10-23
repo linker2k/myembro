@@ -87,6 +87,22 @@ class BitmapVectorizerTest {
         }
     }
 
+    @Test fun allThreeByThreeBinaryMasksPreservePixelCenterMembership() {
+        for (mask in 0 until 512) {
+            val pixels = IntArray(9) { i -> if (mask and (1 shl i) != 0) red else 0 }
+            val vector = trace(3, 3, pixels).vector
+            assertEquals(Integer.bitCount(mask).toDouble(), vector.regions.sumOf { it.areaMm2 }, 1e-8)
+            for (i in pixels.indices) assertEquals(pixels[i] != 0,
+                vector.regions.any { it.geometry.covers(Point((i % 3 + 0.5) * 10, (i / 3 + 0.5) * 10)) }, "mask=$mask pixel=$i")
+        }
+    }
+
+    @Test fun boundaryBudgetRejectsOneConnectedHighlyDetailedRegionBeforePolygonization() {
+        val pixels = IntArray(600 * 600) { i -> if (i / 600 % 2 == 0 || i % 600 == 0) red else 0 }
+        val error = assertFailsWith<IllegalArgumentException> { trace(600, 600, pixels) }
+        assertTrue(error.message.orEmpty().contains("boundary edges"))
+    }
+
     @Test fun emptyAndOverlyFragmentedImagesHaveExplicitOutcomes() {
         assertTrue(trace(3, 3, IntArray(9)).elements.isEmpty())
         assertFailsWith<IllegalArgumentException> {

@@ -68,7 +68,7 @@ class ImageElementsTest {
                     val fromSvg = SvgPath.polygons(node.getAttribute("d"), FillRule.EVEN_ODD)
                     assertEquals(element.region.areaMm2, fromSvg.area, 1e-8)
                 }
-                assertEquals(listOf(element.type), draft.toElements { it.type })
+                assertEquals(listOf(element.type), draft.elements.map { it.type })
             }
         } finally { Locale.setDefault(locale) }
     }
