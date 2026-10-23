@@ -422,3 +422,20 @@ UI/기존 제품 경로 연결 및 시작점 계약 변경은 이번 단위에 �
 검증 결과: 외부 소스를 지정하지 않은 일반 엔진 테스트 **395개 통과**, S1 소스만 지정한
 preview `DefaultTatamiTest` **3개 통과**. 두 생성/유틸 파일은 출처 주석을 제외하고
 letter의 기록된 커밋과 byte-for-byte 동일함도 확인했다. 전체 매트릭스는 실행하지 않았다.
+
+
+### 15분 단위: S4 기본 채움 시험 후보 4개
+
+`exportDefaultTatamiSewtest` 태스크가 기존 DefaultTatami + S1 기본 planner를 호출해
+`/tmp/myembro-sewtest/s4/`에 PES v6/SVG/manifest를 생성한다. 사각 20×20mm(739땀),
+원 지름25mm(1,027땀), 도넛 외경30/내경12mm(1,490땀), 직접 만든 굵은 H 높이20mm(616땀).
+생성 중 우리 PesReader 왕복 땀수·100mm 후프 범위·도넛 안쪽 바늘 없음도 확인했다.
+디자인은 모두 오리지널 기하 도형(CC0), 개인 파일/폰트 미사용이다.
+
+외부 `/tmp/myembro-quality-gate/quality-gate check` v5 결과 **4/4 PASS**.
+최대 밀집은6회/0.5mm 셀, 동일점 연속 최대2회, 최대 땀4.11mm 미만,
+실 시작/끝 잠금 및 후프100×100 검사가 통과했다. 짧은 땀 비율 경고는 참고만 한다.
+S4 단계 승인은 요청하지 않았으며, 현재 단계 진행/출시/실봉제 승인을 뜻하지 않는다.
+`tools/render_tatami_sewtest.py`는 pyembroidery로 읽은 실제 PES를 동일 배율의
+`overview.png`/개별 PNG로 렌더링한다. 결과 디렉터리 README에 정확한 재현 명령을 기록했다.
+알고리즘·UI·기존 제품 경로 변경은 없다. 여기서 멈추고 총괄 검토를 기다린다.

@@ -21,6 +21,12 @@ gradle.projectsEvaluated {
     engine.tasks.named('compileTestKotlin').configure {
         source(engine.file('src/inkstitchPreviewTest/kotlin'))
     }
+    engine.tasks.register('exportDefaultTatamiSewtest', JavaExec) {
+        dependsOn(engine.tasks.named('testClasses'))
+        classpath = engine.sourceSets.test.runtimeClasspath
+        mainClass.set('io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatamiSewtest')
+        args(engine.providers.gradleProperty('fillSewtestDir').getOrElse('/tmp/myembro-sewtest/s4'))
+    }
     engine.tasks.register('exportFillQualityFixtures', JavaExec) {
         dependsOn(engine.tasks.named('testClasses'))
         classpath = engine.sourceSets.test.runtimeClasspath
