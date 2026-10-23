@@ -10,6 +10,13 @@ import io.github.linker2k.myembro.engine.model.EmbThread
 import kotlin.test.*
 
 class InkFontSatinBridgeTest {
+    @Test fun forceFlagWithTiesNeitherKeepsUpstreamEndOnlySemantics() {
+        val locks=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitches.fromParameters(
+            io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitchParameters(ties=3,force_lock_stitches=true))
+        assertNull(locks.start)
+        assertNotNull(locks.end)
+    }
+
     @Test fun sourceSvgBooleansUseInkStitchSpellings() {
         val p=SatinParametersCodec.decode(mapOf("center_walk_underlay" to " False ","zigzag_underlay" to "True", "swap_satin_rails" to "yes"))
         assertFalse(p.center_walk_underlay);assertTrue(p.zigzag_underlay);assertTrue(p.swap_satin_rails)

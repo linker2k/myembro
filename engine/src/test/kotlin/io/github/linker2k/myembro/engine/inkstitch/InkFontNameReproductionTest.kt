@@ -10,7 +10,7 @@ import java.io.File
 import kotlinx.serialization.json.*
 import kotlin.test.*
 
-/** Three name cases only. Font data stays external; no private PES is read. */
+/** One in-hoop name case only. Font data stays external; no private PES is read. */
 class InkFontNameReproductionTest {
     @Test fun generateThreeNames() {
         val root=System.getProperty("myembro.nameOutput")?.let(::File) ?: return
@@ -18,7 +18,7 @@ class InkFontNameReproductionTest {
         val font=InkStitchFont.parse(input.resolve("ltr.svg").inputStream(),input.resolve("font.json").readText())
         assertTrue("HJungMin".all { it.toString() in font.glyphs })
         assertTrue(font.unsupported.isEmpty(),font.unsupported.toString())
-        val cases=listOf(12.0,20.0,30.0).map { height ->
+        val cases=listOf(12.0).map { height ->
             val placements=InkStitchLettering.layout(font,"Jung Min",height)
             val elements=placements.flatMap { it.glyph.elements }
             assertTrue(elements.any { it is InkSatin })
@@ -30,7 +30,7 @@ class InkFontNameReproductionTest {
             assertEquals(pattern.stitchCount,PesReader.read(file.readBytes()).stitchCount)
             buildJsonObject {
                 put("id",id);put("font_id","aventurina");put("text","Jung Min");put("height_mm",height)
-                put("path",file.absolutePath);put("style","satin");put("text_check",true)
+                put("path",file.absolutePath);put("style","satin");put("text_check",true);put("force_boundary_locks",true)
                 put("stitch_count",pattern.stitchCount);put("satin_elements",elements.count { it is InkSatin })
                 put("running_elements",elements.count { it is InkRun })
                 put("recorded_min_height_mm",font.minHeightMm!!);put("recorded_max_height_mm",font.maxHeightMm!!)

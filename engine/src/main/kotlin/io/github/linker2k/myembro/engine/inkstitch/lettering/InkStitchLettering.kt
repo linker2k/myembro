@@ -23,12 +23,19 @@ object InkStitchLettering {
     }
     fun render(font:InkStitchFont,text:String,heightMm:Double,thread:EmbThread?=null,
         letterSpacingMm:Double=0.0,lineHeightMm:Double?=null,
-        alignment:TextAlignment=TextAlignment.LEFT,backAndForth:Boolean=true):EmbPattern {
+        alignment:TextAlignment=TextAlignment.LEFT,backAndForth:Boolean=true,
+        forceBoundaryLocks:Boolean=true):EmbPattern {
         val placements=layout(font,text,heightMm,letterSpacingMm,lineHeightMm,alignment,backAndForth)
         val groups=arrayListOf<StitchGroup>()
         for(p in placements) for(element in p.glyph.elements) {
             val params=element.params
-            val attrs=params.names.associateWith { params[it]!! }
+            val boundary=groups.isEmpty() || groups.last().trimAfter || groups.last().stopAfter || groups.last().color!= (thread ?: EmbThread(element.color))
+            // Product policy uses the upstream force flag only at a real thread boundary.
+            // As in element.py, this flag alone does not override ties=3 for lock_start.
+            val attrs=params.names.associateWith { params[it]!! }.let {
+                if(forceBoundaryLocks && boundary) it + ("force_lock_stitches" to "true") else it
+            }
+            val effective=InkStitchParams(attrs)
             val locks=LockStitches.fromParameters(LockStitchParameters.fromAttributes(attrs))
             val color=thread ?: EmbThread(element.color)
             fun px(q:Point)=p.mm(q).let { SvgPoint(Units.mmToPixels(it.x),Units.mmToPixels(it.y)) }
@@ -38,7 +45,7 @@ object InkStitchLettering {
                     SatinParametersCodec.decode(attrs),element.nodePaths.map { it.map(::px) },color=color,
                     trim_after=params.bool("trim_after",false),stop_after=params.bool("stop_after",false),
                     lockStart=locks.start,lockEnd=locks.end,
-                    force_lock_stitches=params.bool("force_lock_stitches",false)).toStitchGroups(previous)
+                    force_lock_stitches=effective.bool("force_lock_stitches",false)).toStitchGroups(previous)
                 is InkRun -> element.paths.map { path ->
                     require((params.number("repeats") ?: 1.0)==1.0 && params.values("bean_stitch_repeats").all { it==0.0 }) { "Repeats/bean lettering is deferred" }
                     val base=InkRunning.even(path.points.map(::px).map { Point(it.x,it.y) },
@@ -49,7 +56,7 @@ object InkStitchLettering {
                         lockStart=locks.start,lockEnd=locks.end,
                         minStitchLengthMm=params.number("min_stitch_length_mm"),
                         minJumpLengthMm=params.number("min_jump_stitch_length_mm"),
-                        forceLockStitches=params.bool("force_lock_stitches",false))
+                        forceLockStitches=effective.bool("force_lock_stitches",false))
                 }
                 is InkFill -> error("Fill lettering is unavailable before S4")
             }

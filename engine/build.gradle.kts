@@ -35,3 +35,13 @@ tasks.register<Test>("inkFontNames") {
     systemProperty("myembro.nameOutput", providers.gradleProperty("nameOutput").orElse("/tmp/myembro-port-out/letter/jungmin").get())
     outputs.upToDateWhen { false }
 }
+
+// Four representative font-default cases, for numeric decomposition against existing official PES.
+tasks.register<Test>("fontDefaultsAudit") {
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("*FontDefaultsAuditTest") }
+    systemProperty("myembro.defaultsAudit", providers.gradleProperty("defaultsAudit").orElse("/tmp/myembro-port-out/letter/font-defaults").get())
+    outputs.upToDateWhen { false }
+}

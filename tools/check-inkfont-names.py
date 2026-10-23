@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Three S2/S3 names: existing independent gate + count/shape oracle comparison. No Ink/Stitch execution."""
+"""S2/S3 names: existing independent gate + count/shape oracle comparison. No Ink/Stitch execution."""
 import argparse,copy,hashlib,json,pathlib,subprocess,sys,xml.etree.ElementTree as ET
 p=argparse.ArgumentParser();p.add_argument('--root',default='/tmp/myembro-port-out/letter/jungmin');p.add_argument('--oracle',default='/tmp/myembro-inkstitch-oracle/out/letter-jungmin');a=p.parse_args()
 root=pathlib.Path(a.root);inp=root/'inputs';oracle=pathlib.Path(a.oracle)
-cases=json.loads((root/'cases.json').read_text())['cases'];assert len(cases)==3
+cases=json.loads((root/'cases.json').read_text())['cases'];assert 0<len(cases)<=3
 SVG='http://www.w3.org/2000/svg';INK='http://inkstitch.org/namespace';ISC='http://www.inkscape.org/namespaces/inkscape'
 font=ET.parse(inp/'ltr.svg').getroot();assert font.attrib['viewBox']=='0 0 100 100' and font.attrib['width']=='100'
 glyphs={e.get('{'+ISC+'}label')[11:]:e for e in font.iter() if e.get('{'+ISC+'}label','').startswith('GlyphLayer-')}
@@ -17,9 +17,13 @@ def needles(path):
 for c in cases:
  tree=ET.Element('{'+SVG+'}svg',{'width':'1000','height':'1000','viewBox':'0 0 1000 1000','version':'1.1'})
  md=ET.SubElement(tree,'{'+SVG+'}metadata');ET.SubElement(md,'{'+INK+'}inkstitch_svg_version').text='4'
+ boundary=True
  for i,place in enumerate(c['placements']):
   wrap=ET.SubElement(tree,'{'+SVG+'}g',{'transform':f"translate({place['dx_px']},{place['dy_px']}) scale({place['scale']})"})
   g=copy.deepcopy(glyphs[place['glyph']]);g.set('style',g.get('style','').replace('display:none','display:inline'))
+  for node in g.iter('{'+SVG+'}path'):
+   if boundary and c.get('force_boundary_locks'):node.set('{'+INK+'}force_lock_stitches','true')
+   boundary=node.get('{'+INK+'}trim_after','').lower() in ('true','1','yes') or node.get('{'+INK+'}stop_after','').lower() in ('true','1','yes')
   for el in g.iter():
    if 'id' in el.attrib:el.set('id',f"glyph{i}-"+el.get('id'))
   wrap.append(g)

@@ -448,3 +448,41 @@ python3 tools/check-inkfont-names.py
 이를 임의로 덮어쓰지 않았으며 게이트③도 변경하지 않았다. 20/30mm는 각각 폭124.6/186.8mm로
 SE400 후프도 초과한다. 기준 H 높이로 환산한 글꼴 기록 범위는 약11.09–27.73mm이므로
 30mm는 UI 허용 샘플이 아니라 범위 밖 진단 샘플이다. 공식 비교는 총괄이 지정한 codex 출력 대기다.
+
+### 시작/트림 경계 force와 lettering 기본값 대조
+
+총괄 지시에 따라 `InkStitchLettering.render`는 실제 시작·trim/stop·색 변경 뒤 첫 요소에만
+원본 `force_lock_stitches=true`를 적용한다. S1 구현이나 게이트 기준은 바꾸지 않는다.
+**중요한 원본 의미:** `lib/elements/element.py:lock_stitches`에서 force는 끝 잠금만 강제한다.
+`ties=3`이면 force=true여도 시작 잠금은 null이다. S1도 같은 규칙을 따른다.
+따라서 Aventurina J 첫 러닝의 시작 잠금 BLOCK은 force만으로 해소되지 않았다.
+첫 요소의 원본 `ties=0`도 함께 적용할지 총괄에게 확인 요청했으며 임의로 켜지 않았다.
+Jung Min 시험 범위는 이제 12mm 한 건, 20/30mm는 후프 범위 밖으로 제외한다.
+
+원본 `font.py:render_text`/`batch_lettering.py`의 trim 기본값은 0/off이며 글자마다 트림하는
+기본 옵션은 없다. 기본 ties=0/half_stitch, force=false, back_and_forth=true도 대조했다.
+공식 대비 부족했던 16–22땀은 이전 canvas native 평탄화/재잠금 경로와 새 S1 group 경로를
+구분해야 한다. 새 경로의 대표 AB 4/10/20mm는 각각 **42/42, 65/66, 89/91**땀이다.
+첫 차이는 인덱스0에서 각각2/5/5로 이동했다. 4mm Hausdorff0.1mm, 10/20mm1.2mm라
+완전 동등 통과로 보고하지 않는다. B의 정확히7.5mm 선분이 포트3분할/공식4분할되는 경계와
+원본 glyph SVG 직렬화 정밀도가 남아 있다. 이를 새 휴리스틱으로 보정하지 않았다.
+
+트림 차이(-2/-3/-3)는 lettering trim 옵션을 켜서 맞추면 안 된다. 원본 output.py는
+`full_jump=True`, PEC writer의 `pec_encode`는 첫 점프 이후 모든 JUMP에 trimjump 플래그를
+쓴다. 반면 우리 `io/PecWriter.kt`는 의도적으로 일반 JUMP를 TRIM으로 바꾸지 않는 계약이다.
+writer는 이 단위에서 수정하지 않았으며 담당자와 별도로 정규화 계약을 맞춰야 한다.
+
+초기 newline 공식 SVG는 실제 첫 줄만 들어 있었고, codex가 `font-newline-corrected`로 갱신했다.
+갱신 출력은 rtl variant 없는 fixture를 위해 reversible=false인 별도 font.json을 쓴다.
+대표 재현도 동일 메타데이터를 읽으며 이전 잘못된 한 줄 기준에 맞춰 포트의 두 번째 줄을 지우지 않는다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:fontDefaultsAudit
+python3 tools/breakdown-fonts-representative.py
+```
+
+이 스크립트는 codex `breakdown_fonts.py`와 같은 땀 수·트림·점프·첫 차이·bbox 중심 정규화
+Hausdorff 수치만 대표4건(최대10건 제한)에 다시 계산한다. 원본96건을 재생성하지 않는다.
+출력은 `/tmp/myembro-port-out/letter/font-defaults/breakdown/cases.{json,md}`다.
+공식 raw 기본값 비교에는 `forceBoundaryLocks=false`를 명시한다. 이는 승인된 제품 경계 force
+정책과 원본 기본값을 혼동하지 않기 위한 재현 인자이며 UI 설정을 추가하지 않는다.
