@@ -20,7 +20,7 @@ internal data class CurveSegment(
     val beta: Double = 0.5,
 )
 
-/** Pixel coordinates, y up. Intermediate stage 4, before upstream opticurve optimization. */
+/** Pixel coordinates, y up. Fitted or optimized curves; no SVG/PES conversion. */
 internal data class FittedCurve(val vertices: List<CurvePoint>, val segments: List<CurveSegment>)
 
 internal object CurveFitter {

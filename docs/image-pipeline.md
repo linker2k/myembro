@@ -176,3 +176,35 @@ S5 구현은 S2/S4 및 비교용 oracle 준비 뒤의 별도 작업이며, 현�
   `engine/src/test/resources/potrace/README.md` 참조. 일반 테스트에는 C 실행이 필요 없다.
 - 새 땀/PES/앱 진입점 없음. 독립 봉제 품질 게이트 대상도 아니며 통과를 주장하지 않는다.
 - 다음 20분 단위 제안: 원본 `opti_penalty`/`opticurve`의 첫 부분 포팅.
+
+
+## 3차 포팅 단위 — stage 5 곡선 최적화
+
+- `CurveOptimizer.kt`: 동일 고정 원본의 `opti_penalty`, `opticurve`, `tangent`,
+  곡선/내적/면적 계산을 이식했다. 원본의 볼록성·코너·179도 굽힘 제한, 접선 오차,
+  동적 계획법, beta 복원을 그대로 사용한다. 기본 `opttolerance=0.2px`이며 임의 보정은 없다.
+- 동일 사각형·계단·구멍 입력에 **원본 기본 `opticurve=1` 최종 경로** 비교를 추가했다.
+  실제 병합 검증을 위해 작은 10×10 둥근 마스크 한 개도 추가했다(원본/Kotlin 모두 7→3개).
+- 4개 대표 입력의 stage 4/5 테스트 8개: 경계·다각형·부호·면적·태그·곡선 개수는 동일,
+  보정/최적화 꼭짓점·제어점·alpha/alpha0/beta 절대오차 `1e-10` 이내 일치.
+  최적화가 원본 곡선을 바꾸지 않는 것도 코드로 assert한다.
+- 재현: `tools/potrace/generate-stage5-goldens.sh /path/to/potrace-1.16`;
+  출력 `/tmp/myembro-port-out/editor/potrace-stage5/`. 일반 Gradle 테스트는 커밋한 원본 골든을
+  읽어 자동 비교하므로 C 컴파일러·다운로드·외부 프로세스가 필요 없다.
+- 원본 전체 경로 계층/정렬, SVG 좌표 변환, 앱/자수 생성 연결은 여전히 별도 작업이다.
+  4개 사례 비교를 모든 입력의 동등성이나 실제 봉제 품질 통과로 확대하지 않는다.
+- 자동 검증 정책에 따라 후속 자수 생성 통합은 `SewoutCheck`의 실제 봉제 실패 조건과
+  공식 땀 수/Hausdorff 비교를 코드로 검증해야 한다. 현재 출력은 곡선이므로 새 PES는 없다.
+
+
+### 3차 단위 자동 검증 결과와 공통 check 차단
+
+- 원본 비교 8개 포함 엔진 **301개**, 앱 debug/release 각 **172개** 테스트 실패 0.
+- `./gradlew check` 실행: `:engine:check` 및 앱 단위 테스트는 통과했으나
+  `:app:lintDebug`의 기존 오류 14건으로 실패했다. 오류가 난 파일은 `origin/main`과
+  동일하며 이번 포팅에서 수정하지 않았다. lint baseline/억제는 추가하지 않았다.
+- 14건: 테마 리소스 minSdk26/API27 속성 6건, 기존 produceState lint 7건,
+  `app_name` 한국어 번역 1건. 상세 보고서는 `app/build/reports/lint-results-debug.txt`.
+- 현재 브랜치 CI는 main push/PR만 트리거하고 JVM 테스트와 APK 빌드를 실행한다.
+  전체 브랜치 push + 공통 정책 check 전환은 총괄의 CI/앱 정리와 함께 반영해야 한다.
+  로컬 단위 테스트 통과를 CI 녹색 또는 병합 승인으로 표현하지 않는다.

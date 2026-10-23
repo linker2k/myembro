@@ -38,3 +38,32 @@ This is a reproducible source comparison, not an independent quality decision.
 - `staircase.stage4.json`: `e72528817311f39516a93fa85fe868ad551c244a134c7b25c0256e0ce9110075`
 - `ring.pbm`: `84e0197c452eb3e923dbf22b1d1bbfcc3c7a8b621f3c70bfb1849ab877e0c634`
 - `ring.stage4.json`: `18cc67cdef80e5badd835dafdd56bb129f8e9314cdd2f6f2972d7b3273f57224`
+
+
+## Stage 5 optimization (same upstream source)
+
+```sh
+tools/potrace/generate-stage5-goldens.sh /path/to/potrace-1.16
+```
+
+Outputs: `/tmp/myembro-port-out/editor/potrace-stage5/`.
+These goldens use **all upstream defaults**, including `opticurve=1`,
+`opttolerance=0.2` pixels. The same rectangle, staircase and ring are compared
+through the final optimized path. A fourth tiny 10×10 rounded mask exercises
+actual merging: **7 smoothed segments → 3 optimized segments**, as upstream.
+The source curve is also asserted unchanged by optimization. Eight stage 4/5
+comparison tests cover only four representative inputs, within the ≤10 policy.
+This is not a stitch/PES generation test or a claim of sew-out safety.
+
+The shared C caller emits `privpath.fcurve`: the selected stage 4 curve or stage 5
+optimized curve. Boundary/polygon data still refers to the same source path.
+Stage 4 goldens for the original three inputs remain unchanged.
+
+### Additional fixture SHA-256
+
+- `rectangle.stage5.json`: `a797768cc5ccd8b1b7d838db16b5095068d760b65a5787e33d328151a0e18d64`
+- `staircase.stage5.json`: `5ca31105cd5bab4094cbaba7c7b5ba5eb4b8acafcf90a436e1a208b3a2de186d`
+- `ring.stage5.json`: `162f5050af4025777ef5a5bb20527edccb29685c49d362453d5b2fd5ccec0168`
+- `rounded.pbm`: `4faa759545a0f1d0a41c58211e4d094ef7fd2dd3a4625e484fb1c444d8ae97ec`
+- `rounded.stage4.json`: `cc2214fac8f9c9718d1bafd877423bcf7578178f86a8f41cd3d498a7c685290a`
+- `rounded.stage5.json`: `65ef1f2f0bb2a66b28c375660e7b14bf3afec8f833399a88252c630c5fe88586`

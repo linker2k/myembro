@@ -9,7 +9,9 @@
 #include "bitmap.h"
 
 int main(int argc, char **argv) {
-  if (argc != 2) return 2;
+  if (argc != 2 && argc != 3) return 2;
+  int optimized = argc == 3 ? atoi(argv[2]) : 0;
+  if (optimized != 0 && optimized != 1) return 2;
   FILE *input = fopen(argv[1], "r");
   int w, h, value;
   if (!input || fscanf(input, "P1 %d %d", &w, &h) != 2 || w <= 0 || h <= 0) return 3;
@@ -23,15 +25,15 @@ int main(int argc, char **argv) {
   fclose(input);
   potrace_param_t *param = potrace_param_default();
   if (!param) return 6;
-  /* Compare intermediate stages 1–4 only, not the default optimized final curve. */
-  param->opticurve = 0;
+  /* Stage 4 disables opticurve; stage 5 retains the upstream default tolerance 0.2. */
+  param->opticurve = optimized;
   potrace_state_t *state = potrace_trace(param, &bm);
   if (!state || state->status != POTRACE_STATUS_OK) return 7;
-  printf("{\"upstream\":\"886392d351417d6753aff61de08e294d1506e502\",\"opticurve\":false,\"paths\":[");
+  printf("{\"upstream\":\"886392d351417d6753aff61de08e294d1506e502\",\"opticurve\":%s,\"paths\":[", optimized ? "true" : "false");
   int first = 1;
   for (potrace_path_t *path = state->plist; path; path = path->next) {
     potrace_privpath_t *p = path->priv;
-    privcurve_t *curve = &p->curve;
+    privcurve_t *curve = p->fcurve;
     printf("%s{\"positive\":%s,\"area\":%d,\"boundary\":[", first ? "" : ",", path->sign == '+' ? "true" : "false", path->area);
     first = 0;
     for (int i = 0; i < p->len; i++) printf("%s[%ld,%ld]", i ? "," : "", p->pt[i].x, p->pt[i].y);
