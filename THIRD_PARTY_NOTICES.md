@@ -32,7 +32,9 @@ derived from the following projects, whose notices are reproduced as their licen
   CC0/public domain, GPL-3.0) are listed in `docs/inkstitch-fonts.md`.
 - `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
   The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
-  the license beside it. No font data is in this repository or the APK.
+  the license beside it. No font file is in this repository or the APK; `assets/fonts/previews/` holds one
+  small picture per font of its stitches (the sample "Abc"), rendered from that font under its own
+  license (OFL-1.1, CC BY / BY-SA, GPL-3.0 or public domain, as listed in the catalog with its authors).
 - The Ink/Stitch font reader, lettering layout, SVG import and clone code under `engine/.../inkstitch/`
   (`svg/`, `elements/InkNodes.kt`, `lettering/`) are ported from Ink/Stitch
   (https://github.com/inkstitch/inkstitch, GPL-3.0-or-later, Copyright (c) Ink/Stitch contributors) at

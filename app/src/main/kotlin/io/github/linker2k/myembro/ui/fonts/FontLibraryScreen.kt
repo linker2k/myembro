@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.fonts
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.Image
+import android.graphics.BitmapFactory
 import android.app.Application
 import android.graphics.Typeface
 import android.net.Uri
@@ -37,8 +43,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -97,9 +101,6 @@ import kotlinx.coroutines.withContext
 
 enum class FontFilter { KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
 
-/** Library tabs: pre-digitized embroidery fonts first (US-5), then fonts the app digitizes. */
-enum class FontTab { EMBROIDERY, GENERAL }
-
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
     data class Outline(val typeface: Typeface) : FontPreview
@@ -120,7 +121,6 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     var filters by mutableStateOf<Set<FontFilter>>(emptySet())
         private set
-    var tab by mutableStateOf(FontTab.EMBROIDERY)
     val installed = mutableStateMapOf<String, Boolean>()
     /** Download progress 0..1 for fonts currently downloading. */
     val progress = mutableStateMapOf<String, Float>()
@@ -149,7 +149,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val visibleUserFonts: List<LetterFont>
-        get() = if (tab == FontTab.EMBROIDERY) emptyList() else userFonts.filter { f ->
+        get() = userFonts.filter { f ->
             val reasons = f.quality?.reasons.orEmpty()
             (FontFilter.KOREAN !in filters || QualityReasons.MISSING_HANGUL !in reasons) &&
                 (FontFilter.LATIN !in filters || QualityReasons.MISSING_LATIN !in reasons) &&
@@ -209,7 +209,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val visible: List<CatalogFont>
-        get() = if (tab == FontTab.EMBROIDERY) fonts.filter { it.predigitized } else fonts.filter { f ->
+        get() = fonts.filter { f ->
             !f.predigitized &&
             (FontFilter.KOREAN !in filters || f.korean) &&
                 (FontFilter.LATIN !in filters || f.latin) &&
@@ -217,6 +217,10 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
                 (FontFilter.SINGLE_LINE !in filters || f.kind == CatalogFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == CatalogFont.Kind.OUTLINE_TTF)
         }
+
+    /** US-3: verified embroidery fonts lead the list; they are Latin-only, so script filters other than Latin hide them. */
+    val embroidery: List<CatalogFont>
+        get() = if ((filters - FontFilter.LATIN).isEmpty()) fonts.filter { it.predigitized } else emptyList()
 
     fun download(font: CatalogFont, checksumMessage: String, failedMessage: (String) -> String) {
         if (font.id in progress) return
@@ -279,7 +283,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = MyembroTheme {
+fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit, text: String = "") = MyembroTheme {
     val vm: FontLibraryViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
     var licenseFor by remember { mutableStateOf<CatalogFont?>(null) }
@@ -328,19 +332,8 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            TabRow(selectedTabIndex = vm.tab.ordinal, containerColor = MaterialTheme.colorScheme.background) {
-                Tab(selected = vm.tab == FontTab.EMBROIDERY, onClick = { vm.tab = FontTab.EMBROIDERY },
-                    text = { Text(stringResource(R.string.fonts_tab_embroidery)) })
-                Tab(selected = vm.tab == FontTab.GENERAL, onClick = { vm.tab = FontTab.GENERAL },
-                    text = { Text(stringResource(R.string.fonts_tab_general)) })
-            }
-            if (vm.tab == FontTab.EMBROIDERY) Text(
-                stringResource(R.string.fonts_embroidery_note),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            ) else Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FontChip(stringResource(R.string.fonts_filter_all), vm.filters.isEmpty()) { vm.clearFilters() }
@@ -365,7 +358,8 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
             }
             val list = vm.visible
             val userList = vm.visibleUserFonts
-            if (list.isEmpty() && userList.isEmpty()) {
+            val embroidery = vm.embroidery
+            if (list.isEmpty() && userList.isEmpty() && embroidery.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.fonts_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -374,6 +368,22 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (embroidery.isNotEmpty()) {
+                        item(key = "embroidery-header") { SectionTitle(stringResource(R.string.fonts_verified_embroidery)) }
+                        items(embroidery, key = { it.id }) { font ->
+                            EmbroideryFontCard(
+                                font = font,
+                                usable = font.covers(text),
+                                installed = vm.installed[font.id] == true,
+                                progress = vm.progress[font.id],
+                                onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
+                                onDelete = { vm.delete(font) },
+                                onLicense = { licenseFor = font },
+                                onUse = { onPick(font.id) },
+                            )
+                        }
+                        if (userList.isEmpty() && list.isNotEmpty()) item(key = "other-header") { SectionTitle(stringResource(R.string.fonts_catalog)) }
+                    }
                     if (userList.isNotEmpty()) {
                         item(key = "user-header") { SectionTitle(stringResource(R.string.fonts_my_fonts)) }
                         items(userList, key = { it.id }) { font ->
@@ -595,8 +605,7 @@ private fun FontCard(
                 Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
             }
         }
-        if (font.predigitized) PredigitizedFacts(font)
-        else quality?.let {
+        quality?.let {
             minHeightText(it.recommendedMinHeightMm)?.let { line -> Text(line, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
         }
         if (progress != null) {
@@ -633,19 +642,51 @@ private fun FontCard(
     }
 }
 
-/** Tested height range and character coverage of a pre-digitized font (US-5). */
+/**
+ * US-3 card: the font's name and a picture of its real stitches (bundled, so it shows before download).
+ * A font without every character of the current text is dimmed and cannot be used.
+ */
 @Composable
-private fun PredigitizedFacts(font: CatalogFont) {
-    val min = font.recommendedMinHeightMm
-    val max = font.recommendedMaxHeightMm
-    if (min != null && max != null) Text(
-        stringResource(R.string.fonts_tested_range, mm(min), mm(max)),
-        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
-    )
-    val coverage = font.coverage ?: return
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        NoteBadge(stringResource(if (coverage.hangul) R.string.fonts_hangul_yes else R.string.fonts_hangul_no))
-        if (coverage.capitalsOnly) NoteBadge(stringResource(R.string.fonts_capitals_only))
-        if (!coverage.digits) NoteBadge(stringResource(R.string.fonts_no_digits))
+private fun EmbroideryFontCard(
+    font: CatalogFont,
+    usable: Boolean,
+    installed: Boolean,
+    progress: Float?,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+    onLicense: () -> Unit,
+    onUse: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val context = LocalContext.current
+    val image = remember(font.id) {
+        runCatching { context.assets.open("fonts/previews/${font.id}.png").use(BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
+    }
+    Column(
+        Modifier.fillMaxWidth().alpha(if (usable) 1f else 0.38f)
+            .background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Stitches are drawn in thread colours, so the picture sits on a light fabric tone in both themes.
+        Box(Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFF7F4EE), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.CenterStart) {
+            image?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(), alignment = Alignment.CenterStart) }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = onLicense) { Text(stringResource(R.string.fonts_license), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            when {
+                progress != null -> Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                installed -> {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Button(onClick = onUse, enabled = usable) { Text(stringResource(R.string.fonts_use)) }
+                }
+                else -> OutlinedButton(onClick = onDownload, enabled = usable) {
+                    Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
     }
 }

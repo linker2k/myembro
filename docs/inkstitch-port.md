@@ -139,13 +139,15 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
 
 원본 고정은 위 공통 기준 **v3.3.0 `b0edd96`** 입니다. 이전에 쓰던 `16e1928`과 비교해 이 담당 범위의 파일(lib/lettering, lib/svg, lib/elements/clone.py, utils/nodes.py)은 같고, satin_column만 v3.3.0의 단일 파일로 출처를 바꿨습니다.
 
-| # | 단계 | 기능 | 원본 | 상태 |
-|---|---|---|---|---|
-| 0 | S3 | Ink/Stitch 폰트: 파서, 카탈로그, 다운로드, 레터링 UI | lib/lettering/{font,font_variant,glyph}.py, lib/svg/guides.py | 완료. US-5(자수 전용 첫 탭, 권장 높이, 한글·대문자 표시, 'TTF로 대체' 칩) 반영 |
-| 1 | S5 | 일반 SVG 가져오기: inkstitch:* 속성, 명령(trim/stop/ignore_object/ignore_layer), 그룹·transform·스타일 상속, viewBox, 도형 | lib/elements/utils/nodes.py, element.py, commands.py, marker.py, lib/svg/{path,units}.py, lib/extensions/output.py | 완료. 앱 가져오기에서 .svg → PES 변환, 제외 요소·자동 배정 안내(US-7) |
-| 2 | S5 | Cross stitch | lib/elements/fill_stitch.py(cross_stitch), lib/stitches/cross_stitch.py | 예정 |
-| 3 | S5 | Clone | lib/elements/clone.py | 완료. 각도 회전·뒤집기·사용자 각도·중첩 clone, 순환·누락 거부 |
-| 4 | S3 | 레터링 동등화 | lib/lettering/font.py | back_and_forth, 줄별 bbox 정렬, NFC·줄 앞뒤 공백 제거, _set_style 완료. 남음: auto_satin, color_sort, trim_option, block 정렬, 경로 따라 배치, 글꼴 샘플 |
+2026-10-24 개정 지시(docs/ui-stories.md "실패 없는 디자인")에 따라 이번 버전 범위는 **S3 자수 글꼴**뿐입니다.
+SVG 가져오기, 복제, 십자수는 다음 버전으로 미뤘고, 진행분은 `claude/svg-import-archive` 브랜치에 보관합니다.
+엔진의 SVG 트리와 요소 분류(nodes.py·clone.py 포트)는 글꼴 읽기에 쓰므로 남깁니다(글리프 안의 clone 포함).
+
+| 기능 | 원본 | 상태 |
+|---|---|---|
+| Ink/Stitch 자수 글꼴 읽기·배치 | lib/lettering/{font,font_variant,glyph}.py, lib/svg/{guides,path,units}.py, lib/elements/utils/nodes.py, clone.py | 완료. back_and_forth, 줄별 bbox 정렬, _set_style 포함 |
+| US-3 화면 | – | 글꼴 목록 맨 앞 "검증된 자수 글꼴"(이름 + 실제 땀 미리보기), 입력 글자가 없는 글꼴은 흐리게·선택 불가, 높이 슬라이더는 글꼴 기록 범위(min_scale–max_scale)로 제한 |
+| 레터링 나머지(auto_satin, color_sort, trim 옵션, block 정렬, 경로 배치, 글꼴 샘플) | lib/lettering/font.py 외 | 다음 버전. auto_satin은 글꼴 기본값이라 S3 품질 판정 후 필요하면 포팅 |
 
 ### 땀 생성 연결
 
@@ -158,13 +160,11 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
 ### 재현 커맨드 (embro-codex 비교용)
 
 ```
-tools/inkstitch_port_out.sh            # fonts, svg_import, clone
-FEATURES=clone tools/inkstitch_port_out.sh
+tools/inkstitch_port_out.sh            # fonts
 ```
 
 - 입력: `/tmp/myembro-quality-gate/matrix-inkstitch.json`의 해당 기능 케이스(입력 sha256 확인). `.xz` 폰트 픽스처는 `xz -dc`로 풀어 데이터로만 씁니다.
 - 출력: `/tmp/myembro-port-out/claude-canvas/<feature>/<output_basename>`, 목록은 `results.json`(matrix_sha256, commit, 케이스별 status·path·sha256·code). compare_matrix.py `--ports`가 읽는 형식입니다.
-- 음성 케이스는 `REJECTED`와 거부 코드로 남깁니다(INVALID_INPUT, UNSUPPORTED_EXTERNAL_RESOURCE, CYCLIC_REFERENCE, MISSING_REFERENCE).
 
 ### 차이점 (원본과 다르게 만든 곳)
 
@@ -178,6 +178,7 @@ FEATURES=clone tools/inkstitch_port_out.sh
 | 레거시 콤보 값 "0" | update_inkstitch_document가 이름으로 변환 | 0이면 기본 방식 | 문서 업데이트기는 포팅하지 않음 |
 | 레터링 높이 | 글꼴 배율(%) | 'H'(없으면 가장 큰 글리프) 잉크 높이(mm) | 앱의 모든 글꼴이 같은 높이 기준 |
 | 자간·줄 간격 | letter_spacing·line_height(mm, 배율 전) | 실제 mm(배율 후). 줄 간격 미지정이면 leading | 기존 UI와 프로젝트 형식 |
+| 없는 글자 | default_glyph로 대체하거나 건너뜀 | 목록에서 그 글꼴을 고를 수 없게 함(US-3) | 실패 없는 디자인 |
 | 시작·끝 위치 명령, satin_cut_point | 땀 시작·끝 위치에 반영 | 무시하고 목록에 표시 | 각 땀 포트의 시작/끝점 인자가 들어오면 연결 |
 | 단일 경로 새틴 | convert_path_to_satin | 임시로 엔진 `SatinColumn.rails` | 새틴 담당 포트 대기 |
 | 잠금, collapse, 최소 땀 | stitch_plan 후처리 | 임시 브리지(잠금 없음, 메타데이터의 collapse_len·min_stitch_len 적용) | ties·후처리는 embro-worker |
@@ -186,7 +187,7 @@ FEATURES=clone tools/inkstitch_port_out.sh
 ### 검증 기록
 
 - 원본 `tests/test_clone.py`의 각도·숨김·스타일·변환·중첩 clone 사례를 같은 입력과 기대값으로 `elements/CloneTest.kt`에 옮겼습니다(18개 통과).
-- 매트릭스 재현(2026-10-24, 커밋은 results.json): fonts 96, svg_import 170, clone 172 케이스 모두 보고. 생성 434, 지정 코드로 거부 4.
+- 매트릭스 재현(2026-10-24, 커밋은 results.json): fonts 96건 생성. svg_import·clone 결과(434 생성, 4 거부)는 보관 브랜치 커밋 `e7cbcf0` 기준입니다.
 - 자체 간이 대조(판정 아님): svg_import·clone은 bbox가 원본과 0.2mm 이내인 경우가 각각 161/168, 149/170으로 가져오기 기하는 맞습니다. 땀 수와 좌표 차이는 임시 생성기와 잠금 부재 때문입니다. 폰트 1줄 케이스는 bbox와 러닝 땀 길이 분포가 같고, 차이는 잠금 땀입니다.
 - oracle의 `fonts--*--AB-newline-BA` 배치 SVG에는 첫 줄 "AB"만 들어 있습니다(글리프 2개). 2줄 배치를 비교할 수 없어 총괄 보고에 적었습니다(embro-codex 확인 필요).
 - 0번 폰트의 이전 게이트 기록: 4개 글꼴 × 15·30mm × satin, 0/8 통과. 주원인은 잠금 검사였고, 게이트는 재보정 중입니다.

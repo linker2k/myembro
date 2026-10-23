@@ -67,7 +67,6 @@
     <string name="lettering_border_none">없음</string>
     <string name="lettering_satin_width">새틴 폭</string>
     <string name="lettering_satin_hint">획 방향을 따라 채워요. 넓은 획은 엇갈린 분할 새틴을 사용해요.</string>
-    <string name="lettering_predigitized_hint">Ink/Stitch에서 자수용으로 디지타이징된 글꼴이에요. 새틴·채움·밑실은 글꼴 설정을 그대로 써요. 시험된 높이: %1$s–%2$s mm</string>
     <string name="lettering_satin_fallback">일부 복잡한 윤곽은 태타미로 보완했어요.</string>
     <string name="lettering_fill_advanced">밀도·언더레이·테두리 설정</string>
     <string name="lettering_auto_fill">획 따라 자동</string>
@@ -81,5 +80,4 @@
     <string name="lettering_fine_thread_hint">바늘 65/9 권장 · 밑실은 기존 설정 유지</string>
     <string name="lettering_weight_min_feature">권장 최소 획 폭·간격: %1$.2fmm(추정)</string>
     <string name="lettering_missing_glyphs">이 글꼴에 없는 글자(빠짐): %1$s</string>
-    <string name="lettering_use_ttf_instead">TTF 글꼴(%1$s)로 대체</string>
 </resources>

@@ -50,12 +50,27 @@ data class CatalogFont(
     val recommendedMaxHeightMm: Double? = null,
     /** Ink/Stitch fonts whose font.json asks for 60 wt thread and a 60 needle. */
     val thinThreadRequired: Boolean = false,
-    /** Ink/Stitch fonts: which characters the glyph set covers; null when unknown. */
-    val coverage: GlyphCoverage? = null,
+    /** Ink/Stitch fonts: glyph names (NFC) of the font; null when unknown. */
+    val glyphs: Set<String>? = null,
+    /** Ink/Stitch fonts: font.json's forced case ("upper" sews every letter as a capital). */
+    val letterCase: String = "",
 ) {
-    /** [letterCase] is font.json's forced case ("upper" sews every letter as a capital). */
-    data class GlyphCoverage(val lowercase: Boolean, val digits: Boolean, val hangul: Boolean, val letterCase: String = "") {
-        val capitalsOnly: Boolean get() = !lowercase || letterCase == "upper"
+    /**
+     * Whether every non-space character of [text] has a glyph, after the font's forced case. Glyph
+     * names may be ligatures; a single character is enough for each one here. Unknown sets cover all.
+     */
+    fun covers(text: String): Boolean {
+        val names = glyphs ?: return true
+        val cased = when (letterCase) { "upper" -> text.uppercase(); "lower" -> text.lowercase(); else -> text }
+        val normalized = java.text.Normalizer.normalize(cased, java.text.Normalizer.Form.NFC)
+        var i = 0
+        while (i < normalized.length) {
+            val cp = normalized.codePointAt(i)
+            val c = String(Character.toChars(cp))
+            if (!Character.isWhitespace(cp) && c !in names) return false
+            i += Character.charCount(cp)
+        }
+        return true
     }
 
     enum class Kind(val json: String, val extension: String) {

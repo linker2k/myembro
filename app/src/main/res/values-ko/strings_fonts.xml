@@ -50,12 +50,5 @@
     <string name="fonts_reason_missing_latin">이 글꼴에는 영문 대문자가 없어요.</string>
     <string name="fonts_analyzing">분석 중…</string>
     <string name="fonts_size_kb">%1$dKB</string>
-    <string name="fonts_tab_embroidery">자수 전용</string>
-    <string name="fonts_tab_general">일반 글꼴</string>
-    <string name="fonts_embroidery_note">Ink/Stitch에서 사람이 직접 디지타이징한 글꼴입니다. 새틴·채우기·땀 방향이 글꼴에 들어 있습니다.</string>
-    <string name="fonts_tested_range">권장 높이 %1$s–%2$s mm</string>
-    <string name="fonts_hangul_yes">한글 지원</string>
-    <string name="fonts_hangul_no">한글 미지원</string>
-    <string name="fonts_capitals_only">대문자만</string>
-    <string name="fonts_no_digits">숫자 없음</string>
+    <string name="fonts_verified_embroidery">검증된 자수 글꼴</string>
 </resources>

@@ -50,12 +50,5 @@
     <string name="fonts_reason_missing_latin">No Latin capitals in this font.</string>
     <string name="fonts_analyzing">Analyzing…</string>
     <string name="fonts_size_kb">%1$d KB</string>
-    <string name="fonts_tab_embroidery">Embroidery fonts</string>
-    <string name="fonts_tab_general">All fonts</string>
-    <string name="fonts_embroidery_note">Digitized by hand in Ink/Stitch: satin, fill and stitch direction come with the font.</string>
-    <string name="fonts_tested_range">Tested heights %1$s–%2$s mm</string>
-    <string name="fonts_hangul_yes">Hangul</string>
-    <string name="fonts_hangul_no">No Hangul</string>
-    <string name="fonts_capitals_only">Capitals only</string>
-    <string name="fonts_no_digits">No digits</string>
+    <string name="fonts_verified_embroidery">Verified embroidery fonts</string>
 </resources>

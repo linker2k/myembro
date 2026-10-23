@@ -70,7 +70,8 @@ import kotlinx.coroutines.withContext
 /**
  * Standalone lettering route. The host adds [onAdd]'s object to its editor/history and
  * closes the route. [backgroundPattern] can show the current project in the hoop.
- * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only.
+ * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only and gets
+ * the current text, so the library can dim embroidery fonts that lack its characters.
  * Download/import UI stays with the host; every host must provide its font-library route.
  * A supplied [initialFontId] takes precedence over the object font after a library pick.
  * [initialObject] reopens an existing text object with its settings; the host keeps its id
@@ -80,7 +81,7 @@ import kotlinx.coroutines.withContext
 fun LetteringScreen(
     onBack: () -> Unit,
     onAdd: (TextObject) -> Unit,
-    onOpenFonts: () -> Unit,
+    onOpenFonts: (text: String) -> Unit,
     modifier: Modifier = Modifier,
     hoop: HoopSpec = HoopSpec.H100,
     initialText: String = "봄날",
@@ -99,7 +100,7 @@ fun LetteringScreen(
 private fun LetteringContent(
     onBack: () -> Unit, onAdd: (TextObject) -> Unit, modifier: Modifier,
     hoop: HoopSpec, initialText: String, initialFontId: String,
-    backgroundPattern: EmbPattern?, onOpenFonts: () -> Unit, initialObject: TextObject?,
+    backgroundPattern: EmbPattern?, onOpenFonts: (text: String) -> Unit, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -275,7 +276,7 @@ private fun LetteringContent(
             LetteringCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel(stringResource(R.string.lettering_fonts), Modifier.weight(1f))
-                    TextButton(onClick = onOpenFonts,
+                    TextButton(onClick = { onOpenFonts(text) },
                         contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(stringResource(R.string.lettering_all_fonts), style = MaterialTheme.typography.labelMedium)
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
@@ -295,17 +296,9 @@ private fun LetteringContent(
                     active?.let { FontQualityBadge(it.quality) }
                 }
             }
-            result?.takeIf { it.textObject.fontId == fontId && it.predigitized }?.let { active -> LetteringCard {
-                val range = active.testedRangeMm
-                Text(stringResource(R.string.lettering_predigitized_hint, "%.1f".format(range?.start ?: 0.0), "%.1f".format(range?.endInclusive ?: 0.0)),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                if (active.missing.isNotEmpty()) {
-                    // US-5: an embroidery font without these glyphs (e.g. Hangul) skips them; offer a TTF instead.
-                    Text(stringResource(R.string.lettering_missing_glyphs, active.missing),
-                        style = MaterialTheme.typography.bodySmall, color = colors.error)
-                    AssistChip(onClick = { fontId = bundledLetteringFonts.first().id },
-                        label = { Text(stringResource(R.string.lettering_use_ttf_instead, bundledLetteringFonts.first().name)) })
-                }
+            result?.takeIf { it.textObject.fontId == fontId && it.predigitized && it.missing.isNotEmpty() }?.let { active -> LetteringCard {
+                Text(stringResource(R.string.lettering_missing_glyphs, active.missing),
+                    style = MaterialTheme.typography.bodySmall, color = colors.error)
             } }
             result?.takeIf { it.textObject.fontId == fontId && !it.predigitized }?.let { active -> LetteringCard {
                 val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING
@@ -335,8 +328,11 @@ private fun LetteringContent(
             } }
             LetteringCard {
                 // Some embroidery fonts are tested only above 50 mm.
-                val maxHeight = result?.testedRangeMm?.endInclusive?.toFloat()?.coerceIn(50f, 150f) ?: 50f
-                SettingSlider(stringResource(R.string.lettering_height), height, 5f..maxHeight, 1f, "mm", showInches = true) { height = it }
+                // US-3: an embroidery font moves only within the heights its digitizer recorded (font.json scales).
+                val tested = result?.takeIf { it.textObject.fontId == fontId }?.testedRangeMm
+                val range = tested?.let { it.start.toFloat()..it.endInclusive.toFloat() } ?: 5f..50f
+                LaunchedEffect(range) { if (height !in range) height = height.coerceIn(range) }
+                SettingSlider(stringResource(R.string.lettering_height), height.coerceIn(range), range, if (tested != null) 0.5f else 1f, "mm", showInches = true) { height = it }
                 SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
                 SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -616,8 +612,8 @@ private fun decimal(value: Double): String = String.format(Locale.getDefault(), 
 
 @Preview(showBackground = true, widthDp = 411, heightDp = 1000)
 @Composable
-private fun LetteringLightPreview() { MyembroTheme(darkTheme = false) { LetteringScreen({}, {}, onOpenFonts = {}) } }
+private fun LetteringLightPreview() { MyembroTheme(darkTheme = false) { LetteringScreen({}, {}, onOpenFonts = { _ -> }) } }
 
 @Preview(showBackground = true, widthDp = 411, heightDp = 1000)
 @Composable
-private fun LetteringDarkPreview() { MyembroTheme(darkTheme = true) { LetteringScreen({}, {}, onOpenFonts = {}) } }
+private fun LetteringDarkPreview() { MyembroTheme(darkTheme = true) { LetteringScreen({}, {}, onOpenFonts = { _ -> }) } }

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Reproduces claude-canvas's port PES for the fixed Ink/Stitch matrix (fonts, svg_import, clone).
+# Reproduces claude-canvas's port PES for the fixed Ink/Stitch matrix (fonts; SVG import and clone
+# are deferred and kept on claude/svg-import-archive).
 # Reads the matrix inputs as data only; nothing from Ink/Stitch is run or installed.
 #
-#   tools/inkstitch_port_out.sh            # all three features
-#   FEATURES=clone tools/inkstitch_port_out.sh
+#   tools/inkstitch_port_out.sh
 #
 # Output: $OUT/<feature>/<case output_basename>.pes and $OUT/results.json (matrix hash, commit, every case once).
 set -euo pipefail
 
 MATRIX=${MATRIX:-/tmp/myembro-quality-gate/matrix-inkstitch.json}
 OUT=${OUT:-/tmp/myembro-port-out/claude-canvas}
-FEATURES=${FEATURES:-fonts,svg_import,clone}
+FEATURES=${FEATURES:-fonts}
 FONTS=${FONTS:-/tmp/myembro-quality-gate/inkstitch/inputs/upstream-fonts}
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 

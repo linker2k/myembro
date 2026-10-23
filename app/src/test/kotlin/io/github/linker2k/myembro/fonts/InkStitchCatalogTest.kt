@@ -31,11 +31,17 @@ class InkStitchCatalogTest {
         }
     }
 
-    @Test fun everyFontStatesItsCharacterCoverage() {
-        assertTrue(fonts.all { it.coverage != null })
-        // No Ink/Stitch font has Hangul (docs/inkstitch-fonts.md); forced capitals show as capitals only.
-        assertTrue(fonts.none { it.coverage!!.hangul })
-        assertTrue(fonts.filter { it.coverage!!.letterCase == "upper" }.all { it.coverage!!.capitalsOnly })
-        assertTrue(fonts.count { !it.coverage!!.capitalsOnly } > 40)
+    @Test fun glyphSetsDecideWhichTextAFontCanSew() {
+        assertTrue(fonts.all { !it.glyphs.isNullOrEmpty() })
+        // No Ink/Stitch font has Hangul (docs/inkstitch-fonts.md).
+        assertTrue(fonts.none { it.covers("자수") })
+        assertTrue(fonts.count { it.covers("Jung Min") } > 40)
+        // Forced capitals: lowercase text is sewn in capitals, so it fits.
+        val upper = fonts.first { it.letterCase == "upper" }
+        assertTrue(upper.covers("abc") && upper.glyphs!!.none { it == "a" })
+    }
+
+    @Test fun everyFontHasABundledStitchPreview() {
+        fonts.forEach { assertTrue(File("src/main/assets/fonts/previews/${it.id}.png").isFile, it.id) }
     }
 }

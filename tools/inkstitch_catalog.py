@@ -10,7 +10,7 @@ says which fonts this engine sews completely and gives the reference ('H') heigh
 The license class of every folder is decided here by hand from its LICENSE file and font.json;
 the quoted evidence is written to [licenses.md] so the table can be re-checked.
 """
-import csv, hashlib, json, math, pathlib, re, subprocess, sys, urllib.parse
+import csv, hashlib, html, json, math, pathlib, re, subprocess, sys, unicodedata, urllib.parse
 
 REPO = "https://raw.githubusercontent.com/inkstitch/embroidery-fonts"
 
@@ -54,6 +54,12 @@ def evidence(lic_text):
     keys = re.compile(r"licen[cs]|public domain|cc0|creative commons|commercial|permission|accepted|allowed|authori[sz]e", re.I)
     picked = [l for l in lines[:40] if keys.search(l)][:2] or lines[:1]
     return " / ".join(p[:160] for p in picked).replace("|", "\\|")
+
+
+def glyph_names(svg):
+    text = svg.read_text(errors="replace")
+    names = {unicodedata.normalize("NFC", html.unescape(m)) for m in re.findall(r'inkscape:label="GlyphLayer-([^"]*)"', text)}
+    return sorted(n for n in names if n)
 
 
 def sha(path):
@@ -104,11 +110,9 @@ def main():
             # Below the app's 6 mm Latin floor only the digitizer's own testing vouches for the font.
             "qualityGrade": "GOOD" if ref * float(r["minScale"]) >= 6.0 else "CAUTION",
             "thinThreadRequired": bool(re.search(r"thin thread|\(60\)|60 ?wt", meta.get("description", ""), re.I)),
-            # Character coverage for the library card: forced case, lowercase/digit glyphs, Hangul.
+            # Glyph names (NFC) and forced case, so the app can tell before download whether a text fits.
             "letterCase": meta.get("letter_case") or "",
-            "lowercase": int(r["lower"]) >= 20,
-            "digits": int(r["digits"]) >= 10,
-            "hangul": int(r["hangul"]) > 0,
+            "glyphs": glyph_names(svg),
         })
     out.write_text(json.dumps({
         "version": 1,

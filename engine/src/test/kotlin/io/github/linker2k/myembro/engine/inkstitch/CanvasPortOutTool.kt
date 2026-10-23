@@ -4,7 +4,6 @@ package io.github.linker2k.myembro.engine.inkstitch
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFont
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontInfo
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchLettering
-import io.github.linker2k.myembro.engine.inkstitch.svg.InkStitchSvgImport
 import io.github.linker2k.myembro.engine.inkstitch.svg.SvgImportException
 import io.github.linker2k.myembro.engine.io.PesWriter
 import java.io.File
@@ -22,7 +21,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
- * Opt-in reproduction of claude-canvas's port output for the fixed Ink/Stitch matrix (run by
+ * Opt-in reproduction of claude-canvas's port output (fonts) for the fixed Ink/Stitch matrix (run by
  * tools/inkstitch_port_out.sh). For each case of the selected features it writes
  * `<out>/<feature>/<output_basename>` and lists every case once in `<out>/results.json` with the
  * matrix hash and commit, in the form the oracle comparator reads. Inputs are only read.
@@ -32,7 +31,7 @@ class CanvasPortOutTool {
         val matrixPath = System.getenv("MYEMBRO_PORT_MATRIX") ?: return
         val out = File(System.getenv("MYEMBRO_PORT_OUT") ?: return)
         val fixtures = File(System.getenv("MYEMBRO_PORT_FIXTURES") ?: return)
-        val features = (System.getenv("MYEMBRO_PORT_FEATURES") ?: "fonts,svg_import,clone").split(',').map { it.trim() }.toSet()
+        val features = (System.getenv("MYEMBRO_PORT_FEATURES") ?: "fonts").split(',').map { it.trim() }.toSet()
         val matrixBytes = File(matrixPath).readBytes()
         val matrix = Json.parseToJsonElement(matrixBytes.decodeToString()).jsonObject
         val fonts = HashMap<String, InkStitchFont>()
@@ -52,15 +51,12 @@ class CanvasPortOutTool {
                     }
                     val started = System.nanoTime()
                     try {
-                        val pattern = when (feature) {
-                            "fonts" -> {
-                                val p = case.getValue("parameters").jsonObject
-                                val shape = case.string("shape")
-                                val font = fonts.getOrPut(shape) { loadFont(File(fixtures, shape)) }
-                                InkStitchLettering.render(font, p.string("text"), case.getValue("reference_extent_mm").jsonPrimitive.content.toDouble())
-                            }
-                            else -> input.inputStream().use { InkStitchSvgImport.open(it, id).pattern }
-                        }
+                        // SVG import and clone are deferred to the next version (archived on claude/svg-import-archive).
+                        require(feature == "fonts") { "feature $feature is not part of this version" }
+                        val p = case.getValue("parameters").jsonObject
+                        val shape = case.string("shape")
+                        val font = fonts.getOrPut(shape) { loadFont(File(fixtures, shape)) }
+                        val pattern = InkStitchLettering.render(font, p.string("text"), case.getValue("reference_extent_mm").jsonPrimitive.content.toDouble())
                         val bytes = PesWriter.write(pattern)
                         target.writeBytes(bytes)
                         put("status", "GENERATED"); put("path", target.absolutePath); put("sha256", sha256(bytes))

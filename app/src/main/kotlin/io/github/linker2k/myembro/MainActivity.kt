@@ -140,6 +140,7 @@ class MainActivity : ComponentActivity() {
                         val hoop = settings.settings.defaultFrame.spec
                         // The font library is drawn over the lettering screen, which keeps what was typed.
                         var showFonts by rememberSaveable { mutableStateOf(false) }
+                        var fontsText by rememberSaveable { mutableStateOf("") }
                         Box {
                             LetteringScreen(
                                 onBack = back,
@@ -149,13 +150,14 @@ class MainActivity : ComponentActivity() {
                                 },
                                 hoop = hoop,
                                 initialFontId = letteringFontId,
-                                onOpenFonts = { showFonts = true },
+                                onOpenFonts = { text -> fontsText = text; showFonts = true },
                             )
                             if (showFonts) {
                                 BackHandler { showFonts = false }
                                 FontLibraryScreen(
                                     onBack = { showFonts = false },
                                     onPick = { id -> letteringFontId = id; showFonts = false },
+                                    text = fontsText,
                                 )
                             }
                         }
