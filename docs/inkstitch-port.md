@@ -188,5 +188,5 @@ FEATURES=clone tools/inkstitch_port_out.sh
 - 원본 `tests/test_clone.py`의 각도·숨김·스타일·변환·중첩 clone 사례를 같은 입력과 기대값으로 `elements/CloneTest.kt`에 옮겼습니다(18개 통과).
 - 매트릭스 재현(2026-10-24, 커밋은 results.json): fonts 96, svg_import 170, clone 172 케이스 모두 보고. 생성 434, 지정 코드로 거부 4.
 - 자체 간이 대조(판정 아님): svg_import·clone은 bbox가 원본과 0.2mm 이내인 경우가 각각 161/168, 149/170으로 가져오기 기하는 맞습니다. 땀 수와 좌표 차이는 임시 생성기와 잠금 부재 때문입니다. 폰트 1줄 케이스는 bbox와 러닝 땀 길이 분포가 같고, 차이는 잠금 땀입니다.
-- oracle의 `fonts--*--AB-newline-BA` 배치 SVG에는 첫 줄 "AB"만 들어 있습니다(글리프 2개). 2줄 배치를 비교할 수 없어 embro-codex에 알렸습니다.
+- oracle의 `fonts--*--AB-newline-BA` 배치 SVG에는 첫 줄 "AB"만 들어 있습니다(글리프 2개). 2줄 배치를 비교할 수 없어 총괄 보고에 적었습니다(embro-codex 확인 필요).
 - 0번 폰트의 이전 게이트 기록: 4개 글꼴 × 15·30mm × satin, 0/8 통과. 주원인은 잠금 검사였고, 게이트는 재보정 중입니다.
