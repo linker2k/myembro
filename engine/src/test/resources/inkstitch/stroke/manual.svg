@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkstitch="http://inkstitch.org/namespace" width="60mm" height="40mm" viewBox="0 0 226.77165 151.181102">
+  <!-- Manual defaults disable ties; force_lock_stitches explicitly exercises source half_stitch ties. -->
+  <path id="manual-fixture" d="M20 20 L50 20 L50 50 L100 50 L100 90 L180 90" fill="none" stroke="#7F9A76" stroke-width="1" inkstitch:stroke_method="manual_stitch" inkstitch:max_stitch_length_mm="3" inkstitch:force_lock_stitches="true" />
+</svg>
