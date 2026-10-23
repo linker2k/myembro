@@ -55,17 +55,17 @@ object LetteringFontQuality {
 
 internal data class AutomaticLetteringState(val fontName:String,val style:StitchStyle?,val heightRanges:List<ValidatedHeightRange>)
 
-/** No implicit satin conversion, quality-derived bounds, or fallback to fill before S4. */
+/** Font metadata or pinned TTF sweep bounds, always capped by the app height limit. */
 internal suspend fun automaticLetteringState(context:Context,fontId:String,text:String,heightMm:Double=18.0):AutomaticLetteringState = withContext(Dispatchers.Default) {
     val source=loadFont(context.applicationContext,fontId)
     // US-3: an Ink/Stitch font is sewn as digitized (satin from the font), within its recorded heights.
     source.ink?.let { _ -> source.testedRangeMm?.takeIf { it.start > 0 && it.endInclusive.isFinite() }?.let { r ->
-        return@withContext AutomaticLetteringState(source.name, StitchStyle.SATIN, listOf(ValidatedHeightRange(r.start, r.endInclusive)))
+        return@withContext AutomaticLetteringState(source.name, StitchStyle.SATIN, LetteringHeightLimits.capRanges(listOf(ValidatedHeightRange(r.start, r.endInclusive))))
     } }
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
     val policy=AutomaticLetteringPolicy.Shared
     val candidates=policy.candidates(fontId,source.revision,geometry,normalizedLetteringText(text))
-    AutomaticLetteringState(source.name,policy.method(candidates,heightMm,geometry),if(geometry==LetteringGeometry.OUTLINE) listOf(ValidatedHeightRange(TatamiLettering.MIN_HEIGHT_MM,TatamiLettering.MAX_HEIGHT_MM)) else candidates.map { it.heights }.distinct())
+    AutomaticLetteringState(source.name,policy.method(candidates,heightMm,geometry),if(geometry==LetteringGeometry.OUTLINE) LetteringHeightLimits.decode(context.assets.open(LetteringHeightLimits.ASSET).bufferedReader().use { it.readText() }).outlineRanges(fontId,source.revision) else LetteringHeightLimits.capRanges(candidates.map { it.heights }.distinct()))
 }
 
 private class LoadedFont(

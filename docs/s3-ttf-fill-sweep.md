@@ -121,3 +121,36 @@ directory for measured counts, per-font ranges, failure cases and execution time
 ```text
 FINAL COMPLETE 8888 PASS 7708 BLOCK 1180 wall_seconds 1405.844
 ```
+
+## App slider connection (2026-10-24)
+
+Coordinator instruction: activate the per-font sweep intervals as slider bounds,
+with a common app maximum of **60mm**. This supersedes the original snapshot's
+`deployment_enabled=false` for the separate app projection; the measured source
+snapshot and its sampling limitations remain unchanged.
+
+- Base: `staging/s2s3` at `b006249`, fast-forwarded on `codex/model`.
+- Reproduce app data: `python3 tools/export_ttf_height_ranges.py`.
+  The generated `assets/lettering/ttf-fill-height-ranges.json` retains all 33
+  font IDs, exact SHA-256 pins, minimums, and `min(sweep maximum, 60mm)` maximums.
+  It records the immutable source summary's SHA-256.
+- `LetteringHeightLimits` resolves by font ID and actual font hash, including
+  the renderer's extraction revision suffix. Unknown/changed TTF files receive
+  no fill interval. Font changes clamp the current height through the existing
+  range-selection effect. Example ranges: Noto Sans KR 26.25–60mm, Nanum Pen
+  Script 5–49mm, East Sea Dokdo 5–6mm, Dongle 5–40mm.
+- Existing Ink/Stitch/single-line intervals are also intersected with the app cap.
+  The initial height, direct numeric entry and Add guard enforce 60mm. This
+  changes app controls, not the engine's wider oracle/generation input range.
+- This activates the sampled benchmark's min/max intervals as requested; it
+  does not turn the 30-glyph sample into proof about arbitrary text or every
+  intermediate height. Preview and hoop rejection continue to apply.
+- Five new app tests cover all 33 projections, the exact source hash, fractional
+  and restrictive bounds, changed/unknown font rejection, satin cap behavior,
+  and malformed/duplicate data. Additional projection check: all 33 per-font
+  hashes and min/max values match the source report.
+- `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check --console=plain`:
+  **BUILD SUCCESSFUL in 47s**, 67 tasks (49 executed, 18 up-to-date).
+  JUnit XML: engine **586**, app Debug **187**, Release **187**;
+  failures/errors/skips **0**. Android Lint passed.
+  [Full command output](checks/model-ttf-height-limits-check.log).
