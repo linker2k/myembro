@@ -423,6 +423,46 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
 
 
+## S5 별도 원본: 흑백 윤곽·다각형 부분 포팅
+
+Ink/Stitch에 없는 사진 입력 준비 기능이며, Ink/Stitch 코드를 포팅한 것으로 표시하지 않는다.
+원본 Potrace 1.16 / 미러 커밋 `886392d351417d6753aff61de08e294d1506e502`,
+`src/decompose.c`, `src/trace.c`, `src/bitmap.h`, `src/auxiliary.h`에서 엔진 내부
+`BinaryContourTracer` / `OptimalPolygon`으로 옮겼다. GPL-2.0-or-later 출처와 전문을 보존한다.
+상세 해시·재현 명령은 [image-pipeline.md](image-pipeline.md)의 첫 포팅 단위 참조.
+
+| 위치 | 원본과 차이 | 이유/한계 |
+|---|---|---|
+| 흑백 비트맵 | BooleanArray, XOR 기준 x=0, 입력 복사 | 워드 저장만 대체; 교차 패리티 유지 |
+| 경로 면적 | Long 유지, C API의 INT_MAX 포화 생략 | 중간 엔진 API이며 기존 PES API에 미연결 |
+| 분해 결과 | 탐색 순서와 양/음 부호, 계층 트리 없음 | 이번 단위는 기본 MINORITY 추적까지만 이식 |
+| 다각형 이후 | vertex adjustment·Bezier·곡선 최적화 없음 | 불완전한 중간 결과를 제품 경로에 연결하지 않음 |
+
+대표 Kotlin 기능 테스트 8개와 엔진 전체 테스트 293개 통과. 원본 실행/독립 게이트는
+실행하지 않았고 동등성·봉제 품질 통과를 주장하지 않는다. 새 PES/앱 진입점도 없다.
+
+
+### S5 곡선화 후속 단위
+
+동일 Potrace 커밋의 `pointslope`/`adjust_vertices`/`reverse`/`smooth`를
+`CurveFitter.kt`로 포팅했다. 위 표의 vertex adjustment·Bezier 미구현 상태를 갱신한다.
+곡선 최적화(stage 5)와 계층 트리는 여전히 미구현이며 앱 미연결이다.
+작은 PBM 3개에 대해 수정하지 않은 원본 C를 `opticurve=0`으로 실행해 비교했다:
+경계·다각형 정확히 일치, 꼭짓점·제어점·alpha/beta 절대오차 1e-10 이내.
+새 비교 테스트 3개 포함 엔진 테스트 296개 통과. 재현 명령/해시는
+`engine/src/test/resources/potrace/README.md` 참조. 독립 봉제 품질 통과 주장은 없다.
+
+
+### S5 곡선 최적화 후속 단위
+
+`CurveOptimizer.kt`가 같은 원본 커밋의 `opti_penalty`/`opticurve`와 기하 함수를
+이식한다. 기본 opticurve=1 / opttolerance=0.2px의 원본 최종 경로를 자동 비교한다.
+4개 대표 PBM의 stage 4/5 비교 8개가 통과하며, 둥근 도형에서 원본과 동일한 7→3
+곡선 병합을 assert한다. 좌표/alpha/beta 절대오차 1e-10 이내. 기존 곡선 최적화 미구현
+기록을 갱신하며, 경로 계층·SVG·자수/앱 연결은 여전히 미구현이다.
+재현: `tools/potrace/generate-stage5-goldens.sh /path/to/potrace-1.16`.
+출력 `/tmp/myembro-port-out/editor/potrace-stage5/`; 코드는 기본 엔진 테스트에 포함된다.
+
 
 ## 별도 원본: Wu 이미지 색 양자화
 
