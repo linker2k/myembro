@@ -71,19 +71,28 @@ In addition to the bundled Hershey and Jua assets documented below,
 may download on demand. Policy:
 
 - Only fonts whose license allows redistribution and embedding in derived output (stitch files)
-  are listed: SIL Open Font License 1.1, or the Hershey font license.
+  are listed: SIL Open Font License 1.1, Apache License 2.0, or the Hershey font license.
 - Every download URL names a fixed commit, and the file is rejected unless its SHA-256 matches
   the catalog. The license text is downloaded (also checksum-verified) or, for Hershey fonts,
   taken from the font's own `<metadata>`, and stored next to the font as `<id>.LICENSE.txt`;
   the app shows it from the font library.
 - Adding a font: pin the commit, compute `sha256` locally, record license and designer here.
+- Static instances are preferred over variable fonts; where Google Fonts ships only a variable
+  file, the static Regular/Bold comes from the upstream repository named in its `METADATA.pb`.
 
 | Fonts | Kind | License | Source (pinned) |
 |---|---|---|---|
-| Hershey Sans 1-stroke, Script 1-stroke, Serif Medium, Gothic English | single-line SVG | Hershey font license (acknowledgement of Dr. A. V. Hershey, U.S. NBS, and James Hurt, Cognition, Inc. must accompany the data; embedded in each file) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
-| EMS Readability, Allure, Tech, Casual Hand, Delight | single-line SVG | OFL-1.1 (derivatives of OFL Google Fonts, by Windell H. Oskay / Evil Mad Scientist) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
+| Hershey Sans 1-stroke, Sans Medium, Script 1-stroke, Script Medium, Serif Medium, Serif Medium Italic, Serif Bold, Serif Bold Italic, Gothic English, Gothic German, Gothic Italian | single-line SVG | Hershey font license (acknowledgement of Dr. A. V. Hershey, U.S. NBS, and James Hurt, Cognition, Inc. must accompany the data; embedded in each file) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
+| EMS Readability, Readability Italic, Allure, Tech, Casual Hand, Delight, Delight Swash Caps, Bird, Bird Swash Caps, Brush, Capitol, Decorous Script, Elfin, Felix, Herculean, Invite, League, Little Princess, Misty Night, Neato, Nixish, Nixish Italic, Osmotron, Pancakes, Pepita, Qwandry, Society, Swiss | single-line SVG | OFL-1.1 (derivatives of OFL fonts, by Sheldon B. Michaels and Windell H. Oskay / Evil Mad Scientist; each file's `<metadata>` names the source font and its designer) | https://gitlab.com/oskay/svg-fonts @ `8c71f2d9e1a5292047bb88e5595a766241b82cc6` |
 | Relief SingleLine | single-line SVG | OFL-1.1, © 2022 The Relief SingleLine Project Authors | https://github.com/isdat-type/Relief-SingleLine @ `01dfc5779ec1e9e4b288d96c6c96c23bfccbaf9d` |
 | Jua, Do Hyeon (Woowahan Brothers), Gowun Dodum (Yanghee Ryu), Nanum Gothic, Nanum Pen Script (NHN Corporation), Gaegu (JIKJI SOFT) | outline TTF (Korean + Latin) | OFL-1.1 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` |
+| Black Han Sans (Zess Type), Sunflower Medium (JIKJISOFT), Gamja Flower (YoonDesign Inc), Hi Melody (YoonDesign Inc), Poor Story (Yoon Design), Single Day (DXKorea Inc), Yeon Sung (Woowahan brothers), Stylish (AsiaSoft Inc), Song Myung (JIKJI), Gugi (TAE System & Typefaces Co.), Cute Font (TypoDesign Lab. Inc), East Sea Dokdo (YoonDesign Inc), Dokdo (FONTRIX), Kirang Haerang (Woowahan Brothers), Nanum Myeongjo (Sandoll Communication), Nanum Myeongjo Bold (Sandoll Communication), Nanum Brush Script (Sandoll Communication), Gothic A1 (HanYang I&C Co), Gothic A1 Bold (HanYang I&C Co), Dongle (Yanghee Ryu), Orbit (Sooun Cho, JAMO), IBM Plex Sans KR (Mike Abbink, Bold Monday), IBM Plex Sans KR Bold (Mike Abbink, Bold Monday) | outline TTF (Korean + Latin) | OFL-1.1 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` |
+| Hahmlet (Hypertype) | outline TTF (Korean + Latin), static Regular | OFL-1.1 | https://github.com/hyper-type/hahmlet @ `106541144954a9b7037b8d3837097ba660312655` |
+| Noto Serif KR (Google) | outline OTF (Korean + Latin), static Regular subset | OFL-1.1 | https://github.com/notofonts/noto-cjk @ `985fa52c81c1d6692ccdd82bc3656e8fb932fd89` |
+| Bebas Neue, Anton, Alfa Slab One, Righteous, Abril Fatface, Pacifico, Lobster, Lobster Two Bold, Kaushan Script, Cookie, Damion, Courgette, Leckerli One, Grand Hotel, Norican, Great Vibes, Alex Brush, Allura, Parisienne, Pinyon Script, Sacramento (designers listed in `catalog.json`) | outline TTF (Latin) | OFL-1.1 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` |
+| Permanent Marker (Font Diner), Satisfy (Sideshow), Yellowtail (Astigmatic) | outline TTF (Latin) | Apache-2.0 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` (`apache/`) |
+| Playfair Display v1.200 (Claus Eggers Sørensen) | outline TTF (Latin), static Regular | OFL-1.1 | https://github.com/google/fonts @ `d08233f9c581786e8c834a1f0695a4f27869c119` |
+| Oswald, Dancing Script Bold, Fredoka, Baloo 2, Comfortaa Bold, Cinzel, Caveat Bold | outline TTF (Latin), static instances | OFL-1.1 | googlefonts/OswaldFont @ `89795261`, googlefonts/DancingScript @ `291f87c0`, hafontia-zz/Fredoka-One @ `35c584ff`, yanone/Baloo2-Variable @ `da523dfa`, alexeiva/comfortaa @ `4aa21cfb`, NDISCOVER/Cinzel @ `8271e162`, googlefonts/caveat @ `59745e81` (full hashes in `catalog.json`) |
 
 ## Ink/Stitch (planned)
 

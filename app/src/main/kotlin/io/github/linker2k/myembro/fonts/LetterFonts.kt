@@ -51,7 +51,7 @@ data class FontQualitySummary(
     companion object {
         const val SAMPLE = "가나다 ABC 자수"
         /** Bump when the analysis changes; older stored reports are recomputed. */
-        const val ANALYSIS_VERSION = 4
+        const val ANALYSIS_VERSION = 5
 
         fun fromJson(o: JSONObject) = FontQualitySummary(
             grade = QualityGrade.valueOf(o.getString("grade")),
@@ -119,6 +119,7 @@ class LetterFontGeometry(context: Context) {
     private val appContext = context.applicationContext
     private val typefaces = ConcurrentHashMap<String, Typeface>()
     private val svgFonts = ConcurrentHashMap<String, SvgFont>()
+    private val cmaps = ConcurrentHashMap<String, FontCmap>()
 
     fun typeface(font: LetterFont): Typeface = typefaces.getOrPut(font.id) {
         if (font.file == null) AndroidGlyphOutlines.jua(appContext)
@@ -129,11 +130,18 @@ class LetterFontGeometry(context: Context) {
         SvgFont.parse(requireNotNull(font.file).readText())
     }
 
+    /** The font file's own character map; null for built-ins, which fall back to [Paint.hasGlyph]. */
+    private fun cmap(font: LetterFont): FontCmap? = font.file?.let { f -> cmaps[font.id] ?: FontCmap.read(f)?.also { cmaps[font.id] = it } }
+
+    /** Whether the outline font itself (not a system fallback) has a glyph for [s]. */
+    private fun hasOutlineGlyph(font: LetterFont, s: String): Boolean =
+        cmap(font)?.has(s) ?: Paint().apply { typeface = typeface(font) }.hasGlyph(s)
+
     /** Characters of [text] (ignoring whitespace) this font cannot draw. */
     fun missing(font: LetterFont, text: String): Set<Char> = text.filterNot(Char::isWhitespace).toSet().filterTo(LinkedHashSet()) { c ->
         when (font.kind) {
             LetterFont.Kind.HERSHEY -> c.code !in 0x20..0x7E
-            LetterFont.Kind.OUTLINE -> !Paint().apply { typeface = typeface(font) }.hasGlyph(c.toString())
+            LetterFont.Kind.OUTLINE -> !hasOutlineGlyph(font, c.toString())
             LetterFont.Kind.SINGLE_LINE_SVG -> !svgFont(font).supports(c)
         }
     }
@@ -157,7 +165,7 @@ class LetterFontGeometry(context: Context) {
         when (font.kind) {
             LetterFont.Kind.OUTLINE -> {
                 val face = typeface(font)
-                val scale = heightMm / outlineReference(face)
+                val scale = heightMm / outlineReference(font)
                 chars.map { c -> AndroidGlyphOutlines.extract(c.toString(), face).map { it.map { (x, y) -> x * scale to y * scale } } }
             }
             LetterFont.Kind.SINGLE_LINE_SVG -> {
@@ -205,7 +213,7 @@ class LetterFontGeometry(context: Context) {
             )
             LetterFont.Kind.OUTLINE -> {
                 val face = typeface(font)
-                val reference = outlineReference(face)
+                val reference = outlineReference(font)
                 TextObject(
                     id = id, name = name, text = text, fontId = font.id, heightMm = heightMm, spacing = spacing,
                     arcDeg = arcDeg, thread = thread, fontKind = FontKind.OUTLINE,
@@ -234,10 +242,9 @@ class LetterFontGeometry(context: Context) {
     }
 
     /** Ink height of a capital-size reference glyph, in the extractor's source pixels. */
-    private fun outlineReference(face: Typeface): Double {
-        val paint = Paint().apply { typeface = face }
-        val ref = listOf("자", "H").firstOrNull { paint.hasGlyph(it) } ?: "H"
-        val points = AndroidGlyphOutlines.extract(ref, face).flatten()
+    private fun outlineReference(font: LetterFont): Double {
+        val ref = listOf("자", "H").firstOrNull { hasOutlineGlyph(font, it) } ?: "H"
+        val points = AndroidGlyphOutlines.extract(ref, typeface(font)).flatten()
         return if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
     }
 

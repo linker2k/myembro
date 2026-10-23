@@ -403,10 +403,23 @@ val editable = TextObject("label", text = "Name", stitchStyle = StitchStyle.SATI
 `FontRepository.userFont`를 찾는다. 사용자 폰트의 캐시 revision은 파일 크기·수정 시각이다.
 다운로드·삭제·사용자 폰트 삭제 시 `FontQualityCache.Shared.invalidate(id)`를 호출한다.
 
-- 카탈로그: `assets/fonts/catalog.json` 15종, 고정 커밋 URL, 다운로드 바이트의 SHA-256·크기를
-  검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로 함께 저장한다(https만, 32MB 상한).
+- 카탈로그: `assets/fonts/catalog.json` 102종(한글 외곽선 30, 영문 외곽선 32, 단선 40), 고정 커밋 URL,
+  다운로드 바이트의 SHA-256·크기를 검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로
+  함께 저장한다(https만, 32MB 상한). 라이선스는 OFL-1.1·Apache-2.0·Hershey만 쓴다.
+  가변 폰트는 업스트림의 정적 Regular/Bold를 쓴다. Noto Serif KR은 noto-cjk의 KR 서브셋 OTF다.
+  번들된 주아·Noto Sans KR·고운바탕은 넣지 않는다.
+  - `scripts`: 폰트 cmap을 직접 읽어 정한다. 한글은 완성형 2,350자 이상, 영문은 A–Z·a–z가 모두 있을 때다.
+  - `style: "script"`: 필기체 필터에 쓴다. `thinStroke: true`(Sacramento)는 "가는 선 · 러닝 스티치용" 배지를 단다.
+  - `recommendedMinHeightMm`·`qualityGrade`: 에뮬레이터에서 앱의 실제 분석(분석 버전 5)으로 미리 계산한
+    값이며, 다운로드 전 카드에 보인다. 설치 후에는 전체 보고서로 바뀐다. 확대로 해결되지 않는
+    폰트(무한대)는 비워 두고 다운로드 후 분석한다.
+  - 외곽선 폰트의 권장 높이가 25mm를 넘으면 "큰 글자 전용" 배지를 단다.
+- 글리프 유무: `Paint.hasGlyph`는 시스템 대체 글꼴까지 세므로, 영문 전용 폰트도 한글이 있다고
+  답한다. 그래서 분석이 대체 글꼴의 한글로 측정되었고, 영문 폰트가 모두 0mm·부적합으로 나왔다.
+  지금은 내려받은 폰트와 내 폰트의 TTF/OTF `cmap`을 `FontCmap`으로 직접 읽는다. 이 결과를
+  품질 분석, 기준 글자(자/H), 레터링의 "지원하지 않는 글자" 판정에 쓴다.
 - 내 폰트: SAF로 TTF/OTF/SVG를 `filesDir/fonts/user/`에 복사하고 파싱·글리프 검사 후
-  `가나다 ABC 자수` 10/20mm 품질 결과를 `<파일>.quality.json`(분석 버전 4)에 저장한다.
+  `가나다 ABC 자수` 10/20mm 품질 결과를 `<파일>.quality.json`(분석 버전 5)에 저장한다.
 - 품질: 앱의 `FontQualityGateway`가 엔진 `FontQuality.analyze`를 감싼다. 외곽선은 그대로 넘긴다.
   단선은 의도한 교차·이음·되짚기를 엔진이 0mm 간격으로 보므로, 다른 획과 글자 높이의 2.5% 안으로
   닿는 지점 주변(높이의 20%)을 잘라낸 뒤 측정한다. 땀·점프 수는 자르지 않은 획 기준이다.
