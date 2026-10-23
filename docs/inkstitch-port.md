@@ -585,3 +585,36 @@ python3 tools/check-inkfont-names.py
 수정 전: `/tmp/myembro-port-out/letter/font-defaults/trims-before-compatibility/`.
 수정 후: `/tmp/myembro-port-out/letter/font-defaults/trims/trim-boundaries.{md,json}`.
 S1 파일 수정은 글꼴 전용 출력·제품 경계 정책을 분리하기 위해 필요한 선택 인자/추적 보존에 한정한다.
+
+### CI 고정 대표 글꼴 오라클 (4건)
+
+`FontEquivalenceTest`를 일반 `engine:test`에 넣었으므로 `./gradlew check`에서 자동 실행한다.
+CI JVM 검증 단계도 `./gradlew check`로 연결하고 해당 JUnit XML을 `font-equivalence-results`
+아티팩트로 보존한다. 실패·예외가 있으면 일반 check가 실패한다. 별도 opt-in task나
+환경 변수, 외부 /tmp 자료, 네트워크, Python, Ink/Stitch 실행은 필요하지 않다.
+
+`engine/src/test/resources/inkstitch/font-equivalence/`는 공식 testfont AB4/10/20mm와
+두 줄10mm의 **4건·331개 바늘 좌표**만 포함한다. 출처/공식 릴리스·바이너리/PES/
+독립 decode/입력 해시와 newline reversible=false 보정 기록, GPL/OFL 고지를 함께 둔다.
+총량 약52KB, 테스트 자체도 10건 이하·전체 묶음1MB 이하를 검사한다.
+기대 좌표는 포트가 만든 값이 아니라 codex 공식 출력의 독립 decode에서 고정한 부분집합이다.
+
+검사 항목은 정확한 땀 수, bbox 중심 평행이동만 허용한 대칭 Hausdorff≤0.2mm,
+TRIM/STOP/색 변경의 순서·수·anchor≤0.2mm, 실 순서다. 기존 동결 오라클의 수치이며
+게이트 기준을 바꾸거나 길이 통계를 차단 조건으로 되살리지 않았다. 초기 위치 JUMP 수 차이는
+이미 문서화된 대로 제외한다. 모든 카탈로그 폰트·새틴의 독립 인증이나 실제 봉제를 대체하지 않는다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check
+# 4건만 재실행하려면
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test --tests '*FontEquivalenceTest'
+```
+
+JUnit 출력: `engine/build/test-results/test/TEST-io.github.linker2k.myembro.engine.inkstitch.FontEquivalenceTest.xml`.
+4건 모두땀 수42/42·66/66·91/91·132/132, 트림2·3·3·7, Hausdorff0.1mm로 통과했다.
+
+검증 실행 결과: 엔진 전체 **367개 통과**, 고정 오라클4건 통과.
+전체 `./gradlew check`는 앱 Lint **14개 오류**로 실패했다. 이 오류가 있는 파일은
+이번 변경 전 HEAD와 동일하다(API26 리소스의 API27 windowLightNavigationBar 6건,
+Compose ProduceStateDoesNotAssignValue 7건, app_name 한국어 번역 누락1건).
+Lint를 끄거나 기준선을 추가하지 않았으며, 앱 담당 수정 전에는 전체 CI가 차단된다.

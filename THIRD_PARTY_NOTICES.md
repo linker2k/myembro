@@ -488,3 +488,13 @@ https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex
 The referenced source is GPL-2.0-or-later, Copyright (C) 2018 Martin Owens and
 Copyright (C) 2023 Jonathan Neuhauser. No inkex package is bundled, installed or executed.
 The surrounding Ink/Stitch glyph port remains GPL-3.0-or-later as identified in its header.
+
+## Ink/Stitch fixed font-oracle test fixtures
+
+`engine/src/test/resources/inkstitch/font-equivalence/` contains the public upstream generic
+A/B test-font input and a subset of independently decoded official v3.3.0 output coordinates.
+Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/tests/lettering/fonts/testfont .
+Copyright Ink/Stitch contributors. Upstream repository license GPL-3.0-or-later and the input's
+declared SIL OFL-1.1 text are included beside the data. Source metadata is retained; the one
+reversible=false newline correction and all provenance/hashes are recorded in PROVENANCE.md.
+Test resources only: no catalog font, personal design or runtime dependency is bundled by this addition.

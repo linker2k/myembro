@@ -17,8 +17,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: FAT12 image test tools
         run: sudo apt-get update && sudo apt-get install -y dosfstools
-      - name: JVM tests
-        run: ./gradlew :engine:test :app:testDebugUnitTest
+      - name: Checks (includes frozen font oracle)
+        run: ./gradlew check
+      - name: Upload font oracle test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: font-equivalence-results
+          path: engine/build/test-results/test/TEST-io.github.linker2k.myembro.engine.inkstitch.FontEquivalenceTest.xml
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
       - uses: actions/upload-artifact@v4
