@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.inkstitch.lettering
 
+import io.github.linker2k.myembro.engine.sewout.DesignOrigin
 import io.github.linker2k.myembro.engine.sewout.FindingCode
+import io.github.linker2k.myembro.engine.sewout.SewoutOptions
 import io.github.linker2k.myembro.engine.sewout.SewoutCheck
 import io.github.linker2k.myembro.engine.sewout.Severity
 import java.io.File
@@ -44,7 +46,7 @@ class InkStitchFontSweep {
                 val passes = heights.map { h ->
                     usable.all { t ->
                         val codes = runCatching {
-                            val report = SewoutCheck.check(InkStitchLettering.render(font, t, h))
+                            val report = SewoutCheck.check(InkStitchLettering.render(font, t, h), options = SewoutOptions(origin = DesignOrigin.APP_GENERATED))
                             report.findings.filter { it.severity == Severity.BLOCKER }.map { it.code }.toSet()
                         }.getOrElse { e -> setOf("ERROR:${e.javaClass.simpleName}") }
                         val blocking = codes.filter { it !in placement }

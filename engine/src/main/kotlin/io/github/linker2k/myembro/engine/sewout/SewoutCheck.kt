@@ -8,6 +8,10 @@ import kotlin.math.*
 
 /** Deterministic command-level planning simulation. Does not claim firmware or fabric simulation. */
 object SewoutCheck {
+    fun originOf(pattern: EmbPattern): DesignOrigin = if (
+        pattern.metadata["myembro.inkstitch.finished"] == "v1" || pattern.metadata["myembro.inkstitch.composite"] == "v1"
+    ) DesignOrigin.APP_GENERATED else DesignOrigin.IMPORTED
+
     fun check(pattern: EmbPattern, machine: SewoutMachine = SewoutMachines.SE400,
         options: SewoutOptions = SewoutOptions()): SewoutReport = run(pattern, machine, options)
 
@@ -31,7 +35,14 @@ object SewoutCheck {
             if (colors == 255 || length < 8) null else stitchStart+length+(colors+2)*228L <= bytes.size
         }
         val artifact = info.copy(pecThumbnailsPresent = thumbnails)
-        val parsed = runCatching { PesReader.read(bytes) }
+        val parsed = runCatching {
+            val bounded = boundedPecStitches(bytes)
+            val read = PesReader.read(bytes)
+            val colors = read.stitches.filter { it.command == Command.COLOR_CHANGE || it.command == Command.STOP }.iterator()
+            val commands = bounded.map { if (it.command == Command.COLOR_CHANGE && colors.hasNext())
+                it.copy(command = colors.next().command) else it }
+            EmbPattern(commands, read.threads, read.metadata, read.warnings)
+        }
         return parsed.fold({ pattern -> run(pattern, machine, options, artifact,
             pattern.warnings.firstOrNull { it.contains("truncated", ignoreCase = true) }) }, {
             run(EmbPattern(emptyList(), emptyList()), machine, options, artifact, "PES를 읽을 수 없습니다: ${it.message}")
@@ -40,12 +51,15 @@ object SewoutCheck {
 
     private fun run(pattern: EmbPattern, machine: SewoutMachine, o: SewoutOptions,
         file: PesFileInfo? = null, fileError: String? = null): SewoutReport {
+        val generated = o.origin == DesignOrigin.APP_GENERATED || o.origin == DesignOrigin.AUTO &&
+            originOf(pattern) == DesignOrigin.APP_GENERATED
+        val safetySeverity = if (generated) Severity.BLOCKER else Severity.WARNING
         val findings = Findings(o.maxFindings)
         if (fileError != null) findings.add(FindingCode.INVALID_PES, Severity.BLOCKER, fileError)
         val terminal = pattern.stitches.indexOfFirst { it.command == Command.END }
         val inputCount = if (terminal < 0) pattern.stitches.size else terminal+1
         val active = pattern.stitches.take(min(inputCount, o.maxCommands))
-        checkStartLocks(active, findings)
+        val lockCounts = checkThreadLocks(active, findings, safetySeverity)
         var complete = inputCount <= o.maxCommands
         val maxSpm = machine.maximumEmbroiderySpm.value?.toDouble()
         val requestedSpm = o.plannedSpm ?: maxSpm?.times(o.profileSpeedFraction) ?: o.assumedSpm
@@ -72,9 +86,17 @@ object SewoutCheck {
         var stage = stages.last()
         val tasks = mutableListOf<OperatorTask>()
         val grid = DensityGrid(o)
-        val exactNeedles = hashMapOf<NeedlePoint, Int>()
+        // Gate v5: use the maximum of four half-cell phases, so grid boundaries cannot hide a hotspot.
+        val shiftedOptions = o.copy(maxGridCells = maxOf(1, o.maxGridCells / 4))
+        val halfCell = o.gridMm * 5
+        val shiftedGrids = listOf(DensityGrid(shiftedOptions, halfCell, 0.0),
+            DensityGrid(shiftedOptions, 0.0, halfCell), DensityGrid(shiftedOptions, halfCell, halfCell))
+        var lastNeedle: NeedlePoint? = null
+        var consecutiveNeedles = 0
         val exactSegments = hashMapOf<Pair<NeedlePoint, NeedlePoint>, Int>()
-        var current: NeedlePoint? = null
+        var current: NeedlePoint? = if (file != null && fileError == null) NeedlePoint(0.0, 0.0) else null
+        var maximumStitchMm = 0.0
+        var maximumConsecutiveNeedles = 0
         var connected = false
         var elapsed = 0.0
         var travel: Travel? = null
@@ -163,10 +185,11 @@ object SewoutCheck {
                     flushCuts()
                     val from = current
                     val length = from?.let { hypot(p.x-it.x, p.y-it.y)/10 } ?: 0.0
+                    maximumStitchMm = max(maximumStitchMm, length)
                     if (from != null) {
-                        if (length > o.longStitchMm) findings.add(FindingCode.LONG_STITCH, Severity.WARNING,
+                        if (length > o.longStitchMm) findings.add(FindingCode.LONG_STITCH, Severity.BLOCKER,
                             "보수적 땀 길이 기준 ${o.longStitchMm}mm를 초과합니다.", Highlight(index, from = from, to = p), length, o.longStitchMm)
-                        if (length < o.shortStitchMm && (length > 0.0 || connected)) findings.add(FindingCode.SHORT_STITCH, Severity.WARNING,
+                        if (length < o.shortStitchMm && (length > 0.0 || connected)) findings.add(FindingCode.SHORT_STITCH, Severity.INFO,
                             "${o.shortStitchMm}mm 미만의 짧은 땀입니다. 실 뭉침·끊김 가능성을 확인하세요.", Highlight(index, from = from, to = p), length, o.shortStitchMm)
                         machine.maximumStitchMm.value?.let { if (length > it) findings.add(FindingCode.MACHINE_STITCH_LENGTH_EXCEEDED,
                             Severity.BLOCKER, "확인된 기계 최대 땀 길이를 초과합니다.", Highlight(index, from = from, to = p), length, it) }
@@ -176,14 +199,17 @@ object SewoutCheck {
                         val key = if (from.x < p.x || from.x == p.x && from.y <= p.y) from to p else p to from
                         if (from != p) {
                             val repeated = (exactSegments[key] ?: 0)+1; exactSegments[key] = repeated
-                            if (repeated == 3) findings.add(FindingCode.OVERLAP_ACCUMULATION, Severity.WARNING,
+                            if (repeated == 3) findings.add(FindingCode.OVERLAP_ACCUMULATION, Severity.INFO,
                                 "같은 선분을 3회 이상 겹쳐 봉제합니다.", Highlight(index, from = from, to = p), repeated.toDouble(), 3.0)
                         }
                     }
                     grid.needle(p, stage.index, index)
-                    val repeats = (exactNeedles[p] ?: 0)+1; exactNeedles[p] = repeats
-                    if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, Severity.BLOCKER,
-                        "같은 좌표에 바늘이 ${o.repeatedPointThreshold}회 이상 진입합니다. 실 뭉침·원단 손상 위험으로 봉제를 차단합니다.",
+                    shiftedGrids.forEach { it.needle(p, stage.index, index) }
+                    val repeats = if (lastNeedle == p) consecutiveNeedles + 1 else 1
+                    lastNeedle = p; consecutiveNeedles = repeats
+                    maximumConsecutiveNeedles = max(maximumConsecutiveNeedles, repeats)
+                    if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, safetySeverity,
+                        "같은 좌표에 바늘이 연속 ${o.repeatedPointThreshold}회 이상 진입합니다. 실 뭉침·원단 손상 위험을 확인하세요.",
                         Highlight(index, from = p), repeats.toDouble(), o.repeatedPointThreshold.toDouble())
                     stage.stitches++; stage.sewn += length
                     val seconds = 60/speed.effectiveSpm
@@ -214,15 +240,18 @@ object SewoutCheck {
         if (!ended && complete) finish(lastIndex) else if (!ended) flushCuts()
         stage.end = active.lastIndex
         val cells = grid.result()
-        for (cell in cells) {
+        val shiftedPeak = shiftedGrids.flatMap { it.result() }.maxByOrNull { it.penetrations }
+        val densityChecks = if (shiftedPeak != null && shiftedPeak.penetrations > (cells.maxOfOrNull { it.penetrations } ?: 0))
+            cells + shiftedPeak else cells
+        for (cell in densityChecks) {
             val location = Highlight(cell.firstCommandIndex, area = cell.area)
-            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, Severity.BLOCKER,
-                "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담 위험으로 봉제를 차단합니다.",
+            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, if (generated || cell.penetrations > 30) Severity.BLOCKER else Severity.WARNING,
+                "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담 위험을 확인하세요.",
                 location, cell.penetrations.toDouble(), o.hotspotPenetrations.toDouble())
             if (cell.segmentPasses >= o.overlapPassThreshold && cell.stageIndices.size > 1) findings.add(FindingCode.OVERLAP_ACCUMULATION,
-                Severity.WARNING, "여러 색 단계의 실 경로가 같은 격자에 누적됩니다.", location, cell.segmentPasses.toDouble(), o.overlapPassThreshold.toDouble())
+                Severity.INFO, "여러 색 단계의 실 경로가 같은 격자에 누적됩니다.", location, cell.segmentPasses.toDouble(), o.overlapPassThreshold.toDouble())
         }
-        val resourcesComplete = complete && grid.complete
+        val resourcesComplete = complete && grid.complete && shiftedGrids.all { it.complete }
         complete = resourcesComplete && fileError == null
         if (!resourcesComplete) findings.add(FindingCode.ANALYSIS_LIMIT, Severity.BLOCKER, "검사 자원 한도를 넘어 일부 분석이 생략됐습니다. 검사 통과로 간주할 수 없습니다.")
         val usedStages = if (active.none { it.command != Command.END }) emptyList() else stages
@@ -232,7 +261,7 @@ object SewoutCheck {
                 st.uncutJump, st.time(), usage(st.sewn, st.uncutJump, st.cuts, machine, o))
         }
         val totalStitches = stages.sumOf { it.stitches }
-        if (totalStitches == 0) findings.add(FindingCode.EMPTY_DESIGN, Severity.INFO, "봉제할 바늘땀이 없습니다.")
+        if (totalStitches == 0) findings.add(FindingCode.EMPTY_DESIGN, Severity.BLOCKER, "봉제할 바늘땀이 없습니다.")
         val time = TimeEstimate(stages.sumOf { it.needle }, stages.sumOf { it.movement }, stages.sumOf { it.autoCut },
             stages.sumOf { it.operator }, stages.sumOf { it.conditional })
         val threadUsage = usage(stages.sumOf { it.sewn }, stages.sumOf { it.uncutJump }, stages.sumOf { it.cuts }, machine, o)
@@ -248,7 +277,9 @@ object SewoutCheck {
             sewnBounds, movementBounds, stages.sumOf { it.sewn }, stages.sumOf { it.jumpLength },
             tasks.count { it.kind in setOf(TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM) && it.cutRequirement == CutRequirement.REQUIRED },
             tasks.count { it.kind in setOf(TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM) && it.cutRequirement == CutRequirement.POSSIBLE },
-            cells.count { it.penetrations >= o.hotspotPenetrations }, cells.count { it.stageIndices.size > 1 && it.segmentPasses >= o.overlapPassThreshold })
+            densityChecks.count { it.penetrations >= o.hotspotPenetrations }, cells.count { it.stageIndices.size > 1 && it.segmentPasses >= o.overlapPassThreshold },
+            densityChecks.maxOfOrNull { it.penetrations } ?: 0, maximumConsecutiveNeedles, maximumStitchMm,
+            lockCounts.startMissing, lockCounts.endMissing)
         val compatibility = compatibility(machine, o, stats, file, fileError, complete, findings)
         return SewoutReport(machine, o, stats, resultStages, tasks.toList(), cells, findings.items.sortedBy { it.severity.ordinal },
             findings.codes.toMap(), findings.severities.toMap(), findings.total-findings.items.size, complete,

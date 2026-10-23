@@ -3,8 +3,10 @@
 """Builds app/src/main/assets/fonts/inkstitch-catalog.json from a local, read-only checkout of
 https://github.com/inkstitch/embroidery-fonts (data only: nothing from the checkout is executed).
 
-usage: python3 -I tools/inkstitch_catalog.py <checkout> <survey.tsv> <out.json> [licenses.md]
+usage: python3 -I tools/inkstitch_catalog.py <checkout> <survey.tsv> <out.json> [licenses.md] [sweep.json]
 
+[sweep.json] comes from the engine test InkStitchFontSweep (SewoutCheck over min/mid/max heights):
+when given, a font is listed only with a passing height and its range is the passing run.
 <survey.tsv> comes from the engine test InkStitchSurveyTool (INKSTITCH_FONTS=<checkout>/src); it
 says which fonts this engine sews completely and gives the reference ('H') height at scale 1.
 The license class of every folder is decided here by hand from its LICENSE file and font.json;
@@ -69,6 +71,7 @@ def sha(path):
 def main():
     checkout, survey, out = map(pathlib.Path, sys.argv[1:4])
     md = pathlib.Path(sys.argv[4]) if len(sys.argv) > 4 else None
+    sweep = json.loads(pathlib.Path(sys.argv[5]).read_text()) if len(sys.argv) > 5 else None
     commit = subprocess.run(["git", "-C", str(checkout), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
     dirty = subprocess.run(["git", "-C", str(checkout), "status", "--porcelain"], capture_output=True, text=True, check=True).stdout.strip()
     if dirty: raise SystemExit("checkout has local changes; hashes would not match the pinned commit")
@@ -86,15 +89,21 @@ def main():
         # every other note is an element this engine cannot sew yet.
         missing = [u for u in (r["unsupported"].split(",") if r and r["unsupported"] else [])
                    if not u.startswith(("command:", "empty:", "text="))]
-        sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_h
+        cid = "inkstitch-" + re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-")
+        swept = sweep.get(cid) if sweep is not None else None
+        gated = sweep is None or (swept is not None and "allowedMinMm" in swept)
+        sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_h and gated
         reason = "" if sewable else ("ltr.svg 없음(여러 파일/RTL)" if not svg.is_file() else
                                      "'H' 글리프 없음" if not has_h else
                                      f"미지원 요소: {','.join(missing)}" if r and missing else
-                                     f"봉제 실패: {r['error'] or r.get('rangeError')}" if r else "조사 누락")
+                                     f"봉제 실패: {r['error'] or r.get('rangeError')}" if r and (r['error'] or r.get('rangeError')) else
+                                     "게이트: 통과하는 높이 없음(SewoutCheck 스윕)" if r else "조사 누락")
         table.append((d.name, meta.get("font_license", ""), lic_name, cls, note, evidence(text), "예" if sewable else f"아니오 ({reason})"))
         if cls != "가능" or not sewable: continue
         q = lambda f: urllib.parse.quote(f"src/{d.name}/{f}")
         ref = float(r["refHeightMm"])
+        lo, hi = ref * float(r["minScale"]), ref * float(r["maxScale"])
+        if swept is not None: lo, hi = swept["allowedMinMm"], swept["allowedMaxMm"]
         fonts.append({
             "id": "inkstitch-" + re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-"),
             "name": meta.get("name", d.name),
@@ -106,10 +115,12 @@ def main():
             "metaUrl": f"{REPO}/{commit}/{q('font.json')}", "metaSha256": sha(d / "font.json"),
             "licenseUrl": f"{REPO}/{commit}/{q(lic.name)}", "licenseSha256": sha(lic),
             # The digitizer's tested range, on the app's 'H' ink-height basis (half-mm, rounded inward).
-            "recommendedMinHeightMm": math.ceil(round(ref * float(r["minScale"]) * 2, 6)) / 2,
-            "recommendedMaxHeightMm": math.floor(round(ref * float(r["maxScale"]) * 2, 6)) / 2,
+            # Heights that pass the sew-out gate within the digitizer's recorded range (half-mm, inward).
+            # A single passing height stays exactly that tested height (0.1 mm).
+            "recommendedMinHeightMm": math.ceil(round(lo * 2, 6)) / 2 if math.ceil(round(lo * 2, 6)) <= math.floor(round(hi * 2, 6)) else round(lo, 1),
+            "recommendedMaxHeightMm": math.floor(round(hi * 2, 6)) / 2 if math.ceil(round(lo * 2, 6)) <= math.floor(round(hi * 2, 6)) else round(lo, 1),
             # Below the app's 6 mm Latin floor only the digitizer's own testing vouches for the font.
-            "qualityGrade": "GOOD" if ref * float(r["minScale"]) >= 6.0 else "CAUTION",
+            "qualityGrade": "GOOD" if lo >= 6.0 else "CAUTION",
             "thinThreadRequired": bool(re.search(r"thin thread|\(60\)|60 ?wt", meta.get("description", ""), re.I)),
             # Glyph names (NFC) and forced case, so the app can tell before download whether a text fits.
             "letterCase": meta.get("letter_case") or "",
