@@ -12,6 +12,7 @@ import io.github.linker2k.myembro.engine.lettering.*
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.fonts.CatalogFont
+import io.github.linker2k.myembro.fonts.FontCmap
 import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.fonts.LetterFont
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
@@ -43,6 +44,8 @@ object LetteringFontQuality {
 
 private class LoadedFont(
     val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String, val name: String,
+    /** Outline file's own character map; [Paint.hasGlyph] would also count system fallback fonts. */
+    val cmap: FontCmap? = null,
 ) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
     fun advance(character: String): Double = when {
@@ -61,7 +64,7 @@ private class LoadedFont(
     }
     val reference: Double by lazy {
         when {
-            face != null -> glyph(if (paint?.hasGlyph("자") == true) "자" else "H").flatten().let { points ->
+            face != null -> glyph(if (supports("자".codePointAt(0))) "자" else "H").flatten().let { points ->
                 if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
             }
             svg != null -> svg.unitsPerEm.coerceAtLeast(1.0)
@@ -69,7 +72,7 @@ private class LoadedFont(
         }
     }
     fun supports(code: Int): Boolean = when {
-        paint != null -> paint.hasGlyph(String(Character.toChars(code)))
+        paint != null -> cmap?.let { code in it } ?: paint.hasGlyph(String(Character.toChars(code)))
         svg != null -> String(Character.toChars(code)) in svg.glyphs
         else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
     }
@@ -93,8 +96,13 @@ private fun loadFont(context: Context, id: String): LoadedFont {
     }
     val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
     check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
-    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: user?.let(repo::userRevision) ?: "bundled-v1") + ":glyph-extractor-v2",
-        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id)
+    val cmap = when {
+        installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> FontCmap.read(repo.fontFile(installed))
+        user?.kind == LetterFont.Kind.OUTLINE -> user.file?.let(FontCmap::read)
+        else -> null
+    }
+    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: user?.let(repo::userRevision) ?: "bundled-v1") + ":glyph-extractor-v3",
+        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap)
 }
 
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {

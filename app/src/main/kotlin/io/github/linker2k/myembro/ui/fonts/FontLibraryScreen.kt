@@ -92,7 +92,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-enum class FontFilter { KOREAN, LATIN, SINGLE_LINE, OUTLINE }
+enum class FontFilter { KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
@@ -126,11 +126,14 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val ids = withContext(Dispatchers.IO) { repo.installedIds() }
             fonts.forEach { installed[it.id] = it.id in ids }
+            // The catalog's precomputed numbers show before download; installed fonts replace them below.
+            fonts.forEach { f -> repo.precomputedQuality(f)?.let { qualities[f.id] = it } }
             fonts.filter { it.id in ids }.forEach { font ->
                 loadPreview(font)
-                // Missing or outdated reports are recomputed; quality is advisory, so failures are ignored.
+                // The full report replaces the catalog numbers; missing or outdated reports are recomputed.
+                // Quality is advisory, so failures are ignored.
                 withContext(Dispatchers.IO) {
-                    runCatching { repo.letterFont(font).quality ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
+                    runCatching { FontQualitySummary.read(repo.fontFile(font)) ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
                 }?.let { qualities[font.id] = it }
             }
             userFonts += withContext(Dispatchers.IO) { repo.userFonts() }
@@ -143,6 +146,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             val reasons = f.quality?.reasons.orEmpty()
             (FontFilter.KOREAN !in filters || QualityReasons.MISSING_HANGUL !in reasons) &&
                 (FontFilter.LATIN !in filters || QualityReasons.MISSING_LATIN !in reasons) &&
+                FontFilter.SCRIPT !in filters &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == LetterFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == LetterFont.Kind.OUTLINE)
         }
@@ -201,6 +205,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
         get() = fonts.filter { f ->
             (FontFilter.KOREAN !in filters || f.korean) &&
                 (FontFilter.LATIN !in filters || f.latin) &&
+                (FontFilter.SCRIPT !in filters || f.script) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == CatalogFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == CatalogFont.Kind.OUTLINE_TTF)
         }
@@ -222,7 +227,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
                 loadPreview(font)
                 // Quality is advisory: a failed analysis must not undo a verified download.
                 withContext(Dispatchers.IO) {
-                    runCatching { repo.letterFont(font).quality ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
+                    runCatching { FontQualitySummary.read(repo.fontFile(font)) ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
                 }?.let { qualities[font.id] = it }
             } catch (e: CancellationException) {
                 throw e
@@ -242,6 +247,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             installed[font.id] = false
             previews.remove(font.id)
             qualities.remove(font.id)
+            repo.precomputedQuality(font)?.let { qualities[font.id] = it }
         }
     }
 
@@ -320,6 +326,7 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
                 FontChip(stringResource(R.string.fonts_filter_all), vm.filters.isEmpty()) { vm.clearFilters() }
                 FontChip(stringResource(R.string.fonts_filter_korean), FontFilter.KOREAN in vm.filters) { vm.toggle(FontFilter.KOREAN) }
                 FontChip(stringResource(R.string.fonts_filter_latin), FontFilter.LATIN in vm.filters) { vm.toggle(FontFilter.LATIN) }
+                FontChip(stringResource(R.string.fonts_filter_script), FontFilter.SCRIPT in vm.filters) { vm.toggle(FontFilter.SCRIPT) }
                 FontChip(stringResource(R.string.fonts_filter_single_line), FontFilter.SINGLE_LINE in vm.filters) { vm.toggle(FontFilter.SINGLE_LINE) }
                 FontChip(stringResource(R.string.fonts_filter_outline), FontFilter.OUTLINE in vm.filters) { vm.toggle(FontFilter.OUTLINE) }
             }
@@ -483,6 +490,19 @@ private fun PreviewBox(label: String, preview: FontPreview?) {
     }
 }
 
+/** Recommended heights above this mark hairline scripts that only work as large lettering. */
+private const val LARGE_ONLY_MM = 25.0
+
+@Composable
+private fun NoteBadge(text: String) {
+    Text(
+        text,
+        color = MaterialTheme.colorScheme.onTertiaryContainer,
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier.background(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.shapes.extraSmall).padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
 @Composable
 private fun FontChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
@@ -517,6 +537,15 @@ private fun FontCard(
     ) {
         PreviewBox(font.nameKo ?: font.name, preview)
         if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) SingleLineFontBadge()
+        // Hairline outlines only; a single-line font's tight spots are gaps, not thin strokes.
+        val largeOnly = font.kind == CatalogFont.Kind.OUTLINE_TTF &&
+            quality?.recommendedMinHeightMm?.let { it.isFinite() && it > LARGE_ONLY_MM } == true
+        if (largeOnly || font.thinStroke) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (largeOnly) NoteBadge(stringResource(R.string.fonts_large_only))
+                if (font.thinStroke) NoteBadge(stringResource(R.string.fonts_thin_stroke))
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
@@ -543,7 +572,7 @@ private fun FontCard(
                 Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
             }
         }
-        quality?.takeIf { installed }?.let {
+        quality?.let {
             minHeightText(it.recommendedMinHeightMm)?.let { line -> Text(line, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
         }
         if (progress != null) {

@@ -5,6 +5,9 @@
     <string name="fonts_filter_korean">한글</string>
     <string name="fonts_filter_latin">영문</string>
     <string name="fonts_filter_single_line">단선</string>
+    <string name="fonts_filter_script">필기체</string>
+    <string name="fonts_large_only">큰 글자 전용</string>
+    <string name="fonts_thin_stroke">가는 선 · 러닝(빈) 스티치용</string>
     <string name="fonts_filter_outline">외곽선</string>
     <string name="fonts_kind_single_line">단선</string>
     <string name="fonts_kind_outline">외곽선</string>

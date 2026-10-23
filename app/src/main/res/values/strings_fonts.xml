@@ -5,6 +5,9 @@
     <string name="fonts_filter_korean">Korean</string>
     <string name="fonts_filter_latin">Latin</string>
     <string name="fonts_filter_single_line">Single-line</string>
+    <string name="fonts_filter_script">Script</string>
+    <string name="fonts_large_only">Large lettering only</string>
+    <string name="fonts_thin_stroke">Thin lines · Best as a running stitch</string>
     <string name="fonts_filter_outline">Outline</string>
     <string name="fonts_kind_single_line">Single-line</string>
     <string name="fonts_kind_outline">Outline</string>

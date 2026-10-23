@@ -37,6 +37,10 @@ data class CatalogFont(
     /** Optional precomputed quality; otherwise the app analyzes the font after download. */
     val recommendedMinHeightMm: Double? = null,
     val qualityGrade: QualityGrade? = null,
+    /** Style tag, e.g. "script" for joined handwriting fonts. */
+    val style: String? = null,
+    /** Hairline outline font: reads best sewn as a running stitch, not a satin fill. */
+    val thinStroke: Boolean = false,
 ) {
     enum class Kind(val json: String, val extension: String) {
         SINGLE_LINE_SVG("single-line-svg", "svg"),
@@ -45,6 +49,7 @@ data class CatalogFont(
 
     val korean: Boolean get() = "ko" in scripts
     val latin: Boolean get() = "latin" in scripts
+    val script: Boolean get() = style == "script"
 }
 
 class ChecksumMismatchException(val fontId: String) : IOException("Checksum mismatch for $fontId")
@@ -131,13 +136,10 @@ class FontRepository(context: Context) {
 
     fun letterFont(font: CatalogFont): LetterFont {
         val file = fontFile(font)
-        val precomputed = font.recommendedMinHeightMm?.let { h ->
-            FontQualitySummary(font.qualityGrade ?: QualityGrade.GOOD, h, null, null, emptyList())
-        }
         return LetterFont(
             id = font.id, name = font.nameKo ?: font.name,
             kind = if (font.kind == CatalogFont.Kind.OUTLINE_TTF) LetterFont.Kind.OUTLINE else LetterFont.Kind.SINGLE_LINE_SVG,
-            file = file, quality = FontQualitySummary.read(file) ?: precomputed,
+            file = file, quality = FontQualitySummary.read(file) ?: precomputedQuality(font),
         )
     }
 
@@ -231,6 +233,11 @@ class FontRepository(context: Context) {
         File(userDir, font.id.removePrefix(USER_PREFIX) + META_SUFFIX).delete()
         file.delete()
         FontQualityCache.Shared.invalidate(font.id)
+    }
+
+    /** The catalog's precomputed quality, shown before download; null when the catalog has none. */
+    fun precomputedQuality(font: CatalogFont): FontQualitySummary? = font.recommendedMinHeightMm?.let { h ->
+        FontQualitySummary(font.qualityGrade ?: QualityGrade.GOOD, h, null, null, emptyList())
     }
 
     /** Runs and stores the quality analysis of an installed catalog font. */
@@ -361,6 +368,8 @@ class FontRepository(context: Context) {
                     licenseInFont = o.optBoolean("licenseInFont"),
                     recommendedMinHeightMm = o.optDouble("recommendedMinHeightMm").takeUnless { it.isNaN() },
                     qualityGrade = o.optString("qualityGrade").ifEmpty { null }?.let { QualityGrade.valueOf(it) },
+                    style = o.optString("style").ifEmpty { null },
+                    thinStroke = o.optBoolean("thinStroke"),
                 )
             }
         }
