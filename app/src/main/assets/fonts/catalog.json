@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Pinned downloads only: every url names a fixed commit and is checked against sha256 before use. Optional per font: recommendedMinHeightMm and qualityGrade (GOOD|CAUTION|UNSUITABLE), present for every font, computed from the script sample at 10/20 mm (analysis version 6, docs/lettering.md) by the engine test CatalogQualityTool; the app re-analyzes the font after download. Jua, Noto Sans KR and Gowun Batang are bundled, not listed.",
+  "note": "Pinned downloads only: every url names a fixed commit and is checked against sha256 before use. Optional per font: recommendedMinHeightMm and qualityGrade (GOOD|CAUTION|UNSUITABLE), present for every font, computed from the script sample at 10/20 mm (analysis version 7, docs/lettering.md) by the engine test CatalogQualityTool; the app re-analyzes the font after download. Jua, Noto Sans KR and Gowun Batang are bundled, not listed.",
   "fonts": [
     {
       "id": "hershey-sans-1",
@@ -17,7 +17,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySans1.svg",
       "licenseSha256": "998705d56cf5148e5b6ef8149801edda3e594ff778f65c84e97977e809db5ed3",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -36,7 +36,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheyScript1.svg",
       "licenseSha256": "26854b00c2147c2a0a27dba488d7a696db581603ff43f4b85f07b435246d473f",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -54,7 +54,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySerifMed.svg",
       "licenseSha256": "5d1bbcfcac94806c6345737add65ed94fc16b40d4716c95c4502ab1c8474a01c",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -72,7 +72,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheyGothEnglish.svg",
       "licenseSha256": "d722e45a9c66b757a3e2c7ed8d92dc06b09ebf87718afbdd30b317b035e2ea28",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 7.5,
+      "recommendedMinHeightMm": 10.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -89,7 +89,7 @@
       "size": 50395,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -107,7 +107,7 @@
       "size": 67847,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 6.5,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -124,7 +124,7 @@
       "size": 48932,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -141,7 +141,7 @@
       "size": 44217,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 8.0,
+      "recommendedMinHeightMm": 7.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -158,7 +158,7 @@
       "size": 46630,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -175,7 +175,7 @@
       "size": 176600,
       "licenseUrl": "https://raw.githubusercontent.com/isdat-type/Relief-SingleLine/01dfc5779ec1e9e4b288d96c6c96c23bfccbaf9d/OFL.txt",
       "licenseSha256": "005834fd32a01fb021a44167cafd4fa3df8058a7b0fb7319bd19b445d2fe24a3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -194,7 +194,7 @@
       "size": 7229088,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/gowundodum/OFL.txt",
       "licenseSha256": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca",
-      "recommendedMinHeightMm": 19.5,
+      "recommendedMinHeightMm": 18.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -213,7 +213,7 @@
       "size": 879764,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/dohyeon/OFL.txt",
       "licenseSha256": "de5ff32211a4340b01477af39ee339d639438955e409f79b666d4b9207f3c92c",
-      "recommendedMinHeightMm": 12.0,
+      "recommendedMinHeightMm": 14.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -251,7 +251,7 @@
       "size": 3201664,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/nanumpenscript/OFL.txt",
       "licenseSha256": "eeacf16032901d0ed0456876ec77b8f0fda6b3fecec7d972f8543eb602e6c30f",
-      "recommendedMinHeightMm": 9.5,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "GOOD"
     },
     {
@@ -270,7 +270,7 @@
       "size": 3165816,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/gaegu/OFL.txt",
       "licenseSha256": "53a9ce47085d9fef613c7ecb3730dc80d25962510bbea231b89564f58240f251",
-      "recommendedMinHeightMm": 8.0,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "GOOD"
     },
     {
@@ -289,7 +289,7 @@
       "size": 998424,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/blackhansans/OFL.txt",
       "licenseSha256": "c324192c8b3a988bae45a9a7e4ac1258b684739003bda114e0523423440457c9",
-      "recommendedMinHeightMm": 15.5,
+      "recommendedMinHeightMm": 17.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -308,7 +308,7 @@
       "size": 770536,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/sunflower/OFL.txt",
       "licenseSha256": "a9b40759b5821a0c2ad07cbd2c2a61dca4b3e222e6370a7d5bfb6b373bf4fb10",
-      "recommendedMinHeightMm": 8.5,
+      "recommendedMinHeightMm": 8.0,
       "qualityGrade": "GOOD"
     },
     {
@@ -346,7 +346,7 @@
       "size": 12623412,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/himelody/OFL.txt",
       "licenseSha256": "39de3de5f1873f89bca4af37823ab22e28e88d0d8f7fe2f07e82e9e6e9bf7b70",
-      "recommendedMinHeightMm": 8.5,
+      "recommendedMinHeightMm": 9.0,
       "qualityGrade": "GOOD"
     },
     {
@@ -403,7 +403,7 @@
       "size": 2511004,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/yeonsung/OFL.txt",
       "licenseSha256": "d7d8074c2dd46804990c184e25849947ab76c5ac7607fbf3966543455769bb73",
-      "recommendedMinHeightMm": 14.0,
+      "recommendedMinHeightMm": 17.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -422,7 +422,7 @@
       "size": 10854004,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/stylish/OFL.txt",
       "licenseSha256": "a9b3e7e1cf5735dc49d802b88b1858a2a50307ba2a877ddf3f0b27d8b1d0abc5",
-      "recommendedMinHeightMm": 12.5,
+      "recommendedMinHeightMm": 11.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -441,7 +441,7 @@
       "size": 2035300,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/songmyung/OFL.txt",
       "licenseSha256": "40bd3f35477284c021978816e9d3b8723ff2283fd7065fafaa5bb3004e41b237",
-      "recommendedMinHeightMm": 24.5,
+      "recommendedMinHeightMm": 21.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -460,7 +460,7 @@
       "size": 990856,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/gugi/OFL.txt",
       "licenseSha256": "391ac3126dacc95b92a8f3408467879edb3245344bc411530a30d5aada52df92",
-      "recommendedMinHeightMm": 9.0,
+      "recommendedMinHeightMm": 10.0,
       "qualityGrade": "GOOD"
     },
     {
@@ -479,8 +479,8 @@
       "size": 1027936,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/cutefont/OFL.txt",
       "licenseSha256": "1a2debd5ad8e656b26bb3b29213caa8f7e557a2f31454b11ebb6c3e3b59aa5d4",
-      "recommendedMinHeightMm": 9.5,
-      "qualityGrade": "GOOD"
+      "recommendedMinHeightMm": 12.0,
+      "qualityGrade": "CAUTION"
     },
     {
       "id": "east-sea-dokdo",
@@ -498,8 +498,8 @@
       "size": 3178684,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/eastseadokdo/OFL.txt",
       "licenseSha256": "39de3de5f1873f89bca4af37823ab22e28e88d0d8f7fe2f07e82e9e6e9bf7b70",
-      "recommendedMinHeightMm": 44.5,
-      "qualityGrade": "UNSUITABLE"
+      "recommendedMinHeightMm": 12.5,
+      "qualityGrade": "CAUTION"
     },
     {
       "id": "dokdo",
@@ -517,8 +517,8 @@
       "size": 2150860,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/dokdo/OFL.txt",
       "licenseSha256": "dcc832bd71ea62cbf97f06327a1b5442905b49ea446801421d71f7d1362db215",
-      "recommendedMinHeightMm": 10.5,
-      "qualityGrade": "CAUTION"
+      "recommendedMinHeightMm": 8.5,
+      "qualityGrade": "GOOD"
     },
     {
       "id": "kirang-haerang",
@@ -536,7 +536,7 @@
       "size": 5995608,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/kiranghaerang/OFL.txt",
       "licenseSha256": "7e896665d0863d2a17a671001dbe2528a5f9302f1dff9222af8b0834e9088d0c",
-      "recommendedMinHeightMm": 14.5,
+      "recommendedMinHeightMm": 16.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -555,7 +555,7 @@
       "size": 3058408,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/nanummyeongjo/OFL.txt",
       "licenseSha256": "8eb1c1019fe7fe6d0b6e7d7bbbba1d9cbdd969d8c5f26455708f6cfb8a77284c",
-      "recommendedMinHeightMm": 28.5,
+      "recommendedMinHeightMm": 30.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -574,7 +574,7 @@
       "size": 3074720,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/nanummyeongjo/OFL.txt",
       "licenseSha256": "8eb1c1019fe7fe6d0b6e7d7bbbba1d9cbdd969d8c5f26455708f6cfb8a77284c",
-      "recommendedMinHeightMm": 21.0,
+      "recommendedMinHeightMm": 21.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -593,7 +593,7 @@
       "size": 3564804,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/nanumbrushscript/OFL.txt",
       "licenseSha256": "eeacf16032901d0ed0456876ec77b8f0fda6b3fecec7d972f8543eb602e6c30f",
-      "recommendedMinHeightMm": 20.5,
+      "recommendedMinHeightMm": 19.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -612,7 +612,7 @@
       "size": 2295400,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/gothica1/OFL.txt",
       "licenseSha256": "ed95c33f80ccca002e3a360b683c43368f9c5eb024e5b992abb51af3c10b59bc",
-      "recommendedMinHeightMm": 18.0,
+      "recommendedMinHeightMm": 16.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -631,7 +631,7 @@
       "size": 2287068,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/gothica1/OFL.txt",
       "licenseSha256": "ed95c33f80ccca002e3a360b683c43368f9c5eb024e5b992abb51af3c10b59bc",
-      "recommendedMinHeightMm": 13.5,
+      "recommendedMinHeightMm": 16.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -650,7 +650,7 @@
       "size": 4458600,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/dongle/OFL.txt",
       "licenseSha256": "f9e59049e824264bffd626d0901cfcaac9d5ba756988b904d3e3e0e233493607",
-      "recommendedMinHeightMm": 7.0,
+      "recommendedMinHeightMm": 8.0,
       "qualityGrade": "GOOD"
     },
     {
@@ -688,7 +688,7 @@
       "size": 1931840,
       "licenseUrl": "https://raw.githubusercontent.com/hyper-type/hahmlet/106541144954a9b7037b8d3837097ba660312655/OFL.txt",
       "licenseSha256": "ddadb10d28a303e3ef3b1f7ec55d3027903b9ec566d2f87d3ee03f3c87c91711",
-      "recommendedMinHeightMm": 15.5,
+      "recommendedMinHeightMm": 16.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -707,7 +707,7 @@
       "size": 2797100,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/ibmplexsanskr/OFL.txt",
       "licenseSha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
-      "recommendedMinHeightMm": 17.0,
+      "recommendedMinHeightMm": 15.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -726,7 +726,7 @@
       "size": 2875584,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/ibmplexsanskr/OFL.txt",
       "licenseSha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
-      "recommendedMinHeightMm": 13.0,
+      "recommendedMinHeightMm": 17.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -745,7 +745,7 @@
       "size": 7669020,
       "licenseUrl": "https://raw.githubusercontent.com/notofonts/noto-cjk/985fa52c81c1d6692ccdd82bc3656e8fb932fd89/Serif/LICENSE",
       "licenseSha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
-      "recommendedMinHeightMm": 23.0,
+      "recommendedMinHeightMm": 28.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -762,7 +762,7 @@
       "size": 61400,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/bebasneue/OFL.txt",
       "licenseSha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341",
-      "recommendedMinHeightMm": 8.5,
+      "recommendedMinHeightMm": 8.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -796,7 +796,7 @@
       "size": 170812,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/anton/OFL.txt",
       "licenseSha256": "ee67e6ee22790b7929f1a3769ca2801d565c64b5a9096942c1adf5596de9c9e4",
-      "recommendedMinHeightMm": 7.5,
+      "recommendedMinHeightMm": 8.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -813,7 +813,7 @@
       "size": 210208,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/d08233f9c581786e8c834a1f0695a4f27869c119/ofl/playfairdisplay/OFL.txt",
       "licenseSha256": "f5b03ea0b27c7f5afb9702771ee57679ae8ba6b471b6ba9e62d985d3256f1929",
-      "recommendedMinHeightMm": 39.0,
+      "recommendedMinHeightMm": 38.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -830,7 +830,7 @@
       "size": 97376,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/alfaslabone/OFL.txt",
       "licenseSha256": "e315abc82a78710c7242e2f2e6529651fd631d4d50e6ad98ea194f9b54c3d701",
-      "recommendedMinHeightMm": 6.0,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -847,7 +847,7 @@
       "size": 43104,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/righteous/OFL.txt",
       "licenseSha256": "1c5bc055869d5e9151ec7774082727db720ec4293c65be67f91a4bdcaeb02998",
-      "recommendedMinHeightMm": 7.5,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -932,7 +932,7 @@
       "size": 67364,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/abrilfatface/OFL.txt",
       "licenseSha256": "aba8997e16b1e3888c6e855ba883c70d96bd4375bff8cb9c7ce0f097200f74b8",
-      "recommendedMinHeightMm": 32.5,
+      "recommendedMinHeightMm": 32.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -949,7 +949,7 @@
       "size": 74632,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/apache/permanentmarker/LICENSE.txt",
       "licenseSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
-      "recommendedMinHeightMm": 7.5,
+      "recommendedMinHeightMm": 10.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1020,7 +1020,7 @@
       "size": 241104,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/lobstertwo/OFL.txt",
       "licenseSha256": "f46c3ea04f38ea73c0731d73dfba3d7361d4b38970feb31a3558bd1b75e0656a",
-      "recommendedMinHeightMm": 16.0,
+      "recommendedMinHeightMm": 15.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1038,7 +1038,7 @@
       "size": 210672,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/kaushanscript/OFL.txt",
       "licenseSha256": "3336bf5d4e7eedba48ecb831f37bf676e901c39f2e6a422cceadd9d2ffa55be8",
-      "recommendedMinHeightMm": 22.5,
+      "recommendedMinHeightMm": 22.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1092,7 +1092,7 @@
       "size": 62216,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/apache/yellowtail/LICENSE.txt",
       "licenseSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
-      "recommendedMinHeightMm": 11.0,
+      "recommendedMinHeightMm": 16.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1110,7 +1110,7 @@
       "size": 43800,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/cookie/OFL.txt",
       "licenseSha256": "c832a4230a713d080aa2f2544d9a298ed911f689b2c48f7f276a0196b16d2b8a",
-      "recommendedMinHeightMm": 21.0,
+      "recommendedMinHeightMm": 22.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1218,7 +1218,7 @@
       "size": 457588,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/greatvibes/OFL.txt",
       "licenseSha256": "61093a21f5e63dedf54222b3c09997e54c0fe43e3851d21386e02ddcbc246d49",
-      "recommendedMinHeightMm": 49.5,
+      "recommendedMinHeightMm": 50.0,
       "qualityGrade": "UNSUITABLE"
     },
     {
@@ -1236,7 +1236,7 @@
       "size": 116244,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/alexbrush/OFL.txt",
       "licenseSha256": "0ee34ce7c99b0deb7f7332bca0a4950d3796c23c00de77ada8aa29a4b55ff2c2",
-      "recommendedMinHeightMm": 39.5,
+      "recommendedMinHeightMm": 40.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1254,7 +1254,7 @@
       "size": 246632,
       "licenseUrl": "https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/allura/OFL.txt",
       "licenseSha256": "c8cb4c94a558b6cb82ac5dc981a73a0b8aee35a5c52c8a7832fc0280c289ad49",
-      "recommendedMinHeightMm": 35.0,
+      "recommendedMinHeightMm": 35.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1327,7 +1327,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySansMed.svg",
       "licenseSha256": "09caef2942baa1fb7db349ff5b6cf01424001b909839276debac5a0937e371f1",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1346,7 +1346,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheyScriptMed.svg",
       "licenseSha256": "9a9fb475691a927a0685637dc32ea1b9cf2cf549f57087e36d3653a077f5702b",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.5,
+      "recommendedMinHeightMm": 7.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1364,7 +1364,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySerifBold.svg",
       "licenseSha256": "73020b1a4ebd922e9c66be9d4e83fb217db9a2b288d7d6eea921a2c579ce2989",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1382,7 +1382,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySerifBoldItalic.svg",
       "licenseSha256": "69fb3b7941a9029c7c7c3bb15ffefe29ebd589959b2328de99dfcc574d2d0eba",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1400,7 +1400,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheySerifMedItalic.svg",
       "licenseSha256": "67b3597c7167e9bc7779b3788fba2c2f93b69807912fe44fef8b8dfe70542b26",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1418,7 +1418,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheyGothGerman.svg",
       "licenseSha256": "c88e34972d9bc0dce22cc6b70bc37cb2f057c6e2d6c8ed0fda7f649502ab29fc",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.5,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1436,7 +1436,7 @@
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/Hershey/HersheyGothItalian.svg",
       "licenseSha256": "8467b56da845cd3a618559622c160a07280955879233a4d31b6b827f29bb22fa",
       "licenseInFont": true,
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 7.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1454,7 +1454,7 @@
       "size": 62625,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 9.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1472,7 +1472,7 @@
       "size": 74579,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 11.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1490,7 +1490,7 @@
       "size": 76584,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 6.5,
+      "recommendedMinHeightMm": 10.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1508,7 +1508,7 @@
       "size": 71165,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 7.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1526,7 +1526,7 @@
       "size": 71010,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 8.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1543,7 +1543,7 @@
       "size": 54594,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 7.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1560,7 +1560,7 @@
       "size": 57434,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 8.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1578,7 +1578,7 @@
       "size": 57795,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1595,7 +1595,7 @@
       "size": 48390,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1613,7 +1613,7 @@
       "size": 61700,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 9.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1631,7 +1631,7 @@
       "size": 82101,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 9.0,
+      "recommendedMinHeightMm": 13.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1649,7 +1649,7 @@
       "size": 67856,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 13.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1666,7 +1666,7 @@
       "size": 107261,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 13.0,
+      "recommendedMinHeightMm": 14.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1684,7 +1684,7 @@
       "size": 53676,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 10.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1701,7 +1701,7 @@
       "size": 59728,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1718,7 +1718,7 @@
       "size": 59914,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1735,7 +1735,7 @@
       "size": 36115,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1752,7 +1752,7 @@
       "size": 46469,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1770,7 +1770,7 @@
       "size": 51967,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1788,7 +1788,7 @@
       "size": 63197,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 7.0,
+      "recommendedMinHeightMm": 11.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1805,7 +1805,7 @@
       "size": 50185,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 6.0,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1823,7 +1823,7 @@
       "size": 83494,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 9.5,
+      "recommendedMinHeightMm": 12.5,
       "qualityGrade": "CAUTION"
     },
     {
@@ -1841,7 +1841,7 @@
       "size": 72972,
       "licenseUrl": "https://gitlab.com/oskay/svg-fonts/-/raw/8c71f2d9e1a5292047bb88e5595a766241b82cc6/fonts/EMS/OFL.txt",
       "licenseSha256": "ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3",
-      "recommendedMinHeightMm": 5.0,
+      "recommendedMinHeightMm": 7.5,
       "qualityGrade": "CAUTION"
     }
   ]

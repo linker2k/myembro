@@ -6,16 +6,17 @@ import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.geometry.PolygonRegion
 import io.github.linker2k.myembro.engine.geometry.Polyline
 import java.util.Locale
-import java.util.PriorityQueue
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryCollection
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Polygon
 
@@ -23,11 +24,11 @@ enum class Grade { GOOD, CAUTION, UNSUITABLE }
 
 /** What sets the recommended height (docs/lettering.md, "글꼴 품질"). */
 enum class QualityLimit {
-    /** Satin needs ink at least [FontQuality.INK_MIN_MM] wide. */
+    /** Satin needs ink at least [FontQuality.SATIN_WIDTH_FACTOR] thread diameters wide. */
     INK,
-    /** Space between outline strokes, or between parallel single-line strokes. */
+    /** Space between outline strokes, or between single-line strokes. */
     GAP,
-    /** Small closed loops of single-line fonts. */
+    /** Closed loops of single-line fonts, followed with running stitches. */
     LOOP,
     /** Nothing measured is tighter than the script's detail floor. */
     DETAIL,
@@ -46,9 +47,9 @@ data class FontQualityReport(
     val reasons: List<String>,
     /** Length-weighted 10th percentile of local stroke width (outline fonts). */
     val inkP10Mm: Double? = null,
-    /** Length-weighted 10th percentile of the space between strokes. */
+    /** Length-weighted 10th percentile of the space between strokes (single-line: centre to centre). */
     val gapP10Mm: Double? = null,
-    /** Length-weighted 10th percentile of small loop diameters (single-line fonts). */
+    /** Length-weighted 10th percentile of loop size as an equivalent diameter, circumference / π (single-line fonts). */
     val loopP10Mm: Double? = null,
     val limitedBy: QualityLimit = QualityLimit.DETAIL,
 )
@@ -56,56 +57,75 @@ data class FontQualityReport(
 /**
  * Embroidery suitability of glyph geometry. A heuristic from local measurements, not a guarantee.
  *
- * Outline fonts: overlapping contours are merged by the nonzero rule first (static instances of
- * variable fonts keep their overlaps). From boundary samples every 1/[STEPS_PER_HEIGHT] of the
- * height, a ray along the inward normal gives the local stroke width and one along the outward
- * normal the local gap. Samples within [END_FACTOR] stroke widths of a stroke end (tapered brush
- * tips, serif ends) and gaps within [END_FACTOR] gap widths of the corner that closes them (ink
- * traps, joins) are left out. Of the rest the length-weighted 10th percentile counts, so one thin
- * spot cannot decide the result.
+ * Outline fonts: overlapping contours are merged by the nonzero rule and specks (brush texture)
+ * dropped. From boundary samples every 1/[STEPS_PER_HEIGHT] of the height, a ray along the inward
+ * normal gives the local stroke width and one along the outward normal the local gap. Stroke ends
+ * (tapered tips, serif ends) are left out, as are gaps whose far side does not face back (open
+ * corners) and the tips of notches. Of the rest the length-weighted 10th percentile counts, so one
+ * thin spot cannot decide the result.
  *
- * Single-line fonts: stroke width is the thread's, so only the space between strokes counts.
- * Crossings and joins are left out, as are parts within [END_FACTOR] gaps of them and strokes
- * bundled into one bolder line ([BUNDLE_FRACTION]). Gaps that
- * close around a short path of ink are loops and need [LOOP_MIN_MM].
+ * Single-line fonts are drawn as lines [LINE_WIDTH_FRACTION] of the height wide, so strokes
+ * meant to merge (Hershey's multi-stroke weights) merge and joins become notches, and measured
+ * like outlines: the gap is centre to centre, the counters are loops.
  *
- * The recommended height is the largest of the heights that bring each percentile to its limit
- * and the script's detail floor, rounded up to 0.5 mm. It is never 0 or infinite.
+ * Limits follow the thread (docs/lettering.md): satin ≥ [SATIN_WIDTH_FACTOR] diameters, a counter
+ * still one diameter open after [SPREAD_MM] spread, a loop long enough for [LOOP_STITCHES]
+ * running stitches of [CURVE_STITCH_MM], all on the [GRID_MM] coordinate grid. The recommended
+ * height is the largest height bringing each percentile to its limit and the detail floor,
+ * rounded up to 0.5 mm. It is never 0 or infinite.
  */
 object FontQuality {
     /** Bump when the analysis changes; stored reports of older versions are recomputed. */
-    const val VERSION = 6
+    const val VERSION = 7
 
-    const val INK_MIN_MM = 1.0
-    const val GAP_MIN_MM = 0.6
-    const val LINE_GAP_MIN_MM = 1.0
-    const val LOOP_MIN_MM = 1.5
-    const val HANGUL_DETAIL_MM = 7.0
-    const val LATIN_DETAIL_MM = 5.0
+    /** Satin column at least this many thread diameters wide (practice value, docs/lettering.md). */
+    const val SATIN_WIDTH_FACTOR = 2.5
+    /** Thread spreads into a counter by about this much (practice value). */
+    const val SPREAD_MM = 0.2
+    /** Running stitch length along curves (practice range 1.0–1.5 mm; the short end). */
+    const val CURVE_STITCH_MM = 1.0
+    /** A loop needs at least this many stitches around to stay round. */
+    const val LOOP_STITCHES = 6
+    /** PES/PEC coordinate unit. */
+    const val GRID_MM = 0.1
+    const val HANGUL_DETAIL_MM = 8.0
+    const val LATIN_DETAIL_MM = 6.0
+    /** No general-purpose font is recommended at or below 5 mm, whatever the thread. */
+    const val MIN_DETAIL_MM = 5.5
 
-    /** Fixed samples per script: dense syllables for Hangul; counters, bowls and joins for Latin. */
+    /** Fixed samples: dense syllables for Hangul; counters, bowls and joins for Latin. */
     const val HANGUL_SAMPLE = "가나다한글뷁쀍"
     const val LATIN_SAMPLE = "aegsRBQ&@"
 
     private const val PERCENTILE = 0.10
-    private const val END_FACTOR = 1.5
     private const val STEPS_PER_HEIGHT = 200.0
     /** Gaps wider than this fraction of the height are open space, not a constraint. */
     private const val MAX_GAP_FRACTION = 0.5
-    /** Single-line strokes closer than this fraction of the height touch (Hershey "A" bar: 1.4 %). */
-    private const val CONTACT_FRACTION = 0.025
+    /** Stroke ends: samples within this many stroke widths plus [TIP_FRACTION] of the height. */
+    private const val TIP_FACTOR = 0.5
+    private const val TIP_FRACTION = 0.02
+    /** Notch tips: gaps closer than this many yardsticks to the corner that closes them. */
+    private const val NOTCH_FACTOR = 1.5
+    /** On outer boundaries the yardstick is at least this share of the local stroke width. */
+    private const val NOTCH_STROKE_SHARE = 0.7
+    /** The far side of a gap must face back within 60°. */
+    private const val FACING_COS = -0.5
+    /** Ink islands smaller than this share of height² are texture specks. */
+    private const val SPECK_FRACTION = 0.0005
     /**
-     * Single-line strokes running closer than this fraction of the height are one line by design:
-     * Hershey's medium, bold and gothic weights draw each line with 2–3 parallel pen strokes
-     * 3–4.5 % of the height apart, meant to merge into a bolder line.
+     * Single-line strokes are drawn this share of the height wide (40wt thread at 6.7 mm), so
+     * Hershey's multi-stroke weights, drawn 1 font unit (4.7–5.4 % of the height) apart to merge
+     * into a bolder line, merge.
      */
-    private const val BUNDLE_FRACTION = 0.05
-    /** Along-ink path / gap below this: the gap closes around a short loop (a circle is π/2). */
-    private const val LOOP_PATH_RATIO = 2.6
+    private const val LINE_WIDTH_FRACTION = 0.06
+    /** Single-line pockets smaller than this share of height² fill in (where bundled strokes part). */
+    private const val POCKET_FRACTION = 0.002
+    /** Holes at least this round (4πA/P², a circle is 1) are loops whatever their size. */
+    private const val ROUND_HOLE = 0.5
     private const val TIGHT_SECTION_MM = 0.25
 
-    /** The fixed analysis sample of a font: Hangul when it has Hangul, otherwise Latin. */
-    fun sample(hangul: Boolean): String = if (hangul) HANGUL_SAMPLE else LATIN_SAMPLE
+    /** The fixed analysis sample of a font: Hangul and Latin when it has Hangul, otherwise Latin. */
+    fun sample(hangul: Boolean): String = if (hangul) HANGUL_SAMPLE + LATIN_SAMPLE else LATIN_SAMPLE
 
     /**
      * A font's badge from its 10 mm and 20 mm reports: good if fine at 10 mm, caution if usable
@@ -120,13 +140,26 @@ object FontQuality {
         return if (missingScript && grade == Grade.GOOD) Grade.CAUTION else grade
     }
 
+    /** The 40wt detail floor of [text]; [analyze] scales it for finer thread. */
     fun detailFloorMm(text: String): Double =
         if (text.any { it in '가'..'힣' || it in 'ᄀ'..'ᇿ' || it in '㄰'..'㆏' }) HANGUL_DETAIL_MM
         else LATIN_DETAIL_MM
 
+    /** Narrowest satin column for [weight], on the coordinate grid. */
+    fun satinMinMm(weight: ThreadWeight): Double = onGrid(SATIN_WIDTH_FACTOR * weight.diameterMm)
+
+    /** Narrowest outline gap: one diameter left open after spread. */
+    fun gapMinMm(weight: ThreadWeight): Double = onGrid(weight.diameterMm + SPREAD_MM)
+
+    /** Narrowest single-line spacing, centre to centre: two half lines, spread and one open diameter. */
+    fun lineGapMinMm(weight: ThreadWeight): Double = onGrid(2 * weight.diameterMm + SPREAD_MM)
+
+    /** Smallest loop as an equivalent diameter: [LOOP_STITCHES] stitches of [CURVE_STITCH_MM] around. */
+    fun loopMinMm(): Double = onGrid(LOOP_STITCHES * CURVE_STITCH_MM / PI)
+
     /**
      * Outer list = independent glyphs, middle list = contours/strokes, inner list = points, all in
-     * mm at [heightMm]. Outline contours are closed implicitly.
+     * mm at [heightMm]. Outline contours are closed implicitly. [detailFloorMm] is the 40wt floor.
      */
     fun analyze(
         glyphContours: List<List<List<Pair<Double, Double>>>>,
@@ -156,16 +189,14 @@ object FontQuality {
             jumpCount = Math.addExact(jumpCount, pattern.jumpCount)
             if (outline) measureOutline(paths, heightMm, ink, gap) else measureStrokes(paths, heightMm, gap, loop)
         }
-        val floorMm = ceilHalf(detailFloorMm)
+        val floorMm = ceilHalf(max(MIN_DETAIL_MM, detailFloorMm * threadWeight.floorScale))
         if (!hasGeometry) return FontQualityReport(
             Double.POSITIVE_INFINITY, floorMm, 0, 0, 0, Grade.UNSUITABLE,
             listOf("분석할 글자 외곽선이나 획이 없습니다."),
         )
-        // Finer thread lays narrower columns, so every feature limit shrinks with the preset.
-        val scale = threadWeight.featureScale
-        val inkLimit = INK_MIN_MM * scale
-        val gapLimit = (if (outline) GAP_MIN_MM else LINE_GAP_MIN_MM) * scale
-        val loopLimit = LOOP_MIN_MM * scale
+        val inkLimit = satinMinMm(threadWeight)
+        val gapLimit = if (outline) gapMinMm(threadWeight) else lineGapMinMm(threadWeight)
+        val loopLimit = loopMinMm()
         // A percentile can be tiny but never 0: keep the recommendation finite.
         val smallest = heightMm * 1e-3
         val inkP10 = ink.percentile()?.coerceAtLeast(smallest)
@@ -186,8 +217,11 @@ object FontQuality {
         val tight = ink.below(inkLimit) + gap.below(gapLimit) + loop.below(loopLimit)
         val reasons = buildList {
             inkP10?.let { add("얇은 획(하위 10%): ${mm(it)}mm (새틴 최소 ${mm(inkLimit)}mm, ${threadWeight.wt}wt).") }
-            gapP10?.let { add("좁은 획 간격(하위 10%): ${mm(it)}mm (최소 ${mm(gapLimit)}mm).") }
-            loopP10?.let { add("작은 고리 지름(하위 10%): ${mm(it)}mm (최소 ${mm(loopLimit)}mm).") }
+            gapP10?.let {
+                if (outline) add("좁은 획 간격(하위 10%): ${mm(it)}mm (최소 ${mm(gapLimit)}mm, 실 퍼짐 포함).")
+                else add("좁은 획 간격(하위 10%, 중심 간): ${mm(it)}mm (최소 ${mm(gapLimit)}mm, ${threadWeight.wt}wt).")
+            }
+            loopP10?.let { add("작은 고리 지름(하위 10%): ${mm(it)}mm (최소 ${mm(loopLimit)}mm, 둘레에 ${LOOP_STITCHES}땀).") }
             val cause = when (limit) {
                 QualityLimit.INK -> "획 두께"
                 QualityLimit.GAP -> "획 사이 간격"
@@ -215,48 +249,63 @@ object FontQuality {
 
     private fun ceilHalf(value: Double) = ceil(value * 2 - 1e-9) / 2
 
+    /** Rounds a physical limit up to the stitch coordinate grid: the machine cannot place finer. */
+    private fun onGrid(value: Double) = ceil(value / GRID_MM - 1e-9) * GRID_MM
+
     private fun mm(value: Double) = String.format(Locale.ROOT, "%.2f", value).trimEnd('0').trimEnd('.')
 
-    /**
-     * Length-weighted samples of one measurement over all measured boundary (or stroke) length:
-     * length facing nothing nearby counts as unconstrained, so a few tight spots in one glyph
-     * do not decide the percentile alone.
-     */
+    /** Length-weighted samples of one measurement; only constrained length counts. */
     private class Measures {
         private val values = ArrayList<Double>()
         private val weights = ArrayList<Double>()
-        private var open = 0.0
         fun add(value: Double, weight: Double) { values += value; weights += weight }
-        fun addOpen(weight: Double) { open += weight }
-        /** Null when nothing was measured or the percentile falls in unconstrained length. */
+        /** Null when nothing was measured. */
         fun percentile(): Double? {
             if (values.isEmpty()) return null
             val order = values.indices.sortedBy { values[it] }
-            val target = (weights.sum() + open) * PERCENTILE
+            val target = weights.sum() * PERCENTILE
             var sum = 0.0
             for (i in order) {
                 sum += weights[i]
                 if (sum >= target) return values[i]
             }
-            return null
+            return values[order.last()]
         }
         fun below(limit: Double): Double = values.indices.sumOf { if (values[it] < limit - 1e-9) weights[it] else 0.0 }
     }
 
-    // ---- Outline fonts ----
+    // ---- Boundary measurement, shared by outline and single-line fonts ----
 
-    /** One edge of a merged boundary ring; the ink is on its left. */
+    /** One edge of a boundary ring; the ink is on its left. */
     private class Edge(val ring: Int, val ax: Double, val ay: Double, val bx: Double, val by: Double, val arc: Double) {
         val length = hypot(bx - ax, by - ay)
     }
 
-    private class Hit(val distance: Double, val ring: Int, val arc: Double)
+    /** A ray's first crossing, with the outward normal of the edge it crossed. */
+    private class Hit(val distance: Double, val ring: Int, val arc: Double, val ox: Double, val oy: Double)
 
     /** A boundary point with its inward normal. */
     private class RingSample(val x: Double, val y: Double, val nx: Double, val ny: Double, val arc: Double, val weight: Double, val edge: Int)
 
+    /** Rings of a region, oriented with the ink on their left, and which of them are holes. */
+    private class Rings(val rings: List<List<Pair<Double, Double>>>, val holes: Set<Int>)
+
     private fun measureOutline(paths: List<List<Pair<Double, Double>>>, heightMm: Double, ink: Measures, gap: Measures) {
-        val rings = mergedRings(paths)
+        val region = runCatching {
+            PolygonRegion.fromPaths(paths.map { p -> Polyline(p.map { Point(it.first, it.second) }, closed = true) }, FillRule.NON_ZERO)
+        }.getOrNull() ?: return
+        val polygons = polygons(region.geometry).filter { it.area >= SPECK_FRACTION * heightMm * heightMm }
+        measureRings(rings(polygons, minHoleArea = 0.0), heightMm, ink, gap, gapOffset = 0.0)
+    }
+
+    /**
+     * Measures [region]: stroke widths into [ink] when given, gaps (plus [gapOffset]) into [gap].
+     * Ink: a sample whose ray comes back to its own ring near where it started sits in a stroke
+     * end; the widest part nearby stands for the stroke. Gap: the far side must face back, and a
+     * notch tip (the hit close along the ring) is a corner, not space between strokes.
+     */
+    private fun measureRings(region: Rings, heightMm: Double, ink: Measures?, gap: Measures, gapOffset: Double) {
+        val rings = region.rings
         if (rings.isEmpty()) return
         val edges = ArrayList<Edge>()
         val ringLength = DoubleArray(rings.size)
@@ -294,10 +343,9 @@ object FontQuality {
             val length = ringLength[r]
             fun along(a: Double, b: Double) = abs(a - b).let { min(it, length - it) }
             val widths = samples.map { s -> cast(edges, s, s.nx, s.ny, Double.POSITIVE_INFINITY) }
-            for ((i, s) in samples.withIndex()) {
+            if (ink != null) for ((i, s) in samples.withIndex()) {
                 val hit = widths[i] ?: continue
                 if (hit.ring == r) {
-                    // The widest part nearby stands for the stroke, so a tip is judged by the stroke it ends.
                     val window = 2 * hit.distance + heightMm * 0.05
                     var stroke = hit.distance
                     for (direction in intArrayOf(1, -1)) {
@@ -309,18 +357,19 @@ object FontQuality {
                         }
                     }
                     val toEnd = (along(hit.arc, s.arc) - hit.distance) / 2
-                    if (toEnd < END_FACTOR * stroke) continue
+                    if (toEnd < TIP_FACTOR * stroke + TIP_FRACTION * heightMm) continue
                 }
                 ink.add(hit.distance, s.weight)
             }
             for ((i, s) in samples.withIndex()) {
-                val hit = cast(edges, s, -s.nx, -s.ny, maxGap)
-                if (hit == null) { gap.addOpen(s.weight); continue }
-                // A notch shallower than the strokes around it (an ink trap, the cusp where a bowl
-                // meets a stem) is a corner, not space between strokes.
-                val stroke = widths[i]?.distance ?: hit.distance
-                if (hit.ring == r && (along(hit.arc, s.arc) - hit.distance) / 2 < END_FACTOR * max(stroke, hit.distance)) continue
-                gap.add(hit.distance, s.weight)
+                val hit = cast(edges, s, -s.nx, -s.ny, maxGap) ?: continue
+                if (-s.nx * hit.ox - s.ny * hit.oy > FACING_COS) continue
+                // Counters are judged by the gap alone; on outer boundaries a notch is also measured
+                // against the strokes around it (an ink trap, the cusp where a bowl meets a stem).
+                val yardstick = if (r in region.holes) hit.distance
+                else max(NOTCH_STROKE_SHARE * (widths[i]?.distance ?: 0.0), hit.distance)
+                if (hit.ring == r && (along(hit.arc, s.arc) - hit.distance) / 2 < NOTCH_FACTOR * yardstick) continue
+                gap.add(hit.distance + gapOffset, s.weight)
             }
         }
     }
@@ -342,20 +391,25 @@ object FontQuality {
             val u = (wx * dy - wy * dx) / denominator
             if (u < 0.0 || u > 1.0) continue
             best = t
-            hit = Hit(t, e.ring, e.arc + u * e.length)
+            hit = Hit(t, e.ring, e.arc + u * e.length, ey / e.length, -ex / e.length)
         }
         return hit
     }
 
-    /** Boundary rings of the nonzero union, each oriented with the ink on its left. */
-    private fun mergedRings(paths: List<List<Pair<Double, Double>>>): List<List<Pair<Double, Double>>> {
-        val region = runCatching {
-            PolygonRegion.fromPaths(paths.map { p -> Polyline(p.map { Point(it.first, it.second) }, closed = true) }, FillRule.NON_ZERO)
-        }.getOrNull() ?: return emptyList()
-        return polygons(region.geometry).flatMap { polygon ->
-            listOf(oriented(polygon.exteriorRing, positive = true)) +
-                (0 until polygon.numInteriorRing).map { oriented(polygon.getInteriorRingN(it), positive = false) }
-        }.filter { it.size >= 3 }
+    private fun rings(polygons: List<Polygon>, minHoleArea: Double): Rings {
+        val rings = ArrayList<List<Pair<Double, Double>>>()
+        val holes = HashSet<Int>()
+        for (polygon in polygons) {
+            oriented(polygon.exteriorRing, positive = true).takeIf { it.size >= 3 }?.let { rings += it }
+            for (k in 0 until polygon.numInteriorRing) {
+                val hole = polygon.getInteriorRingN(k)
+                val area = polygon.factory.createPolygon(hole.coordinates).area
+                // A small sliver is a pocket between merging strokes; a small round hole is still a loop.
+                if (area < minHoleArea && 4 * PI * area / (hole.length * hole.length) < ROUND_HOLE) continue
+                oriented(hole, positive = false).takeIf { it.size >= 3 }?.let { holes += rings.size; rings += it }
+            }
+        }
+        return Rings(rings, holes)
     }
 
     private fun polygons(g: Geometry): List<Polygon> = when {
@@ -379,169 +433,24 @@ object FontQuality {
 
     // ---- Single-line fonts ----
 
+    private val geometryFactory = GeometryFactory()
+
+    /**
+     * Draws the strokes [LINE_WIDTH_FRACTION] of the height wide and measures the drawing: gaps
+     * plus the line width are centre-to-centre spacing; each counter is a loop whose centre line
+     * runs half a line width outside it.
+     */
     private fun measureStrokes(strokes: List<List<Pair<Double, Double>>>, heightMm: Double, gap: Measures, loop: Measures) {
-        val step = heightMm / STEPS_PER_HEIGHT
-        val contact = heightMm * CONTACT_FRACTION
-        // Dense points of every stroke; a stroke ending where it started is a closed loop.
-        val xs = ArrayList<Double>()
-        val ys = ArrayList<Double>()
-        val strokeOf = ArrayList<Int>()
-        val starts = IntArray(strokes.size + 1)
-        val closed = BooleanArray(strokes.size)
-        for ((s, stroke) in strokes.withIndex()) {
-            starts[s] = xs.size
-            xs += stroke.first().first
-            ys += stroke.first().second
-            strokeOf += s
-            for ((p, q) in stroke.zipWithNext()) {
-                val n = max(1, ceil(hypot(q.first - p.first, q.second - p.second) / step).toInt())
-                for (k in 1..n) {
-                    xs += p.first + (q.first - p.first) * k / n
-                    ys += p.second + (q.second - p.second) * k / n
-                    strokeOf += s
-                }
-            }
-            closed[s] = hypot(stroke.first().first - stroke.last().first, stroke.first().second - stroke.last().second) < contact
-        }
-        starts[strokes.size] = xs.size
-        val count = xs.size
-        fun dist(i: Int, j: Int) = hypot(xs[i] - xs[j], ys[i] - ys[j])
-        val arc = DoubleArray(count)
-        for (s in strokes.indices) for (i in starts[s] + 1 until starts[s + 1]) arc[i] = arc[i - 1] + dist(i - 1, i)
-        /** Distance along one stroke, around the loop when the stroke is closed. */
-        fun alongStroke(i: Int, j: Int): Double {
-            val s = strokeOf[i]
-            val d = abs(arc[i] - arc[j])
-            return if (closed[s]) min(d, arc[starts[s + 1] - 1] - d) else d
-        }
-        fun neighbors(i: Int): List<Int> {
-            val s = strokeOf[i]
-            val first = starts[s]
-            val last = starts[s + 1] - 1
-            return buildList {
-                if (i > first) add(i - 1) else if (closed[s] && last > first) add(last)
-                if (i < last) add(i + 1) else if (closed[s] && last > first) add(first)
-            }
-        }
-
-        // Contacts: points of another stroke, or of a distant part of the same stroke, within reach.
-        val grid = HashMap<Long, MutableList<Int>>()
-        fun cell(i: Int) = floor(xs[i] / contact).toLong() to floor(ys[i] / contact).toLong()
-        fun key(cx: Long, cy: Long) = cx * 73856093L xor cy * 19349663L
-        for (i in 0 until count) cell(i).let { (cx, cy) -> grid.getOrPut(key(cx, cy)) { mutableListOf() } += i }
-        val links = Array(count) { ArrayList<Int>(4) }
-        val inContact = BooleanArray(count)
-        for (i in 0 until count) {
-            val (cx, cy) = cell(i)
-            for (dx in -1L..1L) for (dy in -1L..1L) for (j in grid[key(cx + dx, cy + dy)].orEmpty()) {
-                if (j <= i || dist(i, j) >= contact) continue
-                if (strokeOf[i] == strokeOf[j] && alongStroke(i, j) <= 3 * contact) continue
-                links[i] += j
-                links[j] += i
-                inContact[i] = true
-                inContact[j] = true
-            }
-        }
-
-        // A contact cluster is a junction when three or more stroke branches meet there (a crossing,
-        // a T, a fork, a retraced stem). Two stroke ends meeting are one continuing line.
-        val cluster = IntArray(count) { it }
-        fun root(i: Int): Int { var r = i; while (cluster[r] != r) r = cluster[r]; return r }
-        fun join(i: Int, j: Int) { val a = root(i); val b = root(j); if (a != b) cluster[a] = b }
-        for (i in 0 until count) if (inContact[i]) {
-            for (j in links[i]) join(i, j)
-            for (j in neighbors(i)) if (inContact[j]) join(i, j)
-        }
-        val branches = HashMap<Int, Int>()
-        for (s in strokes.indices) {
-            val first = starts[s]
-            val last = starts[s + 1] - 1
-            // On a closed stroke, start counting after a gap so a run across the closing point is one run.
-            val offset = if (closed[s]) (0..last - first).firstOrNull { !inContact[first + it] } ?: continue else 0
-            val size = last - first + 1
-            var k = 0
-            while (k < size) {
-                val i = first + (offset + k) % size
-                if (!inContact[i]) { k++; continue }
-                val c = root(i)
-                var end = k
-                while (end + 1 < size && first + (offset + end + 1) % size != i && inContact[first + (offset + end + 1) % size] &&
-                    root(first + (offset + end + 1) % size) == c) end++
-                val atStart = !closed[s] && i == first
-                val atEnd = !closed[s] && first + (offset + end) % size == last
-                branches[c] = (branches[c] ?: 0) + (if (atStart) 0 else 1) + (if (atEnd) 0 else 1)
-                k = end + 1
-            }
-        }
-        val junction = BooleanArray(count) { inContact[it] && (branches[root(it)] ?: 0) >= 3 }
-
-        // Ink distance to the nearest junction, along strokes and across contacts.
-        val toJunction = DoubleArray(count) { Double.POSITIVE_INFINITY }
-        val queue = PriorityQueue<Pair<Double, Int>>(compareBy { it.first })
-        for (i in 0 until count) if (junction[i]) { toJunction[i] = 0.0; queue += 0.0 to i }
-        while (queue.isNotEmpty()) {
-            val (d, i) = queue.poll()
-            if (d > toJunction[i]) continue
-            for (j in neighbors(i) + links[i]) {
-                val nd = d + dist(i, j)
-                if (nd < toJunction[j]) { toJunction[j] = nd; queue += nd to j }
-            }
-        }
-
-        /** Whether ink connects [from] to [to] within [limit]. */
-        fun inkPathWithin(from: Int, to: Int, limit: Double): Boolean {
-            val best = HashMap<Int, Double>()
-            val open = PriorityQueue<Pair<Double, Int>>(compareBy { it.first })
-            best[from] = 0.0
-            open += 0.0 to from
-            while (open.isNotEmpty()) {
-                val (d, i) = open.poll()
-                if (i == to) return true
-                if (d > (best[i] ?: Double.POSITIVE_INFINITY)) continue
-                for (j in neighbors(i) + links[i]) {
-                    val nd = d + dist(i, j)
-                    if (nd <= limit && nd < (best[j] ?: Double.POSITIVE_INFINITY)) { best[j] = nd; open += nd to j }
-                }
-            }
-            return false
-        }
-
-        val maxGap = heightMm * MAX_GAP_FRACTION
-        for (i in 0 until count) {
-            if (inContact[i]) continue
-            val around = neighbors(i)
-            if (around.isEmpty()) continue
-            val tx = xs[around.last()] - xs[around.first()]
-            val ty = ys[around.last()] - ys[around.first()]
-            val length = hypot(tx, ty)
-            if (length <= 0.0) continue
-            val weight = length / around.size / 2
-            for (sign in intArrayOf(1, -1)) {
-                val dx = -ty / length * sign
-                val dy = tx / length * sign
-                var best = maxGap
-                var target = -1
-                for (s in strokes.indices) for (j in starts[s] until starts[s + 1] - 1) {
-                    if (strokeOf[i] == s && min(alongStroke(i, j), alongStroke(i, j + 1)) <= 3 * step) continue
-                    val ex = xs[j + 1] - xs[j]
-                    val ey = ys[j + 1] - ys[j]
-                    val denominator = dx * ey - dy * ex
-                    if (abs(denominator) < 1e-12) continue
-                    val wx = xs[j] - xs[i]
-                    val wy = ys[j] - ys[i]
-                    val t = (wx * ey - wy * ex) / denominator
-                    if (t <= contact || t >= best) continue
-                    val u = (wx * dy - wy * dx) / denominator
-                    if (u < 0.0 || u > 1.0) continue
-                    best = t
-                    target = if (u < 0.5) j else j + 1
-                }
-                if (target < 0) { gap.addOpen(weight); loop.addOpen(weight); continue }
-                if (best < heightMm * BUNDLE_FRACTION) continue
-                if (toJunction[i] < END_FACTOR * best) continue
-                if (inkPathWithin(i, target, LOOP_PATH_RATIO * best)) { loop.add(best, weight); gap.addOpen(weight) }
-                else { gap.add(best, weight); loop.addOpen(weight) }
-            }
+        val width = LINE_WIDTH_FRACTION * heightMm
+        val lines = strokes.map { s -> geometryFactory.createLineString(s.map { (x, y) -> Coordinate(x, y) }.toTypedArray()) }
+        val drawn = runCatching { geometryFactory.createMultiLineString(lines.toTypedArray()).buffer(width / 2, 8) }.getOrNull() ?: return
+        val region = rings(polygons(drawn), minHoleArea = POCKET_FRACTION * heightMm * heightMm)
+        measureRings(region, heightMm, ink = null, gap = gap, gapOffset = width)
+        for (h in region.holes) {
+            val ring = region.rings[h]
+            val perimeter = ring.indices.sumOf { i -> ring[i].let { (ax, ay) -> ring[(i + 1) % ring.size].let { (bx, by) -> hypot(bx - ax, by - ay) } } }
+            val circumference = perimeter + PI * width
+            loop.add(circumference / PI, circumference)
         }
     }
 }
