@@ -142,7 +142,19 @@ private fun LetteringContent(
         if (ready) result?.let { onAdd(it.textObject.copy(id = UUID.randomUUID().toString())) }
         Unit
     }
-    BackHandler(onBack = onBack)
+    val initialDraft = remember { LetteringDraftSnapshot(initialText, initialFontId, heightDraft, thread.color) }
+    val draftChanged = LetteringDraftSnapshot(text, fontId, heightDraft, thread.color) != initialDraft
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val requestBack = { if (draftChanged) confirmDiscard = true else onBack() }
+    BackHandler(onBack = requestBack)
+    if (confirmDiscard) AlertDialog(
+        onDismissRequest = { confirmDiscard = false },
+        title = { Text(stringResource(R.string.lettering_discard_title)) },
+        text = { Text(stringResource(R.string.lettering_discard_body)) },
+        confirmButton = { TextButton(onClick = { confirmDiscard = false; onBack() }) {
+            Text(stringResource(R.string.editor_discard)) } },
+        dismissButton = { TextButton(onClick = { confirmDiscard = false }) {
+            Text(stringResource(R.string.editor_cancel)) } })
     LaunchedEffect(fontId, text, height) {
         try {
             automatic = automaticLetteringState(context, fontId, text, height)
@@ -187,11 +199,14 @@ private fun LetteringContent(
         fontPreviews = previews
     }
     val current = result.takeIf { renderedKey == generationKey && !busy && permittedHeight }
+    val previewPattern = remember(current, initialObject?.transform) {
+        current?.let { letteringPreviewObject(it.textObject, initialObject).placedPattern() }
+    }
     Scaffold(modifier = modifier, containerColor = colors.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.lettering_title), style = MaterialTheme.typography.titleMedium) },
-                navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
+                navigationIcon = { IconButton(requestBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background))
         },
         bottomBar = {
@@ -209,7 +224,7 @@ private fun LetteringContent(
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.fillMaxWidth().height(280.dp)) {
-                HoopPreview(current?.pattern, backgroundPattern, hoop, fitText,
+                HoopPreview(previewPattern, backgroundPattern, hoop, fitText,
                     Modifier.fillMaxSize().semantics { contentDescription = context.getString(R.string.lettering_preview) })
                 Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = MaterialTheme.shapes.small,
                     color = colors.surface.copy(alpha = 0.9f)) {
@@ -422,25 +437,23 @@ private fun ThreadChip(color: Color, label: String, selected: Boolean, onClick: 
 private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: HoopSpec, fitText: Boolean, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     Canvas(modifier) {
-        val radius = minOf(size.width * 0.42f, size.height * 0.45f)
-        val center = Offset(size.width / 2, size.height / 2 + 5.dp.toPx())
-        val wood = lerp(colors.outline, colors.primary, 0.32f)
-        drawCircle(colors.onSurface.copy(alpha = 0.05f), radius + 5.dp.toPx(), center + Offset(0f, 4.dp.toPx()))
-        drawCircle(colors.surface, radius, center)
-        val clip = Path().apply { addOval(androidx.compose.ui.geometry.Rect(center - Offset(radius, radius), Size(radius * 2, radius * 2))) }
+        val center = Offset(size.width / 2, size.height / 2)
+        val viewport = letteringViewport(minOf(size.width, size.height) * 0.82f, pattern, hoop, fitText)
+        val scale = viewport.scale
+        fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
+        val topLeft = point(-hoop.width / 2.0, -hoop.height / 2.0)
+        val hoopSize = Size(hoop.width * scale, hoop.height * scale)
+        val corner = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+        drawRoundRect(colors.surface, topLeft, hoopSize, cornerRadius = corner)
+        val clip = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(
+            androidx.compose.ui.geometry.Rect(topLeft, hoopSize), corner)) }
         clipPath(clip) {
-            val grid = 5.dp.toPx()
-            var x = center.x - radius
-            while (x < center.x + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(x, center.y - radius), Offset(x, center.y + radius), 0.5.dp.toPx()); x += grid }
-            var y = center.y - radius
-            while (y < center.y + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(center.x - radius, y), Offset(center.x + radius, y), 0.5.dp.toPx()); y += grid }
-            val viewport = letteringViewport(radius * 1.35f, pattern, hoop, fitText)
-            val scale = viewport.scale
-            fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
-            // Decorative round frame and the actual rectangular sewing area are distinct.
-            drawRect(colors.outline, point(-hoop.width / 2.0, -hoop.height / 2.0),
-                Size(hoop.width * scale, hoop.height * scale),
-                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))))
+            for (x in (-hoop.width / 2)..(hoop.width / 2) step 100) {
+                drawLine(colors.outline.copy(alpha = 0.35f), point(x.toDouble(), -hoop.height / 2.0), point(x.toDouble(), hoop.height / 2.0))
+            }
+            for (y in (-hoop.height / 2)..(hoop.height / 2) step 100) {
+                drawLine(colors.outline.copy(alpha = 0.35f), point(-hoop.width / 2.0, y.toDouble()), point(hoop.width / 2.0, y.toDouble()))
+            }
             fun drawPattern(p: EmbPattern, color: Color?) {
                 var previous = p.stitches.firstOrNull() ?: return
                 var colorIndex = 0
@@ -457,11 +470,8 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             pattern?.let { drawPattern(it, null) }
 
         }
-        drawCircle(wood, radius, center, style = Stroke(9.dp.toPx()))
-        drawCircle(colors.surface.copy(alpha = 0.45f), radius - 3.dp.toPx(), center, style = Stroke(1.dp.toPx()))
-        drawCircle(colors.onSurface.copy(alpha = 0.12f), radius + 3.dp.toPx(), center, style = Stroke(1.dp.toPx()))
-        drawRoundRect(wood, center + Offset(-18.dp.toPx(), -radius - 14.dp.toPx()), Size(36.dp.toPx(), 12.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()))
-        drawLine(colors.tertiary, center + Offset(-23.dp.toPx(), -radius - 10.dp.toPx()), center + Offset(23.dp.toPx(), -radius - 10.dp.toPx()), 4.dp.toPx(), StrokeCap.Round)
+        drawRoundRect(colors.outline, topLeft, hoopSize, cornerRadius = corner, style = Stroke(5.dp.toPx()))
+
     }
 }
 

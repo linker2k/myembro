@@ -641,3 +641,21 @@ embro-codex `auto-rules.md`에서 글자 높이·새틴 폭의 안전 경계가 
 b798af7 임시 잠금은 제거했고 S1 공통 후처리를 쓴다. 정상 source 잠금의 S0·짧은 분할을 보존하므로
 이전 문서의 “모든 실제 땀 0.3mm 이상”은 현재 후처리의 보장이 아니다. 기존 저장 프로젝트의 명시적
 채우기·빈 설정은 읽을 수 있지만 신규 UI 선택에는 노출하지 않는다.
+
+### 편집기 레터링 수정 시트 UI 회귀 (staging/s2s3 be02ff3 기준)
+
+시트는 Hidden 전환을 거부하며 바깥 탭/드래그로 초안을 취소하지 않는다.
+시스템·상단 뒤로는 변경이 있을 때 버리기 확인을 거치고, 취소는 초안을 유지한다.
+완료만 기존 객체에 반영한다. 글꼴 목록은 기존 뒤로 동작으로 레터링 초안에 돌아온다.
+미리보기는 편집기와 같은 테마 사각 프레임/10mm 격자이며, 기존 객체의 위치·회전·
+확대를 보존해 그린다. 새 글자만 원점에 놓는다. 렌더러·생성 엔진·저장 배치 계약은 변경하지 않았다.
+
+에뮬레이터 전/후는 별도 `io.github.linker2k.myembro.lettersheetqa` 패키지에서 실제
+EditorScreen/LetteringScreen으로 확인했다. AB, Hershey,12mm, Transform(230,-180,15°),
+100×100mm 후프. 기존 드래그 취소 재현, 수정 후 동일 드래그+바깥 탭 유지, 변경 후
+뒤로 확인→취소 초안 유지, 완료→재수정, 명시적 버리기 후 객체 전체 불변을 확인했다.
+스크린샷/XML/자동 저장 비교와 테스트 출력:
+`/tmp/myembro-port-out/letter/sheet-ui/` (`before.png`, `after.png`, `confirm.png`, `output.txt`).
+
+검증: `./gradlew check :app:assembleDebug` 전체 통과, 엔진586·앱 Debug/Release 각190개 실패0,
+Lint 통과. LetteringPreviewPlacementTest3건은 위치·회전·크기, 새 글자 중앙, 초안 변경 필드를 검증한다.

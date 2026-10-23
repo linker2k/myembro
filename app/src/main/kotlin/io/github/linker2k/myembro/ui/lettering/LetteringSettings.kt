@@ -144,3 +144,9 @@ internal fun layoutGlyphs(lines: List<List<LayoutGlyph>>, reference: Double, set
     }
     return LetteringLayout(contours, characters, baselines)
 }
+
+/** UI projection only: editing retains the editor object's transform; new text starts centered. */
+internal fun letteringPreviewObject(generated: TextObject, original: TextObject?): TextObject =
+    generated.copy(transform = original?.transform ?: Transform())
+
+internal data class LetteringDraftSnapshot(val text: String, val fontId: String, val height: String, val color: Int)
