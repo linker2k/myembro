@@ -15,6 +15,13 @@ import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.DesignSourceResolver
+import io.github.linker2k.myembro.library.DesignImportProgress
+import io.github.linker2k.myembro.library.DesignImportReport
+import io.github.linker2k.myembro.library.ImportSkip
+import io.github.linker2k.myembro.library.ImportSkipReason
+import io.github.linker2k.myembro.library.importDesigns
+import io.github.linker2k.myembro.library.ImportDecisions
+import kotlinx.coroutines.Job
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.ui.machines.MachineHoop
 import io.github.linker2k.myembro.export.ExportChecks
@@ -25,6 +32,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ensureActive
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val documents = EditorDocuments()
@@ -239,8 +248,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         replaceSession(Project(hoop = supportedHoop(hoop)).add(obj), savedOnDisk = false, selection = setOf(obj.id))
     }
 
-    private fun importObject(file: File) = StitchObject.fromBytes(UUID.randomUUID().toString(),
-        file.nameWithoutExtension, file.readBytes(), file.name)
+    private fun importObject(file: File) = importDesignObject(file)
 
     /** Viewer entry point: its initial object is the baseline, not an undoable import. */
     fun editDesign(file: File) = requestReplacement {
@@ -390,6 +398,53 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_load_failed, e)
             } finally { busy = false }
+        }
+    }
+    val importProgress = MutableStateFlow<DesignImportProgress?>(null)
+    var importReport by mutableStateOf<DesignImportReport?>(null)
+        private set
+    fun dismissImportReport() { importReport = null }
+    val importDecisions = ImportDecisions()
+    private var importJob: Job? = null
+    fun cancelImport() { importDecisions.cancel(); importJob?.cancel() }
+
+    /** One undo step for the batch, one independently editable object per selected design. */
+    fun importDesigns(uris: List<Uri>, tree: Uri? = null, openSingleProject: Boolean = false) {
+        if (interactionBlocked || gestureInProgress || (uris.isEmpty() && tree == null)) return
+        busy = true
+        importReport = null
+        importProgress.value = DesignImportProgress(0, null, "")
+        importJob = viewModelScope.launch {
+            var projectToOpen: File? = null
+            try {
+                val report = getApplication<Application>().importDesigns(uris, tree, importDecisions::choose) { importProgress.value = it }
+                if (report.cancelled) return@launch
+                val files = report.imported.distinct()
+                val skipped = report.skipped.toMutableList()
+                if (openSingleProject && files.size == 1 && files.single().extension == "myembro") {
+                    projectToOpen = files.single()
+                    importReport = DesignImportReport(files, skipped)
+                } else {
+                    val added = withContext(Dispatchers.IO) {
+                        files.mapIndexedNotNull { index, file ->
+                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                            importProgress.value = DesignImportProgress(index, files.size, file.name, committing = true)
+                            try { importObject(file) }
+                            catch (e: CancellationException) { throw e }
+                            catch (e: Exception) { skipped += ImportSkip(file.name, ImportSkipReason.FAILED, e.message); null }
+                        }
+                    }
+                    if (added.isNotEmpty()) {
+                        edit(project.copy(objects = project.objects + added))
+                        selectedIds = added.mapTo(linkedSetOf()) { it.id }
+                    }
+                    importReport = DesignImportReport(files.filter { f -> added.any { it.name == f.nameWithoutExtension } }, skipped)
+                }
+            } catch (e: CancellationException) { throw e
+            } catch (e: Exception) {
+                importReport = DesignImportReport(emptyList(), listOf(ImportSkip(tree?.toString() ?: "", ImportSkipReason.FAILED, e.message)))
+            } finally { importProgress.value = null; busy = false }
+            projectToOpen?.let(::openProject)
         }
     }
     private fun report(resource: Int, e: Exception) {

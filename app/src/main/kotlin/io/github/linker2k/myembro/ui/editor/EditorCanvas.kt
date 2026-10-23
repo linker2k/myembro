@@ -15,6 +15,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,6 +35,11 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.edit.DesignObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
 import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.ThreadRendering
 import kotlin.math.abs
@@ -59,9 +65,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val accent = colors.primary
     val textSize = with(density) { MaterialTheme.typography.labelSmall.fontSize.toPx() }
     val description = stringResource(R.string.editor_canvas_description)
-    val renders = vm.project.objects.filter { it.visible }.map { obj ->
-        key(obj.id) { remember(obj) { obj.id to RenderData(obj.placedPattern()) } }
-    }
+    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible })
     val selectedBounds = remember(renders, vm.selectedIds) {
         val boxes = renders.filter { it.first in vm.selectedIds }.mapNotNull { it.second.pattern.bounds }
         if (boxes.isEmpty()) null else Bounds(boxes.minOf { it.minX }, boxes.minOf { it.minY },
@@ -280,4 +284,26 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             c.nativeCanvas.drawText("${(zoom * 100).roundToInt()}%", 32.dp.toPx(), size.height - 10.dp.toPx(), p)
         }
     }
+}
+
+/** A batch can contain hundreds of objects; retain unchanged renders and build new ones off main. */
+@Composable
+private fun rememberObjectRenders(objects: List<DesignObject>): List<Pair<String, RenderData>> {
+    if (objects.size < 20) return objects.map { obj ->
+        key(obj.id) { remember(obj) { obj.id to RenderData(obj.placedPattern()) } }
+    }
+    val cache = remember { mutableMapOf<String, Pair<DesignObject, RenderData>>() }
+    val renders by produceState<List<Pair<String, RenderData>>>(emptyList(), objects) {
+        val previous = cache.toMap()
+        val next = withContext(Dispatchers.Default) {
+            objects.associate { obj ->
+                currentCoroutineContext().ensureActive()
+                obj.id to (obj to (previous[obj.id]?.takeIf { it.first == obj }?.second
+                    ?: RenderData(obj.placedPattern()).also { it.pattern.bounds }))
+            }
+        }
+        cache.clear(); cache.putAll(next)
+        value = objects.map { it.id to next.getValue(it.id).second }
+    }
+    return renders
 }

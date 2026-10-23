@@ -25,8 +25,13 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.SewingPosition
+import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.rememberDesignImporter
+import io.github.linker2k.myembro.ui.DesignImportDialogs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Standalone entry point. Brand, dark mode, typography and surfaces come from MyembroTheme. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,10 +61,16 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var preview by remember { mutableFloatStateOf(1f) }
         var exportName by remember { mutableStateOf("myembro") }
         val enabled = !vm.interactionBlocked && !vm.gestureInProgress
+        val importDesign = rememberDesignImporter(
+            onFiles = { vm.importDesigns(it); preview = 1f },
+            onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
+        // Keep the local design collection available alongside device files/folders.
         val addDesign = { vm.refreshDesigns(); showDesigns = true }
-        val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) { vm.openProject(uri); fitRequest++; preview = 1f }
-        }
+        val openDocument = rememberDesignImporter(
+            onFiles = { vm.importDesigns(it, openSingleProject = true); fitRequest++; preview = 1f },
+            onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
+        val importProgress by vm.importProgress.collectAsState()
+        DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
             if (uri != null) vm.saveProject(exportName, uri)
         }
@@ -71,7 +82,20 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 if (vm.message == message) vm.message = null
             }
         }
-        val outside = remember(vm.project, vm.gestureInProgress, vm.sewingPositions) { vm.hoopOverflowVisible }
+        val outside = if (vm.project.objects.size < 20) {
+            remember(vm.project, vm.gestureInProgress, vm.sewingPositions) { vm.hoopOverflowVisible }
+        } else {
+            val project = vm.project
+            val gesturing = vm.gestureInProgress
+            val positions = vm.sewingPositions
+            val multiPosition = vm.multiPositionFrame != null
+            val value by produceState(false, project, gesturing, positions, multiPosition) {
+                value = withContext(Dispatchers.Default) {
+                    !gesturing && (project.exceedsHoop() || (multiPosition && positions.isNotEmpty() && project.positionFit(positions).outsideIds.isNotEmpty()))
+                }
+            }
+            value
+        }
         Scaffold(containerColor = colors.background, snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 Column {
@@ -227,6 +251,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             confirmButton = { TextButton(onClick = vm::dismissExportProblems) { Text(stringResource(R.string.editor_apply)) } }) }
         if (showDesigns) ModalBottomSheet(onDismissRequest = { showDesigns = false }) {
             Text(stringResource(R.string.editor_add), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = { showDesigns = false; importDesign() }, modifier = Modifier.padding(horizontal = 12.dp)) {
+                Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.import_title))
+            }
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
                 items(vm.designs, key = { it.path }) { file ->
@@ -259,7 +287,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro") })
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
             onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
-            onDevice = { showOpenProjects = false; openDocument.launch(arrayOf("*/*")) })
+            onDevice = { showOpenProjects = false; openDocument() })
     }
 }
 

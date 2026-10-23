@@ -8,9 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.library.BundledDesigns
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.library.DesignFormats
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
@@ -73,8 +73,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun describe(file: File): HomeProject {
         val thumbnail = try {
-            if (file.extension.equals("myembro", ignoreCase = true)) null
-            else Thumbnails.render(RenderData(PatternReader.read(file.readBytes(), file.name)), 320)
+            Thumbnails.render(RenderData(DesignFormats.read(file)), 320)
         } catch (_: Exception) { null }
         return HomeProject(file, thumbnail)
     }

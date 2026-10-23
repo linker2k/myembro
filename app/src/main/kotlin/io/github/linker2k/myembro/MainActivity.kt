@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -22,13 +23,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.IntentCompat
-import androidx.lifecycle.lifecycleScope
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.export.PreflightDialog
-import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.LibraryScreen
 import io.github.linker2k.myembro.ui.LibraryViewModel
+import io.github.linker2k.myembro.ui.DesignImportDialogs
+import io.github.linker2k.myembro.ui.rememberDesignImporter
 import io.github.linker2k.myembro.ui.ViewerScreen
 import io.github.linker2k.myembro.ui.ViewerViewModel
 import io.github.linker2k.myembro.ui.editor.EditorRecoveryDialog
@@ -43,10 +44,6 @@ import io.github.linker2k.myembro.ui.settings.SettingsViewModel
 import io.github.linker2k.myembro.ui.sources.FreeDesignSourcesScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.installMyembroSplashScreen
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -73,9 +70,8 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val context = LocalContext.current
-            val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                uri?.let { importUris(listOf(it)) }
-            }
+            val openDocument = rememberDesignImporter(onFiles = ::importUris,
+                onFolder = { library.import(emptyList(), tree = it, onComplete = ::afterImport) })
             val saveDocument = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/octet-stream"),
             ) { uri -> viewer.save(uri) }
@@ -124,8 +120,7 @@ class MainActivity : ComponentActivity() {
                                 openDesign(file)
                             }
                         },
-                        // PES files have no registered MIME type, so allow any file and let the reader decide.
-                        onImport = { openDocument.launch(arrayOf("*/*")) },
+                        onImport = openDocument,
                         onLettering = { stack += Screen.LETTERING },
                         onOpenLibrary = { stack += Screen.LIBRARY },
                         onSettings = { stack += Screen.SETTINGS },
@@ -172,7 +167,7 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.VIEWER -> ViewerScreen(
                         viewer,
-                        onOpenFile = { openDocument.launch(arrayOf("*/*")) },
+                        onOpenFile = openDocument,
                         onSaveFile = {
                             checked {
                                 viewer.prepareSave()?.let { name ->
@@ -201,6 +196,11 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+                }
+                val importProgress by library.importProgress.collectAsState()
+                // LibraryScreen also works standalone and owns these dialogs while it is visible.
+                if (stack.lastOrNull() != Screen.LIBRARY) {
+                    DesignImportDialogs(importProgress, library.importReport, library::dismissImportReport, library.importDecisions, library::cancelImport)
                 }
                 // After a process restart, offer the editor's autosaved draft on Home once per session;
                 // dismissing keeps the draft (the editor offers it again on entry).
@@ -264,6 +264,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openDesign(file: File) {
+        if (file.extension.equals("myembro", ignoreCase = true)) {
+            editor.openProject(file)
+            if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
+            return
+        }
         openPath = file.path
         viewer.openFile(file)
         showViewer()
@@ -275,29 +280,12 @@ class MainActivity : ComponentActivity() {
      * summary message.
      */
     private fun importUris(uris: List<Uri>) {
-        if (uris.isEmpty()) return
-        lifecycleScope.launch {
-            val imported = mutableListOf<File>()
-            val failures = mutableListOf<String>()
-            for (uri in uris) {
-                try {
-                    imported += withContext(Dispatchers.IO) { DesignLibrary(applicationContext).importShared(uri) }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    val name = uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
-                    failures += getString(R.string.library_shared_failed, name, e.message ?: e.javaClass.simpleName)
-                }
-            }
-            library.refresh()
-            if (imported.size == 1 && failures.isEmpty()) {
-                openDesign(imported.single())
-                return@launch
-            }
-            val summary = if (imported.isEmpty()) emptyList() else listOf(getString(R.string.library_shared_imported, imported.size))
-            library.message = (summary + failures).joinToString("\n")
-            if (stack.lastOrNull() != Screen.LIBRARY) stack += Screen.LIBRARY
-        }
+        library.import(uris, onComplete = ::afterImport)
+    }
+
+    private fun afterImport(report: io.github.linker2k.myembro.library.DesignImportReport) {
+        if (report.imported.size == 1) openDesign(report.imported.single())
+        else if (stack.lastOrNull() != Screen.LIBRARY) stack += Screen.LIBRARY
     }
 
     private companion object {

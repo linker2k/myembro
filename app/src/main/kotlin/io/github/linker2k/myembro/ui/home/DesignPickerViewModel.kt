@@ -9,9 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.library.BundledDesigns
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.library.DesignFormats
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.ui.RenderData
 import java.io.File
@@ -66,7 +66,7 @@ class DesignPickerViewModel(app: Application) : AndroidViewModel(app) {
                     if (item.ready) continue
                     val loaded = withContext(Dispatchers.IO) {
                         try {
-                            val data = RenderData(PatternReader.read(item.file.readBytes(), item.file.name))
+                            val data = RenderData(DesignFormats.read(item.file))
                             item.copy(thumbnail = Thumbnails.render(data, 320),
                                 stitchCount = data.pattern.stitchCount, colorCount = data.pattern.colorBlocks.size)
                         } catch (cancelled: CancellationException) {
