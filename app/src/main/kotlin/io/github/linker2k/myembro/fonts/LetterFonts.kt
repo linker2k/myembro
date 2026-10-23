@@ -8,6 +8,10 @@ import io.github.linker2k.myembro.engine.edit.FontKind
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.FontQuality
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFont
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchLettering
+import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.lettering.QualityLimit
 import io.github.linker2k.myembro.engine.lettering.SvgFont
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -27,7 +31,7 @@ data class LetterFont(
     val quality: FontQualitySummary?,
     val userAdded: Boolean = false,
 ) {
-    enum class Kind { HERSHEY, OUTLINE, SINGLE_LINE_SVG }
+    enum class Kind { HERSHEY, OUTLINE, SINGLE_LINE_SVG, INKSTITCH }
 
     val outline: Boolean get() = kind == Kind.OUTLINE
 }
@@ -128,6 +132,12 @@ class LetterFontGeometry(context: Context) {
         else Typeface.Builder(font.file).build() ?: throw IllegalArgumentException("Unreadable font file")
     }
 
+    /** Installed Ink/Stitch font, resolved through the engine registry (FontRepository sets its loader). */
+    fun inkStitchFont(font: LetterFont): InkStitchFont {
+        FontRepository.installInkStitchLoader(appContext)
+        return InkStitchFontRegistry[font.id] ?: throw IllegalArgumentException("Ink/Stitch font ${font.id} is not installed")
+    }
+
     fun svgFont(font: LetterFont): SvgFont = svgFonts.getOrPut(font.id) {
         SvgFont.parse(requireNotNull(font.file).readText())
     }
@@ -145,6 +155,7 @@ class LetterFontGeometry(context: Context) {
             LetterFont.Kind.HERSHEY -> c.code !in 0x20..0x7E
             LetterFont.Kind.OUTLINE -> !hasOutlineGlyph(font, c.toString())
             LetterFont.Kind.SINGLE_LINE_SVG -> !svgFont(font).supports(c)
+            LetterFont.Kind.INKSTITCH -> c.toString() !in inkStitchFont(font).glyphs
         }
     }
 
@@ -179,6 +190,8 @@ class LetterFontGeometry(context: Context) {
                 val scale = heightMm / svgReference(svg)
                 chars.map { c -> svg.glyph(c)?.strokes.orEmpty().map { s -> s.map { it.x * scale to -it.y * scale } } }
             }
+            // Stitches come from the digitizer; contour analysis does not apply (FontRepository.analyzeInstalled).
+            LetterFont.Kind.INKSTITCH -> chars.map { emptyList() }
             LetterFont.Kind.HERSHEY -> {
                 val hershey = HersheyFont.load(font.id)
                 val scale = heightMm / hershey.capHeight
@@ -194,6 +207,7 @@ class LetterFontGeometry(context: Context) {
         return when (font.kind) {
             LetterFont.Kind.OUTLINE -> AndroidGlyphOutlines.extract(line, typeface(font))
             LetterFont.Kind.SINGLE_LINE_SVG -> svgFont(font).layout(line).map { s -> s.map { it.x to -it.y } }
+            LetterFont.Kind.INKSTITCH -> inkStitchPreview(inkStitchFont(font), line)
             LetterFont.Kind.HERSHEY -> {
                 val hershey = HersheyFont.load(font.id)
                 var cursor = 0.0
@@ -227,6 +241,10 @@ class LetterFontGeometry(context: Context) {
                     contourSourceHeight = reference,
                 )
             }
+            LetterFont.Kind.INKSTITCH -> TextObject(
+                id = id, name = name, text = text, fontId = font.id, heightMm = heightMm, spacing = spacing,
+                arcDeg = 0.0, thread = thread, fontKind = FontKind.INKSTITCH, singleLine = false,
+            )
             LetterFont.Kind.SINGLE_LINE_SVG -> {
                 val svg = svgFont(font)
                 val reference = svgReference(svg)
@@ -259,4 +277,17 @@ class LetterFontGeometry(context: Context) {
             ?.strokes?.flatten().orEmpty()
         return if (points.isEmpty()) svg.unitsPerEm * 0.7 else (points.maxOf { it.y } - points.minOf { it.y }).coerceAtLeast(1.0)
     }
+}
+
+/** Sewn runs of [text] at 10 mm as polylines (+y down, mm): what the machine will stitch, for font cards. */
+fun inkStitchPreview(font: InkStitchFont, text: String): List<List<Pair<Double, Double>>> {
+    val pattern = InkStitchLettering.render(font, text.ifBlank { font.info.name }, 10.0, EmbThread(0xFF000000.toInt()))
+    val runs = ArrayList<List<Pair<Double, Double>>>()
+    var run = ArrayList<Pair<Double, Double>>()
+    for (s in pattern.stitches) {
+        if (s.command == Command.STITCH) run += s.x / 10.0 to s.y / 10.0
+        else if (run.isNotEmpty()) { runs += run; run = ArrayList() }
+    }
+    if (run.isNotEmpty()) runs += run
+    return runs
 }

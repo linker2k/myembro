@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.Grade
@@ -154,6 +155,10 @@ private fun LetteringContent(
         Unit
     }
     BackHandler(onBack = onBack)
+    // Embroidery fonts carry their own letter spacing (script joins would break): start from none.
+    LaunchedEffect(fontId) {
+        if (initial?.fontId != fontId && withContext(Dispatchers.IO) { FontRepository(context).find(fontId)?.predigitized } == true) spacing = 0f
+    }
     LaunchedEffect(generationKey, hoop) {
         busy = true
         error = null
@@ -290,7 +295,12 @@ private fun LetteringContent(
                     active?.let { FontQualityBadge(it.quality) }
                 }
             }
-            result?.takeIf { it.textObject.fontId == fontId }?.let { active -> LetteringCard {
+            result?.takeIf { it.textObject.fontId == fontId && it.predigitized }?.let { active -> LetteringCard {
+                val range = active.testedRangeMm
+                Text(stringResource(R.string.lettering_predigitized_hint, "%.1f".format(range?.start ?: 0.0), "%.1f".format(range?.endInclusive ?: 0.0)),
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            } }
+            result?.takeIf { it.textObject.fontId == fontId && !it.predigitized }?.let { active -> LetteringCard {
                 val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING
                 ThreadWeightSelector(threadWeight) {
                     if (it != threadWeight) {
@@ -317,7 +327,9 @@ private fun LetteringContent(
                 }
             } }
             LetteringCard {
-                SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm", showInches = true) { height = it }
+                // Some embroidery fonts are tested only above 50 mm.
+                val maxHeight = result?.testedRangeMm?.endInclusive?.toFloat()?.coerceIn(50f, 150f) ?: 50f
+                SettingSlider(stringResource(R.string.lettering_height), height, 5f..maxHeight, 1f, "mm", showInches = true) { height = it }
                 SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
                 SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -328,7 +340,8 @@ private fun LetteringContent(
                     }
                 }
             }
-            LetteringCard {
+            // Ink/Stitch fonts are laid out straight (along-path layout is a later port).
+            if (result?.takeIf { it.textObject.fontId == fontId }?.predigitized != true) LetteringCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel(stringResource(R.string.lettering_curved), Modifier.weight(1f))
                     Switch(curved, onCheckedChange = { curved = it }, modifier = Modifier.semantics {

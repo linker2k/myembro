@@ -77,6 +77,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.lettering.SingleLineFontBadge
 import io.github.linker2k.myembro.fonts.CatalogFont
+import io.github.linker2k.myembro.fonts.inkStitchPreview
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
 import io.github.linker2k.myembro.fonts.FontQualitySummary
 import io.github.linker2k.myembro.fonts.FontRepository
@@ -92,7 +93,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-enum class FontFilter { KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
+enum class FontFilter { PREDIGITIZED, KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
@@ -147,6 +148,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             (FontFilter.KOREAN !in filters || QualityReasons.MISSING_HANGUL !in reasons) &&
                 (FontFilter.LATIN !in filters || QualityReasons.MISSING_LATIN !in reasons) &&
                 FontFilter.SCRIPT !in filters &&
+                (FontFilter.PREDIGITIZED !in filters || f.kind == LetterFont.Kind.INKSTITCH) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == LetterFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == LetterFont.Kind.OUTLINE)
         }
@@ -206,6 +208,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             (FontFilter.KOREAN !in filters || f.korean) &&
                 (FontFilter.LATIN !in filters || f.latin) &&
                 (FontFilter.SCRIPT !in filters || f.script) &&
+                (FontFilter.PREDIGITIZED !in filters || f.predigitized) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == CatalogFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == CatalogFont.Kind.OUTLINE_TTF)
         }
@@ -258,6 +261,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             when (font.kind) {
                 CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(font)?.let { FontPreview.Outline(it) }
                 CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name).map { st -> st.map { p -> p.x to -p.y } }) }
+                CatalogFont.Kind.INKSTITCH_SVG -> runCatching { repo.inkStitchFont(font)?.let { FontPreview.Strokes(inkStitchPreview(it, font.name)) } }.getOrNull()
             }
         }
         if (preview != null) previews[font.id] = preview
@@ -324,6 +328,7 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FontChip(stringResource(R.string.fonts_filter_all), vm.filters.isEmpty()) { vm.clearFilters() }
+                FontChip(stringResource(R.string.fonts_filter_predigitized), FontFilter.PREDIGITIZED in vm.filters) { vm.toggle(FontFilter.PREDIGITIZED) }
                 FontChip(stringResource(R.string.fonts_filter_korean), FontFilter.KOREAN in vm.filters) { vm.toggle(FontFilter.KOREAN) }
                 FontChip(stringResource(R.string.fonts_filter_latin), FontFilter.LATIN in vm.filters) { vm.toggle(FontFilter.LATIN) }
                 FontChip(stringResource(R.string.fonts_filter_script), FontFilter.SCRIPT in vm.filters) { vm.toggle(FontFilter.SCRIPT) }
@@ -540,18 +545,21 @@ private fun FontCard(
         // Hairline outlines only; a single-line font's tight spots are gaps, not thin strokes.
         val largeOnly = font.kind == CatalogFont.Kind.OUTLINE_TTF &&
             quality?.recommendedMinHeightMm?.let { it.isFinite() && it > LARGE_ONLY_MM } == true
-        if (largeOnly || font.thinStroke) {
+        if (largeOnly || font.thinStroke || font.thinThreadRequired) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (largeOnly) NoteBadge(stringResource(R.string.fonts_large_only))
                 if (font.thinStroke) NoteBadge(stringResource(R.string.fonts_thin_stroke))
+                if (font.thinThreadRequired) NoteBadge(stringResource(R.string.fonts_thin_thread))
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
-                val kind = stringResource(
-                    if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline,
-                )
+                val kind = stringResource(when (font.kind) {
+                    CatalogFont.Kind.SINGLE_LINE_SVG -> R.string.fonts_kind_single_line
+                    CatalogFont.Kind.OUTLINE_TTF -> R.string.fonts_kind_outline
+                    CatalogFont.Kind.INKSTITCH_SVG -> R.string.fonts_kind_predigitized
+                })
                 val scripts = buildList {
                     if (font.korean) add(stringResource(R.string.fonts_filter_korean))
                     if (font.latin) add(stringResource(R.string.fonts_filter_latin))

@@ -11,6 +11,9 @@
     <string name="fonts_filter_outline">Outline</string>
     <string name="fonts_kind_single_line">Single-line</string>
     <string name="fonts_kind_outline">Outline</string>
+    <string name="fonts_kind_predigitized">Embroidery font (Ink/Stitch)</string>
+    <string name="fonts_filter_predigitized">Embroidery</string>
+    <string name="fonts_thin_thread">60 wt thread</string>
     <string name="fonts_size_mb">%1$s MB</string>
     <string name="fonts_download">Download</string>
     <string name="fonts_downloading">%1$d%%</string>

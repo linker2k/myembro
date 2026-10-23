@@ -11,6 +11,9 @@
     <string name="fonts_filter_outline">외곽선</string>
     <string name="fonts_kind_single_line">단선</string>
     <string name="fonts_kind_outline">외곽선</string>
+    <string name="fonts_kind_predigitized">자수 글꼴(Ink/Stitch)</string>
+    <string name="fonts_filter_predigitized">자수 글꼴</string>
+    <string name="fonts_thin_thread">60수 실 필요</string>
     <string name="fonts_size_mb">%1$s MB</string>
     <string name="fonts_download">다운로드</string>
     <string name="fonts_downloading">%1$d%%</string>

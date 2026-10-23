@@ -49,7 +49,7 @@ Ink/Stitch 폰트는 라틴 문자의 1순위 소스로 씁니다.
 
 ## 파서와 봉제 설계
 엔진 코드는 다음 세 곳입니다.
-- `engine/.../lettering/InkStitchFont.kt`: 파서
+- `engine/.../inkstitch/lettering/InkStitchFont.kt`: 파서
 - `InkStitchLettering.kt`: 배치와 봉제
 - `SatinColumn.sectionPoints`: 렁으로 나눈 새틴
 
@@ -99,7 +99,10 @@ Ink/Stitch 폰트는 라틴 문자의 1순위 소스로 씁니다.
   - 내려받은 파일 하나(glacial_tiny)의 sha256이 카탈로그 값과 일치합니다.
 
 ### 남은 일
-- 앱 연결: `TextObject`에 Ink/Stitch 폰트 종류를 추가하고, 프로젝트 저장, 글꼴 화면 노출을 붙여야 합니다. 이번 브랜치는 엔진, 카탈로그, 다운로드까지입니다. 편집기 작업(codex/editor)과 충돌하지 않도록 UI는 건드리지 않았습니다.
+- 앱 연결(완료): 글꼴 라이브러리 맨 앞에 '자수 글꼴' 필터·배지와 함께 표시하고, 내려받으면 레터링에서 `FontKind.INKSTITCH` TextObject로 씁니다.
+  - 프로젝트에는 글꼴 id만 저장하고, 설치된 글꼴을 `InkStitchFontRegistry`로 찾습니다. 글꼴을 지우면 해당 텍스트는 경고와 함께 빈 땀이 됩니다.
+  - 레터링 화면에서는 땀 종류·실 굵기·채움 설정과 곡선 배치를 숨기고, 시험된 높이 범위를 보여 줍니다. 품질 배지는 이 범위로 판정합니다.
+  - 글꼴을 바꾸면 자간을 0으로 맞춥니다. 필기체 연결선이 끊기지 않게 하기 위해서입니다. 글자별 색은 아직 적용되지 않습니다(여러 색 글꼴 항목에서 다룸).
 - embro-letter가 Ink/Stitch에서 포팅 중인 알고리즘을 그대로 끼울 수 있게 했습니다. 파서 결과(`InkSatin` 구간, `InkFill`, `InkRun`과 원본 파라미터)는 봉제 코드와 분리되어 있으므로 `InkStitchLettering.runs`만 바꾸면 됩니다.
 - 미지원 방식을 구현하면 카탈로그가 늘어납니다. 크로스스티치만 해도 가능 판정 폰트 17종이 추가되고, manual(dejavufont 7개 요소, paquerette)도 대상입니다.
 - 조건부 8종은 원작자에게 앱 재배포 허락을 받으면 추가할 수 있습니다.

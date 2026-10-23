@@ -6,6 +6,8 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.provider.OpenableColumns
 import io.github.linker2k.myembro.engine.lettering.FontQualityCache
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFont
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
 import io.github.linker2k.myembro.engine.lettering.SvgFont
 import java.io.File
 import java.io.IOException
@@ -41,11 +43,22 @@ data class CatalogFont(
     val style: String? = null,
     /** Hairline outline font: reads best sewn as a running stitch, not a satin fill. */
     val thinStroke: Boolean = false,
+    /** Ink/Stitch fonts: pinned `font.json` (layout metadata) downloaded beside the SVG. */
+    val metaUrl: String? = null,
+    val metaSha256: String? = null,
+    /** Ink/Stitch fonts: the digitizer's largest tested height. */
+    val recommendedMaxHeightMm: Double? = null,
+    /** Ink/Stitch fonts whose font.json asks for 60 wt thread and a 60 needle. */
+    val thinThreadRequired: Boolean = false,
 ) {
     enum class Kind(val json: String, val extension: String) {
         SINGLE_LINE_SVG("single-line-svg", "svg"),
         OUTLINE_TTF("outline-ttf", "ttf"),
+        /** Pre-digitized Ink/Stitch font (docs/inkstitch-fonts.md): satin/fill/running parameters included. */
+        INKSTITCH_SVG("inkstitch-svg", "svg"),
     }
+
+    val predigitized: Boolean get() = kind == Kind.INKSTITCH_SVG
 
     val korean: Boolean get() = "ko" in scripts
     val latin: Boolean get() = "latin" in scripts
@@ -68,8 +81,14 @@ class FontRepository(context: Context) {
     private val appContext = context.applicationContext
     val dir: File = File(appContext.filesDir, "fonts")
 
+    /** Pre-digitized Ink/Stitch fonts first: they are the primary lettering source for Latin text. */
     val catalog: List<CatalogFont> by lazy {
-        appContext.assets.open(CATALOG_ASSET).bufferedReader().use { parseCatalog(it.readText()) }
+        appContext.assets.open(InkStitchCatalog.ASSET).bufferedReader().use { InkStitchCatalog.parse(it.readText()) } +
+            appContext.assets.open(CATALOG_ASSET).bufferedReader().use { parseCatalog(it.readText()) }
+    }
+
+    init {
+        installInkStitchLoader(appContext)
     }
 
     fun find(id: String): CatalogFont? = catalog.firstOrNull { it.id == id }
@@ -78,7 +97,11 @@ class FontRepository(context: Context) {
 
     fun licenseFile(font: CatalogFont): File = File(dir, "${font.id}.LICENSE.txt")
 
-    fun isInstalled(font: CatalogFont): Boolean = fontFile(font).isFile && licenseFile(font).isFile
+    /** Ink/Stitch layout metadata beside the SVG; null for other kinds. */
+    fun metaFile(font: CatalogFont): File? = font.metaUrl?.let { File(dir, "${font.id}.font.json") }
+
+    fun isInstalled(font: CatalogFont): Boolean =
+        fontFile(font).isFile && licenseFile(font).isFile && metaFile(font)?.isFile != false
 
     fun installedIds(): Set<String> = catalog.filter(::isInstalled).map { it.id }.toSet()
 
@@ -91,8 +114,10 @@ class FontRepository(context: Context) {
         val target = fontFile(font)
         val license = licenseFile(font)
         val tmp = File(dir, "${font.id}.part")
+        val metaTmp = File(dir, "${font.id}.meta.part")
         try {
             fetch(font.url, tmp, font.sha256, font.id, font.size, onProgress)
+            font.metaUrl?.let { fetch(it, metaTmp, font.metaSha256, font.id, null) {} }
             val licenseText = if (font.licenseInFont) {
                 extractMetadata(tmp.readText()) ?: throw IOException("No license metadata in ${font.id}")
             } else {
@@ -108,6 +133,8 @@ class FontRepository(context: Context) {
             }
             ensureActive()
             license.writeText(licenseHeader(font) + licenseText)
+            metaFile(font)?.let { meta -> if (!metaTmp.renameTo(meta)) metaTmp.copyTo(meta, overwrite = true) }
+            InkStitchFontRegistry.invalidate(font.id)
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
             }
@@ -117,15 +144,19 @@ class FontRepository(context: Context) {
         } catch (e: Throwable) {
             target.delete()
             license.delete()
+            metaFile(font)?.delete()
             throw e
         } finally {
             tmp.delete()
+            metaTmp.delete()
         }
     }
 
     fun delete(font: CatalogFont) {
         fontFile(font).delete()
         licenseFile(font).delete()
+        metaFile(font)?.delete()
+        InkStitchFontRegistry.invalidate(font.id)
         FontQualitySummary.qualityFile(fontFile(font)).delete()
         FontQualityCache.Shared.invalidate(font.id)
     }
@@ -138,7 +169,11 @@ class FontRepository(context: Context) {
         val file = fontFile(font)
         return LetterFont(
             id = font.id, name = font.nameKo ?: font.name,
-            kind = if (font.kind == CatalogFont.Kind.OUTLINE_TTF) LetterFont.Kind.OUTLINE else LetterFont.Kind.SINGLE_LINE_SVG,
+            kind = when (font.kind) {
+                CatalogFont.Kind.OUTLINE_TTF -> LetterFont.Kind.OUTLINE
+                CatalogFont.Kind.SINGLE_LINE_SVG -> LetterFont.Kind.SINGLE_LINE_SVG
+                CatalogFont.Kind.INKSTITCH_SVG -> LetterFont.Kind.INKSTITCH
+            },
             file = file, quality = FontQualitySummary.read(file) ?: precomputedQuality(font),
         )
     }
@@ -240,8 +275,12 @@ class FontRepository(context: Context) {
         FontQualitySummary(font.qualityGrade ?: QualityGrade.GOOD, h, null, null, emptyList())
     }
 
-    /** Runs and stores the quality analysis of an installed catalog font. */
+    /**
+     * Runs and stores the quality analysis of an installed catalog font. Ink/Stitch fonts keep the
+     * digitizer's tested range instead: contour analysis does not describe their stitches.
+     */
     fun analyzeInstalled(font: CatalogFont, geometry: LetterFontGeometry): FontQualitySummary {
+        if (font.predigitized) return checkNotNull(precomputedQuality(font))
         val summary = geometry.analyze(letterFont(font))
         FontQualitySummary.write(fontFile(font), summary)
         return summary
@@ -284,6 +323,12 @@ class FontRepository(context: Context) {
     fun typeface(font: CatalogFont): Typeface? {
         if (font.kind != CatalogFont.Kind.OUTLINE_TTF || !isInstalled(font)) return null
         return runCatching { Typeface.createFromFile(fontFile(font)) }.getOrNull()
+    }
+
+    /** Parsed Ink/Stitch font of an installed entry (cached by id), or null. Up to a second for large fonts. */
+    fun inkStitchFont(font: CatalogFont): InkStitchFont? {
+        if (font.kind != CatalogFont.Kind.INKSTITCH_SVG || !isInstalled(font)) return null
+        return InkStitchFontRegistry[font.id]
     }
 
     /** Parsed single-line font of an installed SVG font, or null. Glyph strokes feed LetteringEngine. */
@@ -341,6 +386,20 @@ class FontRepository(context: Context) {
 
     companion object {
         const val CATALOG_ASSET = "fonts/catalog.json"
+
+        /** Lets saved Ink/Stitch text objects find installed fonts by id. Idempotent. */
+        fun installInkStitchLoader(context: Context) {
+            if (InkStitchFontRegistry.loader != null) return
+            val app = context.applicationContext
+            InkStitchFontRegistry.loader = { id ->
+                val repo = FontRepository(app)
+                repo.find(id)?.takeIf { it.kind == CatalogFont.Kind.INKSTITCH_SVG && repo.isInstalled(it) }?.let { font ->
+                    runCatching {
+                        repo.fontFile(font).inputStream().buffered().use { InkStitchFont.parse(it, repo.metaFile(font)!!.readText()) }
+                    }.getOrNull()
+                }
+            }
+        }
         const val USER_PREFIX = "user:"
         private const val META_SUFFIX = ".meta.json"
         private const val MAX_BYTES = 32L * 1024 * 1024

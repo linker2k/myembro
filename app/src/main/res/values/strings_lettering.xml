@@ -67,6 +67,7 @@
     <string name="lettering_border_none">None</string>
     <string name="lettering_satin_width">Satin width</string>
     <string name="lettering_satin_hint">Stitches follow each stroke. Wide strokes use staggered split satin.</string>
+    <string name="lettering_predigitized_hint">Digitized for embroidery in Ink/Stitch: satin, fill and underlay come from the font. Tested heights: %1$s–%2$s mm.</string>
     <string name="lettering_satin_fallback">Some complex areas are completed with tatami.</string>
     <string name="lettering_fill_advanced">Density, underlay and border settings</string>
     <string name="lettering_auto_fill">Follow strokes</string>
