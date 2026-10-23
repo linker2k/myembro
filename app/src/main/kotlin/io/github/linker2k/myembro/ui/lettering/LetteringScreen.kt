@@ -136,10 +136,7 @@ private fun LetteringContent(
     val ranges = automatic?.heightRanges.orEmpty()
     val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
-    val permittedHeight = height <= LetteringHeightLimits.MAX_MM && automaticHeight == height && heightInputValid && when {
-        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
-        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
-    }
+    val permittedHeight = automaticHeight == height && heightInputValid && letteringHeightPermitted(automatic, height)
     val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
         spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
         curve = LetteringCurve.STRAIGHT, curvature = 0.0, lineSpacingMm = 0.0,

@@ -61,5 +61,18 @@ internal fun automaticLetteringState(
     val candidates = policy.candidates(fontId, revision, geometry, text)
     val ranges = if (geometry == LetteringGeometry.OUTLINE) limits.outlineRanges(fontId, revision)
         else candidates.map { it.heights }.distinct()
-    return AutomaticLetteringState(fontName, policy.method(candidates, heightMm, geometry), ranges)
+    // Fill needs a swept height range; an outline font without one (most library TTFs) falls back to the
+    // automatic running baseline, which the screen permits without a range, instead of producing nothing.
+    val style = policy.method(candidates, heightMm, geometry)
+        .let { if (it == StitchStyle.FILL && ranges.isEmpty()) StitchStyle.RUNNING else it }
+    return AutomaticLetteringState(fontName, style, ranges)
+}
+
+/** Whether the screen may generate at [height]: a validated range must hold it, or the style is the range-free running baseline. */
+internal fun letteringHeightPermitted(automatic: AutomaticLetteringState?, height: Double): Boolean {
+    val ranges = automatic?.heightRanges.orEmpty()
+    return height <= LetteringHeightLimits.MAX_MM && when {
+        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
+        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
+    }
 }
