@@ -14,7 +14,8 @@ import kotlin.test.*
 class OutlineFillTest {
     private fun box(x: Double, y: Double, w: Double, h: Double) = listOf(x to y, x + w to y, x + w to y + h, x to y + h, x to y)
     private val ring = listOf(box(-6.0, -6.0, 12.0, 12.0), box(-3.0, -3.0, 6.0, 6.0))
-    private val noExtras = FillOptions(pullCompensationMm = 0.0, underlay = false, border = FillBorder.NONE)
+    private val noExtras = FillOptions(pullCompensationMm = 0.0, underlay = false, border = FillBorder.NONE,
+        strategy = FillStrategy.TATAMI, autoDensity = false)
     private fun assertLengths(pattern: EmbPattern) {
         pattern.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH) {
@@ -91,14 +92,17 @@ class OutlineFillTest {
         assertLengths(two)
     }
 
-    @Test fun narrowOutlineSatinUsesZigzagAndWideShapesFallBackToTatami() {
+    @Test fun narrowAndWideOutlinesUseColumnsAndWideStitchesSplit() {
         val narrow = OutlineFill.generate(listOf(box(-1.5, -6.0, 3.0, 12.0)), noExtras, satin = true)
         assertTrue(narrow.warnings.isEmpty())
         assertLengths(narrow)
-        val wide = OutlineFill.generate(listOf(box(-6.0, -6.0, 12.0, 12.0)), noExtras, satin = true)
-        assertTrue(wide.warnings.any { "태타미" in it })
+        val wide = OutlineFill.generate(listOf(box(-6.0, -12.0, 12.0, 24.0)), noExtras, satin = true)
+        assertTrue(wide.warnings.isEmpty())
         assertLengths(wide)
-        assertEquals(OutlineFill.generate(listOf(box(-6.0, -6.0, 12.0, 12.0)), noExtras).stitches, wide.stitches)
+        wide.stitches.zipWithNext().forEach { (a, b) ->
+            if (a.command == Command.STITCH && b.command == Command.STITCH)
+                assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 40.0)
+        }
     }
 
     @Test fun multiColorFillPersistsAndRoundTripsThroughPesWithTheSameHoles() {
@@ -123,7 +127,10 @@ class OutlineFillTest {
         assertLengths(pes)
         val old = TextObject("old", text = "AB")
         val payload = JsonObject(TextObjectCodec.encode(old).filterKeys { it != "fillOptions" })
-        assertEquals(old, TextObjectCodec.decode(payload))
+        val legacy = TextObjectCodec.decode(payload) as TextObject
+        assertEquals(FillStrategy.TATAMI, legacy.fillOptions.strategy)
+        assertFalse(legacy.fillOptions.autoDensity)
+        assertEquals(old.localPattern().stitches, legacy.localPattern().stitches)
     }
 
     @Test fun emptyDegenerateAndInvalidFillInputsAreSafe() {

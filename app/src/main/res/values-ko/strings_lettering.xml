@@ -56,7 +56,7 @@
     <string name="lettering_single_line_badge">단선 · 이름 새기기·레드워크에 적합</string>
     <string name="lettering_sewing_mode">봉제 방식</string>
     <string name="lettering_outline_mode">외곽선</string>
-    <string name="lettering_fill_mode">채우기(태타미)</string>
+    <string name="lettering_fill_mode">채우기</string>
     <string name="lettering_satin_mode">새틴</string>
     <string name="lettering_density">땀 간격</string>
     <string name="lettering_fill_angle">채우기 각도</string>
@@ -66,7 +66,11 @@
     <string name="lettering_border">테두리 스티치</string>
     <string name="lettering_border_none">없음</string>
     <string name="lettering_satin_width">새틴 폭</string>
-    <string name="lettering_satin_hint">좁은 획은 가능한 경우 새틴으로, 넓거나 복잡한 획은 태타미로 채워요.</string>
-    <string name="lettering_satin_fallback">새틴을 적용하기 어려운 일부 획은 태타미로 채웠어요.</string>
+    <string name="lettering_satin_hint">획 방향을 따라 채워요. 넓은 획은 엇갈린 분할 새틴을 사용해요.</string>
+    <string name="lettering_satin_fallback">일부 복잡한 윤곽은 태타미로 보완했어요.</string>
     <string name="lettering_fill_advanced">밀도·언더레이·테두리 설정</string>
+    <string name="lettering_auto_fill">획 따라 자동</string>
+    <string name="lettering_fixed_tatami">고정 각도 태타미</string>
+    <string name="lettering_auto_density">7mm 미만 글자 간격 완화</string>
+    <string name="lettering_auto_underlay">센터런·가장자리 언더레이</string>
 </resources>

@@ -7,6 +7,7 @@ import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.lettering.FillBorder
+import io.github.linker2k.myembro.engine.lettering.FillStrategy
 
 /** Editable lettering, including cached font outlines for offline reconstruction without Android. */
 object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject::class.java) {
@@ -26,6 +27,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("pullCompensationMm", obj.fillOptions.pullCompensationMm)
             put("underlay", obj.fillOptions.underlay)
             put("border", obj.fillOptions.border.name)
+            put("strategy", obj.fillOptions.strategy.name)
+            put("autoDensity", obj.fillOptions.autoDensity)
         })
         put("satinOptions", buildJsonObject {
             put("widthMm", obj.satinOptions.widthMm)
@@ -85,7 +88,9 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             pullCompensationMm = fill["pullCompensationMm"]?.jsonPrimitive?.double ?: 0.2,
             underlay = fill["underlay"]?.jsonPrimitive?.boolean ?: true,
             border = fill["border"]?.jsonPrimitive?.content?.let(FillBorder::valueOf) ?: FillBorder.RUNNING,
-        ) } ?: FillOptions(),
+            strategy = fill["strategy"]?.jsonPrimitive?.content?.let(FillStrategy::valueOf) ?: FillStrategy.TATAMI,
+            autoDensity = fill["autoDensity"]?.jsonPrimitive?.boolean ?: false,
+        ) } ?: FillOptions(strategy = FillStrategy.TATAMI, autoDensity = false),
         satinOptions = data["satinOptions"]?.jsonObject?.let { satin -> SatinOptions(
             widthMm = satin["widthMm"]?.jsonPrimitive?.double ?: 2.0,
             densityMm = satin["densityMm"]?.jsonPrimitive?.double ?: 0.4,

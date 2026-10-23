@@ -56,7 +56,7 @@
     <string name="lettering_single_line_badge">Single line · Great for names and redwork</string>
     <string name="lettering_sewing_mode">Sewing mode</string>
     <string name="lettering_outline_mode">Outline</string>
-    <string name="lettering_fill_mode">Fill (tatami)</string>
+    <string name="lettering_fill_mode">Fill</string>
     <string name="lettering_satin_mode">Satin</string>
     <string name="lettering_density">Row spacing</string>
     <string name="lettering_fill_angle">Fill angle</string>
@@ -66,7 +66,11 @@
     <string name="lettering_border">Border stitches</string>
     <string name="lettering_border_none">None</string>
     <string name="lettering_satin_width">Satin width</string>
-    <string name="lettering_satin_hint">Satin fills narrow strokes where possible. Wider or complex shapes use tatami.</string>
-    <string name="lettering_satin_fallback">Some strokes use tatami because satin cannot safely cover their shape.</string>
+    <string name="lettering_satin_hint">Stitches follow each stroke. Wide strokes use staggered split satin.</string>
+    <string name="lettering_satin_fallback">Some complex areas are completed with tatami.</string>
     <string name="lettering_fill_advanced">Density, underlay and border settings</string>
+    <string name="lettering_auto_fill">Follow strokes</string>
+    <string name="lettering_fixed_tatami">Fixed-angle tatami</string>
+    <string name="lettering_auto_density">Relax spacing below 7mm</string>
+    <string name="lettering_auto_underlay">Center / edge underlay</string>
 </resources>

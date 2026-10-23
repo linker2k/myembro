@@ -174,7 +174,7 @@ object LetteringEngine {
                     .map { (x, y) -> x / 10 to (y + lineY) / 10 }
                 glyphThreads.putIfAbsent(character, contourThreads.getOrNull(index) ?: thread)
             }
-            return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character)) },
+            return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character), heightMm) },
                 fillOptions, stitchStyle == StitchStyle.SATIN)
         }
         contours.forEachIndexed { index, contour ->

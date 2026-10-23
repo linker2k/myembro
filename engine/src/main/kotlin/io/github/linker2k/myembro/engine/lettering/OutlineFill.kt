@@ -15,6 +15,7 @@ import org.locationtech.jts.geom.prep.PreparedGeometryFactory
 import kotlin.math.*
 
 enum class FillBorder { NONE, RUNNING, BEAN }
+enum class FillStrategy { AUTO, TATAMI }
 
 /** Public dimensions are mm; a positive pull compensation expands exteriors, preserving counters. */
 data class FillOptions(
@@ -23,15 +24,18 @@ data class FillOptions(
     val pullCompensationMm: Double = 0.2,
     val underlay: Boolean = true,
     val border: FillBorder = FillBorder.RUNNING,
+    val strategy: FillStrategy = FillStrategy.AUTO,
+    val autoDensity: Boolean = true,
 ) {
     init {
         require(densityMm.isFinite() && densityMm in 0.3..2.0)
         require(angleDeg.isFinite() && angleDeg in -180.0..180.0)
         require(pullCompensationMm.isFinite() && pullCompensationMm in 0.0..2.0)
     }
+    fun densityForHeight(heightMm: Double): Double = if (autoDensity && heightMm < 7.0) max(0.6, densityMm) else densityMm
 }
 
-internal data class OutlineGlyph(val contours: List<List<Pair<Double, Double>>>, val thread: EmbThread)
+internal data class OutlineGlyph(val contours: List<List<Pair<Double, Double>>>, val thread: EmbThread, val heightMm: Double? = null)
 
 /** Even-odd filled glyphs. Public inputs use mm; needle positions use centered 0.1 mm units. */
 object OutlineFill {
@@ -40,7 +44,11 @@ object OutlineFill {
         options: FillOptions = FillOptions(),
         thread: EmbThread = EmbThread(0xFF000000.toInt(), "Black"),
         satin: Boolean = false,
-    ): EmbPattern = generateGlyphs(listOf(OutlineGlyph(contours, thread)), options, satin)
+        heightMm: Double? = null,
+    ): EmbPattern {
+        require(heightMm == null || heightMm.isFinite() && heightMm > 0)
+        return generateGlyphs(listOf(OutlineGlyph(contours, thread, heightMm)), options, satin)
+    }
 
     internal fun generateGlyphs(glyphs: List<OutlineGlyph>, options: FillOptions, satin: Boolean): EmbPattern {
         val builder = FillStitches()
@@ -57,27 +65,43 @@ object OutlineFill {
             }
             val holes = PolygonRegion.fromPaths(shells(raw.geometry)).difference(raw)
             val region = raw.offset(options.pullCompensationMm * 10).difference(holes)
-            val canSatin = satin && satinPossible(glyph.contours, region, options)
-            if (satin && !canSatin) builder.warnings += "새틴을 적용하기 어려운 넓거나 복잡한 획은 태타미로 채웠습니다."
+            val height = glyph.heightMm ?: raw.geometry.envelopeInternal.height / 10
+            val density = options.densityForHeight(height)
+            val automatic = satin || options.strategy == FillStrategy.AUTO
+            val columns = if (automatic) OutlineColumns.extract(region) else emptyList()
             builder.begin(region, glyph.thread)
             if (options.underlay) {
-                val inset = raw.offset(-3.0).takeUnless { it.isEmpty } ?: raw
-                inset.boundaries().forEach { builder.path(RunningStitch.sample(it, RunningSettings(25.0, 0.0)).points) }
+                if (columns.isEmpty() || columns.any { it.maxWidthMm > 7.0 }) {
+                    val inset = raw.offset(-3.0).takeUnless { it.isEmpty } ?: raw
+                    inset.boundaries().forEach { builder.path(RunningStitch.sample(it, RunningSettings(25.0, 0.0)).points) }
+                }
+                columns.forEach { column ->
+                    val center = GeometryPath(column.centerline.map { (x, y) -> Point(x * 10, y * 10) }, column.centerline.first() == column.centerline.last())
+                    builder.path(RunningStitch.sample(center, RunningSettings(25.0, 0.0)).points)
+                }
             }
-            val fill = TatamiFill.generate(region, TatamiSettings(
-                angleDegrees = options.angleDeg,
-                rowSpacing = options.densityMm * if (canSatin) 5 else 10,
-                stitchLength = if (canSatin) 69.0 else 35.0,
-                rowOffsets = if (canSatin) listOf(0.0) else listOf(0.0, 0.25, 0.5, 0.75),
-                underlay = false, zigzag = canSatin,
-            ), glyph.thread)
-            // Re-route disconnected scanline runs inside this glyph, never through a counter.
-            var run = arrayListOf<Point>()
-            for (stitch in fill.stitches) {
-                if (stitch.command == Command.STITCH) run += Point(stitch.x.toDouble(), stitch.y.toDouble())
-                else if (run.isNotEmpty()) { builder.path(run); run = arrayListOf() }
+            val strips = columns.map { column ->
+                GeometryPath((column.leftRail + column.rightRail.asReversed()).map { (x, y) -> Point(x * 10, y * 10) }, true)
             }
-            if (run.isNotEmpty()) builder.path(run)
+            val covered = PolygonRegion.fromPaths(strips, FillRule.NON_ZERO).intersection(region)
+            val remainder = if (columns.isEmpty()) region else region.difference(covered.offset(1.0))
+            if (automatic && (columns.isEmpty() || remainder.area > region.area * 0.05))
+                builder.warnings += "일부 복잡한 윤곽은 태타미로 보완했습니다."
+            if (!remainder.isEmpty) {
+                val fill = TatamiFill.generate(remainder, TatamiSettings(
+                    angleDegrees = options.angleDeg, rowSpacing = density * 10, stitchLength = 35.0, underlay = false,
+                ), glyph.thread)
+                var run = arrayListOf<Point>()
+                for (stitch in fill.stitches) {
+                    if (stitch.command == Command.STITCH) run += Point(stitch.x.toDouble(), stitch.y.toDouble())
+                    else if (run.isNotEmpty()) { builder.path(run); run = arrayListOf() }
+                }
+                if (run.isNotEmpty()) builder.path(run)
+            }
+            columns.forEach { column ->
+                val points = SatinColumn.pairedColumnPoints(column, density)
+                builder.path(points.map { (x, y) -> Point(x * 10, y * 10) }, maxStitchLengthMm = if (column.maxWidthMm > 7.0) 4.0 else 7.0)
+            }
             if (options.border != FillBorder.NONE) region.boundaries().forEach {
                 builder.path(RunningStitch.sample(it, RunningSettings(25.0, 0.0)).points, options.border == FillBorder.BEAN)
             }
@@ -85,22 +109,6 @@ object OutlineFill {
         return builder.finish()
     }
 
-    private fun satinPossible(contours: List<List<Pair<Double, Double>>>, region: PolygonRegion, options: FillOptions): Boolean {
-        val points = contours.flatten()
-        val height = (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(0.1)
-        val thickness = FontQuality.analyze(listOf(contours), height, true).minStrokeMm
-        if (thickness !in 0.6..4.0) return false
-        val scan = region.transformed(Affine2D.rotation(-options.angleDeg))
-        val bounds = scan.geometry.envelopeInternal
-        val spacing = options.densityMm * 5
-        val rows = ceil(bounds.height / spacing)
-        require(rows <= 100_000) { "Outline satin exceeds row limit" }
-        for (row in 0 until rows.toInt()) {
-            val y = bounds.minY + min(spacing / 2, bounds.height / 2) + row * spacing
-            if (scan.horizontalSpans(y).any { it.second - it.first > 68.0 }) return false
-        }
-        return true
-    }
 }
 
 /** Route connections along the shortest visible ring arc if a direct hidden run would cross a hole. */
@@ -176,7 +184,7 @@ private class FillStitches {
         stitches += target
         lastWasBean = false
     }
-    private fun sew(p: Point, bean: Boolean = false) {
+    private fun sew(p: Point, bean: Boolean = false, maxStitchLengthMm: Double = 7.0) {
         val target = Stitch(p.x.roundToInt(), p.y.roundToInt(), Command.STITCH)
         val last = stitches.lastOrNull()
         if (last == null || first) { jump(target); first = false; return }
@@ -187,12 +195,12 @@ private class FillStitches {
             // a sub-0.3 mm stitch or cutting the corner on the following movement.
             val before = stitches.getOrNull(stitches.lastIndex - 1)
             if (distance > 0 && !bean && !lastWasBean && before?.command == Command.STITCH &&
-                point(before).distance(b) in 3.0..70.0 && region.coversSegment(point(before), b)
+                point(before).distance(b) in 3.0..(maxStitchLengthMm * 10) && region.coversSegment(point(before), b)
             ) stitches[stitches.lastIndex] = target
             return
         }
         if (!region.coversSegment(a, b)) { jump(target); return }
-        val parts = ceil(distance / 68.0).toInt().coerceAtLeast(1)
+        val parts = ceil(distance / (maxStitchLengthMm * 10 - 2)).toInt().coerceAtLeast(1)
         require(parts <= 1_000_000)
         for (i in 1..parts) {
             val next = a.interpolate(b, i.toDouble() / parts).let { Stitch(it.x.roundToInt(), it.y.roundToInt(), Command.STITCH) }
@@ -204,7 +212,7 @@ private class FillStitches {
         }
         require(stitches.size <= 1_000_000) { "Filled lettering exceeds command limit" }
     }
-    fun path(points: List<Point>, bean: Boolean = false) {
+    fun path(points: List<Point>, bean: Boolean = false, maxStitchLengthMm: Double = 7.0) {
         if (points.isEmpty()) return
         if (!first) {
             val route = routes.route(point(stitches.last()), points.first())
@@ -215,7 +223,7 @@ private class FillStitches {
                 for (i in 1..parts) sew(start.interpolate(destination, i.toDouble() / parts))
             }
         }
-        points.forEach { sew(it, bean) }
+        points.forEach { sew(it, bean, maxStitchLengthMm) }
     }
     fun finish(): EmbPattern {
         val sewn = stitches.filter { it.command == Command.STITCH }

@@ -3,6 +3,17 @@
 myembro is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). It contains code
 derived from the following projects, whose notices are reproduced as their licenses require.
 
+## Outline thinning algorithm reference
+
+- Zicheng Guo and Richard W. Hall, *Parallel thinning with two-subiteration algorithms*,
+  Communications of the ACM 32(3), 1989, pp. 359–373:
+  https://doi.org/10.1145/62065.62074.
+- `engine/.../lettering/OutlineColumns.kt` independently implements the mathematical
+  connectivity tests, bounded rasterization, skeleton tracing and vector rail pairing.
+  Its small lookup masks are generated from those equations, not copied tables.
+  No paper text/images, OpenCV binaries/source tables, or commercial font/design data
+  are included in the repository or distributed application.
+
 ## Ink/Stitch satin-column conceptual reference
 
 - Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),
