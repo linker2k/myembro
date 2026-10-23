@@ -48,7 +48,7 @@ class InkFontSatinBridgeTest {
         val actual=InkStitchLettering.render(font,"H",10.0)
         val nativePaths=paths.map { it.map { q->SvgPoint(q.x,q.y) } }
         val groups=SatinColumn.fromSubpaths(nativePaths,SatinParametersCodec.decode(attrs),nativePaths,EmbThread(0xFF000000.toInt())).toStitchGroups(null)
-        val expected=GeneratedPatternProcessor.fromGroups(groups)
+        val expected=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true)
         assertEquals(expected.stitches,actual.stitches)
         assertEquals(expected.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY],actual.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY])
     }

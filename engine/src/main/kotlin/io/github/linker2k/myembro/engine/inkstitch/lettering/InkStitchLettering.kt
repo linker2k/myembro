@@ -62,7 +62,7 @@ object InkStitchLettering {
             }
             groups+=made
         }
-        val pattern=GeneratedPatternProcessor.fromGroups(groups,collapse_len=3.0,min_stitch_len=.1)
+        val pattern=GeneratedPatternProcessor.fromGroups(groups,collapse_len=3.0,min_stitch_len=.1,pecJumpTrims=true,lockAtThreadBoundaries=forceBoundaryLocks)
         return EmbPattern(pattern.stitches,pattern.threads,pattern.metadata+mapOf("name" to text,"font" to font.info.name),pattern.warnings)
     }
     fun layout(

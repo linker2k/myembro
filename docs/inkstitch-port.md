@@ -536,3 +536,52 @@ PEC 출력 트림 계약과 glyph 직렬화 정밀도 차이는 별도 후속 �
 수정 전 자료: `/tmp/myembro-port-out/letter/font-defaults/{deviation,breakdown}-before-precision/`.
 수정 후: 같은 폴더 `{deviation,breakdown}/`; 특히 `deviation/max-deviations.{json,md}`.
 회귀는 원본 테스트 폰트의 동일 A/B path 입력으로 7.5mm 경계·66땀을 확인한다.
+
+### 트림 경계 분해 및 원본 PEC 동작 보존
+
+재현: `python3 tools/locate-font-trims.py`. 대표4건에 대해 독립 PES decode의
+실제 JUMP 이동 전후 바늘 좌표를 bbox 중심 정규화하고, 원본 배치 SVG의 line/glyph/path/subpath
+endpoint와 대응시킨다. 공식/포트 경계 위치가0.2mm 이내일 때만 일치로 표시한다. 이 값은
+기존 공식 비교 좌표 허용값이며 게이트를 바꾸지 않는다. 양 PES SHA256도 JSON에 기록한다.
+
+10mm AB의3개 누락은 A/path17279 내부 subpath0→1, A→B 글자 경계,
+B/path17694 내부 subpath0→1이다. 두 줄의7개 중에는 L1 B→L2 B 줄 경계도 있다.
+따라서 글자마다 한 번 trim 옵션을 켜서는 원본과 같아지지 않는다.
+원본 `font.py:render_text/_add_trims`, `batch_lettering.py:setup_trim`에서 기본값은
+`trim_option=0/off`다. 1=line/2=word/3=glyph 옵션은 선택한 경우에만 trim_after를 추가한다.
+이번 기본값은0 그대로 유지했다.
+
+실제 원인은 `lib/output.py`의 full_jump 설정과 **pyembroidery1.5.1
+PecWriter.py:pec_encode**다. 원본 PEC는 첫 점프 이후의 JUMP를 trimjump로 기록한다.
+일반 JUMP를 유지하는 기존 우리 writer 계약을 전역 변경하지 않았다. 대신
+`GeneratedPatternProcessor.fromGroups(..., pecJumpTrims=true)`라는 **자수 글꼴 전용 opt-in
+출력 어댑터**로 실제 바늘을 꿰맨 뒤의 점프에 명시 TRIM을 보존한다. 기존 TRIM은 중복하지 않고
+처음·연속 점프에는 새 트림을 추가하지 않는다. 바늘 좌표·땀 수는 바뀌지 않는다.
+S1 잠금/실행/명령 anchor 인덱스는 추가된 제어 명령에 맞춰 이동시킨다.
+원본 `StitchPlanBuilder` 기본값과 일반/가져온 도안의 writer 기본값은 그대로다.
+
+원본 ties=3으로 꺼져 있던 내부 요소에서 PEC 트림 뒤 잠금 누락3곳이 새로 드러났다.
+총괄이 확정한 thread-boundary ties=0 정책을 **S1이 실제 need_tie_in을 계산한 위치**에도
+적용하는 opt-in `lockAtThreadBoundaries`를 추가했다. 시작/끝이 이미 정의된 커스텀 잠금은
+유지하며, 꺼진 경우에만 worker의 기본 InkLockStitch(half_stitch)를 쓴다. 새 잠금 형태나
+자체 거리 임계값은 없고, S1 후처리는 한 번이다. `forceBoundaryLocks=false`인 raw 공식 비교에서는
+이 제품 override를 쓰지 않는다. 오라클용 이름 배치 SVG는 ties=0을 path에 표시하되
+force는 시작/명시 trim 뒤 첫 요소만 설정하므로 source의 실제 경계 결정은 유지된다.
+
+수정 후 AB4/10/20mm 및 두 줄10mm의 **트림 수 2/2·3/3·3/3·7/7**,
+계산한 **15개 경계 전부 일치**. 땀 수42/42·66/66·91/91·132/132와 Hausdorff0.1mm 유지.
+초기 원점 점프 수 차이(-1)는 남아 있으며 전체 제어 스트림 완전 동등으로 확대하지 않는다.
+Jung Min12mm는 새 트림/재시작 잠금을 포함해 **2,076땀, 기존 --text 게이트 PASS**다.
+공식 Jung Min 출력은 대기이므로 그 오라클 동등 판정은 미판정이다.
+엔진363개 테스트 통과: PES 왕복 트림·바늘 불변·중복 트림 방지·S1 잠금 인덱스·재시작 잠금 검증 포함.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:fontDefaultsAudit :engine:inkFontNames
+python3 tools/locate-font-trims.py
+python3 tools/breakdown-fonts-representative.py
+python3 tools/check-inkfont-names.py
+```
+
+수정 전: `/tmp/myembro-port-out/letter/font-defaults/trims-before-compatibility/`.
+수정 후: `/tmp/myembro-port-out/letter/font-defaults/trims/trim-boundaries.{md,json}`.
+S1 파일 수정은 글꼴 전용 출력·제품 경계 정책을 분리하기 위해 필요한 선택 인자/추적 보존에 한정한다.

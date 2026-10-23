@@ -22,6 +22,7 @@ object StitchPlanBuilder {
     internal fun tracedFromGroups(
         groups: List<StitchGroup>, collapse_len: Double? = null,
         min_stitch_len: Double? = 0.1, disable_ties: Boolean = false,
+        lockAtThreadBoundaries: Boolean = false,
     ): TracedPlan {
         val collapsePixels = Units.mmToPixels(collapse_len ?: 3.0)
         val minPixels = Units.mmToPixels(min_stitch_len ?: 0.1)
@@ -35,10 +36,15 @@ object StitchPlanBuilder {
         var needTieIn = true
         var activeJump: Stitch? = null
 
+        // Product policy: ties=0 at actual thread boundaries, including PEC trimjump restarts.
+        // Keep source geometry, custom enabled locks and force flags; use the original half_stitch.
+        fun boundaryGroup(group: StitchGroup) = if (lockAtThreadBoundaries) group.copy(
+            lockStart = group.lockStart ?: InkLockStitch(), lockEnd = group.lockEnd ?: InkLockStitch()) else group
+
         for (group in nonempty) {
             if (!sameColor(block.color, group.color)) {
                 if (!needTieIn) {
-                    block.stitches += previous!!.lockStitches(LockPosition.END, disable_ties)
+                    block.stitches += boundaryGroup(previous!!).lockStitches(LockPosition.END, disable_ties)
                     needTieIn = true
                 }
                 block.command { it.copy(colorChange = true) }
@@ -49,13 +55,13 @@ object StitchPlanBuilder {
                 val threshold = previousGroup.minJumpLengthMm?.takeIf { it != 0.0 }
                     ?.let(Units::mmToPixels) ?: collapsePixels
                 if (previousGroup.forceLockStitches || distance > threshold) {
-                    block.stitches += previousGroup.lockStitches(LockPosition.END, disable_ties)
+                    block.stitches += boundaryGroup(previousGroup).lockStitches(LockPosition.END, disable_ties)
                     needTieIn = true
                 }
             }
 
             if (needTieIn) {
-                val locks = group.lockStitches(LockPosition.START, disable_ties)
+                val locks = boundaryGroup(group).lockStitches(LockPosition.START, disable_ties)
                 val jump = (locks.firstOrNull() ?: group.stitches.first()).copy(jump = true)
                 block.stitches += jump
                 anchors[jump] = RunAnchor(group.stitches.first(), group.stitches.last())
@@ -70,14 +76,14 @@ object StitchPlanBuilder {
             activeJump?.let { jump -> anchors[jump] = anchors.getValue(jump).copy(end = group.stitches.last()) }
 
             if (group.trimAfter || group.stopAfter) {
-                block.stitches += group.lockStitches(LockPosition.END, disable_ties)
+                block.stitches += boundaryGroup(group).lockStitches(LockPosition.END, disable_ties)
                 needTieIn = true
             }
             if (group.trimAfter) block.command { it.copy(trim = true) }
             if (group.stopAfter) block.command { it.copy(stop = true) }
             previous = group
         }
-        if (!needTieIn) block.stitches += previous!!.lockStitches(LockPosition.END, disable_ties)
+        if (!needTieIn) block.stitches += boundaryGroup(previous!!).lockStitches(LockPosition.END, disable_ties)
         val filtered = blocks.filter { it.stitches.isNotEmpty() }.map {
             ColorBlock(it.color, filterDuplicateStitches(it.stitches, minPixels))
         }

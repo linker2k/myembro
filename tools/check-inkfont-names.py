@@ -22,8 +22,10 @@ for c in cases:
   wrap=ET.SubElement(tree,'{'+SVG+'}g',{'transform':f"translate({place['dx_px']},{place['dy_px']}) scale({place['scale']})"})
   g=copy.deepcopy(glyphs[place['glyph']]);g.set('style',g.get('style','').replace('display:none','display:inline'))
   for node in g.iter('{'+SVG+'}path'):
-   if boundary and c.get('force_boundary_locks'):
-    node.set('{'+INK+'}force_lock_stitches','true');node.set('{'+INK+'}ties','0')
+   if c.get('force_boundary_locks'):
+    # ties are only sewn where upstream's plan requires a thread boundary; no extra force flags internally.
+    node.set('{'+INK+'}ties','0')
+    if boundary:node.set('{'+INK+'}force_lock_stitches','true')
    boundary=node.get('{'+INK+'}trim_after','').lower() in ('true','1','yes') or node.get('{'+INK+'}stop_after','').lower() in ('true','1','yes')
   for el in g.iter():
    if 'id' in el.attrib:el.set('id',f"glyph{i}-"+el.get('id'))
