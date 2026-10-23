@@ -45,6 +45,7 @@ object SewoutCheck {
         val terminal = pattern.stitches.indexOfFirst { it.command == Command.END }
         val inputCount = if (terminal < 0) pattern.stitches.size else terminal+1
         val active = pattern.stitches.take(min(inputCount, o.maxCommands))
+        checkStartLocks(active, findings)
         var complete = inputCount <= o.maxCommands
         val maxSpm = machine.maximumEmbroiderySpm.value?.toDouble()
         val requestedSpm = o.plannedSpm ?: maxSpm?.times(o.profileSpeedFraction) ?: o.assumedSpm
@@ -181,8 +182,9 @@ object SewoutCheck {
                     }
                     grid.needle(p, stage.index, index)
                     val repeats = (exactNeedles[p] ?: 0)+1; exactNeedles[p] = repeats
-                    if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, Severity.WARNING,
-                        "같은 좌표에 바늘이 반복 진입합니다.", Highlight(index, from = p), repeats.toDouble(), o.repeatedPointThreshold.toDouble())
+                    if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, Severity.BLOCKER,
+                        "같은 좌표에 바늘이 ${o.repeatedPointThreshold}회 이상 진입합니다. 실 뭉침·원단 손상 위험으로 봉제를 차단합니다.",
+                        Highlight(index, from = p), repeats.toDouble(), o.repeatedPointThreshold.toDouble())
                     stage.stitches++; stage.sewn += length
                     val seconds = 60/speed.effectiveSpm
                     stage.needle += seconds; elapsed += seconds
@@ -214,8 +216,9 @@ object SewoutCheck {
         val cells = grid.result()
         for (cell in cells) {
             val location = Highlight(cell.firstCommandIndex, area = cell.area)
-            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, Severity.WARNING,
-                "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담을 확인하세요.", location, cell.penetrations.toDouble(), o.hotspotPenetrations.toDouble())
+            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, Severity.BLOCKER,
+                "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담 위험으로 봉제를 차단합니다.",
+                location, cell.penetrations.toDouble(), o.hotspotPenetrations.toDouble())
             if (cell.segmentPasses >= o.overlapPassThreshold && cell.stageIndices.size > 1) findings.add(FindingCode.OVERLAP_ACCUMULATION,
                 Severity.WARNING, "여러 색 단계의 실 경로가 같은 격자에 누적됩니다.", location, cell.segmentPasses.toDouble(), o.overlapPassThreshold.toDouble())
         }
