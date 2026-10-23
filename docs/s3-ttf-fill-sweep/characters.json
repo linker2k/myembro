@@ -1,0 +1,234 @@
+{
+  "selection": "Top 30 strict-writing stroke sums among Hangul supported by every pinned font; ties codepoint ascending",
+  "source": "https://github.com/juunini/count-korean-stroke-js/blob/5f595640db4a059caf0d535fc72a4751a706e077/index.ts",
+  "source_license": "MIT; strict=true tables; no claim of a unique handwriting convention",
+  "common_supported_syllables": 2350,
+  "tables": {
+    "leading": [
+      1,
+      2,
+      1,
+      2,
+      4,
+      3,
+      3,
+      4,
+      8,
+      2,
+      4,
+      1,
+      2,
+      4,
+      3,
+      2,
+      3,
+      4,
+      3
+    ],
+    "vowel": [
+      2,
+      3,
+      3,
+      4,
+      2,
+      3,
+      3,
+      4,
+      2,
+      4,
+      5,
+      3,
+      3,
+      2,
+      4,
+      5,
+      3,
+      3,
+      1,
+      2,
+      1
+    ],
+    "trailing": [
+      0,
+      1,
+      2,
+      3,
+      1,
+      3,
+      4,
+      2,
+      3,
+      4,
+      6,
+      7,
+      5,
+      6,
+      7,
+      6,
+      3,
+      4,
+      6,
+      2,
+      4,
+      1,
+      2,
+      3,
+      2,
+      3,
+      4,
+      3
+    ]
+  },
+  "characters": [
+    {
+      "codepoint": 48746,
+      "text": "빪",
+      "strokes": 16
+    },
+    {
+      "codepoint": 48781,
+      "text": "뺍",
+      "strokes": 15
+    },
+    {
+      "codepoint": 48784,
+      "text": "뺐",
+      "strokes": 15
+    },
+    {
+      "codepoint": 48921,
+      "text": "뼙",
+      "strokes": 15
+    },
+    {
+      "codepoint": 48924,
+      "text": "뼜",
+      "strokes": 15
+    },
+    {
+      "codepoint": 48753,
+      "text": "빱",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48756,
+      "text": "빴",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48772,
+      "text": "뺄",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48780,
+      "text": "뺌",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48808,
+      "text": "뺨",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48868,
+      "text": "뻤",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48920,
+      "text": "뼘",
+      "strokes": 14
+    },
+    {
+      "codepoint": 48977,
+      "text": "뽑",
+      "strokes": 14
+    },
+    {
+      "codepoint": 46507,
+      "text": "떫",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48159,
+      "text": "밟",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48448,
+      "text": "뵀",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48744,
+      "text": "빨",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48752,
+      "text": "빰",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48763,
+      "text": "빻",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48783,
+      "text": "뺏",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48856,
+      "text": "뻘",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48864,
+      "text": "뻠",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48923,
+      "text": "뼛",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48968,
+      "text": "뽈",
+      "strokes": 13
+    },
+    {
+      "codepoint": 48976,
+      "text": "뽐",
+      "strokes": 13
+    },
+    {
+      "codepoint": 49108,
+      "text": "뿔",
+      "strokes": 13
+    },
+    {
+      "codepoint": 49116,
+      "text": "뿜",
+      "strokes": 13
+    },
+    {
+      "codepoint": 49257,
+      "text": "쁩",
+      "strokes": 13
+    },
+    {
+      "codepoint": 49313,
+      "text": "삡",
+      "strokes": 13
+    },
+    {
+      "codepoint": 50212,
+      "text": "쐤",
+      "strokes": 13
+    }
+  ]
+}

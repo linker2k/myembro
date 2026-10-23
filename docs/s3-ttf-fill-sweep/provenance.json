@@ -1,0 +1,35 @@
+{
+  "engine_base_commit": "6121c75be3320d52c00b1902df9bc9fdbff686ef",
+  "source_sha256": {
+    "tools/sweep_korean_ttf.py": "09a20dd20dbc85a99f5a2008a17849272cd8e63eae7dfcc2d6f79d1d1502792c",
+    "engine/src/test/kotlin/io/github/linker2k/myembro/engine/lettering/KoreanTtfSweep.kt": "dac5602cf4d859f5219c0526f368c48e2a209f5c3c40e05ac6b2e37330e4a29b",
+    "engine/src/main/kotlin/io/github/linker2k/myembro/engine/sewout/SewoutCheck.kt": "a5e56cfd9c38eb8c8bc08933d9e56247ef4c080f3be3df637ac5df6282a7ed9f",
+    "engine/src/main/kotlin/io/github/linker2k/myembro/engine/sewout/SewoutModel.kt": "8422584fbb60b92157d062200d1486c0775636f8419f54fdf197083c453f422c",
+    "app/src/main/assets/fonts/catalog.json": "ce5e62bbc6ccbb5737caf911b84437aa62027b51c73f43b5fb417eeacdc18581"
+  },
+  "artifacts_sha256": {
+    "allowed-height-ranges.json": "440bd79bc5176776d2af4a23eae6557056cb3240191104d56bfdde99425f04b5",
+    "cases.csv.gz": "26aedf6908da8a5ac7f605664c6b4d104c7d6b6e37a3f2a52bbbd432cbfdd7ae",
+    "characters.json": "054aa0de9cc764f36e6b1c7015ee00e670bf176af671f42f8d4b5fd0e747e889",
+    "failures.jsonl": "16c39674dc3081c2babefb640071269c5a11401d90aa9a3f907912f2e4802ff9",
+    "fonts.json": "0af6cf34865f3592080e775c9069841914e1f683c9bb828864303ae2c58585ea",
+    "identity.json": "78e83a8ee669501ec50d6dede53a217878a8a6ca333046b5019409235474d9b1",
+    "initial-identity.json": "c9ad9abfebbc33ae881dd84af36a7c29460f9c10233cd61bd498171f78c3229e",
+    "run.log": "13bfdedc621e3d21a7100c55535379e48be3a0d9932f86f417d9a58bf77947e6",
+    "summary.json": "502166af63dc67d1cbe20992a1fb51707cdda2182d6a70ae84bacbde0053d468",
+    "summary.md": "0b3ec4f9ac0e6200ae57b9d05b4641f3d3e3f3aa767185587a8a7bb74a3ea7be",
+    "timing.json": "1a87113eef77d77303c7856327309d94141994d398c1ca43cb4d859a2dbb93c4"
+  },
+  "local_only": "Font binaries, PES examples and frozen runtime remain in /tmp; no private files used.",
+  "checks": {
+    "engine_check": {
+      "tests": 564,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "python_unittest": "Ran 11 tests; OK",
+    "frozen_runtime": "SHA256 MATCH",
+    "raw_rows_reconciled": 8888
+  }
+}

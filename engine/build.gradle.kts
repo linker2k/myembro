@@ -111,3 +111,14 @@ tasks.register<JavaExec>("makeSampler") {
         providers.gradleProperty("samplerGapMm").orElse("5").get())
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
+
+// Writes a classpath for a separately launched, frozen local JVM sweep; never a check dependency.
+tasks.register("koreanTtfSweepClasspath") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"), tasks.named("oracleClasses"))
+    doLast {
+        val out = file(providers.gradleProperty("koreanTtfSweepClasspath").orElse("/tmp/myembro-ttf-fill-sweep-reduced/classpath.txt").get())
+        out.parentFile.mkdirs()
+        out.writeText(sourceSets.test.get().runtimeClasspath.asPath)
+    }
+}

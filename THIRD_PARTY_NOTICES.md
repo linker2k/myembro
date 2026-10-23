@@ -542,3 +542,14 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
+
+## Hangul strict-writing stroke tables — local sweep tooling only (MIT)
+
+- Source: [juunini/count-korean-stroke-js](https://github.com/juunini/count-korean-stroke-js/blob/5f595640db4a059caf0d535fc72a4751a706e077/index.ts), commit `5f595640db4a059caf0d535fc72a4751a706e077`.
+- Copyright (c) 2025 Juunini; MIT license reproduced in
+  [`tools/licenses/count-korean-stroke-MIT.txt`](tools/licenses/count-korean-stroke-MIT.txt).
+- `tools/sweep_korean_ttf.py` translates the `strict=true` initial/vowel/final
+  stroke tables to rank the common supported Hangul syllables. This is a
+  reproducible writing-stroke convention, not a claim that handwriting has one
+  universal stroke count. Upstream JavaScript was read, never executed.
+- Tooling only; no new font binaries, private fonts or embroidery designs bundled.
