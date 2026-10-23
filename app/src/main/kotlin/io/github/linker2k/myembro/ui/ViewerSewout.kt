@@ -14,8 +14,9 @@ internal fun viewerSewoutMachine(id: String?, name: String): SewoutMachine =
         ?: SewoutMachine("custom", name, Specification(), Specification(), knownHoopsMm = emptySet())
 
 internal fun checkViewerSewout(pattern: EmbPattern, machine: SewoutMachine, hoop: HoopSpec,
-    preservePlacement: Boolean, pesBytes: ByteArray? = null): SewoutReport {
-    val options = SewoutOptions(hoop = hoop, placement = if (preservePlacement) Placement.HOOP_COORDINATES else Placement.CENTER_DESIGN)
+    preservePlacement: Boolean, pesBytes: ByteArray? = null,
+    origin: DesignOrigin = SewoutCheck.originOf(pattern)): SewoutReport {
+    val options = SewoutOptions(origin = origin, hoop = hoop, placement = if (preservePlacement) Placement.HOOP_COORDINATES else Placement.CENTER_DESIGN)
     // Project highlights must refer to the displayed flattened input, not writer-normalized commands.
     return if (!preservePlacement && pesBytes != null) SewoutCheck.checkPes(pesBytes, machine, options)
         else SewoutCheck.check(pattern, machine, options)
@@ -66,4 +67,10 @@ internal fun viewerMovementBounds(pattern: EmbPattern): Bounds? {
         if (stitch.command == io.github.linker2k.myembro.engine.model.Command.END) break
     }
     return Bounds(minX, minY, maxX, maxY)
+}
+
+internal fun sewoutVerdictResource(report: SewoutReport): Int = when (report.verdict) {
+    SewoutVerdict.PASS -> io.github.linker2k.myembro.R.string.sewout_badge_pass
+    SewoutVerdict.CAUTION -> io.github.linker2k.myembro.R.string.sewout_badge_caution
+    SewoutVerdict.BLOCK -> io.github.linker2k.myembro.R.string.sewout_badge_block
 }

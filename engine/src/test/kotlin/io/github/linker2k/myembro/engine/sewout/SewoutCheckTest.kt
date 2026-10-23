@@ -104,7 +104,7 @@ class SewoutCheckTest {
         val report = SewoutCheck.check(p(s(-1,-1), s(-1,-1), *Array(12) { s(0) }))
         assertEquals(2, report.density.single { it.column == -1L && it.row == -1L }.penetrations)
         assertEquals(12, report.density.single { it.column == 0L && it.row == 0L }.penetrations)
-        assertEquals(0, report.statistics.densityHotspotCount) // Twelve is within the single fifteen-puncture limit.
+        assertEquals(0, report.statistics.densityHotspotCount)
         assertEquals(1, report.count(FindingCode.REPEATED_PENETRATION))
         val line = SewoutCheck.check(p(s(0), s(40)))
         assertEquals(2, line.density.sumOf { it.penetrations })

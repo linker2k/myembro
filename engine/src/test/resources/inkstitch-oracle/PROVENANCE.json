@@ -1,0 +1,24 @@
+{
+  "source": "Ink/Stitch official release v3.3.0",
+  "source_commit": "b0edd96311ece82ee48816dc93466274b12c2a9c",
+  "license": "GPL-3.0-or-later",
+  "policy": "Copied existing official synthetic outputs only; no personal designs or original Ink/Stitch execution",
+  "cases": [
+    {
+      "id": "ties--rectangle--008mm--upstream-default",
+      "source_record": "/tmp/myembro-inkstitch-oracle/out/defaults-v2/ties/ties--rectangle--008mm--upstream-default.oracle.json",
+      "record_sha256": "b5b6c0d3c4cfcc9f61fcf21f0782ea69b02b682157aa83ade839ebdfb40e2f12",
+      "official_pes_sha256": "e01b8fb654e7377499ccacca527369750ab947282e1b44d32bfa504eb853ef54",
+      "coordinates_sha256": "a6ce0fb0ee3a40478de3815544c40c6e56af934ba26d79d92a7265c3a0f434ae",
+      "input_sha256": "ca2e95ba97e41838a5fd6b662a208db6abdca95685a83e3a144adba34874ffe9"
+    },
+    {
+      "id": "stitch_plan--sharp_corner--010mm--upstream-default",
+      "source_record": "/tmp/myembro-inkstitch-oracle/out/defaults-v2/stitch_plan/stitch_plan--sharp_corner--010mm--upstream-default.oracle.json",
+      "record_sha256": "c47ccda1a07c6736eac053606703e89aa44398114cf05cdd973880ed3d1731bd",
+      "official_pes_sha256": "c205849998a8c0b41c09e93340d0c5ba03006df438b3ba4bcbd78fd38302e732",
+      "coordinates_sha256": "8badff1681dc3fbbbfc9ed95f893195fc29b9c50dd468de4c41f3e4350ce72fa",
+      "input_sha256": "a1bae465865160be1b0456aa4a06703f447ec3fd496d4e8face4cd98757f826b"
+    }
+  ]
+}

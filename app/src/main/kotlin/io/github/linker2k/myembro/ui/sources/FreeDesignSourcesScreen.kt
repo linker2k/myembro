@@ -55,8 +55,9 @@ fun FreeDesignSourcesScreen(onBack: () -> Unit) {
             scope.launch { snackbar.showSnackbar(browserError) }
         }
     }
-    val sources by produceState<Result<List<FreeDesignSource>>?>(null, context) {
-        value = try {
+    var sources by remember { mutableStateOf<Result<List<FreeDesignSource>>?>(null) }
+    LaunchedEffect(context) {
+        sources = try {
             Result.success(withContext(Dispatchers.IO) {
                 context.assets.open(FreeDesignSources.ASSET).bufferedReader().use { FreeDesignSources.parse(it.readText()) }
             })

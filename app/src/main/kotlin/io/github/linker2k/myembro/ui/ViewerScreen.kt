@@ -195,8 +195,9 @@ private fun ViewerContent(
         })
     if (exportSheet) {
         val data = vm.render
-        val preview by produceState<android.graphics.Bitmap?>(null, data) {
-            value = data?.let { withContext(Dispatchers.Default) { Thumbnails.render(it, 240) } }
+        var preview by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        LaunchedEffect(data) {
+            preview = data?.let { withContext(Dispatchers.Default) { Thumbnails.render(it, 240) } }
         }
         ExportSheet(
             onDismissRequest = { exportSheet = false }, onSavePes = onSaveFile, onShare = onShareFile,

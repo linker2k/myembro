@@ -12,6 +12,22 @@ class ViewerSewoutTest {
         Stitch(x + 50, 50, Command.STITCH), Stitch(x + 50, 50, Command.END)), listOf(EmbThread(0xFFAA5500.toInt(), "thread")))
     private fun report() = checkViewerSewout(pattern(), SewoutMachines.SE400, HoopSpec.H100, false)
 
+    @Test fun `badge uses functional verdict and generated origin survives byte parsing`() {
+        val p=pattern()
+        val bytes=PesWriter.write(p)
+        val imported=checkViewerSewout(p,SewoutMachines.SE400,HoopSpec.H100,false,bytes)
+        val generated=checkViewerSewout(p,SewoutMachines.SE400,HoopSpec.H100,false,bytes,DesignOrigin.APP_GENERATED)
+        assertEquals(SewoutVerdict.CAUTION,imported.verdict)
+        assertEquals(io.github.linker2k.myembro.R.string.sewout_badge_caution,sewoutVerdictResource(imported))
+        assertEquals(SewoutVerdict.BLOCK,generated.verdict)
+        assertEquals(io.github.linker2k.myembro.R.string.sewout_badge_block,sewoutVerdictResource(generated))
+        val pass=checkViewerSewout(EmbPattern(listOf(Stitch(0,0,Command.STITCH),Stitch(0,0,Command.STITCH),
+            Stitch(40,0,Command.STITCH),Stitch(40,0,Command.STITCH),Stitch(40,0,Command.END)),p.threads),
+            SewoutMachines.SE400,HoopSpec.H100,false)
+        assertEquals(SewoutVerdict.PASS,pass.verdict)
+        assertEquals(io.github.linker2k.myembro.R.string.sewout_badge_pass,sewoutVerdictResource(pass))
+    }
+
     @Test fun `settings machine selects exact profile and unknown customs never inherit SE400 limits`() {
         assertSame(SewoutMachines.SE400, viewerSewoutMachine("se400", "Brother SE400"))
         assertSame(SewoutMachines.SE600, viewerSewoutMachine("se600", "Brother SE600"))

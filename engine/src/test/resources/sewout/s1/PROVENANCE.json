@@ -1,0 +1,21 @@
+{
+  "purpose": "Five public synthetic S1 scrap-fabric inputs, not personal designs",
+  "generator": "tools/generate_s1_sewtest.py + actual Android renderLettering, then ProjectJson.encode",
+  "source_base_commit": "a59fa6f5d967ca0a79018dddc4b4e288a9b759eb",
+  "font": "Bundled Noto Sans KR (OFL-1.1), outlines extracted by the app AndroidGlyphOutlines",
+  "font_sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+  "text": "ABC 가나다",
+  "heights_mm": [
+    5,
+    8,
+    12
+  ],
+  "shapes": "Circle and square, nominal 10mm",
+  "files": {
+    "TXT12.myembro": "ac067be92a599df62d3e2072360101ecb8f6c7766fbc70369cfef0b0dfb1e644",
+    "CIRCLE.myembro": "14fe22bdbabbe29bc3a2e26bc2861153c7730fde110f0a7ca4f881a9dffe9280",
+    "TXT05.myembro": "6a34b155e65154f9013b2763f68284c23d1f45b0cb4b74e66b4ea66ee1c3da75",
+    "SQUARE.myembro": "72b545b2c9baaba561b2ab46a864df11fdba6b5dd104491e8b2cdbd91146e871",
+    "TXT08.myembro": "55d1dca31cccc8b89ed18d38d2dc04477b4e35bd7d26a998ba6fac31e36baaba"
+  }
+}
