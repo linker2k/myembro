@@ -104,8 +104,8 @@ private fun LetteringContent(
     val colors = MaterialTheme.colorScheme
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
-    var height by rememberSaveable { mutableDoubleStateOf(initialObject?.heightMm ?: 18.0) }
-    var heightDraft by rememberSaveable { mutableStateOf((initialObject?.heightMm ?: 18.0).toString()) }
+    var height by rememberSaveable { mutableDoubleStateOf((initialObject?.heightMm ?: 18.0).coerceAtMost(LetteringHeightLimits.MAX_MM)) }
+    var heightDraft by rememberSaveable { mutableStateOf((initialObject?.heightMm ?: 18.0).coerceAtMost(LetteringHeightLimits.MAX_MM).toString()) }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
     var keepInitialThread by rememberSaveable { mutableStateOf(initialObject != null) }
     var fitText by rememberSaveable { mutableStateOf(false) }
@@ -124,7 +124,7 @@ private fun LetteringContent(
     val ranges = automatic?.heightRanges.orEmpty()
     val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
-    val permittedHeight = automaticHeight == height && heightInputValid && when {
+    val permittedHeight = height <= LetteringHeightLimits.MAX_MM && automaticHeight == height && heightInputValid && when {
         ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
         else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
     }
@@ -279,7 +279,10 @@ private fun LetteringContent(
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     OutlinedTextField(heightDraft, onValueChange = { value ->
                         heightDraft = value
-                        value.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }?.let { height = it }
+                        value.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }?.let {
+                            height = it.coerceAtMost(LetteringHeightLimits.MAX_MM)
+                            if (it > LetteringHeightLimits.MAX_MM) heightDraft = height.toString()
+                        }
                     }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                         label = { Text(stringResource(R.string.lettering_height)) }, suffix = { Text("mm") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
