@@ -256,9 +256,13 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     private fun read(lba: Long, count: Int): ByteArray = checkedRead(device, lba, count)
 
     companion object {
-        fun mount(device: BlockDevice): Fat12Volume {
+        fun mount(device: BlockDevice): Fat12Volume = mount(device) { _, _ -> }
+
+        /** Observes boot sectors already read by mounting, including a partition BPB that fails parsing. */
+        fun mount(device: BlockDevice, onBootSector: (Long, ByteArray) -> Unit): Fat12Volume {
             checkDisk(device.sectorSize in setOf(512, 1024, 2048, 4096) && device.sectorCount > 0, "Unsupported block geometry")
             val zero = checkedRead(device, 0, 1)
+            onBootSector(0, zero)
             val superFailure = try {
                 val parsed = parse(zero, device, 0, device.sectorCount)
                 return Fat12Volume(device, parsed.geometry, zero, parsed.warnings)
@@ -273,10 +277,21 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
                 checkDisk(u8(zero, entry) in setOf(0, 0x80) && u8(zero, entry + 4) == 1,
                     "Not an MBR: first partition needs boot flag 0/0x80 and FAT12 type 0x01")
                 val start = u32(zero, entry + 8); val count = u32(zero, entry + 12)
-                checkDisk(start > 0 && start < device.sectorCount && count > 0 && count <= device.sectorCount - start,
-                    "MBR partition out of device bounds: start=$start count=$count device=${device.sectorCount}")
+                checkDisk(start > 0 && start < device.sectorCount && count > 0,
+                    "Invalid MBR partition start/count: start=$start count=$count device=${device.sectorCount}")
+                // SE400 firmware reports start=32/count=987 on a 988-block RAM disk.
+                // Bound access without rewriting its synthesized MBR, BPB or volume label.
+                val boundedCount = minOf(count, device.sectorCount - start)
+                val warning = if (boundedCount != count)
+                    "MBR partition sectors=$count clamped to device remainder=$boundedCount at start=$start (MBR unchanged)" else null
                 val boot = checkedRead(device, start, 1)
-                val parsed = parse(boot, device, start, count)
+                onBootSector(start, boot)
+                val parsed = try { parse(boot, device, start, boundedCount) }
+                catch (e: IOException) {
+                    if (warning != null) throw IOException("$warning; ${e.message}", e)
+                    throw e
+                }
+                if (warning != null) parsed.warnings.add(0, warning)
                 return Fat12Volume(device, parsed.geometry, boot, parsed.warnings)
             } catch (e: IOException) {
                 throw MountFailure(superFailure.message ?: superFailure.javaClass.simpleName,

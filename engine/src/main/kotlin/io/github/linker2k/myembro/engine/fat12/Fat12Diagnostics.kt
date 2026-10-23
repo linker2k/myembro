@@ -3,8 +3,8 @@ package io.github.linker2k.myembro.engine.fat12
 
 /** Read-only interpretation for field reports; unknown/nonstandard OEM and label bytes are retained. */
 object Fat12Diagnostics {
-    fun bootSector(bytes: ByteArray): String = buildString {
-        appendLine("sector0 bytes=${bytes.size}")
+    fun bootSector(bytes: ByteArray, location: String = "sector0"): String = buildString {
+        appendLine("$location bytes=${bytes.size}")
         if (bytes.size >= 512) {
             fun u8(offset: Int) = bytes[offset].toInt() and 255
             fun u16(offset: Int) = u8(offset) or (u8(offset + 1) shl 8)
@@ -13,7 +13,7 @@ object Fat12Diagnostics {
                 val n = it.toInt() and 255
                 if (n in 32..126) n.toChar().toString() else "\\x%02X".format(n)
             }
-            appendLine("BPB (sector0 interpreted as boot sector):")
+            appendLine("BPB ($location interpreted as boot sector):")
             appendLine("Jump=${hex(bytes.copyOfRange(0, 3))}; OEM=${text(3, 8)}; signature=" + "0x%04X".format(u16(510)))
             appendLine("BytesPerSector=${u16(11)}; SectorsPerCluster=${u8(13)}; ReservedSectors=${u16(14)}")
             appendLine("NumberOfFATs=${u8(16)}; RootEntryCount=${u16(17)}; TotalSectors16=${u16(19)}")
@@ -33,7 +33,7 @@ object Fat12Diagnostics {
                 appendLine("$n: boot=0x%02X type=0x%02X start=${u32(o + 8)} sectors=${u32(o + 12)}".format(u8(o), u8(o + 4)))
             }
         }
-        appendLine("sector0 first 512 bytes (hex):")
+        appendLine("$location first 512 bytes (hex):")
         bytes.take(512).chunked(16).forEachIndexed { row, values ->
             appendLine("%04X: ".format(row * 16) + hex(values.toByteArray()))
         }

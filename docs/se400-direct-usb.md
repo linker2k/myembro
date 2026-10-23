@@ -94,3 +94,23 @@ READ CAPACITY 원시값·블록 수·블록 크기, sector0 512바이트 hex·BP
 
 일괄 가져오기는 긴급 작업과 분리해 `WIP batch design import before urgent SE400 diagnostics`
 이름의 git stash에 보관했다. 이 긴급 커밋만 통합해 alpha14를 배포할 수 있다.
+
+## alpha20 긴급 통합: 실제 MBR 길이 제한
+
+실기 진단: 순수 MBR, boot `0x80`, type `0x01`, start `32`, count `987`,
+READ CAPACITY lastLBA `987` / blockCount `988`.
+파티션 길이를 **956섹터(LBA 32..987)**로 제한하고 기존 BPB total 클램프에 넘긴다.
+장치 밖 start·0 길이, 범위 안에 들어오지 않는 FAT/루트/데이터 및 파일 체인은 계속 거부한다.
+파티션 길이를 제한해도 MBR·BPB·라벨 바이트는 그대로 두며 포맷하지 않는다.
+
+`Fat12Volume.mount(device, onBootSector)`는 기존 읽기 결과를 파싱 전에 관찰할 수 있게 한다.
+USB 진단 v2는 이를 이용해 sector0와 partition start sector (LBA 32)의 512바이트 hex·BPB를
+별도로 남긴다. 실제 BPB가 실패해도 진단에 포함하며, 진단을 위한 추가 SCSI 읽기는 없다.
+
+`Se400FirmwareLayoutTest`는 제공된 MBR 필드를 리터럴로 재현하고 988블록 장치와 합성 BPB/FAT를
+만든다. 제공되지 않은 CHS/부트코드는 0으로 채웠다. PES 쓰기→재마운트→읽기, 남은 공간을
+마지막 LBA 987까지 채우기, 모든 쓰기가 상대 섹터 0..955 안에 있는지, FAT 사본 일치,
+MBR/파티션 앞 영역/BPB/두 볼륨 라벨 불변, 잘못된 start와 손상된 제한 영역의 거부를 검사한다.
+실제 LBA 32 BPB와 미싱의 파일 인식 여부는 다음 실기 보고로 확인한다.
+
+검증 완료: `:engine:test` **240개**, `:app:testDebugUnitTest` **156개**, `:app:assembleDebug` 통과.
