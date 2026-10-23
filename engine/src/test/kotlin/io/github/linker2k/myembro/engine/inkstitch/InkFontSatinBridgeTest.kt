@@ -17,6 +17,23 @@ class InkFontSatinBridgeTest {
         assertNotNull(locks.end)
     }
 
+    @Test fun originalPathSerializationPreservesRunningSubdivisionAtExactMultiples() {
+        // Ink/Stitch tests/lettering/fonts/testfont: same A/B path inputs, direct groups, no product boundary override.
+        val svg="""<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+            xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" width="30mm" height="40mm" viewBox="0 0 30 40">
+            <sodipodi:namedview><sodipodi:guide position="0,0" inkscape:label="baseline"/></sodipodi:namedview>
+            <g inkscape:label="GlyphLayer-A"><path style="fill:none;stroke:#000000" d="m 7.5,19.999999 h 15 m -22.5,20 L 15,0 30,39.999999"/></g>
+            <g inkscape:label="GlyphLayer-B"><path style="fill:none;stroke:#000000" d="m 0,19.999999 h 30 m -30,20 V 0 H 14.269089 L 30,13.161696 V 29.849683 L 15,39.999999 0,40"/></g>
+            </svg>"""
+        val font=InkStitchFont.parse(svg.byteInputStream(),"""{"name":"boundary","leading":100,"reversible":false}""")
+        // 7.5mm is infinitesimally ABOVE three 2.5mm stitches after source {:.6g} serialization.
+        // No epsilon or stitch-length adjustment is used to force the expected division.
+        val placement=InkStitchLettering.layout(font,"B",10.0).single()
+        val bar=(placement.glyph.elements.single() as InkRun).paths.first().points.map(placement::mm)
+        assertTrue(bar.last().x-bar.first().x>7.5)
+        assertEquals(66,InkStitchLettering.render(font,"AB",10.0,forceBoundaryLocks=false).stitchCount)
+    }
+
     @Test fun sourceSvgBooleansUseInkStitchSpellings() {
         val p=SatinParametersCodec.decode(mapOf("center_walk_underlay" to " False ","zigzag_underlay" to "True", "swap_satin_rails" to "yes"))
         assertFalse(p.center_walk_underlay);assertTrue(p.zigzag_underlay);assertTrue(p.swap_satin_rails)

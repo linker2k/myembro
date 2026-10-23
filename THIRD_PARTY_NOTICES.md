@@ -478,3 +478,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
+
+## inkex path-number compatibility
+
+Ink/Stitch v3.3.0 pins Inkscape extensions/inkex at `EXTENSIONS_AT_INKSCAPE_1.4.1`.
+Its `inkex/paths/interfaces.py:PathCommand.number_template` uses six significant digits;
+our font path canonicalization follows that serialization rule. Source:
+https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
+The referenced source is GPL-2.0-or-later, Copyright (C) 2018 Martin Owens and
+Copyright (C) 2023 Jonathan Neuhauser. No inkex package is bundled, installed or executed.
+The surrounding Ink/Stitch glyph port remains GPL-3.0-or-later as identified in its header.

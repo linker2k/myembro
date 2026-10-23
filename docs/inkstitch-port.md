@@ -499,3 +499,40 @@ Hausdorff 수치만 대표4건(최대10건 제한)에 다시 계산한다. 원�
 20/30mm는 이번 판정 범위에서 제외했다. 대표 기본값 분해는 AB 4/10/20mm 42/42,65/66,89/91,
 같은 reversible=false 메타데이터의 두 줄10mm 130/132다. 완전 동등 통과는 아니며
 PEC 출력 트림 계약과 glyph 직렬화 정밀도 차이는 별도 후속 작업으로 남는다.
+
+### Hausdorff 1.2mm 원인 추적과 수정
+
+재현: `python3 tools/locate-font-deviation.py`. 최대10건 제한이며 두 방향의 최근접 점을
+독립 PES 파서·KDTree로 계산한다. 바늘/명령 인덱스(0부터), raw·bbox 중심 정규화 좌표,
+최근접 바늘, 앞뒤2개 바늘, 원본 glyph/path/subpath, 양 PES 해시를 JSON/표로 출력한다.
+원본 SVG subpath와 공식 sewn run 개수가 같을 때만 순서로 요소를 대응시키고, collapse로
+개수가 다르면 unresolved로 기록한다. 억지로 다른 요소 이름을 붙이지 않는다.
+
+수정 전 10mm AB의 **공식 바늘36** raw(11.3,5.0), 정규화(3.8,0.0)의 최근접은
+포트 바늘36 raw(12.5,-5.0), 정규화(5.0,0.0)로 거리1.2mm였다.
+해당 요소는 **B / path17694 / subpath0**, 첫 가로획이다. 공식은 그 선분을4구간,
+포트는3구간으로 나눴다. 20mm는 A/path17279/subpath0의 공식 바늘6도1.2mm 차이였다.
+이는 **실제 샘플링 경로 차이**이므로 PEC 반올림·트림의 허용 차이로 처리하지 않았다.
+
+원인: Ink/Stitch `glyph.py:_process_group/_move_to_origin`은 path를 문자열로 저장한다.
+고정 의존성 inkex `EXTENSIONS_AT_INKSCAPE_1.4.1`, `paths/interfaces.py:PathCommand`의
+`number_template="{:.6g}"`와 달리 포트는 변환된 좌표를 full precision으로 유지했다.
+7.5mm / 2.5mm가 경계의 어느 쪽인지 달라져 원본 `ceil`의 구간 수가 달라졌다.
+숫자 epsilon이나 땀 길이를 조정하지 않고, 원본의 **6자리 유효숫자 경로 직렬화**를
+변환된 endpoint/Bezier control point에 적용한 뒤 분할하도록 수정했다. SVG viewport도
+기존 원본6자리 고정소수 변환 공용 함수를 재사용한다.
+`SvgPath.flatten`에 선택적 canonicalize 인자를 추가했으며 기존 호출은 정밀도가 바뀌지 않는다.
+원호(A/a) 파라미터 직렬화 포트는 별도이므로 그 경우 기존 경로를 유지한다.
+
+원본 확인: https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
+소스/의존성 코드는 읽기만 했으며 실행·설치하지 않았다.
+
+수정 후 AB4/10/20mm **42/42·66/66·91/91**, 동일 메타데이터 두 줄10mm **132/132**.
+모두 Hausdorff **0.1mm**다. 원본 좌표 직렬화와 최종0.1mm 격자 반올림에 남은
+한 격자(0.1mm) 좌표 차이만 이번 대표 사례의 **허용 차이**로 기록한다.
+트림 명령 수 차이(-2/-3/-3/-7)는 별도의 PEC writer 계약 차이이며 이 허용에 포함하지 않는다.
+전체 제어 명령·전체 글꼴의 완전 동등/봉제 인증으로 확대하지 않는다.
+
+수정 전 자료: `/tmp/myembro-port-out/letter/font-defaults/{deviation,breakdown}-before-precision/`.
+수정 후: 같은 폴더 `{deviation,breakdown}/`; 특히 `deviation/max-deviations.{json,md}`.
+회귀는 원본 테스트 폰트의 동일 A/B path 입력으로 7.5mm 경계·66땀을 확인한다.

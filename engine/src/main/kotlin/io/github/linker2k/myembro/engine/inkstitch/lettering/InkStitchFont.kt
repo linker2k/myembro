@@ -14,6 +14,10 @@ import io.github.linker2k.myembro.engine.geometry.Polyline
 import io.github.linker2k.myembro.engine.geometry.SvgPath as GeometrySvgPath
 import java.io.InputStream
 import java.text.Normalizer
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
+import io.github.linker2k.myembro.engine.inkstitch.svg.ViewBoxTransform
 import javax.xml.parsers.SAXParserFactory
 import kotlin.math.hypot
 import kotlin.math.max
@@ -180,6 +184,11 @@ class InkStitchFont(
         private const val REFERENCE = "H"
         /** Ink/Stitch default "minimum satin stroke width": thinner single-path satins sew as running. */
         private const val MIN_SATIN_STROKE_PX = 1.0 / MM_PER_PX
+        // Ink/Stitch glyph.py@b0edd96311ece82ee48816dc93466274b12c2a9c uses str(inkex.paths.Path).
+        // inkex 1.4.1 paths/interfaces.py PathCommand.number_template = "{:.6g}" (GPL-2.0-or-later).
+        private val sourceNumberContext = MathContext(6, RoundingMode.HALF_EVEN)
+        private fun sourcePathPrecision(p:Point)=Point(
+            BigDecimal(p.x).round(sourceNumberContext).toDouble(),BigDecimal(p.y).round(sourceNumberContext).toDouble())
         private const val TOLERANCE_PX = 0.1
         private const val NS_INKSTITCH = "http://inkstitch.org/namespace"
         private const val NS_INKSCAPE = "http://www.inkscape.org/namespaces/inkscape"
@@ -259,11 +268,8 @@ class InkStitchFont(
                     val height = attrs.getValue("height")?.let(::lengthPx)
                     pageHeight = box?.get(3) ?: height
                     if (box != null && box[2] > 0 && box[3] > 0) {
-                        var sx = (width ?: box[2]) / box[2]
-                        var sy = (height ?: box[3]) / box[3]
-                        val aspect = attrs.getValue("preserveAspectRatio") ?: "xMidYMid meet"
-                        if (aspect != "none") { val k = if ("slice" in aspect) max(sx, sy) else min(sx, sy); sx = k; sy = k }
-                        root = Affine2D.translation(-box[0], -box[1]) * Affine2D.scale(sx, sy)
+                        root = ViewBoxTransform.fromDimensions(width ?: box[2], height ?: box[3], box,
+                            attrs.getValue("preserveAspectRatio") ?: "xMidYMid meet")
                     } else if (box != null) root = Affine2D.translation(-box[0], -box[1])
                 }
                 if (parent?.skip == true || local in SKIPPED || uri == NS_SODIPODI) {
@@ -314,7 +320,11 @@ class InkStitchFont(
 
             private fun path(attrs: org.xml.sax.Attributes, transform: Affine2D, style: Map<String, String>, hidden: Boolean, glyph: GlyphBuilder) {
                 val d = attrs.getValue("d") ?: return
-                val paths = runCatching { GeometrySvgPath.flatten(d, transform, TOLERANCE_PX) }.getOrNull() ?: run { note("bad-path"); return }
+                // Glyph._process_group/_move_to_origin serialize path commands through inkex's {:.6g}.
+                // Canonicalize transformed endpoints/control points BEFORE subdivision, never stitch coordinates.
+                // SVG arc parameter serialization requires a separate port; retain its existing path for now.
+                val precision = if (d.any { it == 'A' || it == 'a' }) null else ::sourcePathPrecision
+                val paths = runCatching { GeometrySvgPath.flatten(d, transform, TOLERANCE_PX, precision) }.getOrNull() ?: run { note("bad-path"); return }
                 // glyph._process_bbox: every path except command connectors spaces the glyph.
                 if (attrs.getValue(NS_INKSCAPE, "connection-end") == null) glyph.extent(paths)
                 val connector = attrs.getValue(NS_INKSCAPE, "connector-type") != null ||
@@ -345,7 +355,7 @@ class InkStitchFont(
                         satin && params.bool("e_stitch", false) -> note("satin:e_stitch")
                         satin && lines.size < 2 -> note("satin:single-path")
                         satin -> {
-                            val nodes = runCatching { GeometrySvgPath.flatten(d, transform, NODES_ONLY) }.getOrNull().orEmpty()
+                            val nodes = runCatching { GeometrySvgPath.flatten(d, transform, NODES_ONLY, precision) }.getOrNull().orEmpty()
                                 .filter { it.points.size > 1 }
                             made += InkSatin(lines.map { it.points }, if (nodes.size == lines.size) nodes.map { it.points } else lines.map { it.points }, stroke, params)
                         }

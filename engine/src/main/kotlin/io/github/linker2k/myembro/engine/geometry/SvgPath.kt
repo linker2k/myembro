@@ -5,9 +5,14 @@ import kotlin.math.*
 
 /** SVG path-data parser, not an SVG/XML/CSS document loader. See docs/geometry.md for units. */
 object SvgPath {
-    /** Tolerance is measured AFTER [transform], in output units (default 0.05 mm). */
-    fun flatten(data: String, transform: Affine2D = Affine2D.IDENTITY, tolerance: Double = 0.5): List<Polyline> {
+    /** Tolerance is measured AFTER [transform], in output units (default 0.05 mm).
+     * Optional [canonicalize] models upstream path serialization before curve subdivision;
+     * existing callers retain full precision. It is not applied to generated needle coordinates.
+     */
+    fun flatten(data: String, transform: Affine2D = Affine2D.IDENTITY, tolerance: Double = 0.5,
+        canonicalize: ((Point) -> Point)? = null): List<Polyline> {
         require(tolerance.isFinite() && tolerance > 0)
+        fun mapped(p: Point): Point = transform.apply(p).let { canonicalize?.invoke(it) ?: it }
         val input = SvgNumbers(data)
         val output = mutableListOf<Polyline>()
         var points = mutableListOf<Point>()
@@ -27,7 +32,7 @@ object SvgPath {
             if (points.isNotEmpty()) output += Polyline(points.toList(), closed)
             points = mutableListOf()
         }
-        fun prepare() { if (points.isEmpty()) emit(transform.apply(current)) }
+        fun prepare() { if (points.isEmpty()) emit(mapped(current)) }
         fun bezier(p0: Point, p1: Point, p2: Point, p3: Point, depth: Int = 0) {
             fun distance(p: Point): Double {
                 val dx = p3.x - p0.x; val dy = p3.y - p0.y
@@ -58,7 +63,7 @@ object SvgPath {
             when (upper) {
                 'M' -> {
                     flush(); current = point(); start = current; started = true
-                    emit(transform.apply(current)); command = if (relative) 'l' else 'L'
+                    emit(mapped(current)); command = if (relative) 'l' else 'L'
                 }
                 'L', 'H', 'V' -> {
                     val end = when (upper) {
@@ -66,7 +71,7 @@ object SvgPath {
                         'V' -> Point(current.x, input.number() + if (relative) current.y else 0.0)
                         else -> point()
                     }
-                    prepare(); emit(transform.apply(end)); current = end
+                    prepare(); emit(mapped(end)); current = end
                 }
                 'C', 'S', 'Q', 'T' -> {
                     prepare()
@@ -84,18 +89,18 @@ object SvgPath {
                         end = point(); quadControl = q
                         p1 = p0.interpolate(q, 2.0/3); p2 = end.interpolate(q, 2.0/3)
                     }
-                    bezier(transform.apply(p0), transform.apply(p1), transform.apply(p2), transform.apply(end))
+                    bezier(mapped(p0), mapped(p1), mapped(p2), mapped(end))
                     current = end
                 }
                 'A' -> {
                     val rx = input.number(); val ry = input.number(); val rotation = input.number()
                     val large = input.flag(); val sweep = input.flag(); val end = point()
                     prepare()
-                    arc(current, end, rx, ry, rotation, large, sweep, transform, tolerance, ::emit)
+                    arc(current, end, rx, ry, rotation, large, sweep, transform, tolerance) { emit(canonicalize?.invoke(it) ?: it) }
                     current = end
                 }
                 'Z' -> {
-                    prepare(); emit(transform.apply(start)); flush(closed = true); current = start; command = null
+                    prepare(); emit(mapped(start)); flush(closed = true); current = start; command = null
                 }
             }
             if (upper !in "CS") cubicControl = null
