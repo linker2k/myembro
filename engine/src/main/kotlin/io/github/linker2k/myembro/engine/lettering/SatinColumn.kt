@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchSafetyOptions
+import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
 import io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -24,13 +24,26 @@ data class SatinOptions(
     val autoDensity: Boolean = true,
     val contourUnderlay: Boolean = false,
     val underlayInsetMm: Double = 0.4,
+    val parameters: SatinParameters? = null,
 ) {
+    /** Existing projects retain explicit legacy values; new UI satin selections store source defaults. */
+    fun sourceParameters(): SatinParameters = parameters ?: SatinParameters(
+        zigzag_spacing_mm = densityMm, max_stitch_length_mm = maxStitchLengthMm,
+        pull_compensation_mm = pullCompensationMm to pullCompensationMm,
+        center_walk_underlay = centerUnderlay, contour_underlay = contourUnderlay,
+        zigzag_underlay = zigzagUnderlay,
+        center_walk_underlay_stitch_length_mm = underlayStitchLengthMm,
+        contour_underlay_stitch_length_mm = underlayStitchLengthMm,
+        contour_underlay_inset_mm = underlayInsetMm to underlayInsetMm,
+        zigzag_underlay_spacing_mm = underlayDensityMm,
+        zigzag_underlay_max_stitch_length_mm = maxStitchLengthMm,
+    )
     fun densityForHeight(heightMm: Double, threadWeight: ThreadWeight = ThreadWeight.WT40): Double =
         when {
-            !autoDensity -> densityMm
+            !autoDensity -> parameters?.zigzag_spacing_mm ?: densityMm
             threadWeight != ThreadWeight.WT40 -> threadWeight.spacingForHeight(heightMm)
-            heightMm < 7.0 -> maxOf(0.6, densityMm)
-            else -> densityMm
+            heightMm < 7.0 -> maxOf(0.6, parameters?.zigzag_spacing_mm ?: densityMm)
+            else -> parameters?.zigzag_spacing_mm ?: densityMm
         }
     init {
         require(underlayInsetMm.isFinite() && underlayInsetMm >= 0)
@@ -56,14 +69,11 @@ object SatinColumn {
         thread: EmbThread = EmbThread(0xFF000000.toInt(), "Black"),
         rungs: List<InkSatin.Rung> = emptyList(),
     ): EmbPattern {
-        val builder = RunningStitches(options.maxStitchLengthMm, false, simplifyPaths = false, resamplePaths = false)
         val left = clean(leftRail).map { Point(it.first, it.second) }
         val right = clean(rightRail).map { Point(it.first, it.second) }
-        if (left.size >= 2 && right.size >= 2) {
-            val path = connectLayers(InkSatin.paths(left, right, options, rungs), options)
-            builder.stroke(path.map { it.x * 10 to it.y * 10 }, thread)
-        }
-        return StitchPlanFinisher.finish(builder.finish(thread), StitchSafetyOptions(maximumMm = maxOf(0.5, options.maxStitchLengthMm)))
+        val groups = if (left.size >= 2 && right.size >= 2)
+            InkSatin.element(left,right,options,rungs,thread).toStitchGroups(null) else emptyList()
+        return GeneratedPatternProcessor.fromGroups(groups).centeredGenerated()
     }
 
     /** Offset a flattened centerline, then sew it as satin. Closed paths retain a closed seam. */

@@ -8,7 +8,7 @@ import io.github.linker2k.myembro.engine.inkstitch.elements.*
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.EmbPatternAdapter
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlan
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.ColorBlock
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.*
 import java.io.File
@@ -40,8 +40,7 @@ class SatinFixtureTool {
             val group=SatinColumn.fromSubpaths(paths.map { path->path.map { it.svg() } },p,
                 color=EmbThread(0xFF000000.toInt())).toStitchGroups(null).single()
             assertTrue(group.stitches.size>=150)
-            val raw=EmbPatternAdapter.toEmbPattern(StitchPlan(listOf(ColorBlock(group.color,group.stitches))))
-            val safe=StitchPlanFinisher.finish(raw)
+            val safe=GeneratedPatternProcessor.fromGroups(listOf(group))
             out?.resolve("$name.pes")?.writeBytes(PesWriter.write(safe))
         }
         if(out!=null) {

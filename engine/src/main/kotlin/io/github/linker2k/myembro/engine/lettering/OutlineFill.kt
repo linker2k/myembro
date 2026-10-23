@@ -3,7 +3,7 @@ package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin
 import io.github.linker2k.myembro.engine.inkstitch.stitches.*
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.digitizing.RunningSettings
 import io.github.linker2k.myembro.engine.digitizing.RunningStitch
 import io.github.linker2k.myembro.engine.digitizing.TatamiFill
@@ -75,17 +75,10 @@ object OutlineFill {
             val region = raw.offset(options.pullCompensationMm * 10).difference(holes).let { PolygonRegion(it.geometry.norm()) }
             val height = glyph.heightMm ?: raw.geometry.envelopeInternal.height / 10
             val density = options.densityForHeight(height)
-            val rails = if (satin) OutlineSatinValidation.rails(raw) else null
-            if (satin && rails == null) builder.warnings += "새틴 기둥 검증을 통과하지 못해 자동 채우기를 사용했습니다."
+            // TTF outlines are not rail ladders. Only explicit/validated satin elements use SatinColumn.
+            if (satin) builder.warnings += "TTF 자동 새틴은 검증 전까지 사용할 수 없어 자동 채우기를 사용했습니다."
             builder.begin(region, glyph.thread)
-            if (rails != null) {
-                val settings = SatinOptions(densityMm = density, pullCompensationMm = options.pullCompensationMm,
-                    centerUnderlay = options.underlay, contourUnderlay = options.underlay && rails.first.first().distance(rails.second.first()) > 7.0)
-                InkSatin.paths(rails.first, rails.second, settings).forEach { path ->
-                    builder.path(path.map { Point(it.x * 10, it.y * 10) },
-                        maxStitchLengthMm = if (rails.first.first().distance(rails.second.first()) > 7.0) 4.0 else 7.0)
-                }
-            } else {
+            run {
                 // Ink/Stitch fill_stitch.py: default underlay is angle+90, 3x row spacing, inset 0.
                 if (options.underlay) InkAutoFill.paths(raw, InkAutoFill.Settings(
                     angleDegrees = options.angleDeg + 90, rowSpacing = density * 30,
@@ -183,7 +176,7 @@ private class FillStitches {
         val cy = if (sewn.isEmpty()) 0 else (sewn.minOf { it.y }.toLong() + sewn.maxOf { it.y }).div(2).toInt()
         val centered = stitches.map { it.copy(x = it.x - cx, y = it.y - cy) }
         val last = centered.lastOrNull()
-        return StitchPlanFinisher.finish(EmbPattern(centered + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END), threads,
+        return GeneratedPatternProcessor.finish(EmbPattern(centered + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END), threads,
             mapOf("name" to "Filled lettering", "geometry.centerXUnits" to cx.toString(), "geometry.centerYUnits" to cy.toString()), warnings.toList()))
     }
 }

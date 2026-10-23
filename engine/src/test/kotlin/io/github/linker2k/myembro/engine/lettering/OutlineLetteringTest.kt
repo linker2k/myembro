@@ -63,7 +63,7 @@ class OutlineLetteringTest {
             if (s.command == Command.JUMP) {
                 if (i > 0) assertEquals(Command.TRIM, pattern.stitches[i - 1].command)
                 start = s.x to s.y
-                assertTrue(hypot((s.x-pattern.stitches[i+1].x).toDouble(),(s.y-pattern.stitches[i+1].y).toDouble()) in 3.0..5.0)
+                assertEquals(s.x to s.y,pattern.stitches[i+1].x to pattern.stitches[i+1].y) // Source half-stitch anchor.
             }
             if (s.command == Command.TRIM || s.command == Command.END) {
                 assertEquals(start, s.x to s.y, "each contour returns to its own start")

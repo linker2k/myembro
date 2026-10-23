@@ -70,10 +70,7 @@ class LetteringTest {
     fun outputIsCenteredForStraightCurvedAndMultilineText() {
         for (text in listOf("Hello!", "W\ni", "gj", " A ")) {
             for (angle in listOf(-180.0, -60.0, 0.0, 0.000001, 60.0, 180.0, 360.0)) {
-                val pattern = try { LetteringEngine.generate(text, arcDeg = angle) }
-                    catch (unsafe: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException) {
-                        assertTrue(unsafe.penetrations > unsafe.limit); continue
-                    }
+                val pattern = LetteringEngine.generate(text, arcDeg = angle)
                 val bounds = assertNotNull(pattern.bounds)
                 assertTrue(abs(bounds.minX + bounds.maxX) <= 1, "$text / $angle")
                 assertTrue(abs(bounds.minY + bounds.maxY) <= 1, "$text / $angle")
@@ -126,7 +123,7 @@ class LetteringTest {
                 val next = pattern.stitches[i + 1]
                 assertEquals(Command.STITCH, next.command)
                 val lockLength = hypot((stitch.x-next.x).toDouble(),(stitch.y-next.y).toDouble())
-                assertTrue(lockLength in 3.0..5.0)
+                assertEquals(0.0, lockLength) // Source half-stitch starts at the jump anchor.
             }
         }
         val untrimmed = LetteringEngine.generate("A A", trimBetweenStrokes = false)

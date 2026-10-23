@@ -36,10 +36,10 @@ class InkStitchPortTest {
         pairs.forEachIndexed { i,(p,q) -> assertEquals(i*0.4,p.y,1e-6); assertEquals(p.y,q.y,1e-6) }
         val backwards = InkSatin.pairs(a,b.asReversed(),listOf(InkSatin.Rung(Point(0.0,5.0),Point(2.0,5.0))),0.4)
         assertEquals(pairs.size,backwards.size)
-        assertFailsWith<IllegalArgumentException> {
-            InkSatin.pairs(a,b,listOf(InkSatin.Rung(Point(0.0,3.0),Point(2.0,8.0)),
-                InkSatin.Rung(Point(0.0,7.0),Point(2.0,2.0))),0.4)
-        }
+        val crossing=InkSatin.pairs(a,b,listOf(InkSatin.Rung(Point(0.0,3.0),Point(2.0,8.0)),
+            InkSatin.Rung(Point(0.0,7.0),Point(2.0,2.0))),0.4)
+        assertTrue(crossing.isNotEmpty()) // Source sorts cuts independently instead of rejecting crossing rungs.
+
         val short = InkSatin.shorten(listOf(Point(0.0,0.0) to Point(2.0,0.0), Point(0.0,0.1) to Point(2.0,0.5)))
         assertEquals(0.0,short.first().first.x)
         assertTrue(short.last().first.x > 0.0) // 15% inward on the crowded rail; the other rail stays full width.
@@ -56,9 +56,11 @@ class InkStitchPortTest {
     @Test fun placedTextRebuildsLocksAtMachineScaleInsteadOfScalingTheirLengths() {
         val text=TextObject("scaled",text="I",stitchStyle=StitchStyle.RUNNING,transform=Transform(scaleX=0.5,scaleY=0.5))
         val placed=text.placedPattern()
-        val first=placed.stitches.first { it.command==Command.STITCH }
-        val jump=placed.stitches.takeWhile{it!=first}.last()
-        assertTrue(hypot((first.x-jump.x).toDouble(),(first.y-jump.y).toDouble()) in 3.0..5.0)
+        val locks=placed.metadata.getValue(GeneratedPatternProcessor.LOCK_INDICES_KEY).split(',').map(String::toInt).toSet()
+        val start=placed.stitches.takeWhile { it.command != Command.STITCH }.last()
+        val prefix=placed.stitches.withIndex().filter { it.index in locks }.take(5).map { it.value }
+        assertEquals(start.x to start.y,prefix.first().x to prefix.first().y)
+        assertTrue(prefix.maxOf { hypot((it.x-start.x).toDouble(),(it.y-start.y).toDouble()) } in 14.0..16.0)
         val pes=PesReader.read(PesWriter.write(placed))
         assertEquals(placed.stitchCount,pes.stitchCount)
     }

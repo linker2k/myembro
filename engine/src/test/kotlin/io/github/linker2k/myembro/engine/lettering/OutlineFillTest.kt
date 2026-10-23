@@ -21,7 +21,7 @@ class OutlineFillTest {
         pattern.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH) {
                 val d = hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble())
-                assertTrue(d in 3.0..70.0, "${d / 10}mm: $a → $b")
+                assertTrue(d in 1.0..70.0, "${d / 10}mm: $a → $b")
             }
         }
     }
@@ -95,12 +95,12 @@ class OutlineFillTest {
         assertLengths(two)
     }
 
-    @Test fun narrowAndWideOutlinesUseColumnsAndWideStitchesSplit() {
+    @Test fun narrowAndWideTtfRequestsUseFillWithAnExplicitWarning() {
         val narrow = OutlineFill.generate(listOf(box(-1.5, -6.0, 3.0, 12.0)), noExtras, satin = true)
-        assertTrue(narrow.warnings.isEmpty())
+        assertTrue(narrow.warnings.isNotEmpty())
         assertLengths(narrow)
         val wide = OutlineFill.generate(listOf(box(-6.0, -12.0, 12.0, 24.0)), noExtras, satin = true)
-        assertTrue(wide.warnings.isEmpty())
+        assertTrue(wide.warnings.isNotEmpty())
         assertLengths(wide)
         wide.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH)
@@ -136,14 +136,16 @@ class OutlineFillTest {
         assertEquals(old.localPattern().stitches, legacy.localPattern().stitches)
     }
 
-    @Test fun overdenseBeanAndCrosswiseUnderlayAreRejectedRatherThanDeletingNeedles() {
+    @Test fun denseBeanRetainsSourceNeedlesAndUsesSharedLocks() {
         val obj = TextObject("dense", text = "B\nB", fontKind = FontKind.OUTLINE,
             contours = ring + ring.map { path -> path.map { (x,y) -> x to y+20 } },
             contourCharacters = listOf(0,0,2,2), contourBaselines = listOf(0.0,0.0,20.0,20.0),
             heightMm = 12.0, contourSourceHeight = 12.0, stitchStyle = StitchStyle.FILL,
             fillOptions = FillOptions(densityMm = 0.5, angleDeg = 45.0, border = FillBorder.BEAN))
-        val failure = assertFailsWith<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException> { obj.localPattern() }
-        assertTrue(failure.penetrations > failure.limit)
+        val pattern = obj.localPattern()
+        assertTrue(pattern.stitchCount > 100)
+        assertTrue(pattern.metadata.containsKey(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.FINISHED_KEY))
+        assertLengths(pattern)
     }
 
     @Test fun emptyDegenerateAndInvalidFillInputsAreSafe() {

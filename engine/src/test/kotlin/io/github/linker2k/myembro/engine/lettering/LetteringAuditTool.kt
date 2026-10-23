@@ -2,7 +2,6 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.edit.*
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.model.*
 import java.awt.font.FontRenderContext
@@ -82,11 +81,7 @@ class LetteringAuditTool {
             summary += row; println(row)
         }
         fun generated(name: String, obj: TextObject) {
-            try { dump(name, obj.localPattern()) }
-            catch (unsafe: UnsafeStitchPlanException) {
-                summary += "$name\tBLOCKED\t0\t0\t0\t${unsafe.penetrations}\t0\t0\t0"
-                File(out, "$name-blocked.txt").writeText(unsafe.message.orEmpty())
-            }
+            dump(name, obj.localPattern())
         }
         System.getenv("MYEMBRO_PRIVATE_PES")?.let { dump("private-input", PesReader.read(File(it).readBytes())) }
         val script = LetteringAuditGlyphs.script()

@@ -25,34 +25,18 @@ class AutomaticFillTest {
         val manual = OutlineFill.generate(listOf(box(1.5, 6.0)), plain.copy(autoDensity = false))
         assertTrue(relaxed.stitchCount < manual.stitchCount)
     }
-    @Test fun ordinaryNarrowTextUsesAlternatingSatinAtPointFourSpacing() {
-        val p = OutlineFill.generate(listOf(box(1.5, 8.0)), plain, satin = true)
-        assertTrue(p.warnings.isEmpty())
-        val steps = moves(p).map { (a, b) -> b.x - a.x }
-        val sewn = steps.zipWithNext().count { (a, b) -> a * b < 0 }
-        assertTrue(sewn > (steps.size - 1) * 0.85)
-        assertTrue(abs(p.bounds!!.width-15)<=1) // 1e-5px source precision can move a half-grid endpoint by one machine unit.
-        for (side in listOf(p.bounds!!.minX, p.bounds!!.maxX)) {
-            val points = p.stitches.filter { it.command == Command.STITCH && it.x == side }
-            assertTrue(points.isNotEmpty())
-            assertTrue(points.zipWithNext().all { (a, b) -> abs(b.y - a.y) <= 5 })
+    @Test fun narrowAndWideTtfRectanglesCannotBypassAutoSatinDisable() {
+        for (width in listOf(1.5,6.5,12.0)) {
+            val shape=listOf(box(width,30.0))
+            val fallback=OutlineFill.generate(shape,plain,satin=true)
+            val fill=OutlineFill.generate(shape,plain,satin=false)
+            assertTrue(fallback.warnings.any { "TTF" in it })
+            assertEquals(fill.stitches,fallback.stitches)
+            assertSewingLengths(fallback)
+            val restored=PesReader.read(PesWriter.write(fallback))
+            assertEquals(fallback.stitchCount,restored.stitchCount)
+            assertEquals(fallback.bounds,restored.bounds)
         }
-    }
-    @Test fun wideColumnsSplitBelowFourMillimetresAndStaggerInteriorPenetrations() {
-        val p = OutlineFill.generate(listOf(box(12.0, 30.0)), plain, satin = true)
-        assertTrue(p.warnings.isEmpty())
-        moves(p).forEach { (a, b) -> assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) in 3.0..40.0) }
-        val internal = p.stitches.filter { it.command == Command.STITCH && abs(it.x) < 59 }.map { it.x }.toSet()
-        assertTrue(internal.size >= 5, "Split positions must not form one straight seam: $internal")
-        val pes = PesReader.read(PesWriter.write(p))
-        assertEquals(p.stitchCount, pes.stitchCount)
-        assertEquals(p.bounds, pes.bounds)
-    }
-    @Test fun strokesBelowSevenMillimetresCanKeepWholeSatinCrossings() {
-        val p = OutlineFill.generate(listOf(box(6.5, 20.0)), plain, satin = true)
-        val lengths = moves(p).map { (a, b) -> hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) }
-        assertTrue(lengths.any { it > 60.0 })
-        assertTrue(lengths.all { it in 3.0..70.0 })
     }
     @Test fun shortTJunctionSpursDoNotCreateFullLetterWidthCrossings() {
         val t = listOf(-2.5 to -4.0, 2.5 to -4.0, 2.5 to -2.8, 0.6 to -2.8, 0.6 to 4.0,

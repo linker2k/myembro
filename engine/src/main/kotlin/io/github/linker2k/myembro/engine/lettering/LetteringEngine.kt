@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchSafetyOptions
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
@@ -94,7 +93,7 @@ object LetteringEngine {
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
             missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
-        ).withStitchStyle(stitchStyle).let { StitchPlanFinisher.finish(it, StitchSafetyOptions(maximumMm = maxOf(0.5, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)), centerOutput = true) }
+        ).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
     }
 
     /**
@@ -114,8 +113,7 @@ object LetteringEngine {
      * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
      * [stitchStyle] defaults to RUNNING for outlines; use BEAN for imported single-line paths.
      * FILL groups [contourCharacters] and fills each glyph with even-odd holes, using
-     * [fillOptions]. Missing owners treat all contours as one glyph. SATIN uses narrow
-     * outline zigzags with tatami fallback when [outline] is true; otherwise it offsets
+     * [fillOptions]. Missing owners treat all contours as one glyph. SATIN requests on TTF outlines use auto-fill until a separately validated column exists; otherwise it offsets
      * centerline contours using [satinOptions], preserving the existing stroke API.
      */
     fun fromContours(
@@ -155,7 +153,7 @@ object LetteringEngine {
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
         val paths = contours.filter { it.size >= 2 }
         val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
-        if (paths.isEmpty()) return StitchPlanFinisher.finish(builder.finish(thread))
+        if (paths.isEmpty()) return GeneratedPatternProcessor.finish(builder.finish(thread))
         val points = paths.flatten()
         val minX = points.minOf { it.first }
         val maxX = points.maxOf { it.first }
@@ -189,7 +187,7 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread).withStitchStyle(stitchStyle).let { StitchPlanFinisher.finish(it, StitchSafetyOptions(maximumMm = maxOf(0.5, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)), centerOutput = true) }
+        return builder.finish(thread).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {
@@ -237,7 +235,8 @@ internal class RunningStitches(
     private val satinOptions: SatinOptions = SatinOptions(),
     private val resamplePaths: Boolean = true,
 ) {
-    private val maxLength = (if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm) * 10
+    private val maxLength = stitchLengthMm * 10
+    private val satinGroups = arrayListOf<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>()
     private val stitches = arrayListOf<Stitch>()
     private val threads = arrayListOf<EmbThread>()
 
@@ -255,10 +254,16 @@ internal class RunningStitches(
                 listOf(points.map { (x, y) -> x / 10 to y / 10 }), mergeToleranceMm, minSegmentMm,
             ).single().map { (x, y) -> x * 10 to y * 10 }
         } else points
-        val path = if (stitchStyle == StitchStyle.SATIN) {
-            SatinColumn.strokePoints(reduced.map { (x, y) -> x / 10 to y / 10 }, satinOptions)
-                .map { (x, y) -> x * 10 to y * 10 }
-        } else reduced
+        if (stitchStyle == StitchStyle.SATIN) {
+            val (left,right) = SatinColumn.rails(reduced.map { (x,y) -> x / 10 to y / 10 },satinOptions.widthMm)
+            if (left.size >= 2 && right.size >= 2) {
+                fun points(path:List<Pair<Double,Double>>) = path.map { Point(it.first,it.second) }
+                satinGroups += io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin.element(
+                    points(left),points(right),satinOptions,color=thread).toStitchGroups(satinGroups.lastOrNull()?.stitches?.lastOrNull())
+            }
+            return
+        }
+        val path = reduced
         val running = if (stitchStyle == StitchStyle.SATIN || !resamplePaths) path else
             InkRunning.even(path.map { Point(it.first, it.second) }, maxLength, if (simplifyPaths) mergeToleranceMm * 10 else 0.0)
                 .map { it.x to it.y }
@@ -293,6 +298,12 @@ internal class RunningStitches(
     }
 
     fun finish(thread: EmbThread, metadata: Map<String, String> = emptyMap(), warnings: List<String> = emptyList()): EmbPattern {
+        if (stitchStyle == StitchStyle.SATIN) {
+            val groups = satinGroups.mapIndexed { i,g -> g.copy(trimAfter = trimBetweenStrokes && i < satinGroups.lastIndex) }
+            return GeneratedPatternProcessor.fromGroups(groups).let {
+                EmbPattern(it.stitches, it.threads, it.metadata + metadata, warnings)
+            }.centeredGenerated()
+        }
         if (stitches.isNotEmpty()) {
             val sewn = stitches.filter { it.command == Command.STITCH }
             val cx = (sewn.minOf { it.x } + sewn.maxOf { it.x }) / 2
