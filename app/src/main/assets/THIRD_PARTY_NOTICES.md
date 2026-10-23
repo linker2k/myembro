@@ -485,18 +485,23 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
 
-## Potrace-derived binary contour and polygon core (engine-only partial port)
 
-- Source: Potrace 1.16, Copyright (C) 2001–2019 Peter Selinger.
-- Official release: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
-- Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
-  (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
-- Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
-  `OptimalPolygon.kt`, `CurveFitter.kt` and `CurveOptimizer.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
-  and `src/auxiliary.h`. Modified 2026 by myembro contributors.
-- License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
-  GPL-3.0-or-later application. Upstream permission is stated in its README;
-  the complete upstream GPL v2 text is packaged as `licenses/potrace/COPYING` in the engine JAR/APK.
-- This is an unfinished, internal algorithm port, not an endorsed or finished Potrace product.
-  No original executable, native library or new dependency is bundled. No application entry point.
-  See `docs/image-pipeline.md` for the exact implemented stages and differences.
+## Wu color quantizer / Graphics Gems II
+
+- Author: Xiaolin Wu; thanks to Tom Lane for documentation and bug correction.
+- Source: `gemsii/quantizer.c` (original C v2 of the 1991 Graphics Gems II algorithm),
+  https://github.com/erich666/GraphicsGems/tree/ca4898517a93b6b45444a9cda5fd50132694b864 .
+- Kotlin translation: `engine/.../inkstitch/svg/image/ImageQuantizer.kt`.
+- Upstream is the custom Graphics Gems permission below, **not MIT or public domain**.
+  Original file also states “Free to distribute, comments and suggestions are appreciated.”
+  Copyright remains with the original authors; the Kotlin translation is GPL-3.0-or-later
+  with upstream notices preserved. No native library or app integration is added.
+- Original permission and author notice are packaged under `licenses/graphics-gems/`.
+
+```text
+LICENSE
+
+This code repository predates the concept of Open Source, and predates most licenses along such lines. As such, the official license truly is:
+
+EULA: The Graphics Gems code is copyright-protected. In other words, you cannot claim the text of the code as your own and resell it. Using the code is permitted in any program, product, or library, non-commercial or commercial. Giving credit is not required, though is a nice gesture. The code comes as-is, and if there are any flaws or problems with any Gems code, nobody involved with Gems - authors, editors, publishers, or webmasters - are to be held responsible. Basically, don't be a jerk, and remember that anything free comes with no guarantee.
+```
