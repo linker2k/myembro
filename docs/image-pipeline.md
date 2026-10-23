@@ -45,3 +45,13 @@ BUILD SUCCESSFUL in 9s
 ```
 
 이는 로컬 엔진 검사 결과이며 CI 녹색이나 새 자수/PES 봉제 품질 통과를 의미하지 않는다.
+
+
+## 단색 레드워크 통합 1차
+
+사용자 결정의 첫 경로를 `RedworkPipeline.generate`로 연결했다. RGB24 → Wu 2색 →
+호출자가 지정한 배경 픽셀 라벨 제외 → Potrace 기본 최적 윤곽 → 기존 SVG 평탄화 →
+Ink/Stitch 러닝 기본값 → S1 → PES v6. 앱 호출은 없다.
+직접 만든 사각형/원형 PBM 두 개, 코드 assertion, 외부 quality-gate 원본 출력과
+내부 연속 반복 집계 회귀 수정은 [qa/redwork-engine.md](qa/redwork-engine.md)에 기록한다.
+재현: `tools/redwork/check-fixtures.sh`; 출력 `/tmp/myembro-port-out/editor/redwork/`.
