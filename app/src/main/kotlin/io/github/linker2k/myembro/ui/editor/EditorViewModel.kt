@@ -581,7 +581,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes")
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings)
-                    writeNamedDesign(projectDir, name, "pes", overwrite, bytes)
+                    writeNamedDesign(projectDir, name, "pes", overwrite, bytes).also {
+                        if (io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern) == io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                            io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).record(bytes)
+                    }
                 }
                 documentName = saved.nameWithoutExtension
                 documents.markSaved(snapshot)

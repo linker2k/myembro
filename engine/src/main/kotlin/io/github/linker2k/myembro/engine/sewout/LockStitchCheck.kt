@@ -5,46 +5,65 @@ import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.Stitch
 import kotlin.math.hypot
 
-/** PES carries coordinates, not reliable tie-on semantics. This is a conservative geometry hint. */
-internal fun checkStartLocks(stitches: List<Stitch>, findings: Findings) {
-    var needsLock = true
-    var reason = "도안/객체 시작"
-    for ((index, stitch) in stitches.withIndex()) {
-        when (stitch.command) {
-            Command.TRIM -> { needsLock = true; reason = "트림 뒤 재시작" }
-            Command.COLOR_CHANGE -> { needsLock = true; reason = "색 교체 뒤 재시작" }
-            Command.STITCH -> if (needsLock) {
-                // Inspect at most six consecutive needle commands, without looking through travel/cuts.
-                val start = stitches.subList(index, minOf(index + 6, stitches.size))
-                    .takeWhile { it.command == Command.STITCH }
-                if (!hasStartLock(start)) {
-                    val last = start.last()
-                    findings.add(FindingCode.MISSING_LOCK_STITCH, Severity.WARNING,
-                        "$reason: 잠금 땀을 확인하지 못했습니다. 시작부의 짧은 왕복/삼각 고정을 확인하세요.",
-                        Highlight(index, index + start.lastIndex,
-                            NeedlePoint(stitch.x.toDouble(), stitch.y.toDouble()),
-                            NeedlePoint(last.x.toDouble(), last.y.toDouble())))
+/** Functional boundary checks from the frozen quality-gate v5 lock_geometry.py.
+ * Accept short sewn returns or 2–3 boundary needles; do not require brand-specific bytes.
+ * Ordinary JUMPs do not create new threads and cannot supply a sewn return leg. */
+internal fun checkThreadLocks(stitches: List<Stitch>, findings: Findings, severity: Severity) {
+    data class Needle(val point: NeedlePoint, val from: NeedlePoint, val index: Int)
+    var prior = NeedlePoint(0.0, 0.0)
+    val section = mutableListOf<Needle>()
+    fun distance(a: NeedlePoint, b: NeedlePoint) = hypot(a.x-b.x, a.y-b.y)
+    fun locked(start: Boolean): Boolean {
+        val seq = if (start) section.take(16) else section.asReversed().take(16)
+        fun inspect(relaxed: Boolean): Boolean {
+            val coords = mutableListOf<NeedlePoint>()
+            var previous: Needle? = null
+            var repeat = 0
+            for (needle in seq) {
+                val q = needle.point
+                val old = previous
+                if (old != null && distance(if (start) needle.from else old.from,
+                        if (start) coords.last() else q) > 1e-6) break
+                val leg = coords.lastOrNull()?.let { distance(q, it) }
+                if (leg != null && leg > (if (relaxed) 10.0 else 30.0) + 1e-6) break
+                if (coords.any { distance(q, it) > 30.0 + 1e-6 }) break
+                repeat = if (leg != null && leg < 1e-6) repeat + 1 else 1
+                previous = needle
+                if (relaxed && repeat in 2..3) return true
+                if (!relaxed && leg != null && leg < 1e-6) continue
+                coords += q
+                val path = if (relaxed && start && distance(seq.first().from, coords.first()) <= 10.0 + 1e-6)
+                    listOf(seq.first().from) + coords else coords
+                val edges = path.zipWithNext().filter { (a,b) -> distance(a,b) > 1e-6 }
+                    .map { (a,b) -> NeedlePoint(b.x-a.x,b.y-a.y) }
+                if (edges.size < 2) continue
+                if (relaxed && edges.zipWithNext().any { (a,b) -> a.x*b.x+a.y*b.y < -1e-7 }) return true
+                if (!relaxed && coords.size >= 3) {
+                    val travel = edges.sumOf { hypot(it.x,it.y) }
+                    val reverse = edges.zipWithNext().any { (a,b) -> a.x*b.x+a.y*b.y <= -.25*hypot(a.x,a.y)*hypot(b.x,b.y)+1e-7 }
+                    if (travel >= 2.0-1e-6 && distance(coords.first(),coords.last()) <= .55*travel+1e-6 && reverse) return true
                 }
-                needsLock = false
             }
-            Command.END -> return
-            else -> Unit // Travel before the first needle must not consume a pending start/trim check.
+            return false
         }
+        return inspect(true) || inspect(false)
     }
-}
-
-private fun hasStartLock(stitches: List<Stitch>): Boolean {
-    // Zero-length anchors do not constitute a lock. Repeated punctures are checked separately.
-    val points = mutableListOf<Stitch>()
-    for (stitch in stitches) if (points.lastOrNull()?.let { it.x == stitch.x && it.y == stitch.y } != true) {
-        points += stitch
-        if (points.size == 4) break
+    fun flush() {
+        if (section.isEmpty()) return
+        for (start in listOf(true,false)) if (!locked(start)) {
+            val seq = if (start) section.take(16) else section.takeLast(16)
+            findings.add(FindingCode.MISSING_LOCK_STITCH, severity,
+                if (start) "실 시작 잠금 땀을 확인하지 못했습니다." else "실 끝 잠금 땀을 확인하지 못했습니다.",
+                Highlight(seq.first().index,seq.last().index,seq.first().point,seq.last().point))
+        }
+        section.clear()
     }
-    if (points.size < 4) return false
-    fun distance(a: Stitch, b: Stitch) = hypot(a.x.toDouble() - b.x, a.y.toDouble() - b.y)
-    // Three real 0.3–1.5mm moves in a compact start, returning as A-B-A-B or A-B-C-A.
-    if (points.zipWithNext().any { (a, b) -> distance(a, b) !in 3.0..15.0 }) return false
-    if (points.any { distance(points[0], it) > 15.0 }) return false
-    return distance(points[0], points[3]) <= 3.0 ||
-        (distance(points[0], points[2]) <= 3.0 && distance(points[1], points[3]) <= 3.0)
+    for ((index, stitch) in stitches.withIndex()) {
+        val p = NeedlePoint(stitch.x.toDouble(),stitch.y.toDouble())
+        if (stitch.command == Command.STITCH) section += Needle(p,prior,index)
+        else if (stitch.command in setOf(Command.TRIM,Command.STOP,Command.COLOR_CHANGE,Command.END)) flush()
+        prior = p
+        if (stitch.command == Command.END) return
+    }
+    flush()
 }

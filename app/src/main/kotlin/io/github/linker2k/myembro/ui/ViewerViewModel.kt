@@ -46,7 +46,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         private set
     val canExport: Boolean get() = render != null && !loading && !exporting && shareUri == null
 
-    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String)
+    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String, val generated: Boolean)
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
     private var sourceName: String = ""
@@ -134,7 +134,12 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         checkingSewout = true
         sewoutJob = viewModelScope.launch {
             try {
-                val report = withContext(Dispatchers.Default) { checkViewerSewout(pattern, machine, selectedHoop, placed, pes) }
+                val identity = sourceBytes
+                val report = withContext(Dispatchers.Default) {
+                    val origin = if (identity != null && io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).contains(identity))
+                        DesignOrigin.APP_GENERATED else SewoutCheck.originOf(pattern)
+                    checkViewerSewout(pattern, machine, selectedHoop, placed, pes, origin)
+                }
                 if (version == sewoutVersion) sewoutReport = report
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (error: Exception) {
@@ -266,7 +271,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         val output = if (suggestCopy) suggestDesignName(name) {
             File(getApplication<Application>().filesDir, "designs/$it.pes").exists()
         } else name
-        return ExportRequest(source, sourceName, "$output.pes")
+        return ExportRequest(source, sourceName, "$output.pes",
+            render?.pattern?.let(SewoutCheck::originOf) == DesignOrigin.APP_GENERATED)
     }
 
     private fun <T> export(request: ExportRequest, write: (ByteArray) -> T, onSuccess: (T) -> Unit) {
@@ -278,7 +284,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                     // Normalize/encode before opening the destination, so validation errors
                     // cannot truncate an existing document. Encoding and all writes run on IO.
                     val settings = settingsPreferences.read().writeSettings
-                    write(PesExport.prepare(request.source, request.sourceName, settings).bytes)
+                    val bytes = PesExport.prepare(request.source, request.sourceName, settings).bytes
+                    val origins = io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication())
+                    write(bytes).also { if (request.generated || origins.contains(request.source)) origins.record(bytes) }
                 }
                 onSuccess(result)
             } catch (cancelled: CancellationException) {

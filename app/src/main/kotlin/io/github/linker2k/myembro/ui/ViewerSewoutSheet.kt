@@ -22,12 +22,8 @@ import io.github.linker2k.myembro.ui.format.Dimensions
 internal fun SewoutSummary(vm: ViewerViewModel) {
     val report = vm.sewoutReport
     AssistChip(onClick = vm::openSewout, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        label = { Column {
-            Text(if (report != null) sewoutSummary(report) else stringResource(
-                if (vm.checkingSewout) R.string.sewout_loading else R.string.sewout_failed), style = MaterialTheme.typography.labelSmall)
-            if (report != null && !report.analysisComplete) Text(stringResource(R.string.sewout_incomplete), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-            if (report != null && report.suppressedFindings > 0) Text(stringResource(R.string.sewout_suppressed, report.suppressedFindings), style = MaterialTheme.typography.labelSmall)
-        } })
+        label = { Text(if (report != null) stringResource(sewoutVerdictResource(report)) else stringResource(
+            if (vm.checkingSewout) R.string.sewout_loading else R.string.sewout_failed)) })
 }
 
 @Composable
@@ -207,7 +203,7 @@ internal fun SewoutTransferConfirmation(report: SewoutReport, onCancel: () -> Un
             Text(stringResource(R.string.sewout_confirm_body, report.machine.name, report.severityCounts[Severity.BLOCKER] ?: 0))
             if (!report.analysisComplete) Text(stringResource(R.string.sewout_confirm_incomplete))
         } },
-        confirmButton = { TextButton(onClick = onContinue) { Text(stringResource(R.string.sewout_transfer_anyway)) } },
+        confirmButton = { TextButton(onClick = onContinue, enabled = !report.hasBlockingIssues) { Text(stringResource(R.string.sewout_transfer_anyway)) } },
         dismissButton = { Row {
             TextButton(onClick = onReview) { Text(stringResource(R.string.sewout_review)) }
             TextButton(onClick = onCancel) { Text(stringResource(R.string.sewout_cancel)) }

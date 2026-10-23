@@ -4,7 +4,7 @@ package io.github.linker2k.myembro.engine.sewout
 import kotlin.math.*
 
 /** Needle targets and thread passages are separate: crossing a cell is not a needle puncture. */
-internal class DensityGrid(private val options: SewoutOptions) {
+internal class DensityGrid(private val options: SewoutOptions, private val offsetX: Double = 0.0, private val offsetY: Double = 0.0) {
     private val size = options.gridMm * 10
     private data class Cell(var needles: Int = 0, var passes: Int = 0, var length: Double = 0.0,
         val stages: MutableSet<Int> = linkedSetOf(), val first: Int)
@@ -18,7 +18,7 @@ internal class DensityGrid(private val options: SewoutOptions) {
             else { complete = false; null }
     }
     fun needle(p: NeedlePoint, stage: Int, index: Int) {
-        cell(floor(p.x/size).toLong(), floor(p.y/size).toLong(), index)?.let { it.needles++; it.stages += stage }
+        cell(floor((p.x-offsetX)/size).toLong(), floor((p.y-offsetY)/size).toLong(), index)?.let { it.needles++; it.stages += stage }
     }
     /** Exact parametric grid traversal; diagonal corner hits do not create spurious side cells. */
     fun segment(a: NeedlePoint, b: NeedlePoint, stage: Int, index: Int) {
@@ -48,6 +48,6 @@ internal class DensityGrid(private val options: SewoutOptions) {
         }
     }
     fun result(): List<DensityCell> = cells.map { (key, cell) -> DensityCell(key.first, key.second,
-        CheckArea(key.first*size, key.second*size, (key.first+1)*size, (key.second+1)*size),
+        CheckArea(key.first*size+offsetX, key.second*size+offsetY, (key.first+1)*size+offsetX, (key.second+1)*size+offsetY),
         cell.needles, cell.passes, cell.length, cell.stages.toSet(), cell.first) }
 }
