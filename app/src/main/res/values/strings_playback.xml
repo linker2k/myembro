@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="playback_title">Stitch playback</string>
+    <string name="playback_title">Stitch preview</string>
     <string name="playback_seek">Sewing order</string>
     <string name="playback_stitch_count">%1$,d / %2$,d stitches</string>
-    <string name="playback_multiplier">%1$d×</string>
-    <string name="playback_speed_description">Playback speed %1$d times</string>
-    <string name="playback_color_marks">Color changes %1$d</string>
-    <string name="playback_trim_marks">Trims %1$d</string>
-    <string name="playback_rate">1×: approx. %1$.0f stitches/min · operator waits omitted</string>
-    <string name="playback_blocker_locations">%1$d blocking locations</string>
     <string name="playback_blocker_description">Blocking problems marked with red circles: %1$d locations</string>
+    <string name="playback_check_pass">Pass</string>
+    <string name="playback_check_blocked">Blocked</string>
+    <string name="playback_check_blocked_reason">Review the check before transferring.</string>
 </resources>

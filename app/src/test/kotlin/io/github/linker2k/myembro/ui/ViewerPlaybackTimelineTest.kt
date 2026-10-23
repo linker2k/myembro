@@ -41,4 +41,22 @@ class ViewerPlaybackTimelineTest {
         val missing = ViewerPlaybackTimeline(EmbPattern(source.take(7), emptyList()))
         assertEquals(6, missing.endIndex); assertEquals(6, missing.advance(-1, 3))
     }
+    @Test fun autoPreviewRateDependsOnlyOnDesignLengthAndNeverMachineSpeed() {
+        assertEquals(0.0, viewerPlaybackRate(0))
+        assertEquals(1.0, viewerPlaybackRate(8))
+        assertEquals(100.0, viewerPlaybackRate(2000))
+        assertEquals(5000.0, viewerPlaybackRate(100000))
+        assertFailsWith<IllegalArgumentException> { viewerPlaybackRate(-1) }
+    }
+
+    @Test fun binaryBadgePassesOnlyCompletedReportsWithoutBlockers() {
+        val p = EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(30, 0, Command.STITCH), Stitch(30, 0, Command.END)), emptyList())
+        val report = checkViewerSewout(p, io.github.linker2k.myembro.engine.sewout.SewoutMachines.SE400,
+            io.github.linker2k.myembro.engine.edit.HoopSpec.H100, false)
+        assertFalse(viewerCheckBlocked(report)) // Non-blocking warnings remain in the details sheet.
+        assertTrue(viewerCheckBlocked(null))
+        assertTrue(viewerCheckBlocked(report.copy(analysisComplete = false)))
+        assertTrue(viewerCheckBlocked(report.copy(severityCounts = mapOf(io.github.linker2k.myembro.engine.sewout.Severity.BLOCKER to 1))))
+    }
+
 }
