@@ -2,7 +2,8 @@
 // Explicit candidate integration only. Does not alter the normal engine source set.
 // Usage: ./gradlew -I tools/inkstitch-fill-preview.gradle \
 //   -PfillPlannerSourceRoot=/path/to/worker/engine/src/main/kotlin :engine:test :engine:exportFillQualityFixtures
-// The worker sources are read-only compile inputs; they are never copied or committed here.
+// Also set -PfillTatamiSourceRoot=/path/to/letter/engine/src/main/kotlin until its backend is on main.
+// External sources are read-only compile inputs; they are never copied or committed here.
 gradle.projectsEvaluated {
     def engine = gradle.rootProject.project(':engine')
     def packagePath = 'io/github/linker2k/myembro/engine/inkstitch/'
@@ -14,6 +15,16 @@ gradle.projectsEvaluated {
     }
     def sourceFiles = missing.collect { new File(external, packagePath + it) }
     sourceFiles.each { if (!it.isFile()) throw new GradleException('Missing shared planner preview source: ' + it) }
+    // Reuse letter's committed backend until it reaches main; never vendor a second generator.
+    def tatamiRoot = engine.providers.gradleProperty('fillTatamiSourceRoot').orNull
+    ['stitches/InkAutoFill.kt', 'stitches/InkRunning.kt'].each { relative ->
+        if (!engine.file('src/main/kotlin/' + packagePath + relative).isFile()) {
+            if (tatamiRoot == null) throw new GradleException('Default tatami preview awaits letter backend; set -PfillTatamiSourceRoot to its Kotlin source root.')
+            def input = new File(tatamiRoot, packagePath + relative)
+            if (!input.isFile()) throw new GradleException('Missing letter tatami preview source: ' + input)
+            sourceFiles.add(input)
+        }
+    }
     engine.tasks.named('compileKotlin').configure {
         source(engine.file('src/inkstitchPreview/kotlin'))
         sourceFiles.each { source(it) }

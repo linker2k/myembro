@@ -369,3 +369,26 @@ Codex의 폭 기준/공식 기준 출력 확정, 단계별 병합 승인, 실제
 
 현재 실행 중인 model 검증은 없다. 이번 마무리는 정책 기록만 변경하며 엔진/UI에는 손대지 않는다.
 다음 후보 단위는 기본값 전용 타타미+바탕 땀 API 준비다. 착수는 총괄의 다음 결정에 따른다.
+
+
+### 20분 단위: 기본 타타미 API 준비
+
+`elements.DefaultTatami.stitchGroups(region, thread)`를 **preview**에 추가했다.
+입력 PolygonRegion은 기존 엔진 단위(0.1mm), 반환 StitchGroup 좌표는 공통 SVG px다.
+사용자 설정 인수·폭 판정·UI·기존 경로 연결은 없다. 호출자가 객체 그룹을 모은 뒤 S1을 한 번 적용한다.
+
+letter의 `stitches.InkAutoFill`을 확인하고 **그 생성기를 그대로 호출**한다. 새 scanline/graph
+알고리즘은 추가하지 않았고 model의 별도 TatamiFill/FillRouting도 이 기본 진입점에서 호출하지 않는다.
+letter 파일의 기존 Settings 기본값(0.4mm/3.5mm)을 그대로 쓰는 대신 원본 fill 기본값인
+0°/0.25mm/4mm/4 stagger/underpath=true를 명시한다. 바탕 땀은90°/0.75mm/4mm다.
+각 성분마다 바탕 땀→본 채움 순서이며 S1 기본 잠금 정의를 붙인다.
+
+검증은 **대표 3개**만 실행했다: 사각형(기본 간격·단위·잠금), 구멍(PES 읽기·내부 바늘 없음),
+분리 성분/빈 입력(레이어 순서·빈 결과). `DefaultTatamiTest` 3개 통과. 전체 매트릭스는 실행하지 않았다.
+letter의 커밋 `b7106ec`에서 InkAutoFill/InkRunning을 읽기 전용으로 추출해 컴파일했다
+(InkAutoFill 도입 커밋 `1cbdd569747032a48075ca16e732629b15555d6c`).
+letter 통합 전 preview 실행에는 `-PfillTatamiSourceRoot=/path/to/letter-source-root`가 필요하다.
+
+이 API 준비는 letter backend의 공식 동등성/실제 봉제 통과나 S4 적용을 뜻하지 않는다.
+특히 현재 backend는 시작점 지정 인수가 없어, 바탕 땀 마지막점을 top 경로 생성에 전달하는
+계약 보강은 별도 단위로 검토할 수 있다. 이번 단위는 여기서 멈추고 총괄 결정을 기다린다.
