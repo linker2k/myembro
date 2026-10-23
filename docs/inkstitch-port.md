@@ -384,3 +384,31 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:satinOracle -Pmatr
 S1 승인 대기이며 게이트 도구·단계 상태·잠금 기준은 바꾸지 않았다.
 별도 기능 진단은 기존 게이트의 5개 조건 **7/7 PASS**. 릴리스 통과나 독립 최종 승인으로
 대체하지 않는다. 다음 단계는 총괄의 S1 검토 결과에 따른다.
+
+### S2 앱 경로 이름 7건 재현
+
+AWT 대체 경로가 아니라 Android `automaticLetteringState` → `renderLettering` →
+`TextObject` → `PesWriter`를 호출하는 opt-in instrumentation이다. 4입력 UI와 같은 설정
+(간격0, 가운데, 곡선off, 40wt, 원본 새틴 파라미터 기본값)을 쓴다.
+테스트 APK만 기존 OFL Dancing Script fixture를 포함한다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PmyembroTestRunner=io.github.linker2k.myembro.ui.lettering.LetteringSewtestInstrumentation
+adb -s emulator-5560 install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5560 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb -s emulator-5560 shell am instrument -w io.github.linker2k.myembro.test/io.github.linker2k.myembro.ui.lettering.LetteringSewtestInstrumentation
+mkdir -p /tmp/myembro-sewtest/s2
+adb -s emulator-5560 exec-out run-as io.github.linker2k.myembro tar -C files/sewtest-s2 -cf - . | tar -xf - -C /tmp/myembro-sewtest/s2
+# 각 파일에 실행. 별도 후프 크기나 게이트 기준 override 없음.
+/tmp/myembro-quality-gate/quality-gate check /tmp/myembro-sewtest/s2/jung-min-12mm.pes --text --style running --json /tmp/myembro-sewtest/s2/jung-min-12mm-quality.json
+```
+
+현재 출력은 승인 범위가 없는 TTF에 대한 기존 자동 러닝 기준선이다. 결과 표 `results.md`,
+각 파일 게이트 JSON/log, `manifest.json`, 독립 PES 파서 왕복 좌표와 `overview.png`는
+`/tmp/myembro-sewtest/s2/`에 둔다. 7건 중 6 PASS, Jung Min 30mm만 폭133.8mm로
+SE400 100mm 후프 초과 BLOCK. 앱 렌더러도 동일하게 outsideHoop=true를 반환한다.
+
+총괄이 이후 채택한 0.9–6.0mm 폭 정책은 `/tmp/myembro-quality-gate/auto-rules.md`의
+‘총괄 채택’ 절이 출처다. 이 출력은 그 정책을 적용한 새틴 결과가 아니다. TTF는 레일이 없고
+기존 자체 OutlineColumns 중축 추출기는 기본 경로 금지 상태이므로, 검증된 기둥 변환 없이
+FontQuality의 추정 폭만으로 새틴 승인이나 슬라이더 상한을 만들지 않는다.
