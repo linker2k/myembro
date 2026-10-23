@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.inkstitch.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.elements.*
 import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.model.Command
@@ -49,22 +50,29 @@ class InkStitchFontTest {
         assertTrue(abs(font.referenceHeightMm!! - 10.0) < 0.01, "10 user units of 1 mm")
         assertTrue(abs(font.baseline - 50 * px) < 1e-6, "guide is y-up from the page bottom")
         assertEquals(8.0, font.minHeightMm!!, 1e-6)
-        assertEquals(mapOf("clone" to 1, "stroke:ripple_stitch" to 1), font.unsupported)
-        // Glyph extents include the hidden path, as Ink/Stitch spaces by every path in the layer.
-        assertEquals(16 * px, h.maxX, 1e-6)
+        assertEquals(mapOf("stroke:ripple_stitch" to 1), font.unsupported)
+        // Glyph extents include the hidden path and the unattached connector: Ink/Stitch spaces by
+        // every path in the layer except command connectors (those with a connection end).
+        assertEquals(18 * px, h.maxX, 1e-6)
     }
 
     @Test fun rungsCutTheRails() {
         val satin = font.glyphs.getValue("H").elements.single() as InkSatin
-        assertEquals(2, satin.sections.size)
-        val (a, b) = satin.sections.first()
+        assertEquals(2, satin.rails.size)
+        assertEquals(1, satin.rungs.size)
+        val sections = TemporarySatin.sections(satin)!!
+        assertEquals(2, sections.size)
+        val (a, b) = sections.first()
         // The second rail was drawn the other way; it is reversed to run with the first.
         assertTrue(abs(a.first().y - b.first().y) < 1e-6 && abs(a.last().y - 45 * px) < 1e-6 && abs(b.last().y - 45 * px) < 1e-6)
         assertEquals(0xFFFF0000.toInt(), satin.color)
     }
 
     @Test fun fillKeepsRuleAndParameters() {
-        val fill = font.glyphs.getValue("O").elements.single() as InkFill
+        val elements = font.glyphs.getValue("O").elements
+        val fill = elements.first() as InkFill
+        // The clone of a stroke in defs sews as that stroke, as Ink/Stitch resolves clones.
+        assertTrue(elements.drop(1).any { it is InkRun && it.color == 0xFF000000.toInt() })
         assertEquals(io.github.linker2k.myembro.engine.geometry.FillRule.EVEN_ODD, fill.rule)
         assertEquals(45.0, fill.params.number("angle"))
         assertTrue(!fill.params.bool("fill_underlay", true))
@@ -93,8 +101,9 @@ class InkStitchFontTest {
 
     @Test fun fontColorsChangeThreadsUnlessOneThreadIsGiven() {
         val colored = InkStitchLettering.render(font, "HIO", 10.0)
-        assertEquals(3, colored.threads.size)
-        assertEquals(2, colored.colorChangeCount)
+        // H red, I green, O fill navy and its black clone.
+        assertEquals(4, colored.threads.size)
+        assertEquals(3, colored.colorChangeCount)
         val mono = InkStitchLettering.render(font, "HIO", 10.0, thread = io.github.linker2k.myembro.engine.model.EmbThread(0xFF000000.toInt()))
         assertEquals(1, mono.threads.size)
         assertEquals(0, mono.colorChangeCount)
@@ -103,19 +112,6 @@ class InkStitchFontTest {
     @Test fun refusesDoctypes() {
         val evil = """<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg>&x;</svg>"""
         assertFailsWith<Exception> { InkStitchFont.parse(evil.byteInputStream(), json) }
-    }
-
-    @Test fun sectionedSatinMatchesPlainColumnForOneSection() {
-        val left = listOf(0.0 to 0.0, 0.0 to 10.0)
-        val right = listOf(2.0 to 0.0, 2.0 to 10.0)
-        val options = SatinOptions(densityMm = 0.4)
-        val sectioned = SatinColumn.sectionPoints(listOf(left to right), options)
-        assertEquals(SatinColumn.generate(left, right, options).stitchCount, sectioned.size)
-        // Two equal sections cover the same column with the same row count.
-        val split = SatinColumn.sectionPoints(listOf(listOf(0.0 to 0.0, 0.0 to 5.0) to listOf(2.0 to 0.0, 2.0 to 5.0),
-            listOf(0.0 to 5.0, 0.0 to 10.0) to listOf(2.0 to 5.0, 2.0 to 10.0)), options)
-        assertEquals(sectioned.size, split.size)
-        sectioned.zip(split).forEach { (p, q) -> assertTrue(abs(p.first - q.first) < 1e-9 && abs(p.second - q.second) < 1e-9) }
     }
 
     @Test fun textObjectsResolveTheFontByIdAndSurviveTheCodec() {
@@ -139,12 +135,22 @@ class InkStitchFontTest {
         val left = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.LEFT)
         val center = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.CENTER)
         val right = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.RIGHT)
+        // Ink/Stitch text_align moves each line left by half (center) or all (right) of its own ink width.
         val shifts = left.indices.map { center[it].dx - left[it].dx }
-        assertEquals(0.0, shifts.min(), 1e-9, "the widest line stays")
-        assertTrue(shifts.max() > 0)
+        assertTrue(shifts.all { it < 0 })
+        assertTrue(shifts[0] < shifts[2], "the wider first line moves further")
         left.indices.forEach { assertEquals(2 * shifts[it], right[it].dx - left[it].dx, 1e-9) }
         assertEquals(100 * left[0].scale, left[2].dy - left[0].dy, 1e-9, "font.json leading defaults to 100 px")
         val spaced = InkStitchLettering.layout(font, "HI\nH", 10.0, lineHeightMm = 20.0)
         assertEquals(20.0, spaced[2].dy - spaced[0].dy, 1e-9)
+    }
+
+    @Test fun everySecondLineIsSewnBackwards() {
+        val glyphs = InkStitchLettering.layout(font, "HI\nHI\nHI", 10.0).map { it.glyph.name }
+        assertEquals(listOf("H", "I", "I", "H", "H", "I"), glyphs)
+        val forward = InkStitchLettering.layout(font, "HI\nHI", 10.0, backAndForth = false).map { it.glyph.name }
+        assertEquals(listOf("H", "I", "H", "I"), forward)
+        val oneWay = InkStitchFont(font.info.copy(reversible = false), font.glyphs, font.baseline, font.unsupported)
+        assertEquals(forward, InkStitchLettering.layout(oneWay, "HI\nHI", 10.0).map { it.glyph.name })
     }
 }

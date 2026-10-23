@@ -33,9 +33,10 @@ derived from the following projects, whose notices are reproduced as their licen
 - `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
   The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
   the license beside it. No font data is in this repository or the APK.
-- `engine/.../inkstitch/lettering/InkStitchFont.kt` and `InkStitchLettering.kt` are ported from
-  Ink/Stitch (https://github.com/inkstitch/inkstitch, GPL-3.0-or-later, Copyright (c) Ink/Stitch
-  contributors) at commit `16e192849e619399ce8fdefb4c4d249dacdb4db1`; each file names its source modules. The sources
+- The Ink/Stitch font reader, lettering layout, SVG import and clone code under `engine/.../inkstitch/`
+  (`svg/`, `elements/InkNodes.kt`, `lettering/`) are ported from Ink/Stitch
+  (https://github.com/inkstitch/inkstitch, GPL-3.0-or-later, Copyright (c) Ink/Stitch contributors) at
+  v3.3.0, commit `b0edd96311ece82ee48816dc93466274b12c2a9c`; each file names its source modules. The sources
   were read, never executed. Ported behaviour and deviations: `docs/inkstitch-port.md`.
 
 ## pyembroidery
