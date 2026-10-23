@@ -2,7 +2,7 @@
     <string name="editor_title">Embroidery editor</string>
     <string name="editor_back">Back to library</string>
     <string name="editor_save">Save PES</string>
-    <string name="editor_hoop_size">Hoop %1$s mm</string>
+    <string name="editor_hoop_size">Hoop %1$s</string>
     <string name="editor_add">Add design</string>
     <string name="editor_layers">Layers</string>
     <string name="editor_duplicate">Duplicate</string>
@@ -109,7 +109,7 @@
     <string name="editor_machine_unknown">Machine capabilities are unknown. Select a supported machine in Settings before exporting PES.</string>
     <string name="editor_hoop_unsupported">This hoop is not a supported single sewing area for the selected machine. Choose a supported hoop before exporting PES.</string>
     <string name="editor_export_blocked">PES export blocked</string>
-    <string name="editor_multi_frame">%1$s mm · multi-position</string>
+    <string name="editor_multi_frame">%1$s · multi-position</string>
     <string name="editor_positions_unconfirmed">Confirm mounting positions to preview sewing areas. Export is unavailable until positions and an export handler are supplied.</string>
     <string name="editor_positions_count">%1$d sewing positions · numbered windows on the frame</string>
     <string name="editor_positions_spanning">%1$d objects span multiple sewing windows and require splitting.</string>

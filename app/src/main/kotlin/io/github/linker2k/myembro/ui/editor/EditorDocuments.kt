@@ -13,6 +13,7 @@ internal class EditorDocuments {
     private var saved: Project? = session.project
     private var pending: (() -> Unit)? = null
     val dirty get() = session.project != saved
+    val draft get() = session.project.takeIf { dirty }
     val needsDecision get() = pending != null
 
     fun requestReplacement(action: () -> Unit) {
@@ -25,10 +26,11 @@ internal class EditorDocuments {
         action?.invoke()
     }
     fun markSaved(snapshot: Project) { saved = snapshot }
-    fun replaceAfterRead(savedOnDisk: Boolean, read: () -> Project) {
+    @Suppress("UNUSED_PARAMETER") // Compatibility: opened snapshot, rather than file existence, defines clean.
+    fun replaceAfterRead(savedOnDisk: Boolean, restoredDraft: Boolean = false, read: () -> Project) {
         val loaded = read() // Do not reset the project, selection or History before this succeeds.
         session = EditorSession(loaded)
-        saved = loaded.takeIf { savedOnDisk }
+        saved = loaded.takeUnless { restoredDraft }
     }
 }
 

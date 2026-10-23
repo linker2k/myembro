@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="viewer_send_usb">USB로 전송</string>
+    <string name="viewer_review_edit">수정</string>
+    <string name="viewer_position">중심 X %1$s · Y %2$s</string>
+    <string name="viewer_fits_hoop">선택한 후프 안에 들어갑니다</string>
+    <string name="editor_default_name">design</string>
+    <string name="editor_overwrite_title">기존 파일을 덮어쓸까요?</string>
+    <string name="editor_overwrite_body">%1$s 이름의 파일이 있습니다. 현재 도안으로 덮어쓸까요?</string>
+    <string name="editor_overwrite">덮어쓰기</string>
+</resources>

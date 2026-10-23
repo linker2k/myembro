@@ -112,14 +112,7 @@ class MainActivity : ComponentActivity() {
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
                         onNewProject = { hoop -> newProject(hoop.spec()) },
-                        onOpenRecent = { file ->
-                            if (file.extension == "myembro") {
-                                editor.openProject(file)
-                                stack += Screen.EDITOR
-                            } else {
-                                openDesign(file)
-                            }
-                        },
+                        onOpenRecent = ::openDesign,
                         onImport = openDocument,
                         onLettering = { stack += Screen.LETTERING },
                         onOpenLibrary = { stack += Screen.LIBRARY },
@@ -182,7 +175,8 @@ class MainActivity : ComponentActivity() {
                         onShareFile = { checked(viewer::share) },
                         onEdit = openPath?.let { path ->
                             {
-                                editor.editDesign(File(path))
+                                val file = File(path)
+                                if (file.extension.equals("myembro", true)) editor.openProject(file) else editor.editDesign(file)
                                 stack += Screen.EDITOR
                             }
                         },
@@ -264,11 +258,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openDesign(file: File) {
-        if (file.extension.equals("myembro", ignoreCase = true)) {
-            editor.openProject(file)
-            if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
-            return
-        }
         openPath = file.path
         viewer.openFile(file)
         showViewer()

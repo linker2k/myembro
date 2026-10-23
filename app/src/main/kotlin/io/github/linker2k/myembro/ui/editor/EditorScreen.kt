@@ -28,6 +28,7 @@ import io.github.linker2k.myembro.engine.edit.SewingPosition
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
+import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.rememberDesignImporter
 import io.github.linker2k.myembro.ui.DesignImportDialogs
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +50,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
         var projectMenu by remember { mutableStateOf(false) }
-        var showSaveProject by remember { mutableStateOf(false) }
         var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
@@ -72,7 +72,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         val importProgress by vm.importProgress.collectAsState()
         DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-            if (uri != null) vm.saveProject(exportName, uri)
+            if (uri != null) vm.saveProject(exportName, uri, afterSave = vm::finishNamedSave) else vm.cancelNamedSave()
         }
         val snackbar = remember { SnackbarHostState() }
         val message = vm.message
@@ -116,7 +116,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                 IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
                                 DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
-                                        onClick = { projectMenu = false; showSaveProject = true })
+                                        onClick = { projectMenu = false; vm.requestProjectSave() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
                                         onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
@@ -128,13 +128,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box {
                             SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, vm.project.hoop.name)) },
+                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0))) },
                                 icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                                vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text("${hoop.name} mm") },
+                                vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
                                     onClick = { vm.setHoop(hoop); hoopMenu = false }) }
                                 vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_multi_frame, frame.coverage.name)) },
+                                    text = { Text(stringResource(R.string.editor_multi_frame, Dimensions.size(frame.coverage.width / 10.0, frame.coverage.height / 10.0))) },
                                     onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
                             }
                         }
@@ -228,7 +228,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             splitPreview = null
             onMultiPositionExport?.invoke(ready.project, ready.positions)
         }) }
-        if (vm.replacementRequested) AlertDialog(
+        if (vm.replacementRequested && vm.savePrompt == null) AlertDialog(
             onDismissRequest = { if (!vm.busy) vm.cancelReplacement() },
             title = { Text(stringResource(R.string.editor_unsaved_title)) },
             text = { Text(stringResource(R.string.editor_unsaved_body)) },
@@ -281,10 +281,22 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
         if (showProperties && vm.selectedIds.size == 1) ObjectProperties(vm) { showProperties = false }
-        if (showSaveProject) SaveProjectDialog(onDismiss = { showSaveProject = false },
-            onSave = { name -> vm.saveProject(name); showSaveProject = false },
-            onExport = { name -> exportName = name; showSaveProject = false
-                exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro") })
+        vm.savePrompt?.let { request ->
+            SaveProjectDialog(initialName = request.suggestedName,
+                title = if (request.kind == EditorSaveKind.PROJECT) R.string.editor_project_save else R.string.editor_save,
+                onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
+                onExport = if (request.kind == EditorSaveKind.PROJECT) { name ->
+                    exportName = name
+                    vm.hideSavePrompt()
+                    exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro")
+                } else null)
+        }
+        vm.overwriteName?.let { name -> AlertDialog(
+            onDismissRequest = vm::cancelOverwrite,
+            title = { Text(stringResource(R.string.editor_overwrite_title)) },
+            text = { Text(stringResource(R.string.editor_overwrite_body, name)) },
+            confirmButton = { TextButton(onClick = { vm.submitSaveName(name, overwrite = true) }) { Text(stringResource(R.string.editor_overwrite)) } },
+            dismissButton = { TextButton(onClick = vm::cancelOverwrite) { Text(stringResource(R.string.editor_cancel)) } }) }
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
             onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
             onDevice = { showOpenProjects = false; openDocument() })

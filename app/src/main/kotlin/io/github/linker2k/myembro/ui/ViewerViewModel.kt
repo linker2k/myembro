@@ -11,10 +11,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.linker2k.myembro.ui.editor.suggestDesignName
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.export.ExportChecks
-import io.github.linker2k.myembro.engine.io.PatternReader
+import io.github.linker2k.myembro.library.DesignSourceResolver
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
@@ -45,6 +47,11 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String)
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
+    private var sourceName: String = ""
+    var projectHoop by mutableStateOf<HoopSpec?>(null)
+        private set
+    var preservePlacement by mutableStateOf(false)
+        private set
     private var pendingSave: ExportRequest? = null
     private val settingsPreferences = SettingsPreferences(app)
     private var settings by mutableStateOf(settingsPreferences.read())
@@ -52,8 +59,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     val machineProfile get() = settings.machineProfile
     val availableHoops: List<Hoop> get() = settings.availableViewerHoops
     val availableFrames: List<FrameOption> get() = settings.frames
-    val frame: FrameOption get() = availableFrames.firstOrNull { it.id == selectedFrameId } ?: settings.defaultFrame
-    fun selectFrame(id: String) { if (availableFrames.any { it.id == id }) selectedFrameId = id }
+    val frame: FrameOption get() = projectHoop?.let { FrameOption("project", it) } ?: availableFrames.firstOrNull { it.id == selectedFrameId } ?: settings.defaultFrame
+    fun selectFrame(id: String) { if (availableFrames.any { it.id == id }) { projectHoop = null; selectedFrameId = id } }
     /** Legacy host accessor. Native precision is available through frame.spec. */
     var hoop: Hoop
         get() = frame.preset ?: Hoop.H100
@@ -98,7 +105,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Keep the selected design across the document picker and configuration changes. */
     fun prepareSave(): String? {
-        val request = exportRequest() ?: return null
+        val request = exportRequest(suggestCopy = true) ?: return null
         pendingSave = request
         exporting = true
         exportMessage = null
@@ -170,7 +177,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         return ExportChecks.check(pattern, request.fileName, settingsPreferences.read())
     }
 
-    private fun exportRequest(): ExportRequest? {
+    private fun exportRequest(suggestCopy: Boolean = false): ExportRequest? {
         if (!canExport) return null
         val source = sourceBytes ?: return null
         val originalName = fileName.orEmpty().substringAfterLast('/').substringAfterLast('\\')
@@ -178,7 +185,10 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             .map { if (it.isISOControl() || it in "/\\:*?\"<>|") '_' else it }.joinToString("")
             .trim().trim('.').take(100)
             .ifBlank { getApplication<Application>().getString(R.string.export_default_name) }
-        return ExportRequest(source, originalName, "$name.pes")
+        val output = if (suggestCopy) suggestDesignName(name) {
+            File(getApplication<Application>().filesDir, "designs/$it.pes").exists()
+        } else name
+        return ExportRequest(source, sourceName, "$output.pes")
     }
 
     private fun <T> export(request: ExportRequest, write: (ByteArray) -> T, onSuccess: (T) -> Unit) {
@@ -211,14 +221,24 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     val (name, bytes) = source()
-                    Triple(name, bytes, RenderData(PatternReader.read(bytes, name)))
+                    name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")))
                 }
-            }.onSuccess { (name, bytes, data) ->
+            }.onSuccess { (name, opened) ->
                 fileName = name
-                sourceBytes = bytes
+                sourceBytes = opened.source
+                sourceName = opened.sourceName
+                projectHoop = opened.hoop
+                preservePlacement = opened.hoop != null
+                val data = RenderData(opened.pattern)
                 render = data
                 progress = data.pattern.stitches.lastIndex
             }.onFailure {
+                if (it is CancellationException) throw it
+                render = null
+                sourceBytes = null
+                fileName = null
+                projectHoop = null
+                preservePlacement = false
                 error = it.message ?: it.javaClass.simpleName
             }
             loading = false

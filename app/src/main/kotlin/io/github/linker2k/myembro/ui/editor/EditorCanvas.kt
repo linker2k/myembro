@@ -44,7 +44,7 @@ import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.ThreadRendering
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import java.util.Locale
+import io.github.linker2k.myembro.ui.format.Dimensions
 
 private fun Bounds.corners() = listOf(
     Offset(minX.toFloat(), minY.toFloat()), Offset(maxX.toFloat(), minY.toFloat()),
@@ -253,8 +253,9 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                     c.nativeCanvas.drawRoundRect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, 6.dp.toPx(), 6.dp.toPx(), fill)
                     c.nativeCanvas.drawText(text, cx - label.measureText(text) / 2, cy - (label.ascent() + label.descent()) / 2, label)
                 }
-                pill(String.format(Locale.getDefault(), "%.1f mm", b.width / 10f), (a.x + z.x) / 2, dimY + 15.dp.toPx())
-                pill(String.format(Locale.getDefault(), "%.1f mm", b.height / 10f), dimX + 27.dp.toPx(), (a.y + z.y) / 2)
+                pill(Dimensions.length(b.width / 10.0), (a.x + z.x) / 2, dimY + 15.dp.toPx())
+                val heightLabel = Dimensions.length(b.height / 10.0)
+                pill(heightLabel, dimX + label.measureText(heightLabel) / 2 + 10.dp.toPx(), (a.y + z.y) / 2)
             }
             b.corners().forEach { corner ->
                 drawCircle(colors.surface, handleRadius, screen(corner))

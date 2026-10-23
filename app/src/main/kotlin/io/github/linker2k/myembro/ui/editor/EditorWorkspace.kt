@@ -37,6 +37,7 @@ import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.theme.ThreadTerracotta
 import androidx.compose.ui.graphics.toArgb
 import java.util.Locale
+import io.github.linker2k.myembro.ui.format.Dimensions
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -254,8 +255,11 @@ private fun TransformInspector(vm: EditorViewModel, obj: DesignObject, expanded:
 
 @Composable
 private fun InspectorNumber(value: String, onChange: (String) -> Unit, label: Int, modifier: Modifier, enabled: Boolean) {
+    val dimension = value.replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() }
+        ?.takeIf { label in setOf(R.string.editor_property_x, R.string.editor_property_y, R.string.editor_width_mm, R.string.editor_height_mm) }
     OutlinedTextField(value, onChange, modifier, enabled = enabled, singleLine = true,
         label = { Text(stringResource(label), style = MaterialTheme.typography.labelSmall) },
+        supportingText = if (dimension != null) { { Text(Dimensions.length(dimension), style = MaterialTheme.typography.labelSmall) } } else null,
         textStyle = MaterialTheme.typography.bodyMedium, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
