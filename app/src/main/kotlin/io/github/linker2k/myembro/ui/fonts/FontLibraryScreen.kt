@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.fonts
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.Image
+import android.graphics.BitmapFactory
 import android.app.Application
 import android.graphics.Typeface
 import android.net.Uri
@@ -77,6 +83,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.lettering.SingleLineFontBadge
 import io.github.linker2k.myembro.fonts.CatalogFont
+import io.github.linker2k.myembro.fonts.inkStitchPreview
 import io.github.linker2k.myembro.fonts.ChecksumMismatchException
 import io.github.linker2k.myembro.fonts.FontQualitySummary
 import io.github.linker2k.myembro.fonts.FontRepository
@@ -203,12 +210,17 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     val visible: List<CatalogFont>
         get() = fonts.filter { f ->
+            !f.predigitized &&
             (FontFilter.KOREAN !in filters || f.korean) &&
                 (FontFilter.LATIN !in filters || f.latin) &&
                 (FontFilter.SCRIPT !in filters || f.script) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == CatalogFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == CatalogFont.Kind.OUTLINE_TTF)
         }
+
+    /** US-3: verified embroidery fonts lead the list; they are Latin-only, so script filters other than Latin hide them. */
+    val embroidery: List<CatalogFont>
+        get() = if ((filters - FontFilter.LATIN).isEmpty()) fonts.filter { it.predigitized } else emptyList()
 
     fun download(font: CatalogFont, checksumMessage: String, failedMessage: (String) -> String) {
         if (font.id in progress) return
@@ -258,6 +270,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             when (font.kind) {
                 CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(font)?.let { FontPreview.Outline(it) }
                 CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name).map { st -> st.map { p -> p.x to -p.y } }) }
+                CatalogFont.Kind.INKSTITCH_SVG -> runCatching { repo.inkStitchFont(font)?.let { FontPreview.Strokes(inkStitchPreview(it, font.name)) } }.getOrNull()
             }
         }
         if (preview != null) previews[font.id] = preview
@@ -270,7 +283,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = MyembroTheme {
+fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit, text: String = "") = MyembroTheme {
     val vm: FontLibraryViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
     var licenseFor by remember { mutableStateOf<CatalogFont?>(null) }
@@ -345,7 +358,8 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
             }
             val list = vm.visible
             val userList = vm.visibleUserFonts
-            if (list.isEmpty() && userList.isEmpty()) {
+            val embroidery = vm.embroidery
+            if (list.isEmpty() && userList.isEmpty() && embroidery.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.fonts_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -354,6 +368,22 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (embroidery.isNotEmpty()) {
+                        item(key = "embroidery-header") { SectionTitle(stringResource(R.string.fonts_verified_embroidery)) }
+                        items(embroidery, key = { it.id }) { font ->
+                            EmbroideryFontCard(
+                                font = font,
+                                usable = font.covers(text),
+                                installed = vm.installed[font.id] == true,
+                                progress = vm.progress[font.id],
+                                onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
+                                onDelete = { vm.delete(font) },
+                                onLicense = { licenseFor = font },
+                                onUse = { onPick(font.id) },
+                            )
+                        }
+                        if (userList.isEmpty() && list.isNotEmpty()) item(key = "other-header") { SectionTitle(stringResource(R.string.fonts_catalog)) }
+                    }
                     if (userList.isNotEmpty()) {
                         item(key = "user-header") { SectionTitle(stringResource(R.string.fonts_my_fonts)) }
                         items(userList, key = { it.id }) { font ->
@@ -540,18 +570,21 @@ private fun FontCard(
         // Hairline outlines only; a single-line font's tight spots are gaps, not thin strokes.
         val largeOnly = font.kind == CatalogFont.Kind.OUTLINE_TTF &&
             quality?.recommendedMinHeightMm?.let { it.isFinite() && it > LARGE_ONLY_MM } == true
-        if (largeOnly || font.thinStroke) {
+        if (largeOnly || font.thinStroke || font.thinThreadRequired) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (largeOnly) NoteBadge(stringResource(R.string.fonts_large_only))
                 if (font.thinStroke) NoteBadge(stringResource(R.string.fonts_thin_stroke))
+                if (font.thinThreadRequired) NoteBadge(stringResource(R.string.fonts_thin_thread))
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
-                val kind = stringResource(
-                    if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline,
-                )
+                val kind = stringResource(when (font.kind) {
+                    CatalogFont.Kind.SINGLE_LINE_SVG -> R.string.fonts_kind_single_line
+                    CatalogFont.Kind.OUTLINE_TTF -> R.string.fonts_kind_outline
+                    CatalogFont.Kind.INKSTITCH_SVG -> R.string.fonts_kind_predigitized
+                })
                 val scripts = buildList {
                     if (font.korean) add(stringResource(R.string.fonts_filter_korean))
                     if (font.latin) add(stringResource(R.string.fonts_filter_latin))
@@ -603,6 +636,55 @@ private fun FontCard(
                     Icon(Icons.Filled.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.fonts_download), color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * US-3 card: the font's name and a picture of its real stitches (bundled, so it shows before download).
+ * A font without every character of the current text is dimmed and cannot be used.
+ */
+@Composable
+private fun EmbroideryFontCard(
+    font: CatalogFont,
+    usable: Boolean,
+    installed: Boolean,
+    progress: Float?,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+    onLicense: () -> Unit,
+    onUse: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val context = LocalContext.current
+    val image = remember(font.id) {
+        runCatching { context.assets.open("fonts/previews/${font.id}.png").use(BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
+    }
+    Column(
+        Modifier.fillMaxWidth().alpha(if (usable) 1f else 0.38f)
+            .background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Stitches are drawn in thread colours, so the picture sits on a light fabric tone in both themes.
+        Box(Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFF7F4EE), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.CenterStart) {
+            image?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(), alignment = Alignment.CenterStart) }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = onLicense) { Text(stringResource(R.string.fonts_license), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            when {
+                progress != null -> Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                installed -> {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Button(onClick = onUse, enabled = usable) { Text(stringResource(R.string.fonts_use)) }
+                }
+                else -> OutlinedButton(onClick = onDownload, enabled = usable) {
+                    Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
             }
         }

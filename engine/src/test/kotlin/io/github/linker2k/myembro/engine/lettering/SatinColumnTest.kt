@@ -105,7 +105,8 @@ class SatinColumnTest {
         val options = SatinOptions(widthMm = 3.0, densityMm = 0.5, maxStitchLengthMm = 6.0,
             pullCompensationMm = 0.2, centerUnderlay = true, zigzagUnderlay = true,
             underlayStitchLengthMm = 2.0, underlayDensityMm = 1.0)
-        for (kind in FontKind.entries) {
+        // Ink/Stitch fonts carry their own stitch types; satin settings apply to the contour kinds.
+        for (kind in listOf(FontKind.HERSHEY, FontKind.OUTLINE)) {
             val obj = TextObject("satin", text = "HI", fontKind = kind, singleLine = true,
                 contours = listOf(listOf(0.0 to 0.0, 0.0 to 10.0), listOf(5.0 to 0.0, 5.0 to 10.0)),
                 contourSourceHeight = 10.0, contourCharacters = listOf(0, 1),

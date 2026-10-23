@@ -82,4 +82,5 @@
     <string name="lettering_contour_underlay">윤곽 언더레이</string>
     <string name="lettering_zigzag_underlay">지그재그 언더레이</string>
     <string name="lettering_unsafe_density">0.5mm 셀에 바늘이 집중돼 생성을 막았습니다(%1$d회, 상한 %2$d회). 글자 크기나 간격을 늘려 주세요.</string>
+    <string name="lettering_missing_glyphs">이 글꼴에 없는 글자(빠짐): %1$s</string>
 </resources>

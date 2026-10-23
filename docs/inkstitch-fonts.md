@@ -1,0 +1,261 @@
+# Ink/Stitch 미리 디지타이징된 자수 폰트
+
+Ink/Stitch 저장소의 `fonts/`는 서브모듈입니다. 실제 데이터는
+[inkstitch/embroidery-fonts](https://github.com/inkstitch/embroidery-fonts)에 있고, 그 `src/<폴더>`마다
+`ltr.svg`, `font.json`, `LICENSE`가 들어 있습니다. 조사 기준은 다음과 같습니다.
+
+- embroidery-fonts commit `c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8` (2026-10 HEAD)
+- inkstitch commit `16e192849e619399ce8fdefb4c4d249dacdb4db1`의 서브모듈 고정값 `084eac0`보다 5커밋 뒤
+- 두 저장소는 읽기 전용으로 clone했고, Ink/Stitch 코드는 실행하지 않았습니다.
+
+## 결론
+
+| 항목 | 결과 |
+|---|---|
+| 폰트 폴더 | 142 |
+| 재배포 가능 | 125 (OFL 102, CC BY-SA 18, 퍼블릭 도메인/CC0 3, CC BY 1, GPL-3.0 1) |
+| 조건부 | 8: CC BY-SA 각색이지만 원본 프리웨어 권리자의 개별 메일 허락이나 EULA에 기댐 |
+| 불가 | 9: CC BY-NC-SA 8, CC BY-ND 1 |
+| 한글 지원 | **없음.** 178개 SVG 전체에 한글 글리프(U+1100–11FF, 3130–318F, AC00–D7A3)가 하나도 없습니다. 폴더 이름의 `_KOR`는 한국어가 아니라 디지타이저의 표기입니다. 일본어(honoka), 히브리어, 그리스어, 키릴 문자는 있습니다. |
+| 앱 카탈로그 | 78종: 재배포 가능하고 우리 엔진이 모든 요소를 봉제할 수 있는 것 |
+
+한글 레터링은 계속 OFL TTF(외곽선)와 우리 분석(docs/lettering.md)에 의존해야 합니다.
+Ink/Stitch 폰트는 라틴 문자의 1순위 소스로 씁니다.
+
+### 판정 원칙
+- **LICENSE 파일을 우선합니다.** font.json과 다를 때는 LICENSE를 따르고, 비고에 차이를 적었습니다.
+  - `precious`: font.json은 OFL, LICENSE는 GPL-3.0
+  - `cogs_KOR`: font.json은 CC-BY-SA, LICENSE는 CC BY 4.0
+  - `nautical`: NC라고 쓰면서 by-sa URL을 링크
+- **NC(비상업)는 불가입니다.** GPL 앱은 누구나 판매할 수 있으므로, 비상업 조건 데이터를 우리 카탈로그로 배포하면 조건이 충돌합니다.
+- **ND(변경 금지)도 불가입니다.** 크기 조정과 땀 생성이 '변형'에 해당하지 않는다고 단정할 수 없습니다.
+- **CC BY-SA는 각색자와 원본 폰트를 둘 다 봤습니다.**
+  - Ink/Stitch용 신작이거나 원본이 퍼블릭 도메인·OFL·Bitstream Vera·Hershey·CC BY-SA이면 가능입니다.
+  - 원본이 "개인·상업 무료" 프리웨어이고 근거가 Ink/Stitch 기여자가 받은 메일 허락뿐이면 조건부입니다. 이 허락이 제3자 앱으로 재배포하는 경우까지 포함하는지 확인할 수 없기 때문입니다. `learning_curve` 원본은 "재판매 금지, CD-ROM 모음집 포함 금지"라고 명시합니다.
+- **앱은 파일을 APK에 넣지 않습니다.** 고정 commit URL에서 사용자 기기로 내려받고, LICENSE를 폰트 옆에 함께 저장합니다.
+  - CC BY-SA 데이터는 GPL 코드와 섞이지 않는 별도 저작물로 다룹니다.
+  - OFL의 Reserved Font Name 조건은 파일을 수정해 재배포할 때만 걸리는데, 우리는 원본 파일을 그대로 받습니다.
+
+## 카탈로그 방식
+- `app/src/main/assets/fonts/inkstitch-catalog.json`은 기존 `catalog.json`과 분리되어 있습니다.
+  - 생성: `tools/inkstitch_catalog.py`
+  - 입력: 체크아웃, 엔진 조사 결과(`InkStitchSurveyTool`)
+- 항목마다 `ltr.svg`, `font.json`, `LICENSE` 세 파일의 `raw.githubusercontent.com/<40자 commit>/...` URL과 sha256을 넣습니다.
+- `InkStitchFonts.download`는 세 파일을 모두 검증한 뒤에 저장합니다. 하나라도 실패하면 아무것도 남기지 않습니다.
+- 권장 높이는 디지타이저가 font.json에 적은 `min_scale`/`max_scale`에서 나옵니다. 앱의 높이 기준(기준 글자 'H'의 잉크 높이)에 맞춰 환산했습니다. 우리 분석 값이 아니라 원작자가 시험한 범위입니다.
+  - 6mm 미만을 허용하는 'small/tiny' 변형 9종은 `CAUTION`으로 표시합니다.
+  - font.json이 60wt 실과 60호 바늘을 요구하는 12종은 `thinThreadRequired`로 표시합니다. 이는 PE-Design 실측 기준(일반 외곽선은 5mm 이하 금지)과 맞추기 위한 것입니다.
+- 크기: SVG 최대 14.5MB, 78종 합계 143MB입니다. 사용자는 고른 폰트만 내려받습니다.
+
+## 파서와 봉제 설계
+엔진 코드는 다음 곳에 있습니다.
+- `engine/.../inkstitch/svg/SvgTree.kt`, `SvgGeometry.kt`: 일반 SVG 가져오기와 같이 쓰는 문서 트리, 변환, 스타일
+- `engine/.../inkstitch/elements/InkNodes.kt`: 요소 분류와 clone 해석(nodes.py, clone.py 포트)
+- `engine/.../inkstitch/lettering/InkStitchFont.kt`: 글리프 레이어 읽기
+- `InkStitchLettering.kt`: 배치
+- `elements/InkElementSewing.kt`: 다른 담당자 포트가 들어오기 전까지 쓰는 임시 봉제 브리지
+
+### 읽기
+- SAX로 가벼운 요소 트리를 만듭니다(W3C DOM 없음). DOCTYPE과 외부 엔티티는 거부합니다.
+- `GlyphLayer-<문자>` 그룹이 하나의 글리프입니다. 이름은 NFC로 정규화하고, 여러 글자 이름은 합자로 봅니다.
+- 좌표는 Ink/Stitch처럼 **px(1/96 in)** 입니다.
+  - 루트 viewBox→페이지 변환과 모든 조상 `transform`을 합성합니다.
+  - 사용자 단위가 mm인 파일(bluenesia, dinomouse 등)도 이 변환으로 바르게 읽힙니다.
+- 스타일은 inkex specified_style처럼 상속 속성(fill, stroke, stroke-width, fill-rule 등)을 내려받습니다.
+- 글리프 레이어는 font_variant처럼 `display`를 지우고 읽으며, 렌더링 시 _set_style처럼 채우기 없는 경로의 선 두께를 1px로 둡니다.
+- 다음은 건너뜁니다: `display:none`, `defs`/`clipPath`/`mask`, 연결선, 명령 기호, Ink/Stitch 패턴·가이드 마커가 달린 경로.
+- clone(`<use>`)은 원본처럼 풀어서 봉제합니다.
+- 글리프 폭과 시작점(minX)은 Ink/Stitch처럼 레이어의 모든 경로로 잽니다.
+- 요소 분류는 Ink/Stitch 규칙을 따릅니다.
+  - fill이 있으면 필, stroke가 있으면 새틴(`satin_column`) 또는 러닝입니다. 하나의 경로가 둘 다일 수 있습니다.
+  - 아직 지원하지 않는 방식은 `unsupported`에 종류별로 세고 빼 둡니다: 크로스스티치, tartan, guided, meander, ripple, manual, e-stitch, zigzag 새틴.
+  - 시작·끝 위치 명령(`command:*`), 빈 경로, 텍스트 객체도 세지만 땀이 빠지는 것은 아니어서 카탈로그 판정에서는 막지 않습니다.
+- 새틴 레일과 렁은 Ink/Stitch 문서의 모델을 따릅니다.
+  - 하위 경로가 2개면 둘 다 레일입니다. 이때 노드 수가 같으면 노드를 짝지어 암묵적인 렁으로 씁니다.
+  - 3개 이상이면 레일과 교차하는 경로가 렁입니다. 애매하면 가장 긴 둘을 레일로 봅니다.
+  - 하나뿐인 굵은 선은 선 굵기만큼의 컬럼이 됩니다(최소 1mm).
+  - `reverse_rails`(자동 판정 포함)와 `swap_satin_rails`를 반영하고, 레일을 렁 위치에서 잘라 구간 쌍을 만듭니다.
+- 기준선은 `baseline` 가이드입니다. Inkscape의 y-up 좌표를 변환해서 씁니다. 모든 글리프가 같은 가이드를 쓰므로, 가이드가 없을 때만 'H' 바닥으로 대신합니다.
+
+### 봉제
+요소마다 `inkstitch:*` 값을 읽고, 없으면 Ink/Stitch 기본값을 씁니다. 실제 땀은 기존 엔진 알고리즘이 만듭니다.
+
+| 요소 | 읽는 파라미터 → 우리 엔진 |
+|---|---|
+| 새틴 | `zigzag_spacing_mm`(기본 0.4, 같은 레일 간격), `pull_compensation_mm`/`_percent`(양쪽 평균), `center_walk_underlay`(+`_stitch_length_mm`), `contour_underlay`(+`_inset_mm`), `zigzag_underlay`(+`_spacing_mm`), `max_stitch_length_mm` → `SatinColumn.sectionPoints`. 렁 구간은 긴 쪽 레일 길이에 비례해 t를 나누므로 렁이 땀 방향이 됩니다. 구간이 하나면 기존 `columnPoints`와 결과가 같습니다(테스트). |
+| 필 | `angle`(Ink/Stitch는 반시계, 우리는 시계 방향이라 부호 반전), `row_spacing_mm`(0.25), `max_stitch_length_mm`(3), `staggers`(4), `expand_mm`, `fill_underlay`(기본 켜짐), `fill_underlay_angle`(기본 +90°), `_row_spacing_mm`(기본 3배), `_inset_mm`, `_max_stitch_length_mm` → 밑실용과 윗실용 `TatamiFill` 두 번 |
+| 러닝 | `running_stitch_length_mm`(2.5), `repeats`, `bean_stitch_repeats` → `RunningStitch.sample` |
+| 공통 | `min_stitch_length_mm`(폰트 대부분 0.5)보다 짧은 땀은 제거합니다. `min_jump_stitch_length_mm`(기본 3mm) 이하의 같은 색 이동은 바느질로 잇고, 그보다 길면 트림+점프로 처리합니다. 한 땀은 최대 7mm입니다. 실 하나를 지정하지 않으면 폰트의 색을 지키고 색 바꿈을 넣습니다. |
+
+배치는 Ink/Stitch 레터링과 같습니다.
+- 앞 글리프 다음에는 `minX − 커닝(“A B” 또는 레거시 “AB”) + 자간`만큼 이동합니다.
+- 다음 위치는 `horiz_adv_x[문자]`(없으면 `horiz_adv_x_default`, 그것도 없으면 글리프 maxX) − minX입니다.
+- 공백은 `horiz_adv_x_space`, 줄 간격은 `leading`, 대소문자 강제는 `letter_case`, 없는 글자는 `default_glyph`를 씁니다.
+- 높이는 'H' 잉크 높이로 맞춥니다. 형상만 비례로 커지고 밀도와 땀 길이(mm)는 그대로입니다. Ink/Stitch의 크기 조정과 같은 방식입니다.
+
+### 검증
+- `InkStitchFontTest`: 합성 SVG로 확인합니다.
+  - viewBox 단위 변환, 숨김·연결선·명령 제외, 렁 절단과 레일 자동 반전, 필 규칙과 파라미터
+  - 높이 20mm 렌더, 레이아웃 진행·커닝·공백, 폰트 색과 단일 실, DOCTYPE 거부, 단일 구간이 기존 새틴과 같은지
+- `InkStitchCatalogTest`: 모든 URL이 commit에 고정되어 있는지, sha256 형식, 라이선스 허용 목록, 높이 범위를 확인합니다.
+- `InkStitchSurveyTool`(선택 실행): 체크아웃 전체를 파싱·렌더해서 표와 PNG를 저장소 밖에 씁니다.
+  - 132개 `ltr.svg` 모두 예외 없이 파싱됩니다(가장 큰 폰트 1.5초).
+  - 'H' 높이 / font.json `size`의 중앙값은 1.01입니다. 단위 변환이 맞다는 근거입니다.
+  - 내려받은 파일 하나(glacial_tiny)의 sha256이 카탈로그 값과 일치합니다.
+
+### 남은 일
+- 앱 연결(완료): 글꼴 라이브러리 맨 앞에 '자수 글꼴' 필터·배지와 함께 표시하고, 내려받으면 레터링에서 `FontKind.INKSTITCH` TextObject로 씁니다.
+  - 프로젝트에는 글꼴 id만 저장하고, 설치된 글꼴을 `InkStitchFontRegistry`로 찾습니다. 글꼴을 지우면 해당 텍스트는 경고와 함께 빈 땀이 됩니다.
+  - 레터링 화면에서는 땀 종류·실 굵기·채움 설정과 곡선 배치를 숨기고, 시험된 높이 범위를 보여 줍니다. 품질 배지는 이 범위로 판정합니다.
+  - 글꼴을 바꾸면 자간을 0으로 맞춥니다. 필기체 연결선이 끊기지 않게 하기 위해서입니다. 글자별 색은 아직 적용되지 않습니다(여러 색 글꼴 항목에서 다룸).
+- embro-letter가 Ink/Stitch에서 포팅 중인 알고리즘을 그대로 끼울 수 있게 했습니다. 파서 결과(`InkSatin` 구간, `InkFill`, `InkRun`과 원본 파라미터)는 봉제 코드와 분리되어 있으므로 `InkStitchLettering.runs`만 바꾸면 됩니다.
+- 미지원 방식을 구현하면 카탈로그가 늘어납니다. 크로스스티치만 해도 가능 판정 폰트 17종이 추가되고, manual(dejavufont 7개 요소, paquerette)도 대상입니다.
+- 조건부 8종은 원작자에게 앱 재배포 허락을 받으면 추가할 수 있습니다.
+
+## 폰트별 라이선스 표
+'LICENSE 인용'은 각 폴더 LICENSE 파일에서 라이선스 관련 문장을 그대로 옮긴 것입니다.
+<!-- generated by tools/inkstitch_catalog.py from embroidery-fonts c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8 -->
+| 폴더 | font.json | LICENSE 판정 | 재배포 | 비고 | LICENSE 인용 | 우리 엔진으로 봉제 |
+|---|---|---|---|---|---|---|
+| abecedaire | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). | 아니오 (미지원 요소: fill:cross_stitch=153) |
+| abecedaire_small | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). | 아니오 (미지원 요소: fill:cross_stitch=153) |
+| ags_garamond_latin_grec | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font AGS Γαραμου has been adapted for Ink/Stitch by Françoise Lapierre Baillet and is licensed under the SIL Open Font License, Version 1.1. / Copyright 2017 The EB Garamond Project Authors (https://github.com/octaviopardo/EBGaramond12), licensed under the SIL Open Font License, Version 1.1. | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| alchemy | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Ourobouros font (also licensed under SIL Open Font License) | 예 |
+| allegria20 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Euphoria Script font also licensed under the SIL Open FOnt License, Version1.1: | 예 |
+| allegria55 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Euphoria Script font also licensed under the SIL Open FOnt License, Version1.1: | 예 |
+| ambigue | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Ammbidexter font also licensed under the SIL Open Font License, Version 1.1: | 예 |
+| amitaclo | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Claudette Venneugues-Aminot, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Amita font also licensed under the SIL Open Font License, Version 1.1: | 예 |
+| amitaclo_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Claudette Venneugues-Aminot, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Amita font also licensed under the SIL Open Font License, Version 1.1: | 예 |
+| animals | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1 / This font is a derivative work from Domine font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=233}) |
+| animaux | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1 / This font is a derivative work from Domine font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {command:ending_point=1, fill:cross_stitch=229}) |
+| apesplit | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This Font Software is licensed under the SIL Open Font License, Version 1.1. / This license is copied below, and is also available with a FAQ at: | 예 |
+| apex_lake | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Françoise Lapierre Baillet  and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / The underlying font is in public domain. | 예 |
+| apex_simple_AGS | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from the Linux Libertine font (also licensed under SIL Open Font License, Version 1.1). | 아니오 (미지원 요소: satin:e_stitch=1) |
+| apex_simple_small_AGS | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from the Linux Libertine font (also licensed under SIL Open Font License, Version 1.1). | 아니오 (미지원 요소: satin:e_stitch=1) |
+| art_nouveau | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Apollo ASM font (also licensed under SIL Open Font License) | 예 |
+| auberge_marif | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from the Grand Hotel font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| auberge_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from the Grand Hotel font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| aventurina | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 예 |
+| barstitch_bold | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| barstitch_cloudy | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 아니오 (미지원 요소: fill:guided_fill=735) |
+| barstitch_crosses | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=834}) |
+| barstitch_mandala | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| barstitch_regular | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| barstitch_textured | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Barlow font (also licensed under SIL Open Font License, Version 1.1). | 아니오 (미지원 요소: fill:meander_fill=235) |
+| bathaus_FI | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, Claudette Venneugues-Aminot, Corinne Renaud, Françoise Lapierre Baillet, Laure Doisneau, Mari / This font is a derivative work from Baumans font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| bathaus_FI_Small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, Claudette Venneugues-Aminot, Corinne Renaud, Françoise Lapierre Baillet, Laure Doisneau, Mari / This font is a derivative work from Baumans font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| bluenesia_satin | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | This font has been adapted for Ink/Stitch by Karen J. Cravens/Silver Seams with permission. (see https://github.com/inkstitch/inkstitch/pull/1686 for copy of th / Font license: | 예 |
+| braille | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been created for Ink/Stitch by Chantal Clot-Grangeat (c.clot-grangeat@orange.fr) with the help of Marie-Françoise BRIS (mfbris@gmail.com) and is l | 아니오 ('H' 글리프 없음) |
+| caesarus_SC_FI | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | Caesarus SC FI  has been adapted for Ink/Stitch by Marie-Françoise Bris, Celia Imbert Sabater, Françoise Lapierre Baillet, Claudine Peyrat, Corinne Renaud and C / This font is a derivative work from Marcellus SC font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| caffeine_KOR | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Espresso Dolce font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| caffeine_tiny | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Espresso Dolce font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| califragilistic | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Ojuju font (also licensed under SIL Open Font License, Version 1.1): | 예 |
+| cats | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Cat font (licensed underCreative Commons Deed CC0): | 예 |
+| cherryforinkstitch | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 예 |
+| cherryforkaalleen | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 예 |
+| chicken_little | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Henny Penny font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| chicken_little_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Henny Penny font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| chicken_scratch | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by safire3002, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Reenie Beanie font (also licensed under SIL Open Font License, Version 1.1). | 예 |
+| chopin | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Public Domain | 예 |
+| circular_3letters_monogram | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been created for Ink/Stitch and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). | 아니오 ('H' 글리프 없음) |
+| cogs_KOR | SCC-BY-SA 4.0 | CC BY 4.0 | 가능 | font.json은 CC-BY-SA 4.0이라 적었으나 LICENSE는 CC BY 4.0 | and is licensed under CC BY 4.0. / Copyright and Licensing: | 예 |
+| colorful | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Spicy Rice font (also licensed under SIL Open Font License, Version 1.1): | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:tartan_fill=127, satin:s_stitch=241}) |
+| computer | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from IBM Plex Sans Arabic font (also licensed under SIL Open Font License, Version 1.1): | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| computer_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from IBM Plex Sans Arabic font (also licensed under SIL Open Font License, Version 1.1): | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| cooper_marif | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by @Marie-Françoise BRIS, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Cooper* font (also licensed under SIL Open Font License, Version 1.1): | 예 |
+| cyrillic | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Roboto font (also licensed under SIL Open Font License, Version 1.1): | 예 |
+| decadent_flowers_monogram | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Linux Libertine font (also licensed under SIL Open Font License, Version 1.1): | 예 |
+| dejavufont | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by @Augusa and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 아니오 (미지원 요소: stroke:manual_stitch=7) |
+| digory_doodles_bean | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Tina, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Digory doodles font (also licensed under SIL Open Font License): | 예 |
+| dinomouse72 | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | This Ink/Stitch embroidery alphabet is copyright 2022 by Karen Cravens d/b/a Silver Seams, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4 / It may be subject to other licensing constraints on the underlying font. | 예 |
+| egyptian | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  cairopixel font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=3, fill:cross_stitch=885}) |
+| egyptian_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  cairopixel font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=3, fill:cross_stitch=885}) |
+| ellenika | SIL Open Font License 1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by George Zouridakis and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from the Clara font, also licensed under the SIL Open Font License, Version 1.1: | 아니오 ('H' 글리프 없음) |
+| eloquent | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  acsf expressive 5pt font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=1, fill:cross_stitch=227}) |
+| eloquent_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  acsf expressive 5pt font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=1, fill:cross_stitch=227}) |
+| emilio_20 | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 예 |
+| emilio_20_applique | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 예 |
+| emilio_20_bold | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 예 |
+| emilio_20_simple | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, with the frame removed by Karen Cravens, and is licensed CC-BY-SA (http://creativecommons.org / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 예 |
+| emilio_20_simple_small | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, with the frame removed by Karen Cravens, and is licensed CC-BY-SA (http://creativecommons.org / It remains under CC BY-SA license. | 예 |
+| emilio_20_tartan | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 아니오 (미지원 요소: fill:tartan_fill=36,satin:zigzag=551) |
+| emilio_20_tricolore | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been adapted for Ink/Stitch by Célia Imbert Sabater, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / LICENSE: Emilio 20 is licensed under the Creative Commons Attribution License (CC BY-SA) | 예 |
+| excalibur_KOR | Public Domain | Public domain / CC0 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud. This ink/stitch font is public domain. / This Art Nouveau period text type is very well suited for headlines. It is beautiful and easily readable with that special 1920’s touch. It comes with a selecti | 예 |
+| excalibur_small | Mublic Domain | Public domain / CC0 | 가능 |  | This Ink/Stitch font is public domain. / This Art Nouveau period text type is very well suited for headlines. It is beautiful and easily readable with that special 1920’s touch. It comes with a selecti | 예 |
+| flowery_crosses | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found at https://www.antiquepatternlibrary.org/pub/PDF/B-YS032Sajou604.pdf where they are shared under the Creative Commons Licence CC-BY | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=28}) |
+| flowery_multicolor | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found athttps://www.antiquepatternlibrary.org/pub/PDF/B-YS032Sajou604.pdf where they are shared under the Creative Commons Licence CC-BY- | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=421}) |
+| fold_inkstitch | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by @Marie-Françoise BRIS, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Fold font (also licensed under SIL Open Font License, Version 1.1) | 예 |
+| geneva_rounded | SCC-BY-SA 2.5 | CC BY-SA 2.5 | 가능 |  | This ink/stitch font is licensed under CC-BY-SA 2.5 https://creativecommons.org/licenses/by-sa/2.5/ / original font license: | 예 |
+| geneva_simple | SCC-BY-SA 2.5 | CC BY-SA 2.5 | 가능 |  | This ink/stitch font is licenced under CC-BY-SA 2.5 https://creativecommons.org/licenses/by-sa/2.5/ / Original font licence : | 예 |
+| gingo200 | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | This font has been created for Ink/Stitch by Sorm Prak, and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). | 예 |
+| glacial_tiny | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Françoise Lapierre Baillet, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Glacial Indifference font (also licensed under SIL Open Font License): | 예 |
+| handkerchief | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found at https://www.antiquepatternlibrary.org/html/warm/C-PR005-02.htm where they are shared under the Creative Commons Licence CC-BY-NC | 아니오 (미지원 요소: fill:cross_stitch=246) |
+| heavenly | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  acsf divine 5pt font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=1, fill:cross_stitch=226}) |
+| heavenly_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  acsf divine 5pt font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=1, fill:cross_stitch=226}) |
+| hebrew_font_large | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Shlomo font (also licensed under SIL Open Font License): | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| hebrew_font_medium | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Shlomo font (also licensed under SIL Open Font License): | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| hebrew_simple_rounded | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Varela Round font (also licensed under SIL Open Font License): | 아니오 ('H' 글리프 없음) |
+| hebrew_simple_rounded_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Varela Round font (also licensed under SIL Open Font License): | 아니오 ('H' 글리프 없음) |
+| honoka | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Honoka Antique Kaku font (also licensed under SIL Open Font License): | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| inclusif(ve) | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Crozet·te font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=425}) |
+| infinipicto | SCC-BY-ND 4.0 | CC BY-ND 4.0 | 불가 | 변경 금지: 크기 조정·땀 생성이 변형에 해당할 수 있음 | This font has been adapted for Ink/Stitch by Françoise Lapierre Baillet, and is licensed under Creative Commons CC  BY-ND / LICENSE: | 예 |
+| initials_medium | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Sortefax font (also licensed under SIL Open Font License): | 예 |
+| initials_XL | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Sortefax font (also licensed under SIL Open Font License): | 예 |
+| inkstitch_masego | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | LICENSE: licensed under the Open Font License. / Open Font License | 아니오 (미지원 요소: stroke:1=1) |
+| invercelia | SCC-BY-SA 4.0 | CC BY-SA 4.0 | 가능 |  | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). | 아니오 ('H' 글리프 없음) |
+| jacquard_12 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch , and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Jacquard 12 font (also licensed under SIL Open Font License): | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {command:ending_point=226, command:starting_point=226, fill:cross_stitch=226}) |
+| jaquarda_bastarda_9 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  Jaquarda Bastarda 9 font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=328}) |
+| jersey_15 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Jersey 15  font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {command:ending_point=238, command:starting_point=237, fill:cross_stitch=238}) |
+| kum_tsoan_AGS | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | Kum Tsoan has been adapted for Ink/Stitch by Françoise Lapierre Baillet, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Namskout font (also licensed under SIL Open Font License) | 예 |
+| kum_tsoan_relief | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | Kum Tsoan Relief has been adapted for Ink/Stitch by Françoise Lapierre Baillet, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Namskout font (also licensed under SIL Open Font License) | 예 |
+| kum_tsoan_tartan | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | Kum Tsoan tartan has been adapted for Ink/Stitch by Françoise Lapierre Baillet, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Namskout font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: fill:tartan_fill=44) |
+| ladies_present | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found at https://www.antiquepatternlibrary.org/html/warm/C-PR002-12.htm where they are shared under the Creative Commons Licence CC-BY-NC | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=26}) |
+| learning_curve | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 아니오 (미지원 요소: stroke:manual_stitch=16) |
+| magic_crosses | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found at https://www.antiquepatternlibrary.org/html/warm/C-PR002-12.htm where they are shared under the Creative Commons Licence CC-BY-NC | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=26}) |
+| magnolia_bicolor | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Magnolia Script font (also licensed under SIL Open Font License) | 예 |
+| magnolia_KOR | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Magnolia Script font (also licensed under SIL Open Font License) | 예 |
+| magnolia_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Magnolia Script font (also licensed under SIL Open Font License) | 예 |
+| magnolia_tamed | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Magnolia Script font (also licensed under SIL Open Font License) | 예 |
+| mai_en_fleur | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Abril Fatface font (also licensed under SIL Open Font License) | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| malika | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Amiri font (also licensed under SIL Open Font License) | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| mam_script | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Kaushan Script font (also licensed under SIL Open Font License) | 예 |
+| manga_impact | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Shojumaru font (also licensed under SIL Open Font License) | 예 |
+| marifenda | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Marie-Françoise BRIS and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Merienda font also licensed under the SIL Open Font License, Version 1.1: | 예 |
+| medium_font | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This Font Software is licensed under the SIL Open Font License, Version 1.1. / This license is copied below, and is also available with a FAQ at: | 예 |
+| milli_marif_bold | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by @Marie-Françoise BRIS with the kind permission of the original font author: / It is licensed under the SIL Open Font License, Version 1.1. | 예 |
+| mimosa_large | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Nose Transport font (also licensed under SIL Open Font License) | 예 |
+| mimosa_medium | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Nose Transport font (also licensed under SIL Open Font License) | 예 |
+| monicha | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | This font has been adapted for Ink/Stitch by Sandrine Ratkoff Rojnoff,  and is licensed CC-BY-SA (http://creativecommons.org/licenses/by-sa/4.0/). / It may be subject to other licensing constraints on the underlying font. | 예 |
+| montecarlo | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Monte Carlo Regular font (also licensed under SIL Open Font License): | 예 |
+| nautical | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {command:ending_point=117, command:starting_point=117, fill:cross_stitch=117}) |
+| neon | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Sportrop font (also licensed under SIL Open Font License) | 예 |
+| neon_blinking | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Sportrop font (also licensed under SIL Open Font License) | 예 |
+| nick_ainley | SCC-BY-SA 4.0 | CC BY-SA 4.0 + 원본 프리웨어 조건 | 조건부 | 원본 폰트 권리자의 개별 허락(메일)·EULA에 의존 | ﻿Font origin and license for NickAinley / Font's license: Free for Personal and Commercial use | 예 |
+| noble | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from  acsf honorable 56pt font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {empty:path=1, fill:cross_stitch=219}) |
+| ondulamarif_Medium | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Qumpellka No 12 font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: stroke:ripple_stitch=164) |
+| ondulamarif_S | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Qumpellka No 12 font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: stroke:ripple_stitch=164) |
+| ondulamarif_XL | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Qumpellka No 12 font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: stroke:ripple_stitch=211) |
+| pacificlo | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Pacifico font (also licensed under SIL Open Font License) | 예 |
+| pacificlo_tiny | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Pacifico font (also licensed under SIL Open Font License) | 예 |
+| paquerette | Public Domain | Public domain / CC0 | 가능 |  | Licence information in the download: / License: Public Domain | 아니오 (미지원 요소: stroke:manual_stitch=1568) |
+| perspective_tricolore_KOR | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch by Corinne Renaud, and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Merriwearther font (also licensed under SIL Open Font License) | 아니오 (미지원 요소: fill:tartan_fill=62) |
+| pisankris | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Manuskript Gothisch font (also licensed under SIL Open Font License) | 예 |
+| pixel10 | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Jersey 10 regular font (also licensed under SIL Open Font License) | 예 |
+| precious | SIL Open Font License v1.1 | GPL-3.0 | 가능 | font.json은 OFL이라 적었으나 LICENSE는 GPL-3.0(원작자 허락 인용) | and is licensed under the GNU General Public License, Version 3 / and with the kind permission of the original font author: | 예 |
+| priscilla | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font  is licensed CC-BY-NC-SA4 .0 (http://creativecommons.org/licenses/by-sa/4.0/). / where they are shared under the Creative Commons Licence CC-BY-NC-SA 4.0 | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=86}) |
+| roaring_twenties_KOR | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Limelighht font (also licensed under SIL Open Font License) | 예 |
+| roaring_twenties_KOR_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Limelighht font (also licensed under SIL Open Font License) | 예 |
+| roman_ags | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / License for 'Latin Modern Roman' | 예 |
+| roman_ags_bicolor | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / License for 'Latin Modern Roman' | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| sacramarif | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work fromm Sacramento font (also under SIL Open Font License) | 예 |
+| small_font | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This Font Software is licensed under the SIL Open Font License, Version 1.1. / This license is copied below, and is also available with a FAQ at: | 예 |
+| stebor_AGS | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work fromm Lobster 2 Bold italic font (also under SIL Open Font License) | 예 |
+| sunset | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work fromm Big Shoulders Inline font (also under SIL Open Font License) | 아니오 (ltr.svg 없음(여러 파일/RTL)) |
+| tieralphabet | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | This font has been adapted for Ink/Stitch and is licensed under the SIL Open Font License, Version 1.1 / This font is a derivative work from Domine font also licensed under the SIL Open Font License, Version 1.1: | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=228}) |
+| tt_directors | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work fromm TT Directors DEMO font (also under SIL Open Font License) | 예 |
+| tt_masters | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work fromm TT Masters DEMO font (also under SIL Open Font License) | 예 |
+| venezia | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Andada Pro font (also under SIL Open Font License) | 예 |
+| venezia_small | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Andada Pro font (also under SIL Open Font License) | 예 |
+| very_crossy | CC BY-NC-SA 4.0 | CC BY-NC-SA 4.0 | 불가 | 비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가 | This embroidery font is licensed CC-BY-NC-SA4.0 (http://creativecommons.org/licenses/by-sa/4.0/). / Scans of this book are found at (http://patternmakercharts.blogspot.com/2009/08/sajou-n-4.html)where they are shared under the Creative Commons Licence CC-BY-NC | 아니오 (미지원 요소: java.lang.IllegalStateException: no sewable glyph: {fill:cross_stitch=27}) |
+| violin_serif | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Instrument Serif font (also under SIL Open Font License) | 예 |
+| western_light | SIL Open Font License v1.1 | OFL-1.1 | 가능 |  | and is licensed under the SIL Open Font License, Version 1.1. / This font is a derivative work from Sancreek font (also under SIL Open Font License) | 예 |
