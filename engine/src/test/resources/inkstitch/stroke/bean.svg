@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkstitch="http://inkstitch.org/namespace" width="60mm" height="40mm" viewBox="0 0 226.77165 151.181102">
+  <path id="bean-fixture" d="M20 20 L100 20 L100 80 L180 80" fill="none" stroke="#2B2420" stroke-width="1" inkstitch:stroke_method="running_stitch" inkstitch:running_stitch_length_mm="2.5" inkstitch:running_stitch_tolerance_mm="0.2" inkstitch:bean_stitch_repeats="0 1 2" />
+</svg>

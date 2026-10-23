@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.engine.lettering
 import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.model.*
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.*
@@ -13,7 +14,11 @@ class SatinColumnTest {
     private fun column(width: Double = 4.0, options: SatinOptions = SatinOptions()) = SatinColumn.generate(
         listOf(0.0 to 0.0, 0.0 to 10.0), listOf(width to 0.0, width to 10.0), options,
     )
-    private fun sewn(p: EmbPattern) = p.stitches.filter { it.command == Command.STITCH }
+    private fun body(p: EmbPattern): EmbPattern {
+        assertTrue(p.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY].orEmpty().isNotEmpty())
+        return GeneratedPatternProcessor.stripGeneratedLocks(p)
+    }
+    private fun sewn(p: EmbPattern) = body(p).stitches.filter { it.command == Command.STITCH }
     private fun assertLimit(p: EmbPattern, limitMm: Double = 7.0) {
         p.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH)
@@ -24,13 +29,13 @@ class SatinColumnTest {
     @Test fun densityIsSameRailSpacingAndWidthIsRailDistance() {
         val p = column()
         val points = sewn(p)
-        assertEquals(52, p.stitchCount) // 25 full 0.4 mm cycles + terminal pair
+        assertEquals(52, body(p).stitchCount) // 25 full 0.4 mm cycles + terminal pair, excluding locks
         assertEquals(40, p.bounds!!.width)
         assertEquals(100, p.bounds!!.height)
         assertEquals(setOf(-20, 20), points.map { it.x }.toSet())
         points.filter { it.x == -20 }.zipWithNext().forEach { (a, b) -> assertEquals(4, b.y - a.y) }
         points.filter { it.x == 20 }.zipWithNext().forEach { (a, b) -> assertTrue(b.y - a.y in 2..4) }
-        assertEquals(102, column(options = SatinOptions(densityMm = 0.2)).stitchCount)
+        assertEquals(102, body(column(options = SatinOptions(densityMm = 0.2))).stitchCount)
         assertEquals(1, p.jumpCount)
         assertEquals(Command.END, p.stitches.last().command)
         assertLimit(p)
@@ -60,9 +65,9 @@ class SatinColumnTest {
         val center = column(options = SatinOptions(centerUnderlay = true))
         val zigzag = column(options = SatinOptions(zigzagUnderlay = true))
         val both = column(options = SatinOptions(centerUnderlay = true, zigzagUnderlay = true))
-        assertEquals(top.size + 9, center.stitchCount) // center anchor + 4 out + 4 back
-        assertEquals(88, zigzag.stitchCount) // coarse zigzag, split underlay legs, center return, top
-        assertEquals(96, both.stitchCount) // center pass shares its anchor with the zigzag pass
+        assertEquals(top.size + 9, body(center).stitchCount) // center anchor + 4 out + 4 back
+        assertEquals(88, body(zigzag).stitchCount) // coarse zigzag, split underlay legs, center return, top
+        assertEquals(96, body(both).stitchCount) // center pass shares its anchor with the zigzag pass
         for (p in listOf(center, zigzag, both)) {
             assertEquals(top, sewn(p).takeLast(top.size))
             assertEquals(1, p.jumpCount)

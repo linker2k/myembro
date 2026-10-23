@@ -59,6 +59,8 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.MyembroThreadColors
+import io.github.linker2k.myembro.ui.settings.rememberSewingDefaults
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -101,6 +103,7 @@ private fun LetteringContent(
     backgroundPattern: EmbPattern?, onOpenFonts: () -> Unit, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
+    val sewingOptions = rememberSewingDefaults()
     val colors = MaterialTheme.colorScheme
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
@@ -145,8 +148,8 @@ private fun LetteringContent(
         else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
     val threadColor = if (keepInitialThread && initial != null) Color(initial.thread.color) else swatches[threadIndex]
     // Stale results are never submitted while a newer generation is pending.
-    val generationKey = settings to thread.color
-    var renderedKey by remember { mutableStateOf<Pair<LetteringSettings, Int>?>(null) }
+    val generationKey = Triple(settings, thread.color, sewingOptions)
+    var renderedKey by remember { mutableStateOf<Triple<LetteringSettings, Int, SewingOptions>?>(null) }
     val ready = !busy && renderedKey == generationKey && text.isNotBlank() && error == null &&
         result?.pattern?.bounds != null && result?.unsupported != true && result?.outsideHoop != true
     val add = {
@@ -164,7 +167,7 @@ private fun LetteringContent(
         } else {
             try {
                 delay(100)
-                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop) }
+                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop, sewingOptions) }
                 renderedKey = generationKey
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -187,7 +190,7 @@ private fun LetteringContent(
         }
         fontReports = reports
     }
-    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions, threadWeight) {
+    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions, threadWeight, sewingOptions) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()

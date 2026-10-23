@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.Hoop
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.ui.machines.CustomFrame
 import io.github.linker2k.myembro.ui.machines.CustomFrameCodec
@@ -37,6 +38,8 @@ data class EmbroiderySettings(
     val customFrames: List<CustomFrame> = emptyList(),
     val defaultFrameId: String? = null,
 ) {
+    /** Fixed Ink/Stitch defaults; intentionally not a user preference. */
+    val sewing: SewingOptions get() = SewingOptions()
     val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val frames: List<FrameOption> get() = FrameCatalog.options(customFrames)
