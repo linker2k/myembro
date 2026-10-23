@@ -14,12 +14,19 @@ import kotlin.math.min
  * instance is poisoned; remount and inspect rather than retrying writes against stale allocation.
  */
 class Fat12Volume private constructor(private val device: BlockDevice, val geometry: Geometry,
-    private val boot: ByteArray, private val mountWarnings: MutableList<String>) {
+    private val boot: ByteArray, private val mountWarnings: MutableList<String>, observer: MountObserver) {
+    /** Receives existing mount reads before validation; observing never performs repair or extra IO. */
+    interface MountObserver {
+        fun bootSector(lba: Long, bytes: ByteArray) {}
+        fun fatCopy(number: Int, lba: Long, bytes: ByteArray) {}
+        fun rootDirectory(lba: Long, bytes: ByteArray) {}
+    }
     /** Firmware-generated RAM disks can have nonstandard descriptive BPB fields. No repair is done. */
     val warnings: List<String> get() = mountWarnings.toList()
     data class Geometry(val startSector: Long, val totalSectors: Long, val bytesPerSector: Int,
         val sectorsPerCluster: Int, val reservedSectors: Int, val fatCount: Int, val sectorsPerFat: Int,
-        val rootEntryCount: Int, val rootSectors: Int, val clusterCount: Int) {
+        val rootEntryCount: Int, val rootSectors: Int, val clusterCount: Int,
+        val declaredClusterCount: Int = clusterCount) {
         val fatSector: Long get() = startSector + reservedSectors
         val rootSector: Long get() = fatSector + fatCount.toLong() * sectorsPerFat
         val dataSector: Long get() = rootSector + rootSectors
@@ -38,8 +45,12 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     class MountFailure(val superfloppyReason: String, val mbrReason: String, cause: Exception) :
         IOException("Superfloppy failed: $superfloppyReason; MBR failed: $mbrReason", cause)
 
-    private var fat = read(geometry.fatSector, geometry.sectorsPerFat)
-    private var root = read(geometry.rootSector, geometry.rootSectors)
+    private var fatCopies = (0 until geometry.fatCount).map { copy ->
+        val lba = geometry.fatSector + copy.toLong() * geometry.sectorsPerFat
+        read(lba, geometry.sectorsPerFat).also { observer.fatCopy(copy + 1, lba, it) }
+    }
+    private var fat = fatCopies.first() // Firmware compatibility: FAT1 is authoritative.
+    private var root = read(geometry.rootSector, geometry.rootSectors).also { observer.rootDirectory(geometry.rootSector, it) }
     private var poisoned = false
     val capacityBytes: Long get() = geometry.totalSectors * geometry.bytesPerSector
     val label: String get() {
@@ -54,11 +65,25 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
 
     init {
         for (copy in 1 until geometry.fatCount) {
-            checkDisk(fat.contentEquals(read(geometry.fatSector + copy.toLong() * geometry.sectorsPerFat, geometry.sectorsPerFat)), "FAT copies disagree; repair is not supported")
+            if (!fat.contentEquals(fatCopies[copy])) mountWarnings +=
+                "FAT${copy + 1} differs from FAT1; using FAT1 for allocation, copies remain unchanged until a file write"
         }
-        checkDisk(fatEntry(0) and 0xF00 == 0xF00 && fatEntry(1) >= 0xFF8, "Invalid FAT reserved entries")
+        for ((copy, table) in fatCopies.withIndex()) {
+            if (fatEntry(table, 0) and 0xF00 != 0xF00 || fatEntry(table, 1) < 0xFF8) mountWarnings +=
+                "Nonstandard FAT${copy + 1} reserved entries: FAT[0]=0x%03X FAT[1]=0x%03X (unchanged)".format(fatEntry(table, 0), fatEntry(table, 1))
+        }
         if (fatEntry(0) and 255 != u8(boot, 21)) mountWarnings +=
             "BPB media byte differs from FAT[0]: BPB=0x%02X FAT=0x%02X (unchanged)".format(u8(boot, 21), fatEntry(0) and 255)
+        // Data cluster IDs start at 2: 115 usable slots are IDs 2..116; slots 116..119
+        // in the user's 1-based data-slot terminology are FAT IDs 117..120.
+        if (geometry.declaredClusterCount > geometry.clusterCount) {
+            for ((copy, table) in fatCopies.withIndex()) {
+                for (cluster in geometry.clusterCount + 2..geometry.declaredClusterCount + 1) {
+                    val entry = fatEntry(table, cluster)
+                    checkDisk(entry == 0, "FAT${copy + 1} cluster=$cluster entry=0x%03X is allocated outside usable data clusters=2..${geometry.lastCluster}; refusing writes".format(entry))
+                }
+            }
+        }
         validateChains()
     }
 
@@ -223,9 +248,10 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         return slots.toList()
     }
 
-    private fun fatEntry(cluster: Int): Int {
+    private fun fatEntry(cluster: Int): Int = fatEntry(fat, cluster)
+    private fun fatEntry(table: ByteArray, cluster: Int): Int {
         val offset = cluster + cluster / 2
-        val word = u16(fat, offset)
+        val word = u16(table, offset)
         return if (cluster and 1 == 0) word and 0xFFF else word ushr 4
     }
     private fun setFatEntry(table: ByteArray, cluster: Int, value: Int) {
@@ -237,10 +263,11 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     private fun unchanged() {
         checkUsable()
         checkDisk(boot.contentEquals(read(geometry.startSector, 1)) && root.contentEquals(read(geometry.rootSector, geometry.rootSectors)), "FAT12 volume changed; reopen before writing")
-        for (copy in 0 until geometry.fatCount) checkDisk(fat.contentEquals(read(geometry.fatSector + copy.toLong() * geometry.sectorsPerFat, geometry.sectorsPerFat)), "FAT12 allocation changed; reopen before writing")
+        for (copy in 0 until geometry.fatCount) checkDisk(fatCopies[copy].contentEquals(read(geometry.fatSector + copy.toLong() * geometry.sectorsPerFat, geometry.sectorsPerFat)), "FAT12 allocation changed; reopen before writing")
     }
     private fun writeFats(next: ByteArray) {
         for (copy in 0 until geometry.fatCount) writeVerified(geometry.fatSector + copy.toLong() * geometry.sectorsPerFat, next)
+        fatCopies = List(geometry.fatCount) { next.copyOf() }
     }
     private inline fun mutation(action: () -> Unit) {
         try { action(); device.flush() } catch (e: Exception) { poisoned = true; throw e }
@@ -256,16 +283,20 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     private fun read(lba: Long, count: Int): ByteArray = checkedRead(device, lba, count)
 
     companion object {
-        fun mount(device: BlockDevice): Fat12Volume = mount(device) { _, _ -> }
+        fun mount(device: BlockDevice): Fat12Volume = mount(device, object : MountObserver {})
 
         /** Observes boot sectors already read by mounting, including a partition BPB that fails parsing. */
-        fun mount(device: BlockDevice, onBootSector: (Long, ByteArray) -> Unit): Fat12Volume {
+        fun mount(device: BlockDevice, onBootSector: (Long, ByteArray) -> Unit): Fat12Volume = mount(device, object : MountObserver {
+            override fun bootSector(lba: Long, bytes: ByteArray) = onBootSector(lba, bytes)
+        })
+
+        fun mount(device: BlockDevice, observer: MountObserver): Fat12Volume {
             checkDisk(device.sectorSize in setOf(512, 1024, 2048, 4096) && device.sectorCount > 0, "Unsupported block geometry")
             val zero = checkedRead(device, 0, 1)
-            onBootSector(0, zero)
+            observer.bootSector(0, zero)
             val superFailure = try {
                 val parsed = parse(zero, device, 0, device.sectorCount)
-                return Fat12Volume(device, parsed.geometry, zero, parsed.warnings)
+                return Fat12Volume(device, parsed.geometry, zero, parsed.warnings, observer)
             } catch (e: IOException) { e }
             try {
                 checkDisk(!(u8(zero, 0) in setOf(0xEB, 0xE9) && plausibleBpb(zero, device)),
@@ -285,14 +316,14 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
                 val warning = if (boundedCount != count)
                     "MBR partition sectors=$count clamped to device remainder=$boundedCount at start=$start (MBR unchanged)" else null
                 val boot = checkedRead(device, start, 1)
-                onBootSector(start, boot)
+                observer.bootSector(start, boot)
                 val parsed = try { parse(boot, device, start, boundedCount) }
                 catch (e: IOException) {
                     if (warning != null) throw IOException("$warning; ${e.message}", e)
                     throw e
                 }
                 if (warning != null) parsed.warnings.add(0, warning)
-                return Fat12Volume(device, parsed.geometry, boot, parsed.warnings)
+                return Fat12Volume(device, parsed.geometry, boot, parsed.warnings, observer)
             } catch (e: IOException) {
                 throw MountFailure(superFailure.message ?: superFailure.javaClass.simpleName,
                     e.message ?: e.javaClass.simpleName, e).apply { addSuppressed(superFailure) }
@@ -329,7 +360,9 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
             checkDisk(boundedTotal > metadata, "FAT12 device ends inside metadata: available=$boundedTotal metadata=$metadata")
             val clusters = ((boundedTotal - metadata) / spc).toInt()
             checkDisk(clusters in 1..4084, "No complete FAT12 data clusters inside device bounds")
-            return Parsed(Geometry(start, boundedTotal, size, spc, reserved, copies, spf, roots, rootSectors, clusters), warnings)
+            if (clusters.toLong() != declaredClusters) warnings +=
+                "FAT12 data clusters: declared=$declaredClusters usable=$clusters; allocation limited to complete clusters within device bounds"
+            return Parsed(Geometry(start, boundedTotal, size, spc, reserved, copies, spf, roots, rootSectors, clusters, declaredClusters.toInt()), warnings)
         }
         private fun checkedRead(d: BlockDevice, lba: Long, count: Int): ByteArray {
             checkDisk(count > 0 && lba >= 0 && count.toLong() <= d.sectorCount - lba, "Block read out of bounds")

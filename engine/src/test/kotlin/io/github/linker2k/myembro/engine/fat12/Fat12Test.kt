@@ -145,12 +145,13 @@ class Fat12Test {
         clean(disk)
     }
 
-    @Test fun `invalid BPB truncated devices and conflicting FAT copies never write`() = image { disk ->
+    @Test fun `invalid BPB truncation still fail while conflicting FAT copies only warn without mounting writes`() = image { disk ->
         val valid = disk.file.readBytes()
         val g = Fat12Volume.mount(disk).geometry
         val damaged = valid.copyOf(); damaged[(g.fatSector * 512).toInt() + 3] = 15
         disk.file.writeBytes(damaged)
-        assertFailsWith<IOException> { Fat12Volume.mount(disk) }
+        assertTrue(Fat12Volume.mount(disk).warnings.any { it.contains("differs from FAT1") })
+        assertContentEquals(damaged, disk.file.readBytes())
         disk.file.writeBytes(valid.copyOf().also { it[13] = 3 })
         assertFailsWith<IOException> { Fat12Volume.mount(disk) }
         disk.file.writeBytes(valid.copyOf(512))
@@ -215,7 +216,10 @@ class Fat12Test {
         val writes = disk.writes
         assertFailsWith<IOException> { fs.writeFile("B.PES", byteArrayOf(2)) }
         assertEquals(writes, disk.writes)
-        assertFailsWith<IOException> { Fat12Volume.mount(disk) }
+        val interrupted = disk.file.readBytes()
+        assertTrue(Fat12Volume.mount(disk).warnings.any { it.contains("differs from FAT1") })
+        assertEquals(writes, disk.writes)
+        assertContentEquals(interrupted, disk.file.readBytes()) // Remount does not repair either FAT.
     }
 
     @Test fun `nonstandard firmware jump and OEM mount with warning and boot bytes never change`() = image { disk ->

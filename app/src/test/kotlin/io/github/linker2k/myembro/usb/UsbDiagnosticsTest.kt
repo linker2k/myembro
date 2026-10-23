@@ -93,4 +93,26 @@ class UsbDiagnosticsTest {
         assertTrue(report.contains("TotalSectors16=987"))
         assertEquals(2, report.lines().count { it.startsWith("01F0:") })
     }
+
+    @Test fun `v3 diagnostics include separate FAT prefixes and the complete first root sector`() {
+        val capture = UsbDiagnosticCapture()
+        val first = ByteArray(512) { it.toByte() }
+        val second = ByteArray(512) { (255 - it).toByte() }
+        val root = ByteArray(32 * 512) { (it * 3).toByte() }
+        capture.fatCopy(1, 33, first)
+        capture.fatCopy(2, 34, second)
+        capture.rootDirectory(35, root)
+        first.fill(0); second.fill(0); root.fill(0) // Snapshots must not alias device buffers.
+        val report = capture.report("SE400", IOException("outside usable data clusters"))
+        assertTrue(report.contains("diagnostics v3"))
+        assertTrue(report.contains("FAT1 (LBA 33) first 64 bytes (hex):"))
+        assertTrue(report.contains("00 01 02 03 04 05 06 07"))
+        assertTrue(report.contains("FAT2 (LBA 34) first 64 bytes (hex):"))
+        assertTrue(report.contains("FF FE FD FC FB FA F9 F8"))
+        assertTrue(report.contains("Root directory first sector (LBA 35) 512 bytes (hex):"))
+        val rows = report.substringAfter("Root directory first sector").lines().filter { it.matches(Regex("[0-9A-F]{4}: .*")) }
+        assertEquals(32, rows.size)
+        val restored = rows.flatMap { it.substringAfter(": ").split(' ') }.map { it.toInt(16).toByte() }.toByteArray()
+        assertContentEquals(ByteArray(512) { (it * 3).toByte() }, restored)
+    }
 }

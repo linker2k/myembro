@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.Fat12Diagnostics
+import io.github.linker2k.myembro.engine.fat12.Fat12Volume
 import me.jahnen.libaums.core.usb.UsbCommunication
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -13,7 +14,7 @@ internal class DirectUsbFailure(cause: Exception, val diagnostics: String) : IOE
  * libaums 0.10.0 does not expose vendor/product from its private INQUIRY response.
  * https://repo.maven.apache.org/maven2/me/jahnen/libaums/core/0.10.0/core-0.10.0-sources.jar
  */
-internal class UsbDiagnosticCapture {
+internal class UsbDiagnosticCapture : Fat12Volume.MountObserver {
     private var opcode = -1
     private var expected = 0
     private var received = ByteArray(0)
@@ -27,11 +28,19 @@ internal class UsbDiagnosticCapture {
     var blocks: Long? = null
     var blockSize: Int? = null
     var warnings: List<String> = emptyList()
+    private val fats = linkedMapOf<Int, Pair<Long, ByteArray>>()
+    private var root: Pair<Long, ByteArray>? = null
 
     /** Called before BPB parsing, so the report survives a malformed partition boot sector. */
-    fun bootSector(lba: Long, bytes: ByteArray) {
+    override fun bootSector(lba: Long, bytes: ByteArray) {
         if (lba == 0L) sector0 = bytes.copyOf()
         else { partitionStart = lba; partitionBoot = bytes.copyOf() }
+    }
+    override fun fatCopy(number: Int, lba: Long, bytes: ByteArray) {
+        fats[number] = lba to bytes.copyOf(minOf(64, bytes.size))
+    }
+    override fun rootDirectory(lba: Long, bytes: ByteArray) {
+        root = lba to bytes.copyOf(minOf(512, bytes.size))
     }
 
     fun outgoing(buffer: ByteBuffer) {
@@ -55,7 +64,7 @@ internal class UsbDiagnosticCapture {
         }
     }
     fun report(device: String, error: Exception): String = buildString {
-        appendLine("myembro SE400 USB/FAT12 diagnostics v2")
+        appendLine("myembro SE400 USB/FAT12 diagnostics v3")
         appendLine(device)
         appendLine("Failure: ${error.javaClass.simpleName}: ${error.message}")
         val response = inquiry
@@ -78,6 +87,21 @@ internal class UsbDiagnosticCapture {
             ?: appendLine("sector0 / BPB: unavailable (미확인; read failed before capture)")
         partitionBoot?.let { append(Fat12Diagnostics.bootSector(it, "partition start sector (LBA $partitionStart)")) }
             ?: appendLine("partition start sector / BPB: unavailable (미확인; no partition or read failed before capture)")
+        appendLine("FAT/root snapshots below were captured during mount, before file writes.")
+        for (number in 1..2) {
+            val copy = fats[number]
+            if (copy == null) appendLine("FAT$number: unavailable (미확인; not read)")
+            else {
+                appendLine("FAT$number (LBA ${copy.first}) first ${copy.second.size} bytes (hex):")
+                appendLine(Fat12Diagnostics.hex(copy.second))
+            }
+        }
+        root?.let { (lba, bytes) ->
+            appendLine("Root directory first sector (LBA $lba) ${bytes.size} bytes (hex):")
+            bytes.toList().chunked(16).forEachIndexed { row, values ->
+                appendLine("%04X: ".format(row * 16) + Fat12Diagnostics.hex(values.toByteArray()))
+            }
+        } ?: appendLine("Root directory first sector: unavailable (미확인; not read)")
     }
 }
 
