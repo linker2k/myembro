@@ -71,6 +71,12 @@
     <string name="lettering_fill_advanced">Density, underlay and border settings</string>
     <string name="lettering_auto_fill">Follow strokes</string>
     <string name="lettering_fixed_tatami">Fixed-angle tatami</string>
-    <string name="lettering_auto_density">Relax spacing below 7mm</string>
+    <string name="lettering_auto_density">Automatic spacing for thread / small text</string>
     <string name="lettering_auto_underlay">Center / edge underlay</string>
+    <string name="lettering_thread_weight">Thread weight</string>
+    <string name="lettering_weight_40">40wt (default)</string>
+    <string name="lettering_weight_50">50wt</string>
+    <string name="lettering_weight_60">60wt (fine)</string>
+    <string name="lettering_fine_thread_hint">65/9 needle recommended · Keep your bobbin setup</string>
+    <string name="lettering_weight_min_feature">Estimated minimum stroke / gap: %1$.2fmm</string>
 </resources>

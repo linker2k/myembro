@@ -133,6 +133,7 @@ object FontQuality {
         heightMm: Double,
         outline: Boolean,
         detailFloorMm: Double = LATIN_DETAIL_MM,
+        threadWeight: ThreadWeight = ThreadWeight.WT40,
     ): FontQualityReport {
         require(heightMm.isFinite() && heightMm > 0) { "heightMm must be finite and positive" }
         require(detailFloorMm.isFinite() && detailFloorMm > 0) { "detailFloorMm must be finite and positive" }
@@ -160,16 +161,20 @@ object FontQuality {
             Double.POSITIVE_INFINITY, floorMm, 0, 0, 0, Grade.UNSUITABLE,
             listOf("분석할 글자 외곽선이나 획이 없습니다."),
         )
-        val gapLimit = if (outline) GAP_MIN_MM else LINE_GAP_MIN_MM
+        // Finer thread lays narrower columns, so every feature limit shrinks with the preset.
+        val scale = threadWeight.featureScale
+        val inkLimit = INK_MIN_MM * scale
+        val gapLimit = (if (outline) GAP_MIN_MM else LINE_GAP_MIN_MM) * scale
+        val loopLimit = LOOP_MIN_MM * scale
         // A percentile can be tiny but never 0: keep the recommendation finite.
         val smallest = heightMm * 1e-3
         val inkP10 = ink.percentile()?.coerceAtLeast(smallest)
         val gapP10 = gap.percentile()?.coerceAtLeast(smallest)
         val loopP10 = loop.percentile()?.coerceAtLeast(smallest)
         val needs = listOfNotNull(
-            inkP10?.let { QualityLimit.INK to heightMm * INK_MIN_MM / it },
+            inkP10?.let { QualityLimit.INK to heightMm * inkLimit / it },
             gapP10?.let { QualityLimit.GAP to heightMm * gapLimit / it },
-            loopP10?.let { QualityLimit.LOOP to heightMm * LOOP_MIN_MM / it },
+            loopP10?.let { QualityLimit.LOOP to heightMm * loopLimit / it },
         )
         val (limit, need) = needs.maxByOrNull { it.second }?.takeIf { it.second > floorMm } ?: (QualityLimit.DETAIL to floorMm)
         val recommended = ceilHalf(need)
@@ -178,11 +183,11 @@ object FontQuality {
             heightMm * 2 >= recommended -> Grade.CAUTION
             else -> Grade.UNSUITABLE
         }
-        val tight = ink.below(INK_MIN_MM) + gap.below(gapLimit) + loop.below(LOOP_MIN_MM)
+        val tight = ink.below(inkLimit) + gap.below(gapLimit) + loop.below(loopLimit)
         val reasons = buildList {
-            inkP10?.let { add("얇은 획(하위 10%): ${mm(it)}mm (새틴 최소 ${mm(INK_MIN_MM)}mm).") }
+            inkP10?.let { add("얇은 획(하위 10%): ${mm(it)}mm (새틴 최소 ${mm(inkLimit)}mm, ${threadWeight.wt}wt).") }
             gapP10?.let { add("좁은 획 간격(하위 10%): ${mm(it)}mm (최소 ${mm(gapLimit)}mm).") }
-            loopP10?.let { add("작은 고리 지름(하위 10%): ${mm(it)}mm (최소 ${mm(LOOP_MIN_MM)}mm).") }
+            loopP10?.let { add("작은 고리 지름(하위 10%): ${mm(it)}mm (최소 ${mm(loopLimit)}mm).") }
             val cause = when (limit) {
                 QualityLimit.INK -> "획 두께"
                 QualityLimit.GAP -> "획 사이 간격"

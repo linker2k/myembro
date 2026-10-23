@@ -6,6 +6,7 @@ import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -42,6 +43,7 @@ data class TextObject(
     val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.RUNNING,
     val satinOptions: SatinOptions = SatinOptions(),
     val fillOptions: FillOptions = FillOptions(),
+    val threadWeight: ThreadWeight = ThreadWeight.WT40,
 ) : DesignObject {
     init {
         require(lineSpacing.isFinite() && lineSpacing >= 1.0)
@@ -54,17 +56,24 @@ data class TextObject(
         require(fontKind != FontKind.OUTLINE || characterThreads.isEmpty() || contourCharacters.size == contours.size)
         require(stitchStyle != StitchStyle.FILL || !singleLine) { "Fill requires an outline font" }
     }
+    /** A new weight restores automatic spacing; subsequent manual density edits remain possible. */
+    fun withThreadWeight(weight: ThreadWeight): TextObject = if (weight == threadWeight) this else copy(
+        threadWeight = weight, fillOptions = fillOptions.copy(autoDensity = true),
+        satinOptions = satinOptions.copy(autoDensity = true),
+    )
     private val pattern: EmbPattern by lazy {
+        val resolvedSatin = satinOptions.copy(densityMm = satinOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
+        val resolvedFill = fillOptions.copy(densityMm = fillOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
         when (fontKind) {
             FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
                 lineSpacing = lineSpacing, alignment = alignment, arcRadiusMm = arcRadiusMm, characterThreads = characterThreads,
-                stitchStyle = stitchStyle, satinOptions = satinOptions)
+                stitchStyle = stitchStyle, satinOptions = resolvedSatin)
             FontKind.OUTLINE -> LetteringEngine.fromContours(
                 contours, heightMm, arcDeg = arcDeg, thread = thread,
                 baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
                 contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
-                contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = satinOptions,
-                fillOptions = fillOptions, contourCharacters = contourCharacters, outline = !singleLine,
+                contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = resolvedSatin,
+                fillOptions = resolvedFill, contourCharacters = contourCharacters, outline = !singleLine,
             )
         }
     }

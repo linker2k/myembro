@@ -24,8 +24,10 @@ import io.github.linker2k.myembro.engine.edit.Alignment as ObjectAlignment
 import io.github.linker2k.myembro.engine.edit.Axis
 import io.github.linker2k.myembro.engine.edit.densityWarning
 import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.ui.lettering.LetteringModeSelector
+import io.github.linker2k.myembro.ui.lettering.ThreadWeightSelector
 import io.github.linker2k.myembro.ui.lettering.TextFillWarning
 import java.io.File
 import java.util.Locale
@@ -58,6 +60,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var sx by remember(obj.id) { mutableStateOf(format(abs(t.scaleX) * 100)) }
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
     var style by remember(obj.id) { mutableStateOf((obj as? TextObject)?.stitchStyle ?: StitchStyle.RUNNING) }
+    var weight by remember(obj.id) { mutableStateOf((obj as? TextObject)?.threadWeight ?: ThreadWeight.WT40) }
     val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,
@@ -67,7 +70,8 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
                 Text(obj.name, style = MaterialTheme.typography.bodyMedium)
                 if (obj is TextObject) {
                     LetteringModeSelector(obj.singleLine, style, { style = it })
-                    TextFillWarning(obj, style)
+                    ThreadWeightSelector(weight) { weight = it }
+                    TextFillWarning(obj.withThreadWeight(weight), style)
                     TextButton(onClick = { vm.openLettering(obj.id); onDismiss() }) {
                         Text(stringResource(R.string.lettering_fill_advanced))
                     }
@@ -89,7 +93,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(enabled = parsed != null, onClick = {
-            parsed?.let { if (obj is TextObject) vm.applyTextProperties(it, style) else vm.applyProperties(it) }; onDismiss()
+            parsed?.let { if (obj is TextObject) vm.applyTextProperties(it, style, weight) else vm.applyProperties(it) }; onDismiss()
         }) {
             Text(stringResource(R.string.editor_apply))
         } },

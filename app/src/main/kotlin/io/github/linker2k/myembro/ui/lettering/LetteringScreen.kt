@@ -47,6 +47,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.Grade
 import io.github.linker2k.myembro.engine.lettering.FontQualityReport
+import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.lettering.FillStrategy
@@ -104,6 +105,8 @@ private fun LetteringContent(
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
     val initial = initialObject
+    var threadWeightName by rememberSaveable { mutableStateOf((initial?.threadWeight ?: ThreadWeight.WT40).name) }
+    val threadWeight = ThreadWeight.valueOf(threadWeightName)
     var height by rememberSaveable { mutableFloatStateOf(initial?.heightMm?.toFloat() ?: 18f) }
     var spacing by rememberSaveable { mutableFloatStateOf(initial?.spacing?.toFloat() ?: 1.2f) }
     var alignmentIndex by rememberSaveable { mutableIntStateOf(initial?.alignment?.ordinal ?: 1) }
@@ -132,7 +135,7 @@ private fun LetteringContent(
     val settings = LetteringSettings(text, fontId, height.toDouble(), spacing.toDouble(), alignment,
         curved, if (curveIndex == 1) LetteringCurve.ARCH else LetteringCurve.BELOW, 35.0,
         lineSpacing.toDouble(), radius.coerceAtLeast(height).toDouble(), characterColors.toMap(), stitchStyleName?.let(StitchStyle::valueOf),
-        fillOptions, satinOptions)
+        fillOptions, satinOptions, threadWeight)
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
@@ -173,23 +176,23 @@ private fun LetteringContent(
             }
         }
     }
-    LaunchedEffect(text, height) {
+    LaunchedEffect(text, height, threadWeight) {
         fontReports = emptyMap()
         delay(150)
         val reports = mutableMapOf<String, FontQualityReport>()
         for (font in bundledLetteringFonts) {
-            try { reports[font.id] = LetteringFontQuality.analyze(context, font.id, text.ifBlank { "자수봄날Aa012" }, height.toDouble()) }
+            try { reports[font.id] = LetteringFontQuality.analyze(context, font.id, text.ifBlank { "자수봄날Aa012" }, height.toDouble(), threadWeight) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* Unavailable cards retain the pending label. */ }
         }
         fontReports = reports
     }
-    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions) {
+    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions, threadWeight) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
         for (font in bundledLetteringFonts) {
-            try { previews[font.id] = LetteringFontPreview.pattern(context, font.id, text, height.toDouble(), thread, settings.stitchStyle, fillOptions) }
+            try { previews[font.id] = LetteringFontPreview.pattern(context, font.id, text, height.toDouble(), thread, settings.stitchStyle, fillOptions, threadWeight) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* Font loading errors remain visible in the main preview. */ }
         }
@@ -212,7 +215,7 @@ private fun LetteringContent(
             Surface(color = colors.background) {
                 Column {
                 val filling = result?.singleLine == false && settings.stitchStyle in listOf(StitchStyle.FILL, StitchStyle.SATIN)
-                val recommended = result?.quality?.let { if (filling) filledLetteringMinimumHeight(it) else it.recommendedMinHeightMm } ?: 0.0
+                val recommended = result?.quality?.let { if (filling) filledLetteringMinimumHeight(it, threadWeight) else it.recommendedMinHeightMm } ?: 0.0
                 if (renderedKey == generationKey && !busy && result != null &&
                     (result!!.quality.grade != Grade.GOOD || filling && height < recommended)) {
                     val message = if (recommended.isFinite() && recommended > 0 && recommended <= 300.0)
@@ -289,13 +292,20 @@ private fun LetteringContent(
             }
             result?.takeIf { it.textObject.fontId == fontId }?.let { active -> LetteringCard {
                 val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING
+                ThreadWeightSelector(threadWeight) {
+                    if (it != threadWeight) {
+                        threadWeightName = it.name
+                        fillOptions = fillOptions.copy(autoDensity = true)
+                        satinOptions = satinOptions.copy(autoDensity = true)
+                    }
+                }
                 LetteringModeSelector(active.singleLine, style, { stitchStyleName = it.name })
                 if (active.singleLine && style == StitchStyle.BEAN) {
                     Text(stringResource(R.string.lettering_bean_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
                 if (!active.singleLine && style in listOf(StitchStyle.FILL, StitchStyle.SATIN)) {
                     val shownOptions = if (style == StitchStyle.SATIN) fillOptions.copy(strategy = FillStrategy.AUTO) else fillOptions
-                    FillSettingsControls(shownOptions, settings.heightMm) {
+                    FillSettingsControls(shownOptions, settings.heightMm, threadWeight) {
                         if (style == StitchStyle.SATIN && it.strategy == FillStrategy.TATAMI)
                             stitchStyleName = StitchStyle.FILL.name
                         fillOptions = it
@@ -303,7 +313,7 @@ private fun LetteringContent(
                     if (style == StitchStyle.SATIN) Text(stringResource(R.string.lettering_satin_hint),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 } else if (active.singleLine && style == StitchStyle.SATIN) {
-                    SatinSettingsControls(satinOptions) { satinOptions = it }
+                    SatinSettingsControls(satinOptions, settings.heightMm, threadWeight) { satinOptions = it }
                 }
             } }
             LetteringCard {
@@ -442,7 +452,7 @@ fun FontQualityBadge(report: FontQualityReport, modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, unit: String, showInches: Boolean = false, onChange: (Float) -> Unit) {
-    val formatted = if (showInches) Dimensions.length(value.toDouble()) else if (unit == "%") "${value.toInt()}%" else "${decimal(value.toDouble())} $unit"
+    val formatted = if (showInches) Dimensions.length(value.toDouble()) else if (unit == "%") "${value.toInt()}%" else if (step < 0.1f) String.format(Locale.getDefault(), "%.2f %s", value, unit) else "${decimal(value.toDouble())} $unit"
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)

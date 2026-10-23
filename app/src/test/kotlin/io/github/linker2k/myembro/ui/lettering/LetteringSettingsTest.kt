@@ -18,6 +18,18 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LetteringSettingsTest {
+    @Test fun fineThreadUpdatesOfflineEditorWarningsAndPracticalMinimum() {
+        val weight = io.github.linker2k.myembro.engine.lettering.ThreadWeight.WT60
+        val contour = listOf(0.0 to 0.0, 0.5 to 0.0, 0.5 to 10.0, 0.0 to 10.0, 0.0 to 0.0)
+        val obj = TextObject("fine", fontKind = FontKind.OUTLINE, contours = listOf(contour),
+            contourSourceHeight = 10.0, heightMm = 10.0, stitchStyle = StitchStyle.FILL)
+        val normal = outlineTextQuality(obj)
+        val fine = outlineTextQuality(obj.withThreadWeight(weight))
+        assertTrue(fine.recommendedMinHeightMm < normal.recommendedMinHeightMm)
+        assertTrue(fine.grade.ordinal <= normal.grade.ordinal)
+        assertEquals(4.5, filledLetteringMinimumHeight(fine.copy(recommendedMinHeightMm = 3.0), weight), 0.001)
+    }
+
     @Test fun fillWarningsKeepMeasuredRecommendationAndPracticalMinimumInBothUnits() {
         val report = FontQualityReport(2.0, 3.0, 100, 1, 0, Grade.GOOD, emptyList())
         assertEquals(6.0, filledLetteringMinimumHeight(report))

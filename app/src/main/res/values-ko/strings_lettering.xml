@@ -71,6 +71,12 @@
     <string name="lettering_fill_advanced">밀도·언더레이·테두리 설정</string>
     <string name="lettering_auto_fill">획 따라 자동</string>
     <string name="lettering_fixed_tatami">고정 각도 태타미</string>
-    <string name="lettering_auto_density">7mm 미만 글자 간격 완화</string>
+    <string name="lettering_auto_density">실 굵기·작은 글자 자동 간격</string>
     <string name="lettering_auto_underlay">센터런·가장자리 언더레이</string>
+    <string name="lettering_thread_weight">실 굵기</string>
+    <string name="lettering_weight_40">40wt(기본)</string>
+    <string name="lettering_weight_50">50wt</string>
+    <string name="lettering_weight_60">60wt(가는 실)</string>
+    <string name="lettering_fine_thread_hint">바늘 65/9 권장 · 밑실은 기존 설정 유지</string>
+    <string name="lettering_weight_min_feature">권장 최소 획 폭·간격: %1$.2fmm(추정)</string>
 </resources>

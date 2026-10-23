@@ -12,6 +12,7 @@ data class FontQualityKey(
     val heightMm: Double,
     val outline: Boolean,
     val analysisVersion: Int = FontQuality.VERSION,
+    val threadWeight: ThreadWeight = ThreadWeight.WT40,
 ) {
     init {
         require(fontId.isNotBlank() && revision.isNotBlank())
@@ -32,7 +33,7 @@ class FontQualityCache(private val maxEntries: Int = 64) {
         key: FontQualityKey,
         detailFloorMm: Double = FontQuality.LATIN_DETAIL_MM,
         glyphContours: () -> List<List<List<Pair<Double, Double>>>>,
-    ): FontQualityReport = reports[key] ?: FontQuality.analyze(glyphContours(), key.heightMm, key.outline, detailFloorMm).also {
+    ): FontQualityReport = reports[key] ?: FontQuality.analyze(glyphContours(), key.heightMm, key.outline, detailFloorMm, key.threadWeight).also {
         put(key, it)
     }
 

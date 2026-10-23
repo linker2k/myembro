@@ -24,9 +24,9 @@ internal val FillOptionsSaver = listSaver<FillOptions, Any>(
 )
 internal val SatinOptionsSaver = listSaver<SatinOptions, Any>(
     save = { listOf(it.widthMm, it.densityMm, it.maxStitchLengthMm, it.pullCompensationMm, it.centerUnderlay,
-        it.zigzagUnderlay, it.underlayStitchLengthMm, it.underlayDensityMm) },
+        it.zigzagUnderlay, it.underlayStitchLengthMm, it.underlayDensityMm, it.autoDensity) },
     restore = { SatinOptions(it[0] as Double, it[1] as Double, it[2] as Double, it[3] as Double,
-        it[4] as Boolean, it[5] as Boolean, it[6] as Double, it[7] as Double) },
+        it[4] as Boolean, it[5] as Boolean, it[6] as Double, it[7] as Double, it.getOrNull(8) as? Boolean ?: false) },
 )
 
 /** The editor's direct mode picker carries the same small-letter warning as the full route. */
@@ -37,7 +37,7 @@ fun TextFillWarning(text: TextObject, style: StitchStyle) {
         value = withContext(Dispatchers.Default) { outlineTextQuality(text) }
     }
     report?.let { quality ->
-        val height = filledLetteringMinimumHeight(quality)
+        val height = filledLetteringMinimumHeight(quality, text.threadWeight)
         if (quality.grade != Grade.GOOD || text.heightMm < height) {
             val message = if (height.isFinite() && height <= 300.0)
                 stringResource(R.string.lettering_quality_height, Dimensions.length(height))
@@ -71,7 +71,7 @@ fun LetteringModeSelector(singleLine: Boolean, style: StitchStyle, onChange: (St
 }
 
 @Composable
-internal fun FillSettingsControls(options: FillOptions, heightMm: Double, onChange: (FillOptions) -> Unit) {
+internal fun FillSettingsControls(options: FillOptions, heightMm: Double, threadWeight: ThreadWeight, onChange: (FillOptions) -> Unit) {
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         FillStrategy.entries.forEach { strategy ->
             FilterChip(options.strategy == strategy, { onChange(options.copy(strategy = strategy)) }, label = {
@@ -83,7 +83,7 @@ internal fun FillSettingsControls(options: FillOptions, heightMm: Double, onChan
         Text(stringResource(R.string.lettering_auto_density), style = MaterialTheme.typography.bodyMedium)
         Switch(options.autoDensity, { onChange(options.copy(autoDensity = it)) })
     }
-    SettingSlider(stringResource(R.string.lettering_density), options.densityForHeight(heightMm).toFloat(), 0.3f..1f, 0.1f, "mm") {
+    SettingSlider(stringResource(R.string.lettering_density), options.densityForHeight(heightMm, threadWeight).toFloat(), 0.3f..1f, 0.05f, "mm") {
         onChange(options.copy(densityMm = it.toDouble().coerceIn(0.3, 1.0), autoDensity = false))
     }
     if (options.strategy == FillStrategy.TATAMI) SettingSlider(stringResource(R.string.lettering_fill_angle), options.angleDeg.toFloat(), -180f..180f, 15f, "°") {
@@ -111,15 +111,42 @@ internal fun FillSettingsControls(options: FillOptions, heightMm: Double, onChan
 }
 
 @Composable
-internal fun SatinSettingsControls(options: SatinOptions, onChange: (SatinOptions) -> Unit) {
+internal fun SatinSettingsControls(options: SatinOptions, heightMm: Double, threadWeight: ThreadWeight, onChange: (SatinOptions) -> Unit) {
     SettingSlider(stringResource(R.string.lettering_satin_width), options.widthMm.toFloat(), 0.6f..6f, 0.2f, "mm") {
         onChange(options.copy(widthMm = it.toDouble()))
     }
-    SettingSlider(stringResource(R.string.lettering_density), options.densityMm.toFloat(), 0.3f..1f, 0.1f, "mm") {
-        onChange(options.copy(densityMm = it.toDouble()))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.lettering_auto_density), style = MaterialTheme.typography.bodyMedium)
+        Switch(options.autoDensity, { onChange(options.copy(autoDensity = it)) })
+    }
+    SettingSlider(stringResource(R.string.lettering_density), options.densityForHeight(heightMm, threadWeight).toFloat(), 0.3f..1f, 0.05f, "mm") {
+        onChange(options.copy(densityMm = it.toDouble(), autoDensity = false))
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(stringResource(R.string.lettering_center_underlay), style = MaterialTheme.typography.bodyMedium)
         Switch(options.centerUnderlay, { onChange(options.copy(centerUnderlay = it)) })
+    }
+}
+
+/** Shared by creation and existing-text properties; changing weight restores automatic spacing. */
+@Composable
+fun ThreadWeightSelector(weight: ThreadWeight, onChange: (ThreadWeight) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.lettering_thread_weight), style = MaterialTheme.typography.titleSmall)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ThreadWeight.entries.forEach { choice ->
+                FilterChip(weight == choice, { onChange(choice) }, label = {
+                    Text(stringResource(when (choice) {
+                        ThreadWeight.WT40 -> R.string.lettering_weight_40
+                        ThreadWeight.WT50 -> R.string.lettering_weight_50
+                        ThreadWeight.WT60 -> R.string.lettering_weight_60
+                    }))
+                })
+            }
+        }
+        Text(stringResource(R.string.lettering_weight_min_feature, weight.minimumFeatureMm),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (weight != ThreadWeight.WT40) Text(stringResource(R.string.lettering_fine_thread_hint),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

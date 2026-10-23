@@ -404,7 +404,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Precompute filled glyphs off the UI thread; commit style and transform in one undo step. */
-    fun applyTextProperties(transform: Transform, style: io.github.linker2k.myembro.engine.lettering.StitchStyle) {
+    fun applyTextProperties(transform: Transform, style: io.github.linker2k.myembro.engine.lettering.StitchStyle,
+        threadWeight: io.github.linker2k.myembro.engine.lettering.ThreadWeight? = null) {
         if (busy || gestureInProgress || selectedIds.size != 1) return
         val original = selected as? TextObject ?: return
         val before = project
@@ -412,7 +413,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             busy = true
             try {
                 val changed = withContext(Dispatchers.Default) {
-                    original.copy(transform = transform, stitchStyle = style).also { it.localPattern() }
+                    original.withThreadWeight(threadWeight ?: original.threadWeight).copy(transform = transform, stitchStyle = style).also { it.localPattern() }
                 }
                 if (project == before) edit(project.replace(changed))
             } catch (e: CancellationException) { throw e
