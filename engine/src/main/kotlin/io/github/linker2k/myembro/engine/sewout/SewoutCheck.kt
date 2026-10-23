@@ -72,7 +72,8 @@ object SewoutCheck {
         var stage = stages.last()
         val tasks = mutableListOf<OperatorTask>()
         val grid = DensityGrid(o)
-        val exactNeedles = hashMapOf<NeedlePoint, Int>()
+        var previousNeedle: NeedlePoint? = null
+        var consecutiveNeedles = 0
         val exactSegments = hashMapOf<Pair<NeedlePoint, NeedlePoint>, Int>()
         var current: NeedlePoint? = null
         var connected = false
@@ -181,7 +182,10 @@ object SewoutCheck {
                         }
                     }
                     grid.needle(p, stage.index, index)
-                    val repeats = (exactNeedles[p] ?: 0)+1; exactNeedles[p] = repeats
+                    // Policy counts consecutive same-point penetrations, not returns after sewing elsewhere.
+                    consecutiveNeedles = if (previousNeedle == p) consecutiveNeedles + 1 else 1
+                    previousNeedle = p
+                    val repeats = consecutiveNeedles
                     if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, Severity.BLOCKER,
                         "같은 좌표에 바늘이 ${o.repeatedPointThreshold}회 이상 진입합니다. 실 뭉침·원단 손상 위험으로 봉제를 차단합니다.",
                         Highlight(index, from = p), repeats.toDouble(), o.repeatedPointThreshold.toDouble())

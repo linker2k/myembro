@@ -31,6 +31,11 @@ class SewoutSafetyTest {
         assertFalse(SewoutCheck.check(pattern(9), options = SewoutOptions(hotspotPenetrations = 10)).hasBlockingIssues)
     }
 
+    @Test fun separatedReturnsAreNotConsecutiveSamePointPenetrations() {
+        val report = SewoutCheck.check(p(s(0), s(20), s(0), s(20), s(0), s(20), s(0)))
+        assertTrue(report.of(FindingCode.REPEATED_PENETRATION).isEmpty())
+    }
+
     @Test fun fourthExactPunctureBlocksIncludingAcrossTrimAndColorBoundaries() {
         assertFalse(SewoutCheck.check(p(*Array(3) { s(0) })).hasBlockingIssues)
         val report = SewoutCheck.check(p(s(0), s(0), s(0, c = Command.TRIM),
@@ -112,7 +117,8 @@ class SewoutSafetyTest {
             assertTrue(report.analysisComplete)
             assertTrue(report.hasBlockingIssues)
             assertEquals(Severity.BLOCKER, report.of(FindingCode.DENSITY_HOTSPOT).single().severity)
-            assertEquals(1, report.of(FindingCode.REPEATED_PENETRATION).size)
+            // Returns to the hub are separated by real stitches; density still blocks the fan.
+            assertEquals(0, report.of(FindingCode.REPEATED_PENETRATION).size)
             assertEquals(1, report.of(FindingCode.MISSING_LOCK_STITCH).size)
             assertTrue(report.density.maxOf { it.penetrations } >= 10)
         }
