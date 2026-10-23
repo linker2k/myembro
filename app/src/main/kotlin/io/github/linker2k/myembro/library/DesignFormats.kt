@@ -3,7 +3,6 @@ package io.github.linker2k.myembro.library
 
 import io.github.linker2k.myembro.engine.edit.ProjectJson
 import io.github.linker2k.myembro.engine.edit.ProjectSourceResolver
-import io.github.linker2k.myembro.engine.inkstitch.svg.InkStitchSvgImport
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
@@ -15,19 +14,13 @@ import java.util.Locale
 /** MIME hints narrow the SAF picker; extension AND content are checked after selection. */
 object DesignFormats {
     val extensions = setOf("pes", "pec", "dst", "myembro")
-    /** Also accepted on import: Ink/Stitch and plain SVG, converted to PES as it is imported. */
-    val importExtensions = extensions + "svg"
     val mimeTypes = arrayOf(
         "application/octet-stream", "application/x-pes", "application/x-pec", "application/x-dst",
         "application/vnd.brother.pes", "application/vnd.tajima.dst", "application/x-myembro",
-        "application/json", "application/zip", "application/x-zip", "application/x-zip-compressed", "image/svg+xml",
+        "application/json", "application/zip", "application/x-zip", "application/x-zip-compressed",
     )
     fun extension(name: String) = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
-    fun accepts(name: String) = extension(name) in importExtensions || extension(name) == "zip"
-
-    /** An SVG design sewn as Ink/Stitch would (refusals throw [SvgImportException]). */
-    fun convertSvg(bytes: ByteArray, name: String): InkStitchSvgImport.Result =
-        InkStitchSvgImport.open(bytes.inputStream(), name.substringBeforeLast('.'))
+    fun accepts(name: String) = extension(name) in extensions || extension(name) == "zip"
     fun read(file: File): EmbPattern {
         val parent = file.absoluteFile.parentFile!!
         val sources = if (parent.name == "projects") File(parent.parentFile, "designs") else parent

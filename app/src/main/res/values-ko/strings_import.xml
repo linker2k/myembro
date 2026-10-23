@@ -21,11 +21,4 @@
     <string name="import_duplicate">이름과 내용이 같은 중복: %1$d개</string>
     <string name="import_failed">읽기·가져오기 실패: %1$d개</string>
     <string name="import_more">외 %1$d개</string>
-    <string name="import_svg_converted">SVG 변환 메모: %1$d개</string>
-    <string name="import_svg_auto">Ink/Stitch 설정 없음 — 채우기는 타타미, 선은 러닝으로 자동 배정</string>
-    <string name="import_svg_excluded">제외: %1$s</string>
-    <string name="import_svg_kind_text">텍스트 객체(경로로 변환 안 됨)</string>
-    <string name="import_svg_kind_image">이미지</string>
-    <string name="import_svg_kind_method">지원 안 되는 땀 종류 %1$s</string>
-    <string name="import_svg_kind_command">명령 %1$s</string>
 </resources>

@@ -2,7 +2,6 @@
 package io.github.linker2k.myembro.library
 
 import io.github.linker2k.myembro.engine.io.PesExport
-import io.github.linker2k.myembro.engine.io.PesWriter
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -27,7 +26,7 @@ data class DesignImportLimits(
 
 /**
  * Imports one design or a ZIP, flattening every entry name to a sanitized leaf file name.
- * PES/PEC/DST and MYEMBRO projects are extracted, SVG is converted to PES; nested archives and macOS resource forks are ignored.
+ * PES/PEC/DST and MYEMBRO projects are extracted; nested archives and macOS resource forks are ignored.
  * All files are staged and parsed before publishing; a failed archive leaves no partial import.
  * Callers should close their stream with use and call on an IO dispatcher in Android UI.
  */
@@ -35,7 +34,6 @@ class DesignFileImporter(private val directory: File, private val limits: Design
     fun import(input: InputStream, fileName: String, mimeType: String? = null,
         onSkipped: ((String) -> Unit)? = null,
         publish: ((File, String) -> File?)? = null,
-        onNotice: ((ImportSkip) -> Unit)? = null,
         checkpoint: () -> Unit = {},
     ): List<File> {
         check(directory.isDirectory || directory.mkdirs()) { "Cannot create design library" }
@@ -63,27 +61,10 @@ class DesignFileImporter(private val directory: File, private val limits: Design
                 sink?.close()
             }
         }
-        fun stage(source: InputStream, sourceName: String) {
+        fun stage(source: InputStream, name: String) {
             if (staged.size >= limits.maxDesigns) throw IOException("Too many embroidery files in ZIP")
             val file = File(staging, "${staged.size}.tmp")
             copyEntry(source, file)
-            var name = sourceName
-            if (DesignFormats.extension(name) == "svg") {
-                // The library keeps machine files: an SVG is sewn now and stored as PES.
-                val converted = try {
-                    DesignFormats.convertSvg(file.readBytes(), name)
-                } catch (e: Exception) {
-                    if (onSkipped == null || e is java.util.concurrent.CancellationException) throw e
-                    file.delete(); onSkipped(name); return
-                }
-                file.writeBytes(PesWriter.write(converted.pattern))
-                val excluded = converted.elements.unsupported
-                if (excluded.isNotEmpty() || !converted.elements.parameterized) {
-                    onNotice?.invoke(ImportSkip(name, ImportSkipReason.CONVERTED, excluded = excluded,
-                        autoAssigned = !converted.elements.parameterized))
-                }
-                name = name.substringBeforeLast('.') + ".pes"
-            }
             // Avoid importing HTML/error pages or arbitrary data renamed to .pes.
             try {
                 DesignFormats.read(file.readBytes(), name)
@@ -188,7 +169,7 @@ class DesignFileImporter(private val directory: File, private val limits: Design
     }
 
     companion object {
-        private val SUPPORTED = DesignFormats.importExtensions
+        private val SUPPORTED = DesignFormats.extensions
         private val ZIP_MIMES = setOf("application/zip", "application/x-zip", "application/x-zip-compressed")
     }
 }
