@@ -137,37 +137,56 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
 
 ## claude-canvas 담당 (브랜치 `claude/inkfonts`)
 
-| # | 기능 | 원본 | 상태 |
-|---|---|---|---|
-| 0 | Ink/Stitch 폰트: 파서, 카탈로그, 다운로드, 레터링 UI 연결 | lib/lettering/{font,font_variant,glyph}.py, lib/svg/guides.py, lib/elements/utils/nodes.py, satin_column 레일·렁 판별 | 완료. 게이트 차단: 잠금(ties)과 새틴 세부 알고리즘이 다른 담당자 포팅을 기다림 |
-| 1 | 일반 Ink/Stitch SVG 가져오기(속성, 명령 심볼, 그룹, transform, clone) | lib/elements/utils/nodes.py, lib/commands.py, lib/svg/* | 예정 |
-| 2 | Cross stitch 요소 | lib/elements/fill_stitch.py (cross_stitch), lib/stitches/cross_stitch.py | 예정. 완료되면 재배포 가능 폰트 17종이 추가됨 |
-| 3 | Clone 요소 | lib/elements/clone.py | 예정 |
-| 4 | 레터링 동등화: 여러 색 글꼴(color_sort), 경로 따라 배치, 정렬·커닝, 글꼴 샘플 | lib/lettering/font.py, lib/extensions/lettering*.py, lettering_along_path.py, lettering_font_sample.py | 정렬(왼쪽/가운데/오른쪽)과 커닝은 0번에서 완료. 나머지는 예정 |
+원본 고정은 위 공통 기준 **v3.3.0 `b0edd96`** 입니다. 이전에 쓰던 `16e1928`과 비교해 이 담당 범위의 파일(lib/lettering, lib/svg, lib/elements/clone.py, utils/nodes.py)은 같고, satin_column만 v3.3.0의 단일 파일로 출처를 바꿨습니다.
 
-땀은 각 담당자의 포팅 결과를 호출해서 만듭니다(새틴=embro-letter, 채움=embro-model, Stroke·ties=embro-worker). 지금은 `InkStitchLettering.runs`가 임시로 기존 엔진 생성기를 부릅니다. 해당 포팅이 main에 들어오면 이 함수만 교체합니다.
+| # | 단계 | 기능 | 원본 | 상태 |
+|---|---|---|---|---|
+| 0 | S3 | Ink/Stitch 폰트: 파서, 카탈로그, 다운로드, 레터링 UI | lib/lettering/{font,font_variant,glyph}.py, lib/svg/guides.py | 완료. US-5(자수 전용 첫 탭, 권장 높이, 한글·대문자 표시, 'TTF로 대체' 칩) 반영 |
+| 1 | S5 | 일반 SVG 가져오기: inkstitch:* 속성, 명령(trim/stop/ignore_object/ignore_layer), 그룹·transform·스타일 상속, viewBox, 도형 | lib/elements/utils/nodes.py, element.py, commands.py, marker.py, lib/svg/{path,units}.py, lib/extensions/output.py | 완료. 앱 가져오기에서 .svg → PES 변환, 제외 요소·자동 배정 안내(US-7) |
+| 2 | S5 | Cross stitch | lib/elements/fill_stitch.py(cross_stitch), lib/stitches/cross_stitch.py | 예정 |
+| 3 | S5 | Clone | lib/elements/clone.py | 완료. 각도 회전·뒤집기·사용자 각도·중첩 clone, 순환·누락 거부 |
+| 4 | S3 | 레터링 동등화 | lib/lettering/font.py | back_and_forth, 줄별 bbox 정렬, NFC·줄 앞뒤 공백 제거, _set_style 완료. 남음: auto_satin, color_sort, trim_option, block 정렬, 경로 따라 배치, 글꼴 샘플 |
+
+### 땀 생성 연결
+
+이 담당은 요소 분류까지만 하고, 땀은 담당자 포트를 호출합니다(새틴=embro-letter, 채우기=embro-model, Stroke·ties=embro-worker).
+그 포트들이 main에 들어오기 전까지 `elements/InkElementSewing.kt`가 기존 엔진 생성기를 임시로 부릅니다. 이 파일만 교체하면 됩니다.
+
+- 새틴: `InkSatin`은 v3.3.0 SatinColumn이 보는 형태 그대로 레일 2개(하위 경로 순서), 명시적 렁, 레일 노드를 넘깁니다. 방향(reverse/swap)·렁 절단·땀 배치는 letter의 `inkstitch.elements.SatinColumn(leftRail, rightRail, parameters, rungs)`가 합니다. 노드 기반 암묵 렁(_synthesize_rungs)은 아직 어느 포트에도 없어, letter와 정할 일로 남깁니다.
+- 기존 `engine/lettering/SatinColumn.kt`에 넣었던 구간 새틴(sectionPoints)은 되돌렸습니다. letter 브랜치와 겹치지 않습니다.
+
+### 재현 커맨드 (embro-codex 비교용)
+
+```
+tools/inkstitch_port_out.sh            # fonts, svg_import, clone
+FEATURES=clone tools/inkstitch_port_out.sh
+```
+
+- 입력: `/tmp/myembro-quality-gate/matrix-inkstitch.json`의 해당 기능 케이스(입력 sha256 확인). `.xz` 폰트 픽스처는 `xz -dc`로 풀어 데이터로만 씁니다.
+- 출력: `/tmp/myembro-port-out/claude-canvas/<feature>/<output_basename>`, 목록은 `results.json`(matrix_sha256, commit, 케이스별 status·path·sha256·code). compare_matrix.py `--ports`가 읽는 형식입니다.
+- 음성 케이스는 `REJECTED`와 거부 코드로 남깁니다(INVALID_INPUT, UNSUPPORTED_EXTERNAL_RESOURCE, CYCLIC_REFERENCE, MISSING_REFERENCE).
 
 ### 차이점 (원본과 다르게 만든 곳)
 
 | 위치 | 원본 동작 | 우리 동작 | 이유 |
 |---|---|---|---|
-| InkStitchFont 파서 | inkex DOM으로 문서 전체를 읽음 | SAX 스트리밍. DOCTYPE과 외부 엔티티 거부 | 휴대폰 메모리(SVG 최대 14.5MB), 내려받은 데이터 보안 |
-| 가이드 없는 글꼴의 기준선 | 0 | 'H' 잉크 바닥 | 모든 글리프가 공유하는 값이라 땀에는 영향이 없고, 줄 배치만 자연스러워짐 |
-| 글리프 경로 평탄화 | 베지어를 그대로 두고 shapely로 처리 | 0.1px(약 0.026mm) 허용오차로 평탄화 | JTS와 엔진 입력 형식에 맞춤 |
-| 단일 경로 새틴(stroke 폭) | convert_path_to_satin(노드마다 렁) | 엔진 `SatinColumn.rails`로 만든 1구간 | 새틴은 embro-letter 담당. 포팅되면 교체 |
-| 레거시 콤보 값 "0" | update_inkstitch_document가 이름으로 변환 | 0이면 기본 방식으로 해석 | 문서 업데이트기는 포팅하지 않음 |
-| 레터링 높이 | 글꼴 배율(%) | 'H' 잉크 높이(mm). 배율 = 높이 / (H 높이 × 1) | 앱의 모든 글꼴이 같은 높이 기준을 씀 |
-| 자간 | letter_spacing(mm, 기본 0) | TextObject.spacing을 그대로 씀. 이 글꼴을 고르면 화면이 0으로 맞춤 | 기존 UI 슬라이더 재사용 |
-| 줄 간격 | leading + line_height | TextObject.lineSpacing × 높이(mm). 미지정이면 leading | 기존 UI와 프로젝트 형식 유지 |
-| 정렬 | text_align(left/center/right/block) | left, center, right. block은 미지원 | block은 4번 항목에서 처리 |
-| auto_satin, 색 정렬(sortable), trim 옵션 | 글꼴 설정에 따라 적용 | 아직 적용 안 함(문서 순서로 봉제, 점프 3mm 초과면 트림) | 4번 항목과 stitch_plan 계약 이후에 처리 |
-| 잠금(lock_start/lock_end) | 기본 half_stitch 잠금 | 없음 → 게이트 차단 | ties는 embro-worker 담당 |
-| 새틴 땀 배치 | plot_points_on_rails(직각 거리 보정), short_stitch_inset | 렁 구간을 호 길이로 짝지음. 짧은 땀 인셋 없음 | embro-letter 포팅 대기. 게이트 SATIN_SPACING_TIGHT와 짧은 땀 비율 초과의 원인 |
-| 프로젝트 저장 | 생성된 SVG 요소를 문서에 넣음 | 글꼴 id와 텍스트만 저장하고 설치된 글꼴로 다시 만듦 | 파일 크기. 글꼴을 지우면 경고와 함께 빈 땀이 됨 |
+| SVG 읽기 | inkex/lxml DOM, CSS `<style>` 시트 적용 | SAX로 만든 가벼운 트리. DOCTYPE·외부 참조 거부. `<style>` 시트는 무시 | 휴대폰 메모리, 내려받은 데이터 보안. 시트 스타일은 Ink/Stitch 파일에서 드묾 |
+| 경로 평탄화 | 베지어를 shapely로 처리 | 0.1px(약 0.026mm) 허용오차로 평탄화 | JTS와 엔진 입력 형식 |
+| 그라데이션 색 | 단일 정지점 스와치만 그 색 | 첫 정지점 색 | 실 색 하나를 골라야 함 |
+| 순환 clone | 파이썬 재귀 오류로 실패 | CYCLIC_REFERENCE로 거부 | 매트릭스 음성 케이스 계약 |
+| 가이드 없는 글꼴의 기준선 | 0 | 'H' 잉크 바닥 | 모든 글리프가 공유하는 값이라 땀에는 영향 없음 |
+| 레거시 콤보 값 "0" | update_inkstitch_document가 이름으로 변환 | 0이면 기본 방식 | 문서 업데이트기는 포팅하지 않음 |
+| 레터링 높이 | 글꼴 배율(%) | 'H'(없으면 가장 큰 글리프) 잉크 높이(mm) | 앱의 모든 글꼴이 같은 높이 기준 |
+| 자간·줄 간격 | letter_spacing·line_height(mm, 배율 전) | 실제 mm(배율 후). 줄 간격 미지정이면 leading | 기존 UI와 프로젝트 형식 |
+| 시작·끝 위치 명령, satin_cut_point | 땀 시작·끝 위치에 반영 | 무시하고 목록에 표시 | 각 땀 포트의 시작/끝점 인자가 들어오면 연결 |
+| 단일 경로 새틴 | convert_path_to_satin | 임시로 엔진 `SatinColumn.rails` | 새틴 담당 포트 대기 |
+| 잠금, collapse, 최소 땀 | stitch_plan 후처리 | 임시 브리지(잠금 없음, 메타데이터의 collapse_len·min_stitch_len 적용) | ties·후처리는 embro-worker |
+| 프로젝트 저장 | 생성된 SVG 요소를 문서에 넣음 | 글꼴 id와 텍스트만 저장하고 설치된 글꼴로 다시 만듦 | 파일 크기. 글꼴을 지우면 경고와 함께 빈 땀 |
 
-### 게이트 기록
-- 0번 Ink/Stitch 폰트 (2026-10-24): `check-release`로 4개 글꼴(ambigue, caffeine_KOR, venezia, manga_impact) × 15·30mm × satin, 'Hamburg 2024'를 검사했습니다. **0/8 통과(차단)**.
-  - 8건 모두: 텍스트 시작 잠금, 시작·끝·트림 앞뒤 잠금이 없음
-  - venezia 15mm: 0.3mm 미만 땀 15%
-  - manga_impact: 새틴 같은 쪽 간격 p10 0.10mm, 0.5mm 셀 밀도 17–18
-  - 원인은 ties와 새틴 세부 알고리즘이며, 포팅 결과를 호출하도록 바꾼 뒤 다시 검사합니다.
+### 검증 기록
+
+- 원본 `tests/test_clone.py`의 각도·숨김·스타일·변환·중첩 clone 사례를 같은 입력과 기대값으로 `elements/CloneTest.kt`에 옮겼습니다(18개 통과).
+- 매트릭스 재현(2026-10-24, 커밋은 results.json): fonts 96, svg_import 170, clone 172 케이스 모두 보고. 생성 434, 지정 코드로 거부 4.
+- 자체 간이 대조(판정 아님): svg_import·clone은 bbox가 원본과 0.2mm 이내인 경우가 각각 161/168, 149/170으로 가져오기 기하는 맞습니다. 땀 수와 좌표 차이는 임시 생성기와 잠금 부재 때문입니다. 폰트 1줄 케이스는 bbox와 러닝 땀 길이 분포가 같고, 차이는 잠금 땀입니다.
+- oracle의 `fonts--*--AB-newline-BA` 배치 SVG에는 첫 줄 "AB"만 들어 있습니다(글리프 2개). 2줄 배치를 비교할 수 없어 embro-codex에 알렸습니다.
+- 0번 폰트의 이전 게이트 기록: 4개 글꼴 × 15·30mm × satin, 0/8 통과. 주원인은 잠금 검사였고, 게이트는 재보정 중입니다.
