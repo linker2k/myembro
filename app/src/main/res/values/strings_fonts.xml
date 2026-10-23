@@ -12,7 +12,6 @@
     <string name="fonts_kind_single_line">Single-line</string>
     <string name="fonts_kind_outline">Outline</string>
     <string name="fonts_kind_predigitized">Embroidery font (Ink/Stitch)</string>
-    <string name="fonts_filter_predigitized">Embroidery</string>
     <string name="fonts_thin_thread">60 wt thread</string>
     <string name="fonts_size_mb">%1$s MB</string>
     <string name="fonts_download">Download</string>
@@ -51,4 +50,12 @@
     <string name="fonts_reason_missing_latin">No Latin capitals in this font.</string>
     <string name="fonts_analyzing">Analyzing…</string>
     <string name="fonts_size_kb">%1$d KB</string>
+    <string name="fonts_tab_embroidery">Embroidery fonts</string>
+    <string name="fonts_tab_general">All fonts</string>
+    <string name="fonts_embroidery_note">Digitized by hand in Ink/Stitch: satin, fill and stitch direction come with the font.</string>
+    <string name="fonts_tested_range">Tested heights %1$s–%2$s mm</string>
+    <string name="fonts_hangul_yes">Hangul</string>
+    <string name="fonts_hangul_no">No Hangul</string>
+    <string name="fonts_capitals_only">Capitals only</string>
+    <string name="fonts_no_digits">No digits</string>
 </resources>

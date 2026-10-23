@@ -50,7 +50,14 @@ data class CatalogFont(
     val recommendedMaxHeightMm: Double? = null,
     /** Ink/Stitch fonts whose font.json asks for 60 wt thread and a 60 needle. */
     val thinThreadRequired: Boolean = false,
+    /** Ink/Stitch fonts: which characters the glyph set covers; null when unknown. */
+    val coverage: GlyphCoverage? = null,
 ) {
+    /** [letterCase] is font.json's forced case ("upper" sews every letter as a capital). */
+    data class GlyphCoverage(val lowercase: Boolean, val digits: Boolean, val hangul: Boolean, val letterCase: String = "") {
+        val capitalsOnly: Boolean get() = !lowercase || letterCase == "upper"
+    }
+
     enum class Kind(val json: String, val extension: String) {
         SINGLE_LINE_SVG("single-line-svg", "svg"),
         OUTLINE_TTF("outline-ttf", "ttf"),

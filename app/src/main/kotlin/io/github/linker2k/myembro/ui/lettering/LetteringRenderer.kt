@@ -34,6 +34,8 @@ internal data class LetteringResult(
     val predigitized: Boolean = false,
     /** The digitizer's tested height range for [predigitized] fonts. */
     val testedRangeMm: ClosedFloatingPointRange<Double>? = null,
+    /** Distinct characters of the text the font has no glyph for, in text order. */
+    val missing: String = "",
 )
 
 /** Catalog-card bridge: call after download, on a worker via this suspending API. No download UI here. */
@@ -80,7 +82,10 @@ private class LoadedFont(
         }
     }
     fun supports(code: Int): Boolean = when {
-        ink != null -> String(Character.toChars(code)) in ink.glyphs
+        // Ink/Stitch sews forced-case fonts in that case (font.json letter_case).
+        ink != null -> String(Character.toChars(code)).let { c ->
+            when (ink.info.letterCase) { "upper" -> c.uppercase(); "lower" -> c.lowercase(); else -> c }
+        } in ink.glyphs
         paint != null -> cmap?.let { code in it } ?: paint.hasGlyph(String(Character.toChars(code)))
         svg != null -> String(Character.toChars(code)) in svg.glyphs
         else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
@@ -204,8 +209,9 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val transformed = placed.placedPattern()
     val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
     val quality = qualityFor(source, settings.fontId, text, settings.heightMm, settings.threadWeight)
-    val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
+    val lacking = text.codePoints().toArray().filter { !Character.isWhitespace(it) && !source.supports(it) }.distinct()
     val outside = letteringOutsideHoop(pattern, hoop)
-    return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null && source.ink == null, source.name,
-        predigitized = source.ink != null, testedRangeMm = source.testedRangeMm)
+    return LetteringResult(placed, pattern, quality, lacking.isNotEmpty(), outside, source.face == null && source.ink == null, source.name,
+        predigitized = source.ink != null, testedRangeMm = source.testedRangeMm,
+        missing = lacking.joinToString("") { String(Character.toChars(it)) })
 }

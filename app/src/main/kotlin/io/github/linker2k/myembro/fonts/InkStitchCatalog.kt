@@ -35,6 +35,10 @@ object InkStitchCatalog {
                 metaUrl = metaUrl, metaSha256 = s("metaSha256"),
                 recommendedMaxHeightMm = d("recommendedMaxHeightMm"),
                 thinThreadRequired = (o["thinThreadRequired"] as? JsonPrimitive)?.booleanOrNull ?: false,
+                coverage = (o["lowercase"] as? JsonPrimitive)?.booleanOrNull?.let { lower ->
+                    CatalogFont.GlyphCoverage(lower, (o["digits"] as? JsonPrimitive)?.booleanOrNull ?: true,
+                        (o["hangul"] as? JsonPrimitive)?.booleanOrNull ?: false, (o["letterCase"] as? JsonPrimitive)?.content.orEmpty())
+                },
             )
         }
 }

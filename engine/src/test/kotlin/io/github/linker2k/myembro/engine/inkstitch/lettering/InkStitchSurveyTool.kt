@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.inkstitch.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.elements.*
 import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.model.Command
@@ -26,7 +27,7 @@ class InkStitchSurveyTool {
         val text = System.getenv("INKSTITCH_TEXT") ?: "Hamburg 2024"
         val rows = arrayListOf(listOf("font", "glyphs", "satins", "fills", "runs", "unsupported", "sizeMm", "refHeightMm",
             "minScale", "maxScale", "baselineFromGuide", "guide", "refTop", "refBottom", "parseMs", "stitches", "trims", "colors", "maxStitchMm", "shortLt03",
-            "renderMs", "error").joinToString("\t"))
+            "renderMs", "lower", "upper", "digits", "hangul", "error").joinToString("\t"))
         for (dir in src.listFiles().orEmpty().filter { File(it, "ltr.svg").isFile && File(it, "font.json").isFile }.sortedBy { it.name }) {
             val row = runCatching {
                 val t0 = System.nanoTime()
@@ -45,8 +46,9 @@ class InkStitchSurveyTool {
                     font.info.sizeMm, "%.2f".format(height), font.info.minScale, font.info.maxScale,
                     ref != null && font.baseline != ref.inkBottom, font.baselineGuide?.let { "%.1f".format(it) }, "%.1f".format(ref?.inkTop), "%.1f".format(ref?.inkBottom), (t1 - t0) / 1_000_000, pattern.stitchCount, pattern.trimCount,
                     pattern.threads.size, "%.2f".format(lengths.maxOrNull() ?: 0.0), lengths.count { it < 0.3 },
-                    (t2 - t1) / 1_000_000, "").joinToString("\t")
-            }.getOrElse { e -> listOf(dir.name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", e.toString().replace('\t', ' ')).joinToString("\t") }
+                    (t2 - t1) / 1_000_000, ('a'..'z').count { it.toString() in font.glyphs }, ('A'..'Z').count { it.toString() in font.glyphs },
+                    ('0'..'9').count { it.toString() in font.glyphs }, font.glyphs.keys.count { k -> k.any { it in '\uAC00'..'\uD7A3' } }, "").joinToString("\t")
+            }.getOrElse { e -> listOf(dir.name, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", e.toString().replace('\t', ' ')).joinToString("\t") }
             rows += row
             println(row)
         }

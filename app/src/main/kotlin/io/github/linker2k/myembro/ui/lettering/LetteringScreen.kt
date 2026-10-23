@@ -299,6 +299,13 @@ private fun LetteringContent(
                 val range = active.testedRangeMm
                 Text(stringResource(R.string.lettering_predigitized_hint, "%.1f".format(range?.start ?: 0.0), "%.1f".format(range?.endInclusive ?: 0.0)),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (active.missing.isNotEmpty()) {
+                    // US-5: an embroidery font without these glyphs (e.g. Hangul) skips them; offer a TTF instead.
+                    Text(stringResource(R.string.lettering_missing_glyphs, active.missing),
+                        style = MaterialTheme.typography.bodySmall, color = colors.error)
+                    AssistChip(onClick = { fontId = bundledLetteringFonts.first().id },
+                        label = { Text(stringResource(R.string.lettering_use_ttf_instead, bundledLetteringFonts.first().name)) })
+                }
             } }
             result?.takeIf { it.textObject.fontId == fontId && !it.predigitized }?.let { active -> LetteringCard {
                 val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING

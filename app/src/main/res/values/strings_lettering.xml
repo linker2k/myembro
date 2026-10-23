@@ -80,4 +80,6 @@
     <string name="lettering_weight_60">60wt (fine)</string>
     <string name="lettering_fine_thread_hint">65/9 needle recommended · Keep your bobbin setup</string>
     <string name="lettering_weight_min_feature">Estimated minimum stroke / gap: %1$.2fmm</string>
+    <string name="lettering_missing_glyphs">Not in this font (left out): %1$s</string>
+    <string name="lettering_use_ttf_instead">Use TTF font %1$s instead</string>
 </resources>

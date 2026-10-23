@@ -155,7 +155,9 @@ class LetterFontGeometry(context: Context) {
             LetterFont.Kind.HERSHEY -> c.code !in 0x20..0x7E
             LetterFont.Kind.OUTLINE -> !hasOutlineGlyph(font, c.toString())
             LetterFont.Kind.SINGLE_LINE_SVG -> !svgFont(font).supports(c)
-            LetterFont.Kind.INKSTITCH -> c.toString() !in inkStitchFont(font).glyphs
+            LetterFont.Kind.INKSTITCH -> inkStitchFont(font).let { ink ->
+                when (ink.info.letterCase) { "upper" -> c.uppercase(); "lower" -> c.lowercase(); else -> c.toString() } !in ink.glyphs
+            }
         }
     }
 

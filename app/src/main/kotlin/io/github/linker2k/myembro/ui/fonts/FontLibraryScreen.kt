@@ -37,6 +37,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -93,7 +95,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-enum class FontFilter { PREDIGITIZED, KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
+enum class FontFilter { KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
+
+/** Library tabs: pre-digitized embroidery fonts first (US-5), then fonts the app digitizes. */
+enum class FontTab { EMBROIDERY, GENERAL }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
@@ -115,6 +120,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     var filters by mutableStateOf<Set<FontFilter>>(emptySet())
         private set
+    var tab by mutableStateOf(FontTab.EMBROIDERY)
     val installed = mutableStateMapOf<String, Boolean>()
     /** Download progress 0..1 for fonts currently downloading. */
     val progress = mutableStateMapOf<String, Float>()
@@ -143,12 +149,11 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val visibleUserFonts: List<LetterFont>
-        get() = userFonts.filter { f ->
+        get() = if (tab == FontTab.EMBROIDERY) emptyList() else userFonts.filter { f ->
             val reasons = f.quality?.reasons.orEmpty()
             (FontFilter.KOREAN !in filters || QualityReasons.MISSING_HANGUL !in reasons) &&
                 (FontFilter.LATIN !in filters || QualityReasons.MISSING_LATIN !in reasons) &&
                 FontFilter.SCRIPT !in filters &&
-                (FontFilter.PREDIGITIZED !in filters || f.kind == LetterFont.Kind.INKSTITCH) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == LetterFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == LetterFont.Kind.OUTLINE)
         }
@@ -204,11 +209,11 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val visible: List<CatalogFont>
-        get() = fonts.filter { f ->
+        get() = if (tab == FontTab.EMBROIDERY) fonts.filter { it.predigitized } else fonts.filter { f ->
+            !f.predigitized &&
             (FontFilter.KOREAN !in filters || f.korean) &&
                 (FontFilter.LATIN !in filters || f.latin) &&
                 (FontFilter.SCRIPT !in filters || f.script) &&
-                (FontFilter.PREDIGITIZED !in filters || f.predigitized) &&
                 (FontFilter.SINGLE_LINE !in filters || f.kind == CatalogFont.Kind.SINGLE_LINE_SVG) &&
                 (FontFilter.OUTLINE !in filters || f.kind == CatalogFont.Kind.OUTLINE_TTF)
         }
@@ -323,12 +328,22 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit) = My
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            TabRow(selectedTabIndex = vm.tab.ordinal, containerColor = MaterialTheme.colorScheme.background) {
+                Tab(selected = vm.tab == FontTab.EMBROIDERY, onClick = { vm.tab = FontTab.EMBROIDERY },
+                    text = { Text(stringResource(R.string.fonts_tab_embroidery)) })
+                Tab(selected = vm.tab == FontTab.GENERAL, onClick = { vm.tab = FontTab.GENERAL },
+                    text = { Text(stringResource(R.string.fonts_tab_general)) })
+            }
+            if (vm.tab == FontTab.EMBROIDERY) Text(
+                stringResource(R.string.fonts_embroidery_note),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            ) else Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FontChip(stringResource(R.string.fonts_filter_all), vm.filters.isEmpty()) { vm.clearFilters() }
-                FontChip(stringResource(R.string.fonts_filter_predigitized), FontFilter.PREDIGITIZED in vm.filters) { vm.toggle(FontFilter.PREDIGITIZED) }
                 FontChip(stringResource(R.string.fonts_filter_korean), FontFilter.KOREAN in vm.filters) { vm.toggle(FontFilter.KOREAN) }
                 FontChip(stringResource(R.string.fonts_filter_latin), FontFilter.LATIN in vm.filters) { vm.toggle(FontFilter.LATIN) }
                 FontChip(stringResource(R.string.fonts_filter_script), FontFilter.SCRIPT in vm.filters) { vm.toggle(FontFilter.SCRIPT) }
@@ -580,7 +595,8 @@ private fun FontCard(
                 Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.fonts_installed), tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
             }
         }
-        quality?.let {
+        if (font.predigitized) PredigitizedFacts(font)
+        else quality?.let {
             minHeightText(it.recommendedMinHeightMm)?.let { line -> Text(line, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
         }
         if (progress != null) {
@@ -614,5 +630,22 @@ private fun FontCard(
                 }
             }
         }
+    }
+}
+
+/** Tested height range and character coverage of a pre-digitized font (US-5). */
+@Composable
+private fun PredigitizedFacts(font: CatalogFont) {
+    val min = font.recommendedMinHeightMm
+    val max = font.recommendedMaxHeightMm
+    if (min != null && max != null) Text(
+        stringResource(R.string.fonts_tested_range, mm(min), mm(max)),
+        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+    )
+    val coverage = font.coverage ?: return
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        NoteBadge(stringResource(if (coverage.hangul) R.string.fonts_hangul_yes else R.string.fonts_hangul_no))
+        if (coverage.capitalsOnly) NoteBadge(stringResource(R.string.fonts_capitals_only))
+        if (!coverage.digits) NoteBadge(stringResource(R.string.fonts_no_digits))
     }
 }

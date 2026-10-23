@@ -80,4 +80,6 @@
     <string name="lettering_weight_60">60wt(가는 실)</string>
     <string name="lettering_fine_thread_hint">바늘 65/9 권장 · 밑실은 기존 설정 유지</string>
     <string name="lettering_weight_min_feature">권장 최소 획 폭·간격: %1$.2fmm(추정)</string>
+    <string name="lettering_missing_glyphs">이 글꼴에 없는 글자(빠짐): %1$s</string>
+    <string name="lettering_use_ttf_instead">TTF 글꼴(%1$s)로 대체</string>
 </resources>

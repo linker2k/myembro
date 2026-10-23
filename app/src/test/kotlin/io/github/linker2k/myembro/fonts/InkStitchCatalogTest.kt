@@ -30,4 +30,12 @@ class InkStitchCatalogTest {
             assertTrue(f.recommendedMinHeightMm!! >= 6.0 || f.qualityGrade == QualityGrade.CAUTION, f.id)
         }
     }
+
+    @Test fun everyFontStatesItsCharacterCoverage() {
+        assertTrue(fonts.all { it.coverage != null })
+        // No Ink/Stitch font has Hangul (docs/inkstitch-fonts.md); forced capitals show as capitals only.
+        assertTrue(fonts.none { it.coverage!!.hangul })
+        assertTrue(fonts.filter { it.coverage!!.letterCase == "upper" }.all { it.coverage!!.capitalsOnly })
+        assertTrue(fonts.count { !it.coverage!!.capitalsOnly } > 40)
+    }
 }
