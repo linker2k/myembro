@@ -121,6 +121,15 @@ private fun ViewerContent(
     onExportUsb: (() -> Unit)?,
 ) {
     var exportSheet by remember { mutableStateOf(false) }
+    LaunchedEffect(vm) { vm.ensureSourceCurrent() }
+    val report = vm.sewoutReport
+    var confirmUsb by remember(report, vm.render, vm.checkingSewout) { mutableStateOf(false) }
+    val checkedUsb: (() -> Unit)? = onExportUsb?.let { transfer -> {
+        val current = vm.sewoutReport
+        if (!vm.ensureSourceCurrent() || !vm.sewoutReady || current == null) vm.openSewout()
+        else if (sewoutNeedsConfirmation(current)) confirmUsb = true
+        else transfer()
+    } }
     val snackbar = remember { SnackbarHostState() }
     val message = vm.exportMessage
     LaunchedEffect(message) {
@@ -134,16 +143,19 @@ private fun ViewerContent(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { onExportUsb?.invoke() }, enabled = vm.canExport && onExportUsb != null,
-                        shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.viewer_send_usb))
-                    }
-                    OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
-                        shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.viewer_review_edit))
+                Column {
+                    SewoutSummary(vm)
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.viewer_send_usb))
+                        }
+                        OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.viewer_review_edit))
+                        }
                     }
                 }
             }
@@ -181,6 +193,15 @@ private fun ViewerContent(
             }
         }
     }
+    if (vm.sewoutSheetOpen) ViewerSewoutSheet(vm)
+    if (confirmUsb && report != null) SewoutTransferConfirmation(report,
+        onCancel = { confirmUsb = false }, onReview = { confirmUsb = false; vm.openSewout() },
+        onContinue = {
+            confirmUsb = false
+            if (vm.canExport && vm.sewoutReady) {
+                if (vm.ensureSourceCurrent()) onExportUsb?.invoke() else vm.openSewout()
+            }
+        })
     if (exportSheet) {
         val data = vm.render
         val preview by produceState<android.graphics.Bitmap?>(null, data) {
@@ -188,7 +209,7 @@ private fun ViewerContent(
         }
         ExportSheet(
             onDismissRequest = { exportSheet = false }, onSavePes = onSaveFile, onShare = onShareFile,
-            onExportUsb = onExportUsb, designName = vm.fileName, busy = vm.exporting, enabled = vm.render != null,
+            onExportUsb = checkedUsb, designName = vm.fileName, busy = vm.exporting, enabled = vm.render != null,
             preview = preview,
             designSummary = data?.pattern?.let {
                 stringResource(R.string.viewer_export_summary, it.stitchCount, it.colorBlocks.size)
@@ -247,7 +268,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         if (maxWidth >= MyembroLayout.ExpandedWidth) {
             val panelWidth = (maxWidth * .42f).coerceIn(280.dp, 400.dp)
             Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ViewerCanvas(vm, data, fitRequest, { fitRequest++ }, Modifier.weight(1f).fillMaxSize())
+                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ }, Modifier.weight(1f).fillMaxSize())
                 ViewerDetails(vm, data,
                     Modifier.width(panelWidth).fillMaxSize().verticalScroll(detailsScroll).padding(vertical = 12.dp),
                     compactStats = true)
@@ -255,7 +276,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         } else {
             val maxPanelHeight = maxHeight * .54f
             Column(Modifier.fillMaxSize()) {
-                ViewerCanvas(vm, data, fitRequest, { fitRequest++ },
+                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ },
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp))
                 ViewerDetails(vm, data, Modifier.fillMaxWidth().heightIn(max = maxPanelHeight)
                     .verticalScroll(detailsScroll).padding(12.dp))
@@ -271,6 +292,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
             data = data,
             progress = vm.progress,
             hoop = vm.hoop, frame = vm.frame.spec, preservePlacement = vm.preservePlacement,
+            highlight = vm.focusedHighlight, focusRequest = vm.focusRequest,
             showJumps = vm.showJumps,
             fitRequest = fitRequest,
             modifier = Modifier.fillMaxSize(),
@@ -285,6 +307,11 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
                 Text(vm.frame.dimensions, style = MaterialTheme.typography.labelMedium)
             }
         }
+        if (vm.focusedHighlight != null) TextButton(onClick = vm::clearSewoutFocus,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+                .background(MaterialTheme.colorScheme.surface, MyembroShapes.Button)) {
+            Text(stringResource(R.string.sewout_clear_highlight))
+        }
         IconButton(
             onClick = onFit,
             modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
@@ -297,7 +324,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
 private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modifier, compactStats: Boolean = false) {
     val pattern = data.pattern
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatsRow(pattern, vm.frame, vm.machineProfile, compactStats, vm.preservePlacement)
+        StatsRow(pattern, vm.frame, vm.machineProfile, compactStats, vm.preservePlacement, vm.sewoutReport)
         Card(
             shape = MyembroShapes.Card,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -328,9 +355,10 @@ private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modif
 }
 
 @Composable
-private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?, compact: Boolean = false, preservePlacement: Boolean = false) {
+private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?, compact: Boolean = false, preservePlacement: Boolean = false,
+    sewout: io.github.linker2k.myembro.engine.sewout.SewoutReport? = null) {
     val b = viewerBounds(pattern, preservePlacement)
-    val seconds = pattern.estimatedSeconds()
+    val seconds = sewout?.time?.totalSeconds?.let { kotlin.math.ceil(it).toLong() } ?: pattern.estimatedSeconds().toLong()
     Card(
         shape = MyembroShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -353,7 +381,8 @@ private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.
                 Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60), Modifier.weight(1f))
             }
             if (!compact) Stat(stringResource(R.string.stat_size), b?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-", Modifier.fillMaxWidth())
-            Text(stringResource(R.string.viewer_trims_size_note, pattern.trimCount),
+            Text(if (sewout == null) stringResource(R.string.viewer_trims_size_note, pattern.trimCount)
+                else stringResource(R.string.sewout_cuts, sewout.statistics.requiredManualCuts, sewout.statistics.possibleManualCuts),
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             for (warning in pattern.warnings) {
                 Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)

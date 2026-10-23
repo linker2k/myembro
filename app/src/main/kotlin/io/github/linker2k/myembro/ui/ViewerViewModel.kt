@@ -22,6 +22,8 @@ import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import io.github.linker2k.myembro.engine.sewout.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,6 +50,18 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
     private var sourceName: String = ""
+    private var openedFile: File? = null
+    private var openedFileStamp: Pair<Long, Long>? = null
+    private var loadJob: Job? = null
+    private var loadVersion = 0
+
+    /** Editor overwrite may change the library file while this viewer remains on the back stack. */
+    fun ensureSourceCurrent(): Boolean {
+        val file = openedFile ?: return true
+        if (openedFileStamp == (file.lastModified() to file.length())) return true
+        openFile(file)
+        return false
+    }
     var projectHoop by mutableStateOf<HoopSpec?>(null)
         private set
     var preservePlacement by mutableStateOf(false)
@@ -60,17 +74,70 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     val availableHoops: List<Hoop> get() = settings.availableViewerHoops
     val availableFrames: List<FrameOption> get() = settings.frames
     val frame: FrameOption get() = projectHoop?.let { FrameOption("project", it) } ?: availableFrames.firstOrNull { it.id == selectedFrameId } ?: settings.defaultFrame
-    fun selectFrame(id: String) { if (availableFrames.any { it.id == id }) { projectHoop = null; selectedFrameId = id } }
+    fun selectFrame(id: String) { if (availableFrames.any { it.id == id }) {
+        projectHoop = null; selectedFrameId = id; refreshSewout()
+    } }
     /** Legacy host accessor. Native precision is available through frame.spec. */
     var hoop: Hoop
         get() = frame.preset ?: Hoop.H100
-        set(value) { selectedFrameId = value.name }
+        set(value) { selectFrame(value.name) }
     private val stopObservingSettings = settingsPreferences.observe {
         val next = settingsPreferences.read()
         if (next.machineModel != settings.machineModel || next.defaultFrame.id != settings.defaultFrame.id) {
             selectedFrameId = next.defaultFrame.id
         }
         settings = next
+        refreshSewout()
+    }
+
+    var sewoutReport by mutableStateOf<SewoutReport?>(null)
+        private set
+    var checkingSewout by mutableStateOf(false)
+        private set
+    var sewoutError by mutableStateOf<String?>(null)
+        private set
+    var sewoutSheetOpen by mutableStateOf(false)
+        private set
+    var focusedHighlight by mutableStateOf<Highlight?>(null)
+        private set
+    var focusRequest by mutableIntStateOf(0)
+        private set
+    private var sewoutJob: Job? = null
+    private var sewoutVersion = 0
+    val sewoutReady get() = sewoutReport != null && !checkingSewout && sewoutError == null
+    fun openSewout() { playing = false; sewoutSheetOpen = true }
+    fun closeSewout() { sewoutSheetOpen = false }
+    fun clearSewoutFocus() { focusedHighlight = null }
+    fun focusSewout(highlight: Highlight?) {
+        val pattern = render?.pattern ?: return
+        if (highlight == null || viewerHighlightArea(pattern, highlight) == null) return
+        playing = false
+        progress = pattern.stitches.lastIndex
+        focusedHighlight = highlight
+        focusRequest++
+        sewoutSheetOpen = false
+    }
+    fun refreshSewout() {
+        val version = ++sewoutVersion
+        sewoutJob?.cancel()
+        sewoutReport = null
+        sewoutError = null
+        focusedHighlight = null
+        val pattern = render?.pattern ?: run { checkingSewout = false; return }
+        val machine = viewerSewoutMachine(settings.machineProfile?.id, settings.machineModel)
+        val selectedHoop = frame.spec
+        val placed = preservePlacement
+        val pes = sourceBytes?.takeIf { !placed && sourceName.endsWith(".pes", ignoreCase = true) }
+        checkingSewout = true
+        sewoutJob = viewModelScope.launch {
+            try {
+                val report = withContext(Dispatchers.Default) { checkViewerSewout(pattern, machine, selectedHoop, placed, pes) }
+                if (version == sewoutVersion) sewoutReport = report
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (error: Exception) {
+                if (version == sewoutVersion) sewoutError = getApplication<Application>().getString(R.string.sewout_failed)
+            } finally { if (version == sewoutVersion) checkingSewout = false }
+        }
     }
 
     override fun onCleared() { stopObservingSettings() }
@@ -85,6 +152,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     var showJumps by mutableStateOf(false)
 
     fun open(uri: Uri) {
+        openedFile = null
+        openedFileStamp = null
         val resolver = getApplication<Application>().contentResolver
         load {
             val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
@@ -97,10 +166,16 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Opens a design stored in the library. */
-    fun openFile(file: java.io.File) = load { file.name to file.readBytes() }
+    fun openFile(file: File) {
+        openedFile = file
+        openedFileStamp = file.lastModified() to file.length()
+        load { file.name to file.readBytes() }
+    }
 
-    fun openSample() = load {
-        "flower.pes" to getApplication<Application>().assets.open("samples/flower.pes").use { it.readBytes() }
+    fun openSample() {
+        openedFile = null
+        openedFileStamp = null
+        load { "flower.pes" to getApplication<Application>().assets.open("samples/flower.pes").use { it.readBytes() } }
     }
 
     /** Keep the selected design across the document picker and configuration changes. */
@@ -214,8 +289,17 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun load(source: () -> Pair<String?, ByteArray>) {
-        viewModelScope.launch {
+        val version = ++loadVersion
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             loading = true
+            sewoutVersion++
+            sewoutJob?.cancel()
+            sewoutReport = null
+            checkingSewout = true
+            sewoutError = null
+            sewoutSheetOpen = false
+            focusedHighlight = null
             error = null
             playing = false
             runCatching {
@@ -224,6 +308,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                     name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")))
                 }
             }.onSuccess { (name, opened) ->
+                if (version != loadVersion) return@onSuccess
                 fileName = name
                 sourceBytes = opened.source
                 sourceName = opened.sourceName
@@ -232,16 +317,19 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 val data = RenderData(opened.pattern)
                 render = data
                 progress = data.pattern.stitches.lastIndex
+                refreshSewout()
             }.onFailure {
                 if (it is CancellationException) throw it
+                if (version != loadVersion) return@onFailure
                 render = null
                 sourceBytes = null
                 fileName = null
                 projectHoop = null
                 preservePlacement = false
+                checkingSewout = false
                 error = it.message ?: it.javaClass.simpleName
             }
-            loading = false
+            if (version == loadVersion) loading = false
         }
     }
 

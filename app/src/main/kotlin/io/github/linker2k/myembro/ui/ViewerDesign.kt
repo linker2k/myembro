@@ -24,8 +24,9 @@ internal fun readViewerDesign(bytes: ByteArray, name: String?, resolver: Project
 
 internal fun viewerBounds(pattern: EmbPattern, preservePlacement: Boolean): Bounds? = pattern.bounds?.let { b ->
     if (preservePlacement) b else {
-        val x = ((b.minX.toLong() + b.maxX) / 2).toInt()
-        val y = ((b.minY.toLong() + b.maxY) / 2).toInt()
+        val movement = viewerMovementBounds(pattern) ?: b
+        val x = ((movement.minX.toLong() + movement.maxX) / 2).toInt()
+        val y = ((movement.minY.toLong() + movement.maxY) / 2).toInt()
         Bounds(b.minX - x, b.minY - y, b.maxX - x, b.maxY - y)
     }
 }
