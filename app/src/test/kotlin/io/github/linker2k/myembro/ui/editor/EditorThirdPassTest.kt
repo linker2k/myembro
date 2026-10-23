@@ -3,9 +3,30 @@ package io.github.linker2k.myembro.ui.editor
 
 import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.model.*
+import io.github.linker2k.myembro.engine.lettering.*
 import kotlin.test.*
 
 class EditorThirdPassTest {
+    @Test fun `text fill mode and settings survive one-step history and reopening`() {
+        val original = text().copy(contours = listOf(listOf(-5.0 to -5.0, 5.0 to -5.0, 5.0 to 5.0, -5.0 to 5.0, -5.0 to -5.0)))
+        val before = Project(objects = listOf(stitch("background"), original))
+        val options = FillOptions(0.5, 45.0, 0.2, true, FillBorder.BEAN)
+        val session = EditorSession(before)
+        session.commit(before.withLettering(original.copy(stitchStyle = StitchStyle.FILL, fillOptions = options), original.id))
+        val filled = session.project.find(original.id) as TextObject
+        assertEquals(original.transform, filled.transform)
+        assertEquals(options, filled.fillOptions)
+        assertEquals(1, session.history.undoCount)
+        val reopened = ProjectJson.decode(ProjectJson.encode(session.project))
+        assertEquals(filled, reopened.find(original.id))
+        assertEquals(session.project.objects.map { it.id }, reopened.objects.map { it.id })
+        assertEquals(session.project.flatten().stitches, reopened.flatten().stitches)
+        assertTrue(session.stepHistory(false))
+        assertEquals(original.stitchStyle, (session.project.find(original.id) as TextObject).stitchStyle)
+        assertTrue(session.stepHistory(true))
+        assertEquals(filled, session.project.find(original.id))
+    }
+
     private fun text(id: String = "text") = TextObject(id = id, text = "Hello", fontId = "offline-font",
         fontKind = FontKind.OUTLINE, heightMm = 18.3, spacing = 1.7, arcDeg = -63.5,
         contours = listOf(listOf(0.0 to 0.0, 10.0 to -20.0, 20.0 to 0.0)), contourSourceHeight = 20.0,

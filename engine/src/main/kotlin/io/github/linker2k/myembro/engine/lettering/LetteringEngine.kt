@@ -43,6 +43,7 @@ object LetteringEngine {
         stitchStyle: StitchStyle = StitchStyle.BEAN,
         satinOptions: SatinOptions = SatinOptions(),
     ): EmbPattern {
+        require(stitchStyle != StitchStyle.FILL) { "FILL requires closed outline contours" }
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         require(spacing.isFinite() && spacing >= 0) { "spacing must be finite and non-negative" }
         require(lineSpacing.isFinite() && lineSpacing >= 1.0) { "lineSpacing must be at least 1" }
@@ -108,8 +109,10 @@ object LetteringEngine {
      * contour count; baselines preserve line offsets after bending each line separately.
      * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
      * [stitchStyle] defaults to RUNNING for outlines; use BEAN for imported single-line paths.
-     * SATIN treats each supplied contour as a centerline, using [satinOptions]. It does
-     * not infer centerlines or fill the inside of an outline font.
+     * FILL groups [contourCharacters] and fills each glyph with even-odd holes, using
+     * [fillOptions]. Missing owners treat all contours as one glyph. SATIN uses narrow
+     * outline zigzags with tatami fallback when [outline] is true; otherwise it offsets
+     * centerline contours using [satinOptions], preserving the existing stroke API.
      */
     fun fromContours(
         contours: List<List<Pair<Double, Double>>>,
@@ -128,12 +131,17 @@ object LetteringEngine {
         contourBaselines: List<Double> = emptyList(),
         stitchStyle: StitchStyle = StitchStyle.RUNNING,
         satinOptions: SatinOptions = SatinOptions(),
+        fillOptions: FillOptions = FillOptions(),
+        contourCharacters: List<Int> = emptyList(),
+        outline: Boolean = false,
     ): EmbPattern {
         validateOptions(heightMm, stitchLengthMm, arcDeg)
         validateRadius(arcRadiusMm)
         require(contourThreads.isEmpty() || contourThreads.size == contours.size) { "One thread per contour is required" }
         require(contourBaselines.isEmpty() || contourBaselines.size == contours.size) { "One baseline per contour is required" }
         require(contourBaselines.all { it.isFinite() })
+        require(contourCharacters.isEmpty() || contourCharacters.size == contours.size)
+        require(contourCharacters.all { it >= 0 })
         require(baseline.isFinite()) { "baseline must be finite" }
         require(sourceHeight == null || sourceHeight.isFinite() && sourceHeight > 0) { "sourceHeight must be finite and positive" }
         require(mergeToleranceMm.isFinite() && mergeToleranceMm >= 0) { "mergeToleranceMm must be finite and non-negative" }
@@ -154,6 +162,21 @@ object LetteringEngine {
         val centerX = minX / 2 + maxX / 2
         val width = (maxX - minX) * scale
         require(scale.isFinite() && width.isFinite()) { "Contour range is too large" }
+        if (stitchStyle == StitchStyle.FILL || stitchStyle == StitchStyle.SATIN && outline) {
+            val glyphs = linkedMapOf<Int, MutableList<List<Pair<Double, Double>>>>()
+            val glyphThreads = linkedMapOf<Int, EmbThread>()
+            contours.forEachIndexed { index, contour ->
+                val character = contourCharacters.getOrNull(index) ?: 0
+                val lineBaseline = contourBaselines.getOrNull(index) ?: baseline
+                val normalized = contour.map { (x, y) -> (x - centerX) * scale to (y - lineBaseline) * scale }
+                val lineY = (lineBaseline - baseline) * scale
+                glyphs.getOrPut(character) { arrayListOf() } += bend(normalized, width, arcDeg, arcRadiusMm)
+                    .map { (x, y) -> x / 10 to (y + lineY) / 10 }
+                glyphThreads.putIfAbsent(character, contourThreads.getOrNull(index) ?: thread)
+            }
+            return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character)) },
+                fillOptions, stitchStyle == StitchStyle.SATIN)
+        }
         contours.forEachIndexed { index, contour ->
             if (contour.size < 2) return@forEachIndexed
             val lineBaseline = contourBaselines.getOrNull(index) ?: baseline

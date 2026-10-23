@@ -356,6 +356,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         val obj = selected ?: return
         edit(project.replace(obj.withTransform(transform)))
     }
+
+    /** Precompute filled glyphs off the UI thread; commit style and transform in one undo step. */
+    fun applyTextProperties(transform: Transform, style: io.github.linker2k.myembro.engine.lettering.StitchStyle) {
+        if (busy || gestureInProgress || selectedIds.size != 1) return
+        val original = selected as? TextObject ?: return
+        val before = project
+        viewModelScope.launch {
+            busy = true
+            try {
+                val changed = withContext(Dispatchers.Default) {
+                    original.copy(transform = transform, stitchStyle = style).also { it.localPattern() }
+                }
+                if (project == before) edit(project.replace(changed))
+            } catch (e: CancellationException) { throw e
+            } catch (e: Exception) { report(R.string.lettering_failed, e)
+            } finally { busy = false }
+        }
+    }
     fun align(alignment: Alignment) = edit(project.align(selectedIds, alignment))
     fun distribute(axis: Axis) = edit(project.distribute(selectedIds, axis))
     fun mirror() = edit(selectedIds.fold(project) { p, id -> p.mirrorX(id) })

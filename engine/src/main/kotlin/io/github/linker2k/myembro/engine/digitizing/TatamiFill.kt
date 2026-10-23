@@ -15,6 +15,8 @@ data class TatamiSettings(
     val underlay: Boolean = true,
     val underlayInset: Double = 10.0,
     val underlayStitchLength: Double = 25.0,
+    /** Narrow-column mode: omit the near endpoint when the cross-row diagonal stays inside. */
+    val zigzag: Boolean = false,
 ) {
     init {
         require(listOf(angleDegrees, rowSpacing, stitchLength, underlayInset, underlayStitchLength).all { it.isFinite() })
@@ -59,7 +61,9 @@ object TatamiFill {
                 val ordered = if (row % 2 == 0) points else points.reversed()
                 val start = ordered.first()
                 val connect = previous?.let { it.distance(start) <= settings.stitchLength && scan.coversSegment(it, start) } == true
-                builder.add(ordered.map(toProject::apply), connect)
+                val diagonal = settings.zigzag && connect && previous!!.distance(ordered.last()) <= settings.stitchLength &&
+                    scan.coversSegment(previous!!, ordered.last())
+                builder.add((if (diagonal) listOf(ordered.last()) else ordered).map(toProject::apply), connect)
                 previous = ordered.last()
             }
         }

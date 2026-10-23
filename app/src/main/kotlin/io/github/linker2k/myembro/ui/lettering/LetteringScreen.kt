@@ -48,6 +48,9 @@ import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.Grade
 import io.github.linker2k.myembro.engine.lettering.FontQualityReport
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.engine.lettering.FillOptions
+import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.ThreadRendering
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
@@ -116,6 +119,8 @@ private fun LetteringContent(
     var stitchStyleName by rememberSaveable(fontId) {
         mutableStateOf(initial?.takeIf { it.fontId == fontId }?.stitchStyle?.name)
     }
+    var fillOptions by rememberSaveable(stateSaver = FillOptionsSaver) { mutableStateOf(initial?.fillOptions ?: FillOptions()) }
+    var satinOptions by rememberSaveable(stateSaver = SatinOptionsSaver) { mutableStateOf(initial?.satinOptions ?: SatinOptions()) }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
     var fitText by rememberSaveable { mutableStateOf(false) }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
@@ -124,7 +129,8 @@ private fun LetteringContent(
     val alignment = LetteringAlignment.entries[alignmentIndex]
     val settings = LetteringSettings(text, fontId, height.toDouble(), spacing.toDouble(), alignment,
         curved, if (curveIndex == 1) LetteringCurve.ARCH else LetteringCurve.BELOW, 35.0,
-        lineSpacing.toDouble(), radius.coerceAtLeast(height).toDouble(), characterColors.toMap(), stitchStyleName?.let(StitchStyle::valueOf))
+        lineSpacing.toDouble(), radius.coerceAtLeast(height).toDouble(), characterColors.toMap(), stitchStyleName?.let(StitchStyle::valueOf),
+        fillOptions, satinOptions)
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
@@ -176,12 +182,12 @@ private fun LetteringContent(
         }
         fontReports = reports
     }
-    LaunchedEffect(text, height, thread.color) {
+    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
         for (font in bundledLetteringFonts) {
-            try { previews[font.id] = LetteringFontPreview.pattern(context, font.id, text, height.toDouble(), thread) }
+            try { previews[font.id] = LetteringFontPreview.pattern(context, font.id, text, height.toDouble(), thread, settings.stitchStyle, fillOptions) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* Font loading errors remain visible in the main preview. */ }
         }
@@ -203,10 +209,12 @@ private fun LetteringContent(
         bottomBar = {
             Surface(color = colors.background) {
                 Column {
-                if (renderedKey == generationKey && !busy && result?.quality?.grade != Grade.GOOD && result != null) {
-                    val recommended = result!!.quality.recommendedMinHeightMm
-                    val message = if (recommended.isFinite() && recommended > 0)
-                        stringResource(R.string.lettering_quality_height, decimal(recommended))
+                val filling = result?.singleLine == false && settings.stitchStyle in listOf(StitchStyle.FILL, StitchStyle.SATIN)
+                val recommended = result?.quality?.let { if (filling) filledLetteringMinimumHeight(it) else it.recommendedMinHeightMm } ?: 0.0
+                if (renderedKey == generationKey && !busy && result != null &&
+                    (result!!.quality.grade != Grade.GOOD || filling && height < recommended)) {
+                    val message = if (recommended.isFinite() && recommended > 0 && recommended <= 300.0)
+                        stringResource(R.string.lettering_quality_height, Dimensions.length(recommended))
                     else stringResource(R.string.lettering_quality_check)
                     Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                         Notice(message, detail = stringResource(R.string.lettering_quality_hint), error = false)
@@ -231,7 +239,7 @@ private fun LetteringContent(
                     Modifier.fillMaxSize().semantics { contentDescription = context.getString(R.string.lettering_preview) })
                 Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = MaterialTheme.shapes.small,
                     color = colors.surface.copy(alpha = 0.9f)) {
-                    Text("${hoop.width / 10} × ${hoop.height / 10} mm", Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    Text(Dimensions.hoopSize(hoop.width / 10, hoop.height / 10), Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                 }
                 FilledTonalIconButton(onClick = { fitText = !fitText }, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
@@ -277,17 +285,22 @@ private fun LetteringContent(
                     active?.let { FontQualityBadge(it.quality) }
                 }
             }
-            if (result?.takeIf { it.textObject.fontId == fontId }?.singleLine == true) LetteringCard {
-                SectionLabel(stringResource(R.string.lettering_stroke_style))
-                val style = settings.stitchStyle ?: StitchStyle.BEAN
-                ChoiceRow(listOf(stringResource(R.string.lettering_running), stringResource(R.string.lettering_bean)),
-                    if (style == StitchStyle.RUNNING) 0 else 1, Modifier.fillMaxWidth()) {
-                    stitchStyleName = if (it == 0) StitchStyle.RUNNING.name else StitchStyle.BEAN.name
+            result?.takeIf { it.textObject.fontId == fontId }?.let { active -> LetteringCard {
+                val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING
+                LetteringModeSelector(active.singleLine, style, { stitchStyleName = it.name })
+                if (active.singleLine && style == StitchStyle.BEAN) {
+                    Text(stringResource(R.string.lettering_bean_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
-                Text(stringResource(R.string.lettering_bean_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            }
+                if (!active.singleLine && style in listOf(StitchStyle.FILL, StitchStyle.SATIN)) {
+                    FillSettingsControls(fillOptions) { fillOptions = it }
+                    if (style == StitchStyle.SATIN) Text(stringResource(R.string.lettering_satin_hint),
+                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                } else if (active.singleLine && style == StitchStyle.SATIN) {
+                    SatinSettingsControls(satinOptions) { satinOptions = it }
+                }
+            } }
             LetteringCard {
-                SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm") { height = it }
+                SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm", showInches = true) { height = it }
                 SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
                 SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -342,6 +355,7 @@ private fun LetteringContent(
             if (error != null) Notice(error ?: "", error = true)
             if (current?.unsupported == true) Notice(stringResource(R.string.lettering_unsupported), error = true)
             if (current?.outsideHoop == true) Notice(stringResource(R.string.lettering_outside), error = true)
+            if (current?.pattern?.warnings?.isNotEmpty() == true) Notice(stringResource(R.string.lettering_satin_fallback), error = false)
             if (current != null) {
                 Text(stringResource(R.string.lettering_stats, current.pattern.stitchCount, current.pattern.jumpCount),
                     Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
@@ -401,8 +415,8 @@ fun FontQualityBadge(report: FontQualityReport, modifier: Modifier = Modifier) {
         Grade.CAUTION -> R.string.lettering_grade_caution
         Grade.UNSUITABLE -> R.string.lettering_grade_unsuitable
     })
-    val minimum = if (report.recommendedMinHeightMm.isFinite() && report.recommendedMinHeightMm > 0)
-        stringResource(R.string.lettering_card_minimum, decimal(report.recommendedMinHeightMm)) else ""
+    val minimum = if (report.recommendedMinHeightMm.isFinite() && report.recommendedMinHeightMm in 0.001..300.0)
+        stringResource(R.string.lettering_card_minimum, Dimensions.length(report.recommendedMinHeightMm)) else ""
     Surface(modifier, shape = MaterialTheme.shapes.extraSmall, color = when (report.grade) {
         Grade.GOOD -> colors.secondaryContainer
         Grade.CAUTION -> colors.tertiaryContainer
@@ -420,8 +434,8 @@ fun FontQualityBadge(report: FontQualityReport, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, unit: String, onChange: (Float) -> Unit) {
-    val formatted = if (unit == "%") "${value.toInt()}%" else "${decimal(value.toDouble())} $unit"
+internal fun SettingSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, unit: String, showInches: Boolean = false, onChange: (Float) -> Unit) {
+    val formatted = if (showInches) Dimensions.length(value.toDouble()) else if (unit == "%") "${value.toInt()}%" else "${decimal(value.toDouble())} $unit"
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)

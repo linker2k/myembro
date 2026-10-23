@@ -413,3 +413,58 @@ val editable = TextObject("label", text = "Name", stitchStyle = StitchStyle.SATI
   같은 획의 조각끼리는 비교하지 않도록 닿는 조각과 닫힌 고리를 처리한다. 두 비율이 높이에 비례하므로
   권장 높이가 측정 높이와 무관하다(Hershey Sans 전체 영숫자 10mm: 12.1mm, 20mm: 12.2mm).
   권장 높이가 300mm를 넘으면(겹친 윤곽의 µm 간격) "확대로 해결 불가"로 표시한다.
+
+## 윤곽 글자 내부 채우기 (2026-10-23)
+
+레터링 화면과 편집기 글자 속성에 **외곽선 / 채우기(태타미) / 새틴**을 제공한다.
+단선 글꼴은 기존 1겹 러닝 / 3겹 콩땀 / 폭을 지정하는 새틴을 사용하며 기본값은 콩땀이다.
+윤곽 글꼴도 기본값은 기존 외곽선이며 채우기는 명시적으로 선택한다.
+
+```kotlin
+val text = TextObject(
+    id = "filled-label", text = "ㅇㅁB", fontId = "jua", fontKind = FontKind.OUTLINE,
+    contours = precomputedContours, contourSourceHeight = sourceCapHeight,
+    contourCharacters = contourCodePointOwners, // 바깥 윤곽과 홀은 같은 글자 인덱스
+    heightMm = 12.0, stitchStyle = StitchStyle.FILL,
+    fillOptions = FillOptions(
+        densityMm = 0.4, angleDeg = 0.0, pullCompensationMm = 0.2,
+        underlay = true, border = FillBorder.RUNNING, // NONE / RUNNING / BEAN
+    ),
+)
+// 직접 mm 윤곽을 전달하는 독립 API. 외곽선과 모든 홀을 같은 리스트에 전달한다.
+val filled = OutlineFill.generate(glyphContoursMm, FillOptions())
+```
+
+- 글자별 경로에 짝수–홀수 규칙을 적용한다. 홀의 감김 방향과 무관하며 중첩된 섬도 보존한다.
+  JTS의 기존 `PolygonRegion`과 `engine/digitizing/TatamiFill`을 재사용한다.
+  당김 보정은 바깥 경계를 확장하며 원래 홀 영역은 제외해 작은 홀이 닫히지 않도록 한다.
+- 기본 땀 간격은 0.4mm, 태타미 목표 땀 길이는 3.5mm다. 각도는 +y 아래 좌표에서
+  시계 방향이다. 윤곽 언더레이는 기본 켜짐이며 원래 경계에서 0.3mm 안쪽을 수놓는다.
+  좁아져 사라지는 언더레이는 원래 경계를 사용한다. 테두리는 없음·러닝·콩땀을 선택한다.
+- 글자 사이는 trim + jump, 실이 바뀌면 COLOR_CHANGE도 넣는다. 글자 내부에서는
+  먼저 영역 안의 직선 연결을 시도하고, 홀을 가로지르면 보이는 경계의 짧은 우회 경로로
+  러닝한다. 연결할 수 없는 분리 영역에서는 jump한다. 전역 최적 라우팅은 아니다.
+- 로컬 패턴의 **실제로 이동하는 needle-down 땀은 정수화 후 0.3~7mm**다.
+  짧은 구간은 합치고 긴 구간은 나눈다. 안전하게 합칠 수 없는 작은 모서리는 jump로
+  이동한다. 0.1mm 좌표 정수화에 따른 경계 오차는 최대 약 0.075mm로 검사한다.
+  다른 스티치와 마찬가지로 편집기 Transform으로 확대하면 땀 길이도 확대된다.
+- 윤곽 새틴은 `FontQuality`의 최소 획 두께 0.6~4mm와 선택 각도에서의 실제 가로지를
+  거리를 함께 검사한다. 가능한 글리프는 교대 지그재그로 채우고, 넓거나 복잡한 글리프는
+  태타미로 전환해 안내한다. 한 글리프의 획을 자동 분할하는 완전한 새틴 디지타이저는 아니다.
+  `fromContours(..., outline = true, stitchStyle = SATIN)`이 이 모드이며,
+  `outline = false`의 기존 단선 오프셋 새틴 API는 유지한다.
+- `FillOptions`와 모드는 `.myembro`에 저장된다. 이전 파일은 기본 옵션으로 읽으며
+  기존 외곽선·콩땀 선택을 유지한다. 글자 소유 인덱스가 없는 직접 API 입력은 한 글리프로
+  취급하므로 글자 사이 trim을 원하면 `contourCharacters`를 전달한다.
+- 작은 채우기 글자는 FontQuality의 권장 높이와 실용 최소 높이 6mm 중 큰 값으로 경고한다.
+  경고는 추가를 막지 않는다. 편집기 속성에서도 저장된 윤곽으로 분석하므로 원본 폰트가
+  필요 없다. 300mm를 넘는 비현실적 권장값은 숫자 대신 일반 점검 문구를 표시한다.
+  높이·권장 높이·폰트 카드·후프 치수는 공용 `Dimensions`로 mm와 인치를 병기한다.
+- 편집기 속성의 모드·변환 변경은 백그라운드에서 패턴을 계산한 뒤 한 번의 실행 취소
+  단계로 적용한다. 세부 채우기 설정은 동일한 레터링 화면으로 연결한다.
+
+검증: 합성 `ㅁ`·원형 `ㅇ`·두 홀 `B`, 반전 방향과 중첩 섬, 0/37/90도,
+밀도·언더레이·테두리, 양자화 후 땀 길이, 내부 연결, 다색·프로젝트·PES 왕복을 테스트했다.
+독립 API 35 에뮬레이터에서 실제 Jua `ㅇㅁB`는 60×20mm SA431 안에 들어갔으며
+1,025땀·7점프, 경계 33.7×11.2mm였다. `ㅇ` 중앙의 빈 공간과 PES 재읽기 경계/땀 수
+일치를 확인했다. 검증용 Activity/Manifest는 최종 소스에서 제거했다.
