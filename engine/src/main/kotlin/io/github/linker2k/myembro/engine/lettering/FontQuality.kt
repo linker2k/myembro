@@ -36,12 +36,13 @@ object FontQuality {
      * Sampling plus bounded multiresolution spatial buckets avoids all-pairs comparisons:
      * O(n log(D / 0.05)) work and O(n) memory for n samples over glyph extent D. Reservoir
      * representatives keep dense cells bounded, so the reported minimum is approximate.
-     * tightSpots counts distinct 0.25 mm arclength sections with a gap below 1 mm, on both sides.
+     * tightSpots counts distinct 0.25 mm arclength sections below the thread preset gap, on both sides.
      */
     fun analyze(
         glyphContours: List<List<List<Pair<Double, Double>>>>,
         heightMm: Double,
         outline: Boolean,
+        threadWeight: ThreadWeight = ThreadWeight.WT40,
     ): FontQualityReport {
         require(heightMm.isFinite() && heightMm > 0) { "heightMm must be finite and positive" }
         require(glyphContours.all { glyph -> glyph.all { path -> path.all { (x, y) -> x.isFinite() && y.isFinite() } } }) {
@@ -60,7 +61,7 @@ object FontQuality {
             val pattern = LetteringEngine.fromContours(glyph, heightMm, sourceHeight = heightMm)
             stitchCount = Math.addExact(stitchCount, pattern.stitchCount)
             jumpCount = Math.addExact(jumpCount, pattern.jumpCount)
-            val result = measure(samples, outline)
+            val result = measure(samples, outline, threadWeight.tightGapMm)
             minimum = min(minimum, result.first)
             tightSpots = Math.addExact(tightSpots, result.second)
         }
@@ -71,11 +72,11 @@ object FontQuality {
         val recommended = when {
             minimum == Double.POSITIVE_INFINITY -> 0.0
             minimum <= 1e-9 -> Double.POSITIVE_INFINITY
-            else -> heightMm * (1.2 / minimum)
+            else -> heightMm * (threadWeight.minimumFeatureMm / minimum)
         }
         val grade = when {
-            minimum < 0.6 -> Grade.UNSUITABLE
-            minimum < 1.2 || outline && !minimum.isFinite() -> Grade.CAUTION
+            minimum < threadWeight.minimumFeatureMm / 2 -> Grade.UNSUITABLE
+            minimum < threadWeight.minimumFeatureMm || outline && !minimum.isFinite() -> Grade.CAUTION
             else -> Grade.GOOD
         }
         val reasons = buildList {
@@ -83,16 +84,16 @@ object FontQuality {
             if (!minimum.isFinite()) {
                 add(if (outline) "마주보는 외곽선을 찾지 못해 최소 두께를 판단할 수 없습니다." else "서로 가까운 다른 획이 없어 최소 간격 제한이 없습니다.")
             } else {
-                add("최소 $feature: ${mm(minimum)}mm (권장 1.2mm 이상).")
-                if (minimum < 0.6) add("너무 가늘거나 획이 겹쳐 현재 크기로는 자수에 부적합합니다.")
-                else if (minimum < 1.2) add("가까운 획이 뭉칠 수 있어 글자 높이를 키우는 것을 권장합니다.")
+                add("최소 $feature: ${mm(minimum)}mm (권장 ${mm(threadWeight.minimumFeatureMm)}mm 이상, ${threadWeight.wt}wt).")
+                if (minimum < threadWeight.minimumFeatureMm / 2) add("너무 가늘거나 획이 겹쳐 현재 크기로는 자수에 부적합합니다.")
+                else if (minimum < threadWeight.minimumFeatureMm) add("가까운 획이 뭉칠 수 있어 글자 높이를 키우는 것을 권장합니다.")
                 else add("현재 크기에서 권장 최소 두께·간격을 충족합니다.")
-                if (minimum < 1.2) {
+                if (minimum < threadWeight.minimumFeatureMm) {
                     add(if (recommended.isFinite()) "글자 높이를 ${mm(recommended)}mm 이상으로 키워 보세요."
                     else "서로 닿거나 겹치는 획은 확대만으로 해결되지 않으므로 다른 폰트를 확인하세요.")
                 }
             }
-            if (tightSpots > 0) add("1mm 미만으로 붙은 0.25mm 획 구간이 ${tightSpots}개 있습니다.")
+            if (tightSpots > 0) add("${mm(threadWeight.tightGapMm)}mm 미만으로 붙은 0.25mm 획 구간이 ${tightSpots}개 있습니다.")
         }
         return FontQualityReport(minimum, recommended, stitchCount, jumpCount, tightSpots, grade, reasons)
     }
@@ -160,7 +161,7 @@ object FontQuality {
         }
     }
 
-    private fun measure(samples: List<Segment>, outline: Boolean): Pair<Double, Int> {
+    private fun measure(samples: List<Segment>, outline: Boolean, tightGapMm: Double): Pair<Double, Int> {
         val minX = samples.minOf { min(it.ax, it.bx) }
         val minY = samples.minOf { min(it.ay, it.by) }
         val extent = max(samples.maxOf { max(it.ax, it.bx) } - minX, samples.maxOf { max(it.ay, it.by) } - minY)
@@ -181,7 +182,7 @@ object FontQuality {
                                 abs(gap.dx * other.ux + gap.dy * other.uy) > gap.distance * 0.3)
                         ) continue
                         minimum = min(minimum, gap.distance)
-                        if (gap.distance < 1.0 - 1e-9) {
+                        if (gap.distance < tightGapMm - 1e-9) {
                             tight += Section(segment.path, floor(segment.arc / SAMPLE_MM).toLong())
                             tight += Section(other.path, floor(other.arc / SAMPLE_MM).toLong())
                         }

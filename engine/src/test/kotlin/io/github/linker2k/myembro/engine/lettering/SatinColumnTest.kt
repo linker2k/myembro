@@ -124,7 +124,7 @@ class SatinColumnTest {
             assertEquals(p.stitchCount, pes.stitchCount)
         }
         val old = TextObject("legacy", text = "AB")
-        assertEquals(SatinOptions(), (TextObjectCodec.decode(JsonObject(TextObjectCodec.encode(old).filterKeys { it != "satinOptions" })) as TextObject).satinOptions)
+        assertEquals(SatinOptions(autoDensity = false), (TextObjectCodec.decode(JsonObject(TextObjectCodec.encode(old).filterKeys { it != "satinOptions" })) as TextObject).satinOptions)
         assertEquals(StitchStyle.BEAN, old.stitchStyle)
     }
 

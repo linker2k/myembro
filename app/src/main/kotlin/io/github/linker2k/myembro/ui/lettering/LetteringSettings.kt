@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui.lettering
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
+import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
@@ -29,6 +30,7 @@ internal data class LetteringSettings(
     val stitchStyle: StitchStyle? = null,
     val fillOptions: FillOptions = FillOptions(),
     val satinOptions: SatinOptions = SatinOptions(),
+    val threadWeight: ThreadWeight = ThreadWeight.WT40,
 ) {
     val arcDeg: Double get() = when {
         !curved || curve == LetteringCurve.STRAIGHT -> 0.0
@@ -39,7 +41,8 @@ internal data class LetteringSettings(
 }
 
 /** Practical lower bound plus the font's measured stroke requirement; never reduced to fit a hoop. */
-internal fun filledLetteringMinimumHeight(report: FontQualityReport): Double = maxOf(6.0, report.recommendedMinHeightMm)
+internal fun filledLetteringMinimumHeight(report: FontQualityReport, weight: ThreadWeight = ThreadWeight.WT40): Double =
+    maxOf(weight.minimumFillHeightMm, report.recommendedMinHeightMm)
 
 /** Offline quality check for the editor property dialog; no original font file is needed. */
 internal fun outlineTextQuality(text: TextObject): FontQualityReport {
@@ -49,7 +52,7 @@ internal fun outlineTextQuality(text: TextObject): FontQualityReport {
     val glyphs = text.contours.indices.groupBy { text.contourCharacters.getOrNull(it) ?: 0 }.values.map { indices ->
         indices.map { index -> text.contours[index].map { (x, y) -> x * scale to y * scale } }
     }
-    return FontQuality.analyze(glyphs, text.heightMm, outline = true)
+    return FontQuality.analyze(glyphs, text.heightMm, outline = true, threadWeight = text.threadWeight)
 }
 
 /** Extra offset for lines shorter than the longest one; inputs share the same font units. */

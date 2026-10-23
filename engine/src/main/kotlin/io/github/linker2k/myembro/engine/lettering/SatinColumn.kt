@@ -18,7 +18,15 @@ data class SatinOptions(
     val zigzagUnderlay: Boolean = false,
     val underlayStitchLengthMm: Double = 2.5,
     val underlayDensityMm: Double = 1.5,
+    val autoDensity: Boolean = true,
 ) {
+    fun densityForHeight(heightMm: Double, threadWeight: ThreadWeight = ThreadWeight.WT40): Double =
+        when {
+            !autoDensity -> densityMm
+            threadWeight != ThreadWeight.WT40 -> threadWeight.spacingForHeight(heightMm)
+            heightMm < 7.0 -> maxOf(0.6, densityMm)
+            else -> densityMm
+        }
     init {
         require(widthMm.isFinite() && widthMm > 0) { "widthMm must be positive" }
         require(densityMm.isFinite() && densityMm >= 0.2) { "densityMm must be at least 0.2 mm" }

@@ -7,6 +7,7 @@ import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.lettering.FillBorder
+import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.FillStrategy
 
 /** Editable lettering, including cached font outlines for offline reconstruction without Android. */
@@ -21,6 +22,7 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         put("fontKind", obj.fontKind.name)
         put("singleLine", obj.singleLine)
         put("stitchStyle", obj.stitchStyle.name)
+        put("threadWeight", obj.threadWeight.name)
         put("fillOptions", buildJsonObject {
             put("densityMm", obj.fillOptions.densityMm)
             put("angleDeg", obj.fillOptions.angleDeg)
@@ -39,6 +41,7 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("zigzagUnderlay", obj.satinOptions.zigzagUnderlay)
             put("underlayStitchLengthMm", obj.satinOptions.underlayStitchLengthMm)
             put("underlayDensityMm", obj.satinOptions.underlayDensityMm)
+            put("autoDensity", obj.satinOptions.autoDensity)
         })
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
@@ -91,6 +94,7 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             strategy = fill["strategy"]?.jsonPrimitive?.content?.let(FillStrategy::valueOf) ?: FillStrategy.TATAMI,
             autoDensity = fill["autoDensity"]?.jsonPrimitive?.boolean ?: false,
         ) } ?: FillOptions(strategy = FillStrategy.TATAMI, autoDensity = false),
+        threadWeight = data["threadWeight"]?.jsonPrimitive?.content?.let(ThreadWeight::valueOf) ?: ThreadWeight.WT40,
         satinOptions = data["satinOptions"]?.jsonObject?.let { satin -> SatinOptions(
             widthMm = satin["widthMm"]?.jsonPrimitive?.double ?: 2.0,
             densityMm = satin["densityMm"]?.jsonPrimitive?.double ?: 0.4,
@@ -100,7 +104,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             zigzagUnderlay = satin["zigzagUnderlay"]?.jsonPrimitive?.boolean ?: false,
             underlayStitchLengthMm = satin["underlayStitchLengthMm"]?.jsonPrimitive?.double ?: 2.5,
             underlayDensityMm = satin["underlayDensityMm"]?.jsonPrimitive?.double ?: 1.5,
-        ) } ?: SatinOptions(),
+            autoDensity = satin["autoDensity"]?.jsonPrimitive?.boolean ?: false,
+        ) } ?: SatinOptions(autoDensity = false),
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,
     )

@@ -32,7 +32,12 @@ data class FillOptions(
         require(angleDeg.isFinite() && angleDeg in -180.0..180.0)
         require(pullCompensationMm.isFinite() && pullCompensationMm in 0.0..2.0)
     }
-    fun densityForHeight(heightMm: Double): Double = if (autoDensity && heightMm < 7.0) max(0.6, densityMm) else densityMm
+    fun densityForHeight(heightMm: Double, threadWeight: ThreadWeight = ThreadWeight.WT40): Double = when {
+        !autoDensity -> densityMm
+        threadWeight != ThreadWeight.WT40 -> threadWeight.spacingForHeight(heightMm)
+        heightMm < 7.0 -> max(0.6, densityMm)
+        else -> densityMm
+    }
 }
 
 internal data class OutlineGlyph(val contours: List<List<Pair<Double, Double>>>, val thread: EmbThread, val heightMm: Double? = null)

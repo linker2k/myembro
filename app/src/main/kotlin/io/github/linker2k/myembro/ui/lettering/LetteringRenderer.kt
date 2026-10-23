@@ -35,9 +35,10 @@ internal data class LetteringResult(
 object LetteringFontQuality {
     suspend fun analyze(
         context: Context, fontId: String, text: String = "자수봄날Aa012", heightMm: Double = 18.0,
+        threadWeight: ThreadWeight = ThreadWeight.WT40,
     ): FontQualityReport = withContext(Dispatchers.Default) {
         val source = loadFont(context.applicationContext, fontId)
-        qualityFor(source, fontId, text, heightMm)
+        qualityFor(source, fontId, text, heightMm, threadWeight)
     }
     fun invalidate(fontId: String) = FontQualityCache.Shared.invalidate(fontId)
 }
@@ -105,10 +106,10 @@ private fun loadFont(context: Context, id: String): LoadedFont {
         bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap)
 }
 
-private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
+private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double, threadWeight: ThreadWeight): FontQualityReport {
     val codes = normalizedLetteringText(text).codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }.sorted()
     val sample = codes.joinToString("") { String(Character.toChars(it)) }
-    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null)) {
+    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null, threadWeight)) {
         codes.map { code -> source.glyph(String(Character.toChars(code))).map { path ->
             path.map { (x, y) -> x * heightMm / source.reference to y * heightMm / source.reference }
         } }
@@ -121,12 +122,13 @@ object LetteringFontPreview {
         context: Context, fontId: String, text: String, heightMm: Double, thread: EmbThread,
         stitchStyle: StitchStyle? = null,
         fillOptions: FillOptions = FillOptions(),
+        threadWeight: ThreadWeight = ThreadWeight.WT40,
     ): EmbPattern = withContext(Dispatchers.Default) {
         val source = loadFont(context.applicationContext, fontId)
         val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
         val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
-            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle, fillOptions = fillOptions)
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle, fillOptions = fillOptions, threadWeight = threadWeight)
         prepareObject(source, settings, thread).localPattern()
     }
 }
@@ -154,7 +156,7 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
         singleLine = source.face == null,
         stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
-        fillOptions = settings.fillOptions, satinOptions = settings.satinOptions,
+        fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
     )
 }
 
@@ -165,7 +167,7 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val transformed = placed.placedPattern()
     val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
-    val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
+    val quality = qualityFor(source, settings.fontId, text, settings.heightMm, settings.threadWeight)
     val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
     val outside = letteringOutsideHoop(pattern, hoop)
     return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
