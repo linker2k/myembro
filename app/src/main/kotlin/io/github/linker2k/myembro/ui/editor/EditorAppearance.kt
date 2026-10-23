@@ -25,7 +25,7 @@ internal fun DesignObject.recolored(index: Int, thread: EmbThread): DesignObject
         val count = maxOf(source.threads.size, source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)
         if (index !in 0 until count || source.threadAt(index) == thread) this else {
             val threads = (0 until count).map { if (it == index) thread else source.threadAt(it) }
-            copy(source = EmbPattern(source.stitches, threads, source.metadata, source.warnings), sourceBytes = null)
+            copy(source = EmbPattern(source.stitches, threads, source.metadata, source.warnings), sourceBytes = null, sourceThreadsEdited = true)
         }
     }
 }

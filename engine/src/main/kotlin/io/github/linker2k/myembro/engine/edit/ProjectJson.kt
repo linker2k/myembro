@@ -9,6 +9,11 @@ import io.github.linker2k.myembro.engine.model.Stitch
 import java.util.Base64
 import kotlinx.serialization.json.*
 
+/** Optional app-owned lookup, e.g. files/designs. Engine decoding never opens paths itself. */
+fun interface ProjectSourceResolver {
+    fun resolve(fileName: String): ByteArray?
+}
+
 /** Extension point for editable object types (for example lettering). Unknown types fail explicitly. */
 interface ProjectObjectCodec {
     val type: String
@@ -77,7 +82,7 @@ object ProjectJson {
         }.let { json.encodeToString(JsonObject.serializer(), it) }
     }
 
-    fun decode(text: String, codecs: List<ProjectObjectCodec> = emptyList()): Project {
+    fun decode(text: String, codecs: List<ProjectObjectCodec> = emptyList(), sourceResolver: ProjectSourceResolver? = null): Project {
         val activeCodecs = effectiveCodecs(codecs)
         val root = json.parseToJsonElement(text).jsonObject
         require(root.string("format") == "myembro") { "Not a .myembro project" }
@@ -86,7 +91,7 @@ object ProjectJson {
         val objects = root.getValue("objects").jsonArray.map { element ->
             val obj = element.jsonObject
             when (val type = obj.string("type")) {
-                "stitch" -> decodeStitch(obj)
+                "stitch" -> decodeStitch(obj, sourceResolver)
                 else -> (activeCodecs.firstOrNull { it.type == type }
                     ?: error("Unsupported project object type: $type")).decode(obj)
             }
@@ -100,29 +105,39 @@ object ProjectJson {
         ProjectObjectFields.from(obj).toJson().forEach { (key, value) -> put(key, value) }
         obj.sourceBytes?.let { put("sourceBytes", Base64.getEncoder().encodeToString(it)) }
         obj.sourceFileName?.let { put("sourceFileName", it) }
+        if (obj.sourceThreadsEdited) put("sourceThreadsEdited", true)
         // Store the parsed source as well: formats like PES v1 cannot preserve custom threads.
         put("sourcePattern", encodePattern(obj.source))
     }
 
-    private fun decodeStitch(obj: JsonObject): StitchObject {
+    private fun decodeStitch(obj: JsonObject, sourceResolver: ProjectSourceResolver?): StitchObject {
         val fields = ProjectObjectFields.fromJson(obj)
-        val sourceBytes = obj["sourceBytes"]?.jsonPrimitive?.content?.let { Base64.getDecoder().decode(it) }
-        val sourceFileName = obj["sourceFileName"]?.jsonPrimitive?.content
+        val sourceBytes = obj.optional("sourceBytes")?.let { runCatching { Base64.getDecoder().decode(it) }.getOrNull() }
+        val sourceFileName = obj.optional("sourceFileName")
         val stored = decodePattern(obj.getValue("sourcePattern").jsonObject)
+        val edited = obj["sourceThreadsEdited"]?.jsonPrimitive?.boolean ?: false
+        val embedded = if (edited) null else sourceBytes?.let { reread(stored, it, sourceFileName) }
+        val resolvedBytes = if (edited || embedded != null) null else sourceFileName?.let { name ->
+            runCatching { sourceResolver?.resolve(name) }.getOrNull()
+        }
+        val resolved = resolvedBytes?.let { reread(stored, it, sourceFileName) }
+        val fresh = embedded ?: resolved
         return StitchObject(
             id = fields.id, name = fields.name,
-            source = sourceBytes?.let { reread(stored, it, sourceFileName) } ?: stored,
+            source = fresh ?: stored,
             transform = fields.transform,
             visible = fields.visible,
-            sourceBytes = sourceBytes,
+            // Embed a successfully matched library source so the next load is self-contained.
+            sourceBytes = if (resolved != null) resolvedBytes?.copyOf() else sourceBytes,
             sourceFileName = sourceFileName,
+            sourceThreadsEdited = edited,
         )
     }
 
     /**
-     * Recoloring drops sourceBytes, so while they are present the stored pattern is just what an
-     * older reader made of them. Reading them again lets saved projects pick up reader fixes, such
-     * as PE-Design thread colors (docs/colors.md), as long as the needle positions are unchanged.
+     * Pick up reader fixes from embedded bytes or an app-resolved library original only when all
+     * saved coordinates match. Failed/mismatched reads preserve the stored source. Explicit user
+     * recoloring is handled before this call; legacy absence of bytes alone is not an edit marker.
      */
     private fun reread(stored: EmbPattern, bytes: ByteArray, fileName: String?): EmbPattern? {
         val fresh = runCatching { PatternReader.read(bytes, fileName) }.getOrNull() ?: return null

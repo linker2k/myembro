@@ -23,6 +23,19 @@ data class EmbThread(
     val blue: Int get() = color and 0xFF
     val hex: String get() = "#%06x".format(color and 0xFFFFFF)
 
+    /** Display-only fallback; never mutate raw thread identity to hide invalid saved text. */
+    val displayName: String get() = description.cleanThreadLabel()
+        ?: catalogNumber.cleanThreadLabel()?.let { catalog -> listOfNotNull(brand.cleanThreadLabel(), catalog).distinct().joinToString(" ") }
+        ?: hex
+
+    val displayDetails: String get() {
+        val description = description.cleanThreadLabel()
+        val catalog = catalogNumber.cleanThreadLabel()
+        val values = listOfNotNull(brand.cleanThreadLabel(), catalog, description) +
+            if (description == null && catalog == null) listOf(hex) else emptyList()
+        return values.distinct().joinToString(" · ")
+    }
+
     /** Same RGB (alpha ignored), regardless of metadata — e.g. matching a fixed palette. */
     fun sameColor(other: EmbThread): Boolean = (color and 0xFFFFFF) == (other.color and 0xFFFFFF)
 
@@ -237,3 +250,8 @@ class PatternBuilder {
 
     fun build(): EmbPattern = EmbPattern(stitches.toList(), threads.toList(), metadata.toMap(), warnings.toList())
 }
+
+/** Invalid text is discarded as a whole, including leading/trailing control characters. */
+private fun String?.cleanThreadLabel(): String? = this?.takeUnless { text ->
+    text.any { it == '\uFFFD' || it.isISOControl() }
+}?.trim()?.takeIf { it.isNotEmpty() }

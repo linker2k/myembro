@@ -14,6 +14,7 @@ import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.library.DesignSourceResolver
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.ui.machines.MachineHoop
 import io.github.linker2k.myembro.export.ExportChecks
@@ -73,7 +74,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
     val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null
-    private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"))
+    private val projectSources = DesignSourceResolver(File(app.filesDir, "designs"))
+    private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"), projectSources)
     private val draftWrites = Channel<Project?>(Channel.CONFLATED)
     private var draftLoading by mutableStateOf(true)
     private var deferredEntry: (() -> Unit)? = null
@@ -402,7 +404,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         busy = true
         viewModelScope.launch {
             try {
-                val loaded = withContext(Dispatchers.IO) { ProjectJson.decode(read()) }
+                val loaded = withContext(Dispatchers.IO) { readEditorProject(read(), projectSources) }
                 replaceSession(loaded, savedOnDisk = true)
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_open_failed, e)
