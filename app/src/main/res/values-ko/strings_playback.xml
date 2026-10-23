@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_title">땀 재생</string>
+    <string name="playback_seek">바느질 순서</string>
+    <string name="playback_stitch_count">%1$,d / %2$,d땀</string>
+    <string name="playback_multiplier">%1$d×</string>
+    <string name="playback_speed_description">재생 속도 %1$d배</string>
+    <string name="playback_color_marks">색 변경 %1$d</string>
+    <string name="playback_trim_marks">트림 %1$d</string>
+    <string name="playback_rate">1×: 약 %1$.0f땀/분 · 작업자 대기 제외</string>
+    <string name="playback_blocker_locations">차단 위치 %1$d곳</string>
+    <string name="playback_blocker_description">차단 문제를 빨간 원으로 표시: %1$d곳</string>
+</resources>
