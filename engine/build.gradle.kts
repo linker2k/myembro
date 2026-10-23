@@ -25,3 +25,13 @@ tasks.register<Test>("satinOracle") {
     systemProperty("myembro.portOutput", providers.gradleProperty("portOutput").orElse("/tmp/myembro-port-out/letter").get())
     outputs.upToDateWhen { false }
 }
+
+// Three human-digitized script-font names. Reads external data only, never invokes Ink/Stitch.
+tasks.register<Test>("inkFontNames") {
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("*InkFontNameReproductionTest") }
+    systemProperty("myembro.nameOutput", providers.gradleProperty("nameOutput").orElse("/tmp/myembro-port-out/letter/jungmin").get())
+    outputs.upToDateWhen { false }
+}

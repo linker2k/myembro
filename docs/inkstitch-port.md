@@ -412,3 +412,39 @@ SE400 100mm 후프 초과 BLOCK. 앱 렌더러도 동일하게 outsideHoop=true�
 ‘총괄 채택’ 절이 출처다. 이 출력은 그 정책을 적용한 새틴 결과가 아니다. TTF는 레일이 없고
 기존 자체 OutlineColumns 중축 추출기는 기본 경로 금지 상태이므로, 검증된 기둥 변환 없이
 FontQuality의 추정 폭만으로 새틴 승인이나 슬라이더 상한을 만들지 않는다.
+
+### S2+S3: 사람이 디지타이즈한 글꼴의 새틴 경로
+
+TTF는 러닝(현재)·S4 이후 채우기만 제공한다. 새틴은 Ink/Stitch 자수 글꼴 SVG의
+레일·렁만 사용한다. `inkstitch/lettering/InkStitchFont.kt`는 canvas `a8acced`의 커밋된 파서를
+재사용한다. `InkStitchLettering.render`는 모든 새틴 속성을 `SatinParametersCodec`으로 읽고
+각 `SatinColumn.toStitchGroups(previousStitch)` 결과를 S1 `fromGroups`에 한 번만 전달한다.
+레이어를 native 좌표로 평탄화했다가 재잠금하지 않는다. 러닝 연결도 ties/trim/stop/최소 땀·점프
+속성을 보존한다. 채우기·반복 러닝·bean은 이 경로에서 지원하지 않으며 조용히 바꾸지 않고 거절한다.
+원본 SVG의 `True`/`False` 때문에 codec이 실패한 문제도 원본 `get_boolean_param` 규칙으로 수정했다.
+
+이번 3건은 **로컬 시험용 Aventurina** 필기체다. 데이터는 공식 v3.3.0 배포물의
+`fonts/src/aventurina/{ltr.svg.xz,font.json.xz,LICENSE}`를 읽었으며 원본 코드·공식 바이너리를 실행하지 않았다.
+라이선스 파일은 CC-BY-SA 4.0, 어댑터 Sandrine Ratkoff Rojnoff, 원본 작가 HalfAsleepArtist의
+사용 허락 기록과 underlying font 추가 제약 가능성을 명시한다. 따라서 **폰트 데이터는 저장소·앱에
+번들하지 않고** `/tmp/myembro-port-out/letter/jungmin/inputs/`에만 둔다. 카탈로그 공개 승인과 다르다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:inkFontNames
+python3 tools/check-inkfont-names.py
+```
+
+`inputs/request.json`에 font id·텍스트·높이·배치 SVG·입력 SHA256을 기록한다. SVG는 원본 글리프의
+곡선·속성·문서 순서를 보존하고 배치 transform만 적용한다. 반복 글리프의 ID는 충돌 방지를 위해
+접두사를 붙인다. 이 fixture의 root viewport는 identity이며 원본 glyph가 root 직속인지 검증한다.
+레이아웃은 포트가 만든 것으로, 공식 batch lettering 배치와 동등하다고 주장하지 않는다.
+
+`tools/check-inkfont-names.py`는 3건만 기존 `quality-gate check --text --style satin`으로 검사하고,
+공식 `/tmp/myembro-inkstitch-oracle/out/letter-jungmin/<id>.pes`가 있으면 땀 수·형상만 자동 비교한다.
+기존 oracle 기준의 땀 수 5%·대칭 Hausdorff 0.2mm를 읽고 bbox 중심 평행이동만 허용한다.
+기준 파일이 없으면 **미판정**으로 기록하고 성공 종료하지 않는다. 출처·파일 해시는 validation.json에 남긴다.
+
+현재 세 건 모두 **BLOCK: 시작 잠금 없음**. 원본 J의 첫 러닝 요소가 `ties=3`으로 잠금을 끈 상태다.
+이를 임의로 덮어쓰지 않았으며 게이트③도 변경하지 않았다. 20/30mm는 각각 폭124.6/186.8mm로
+SE400 후프도 초과한다. 기준 H 높이로 환산한 글꼴 기록 범위는 약11.09–27.73mm이므로
+30mm는 UI 허용 샘플이 아니라 범위 밖 진단 샘플이다. 공식 비교는 총괄이 지정한 codex 출력 대기다.
