@@ -21,4 +21,11 @@
     <string name="import_duplicate">Same name and content: %1$d</string>
     <string name="import_failed">Could not read or import: %1$d</string>
     <string name="import_more">…and %1$d more</string>
+    <string name="import_svg_converted">SVG converted with notes: %1$d</string>
+    <string name="import_svg_auto">No Ink/Stitch settings — fills sewn as tatami, lines as running stitch</string>
+    <string name="import_svg_excluded">left out: %1$s</string>
+    <string name="import_svg_kind_text">text objects (not converted to paths)</string>
+    <string name="import_svg_kind_image">images</string>
+    <string name="import_svg_kind_method">unsupported stitch type %1$s</string>
+    <string name="import_svg_kind_command">command %1$s</string>
 </resources>

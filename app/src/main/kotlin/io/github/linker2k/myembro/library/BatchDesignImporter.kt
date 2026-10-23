@@ -22,8 +22,13 @@ interface DesignImportEntry {
 }
 
 data class DesignImportProgress(val completed: Int, val total: Int?, val name: String, val committing: Boolean = false)
-enum class ImportSkipReason { UNSUPPORTED, DUPLICATE, FAILED }
-data class ImportSkip(val name: String, val reason: ImportSkipReason, val detail: String? = null)
+enum class ImportSkipReason { UNSUPPORTED, DUPLICATE, FAILED, CONVERTED }
+/**
+ * A file not imported, or (for [ImportSkipReason.CONVERTED]) imported with notes: SVG element kinds
+ * left out ([excluded], by kind) and whether stitches were assigned by default ([autoAssigned]).
+ */
+data class ImportSkip(val name: String, val reason: ImportSkipReason, val detail: String? = null,
+    val excluded: Map<String, Int> = emptyMap(), val autoAssigned: Boolean = false)
 data class DesignImportReport(val imported: List<File>, val skipped: List<ImportSkip>, val cancelled: Boolean = false)
 enum class DuplicateAction { SKIP, COPY, REPLACE }
 data class DuplicateDesign(val id: Int, val name: String, val existing: File)
@@ -64,6 +69,7 @@ class BatchDesignImporter(private val directory: File) {
                     source.open().use { stream ->
                         DesignFileImporter(staging).import(stream, source.name,
                             onSkipped = { skipped += ImportSkip(it, ImportSkipReason.UNSUPPORTED) },
+                            onNotice = { skipped += it },
                             publish = { staged, name ->
                                 checkpoint()
                                 val file = File(staging, "candidate-${stagedId++}.tmp")

@@ -71,14 +71,15 @@ fun DesignImportDialogs(progress: DesignImportProgress?, report: DesignImportRep
     else if (report != null) AlertDialog(onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.import_complete)) },
         text = { Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.import_summary, report.imported.size, report.skipped.size))
+            Text(stringResource(R.string.import_summary, report.imported.size, report.skipped.count { it.reason != ImportSkipReason.CONVERTED }))
             report.skipped.groupBy { it.reason }.forEach { (reason, entries) ->
                 Text(stringResource(when (reason) {
                     ImportSkipReason.UNSUPPORTED -> R.string.import_unsupported
                     ImportSkipReason.DUPLICATE -> R.string.import_duplicate
                     ImportSkipReason.FAILED -> R.string.import_failed
+                    ImportSkipReason.CONVERTED -> R.string.import_svg_converted
                 }, entries.size), style = MaterialTheme.typography.titleSmall)
-                entries.take(20).forEach { Text(it.name + (it.detail?.let { detail -> ": $detail" } ?: ""), style = MaterialTheme.typography.bodySmall) }
+                entries.take(20).forEach { Text(it.name + (importNote(it)?.let { detail -> ": $detail" } ?: ""), style = MaterialTheme.typography.bodySmall) }
                 if (entries.size > 20) Text(stringResource(R.string.import_more, entries.size - 20))
             }
         } }, confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } })
@@ -113,4 +114,28 @@ private fun DuplicateImportDialog(prompt: DuplicatePrompt, onAnswer: (DuplicateA
             }
             TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text(stringResource(android.R.string.cancel)) }
         } })
+}
+
+/** The detail line of an import entry; SVG notes list the left-out element kinds and default stitching. */
+@Composable
+private fun importNote(entry: ImportSkip): String? {
+    if (entry.reason != ImportSkipReason.CONVERTED) return entry.detail
+    val parts = ArrayList<String>()
+    if (entry.autoAssigned) parts += stringResource(R.string.import_svg_auto)
+    if (entry.excluded.isNotEmpty()) {
+        val kinds = ArrayList<String>()
+        for ((kind, count) in entry.excluded) kinds += "${svgKindLabel(kind)} $count"
+        parts += stringResource(R.string.import_svg_excluded, kinds.joinToString(", "))
+    }
+    return parts.joinToString(" · ").ifEmpty { null }
+}
+
+@Composable
+private fun svgKindLabel(kind: String): String = when {
+    kind == "text" -> stringResource(R.string.import_svg_kind_text)
+    kind == "image" -> stringResource(R.string.import_svg_kind_image)
+    kind.startsWith("fill:") || kind.startsWith("stroke:") || kind.startsWith("satin:") ->
+        stringResource(R.string.import_svg_kind_method, kind.substringAfter(':'))
+    kind.startsWith("command:") -> stringResource(R.string.import_svg_kind_command, kind.substringAfter(':'))
+    else -> kind
 }

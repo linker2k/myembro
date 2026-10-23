@@ -52,6 +52,24 @@ class BatchDesignImporterTest {
         assertFalse("*/*" in DesignFormats.mimeTypes)
     }
 
+    @Test fun `SVG is sewn on import, stored as PES, with notes on defaults and left-out elements`() = withDirectory { directory ->
+        val svg = """<svg xmlns="http://www.w3.org/2000/svg" width="20mm" height="20mm" viewBox="0 0 20 20">
+            <rect width="10" height="10" fill="#c00"/><text x="0" y="15">hi</text></svg>""".toByteArray()
+        val tuned = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkstitch="http://inkstitch.org/namespace" width="20mm" height="20mm"
+            viewBox="0 0 20 20"><rect width="10" height="10" fill="#c00" inkstitch:angle="45"/></svg>""".toByteArray()
+        val report = BatchDesignImporter(directory).import(listOf(source("logo.svg", svg), source("tuned.svg", tuned),
+            source("broken.svg", "<svg><path".toByteArray())))
+        assertEquals(listOf("logo.pes", "tuned.pes"), report.imported.map { it.name })
+        assertTrue(DesignFormats.read(report.imported.first()).stitchCount > 50)
+        val note = report.skipped.single { it.reason == ImportSkipReason.CONVERTED }
+        assertEquals("logo.svg", note.name)
+        assertTrue(note.autoAssigned)
+        assertEquals(mapOf("text" to 1), note.excluded)
+        assertEquals(ImportSkipReason.UNSUPPORTED, report.skipped.single { it.name == "broken.svg" }.reason)
+        assertTrue("image/svg+xml" in DesignFormats.mimeTypes)
+        assertFalse("svg" in DesignFormats.extensions, "the library itself holds machine files only")
+    }
+
     @Test fun `DST header is checked rather than interpreting arbitrary bytes as stitches`() {
         val file = listOf(File("../engine/src/test/resources/fixtures/flower.dst"),
             File("engine/src/test/resources/fixtures/flower.dst")).first { it.isFile }
