@@ -39,4 +39,12 @@ class QuickFontSlotsTest {
         val slots = quickFontSlots("ink-allegria", listOf("ink-allegria", "ink-venezia"), fonts, "봄날")
         assertEquals(listOf("ink-allegria", "ink-venezia", "gowun-batang"), slots)
     }
+
+    @Test fun firstOpenPicksADownloadedEmbroideryFontForLatinAndGowunForHangul() {
+        val installed = fonts.filter { it.embroidery }
+        assertEquals("ink-venezia", defaultLetteringFont(emptyList(), "Jung", installed))
+        assertEquals("gowun-batang", defaultLetteringFont(emptyList(), "봄날", installed))
+        assertEquals("gowun-batang", defaultLetteringFont(emptyList(), "Jung", emptyList()), "none downloaded yet")
+        assertEquals("gowun-batang", defaultLetteringFont(listOf("jua"), "Jung", installed), "history wins")
+    }
 }
