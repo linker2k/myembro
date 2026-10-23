@@ -457,3 +457,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   The optional `libusbcommunication` module is not included. No libaums filesystem
   factory is invoked. `engine/fat12` is an independent GPL-3.0-or-later Kotlin
   implementation; the app adapts sector I/O and handles explicit deletion consent.
+
+## Image pipeline SVG parameter compatibility
+
+- `engine/.../inkstitch/svg/image/ImageElements.kt` transcribes SVG attribute names and
+  defaults from Ink/Stitch **v3.3.0**, commit `b0edd96311ece82ee48816dc93466274b12c2a9c`:
+  `lib/elements/fill_stitch.py`, `lib/elements/stroke.py`, `lib/elements/satin_column.py`.
+- License: GPL-3.0-or-later, Copyright (c) Ink/Stitch contributors.
+  Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c .
+- Median-cut quantization, CIELAB thread matching, cell-boundary tracing and automatic
+  image classification are original myembro GPL-3.0-or-later implementations.
+  No Potrace code, native library or additional dependency is included. Existing JTS
+  1.20.0 (EDL-1.0, notice above) supplies polygon topology and coverage simplification.
+- Source was read only; Ink/Stitch and its dependencies were neither installed nor run.
+  See `docs/inkstitch-port.md` for the source pin, handoff contract and differences.

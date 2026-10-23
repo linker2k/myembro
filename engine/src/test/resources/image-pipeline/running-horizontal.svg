@@ -1,0 +1,4 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original myembro test fixture. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="20mm" viewBox="0 0 40 20">
+  <path fill="#B5492A" fill-rule="evenodd" d="M5 9.8H35V10.2H5Z"/>
+</svg>
