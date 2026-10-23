@@ -1152,3 +1152,13 @@ Hausdorff 수치만 대표4건(최대10건 제한)에 다시 계산한다. 원�
 20/30mm는 이번 판정 범위에서 제외했다. 대표 기본값 분해는 AB 4/10/20mm 42/42,65/66,89/91,
 같은 reversible=false 메타데이터의 두 줄10mm 130/132다. 완전 동등 통과는 아니며
 PEC 출력 트림 계약과 glyph 직렬화 정밀도 차이는 별도 후속 작업으로 남는다.
+
+
+### S3 앱 연결: 기본 타타미+바탕 땀
+
+letter S2기반111ae77을 통합하고 TTF 채우기·6.0mm 초과 레일/센터라인 새틴을
+DefaultTatami→S1그룹으로 연결했다. 자동 표시에 채우기를 추가하고 높이 상한은 스윕90mm다.
+[구현 범위·근거·테스트 출력](s3-fill-app-integration.md)을 기록했다.
+`./gradlew :engine:check :app:assembleDebug :app:testDebugUnitTest`: BUILD SUCCESSFUL in19s,
+engine552/app176 failures0. 통합6건, bundled Jua TTF ‘자수’1230땀의 외부 게이트PASS1/1.
+원격CI/실기승인은 별도이며 여기서 멈추고 총괄 검토를 기다린다.

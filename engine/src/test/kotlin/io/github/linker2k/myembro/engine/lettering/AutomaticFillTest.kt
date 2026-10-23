@@ -78,7 +78,7 @@ class AutomaticFillTest {
         val old = TextObjectCodec.decode(JsonObject(encoded + ("fillOptions" to legacyOptions))) as TextObject
         assertEquals(FillStrategy.TATAMI, old.fillOptions.strategy)
         assertFalse(old.fillOptions.autoDensity)
-        assertEquals(OutlineFill.generate(listOf(box(1.5, 6.0)), FillOptions(strategy = FillStrategy.TATAMI, autoDensity = false)).stitches,
+        assertEquals(TatamiLettering.generateGlyphs(listOf(OutlineGlyph(listOf(box(1.5,6.0)),old.thread,6.0))).stitches,
             old.localPattern().stitches)
     }
 }

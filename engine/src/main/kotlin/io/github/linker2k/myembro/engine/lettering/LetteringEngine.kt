@@ -177,8 +177,7 @@ object LetteringEngine {
                     .map { (x, y) -> x / 10 to (y + lineY) / 10 }
                 glyphThreads.putIfAbsent(character, contourThreads.getOrNull(index) ?: thread)
             }
-            return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character), heightMm) },
-                fillOptions, false)
+            return TatamiLettering.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character), heightMm) })
         }
         contours.forEachIndexed { index, contour ->
             if (contour.size < 2) return@forEachIndexed
@@ -261,7 +260,9 @@ internal class RunningStitches(
             val (left,right) = SatinColumn.rails(reduced.map { (x,y) -> x / 10 to y / 10 },satinOptions.widthMm)
             if (left.size >= 2 && right.size >= 2) {
                 fun points(path:List<Pair<Double,Double>>) = path.map { Point(it.first,it.second) }
-                satinGroups += io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin.element(
+                if (TatamiLettering.methodForWidth(satinOptions.widthMm)==StitchStyle.FILL) {
+                    satinGroups += TatamiLettering.groups(listOf(left+right.asReversed()),thread ?: EmbThread(0xff000000.toInt(),"Black"))
+                } else satinGroups += io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin.element(
                     points(left),points(right),satinOptions,color=thread).toStitchGroups(satinGroups.lastOrNull()?.stitches?.lastOrNull())
             }
             return

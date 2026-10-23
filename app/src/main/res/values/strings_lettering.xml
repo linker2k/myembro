@@ -91,4 +91,6 @@
     <string name="lettering_validated_range">Validated range: %1$s</string>
     <string name="lettering_satin_unconfirmed_running">Satin range unconfirmed · Running applied</string>
     <string name="lettering_height_invalid">Enter a valid height greater than 0 mm.</string>
+    <string name="lettering_automatic_fill">Automatic · Fill</string>
+    <string name="lettering_fill_size_range">Fill height · %1$s</string>
 </resources>

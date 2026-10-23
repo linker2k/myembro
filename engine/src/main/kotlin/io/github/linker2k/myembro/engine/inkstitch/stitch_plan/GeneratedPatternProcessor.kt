@@ -26,7 +26,7 @@ object GeneratedPatternProcessor {
         disable_ties: Boolean = false,
     ): EmbPattern {
         val processed = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties))
-        return processed.pattern.copy(metadata = markedMetadata(processed))
+        return processed.pattern.copy(metadata = markedMetadata(processed) + (SEWING_OPTIONS_KEY to SewingOptions().toJson()))
     }
 
     /** Rebuild removes only locks created by this bridge, retaining original commands and thread indices. */

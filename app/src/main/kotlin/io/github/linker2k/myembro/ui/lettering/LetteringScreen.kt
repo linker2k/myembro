@@ -124,7 +124,7 @@ private fun LetteringContent(
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
     val permittedHeight = automaticHeight == height && heightInputValid && when {
         ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
-        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN) && ranges.any { it.contains(height) }
+        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
     }
     val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
         spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
@@ -250,16 +250,17 @@ private fun LetteringContent(
                 Text(stringResource(when (automatic?.style) {
                     StitchStyle.RUNNING -> R.string.lettering_automatic_running
                     StitchStyle.SATIN -> R.string.lettering_automatic_satin
+                    StitchStyle.FILL -> R.string.lettering_automatic_fill
                     else -> R.string.lettering_automatic_unconfirmed
                 }), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
             LetteringCard {
                 SectionLabel(stringResource(R.string.lettering_height))
-                if (ranges.isNotEmpty() && automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN)) {
+                if (ranges.isNotEmpty() && automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL)) {
                     val minimum = ranges.minOf { it.minMm }
                     val maximum = ranges.maxOf { it.maxMm }
                     Text(Dimensions.length(height), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(R.string.lettering_validated_range, ranges.joinToString(" · ") {
+                    Text(stringResource(if(automatic?.style==StitchStyle.FILL) R.string.lettering_fill_size_range else R.string.lettering_validated_range, ranges.joinToString(" · ") {
                         if (it.minMm == it.maxMm) Dimensions.length(it.minMm)
                         else "${Dimensions.length(it.minMm)} – ${Dimensions.length(it.maxMm)}"
                     }), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)

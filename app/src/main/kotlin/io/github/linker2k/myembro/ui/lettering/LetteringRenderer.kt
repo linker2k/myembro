@@ -54,7 +54,7 @@ internal suspend fun automaticLetteringState(context:Context,fontId:String,text:
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
     val policy=AutomaticLetteringPolicy.Shared
     val candidates=policy.candidates(fontId,source.revision,geometry,normalizedLetteringText(text))
-    AutomaticLetteringState(source.name,policy.method(candidates,heightMm),candidates.map { it.heights }.distinct())
+    AutomaticLetteringState(source.name,policy.method(candidates,heightMm,geometry),if(geometry==LetteringGeometry.OUTLINE) listOf(ValidatedHeightRange(TatamiLettering.MIN_HEIGHT_MM,TatamiLettering.MAX_HEIGHT_MM)) else candidates.map { it.heights }.distinct())
 }
 
 private class LoadedFont(
@@ -194,8 +194,8 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val source = loadFont(context, settings.fontId)
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
     val policy=AutomaticLetteringPolicy.Shared
-    val method=policy.method(policy.candidates(settings.fontId,source.revision,geometry,text),settings.heightMm)
-    require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Satin validation range is unconfirmed; use running stitch" }
+    val method=policy.method(policy.candidates(settings.fontId,source.revision,geometry,text),settings.heightMm,geometry)
+    require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Lettering method is outside the supported automatic range" }
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val transformed = placed.placedPattern().withSewingDefaults(sewingOptions)
     val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
