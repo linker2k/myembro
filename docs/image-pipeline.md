@@ -201,8 +201,8 @@ S5 구현은 S2/S4 및 비교용 oracle 준비 뒤의 별도 작업이며, 현�
 
 - 원본 비교 8개 포함 엔진 **301개**, 앱 debug/release 각 **172개** 테스트 실패 0.
 - `./gradlew check` 실행: `:engine:check` 및 앱 단위 테스트는 통과했으나
-  `:app:lintDebug`의 기존 오류 14건으로 실패했다. 오류가 난 파일은 `origin/main`과
-  동일하며 이번 포팅에서 수정하지 않았다. lint baseline/억제는 추가하지 않았다.
+  `:app:lintDebug`의 기존 오류 14건으로 실패했다. 오류가 난 파일은 포팅 시작 당시의 main 기반(`c0b5f94^`)과
+  동일하며 이번 포팅에서 수정하지 않았다. 공유 `origin/main` 참조는 병렬 작업 중 이동할 수 있다. lint baseline/억제는 추가하지 않았다.
 - 14건: 테마 리소스 minSdk26/API27 속성 6건, 기존 produceState lint 7건,
   `app_name` 한국어 번역 1건. 상세 보고서는 `app/build/reports/lint-results-debug.txt`.
 - 현재 브랜치 CI는 main push/PR만 트리거하고 JVM 테스트와 APK 빌드를 실행한다.
