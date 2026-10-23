@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
+import androidx.compose.material.icons.filled.Download
+import io.github.linker2k.myembro.fonts.CatalogFont
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
@@ -113,6 +119,12 @@ private fun LetteringContent(
     var automaticHeight by remember(fontId, text) { mutableDoubleStateOf(Double.NaN) }
     var automaticLoaded by remember(fontId, text) { mutableStateOf(false) }
     var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
+    var embroideryFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
+    var installedEmbroidery by remember { mutableStateOf<Set<String>>(emptySet()) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { FontRepository(context).let { repo -> repo.catalog.filter { it.predigitized } to repo.installedIds() } }
+            .let { (fonts, installed) -> embroideryFonts = fonts.sortedByDescending { it.id in installed }; installedEmbroidery = installed }
+    }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -256,11 +268,26 @@ private fun LetteringContent(
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    bundledLetteringFonts.forEach { font ->
-                        FontChoice(font, fontId == font.id, Modifier.weight(1f), fontPreviews[font.id]) { fontId = font.id }
+                // US-3: verified embroidery fonts lead; with Hangul (none of them has it) the Hangul TTFs come first.
+                val hangul = text.any { it in '\uAC00'..'\uD7A3' || it in '\u3131'..'\u318E' }
+                val ttfRow: @Composable () -> Unit = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        bundledLetteringFonts.forEach { font ->
+                            FontChoice(font, fontId == font.id, Modifier.weight(1f), fontPreviews[font.id]) { fontId = font.id }
+                        }
                     }
                 }
+                val embroideryRow: @Composable () -> Unit = {
+                    SectionLabel(stringResource(R.string.fonts_verified_embroidery))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(embroideryFonts, key = { it.id }) { font ->
+                            EmbroideryFontChoice(font, fontId == font.id, font.id in installedEmbroidery, font.covers(text)) {
+                                if (font.id in installedEmbroidery) fontId = font.id else onOpenFonts(text)
+                            }
+                        }
+                    }
+                }
+                if (hangul) { ttfRow(); embroideryRow() } else { embroideryRow(); ttfRow() }
                 if (bundledLetteringFonts.none { it.id == fontId }) {
                     Text(automatic?.fontName ?: fontId, style = MaterialTheme.typography.titleSmall, color = colors.primary)
                     StitchPatternPreview(fontPreviews[fontId], Modifier.fillMaxWidth().height(70.dp))
@@ -360,6 +387,31 @@ private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifie
                 Modifier.size(16.dp), tint = if (selected) colors.primary else colors.outline)
         }
         StitchPatternPreview(preview, Modifier.fillMaxWidth().height(58.dp))
+    }
+}
+
+/** A verified embroidery font: its bundled stitch picture; not yet downloaded opens the library, missing glyphs dim it. */
+@Composable
+private fun EmbroideryFontChoice(font: CatalogFont, selected: Boolean, installed: Boolean, usable: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.small
+    val context = LocalContext.current
+    val image = remember(font.id) {
+        runCatching { context.assets.open("fonts/previews/${font.id}.png").use(android.graphics.BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
+    }
+    Column(Modifier.width(132.dp).height(106.dp).alpha(if (usable) 1f else 0.38f).clip(shape)
+        .background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
+        .border(if (selected) 1.5.dp else 1.dp, if (selected) colors.primary else colors.outlineVariant, shape)
+        .selectable(selected, enabled = usable, role = Role.RadioButton, onClick = onClick).padding(9.dp),
+        verticalArrangement = Arrangement.SpaceBetween) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(font.name, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Icon(if (installed) (if (selected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked) else Icons.Default.Download,
+                null, Modifier.size(16.dp), tint = if (selected) colors.primary else colors.outline)
+        }
+        Box(Modifier.fillMaxWidth().height(58.dp).background(androidx.compose.ui.graphics.Color(0xFFF7F4EE), MaterialTheme.shapes.extraSmall)) {
+            image?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().padding(4.dp), contentScale = androidx.compose.ui.layout.ContentScale.Fit) }
+        }
     }
 }
 
