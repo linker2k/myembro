@@ -1,0 +1,7 @@
+<!-- Synthetic input authored for this port; no private font/design data. One viewBox unit = 1mm. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkstitch="http://inkstitch.org/namespace"
+     width="20mm" height="44mm" viewBox="0 0 20 44">
+  <path id="satin" fill="none" stroke="#000000" inkstitch:satin_column="true"
+        inkstitch:zigzag_spacing_mm="0.4"
+        d="M 4,5 L 4,39 M 8,5 L 8,39 M 3,13 L 9,13 M 3,22 L 9,22 M 3,31 L 9,31"/>
+</svg>

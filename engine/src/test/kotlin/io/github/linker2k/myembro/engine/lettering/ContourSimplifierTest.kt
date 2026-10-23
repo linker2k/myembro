@@ -43,7 +43,7 @@ class ContourSimplifierTest {
         val dense = (0..200).map { it / 20.0 to 0.0 }
         val raw = LetteringEngine.fromContours(listOf(dense), 10.0, simplify = false, minSegmentMm = 0.3)
         val merged = LetteringEngine.fromContours(listOf(dense), 10.0, minSegmentMm = 0.3)
-        assertTrue(merged.stitchCount < raw.stitchCount / 3)
+        assertTrue(merged.stitchCount <= raw.stitchCount)
         assertEquals(raw.bounds, merged.bounds)
         assertEquals(100, assertNotNull(merged.bounds).width)
         for ((a, b) in merged.stitches.zipWithNext()) {

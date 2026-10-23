@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
+import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -22,7 +25,7 @@ object LetteringEngine {
      * apart (default 1.5). [arcDeg] bends the baseline; [arcRadiusMm], when set, replaces
      * angle magnitude with a physical radius, retaining the angle's direction.
      * [characterThreads] indices count code points after CR/LF and tab normalization.
-     * Single-line Hershey defaults to [StitchStyle.BEAN]; select RUNNING for one pass.
+     * New lettering defaults to [StitchStyle.RUNNING]; bean remains an explicit legacy option.
      * SATIN offsets each bent stroke by [satinOptions]' width; its separate maximum
      * stitch length replaces [stitchLengthMm] for this style only.
      * Unsupported Unicode code points become '?' and are reported in warnings.
@@ -40,7 +43,7 @@ object LetteringEngine {
         alignment: TextAlignment = TextAlignment.CENTER,
         arcRadiusMm: Double? = null,
         characterThreads: Map<Int, EmbThread> = emptyMap(),
-        stitchStyle: StitchStyle = StitchStyle.BEAN,
+        stitchStyle: StitchStyle = StitchStyle.RUNNING,
         satinOptions: SatinOptions = SatinOptions(),
     ): EmbPattern {
         require(stitchStyle != StitchStyle.FILL) { "FILL requires closed outline contours" }
@@ -90,7 +93,7 @@ object LetteringEngine {
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
             missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
-        ).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)
+        ).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
     }
 
     /**
@@ -110,8 +113,7 @@ object LetteringEngine {
      * [arcRadiusMm] sets a physical radius, with the sign of [arcDeg] choosing above/below.
      * [stitchStyle] defaults to RUNNING for outlines; use BEAN for imported single-line paths.
      * FILL groups [contourCharacters] and fills each glyph with even-odd holes, using
-     * [fillOptions]. Missing owners treat all contours as one glyph. SATIN uses narrow
-     * outline zigzags with tatami fallback when [outline] is true; otherwise it offsets
+     * [fillOptions]. Missing owners treat all contours as one glyph. SATIN requests on TTF outlines use auto-fill until a separately validated column exists; otherwise it offsets
      * centerline contours using [satinOptions], preserving the existing stroke API.
      */
     fun fromContours(
@@ -149,9 +151,10 @@ object LetteringEngine {
             "Contour coordinates must be finite"
         }
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
+        val effectiveStyle = if (stitchStyle == StitchStyle.SATIN && outline) StitchStyle.RUNNING else stitchStyle
         val paths = contours.filter { it.size >= 2 }
-        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
-        if (paths.isEmpty()) return builder.finish(thread).withStitchStyle(stitchStyle, stitchLengthMm)
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, effectiveStyle, satinOptions)
+        if (paths.isEmpty()) return GeneratedPatternProcessor.finish(builder.finish(thread))
         val points = paths.flatten()
         val minX = points.minOf { it.first }
         val maxX = points.maxOf { it.first }
@@ -162,7 +165,7 @@ object LetteringEngine {
         val centerX = minX / 2 + maxX / 2
         val width = (maxX - minX) * scale
         require(scale.isFinite() && width.isFinite()) { "Contour range is too large" }
-        if (stitchStyle == StitchStyle.FILL || stitchStyle == StitchStyle.SATIN && outline) {
+        if (effectiveStyle == StitchStyle.FILL) {
             val glyphs = linkedMapOf<Int, MutableList<List<Pair<Double, Double>>>>()
             val glyphThreads = linkedMapOf<Int, EmbThread>()
             contours.forEachIndexed { index, contour ->
@@ -175,7 +178,7 @@ object LetteringEngine {
                 glyphThreads.putIfAbsent(character, contourThreads.getOrNull(index) ?: thread)
             }
             return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character), heightMm) },
-                fillOptions, stitchStyle == StitchStyle.SATIN)
+                fillOptions, false)
         }
         contours.forEachIndexed { index, contour ->
             if (contour.size < 2) return@forEachIndexed
@@ -185,14 +188,16 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)
+        val pattern = builder.finish(thread).withStitchStyle(effectiveStyle, if (effectiveStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
+        return if (effectiveStyle == stitchStyle) pattern else EmbPattern(pattern.stitches, pattern.threads, pattern.metadata,
+            pattern.warnings + "검증되지 않은 TTF 새틴 요청을 러닝으로 바꿨습니다.")
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {
         require(heightMm.isFinite() && heightMm > 0) { "heightMm must be finite and positive" }
         require(arcDeg.isFinite() && abs(arcDeg) <= 360) { "arcDeg must be within -360..360" }
-        require(stitchLengthMm.isFinite() && stitchLengthMm >= 0.2) {
-            "stitchLengthMm must be finite and at least 0.2 mm (coordinate resolution)"
+        require(stitchLengthMm.isFinite() && stitchLengthMm >= 0.3) {
+            "stitchLengthMm must be finite and at least 0.3 mm (generated-pattern minimum)"
         }
     }
 
@@ -226,13 +231,15 @@ object LetteringEngine {
 internal class RunningStitches(
     stitchLengthMm: Double,
     private val trimBetweenStrokes: Boolean,
-    private val mergeToleranceMm: Double = 0.05,
-    private val simplifyPaths: Boolean = true,
+    private val mergeToleranceMm: Double = 0.2,
+    private val simplifyPaths: Boolean = false,
     private val minSegmentMm: Double = 0.0,
     private val stitchStyle: StitchStyle = StitchStyle.RUNNING,
     private val satinOptions: SatinOptions = SatinOptions(),
+    private val resamplePaths: Boolean = true,
 ) {
-    private val maxLength = (if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm) * 10
+    private val maxLength = stitchLengthMm * 10
+    private val satinGroups = arrayListOf<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>()
     private val stitches = arrayListOf<Stitch>()
     private val threads = arrayListOf<EmbThread>()
 
@@ -250,11 +257,20 @@ internal class RunningStitches(
                 listOf(points.map { (x, y) -> x / 10 to y / 10 }), mergeToleranceMm, minSegmentMm,
             ).single().map { (x, y) -> x * 10 to y * 10 }
         } else points
-        val path = if (stitchStyle == StitchStyle.SATIN) {
-            SatinColumn.strokePoints(reduced.map { (x, y) -> x / 10 to y / 10 }, satinOptions)
-                .map { (x, y) -> x * 10 to y * 10 }
-        } else reduced
-        val sampled = path.map { (x, y) -> quantize(x, y) }
+        if (stitchStyle == StitchStyle.SATIN) {
+            val (left,right) = SatinColumn.rails(reduced.map { (x,y) -> x / 10 to y / 10 },satinOptions.widthMm)
+            if (left.size >= 2 && right.size >= 2) {
+                fun points(path:List<Pair<Double,Double>>) = path.map { Point(it.first,it.second) }
+                satinGroups += io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin.element(
+                    points(left),points(right),satinOptions,color=thread).toStitchGroups(satinGroups.lastOrNull()?.stitches?.lastOrNull())
+            }
+            return
+        }
+        val path = reduced
+        val running = if (stitchStyle == StitchStyle.SATIN || !resamplePaths) path else
+            InkRunning.even(path.map { Point(it.first, it.second) }, maxLength, mergeToleranceMm * 10)
+                .map { it.x to it.y }
+        val sampled = running.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return
         val changesColor = thread != null && threads.isNotEmpty() && !threads.last().sameThread(thread)
         if (stitches.isNotEmpty() && (trimBetweenStrokes || changesColor)) stitches += stitches.last().copy(command = Command.TRIM)
@@ -285,6 +301,12 @@ internal class RunningStitches(
     }
 
     fun finish(thread: EmbThread, metadata: Map<String, String> = emptyMap(), warnings: List<String> = emptyList()): EmbPattern {
+        if (stitchStyle == StitchStyle.SATIN) {
+            val groups = satinGroups.mapIndexed { i,g -> g.copy(trimAfter = trimBetweenStrokes && i < satinGroups.lastIndex) }
+            return GeneratedPatternProcessor.fromGroups(groups).let {
+                EmbPattern(it.stitches, it.threads, it.metadata + metadata, warnings)
+            }.centeredGenerated()
+        }
         if (stitches.isNotEmpty()) {
             val sewn = stitches.filter { it.command == Command.STITCH }
             val cx = (sewn.minOf { it.x } + sewn.maxOf { it.x }) / 2

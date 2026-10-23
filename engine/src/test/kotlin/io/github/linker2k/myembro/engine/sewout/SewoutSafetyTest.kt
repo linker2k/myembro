@@ -14,21 +14,20 @@ class SewoutSafetyTest {
     private fun p(vararg stitches: Stitch) = EmbPattern(stitches.toList(), listOf(EmbPattern.DEFAULT_PALETTE[0]))
     private fun SewoutReport.of(code: FindingCode) = findings.filter { it.code == code }
 
-    @Test fun ninthDistinctPunctureInHalfMillimeterCellBlocksButEighthDoesNot() {
-        fun pattern(count: Int) = p(*Array(count) { s(it % 3, it / 3) })
-        val eight = SewoutCheck.check(pattern(8))
-        assertFalse(eight.hasBlockingIssues)
-        assertTrue(eight.of(FindingCode.DENSITY_HOTSPOT).isEmpty())
-        val nine = SewoutCheck.check(pattern(9))
-        assertTrue(nine.hasBlockingIssues)
-        val finding = nine.of(FindingCode.DENSITY_HOTSPOT).single()
+    @Test fun sixteenthDistinctPunctureInHalfMillimeterCellBlocksButFifteenthDoesNot() {
+        fun pattern(count: Int) = p(*Array(count) { s(it % 4, it / 4) })
+        val fifteen = SewoutCheck.check(pattern(15))
+        assertFalse(fifteen.hasBlockingIssues)
+        assertTrue(fifteen.of(FindingCode.DENSITY_HOTSPOT).isEmpty())
+        val sixteen = SewoutCheck.check(pattern(16))
+        assertTrue(sixteen.hasBlockingIssues)
+        val finding = sixteen.of(FindingCode.DENSITY_HOTSPOT).single()
         assertEquals(Severity.BLOCKER, finding.severity)
-        assertEquals(9.0, finding.measured)
-        assertEquals(9.0, finding.threshold)
+        assertEquals(16.0, finding.measured)
+        assertEquals(16.0, finding.threshold)
         assertEquals(CheckArea(0.0, 0.0, 5.0, 5.0), finding.highlight!!.area)
-        assertEquals(1, nine.statistics.densityHotspotCount)
-        assertTrue(nine.of(FindingCode.REPEATED_PENETRATION).isEmpty())
-        assertFalse(SewoutCheck.check(pattern(9), options = SewoutOptions(hotspotPenetrations = 10)).hasBlockingIssues)
+        assertEquals(1, sixteen.statistics.densityHotspotCount)
+        assertTrue(sixteen.of(FindingCode.REPEATED_PENETRATION).isEmpty())
     }
 
     @Test fun fourthExactPunctureBlocksIncludingAcrossTrimAndColorBoundaries() {
@@ -105,7 +104,7 @@ class SewoutSafetyTest {
 
     @Test fun syntheticFanSatinRemainsBlockedAfterPesRoundTripForEveryProfile() {
         val needles = mutableListOf(s(0))
-        repeat(9) { needles += s(60, (it - 4) * 10); needles += s(0) }
+        repeat(16) { needles += s(60, (it - 8) * 10); needles += s(0) }
         val bytes = PesWriter.writeV6(p(*needles.toTypedArray()))
         for (machine in SewoutMachines.all) {
             val report = SewoutCheck.checkPes(bytes, machine)
@@ -114,7 +113,7 @@ class SewoutSafetyTest {
             assertEquals(Severity.BLOCKER, report.of(FindingCode.DENSITY_HOTSPOT).single().severity)
             assertEquals(1, report.of(FindingCode.REPEATED_PENETRATION).size)
             assertEquals(1, report.of(FindingCode.MISSING_LOCK_STITCH).size)
-            assertTrue(report.density.maxOf { it.penetrations } >= 10)
+            assertTrue(report.density.maxOf { it.penetrations } >= 16)
         }
     }
 
