@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchSafetyOptions
+import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -90,7 +94,7 @@ object LetteringEngine {
         return builder.finish(
             thread, mapOf("name" to text, "font" to fontId),
             missing.map { "Unsupported lettering character U+${it.toString(16).uppercase().padStart(4, '0')}; replaced with '?'" },
-        ).withStitchStyle(stitchStyle)
+        ).withStitchStyle(stitchStyle).let { StitchPlanFinisher.finish(it, StitchSafetyOptions(maximumMm = maxOf(0.5, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)), centerOutput = true) }
     }
 
     /**
@@ -151,7 +155,7 @@ object LetteringEngine {
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
         val paths = contours.filter { it.size >= 2 }
         val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
-        if (paths.isEmpty()) return builder.finish(thread)
+        if (paths.isEmpty()) return StitchPlanFinisher.finish(builder.finish(thread))
         val points = paths.flatten()
         val minX = points.minOf { it.first }
         val maxX = points.maxOf { it.first }
@@ -185,14 +189,14 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread).withStitchStyle(stitchStyle)
+        return builder.finish(thread).withStitchStyle(stitchStyle).let { StitchPlanFinisher.finish(it, StitchSafetyOptions(maximumMm = maxOf(0.5, if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm)), centerOutput = true) }
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {
         require(heightMm.isFinite() && heightMm > 0) { "heightMm must be finite and positive" }
         require(arcDeg.isFinite() && abs(arcDeg) <= 360) { "arcDeg must be within -360..360" }
-        require(stitchLengthMm.isFinite() && stitchLengthMm >= 0.2) {
-            "stitchLengthMm must be finite and at least 0.2 mm (coordinate resolution)"
+        require(stitchLengthMm.isFinite() && stitchLengthMm >= 0.3) {
+            "stitchLengthMm must be finite and at least 0.3 mm (generated-pattern minimum)"
         }
     }
 
@@ -231,6 +235,7 @@ internal class RunningStitches(
     private val minSegmentMm: Double = 0.0,
     private val stitchStyle: StitchStyle = StitchStyle.RUNNING,
     private val satinOptions: SatinOptions = SatinOptions(),
+    private val resamplePaths: Boolean = true,
 ) {
     private val maxLength = (if (stitchStyle == StitchStyle.SATIN) satinOptions.maxStitchLengthMm else stitchLengthMm) * 10
     private val stitches = arrayListOf<Stitch>()
@@ -254,7 +259,10 @@ internal class RunningStitches(
             SatinColumn.strokePoints(reduced.map { (x, y) -> x / 10 to y / 10 }, satinOptions)
                 .map { (x, y) -> x * 10 to y * 10 }
         } else reduced
-        val sampled = path.map { (x, y) -> quantize(x, y) }
+        val running = if (stitchStyle == StitchStyle.SATIN || !resamplePaths) path else
+            InkRunning.even(path.map { Point(it.first, it.second) }, maxLength, if (simplifyPaths) mergeToleranceMm * 10 else 0.0)
+                .map { it.x to it.y }
+        val sampled = running.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return
         val changesColor = thread != null && threads.isNotEmpty() && !threads.last().sameThread(thread)
         if (stitches.isNotEmpty() && (trimBetweenStrokes || changesColor)) stitches += stitches.last().copy(command = Command.TRIM)

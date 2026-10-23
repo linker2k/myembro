@@ -42,6 +42,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("underlayStitchLengthMm", obj.satinOptions.underlayStitchLengthMm)
             put("underlayDensityMm", obj.satinOptions.underlayDensityMm)
             put("autoDensity", obj.satinOptions.autoDensity)
+            put("contourUnderlay", obj.satinOptions.contourUnderlay)
+            put("underlayInsetMm", obj.satinOptions.underlayInsetMm)
         })
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
@@ -105,6 +107,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             underlayStitchLengthMm = satin["underlayStitchLengthMm"]?.jsonPrimitive?.double ?: 2.5,
             underlayDensityMm = satin["underlayDensityMm"]?.jsonPrimitive?.double ?: 1.5,
             autoDensity = satin["autoDensity"]?.jsonPrimitive?.boolean ?: false,
+            contourUnderlay = satin["contourUnderlay"]?.jsonPrimitive?.boolean ?: false,
+            underlayInsetMm = satin["underlayInsetMm"]?.jsonPrimitive?.double ?: 0.4,
         ) } ?: SatinOptions(autoDensity = false),
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,

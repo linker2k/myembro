@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.edit
 
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.model.Stitch
+import kotlin.math.roundToInt
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
@@ -40,7 +43,7 @@ data class TextObject(
     val contourBaselines: List<Double> = emptyList(),
     /** Also true for imported single-line SVGs stored as precomputed contours. */
     val singleLine: Boolean = fontKind == FontKind.HERSHEY,
-    val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.RUNNING,
+    val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.FILL,
     val satinOptions: SatinOptions = SatinOptions(),
     val fillOptions: FillOptions = FillOptions(),
     val threadWeight: ThreadWeight = ThreadWeight.WT40,
@@ -79,6 +82,14 @@ data class TextObject(
     }
 
     override fun localPattern(): EmbPattern = pattern
+    /** Rebuild machine-length locks AFTER placement/scaling; imported StitchObjects are never rewritten. */
+    override fun placedPattern(): EmbPattern {
+        val placed = pattern.stitches.map { s ->
+            val (x, y) = transform.apply(s.x.toDouble(), s.y.toDouble())
+            Stitch(x.roundToInt(), y.roundToInt(), s.command)
+        }
+        return StitchPlanFinisher.finish(EmbPattern(placed, pattern.threads, pattern.metadata, pattern.warnings), rebuild = true)
+    }
     override fun withId(id: String): TextObject = copy(id = id)
     override fun withTransform(t: Transform): TextObject = copy(transform = t)
     override fun withVisible(v: Boolean): TextObject = copy(visible = v)

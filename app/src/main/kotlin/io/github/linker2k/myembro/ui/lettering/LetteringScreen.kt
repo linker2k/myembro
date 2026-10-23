@@ -47,6 +47,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.Grade
 import io.github.linker2k.myembro.engine.lettering.FontQualityReport
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.FillOptions
@@ -169,7 +170,8 @@ private fun LetteringContent(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                error = context.getString(R.string.lettering_failed)
+                error = if (failure is UnsafeStitchPlanException) context.getString(R.string.lettering_unsafe_density, failure.penetrations, failure.limit)
+                    else context.getString(R.string.lettering_failed)
                 result = null
             } finally {
                 busy = false
@@ -291,7 +293,7 @@ private fun LetteringContent(
                 }
             }
             result?.takeIf { it.textObject.fontId == fontId }?.let { active -> LetteringCard {
-                val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.RUNNING
+                val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.FILL
                 ThreadWeightSelector(threadWeight) {
                     if (it != threadWeight) {
                         threadWeightName = it.name

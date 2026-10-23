@@ -66,17 +66,20 @@
     <string name="lettering_border">Border stitches</string>
     <string name="lettering_border_none">None</string>
     <string name="lettering_satin_width">Satin width</string>
-    <string name="lettering_satin_hint">Stitches follow each stroke. Wide strokes use staggered split satin.</string>
+    <string name="lettering_satin_hint">Satin requires a validated constant-width column. Other outlines use auto-fill.</string>
     <string name="lettering_satin_fallback">Some complex areas are completed with tatami.</string>
     <string name="lettering_fill_advanced">Density, underlay and border settings</string>
-    <string name="lettering_auto_fill">Follow strokes</string>
-    <string name="lettering_fixed_tatami">Fixed-angle tatami</string>
+    <string name="lettering_auto_fill">Auto-fill (routed)</string>
+    <string name="lettering_fixed_tatami">Auto-fill (boundary travel)</string>
     <string name="lettering_auto_density">Automatic spacing for thread / small text</string>
-    <string name="lettering_auto_underlay">Center / edge underlay</string>
+    <string name="lettering_auto_underlay">Fill underlay (crosswise)</string>
     <string name="lettering_thread_weight">Thread weight</string>
     <string name="lettering_weight_40">40wt (default)</string>
     <string name="lettering_weight_50">50wt</string>
     <string name="lettering_weight_60">60wt (fine)</string>
     <string name="lettering_fine_thread_hint">65/9 needle recommended · Keep your bobbin setup</string>
     <string name="lettering_weight_min_feature">Estimated minimum stroke / gap: %1$.2fmm</string>
+    <string name="lettering_contour_underlay">Contour underlay</string>
+    <string name="lettering_zigzag_underlay">Zigzag underlay</string>
+    <string name="lettering_unsafe_density">Too many needle penetrations in a 0.5mm cell (%1$d; limit %2$d). Increase letter size or spacing.</string>
 </resources>

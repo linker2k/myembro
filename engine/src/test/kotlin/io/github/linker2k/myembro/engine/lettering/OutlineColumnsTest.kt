@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.geometry.*
+import io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin
 import io.github.linker2k.myembro.engine.geometry.Polyline as GeometryPath
 import kotlin.math.*
 import kotlin.test.*
@@ -12,8 +13,10 @@ class OutlineColumnsTest {
         val column = OutlineColumn(listOf(0.0 to 0.0, 0.0 to 3.0, 0.0 to 10.0),
             listOf(-1.0 to 0.0, -1.0 to 3.0, -1.0 to 10.0),
             listOf(1.0 to 0.0, 4.0 to 3.0, 1.0 to 10.0))
-        val points = SatinColumn.pairedColumnPoints(column, 0.4)
-        points.zipWithNext().forEach { (a, b) -> assertTrue(abs(a.second - b.second) <= 0.21) }
+        val points = InkSatin.pairs(column.leftRail.map { Point(it.first, it.second) },
+            column.rightRail.map { Point(it.first, it.second) },
+            listOf(InkSatin.Rung(Point(-1.0, 3.0), Point(4.0, 3.0))), 0.4)
+        points.forEach { (a, b) -> assertEquals(a.y, b.y, 1e-6) }
     }
     private fun box(x: Double, y: Double, w: Double, h: Double) = listOf(x to y, x + w to y, x + w to y + h, x to y + h, x to y)
     @Test fun straightOutlineProducesCenterlineAndPairedNormalRails() {
