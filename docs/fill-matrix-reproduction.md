@@ -135,3 +135,61 @@ PE-Design 출력 패턴을 맞추는 변경이 아니다. 수정 후 전체 재�
   underpath 소진 후 경로가 없을 때 원본의 직선 후보→polygon clamp 복구 대신 오류를 내는
   차이가 남아 있다. 이 225건에서는 생성 실패가 없으므로 관측된 실패라고 단정하지 않는다.
   구멍 명령 별도 회귀를 통해 S4에서 다룰 항목이다.
+
+
+## 교정 후 제출 결과
+
+생성 코드 커밋: **`3412ebbdddd2e8a58e4526b7cec4b35add7d511d`**.
+깨끗한 `/tmp/myembro-model-fill-core-check` 체크아웃에서 전체를 두 번 생성했다.
+225/225건 생성, **225/225 PES 바이트 동일**. 두 실행은 각각 1분 42초/1분 56초였다.
+PES를 자체 PesReader와 pyembroidery로 읽었고 manifest의 PES SHA-256를 모두 재검증했다.
+
+| 범위 | 건수 | 땀 수 ±5% | needle Hausdorff ≤0.2mm | 두 조건 모두 | 순서 p95≤0.3mm·최대≤1mm |
+|---|---:|---:|---:|---:|---:|
+| 전체(음성 1 포함) | 225 | 193 | 128 | 125 | 125 |
+| rectangle | 32 | 32 | 32 | 32 | 32 |
+| circle | 32 | 31 | 7 | 7 | 8 |
+| hole | 32 | 32 | 27 | 27 | 26 |
+| sharp_corner | 32 | 14 | 1 | 0 | 0 |
+| narrow_tip | 32 | 32 | 30 | 30 | 31 |
+| self_intersection | 32 | 20 | 1 | 0 | 0 |
+| crossing_strokes | 32 | 32 | 29 | 29 | 28 |
+
+**이 열의 일부 기준을 만족한 건수는 전체 동등/PASS 판정이 아니다.** 길이 분포·잠금 경계·
+제어명령·원본 정적 검토까지 포함한 Codex 판정은 아직 없다.
+
+- 주 결과: `/tmp/myembro-port-out/model/results.json`
+- 반복 결과: `/tmp/myembro-port-out/model-repeat/results.json`
+- 수치 전체: `/tmp/myembro-port-out/model/observations/measurements.json`
+- 요약: `docs/fill-matrix-summary.json` 및 `/tmp/myembro-port-out/model/summary.json`
+- 공통 S1 소스의 고정 hash 목록: `/tmp/myembro-port-out/model/dependencies.json`
+- 재현에 사용할 불변 스냅샷 source root:
+  `/tmp/myembro-port-out/model-baseline-088b3ca/dependencies/source`
+
+Graph.copy 교정으로 rectangle10 diagonal의 순서 p95가 4.6→약 0.141mm,
+hole10 horizontal은 9.16→약 0mm가 됐다. 후자는 땀 수도 143/140→143/143으로 맞았다.
+형상 교체나 PE-Design 잠금에 맞춘 조정 없이 source graph 복제 순서만 교정한 결과다.
+
+구멍 32건의 교정 후 coverage 표본도 양쪽 최소 100%, inset 구멍 내부 바늘은 양쪽 0개다.
+구멍을 일부 지나는 봉제 선은 공식 22건/포트 23건으로, running tolerance와 quantization을
+분리해 추가 검토해야 한다. 0.3mm 미만 양수 땀 수는 공식보다 증가 73건/감소 95건/동일 57건이다.
+감소를 품질 개선이라고, 증가를 전부 회귀라고 단정하지 않는다.
+
+다음 S4 동등성 보강 우선순위:
+
+1. **자기교차 repair/조각·ring 순서:** count ±5%를 벗어난 32건 중 sharp_corner 18건,
+   self_intersection 12건이다. JTS GeometryFixer/precision과 GEOS make_valid의 linework·
+   순서 차이를 먼저 대조한다. 나머지는 circle 1건, 0 간격 음성 1건이다.
+2. **원형 flatten/경계 traversal:** count는 대부분 근접하지만 Hausdorff·순서가 남는다.
+   원본 cspsubdiv와 현재 SVG arc flatten의 샘플/경계 투영을 대조한다.
+3. **출력 양자화:** 원본 `lib/output.py`는 bbox 중심 이동 후 px→0.1mm encoder를 사용한다.
+   현재 raw adapter는 절대 px를 Math.round로 양자화한다. 동일한 rectangle150 dense의
+   땀 수 35,306개와 순서가 근접해도 짧은 땀은 공식 669/포트 821개였다.
+   이동/반올림 단계가 이 차이에 얼마나 기여하는지 별도 probe가 필요하다.
+   원본 출력 정책 검토 없이 짧은 땀을 지워 수치만 맞추지 않는다.
+4. **추가 hole 명령 회귀:** 행 없는 링·underpath 경로 소진 후 복구는 앞서 기록한 미검증 차이다.
+
+검증: 일반 엔진 **394개**, frozen S1 조합의 preview **410개** 테스트를 통과했다.
+공식 comparator는 재보정 중 `FROZEN_GATE_CHANGED: gate.py`로 좌표 export가 중단되므로
+통과를 선언하지 않는다. 재현 커맨드/고정 소스/PES/참고 수치는 Codex에 검토용으로 제출한다.
+UI와 기존 채움 교체는 S4 사용자 검토 차례까지 계속 보류한다.

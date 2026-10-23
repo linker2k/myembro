@@ -298,3 +298,18 @@ randomized fill 전체/게이트 통과로 확대하지 않는다. 유한 수·�
 통합 후보는 별도 preview 실행에서 **391개 통과·112/112 PES 생성**했고,
 최종 외부 판정은 여전히 **BLOCK 112/112**다. 저장한 report의 PES SHA-256가 현재
 112개 후보 파일과 모두 일치하는 것도 확인했다(`docs/inkstitch-fill-gate.json`).
+
+
+## 단계 적용 전환 — S4 공식 fill 매트릭스
+
+`docs/ui-stories.md`의 S1→S2→S3→S4 순서를 따른다. FillStitch는 preview를 유지하고
+US-6/기존 fill 교체를 시작하지 않는다. 앞의 BLOCK 112/112는 초기 PE-Design 패턴 기반
+게이트의 **역사적 기록**이다. 총괄이 공식 Ink/Stitch 출력에도 과도한 차단이 발생한다고
+전달하여 Codex가 기능 기준으로 재보정 중이다. 그 잠금 시퀀스를 맞추기 위해 원본 동작을 바꾸지 않는다.
+
+고정 공식 `fill_stitch` SVG 225건의 재현 CLI·매핑·코드/외부 S1 소스 provenance와
+수치/차단 원인은 [fill-matrix-reproduction.md](fill-matrix-reproduction.md)에 기록한다.
+`3412ebb`의 두 실행에서 225/225 PES 생성·바이트 일치, 일반 엔진394/preview410 테스트 통과.
+원본 NetworkX graph copy의 node→neighbor→key 삽입 순서를 맞춘 뒤 count/Hausdorff/순서가
+개선됐지만 전체 동등성 판정은 아직 없다. 외부 S1 WIP는 hash로 고정한 별도 입력이며
+model 커밋에 포함된 것처럼 표시하지 않는다. 독립 gate/criteria는 수정하지 않았다.
