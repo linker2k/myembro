@@ -1604,7 +1604,7 @@ CI는 main의 모든 브랜치 push 트리거와 전체 engine-test-results 아�
 `staging/s2s3` 위에 올렸습니다. 글꼴 읽기·배치·봉제(`engine/.../inkstitch/lettering/InkStitchFont.kt`, `InkStitchLettering.kt`)는 embro-letter 구현을 그대로 씁니다. 이 브랜치가 더하는 것은 다음뿐입니다.
 
 - 카탈로그 `app/src/main/assets/fonts/inkstitch-catalog.json`: 재배포 가능한 글꼴의 고정 URL·sha256, 글리프 이름, 허용 높이 범위. `tools/inkstitch_catalog.py`가 만듭니다.
-- 허용 높이: `InkStitchFontSweep`(opt-in 엔진 테스트)가 글꼴 기록 범위를 1mm 간격으로, 텍스트 3종을 `SewoutCheck`로 판정하고, 가장 긴 연속 통과 구간을 씁니다. 결과는 `docs/inkstitch-font-sweep.json`에 둡니다. 후프 초과는 범위를 줄이지 않고 따로 셉니다(총괄 확인).
+- 허용 높이: `InkStitchFontSweep`(opt-in 엔진 테스트)가 글꼴 기록 범위(60mm 상한)를 2mm 간격으로, 텍스트 3종을 `SewoutCheck`로 판정하고, 가장 긴 연속 통과 구간을 씁니다. 결과는 `docs/inkstitch-font-sweep.json`에 둡니다. 후프 초과는 범위를 줄이지 않고 따로 셉니다(총괄 확인).
 - 목록 UI: "검증된 자수 글꼴"을 맨 앞에 두고(이름과 땀 미리보기), 입력 글자가 없는 글꼴은 흐리게·선택 불가로 둡니다. 높이 슬라이더는 허용 범위로 제한합니다.
 
 ### 글꼴 92/96의 잔여4건 계산 분해
