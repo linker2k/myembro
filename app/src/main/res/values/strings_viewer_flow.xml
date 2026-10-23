@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="viewer_send_usb">Send to USB</string>
+    <string name="viewer_review_edit">Edit</string>
+    <string name="viewer_position">Center X %1$s · Y %2$s</string>
+    <string name="viewer_fits_hoop">Fits inside the selected hoop</string>
+    <string name="editor_default_name">design</string>
+    <string name="editor_overwrite_title">Replace the existing file?</string>
+    <string name="editor_overwrite_body">A file named %1$s already exists. Replace it with this design?</string>
+    <string name="editor_overwrite">Replace</string>
+</resources>

@@ -144,7 +144,7 @@ class EditorSecondPassTest {
         try {
             val p = Project(HoopSpec.H130x180, listOf(obj("a", -70.0), obj("hidden", visible = false)))
             val first = saveProjectSnapshot(directory, "내 작업/one.myembro", p)
-            val second = saveProjectSnapshot(directory, "내 작업/one.myembro", p)
+            val second = saveProjectSnapshot(directory, suggestDesignName("내 작업/one.myembro") { designSaveTarget(directory, it, "myembro").exists() }, p)
             assertNotEquals(first.name, second.name)
             assertEquals(directory, first.parentFile)
             assertEquals(2, listProjectFiles(directory).size)

@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.library
 
 import io.github.linker2k.myembro.engine.edit.ProjectJson
+import io.github.linker2k.myembro.engine.edit.ProjectSourceResolver
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
@@ -20,14 +21,18 @@ object DesignFormats {
     )
     fun extension(name: String) = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
     fun accepts(name: String) = extension(name) in extensions || extension(name) == "zip"
-    fun read(file: File): EmbPattern = read(file.readBytes(), file.name)
+    fun read(file: File): EmbPattern {
+        val parent = file.absoluteFile.parentFile!!
+        val sources = if (parent.name == "projects") File(parent.parentFile, "designs") else parent
+        return read(file.readBytes(), file.name, DesignSourceResolver(sources))
+    }
 
     fun preparePes(file: File, settings: PesWriteSettings): PesExport.Result =
         if (extension(file.name) == "myembro") {
             PesExport.Result(PesWriter.write(read(file), settings), "${file.nameWithoutExtension}.pes", true)
         } else PesExport.prepare(file.readBytes(), file.name, settings)
 
-    fun read(bytes: ByteArray, name: String): EmbPattern {
+    fun read(bytes: ByteArray, name: String, sourceResolver: ProjectSourceResolver? = null): EmbPattern {
         val prefix = bytes.take(8).toByteArray().toString(Charsets.ISO_8859_1)
         val valid = when (extension(name)) {
             "pes" -> prefix.startsWith("#PES")
@@ -38,7 +43,7 @@ object DesignFormats {
             else -> false
         }
         require(valid) { "Unsupported file or mismatched signature: $name" }
-        return if (extension(name) == "myembro") ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF")).flatten()
+        return if (extension(name) == "myembro") ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), sourceResolver = sourceResolver).flatten()
         else PatternReader.read(bytes, name)
     }
 }

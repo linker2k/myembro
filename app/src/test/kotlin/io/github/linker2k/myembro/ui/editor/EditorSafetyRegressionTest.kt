@@ -68,10 +68,10 @@ class EditorSafetyRegressionTest {
         assertFalse(d.dirty)
     }
 
-    @Test fun `imported design is dirty despite having no undo entries`() {
+    @Test fun `imported design is clean until changed even with no file on disk`() {
         val d = EditorDocuments()
         d.replaceAfterRead(savedOnDisk = false) { project() }
-        assertTrue(d.dirty)
+        assertFalse(d.dirty)
         assertFalse(d.session.canUndo)
     }
 
@@ -143,7 +143,7 @@ class EditorSafetyRegressionTest {
             assertEquals(p.find("a")!!.transform, recovered.find("a")!!.transform)
             assertFalse(recovered.find("a")!!.visible)
             val d = EditorDocuments()
-            d.replaceAfterRead(false) { recovered }
+            d.replaceAfterRead(false, restoredDraft = true) { recovered }
             assertTrue(d.dirty)
             assertFalse(directory.listFiles()!!.any { it.extension == "tmp" })
             EditorDraftStore(directory).write(null)

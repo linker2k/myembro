@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
@@ -133,11 +134,17 @@ private fun ViewerContent(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
-                Button(onClick = { exportSheet = true }, enabled = vm.canExport,
-                    shape = MyembroShapes.Button, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Icon(Icons.Default.SaveAlt, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.export_sheet_title))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = { onExportUsb?.invoke() }, enabled = vm.canExport && onExportUsb != null,
+                        shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.viewer_send_usb))
+                    }
+                    OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
+                        shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.viewer_review_edit))
+                    }
                 }
             }
         },
@@ -152,14 +159,6 @@ private fun ViewerContent(
                     )
                 },
                 actions = {
-                    TextButton(
-                        onClick = { onEdit?.invoke() },
-                        enabled = onEdit != null && vm.render != null && !vm.loading && !vm.exporting,
-                    ) {
-                        Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.viewer_edit))
-                    }
                     IconButton(onClick = onOpenFile, enabled = !vm.loading && !vm.exporting) {
                         Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.open_file))
                     }
@@ -271,7 +270,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
         StitchCanvas(
             data = data,
             progress = vm.progress,
-            hoop = vm.hoop, frame = vm.frame.spec,
+            hoop = vm.hoop, frame = vm.frame.spec, preservePlacement = vm.preservePlacement,
             showJumps = vm.showJumps,
             fitRequest = fitRequest,
             modifier = Modifier.fillMaxSize(),
@@ -298,7 +297,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
 private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modifier, compactStats: Boolean = false) {
     val pattern = data.pattern
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatsRow(pattern, vm.frame, vm.machineProfile, compactStats)
+        StatsRow(pattern, vm.frame, vm.machineProfile, compactStats, vm.preservePlacement)
         Card(
             shape = MyembroShapes.Card,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -329,8 +328,8 @@ private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modif
 }
 
 @Composable
-private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?, compact: Boolean = false) {
-    val b = pattern.bounds
+private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.linker2k.myembro.ui.machines.MachineProfile?, compact: Boolean = false, preservePlacement: Boolean = false) {
+    val b = viewerBounds(pattern, preservePlacement)
     val seconds = pattern.estimatedSeconds()
     Card(
         shape = MyembroShapes.Card,
@@ -359,8 +358,14 @@ private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.
             for (warning in pattern.warnings) {
                 Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
             }
-            if (b != null && (!hoop.fits(b.width, b.height) || machine?.fits(b) == false)) {
-                Text(stringResource(R.string.hoop_too_small), color = MaterialTheme.colorScheme.error,
+            if (b != null) {
+                Text(stringResource(R.string.viewer_position,
+                    Dimensions.length((b.minX.toDouble() + b.maxX) / 20),
+                    Dimensions.length((b.minY.toDouble() + b.maxY) / 20)),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val fits = viewerFits(pattern, hoop.spec, preservePlacement) && machine?.fits(b) != false
+                Text(stringResource(if (fits) R.string.viewer_fits_hoop else R.string.hoop_too_small),
+                    color = if (fits) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelSmall)
             }
         }

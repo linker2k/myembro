@@ -29,6 +29,7 @@ import io.github.linker2k.myembro.ui.lettering.LetteringModeSelector
 import io.github.linker2k.myembro.ui.lettering.TextFillWarning
 import java.io.File
 import java.util.Locale
+import io.github.linker2k.myembro.ui.format.Dimensions
 import kotlin.math.abs
 
 @Composable
@@ -97,19 +98,22 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
 
 @Composable
 private fun NumericField(value: String, onChange: (String) -> Unit, label: Int, modifier: Modifier) {
+    val dimension = value.replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() }
+        ?.takeIf { label in setOf(R.string.editor_property_x, R.string.editor_property_y, R.string.editor_width_mm, R.string.editor_height_mm) }
     OutlinedTextField(value, onChange, modifier, singleLine = true, label = { Text(stringResource(label)) },
+        supportingText = if (dimension != null) { { Text(Dimensions.length(dimension), style = MaterialTheme.typography.labelSmall) } } else null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
 @Composable
-internal fun SaveProjectDialog(onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: (String) -> Unit) {
-    var name by remember { mutableStateOf("myembro-${System.currentTimeMillis()}") }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_project_save)) },
+internal fun SaveProjectDialog(initialName: String, title: Int, onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: ((String) -> Unit)? = null) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(title)) },
         text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.editor_project_name)) }) },
         confirmButton = { TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_save_local)) } },
         dismissButton = {
             Row {
-                TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
+                if (onExport != null) TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
             }
         })

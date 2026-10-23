@@ -11,7 +11,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.*
-import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.DesignSourceResolver
@@ -82,7 +81,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } finally { busy = false }
         }
     }
-    val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null
+    val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null || savePrompt != null
     private val projectSources = DesignSourceResolver(File(app.filesDir, "designs"))
     private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"), projectSources)
     private val draftWrites = Channel<Project?>(Channel.CONFLATED)
@@ -101,7 +100,51 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private var gestureDraft: Project? = null
     private var targets = SnapTargets(emptyList(), emptyList())
     private val library = DesignLibrary(app)
-    private val projectDir get() = File(getApplication<Application>().filesDir, "projects")
+    private val projectDir get() = File(getApplication<Application>().filesDir, "designs")
+    private val legacyProjectDir get() = File(getApplication<Application>().filesDir, "projects")
+    private var documentName: String? = null
+    internal var savePrompt by mutableStateOf<EditorSavePrompt?>(null)
+        private set
+    internal var overwriteName by mutableStateOf<String?>(null)
+        private set
+    private var continueAfterNamedSave = false
+
+    fun requestProjectSave() = requestNamedSave(EditorSaveKind.PROJECT)
+    private fun requestNamedSave(kind: EditorSaveKind, continueAfterSave: Boolean = false) {
+        if (busy || gestureInProgress || recoveryProject != null) return
+        busy = true
+        viewModelScope.launch {
+            try {
+                val original = documentName ?: getApplication<Application>().getString(R.string.editor_default_name)
+                val proposed = withContext(Dispatchers.IO) {
+                    val extension = if (kind == EditorSaveKind.PES) "pes" else "myembro"
+                    suggestDesignName(original) { designSaveTarget(projectDir, it, extension).exists() }
+                }
+                continueAfterNamedSave = continueAfterSave
+                savePrompt = EditorSavePrompt(kind, proposed)
+            } catch (e: CancellationException) { throw e
+            } catch (e: Exception) { report(R.string.editor_project_save_failed, e)
+            } finally { busy = false }
+        }
+    }
+    internal fun cancelNamedSave() { savePrompt = null; overwriteName = null; continueAfterNamedSave = false }
+    internal fun hideSavePrompt() { savePrompt = null }
+    internal fun cancelOverwrite() { overwriteName = null }
+    internal fun submitSaveName(name: String, overwrite: Boolean = false) {
+        val request = savePrompt ?: return
+        if (busy || gestureInProgress || designSaveStem(name).isBlank()) return
+        val extension = if (request.kind == EditorSaveKind.PES) "pes" else "myembro"
+        if (!overwrite && designSaveTarget(projectDir, name, extension).exists()) { overwriteName = name; return }
+        savePrompt = null
+        overwriteName = null
+        if (request.kind == EditorSaveKind.PROJECT) saveProject(name, afterSave = ::finishNamedSave, overwrite = overwrite)
+        else writePes(name, overwrite)
+    }
+    internal fun finishNamedSave() {
+        val resume = continueAfterNamedSave
+        continueAfterNamedSave = false
+        if (resume) discardAndContinue()
+    }
     var project by mutableStateOf(session.project)
         private set
     var letteringOpen by mutableStateOf(false)
@@ -165,7 +208,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun queueDraft() {
         if (draftLoading || recoveryProject != null || session.isGesturing) return
-        val snapshot = project.takeIf { documents.dirty }
+        val snapshot = documents.draft
         if (!draftQueued || snapshot != lastDraft) {
             draftQueued = true
             lastDraft = snapshot
@@ -195,13 +238,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun saveAndContinue() {
         if (!replacementRequested) return
-        saveProject("myembro-${System.currentTimeMillis()}", afterSave = ::discardAndContinue)
+        requestNamedSave(EditorSaveKind.PROJECT, continueAfterSave = true)
     }
     fun restoreDraft() {
         val recovered = recoveryProject ?: return
         deferredEntry = null // Recovery takes precedence over an incoming empty/new design request.
         recoveryProject = null
-        replaceSession(recovered, savedOnDisk = false)
+        replaceSession(recovered, savedOnDisk = false, restoredDraft = true)
     }
     fun discardDraft() {
         recoveryProject = null
@@ -210,8 +253,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         resumeDeferredEntry()
     }
     fun dismissExportProblems() { exportProblems = null }
-    private fun replaceSession(loaded: Project, savedOnDisk: Boolean, selection: Set<String> = emptySet()) {
-        documents.replaceAfterRead(savedOnDisk) { loaded }
+    private fun replaceSession(loaded: Project, savedOnDisk: Boolean, selection: Set<String> = emptySet(), restoredDraft: Boolean = false) {
+        documents.replaceAfterRead(savedOnDisk, restoredDraft) { loaded }
         gestureDraft = null
         selectedIds = selection
         selectionMode = false
@@ -226,7 +269,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { designs = withContext(Dispatchers.IO) { library.list() } }
     }
     fun refreshProjects() {
-        viewModelScope.launch { projectFiles = withContext(Dispatchers.IO) { listProjectFiles(projectDir) } }
+        viewModelScope.launch { projectFiles = withContext(Dispatchers.IO) { (listProjectFiles(projectDir) + listProjectFiles(legacyProjectDir)).sortedByDescending { it.lastModified() } } }
     }
     private fun sync() {
         project = session.project
@@ -241,10 +284,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         queueDraft()
     }
     fun newProject(hoop: HoopSpec = HoopSpec.H100) = requestReplacement {
+        documentName = null
         replaceSession(Project(hoop = supportedHoop(hoop)), savedOnDisk = true)
     }
-    /** Imported lettering is an unsaved baseline, while its History starts with zero undo steps. */
+    /** The entry snapshot starts clean; subsequent edits form the undo history. */
     fun startWith(obj: DesignObject, hoop: HoopSpec) = requestReplacement {
+        documentName = designSaveStem(obj.name).ifBlank { null }
         replaceSession(Project(hoop = supportedHoop(hoop)).add(obj), savedOnDisk = false, selection = setOf(obj.id))
     }
 
@@ -256,6 +301,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val obj = withContext(Dispatchers.IO) { importObject(file) }
+                documentName = file.nameWithoutExtension
                 replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)).add(obj),
                     savedOnDisk = false, selection = setOf(obj.id))
             } catch (e: CancellationException) { throw e
@@ -468,23 +514,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private fun report(resource: Int, e: Exception) {
         message = getApplication<Application>().getString(resource, e.localizedMessage.orEmpty())
     }
-    fun openProject(file: File) = loadProject { file.readText() }
-    fun openProject(uri: Uri) = loadProject {
+    fun openProject(file: File) = loadProject(file.nameWithoutExtension) { file.readText() }
+    fun openProject(uri: Uri) = loadProject(uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.')) {
         getApplication<Application>().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
             ?: error(getApplication<Application>().getString(R.string.editor_project_read_error))
     }
-    private fun loadProject(read: () -> String) = requestReplacement {
+    private fun loadProject(name: String?, read: () -> String) = requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
                 val loaded = withContext(Dispatchers.IO) { readEditorProject(read(), projectSources) }
+                documentName = name
                 replaceSession(loaded, savedOnDisk = true)
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_open_failed, e)
             } finally { busy = false }
         }
     }
-    fun saveProject(name: String, uri: Uri? = null, afterSave: (() -> Unit)? = null) {
+    fun saveProject(name: String, uri: Uri? = null, afterSave: (() -> Unit)? = null, overwrite: Boolean = false) {
         if (busy || gestureInProgress) return
         endGesture()
         val snapshot = project
@@ -493,7 +540,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             var savedSuccessfully = false
             try {
                 val savedName = withContext(Dispatchers.IO) {
-                    if (uri == null) saveProjectSnapshot(projectDir, name, snapshot).name
+                    if (uri == null) saveProjectSnapshot(projectDir, name, snapshot, overwrite).name
                     else {
                         val text = ProjectJson.encode(snapshot)
                         getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { it.write(text) }
@@ -501,20 +548,25 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                         name
                     }
                 }
-                projectFiles = withContext(Dispatchers.IO) { listProjectFiles(projectDir) }
+                projectFiles = withContext(Dispatchers.IO) { (listProjectFiles(projectDir) + listProjectFiles(legacyProjectDir)).sortedByDescending { it.lastModified() } }
+                documentName = designSaveStem(name)
                 documents.markSaved(snapshot)
                 sync()
                 message = getApplication<Application>().getString(R.string.editor_project_saved, savedName)
                 savedSuccessfully = true
             } catch (e: CancellationException) { throw e
+            } catch (e: EditorSaveConflict) {
+                savePrompt = EditorSavePrompt(EditorSaveKind.PROJECT, name)
+                overwriteName = name
             } catch (e: Exception) { report(R.string.editor_project_save_failed, e)
             } finally { busy = false }
             if (savedSuccessfully) afterSave?.invoke()
         }
     }
 
-    /** Exports a snapshot atomically, without overwriting any library design. */
-    fun save() {
+    /** Named PES export; replacement requires explicit confirmation. */
+    fun save() { if (!interactionBlocked && project.objects.any { it.visible }) requestNamedSave(EditorSaveKind.PES) }
+    private fun writePes(name: String, overwrite: Boolean) {
         if (interactionBlocked || gestureInProgress || project.objects.none { it.visible }) return
         endGesture()
         val snapshot = project
@@ -525,23 +577,21 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val pattern = snapshot.flatten()
                     require(pattern.stitchCount > 0) { getApplication<Application>().getString(R.string.editor_empty_export) }
                     val exportSettings = preferences.read() // Re-read immediately before writing.
-                    val problems = editorExportProblems(snapshot, exportSettings, "myembro.pes")
+                    val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes")
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings)
-                    val dir = File(getApplication<Application>().filesDir, "designs").apply { mkdirs() }
-                    val name = PesExport.uniqueName("myembro-${System.currentTimeMillis()}.pes") { File(dir, it).exists() }
-                    val target = File(dir, name)
-                    val temp = File.createTempFile("editor-", ".tmp", dir)
-                    try {
-                        temp.outputStream().use { it.write(bytes) }
-                        check(temp.renameTo(target)) { "Could not finish PES export" }
-                    } finally { temp.delete() }
-                    target
+                    writeNamedDesign(projectDir, name, "pes", overwrite, bytes)
                 }
+                documentName = saved.nameWithoutExtension
+                documents.markSaved(snapshot)
+                sync()
                 lastSavedFile = saved
                 designs = withContext(Dispatchers.IO) { library.list() }
                 message = getApplication<Application>().getString(R.string.editor_saved, saved.name)
             } catch (e: CancellationException) { throw e
+            } catch (e: EditorSaveConflict) {
+                savePrompt = EditorSavePrompt(EditorSaveKind.PES, name)
+                overwriteName = name
             } catch (e: EditorExportBlocked) {
                 exportProblems = e.problems.map { problem ->
                     val resource = when (problem) {

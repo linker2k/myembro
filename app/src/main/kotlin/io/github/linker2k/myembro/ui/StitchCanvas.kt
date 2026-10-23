@@ -40,13 +40,14 @@ fun StitchCanvas(
     backgroundColor: Int,
     hoopColor: Int,
     frame: HoopSpec? = null,
+    preservePlacement: Boolean = false,
 ) {
     val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
     val needleColor = MaterialTheme.colorScheme.primary.toArgb()
     val bounds = data.pattern.bounds ?: Bounds(0, 0, 1, 1)
-    val cx = (bounds.minX + bounds.maxX) / 2f
-    val cy = (bounds.minY + bounds.maxY) / 2f
+    val cx = if (preservePlacement) 0f else (bounds.minX.toLong() + bounds.maxX) / 2f
+    val cy = if (preservePlacement) 0f else (bounds.minY.toLong() + bounds.maxY) / 2f
 
     // User zoom/pan on top of the fit-to-hoop transform. Reset whenever the design or fit request changes.
     var zoom by remember(data, fitRequest) { mutableFloatStateOf(1f) }
@@ -88,8 +89,8 @@ fun StitchCanvas(
     ) {
         val hoopW = frame?.width?.toFloat() ?: (hoop.widthMm * 10f)
         val hoopH = frame?.height?.toFloat() ?: (hoop.heightMm * 10f)
-        val viewW = maxOf(hoopW, bounds.width.toFloat())
-        val viewH = maxOf(hoopH, bounds.height.toFloat())
+        val viewW = maxOf(hoopW, if (preservePlacement) maxOf(kotlin.math.abs(bounds.minX.toFloat()), kotlin.math.abs(bounds.maxX.toFloat())) * 2 else bounds.width.toFloat())
+        val viewH = maxOf(hoopH, if (preservePlacement) maxOf(kotlin.math.abs(bounds.minY.toFloat()), kotlin.math.abs(bounds.maxY.toFloat())) * 2 else bounds.height.toFloat())
         val fit = minOf(size.width / viewW, size.height / viewH) * 0.92f
         val scale = fit * zoom
 
