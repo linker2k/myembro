@@ -97,6 +97,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     var driveChoice by mutableStateOf<List<UsbExporter.Drive>?>(null)
         private set
 
+    // Declared before init: refreshDrives() reads these during construction.
+    internal data class DirectSpaceRequest(val drive: UsbExporter.Drive, val plan: DirectUsbExporter.SpacePlan)
+    internal var directSpaceRequest by mutableStateOf<DirectSpaceRequest?>(null)
+        private set
+    private var permissionDrive: UsbExporter.Drive? = null
+    private var cancelUsbPermission: (() -> Unit)? = null
+    private var usbPermissionEpoch = 0L
+
     init {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { library.seedSampleIfEmpty() }
@@ -307,12 +315,6 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    internal data class DirectSpaceRequest(val drive: UsbExporter.Drive, val plan: DirectUsbExporter.SpacePlan)
-    internal var directSpaceRequest by mutableStateOf<DirectSpaceRequest?>(null)
-        private set
-    private var permissionDrive: UsbExporter.Drive? = null
-    private var cancelUsbPermission: (() -> Unit)? = null
-    private var usbPermissionEpoch = 0L
 
     private fun exportDirect(drive: UsbExporter.Drive, files: List<File>) {
         val target = drive.direct ?: return
