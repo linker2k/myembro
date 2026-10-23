@@ -14,6 +14,20 @@ class RedworkPipelineTest {
     @Test fun rectangleBitmapToFinishedSingleColorPes() = fixture("rectangle")
     @Test fun roundBitmapToFinishedSingleColorPes() = fixture("round")
 
+    @Test fun filledRingPreservesBackgroundHoleAndUsesDefaultTatamiBackend() {
+        val rgb = IntArray(64*64) { i ->
+            val x=i%64; val y=i/64
+            if (x in 10..53 && y in 10..53 && !(x in 24..39 && y in 24..39)) 0 else 0xFFFFFF
+        }
+        val result=RedworkPipeline.generate(64,64,rgb,40.0,0,EmbThread(0xFF000000.toInt(), "Black"))
+        assertEquals("inkstitch-default-tatami-underlay",result.pattern.metadata["myembro.fill.backend"])
+        val needles=PesReader.read(PesWriter.write(result.pattern)).stitches.filter { it.command==Command.STITCH }
+        assertTrue(needles.isNotEmpty())
+        assertFalse(needles.any { it.x in -39..39 && it.y in -39..39 }, "White center must remain unsewn")
+        // Interior needles demonstrate area fill instead of another pair of running outlines.
+        assertTrue(needles.any { it.x in 65..110 && it.y in -20..20 })
+    }
+
     private fun fixture(name: String) {
         val width = 64
         val height = 64

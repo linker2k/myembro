@@ -3,11 +3,13 @@
 package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
 import io.github.linker2k.myembro.engine.geometry.SvgPath
-import io.github.linker2k.myembro.engine.inkstitch.elements.Stroke
-import io.github.linker2k.myembro.engine.inkstitch.elements.StrokeParameters
+import io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami
+import io.github.linker2k.myembro.engine.geometry.PolygonRegion
+import io.github.linker2k.myembro.engine.geometry.Polyline
+import io.github.linker2k.myembro.engine.geometry.FillRule
+import io.github.linker2k.myembro.engine.geometry.Point as RegionPoint
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
-import io.github.linker2k.myembro.engine.inkstitch.utils.Point
 import io.github.linker2k.myembro.engine.io.PesV6Writer
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -25,7 +27,8 @@ class RedworkResult internal constructor(
 object RedworkPipeline {
     /**
      * Caller supplies a known background pixel; no unvalidated automatic polarity heuristic.
-     * Traces region boundaries, not a skeleton/centerline. Both sides of a thick band remain contours.
+     * Traces boundaries into filled regions with holes, then source-default tatami/underlay.
+     * No running outline or centerline approximation is generated.
      * widthMm is the full bitmap width; aspect ratio and placement about the hoop center are preserved.
      */
     fun generate(
@@ -45,7 +48,7 @@ object RedworkPipeline {
         val contours = BinaryContourTracer.trace(width, height, bottomUp)
         require(contours.isNotEmpty()) { "No contour remains after original Potrace turdsize=2 filtering" }
         val scale = Units.mmToPixels(widthMm) / width
-        fun point(p: CurvePoint) = Point((p.x - width / 2.0) * scale, (height / 2.0 - p.y) * scale)
+        fun point(p: CurvePoint) = RegionPoint((p.x - width / 2.0) * scale, (height / 2.0 - p.y) * scale)
         val paths = contours.map { contour ->
             val curve = CurveOptimizer.optimize(CurveFitter.fit(contour))
             buildString {
@@ -62,16 +65,22 @@ object RedworkPipeline {
                 append(" Z")
             }
         }
-        // Same geometry boundary and 0.01px flattening tolerance used by StrokeFixtureTest.
-        val flattened = paths.flatMap { path ->
-            SvgPath.flatten(path, tolerance = 0.01).map { line -> line.points.map { Point(it.x, it.y) } }
-        }
-        // All Ink/Stitch running/tie/filter settings remain upstream defaults, including 2.5mm/0.2mm.
-        val groups = Stroke(flattened, thread, StrokeParameters(), elementId = "redwork").toStitchGroups(null)
-        val pattern = GeneratedPatternProcessor.fromGroups(groups)
+        // Convert SVG-pixel contours to the native 0.1mm PolygonRegion contract.
+        // Even-odd preserves background holes and foreground islands without a new heuristic.
+        val region = PolygonRegion.fromPaths(paths.flatMap { path ->
+            SvgPath.flatten(path, tolerance = 0.01).map { line ->
+                Polyline(line.points.map { RegionPoint(it.x * 10 / Units.mmToPixels(1.0),
+                    it.y * 10 / Units.mmToPixels(1.0)) }, true)
+            }
+        }, FillRule.EVEN_ODD)
+        val groups = DefaultTatami.stitchGroups(region, thread)
+        require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
+        val finished = GeneratedPatternProcessor.fromGroups(groups)
+        val pattern = EmbPattern(finished.stitches, finished.threads,
+            finished.metadata + ("myembro.fill.backend" to "inkstitch-default-tatami-underlay"), finished.warnings)
         val svgWidth = Units.mmToPixels(widthMm)
         val svgHeight = svgWidth * height / width
-        val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill="none" stroke="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
+        val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill-rule="evenodd" fill="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
         return RedworkResult(pattern, svg, contours.size, PesV6Writer.write(pattern))
     }
 }

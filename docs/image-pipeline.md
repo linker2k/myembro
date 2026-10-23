@@ -263,3 +263,16 @@ Ink/Stitch 러닝 기본값 → S1 → PES v6. 앱 호출은 없다.
 직접 만든 사각형/원형 PBM 두 개, 코드 assertion, 외부 quality-gate 원본 출력과
 내부 연속 반복 집계 회귀 수정은 [qa/redwork-engine.md](qa/redwork-engine.md)에 기록한다.
 재현: `tools/redwork/check-fixtures.sh`; 출력 `/tmp/myembro-port-out/editor/redwork/`.
+
+
+## 사용자 결정 갱신: 검은 선 영역을 채움
+
+2026-10-24: Potrace는 띠의 양쪽 경계를 내므로 윤곽 러닝을 사진 선화 기본값으로
+사용하지 않는다. 검은 영역을 구멍 포함 EVEN_ODD로 구성하고 한글 TTF와 같은 model
+DefaultTatami(기본 타타미+바탕 땀)로 채운다. 상세 파라미터 UI는 추가하지 않는다.
+검사에서 차단된 디테일/선 굵기 쌍은 스윕 JSON 허용 목록에서 자동 제외한다.
+자동화 범위는 측정한 합성 입력이며 일반 사진 전체의 안전성을 주장하지 않는다.
+
+센터라인(Autotrace 등 공개 알고리즘)은 다음 버전 후보로 조사만 남긴다. 도입 전
+고정 원본/라이선스 GPL 호환성/얇은 선·교차·끝점의 대표 비교 검증이 필요하며,
+이번에는 센터라인 추정·윤곽 평균·스켈레톤 자체 휴리스틱을 구현하지 않는다.

@@ -472,3 +472,25 @@ Graphics Gems `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`를
 차이점(호출별 배열·Long/Float 유지·하위 박스 Vol·입력 경계)은
 `docs/image-pipeline.md`의 Wu 표에 기록한다. 대표 RGB 3개에 대해 원본 C LUT/픽셀
 인덱스를 자동 비교하며, 앱·땀 생성에는 연결하지 않는다.
+
+
+## S4 사진 영역 채우기 연결 — 2026-10-24
+
+기존 검은 띠의 양쪽 윤곽 러닝은 제품 선화 경로에서 제거했다. Potrace 곡선을
+0.01 SVG-px로 평탄화한 뒤 0.1mm PolygonRegion(EVEN_ODD)으로 변환하고, 한글 TTF와
+같은 model `DefaultTatami.stitchGroups`에 넘긴다. 윗땀 0.25mm/4mm/0°,
+바탕 땀 0.75mm/4mm/90°, underpath=true 및 S1 기본값은 바꾸지 않는다.
+
+model 스냅샷 `ea5fd8d63f30db770f626ab245f9bc50bbe5bf31`의 DefaultTatami/InkAutoFill/TatamiFill/Fill/FillRouting/
+FillGeometry/FillRunning/FillPoint 8파일을 **수정 없이** 가져왔다.
+이는 독립 채우기 재구현이 아니라 S2·S3 병합 전 API 의존성 준비이며, 통합 시 같은
+model 파일을 유지한다. GPL 출처 헤더·JGraphT LGPL 선택 및 전이 라이브러리 고지·전문을 보존한다.
+
+| 연결 경계 | 차이/근거 |
+|---|---|
+| 윤곽→영역 | Potrace y-up을 SVG y-down으로 변환; SVG-px→0.1mm 후 EVEN_ODD로 구멍 보존 |
+| 출력 | 경계 러닝 대신 model 기본 타타미·바탕 땀; S1 한 번 적용 |
+| 좁은 선 | 자체 밀도/간격 보정 없음; 실제 생성+봉제 검사+외부 gate의 실패 조합만 제외 |
+| 센터라인 | autotrace 등은 다음 버전 조사 후보; 이번 기본 경로에 미적용 |
+
+재현·수치·PNG·스윕 범위는 [qa/s4-sampler.md](qa/s4-sampler.md) 참조.
