@@ -23,7 +23,8 @@ derived from the following projects, whose notices are reproduced as their licen
   [upstream GPL v3 license](https://github.com/inkstitch/inkstitch/blob/main/LICENSE).
 - `engine/.../lettering/SatinColumn.kt` is an independent Kotlin implementation under
   this repository's GPL-3.0-or-later license. No Ink/Stitch source code, images, font
-  data, or other assets were copied or bundled; no remote code was executed.
+  data, or other assets were copied into that implementation; no remote code was executed.
+  The newer source-derived ports under `engine/.../inkstitch/` are separately attributed below.
 
 ## pyembroidery
 
@@ -93,11 +94,6 @@ may download on demand. Policy:
 | Permanent Marker (Font Diner), Satisfy (Sideshow), Yellowtail (Astigmatic) | outline TTF (Latin) | Apache-2.0 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` (`apache/`) |
 | Playfair Display v1.200 (Claus Eggers Sørensen) | outline TTF (Latin), static Regular | OFL-1.1 | https://github.com/google/fonts @ `d08233f9c581786e8c834a1f0695a4f27869c119` |
 | Oswald, Dancing Script Bold, Fredoka, Baloo 2, Comfortaa Bold, Cinzel, Caveat Bold | outline TTF (Latin), static instances | OFL-1.1 | googlefonts/OswaldFont @ `89795261`, googlefonts/DancingScript @ `291f87c0`, hafontia-zz/Fredoka-One @ `35c584ff`, yanone/Baloo2-Variable @ `da523dfa`, alexeiva/comfortaa @ `4aa21cfb`, NDISCOVER/Cinzel @ `8271e162`, googlefonts/caveat @ `59745e81` (full hashes in `catalog.json`) |
-
-## Ink/Stitch (planned)
-
-Digitizing algorithms will be ported from https://github.com/inkstitch/inkstitch
-(GPL-3.0-or-later). Each ported file will record its upstream path and commit.
 
 ## Hershey Futural single-stroke font data
 
