@@ -34,6 +34,7 @@ derived from the following projects, whose notices are reproduced as their licen
   No paper text/images, OpenCV binaries/source tables, or commercial font/design data
   are included in the repository or distributed application.
 
+
 ## Ink/Stitch satin-column conceptual reference
 
 - Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),

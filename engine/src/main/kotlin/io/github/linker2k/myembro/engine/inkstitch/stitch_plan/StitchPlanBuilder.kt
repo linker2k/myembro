@@ -22,15 +22,18 @@ object StitchPlanBuilder {
     internal fun tracedFromGroups(
         groups: List<StitchGroup>, collapse_len: Double? = null,
         min_stitch_len: Double? = 0.1, disable_ties: Boolean = false,
+        lockAtThreadBoundaries: Boolean = false,
     ): TracedPlan {
         val collapsePixels = Units.mmToPixels(collapse_len ?: 3.0)
         val minPixels = Units.mmToPixels(min_stitch_len ?: 0.1)
         // Source's UI exit and empty-group indexing are unsuitable for a reusable pure engine.
         val nonempty = groups.filter { it.stitches.isNotEmpty() }
         val anchors = IdentityHashMap<Stitch, RunAnchor>()
+        fun boundaryGroup(group: StitchGroup) = if (lockAtThreadBoundaries) group.copy(
+            lockStart = group.lockStart ?: InkLockStitch(), lockEnd = group.lockEnd ?: InkLockStitch()) else group
         var lockLocations = 0
         var removed = 0
-        fun lock(group: StitchGroup, position: LockPosition): List<Stitch> = group.lockStitches(position, disable_ties).also {
+        fun lock(group: StitchGroup, position: LockPosition): List<Stitch> = boundaryGroup(group).lockStitches(position, disable_ties).also {
             if (it.isNotEmpty()) lockLocations++
         }
         if (nonempty.isEmpty()) return TracedPlan(StitchPlan(), anchors)

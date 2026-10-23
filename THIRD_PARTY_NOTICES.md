@@ -34,6 +34,7 @@ derived from the following projects, whose notices are reproduced as their licen
   No paper text/images, OpenCV binaries/source tables, or commercial font/design data
   are included in the repository or distributed application.
 
+
 ## Ink/Stitch satin-column conceptual reference
 
 - Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),
@@ -523,6 +524,26 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
   Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
   Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+
+## inkex path-number compatibility
+
+Ink/Stitch v3.3.0 pins Inkscape extensions/inkex at `EXTENSIONS_AT_INKSCAPE_1.4.1`.
+Its `inkex/paths/interfaces.py:PathCommand.number_template` uses six significant digits;
+our font path canonicalization follows that serialization rule. Source:
+https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
+The referenced source is GPL-2.0-or-later, Copyright (C) 2018 Martin Owens and
+Copyright (C) 2023 Jonathan Neuhauser. No inkex package is bundled, installed or executed.
+The surrounding Ink/Stitch glyph port remains GPL-3.0-or-later as identified in its header.
+
+## Ink/Stitch fixed font-oracle test fixtures
+
+`engine/src/test/resources/inkstitch/font-equivalence/` contains the public upstream generic
+A/B test-font input and a subset of independently decoded official v3.3.0 output coordinates.
+Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/tests/lettering/fonts/testfont .
+Copyright Ink/Stitch contributors. Upstream repository license GPL-3.0-or-later and the input's
+declared SIL OFL-1.1 text are included beside the data. Source metadata is retained; the one
+reversible=false newline correction and all provenance/hashes are recorded in PROVENANCE.md.
+Test resources only: no catalog font, personal design or runtime dependency is bundled by this addition.
 
 ## Inkex manual cubic-superpath boundary (oracle runner only)
 
