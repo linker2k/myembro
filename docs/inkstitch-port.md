@@ -724,3 +724,34 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   릴리스 매트릭스의 font 축은 `feature/shape` fixture ID이며 제품 폰트·안전 크기 범위가 아니다.
 - **S1 병합/배포 승인 대기**: Codex의 남은 게이트 검토와 사용자 실제 봉제. S2 이후로 자동 진전하지 않는다.
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
+
+
+### 20분 단위: 기본 타타미 공식 좌표 회귀 테스트 (실패를 자동 검출)
+
+main의 S1 planner를 병합한 뒤 DefaultTatami와 기존 3개 smoke 테스트를 일반 source set으로
+옮겼다. UI/제품 경로는 연결하지 않았다. `DefaultTatamiOracleTest`는 공식 defaults-v2의
+사각·원·구멍 nominal20mm **3건**을 생성→PES v6→PesReader로 읽어 비교한다.
+공식 PES/좌표 gzip/입력 SVG/원본 실행 기록을 `engine/src/test/resources/inkstitch-oracle/`
+아래에 변경 없이 복사하고 출처·고정 커밋·SHA256을 기록했다. 개인 도안은 없다.
+서로의 바늘 bbox 중심을 빼는 평행이동만 적용하며, 전 바늘(잠금 포함)의 점 집합으로
+양방향 Hausdorff를 계산한다. 회전·크기 조절·점 제거는 하지 않는다.
+
+| 대표 사례 | 우리/공식 땀 수 | 땀 수 차이 | Hausdorff mm | 결과 |
+|---|---:|---:|---:|---|
+| 사각 | 557/571 | 2.45% | 0.5831 | FAIL |
+| 원 | 722/662 | 9.06% | 0.5315 | FAIL |
+| 구멍 | 804/824 | 2.43% | 0.5831 | FAIL |
+
+명령: `./gradlew :engine:test --tests '*DefaultTatami*'`.
+기존 smoke3개 PASS, 새 공식 동등성3개 FAIL. 기준은 사용자 지정 땀수±5%/Hausdorff≤0.2mm
+그대로이며, 실패 테스트를 무시하거나 허용치를 높이지 않았다. 수치·후보 PES는
+`engine/build/tatami-oracle/`에 자동 저장한다. 따라서 **이 커밋은 병합 준비가 아니다**.
+이전 S4 외부 게이트4/4 PASS는 기능 안전 조건 결과이며 공식 동등성 통과를 뜻하지 않았다.
+
+worker가 POLICY.md v5의 출처별 게이트 구현을 추가하면 이 생성 PES에 SewoutCheck assert를
+연결해야 한다. 현재 구형 SewoutCheck를 해당 정책과 같다고 주장하지 않고, 호출 위치를 명시했다.
+CI push 대상은 모든 브랜치, 검증 명령은 `./gradlew check`로 바꿨다. 원격 CI 녹색은 미확인이다.
+다음 단위 제안: 시작/끝 연결 및 바탕 땀→top 경로 전달을 원본과 대조해 3건 불일치를 수정.
+이번 단위는 자동 검출·실패 수치 기록까지 하고 총괄 결정을 기다린다.
+
+전체 `:engine:check`도 실행했다: 509개 중506개 PASS, 위 공식 동등성3개만 FAIL.
