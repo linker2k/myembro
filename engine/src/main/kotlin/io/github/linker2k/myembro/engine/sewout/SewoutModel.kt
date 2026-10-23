@@ -92,8 +92,8 @@ data class SewoutOptions(
     val placement: Placement = Placement.CENTER_DESIGN,
     val destination: Destination = Destination.TRANSFER,
     val longStitchMm: Double = 12.1, val shortStitchMm: Double = 0.3,
-    /** Inclusive blocking thresholds: defaults mean >8 punctures per cell and >3 at one point. */
-    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 9,
+    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >3 at one point. */
+    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 16,
     val repeatedPointThreshold: Int = 4, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,

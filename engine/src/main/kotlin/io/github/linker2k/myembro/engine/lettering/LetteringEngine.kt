@@ -151,8 +151,9 @@ object LetteringEngine {
             "Contour coordinates must be finite"
         }
         require(minSegmentMm.isFinite() && minSegmentMm >= 0) { "minSegmentMm must be finite and non-negative" }
+        val effectiveStyle = if (stitchStyle == StitchStyle.SATIN && outline) StitchStyle.RUNNING else stitchStyle
         val paths = contours.filter { it.size >= 2 }
-        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, stitchStyle, satinOptions)
+        val builder = RunningStitches(stitchLengthMm, trimBetweenStrokes, mergeToleranceMm, simplify, minSegmentMm, effectiveStyle, satinOptions)
         if (paths.isEmpty()) return GeneratedPatternProcessor.finish(builder.finish(thread))
         val points = paths.flatten()
         val minX = points.minOf { it.first }
@@ -164,7 +165,7 @@ object LetteringEngine {
         val centerX = minX / 2 + maxX / 2
         val width = (maxX - minX) * scale
         require(scale.isFinite() && width.isFinite()) { "Contour range is too large" }
-        if (stitchStyle == StitchStyle.FILL || stitchStyle == StitchStyle.SATIN && outline) {
+        if (effectiveStyle == StitchStyle.FILL) {
             val glyphs = linkedMapOf<Int, MutableList<List<Pair<Double, Double>>>>()
             val glyphThreads = linkedMapOf<Int, EmbThread>()
             contours.forEachIndexed { index, contour ->
@@ -177,7 +178,7 @@ object LetteringEngine {
                 glyphThreads.putIfAbsent(character, contourThreads.getOrNull(index) ?: thread)
             }
             return OutlineFill.generateGlyphs(glyphs.map { (character, paths) -> OutlineGlyph(paths, glyphThreads.getValue(character), heightMm) },
-                fillOptions, stitchStyle == StitchStyle.SATIN)
+                fillOptions, false)
         }
         contours.forEachIndexed { index, contour ->
             if (contour.size < 2) return@forEachIndexed
@@ -187,7 +188,9 @@ object LetteringEngine {
             builder.stroke(bend(normalized, width, arcDeg, arcRadiusMm).map { (x, y) -> x to y + lineY },
                 contourThreads.getOrNull(index) ?: thread)
         }
-        return builder.finish(thread).withStitchStyle(stitchStyle, if (stitchStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
+        val pattern = builder.finish(thread).withStitchStyle(effectiveStyle, if (effectiveStyle == StitchStyle.SATIN) satinOptions.sourceParameters().max_stitch_length_mm else stitchLengthMm).centeredGenerated()
+        return if (effectiveStyle == stitchStyle) pattern else EmbPattern(pattern.stitches, pattern.threads, pattern.metadata,
+            pattern.warnings + "검증되지 않은 TTF 새틴 요청을 러닝으로 바꿨습니다.")
     }
 
     private fun validateOptions(heightMm: Double, stitchLengthMm: Double, arcDeg: Double) {

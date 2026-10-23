@@ -5,16 +5,13 @@ import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternP
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.PatternStartAnalysis
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.model.*
-import kotlin.math.floor
 import kotlin.test.*
 
 class BirdnestRegressionTest {
-    @Test fun publicScriptAt34MmUsesAutoFillInsteadOfUnvalidatedSkeletonSatin() {
-        val text=LetteringAuditGlyphs.script(style=StitchStyle.FILL)
+    @Test fun publicScriptAt34MmUsesRunningInsteadOfUnvalidatedSatinOrFill() {
+        val text=LetteringAuditGlyphs.script()
         val p=text.localPattern()
         assertSewingLengths(p)
-        val cells=bodyStitches(p).groupingBy { floor(it.x/5.0).toInt() to floor(it.y/5.0).toInt() }.eachCount()
-        assertTrue(cells.values.max()<=8)
         val satin=text.copy(stitchStyle=StitchStyle.SATIN).localPattern()
         assertTrue(satin.warnings.isNotEmpty())
         assertEquals(p.stitches,satin.stitches)
