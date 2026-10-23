@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
+import io.github.linker2k.myembro.engine.fat12.ShortNames
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.library.DesignFormats
 import java.io.File
@@ -11,7 +12,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
     data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean)
     data class SpacePlan(val fingerprint: String, val candidates: List<Fat12Volume.Entry>,
         val payloads: List<Payload>, val failures: List<Pair<String, String>>, val freeBytes: Long,
-        val requiredBytes: Long, val freeEntries: Int, val clusterBytes: Int) {
+        val requiredBytes: Long, val freeEntries: Int, val clusterBytes: Int, val diagnostics: String = "") {
         fun canProceed(names: Set<String>): Boolean {
             if (names.isEmpty() || names.any { name -> candidates.none { it.name == name } }) return false
             val selected = candidates.filter { it.name in names }
@@ -36,7 +37,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             try {
                 val volume = session.volume
                 try { volume.checkSpace(payloads.map { it.bytes.size }) }
-                catch (e: Fat12Volume.NoSpace) { return@use Result.NeedSpace(plan(volume, payloads, failures, e)) }
+                catch (e: Fat12Volume.NoSpace) { return@use Result.NeedSpace(plan(volume, payloads, failures, e, session.diagnostics())) }
                 write(session, payloads, failures)
             } catch (e: Exception) { throw session.failure(e) }
         }
@@ -58,27 +59,40 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
         } catch (e: Exception) { throw session.failure(e) }
     }
 
-    private fun plan(fs: Fat12Volume, payloads: List<Payload>, failures: List<Pair<String, String>>, e: Fat12Volume.NoSpace) =
+    private fun plan(fs: Fat12Volume, payloads: List<Payload>, failures: List<Pair<String, String>>, e: Fat12Volume.NoSpace, diagnostics: String) =
         SpacePlan(fs.fingerprint(), fs.listRoot().filter { !it.isDirectory && !it.isReadOnly && it.name.endsWith(".PES", true) },
-            payloads, failures, fs.freeBytes, e.requiredBytes, fs.freeRootEntries, fs.geometry.clusterBytes)
+            payloads, failures, fs.freeBytes, e.requiredBytes, fs.freeRootEntries, fs.geometry.clusterBytes, diagnostics)
 
-    private fun write(session: DirectUsbAccess.Session, payloads: List<Payload>, initialFailures: List<Pair<String, String>>): Result {
-        val fs = session.volume
-        val exported = mutableListOf<String>()
-        val failures = initialFailures.toMutableList()
-        var converted = 0
-        var failure: DirectUsbFailure? = null
-        for ((index, payload) in payloads.withIndex()) {
-            try {
-                exported += fs.writeFile(payload.name, payload.bytes).name
-                if (payload.converted) converted++
-            } catch (e: Exception) {
-                failure = session.failure(e)
-                // Never retry against a potentially half-written filesystem or continue after detach.
-                payloads.drop(index).forEach { failures += it.source to (e.message ?: e.javaClass.simpleName) }
-                break
+    companion object {
+        internal fun write(session: DirectUsbAccess.Session, payloads: List<Payload>, initialFailures: List<Pair<String, String>>): Result {
+            val fs = session.volume
+            val exported = mutableListOf<String>()
+            val written = mutableListOf<UsbTransferredFile>()
+            val notices = mutableSetOf<UsbTransferNotice>()
+            if (fs.warnings.any { !expectedSe400Note(it, fs.geometry) }) notices += UsbTransferNotice.FILESYSTEM
+            var remaining: Long? = fs.freeBytes
+            val failures = initialFailures.toMutableList()
+            var converted = 0
+            var failure: DirectUsbFailure? = null
+            for ((index, payload) in payloads.withIndex()) {
+                try {
+                    val preferred = ShortNames.unique(payload.name, emptyList())
+                    val entry = fs.writeFile(payload.name, payload.bytes)
+                    exported += entry.name
+                    written += UsbTransferredFile(entry.name, entry.size)
+                    if (entry.name != preferred) notices += UsbTransferNotice.NAME_COLLISION
+                    remaining = fs.freeBytes
+                    if (payload.converted) converted++
+                } catch (e: Exception) {
+                    remaining = null // A failed mutation poisons the session; do not query it again.
+                    failure = session.failure(e)
+                    // Never retry against a potentially half-written filesystem or continue after detach.
+                    payloads.drop(index).forEach { failures += it.source to (e.message ?: e.javaClass.simpleName) }
+                    break
+                }
             }
+            return Result.Complete(UsbExporter.Report(exported, converted, failures, fs.warnings,
+                written, remaining, notices, failure?.diagnostics ?: session.diagnostics()), failure)
         }
-        return Result.Complete(UsbExporter.Report(exported, converted, failures, fs.warnings), failure)
     }
 }

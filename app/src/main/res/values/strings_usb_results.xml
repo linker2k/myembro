@@ -1,0 +1,25 @@
+<resources>
+    <string name="usb_result_title">USB transfer result</string>
+    <string name="usb_result_success_one">✔ %1$s sent (%2$s)</string>
+    <string name="usb_result_success_many">✔ %1$d files sent (%2$s)</string>
+    <string name="usb_result_partial">%1$d sent · %2$d failed (%3$s sent)</string>
+    <string name="usb_result_failure">USB transfer failed</string>
+    <string name="usb_result_remaining">Remaining space: %1$s</string>
+    <string name="usb_result_unknown">Unknown</string>
+    <string name="usb_result_problem_space">Not enough space or file slots. Choose fewer designs or delete files you no longer need.</string>
+    <string name="usb_result_problem_verify">Writing could not be verified. Reconnect the USB device and check the files before use.</string>
+    <string name="usb_result_problem_permission">USB access was not granted. Check access and try again.</string>
+    <string name="usb_result_problem_other">Some files could not be sent. See details for the affected files and diagnostics.</string>
+    <string name="usb_result_name_collision">An existing name was preserved; the new file was sent under a different name.</string>
+    <string name="usb_result_filesystem">An unexpected disk condition needs checking. See details.</string>
+    <string name="usb_result_details">Details ▾</string>
+    <string name="usb_result_less">Hide details ▴</string>
+    <string name="usb_result_close">Close</string>
+    <string name="usb_result_file">%1$s · %2$s</string>
+    <string name="usb_result_share_unavailable">No app is available to share diagnostics.</string>
+    <string name="usb_history_title">Recent USB transfers</string>
+    <string name="usb_history_empty">No USB transfers yet. The latest 20 results will appear here.</string>
+    <string name="usb_history_save_failed">The result is shown, but transfer history could not be saved.</string>
+    <string name="usb_history_load_failed">USB transfer history could not be loaded.</string>
+    <string name="usb_result_problem_folder">Choose a folder on the USB drive you selected.</string>
+</resources>
