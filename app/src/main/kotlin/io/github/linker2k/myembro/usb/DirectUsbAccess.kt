@@ -71,13 +71,15 @@ internal class DirectUsbAccess(private val context: Context) {
             capture.blocks = block.sectorCount; capture.blockSize = block.sectorSize
             val volume = Fat12Volume.mount(block, capture)
             capture.warnings = volume.warnings
-            return Session(volume, communication) { error -> DirectUsbFailure(error, capture.report(description, error)) }
+            return Session(volume, communication, { capture.report(description) }) { error ->
+                DirectUsbFailure(error, capture.report(description, error))
+            }
         } catch (e: Exception) {
             runCatching { communication.close() }.exceptionOrNull()?.let(e::addSuppressed)
             throw DirectUsbFailure(e, capture.report(description, e))
         }
     }
-    class Session(val volume: Fat12Volume, private val transport: Closeable,
+    class Session(val volume: Fat12Volume, private val transport: Closeable, val diagnostics: () -> String,
         val failure: (Exception) -> DirectUsbFailure) : Closeable {
         override fun close() {
             try { transport.close() } catch (e: Exception) { throw failure(e) }

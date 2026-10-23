@@ -32,6 +32,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SelectAll
@@ -146,6 +147,9 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                     }
                 },
                 actions = {
+                    IconButton(onClick = { vm.showUsbHistory = true }) {
+                        Icon(Icons.Default.History, stringResource(R.string.usb_history_title))
+                    }
                     if (selecting) {
                         IconButton(onClick = vm::selectAll) {
                             Icon(Icons.Default.SelectAll, stringResource(R.string.library_select_all))
@@ -272,7 +276,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
     }
 
     DirectUsbSpaceDialog(vm)
-    DirectUsbFailureDialog(vm)
+    UsbTransferDialogs(vm)
 
     vm.driveChoice?.let { choices ->
         AlertDialog(

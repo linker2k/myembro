@@ -29,6 +29,11 @@ import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
 import io.github.linker2k.myembro.usb.DirectUsbExporter
 import io.github.linker2k.myembro.usb.DirectUsbFailure
+import io.github.linker2k.myembro.usb.UsbTransferHistory
+import io.github.linker2k.myembro.usb.UsbTransferRecord
+import io.github.linker2k.myembro.usb.UsbTransferProblem
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import io.github.linker2k.myembro.export.ExportChecks
 import java.io.File
 import java.util.Locale
@@ -114,9 +119,46 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private var permissionDrive: UsbExporter.Drive? = null
     private var cancelUsbPermission: (() -> Unit)? = null
     private var usbPermissionEpoch = 0L
-    internal var directFailure by mutableStateOf<DirectUsbFailure?>(null)
+    private val usbHistoryStore = UsbTransferHistory(File(app.filesDir, "usb-transfers.json"))
+    private val usbHistoryMutex = Mutex()
+    var usbHistory by mutableStateOf<List<UsbTransferRecord>>(emptyList())
         private set
-    internal fun dismissDirectFailure() { directFailure = null }
+    var usbResult by mutableStateOf<UsbTransferRecord?>(null)
+        private set
+    var showUsbHistory by mutableStateOf(false)
+
+    private fun applyUsbHistory(state: UsbTransferHistory.State) {
+        usbHistory = state.records
+        usbResult = state.pending
+    }
+    private suspend fun publishUsbResult(record: UsbTransferRecord) = usbHistoryMutex.withLock {
+        // Keep the result visible even if local history storage fails (e.g. phone storage full).
+        usbResult = record
+        usbHistory = (listOf(record) + usbHistory).take(20)
+        try { applyUsbHistory(withContext(Dispatchers.IO) { usbHistoryStore.add(record) }) }
+        catch (e: CancellationException) { throw e }
+        catch (_: Exception) { message = getApplication<Application>().getString(R.string.usb_history_save_failed) }
+    }
+    fun dismissUsbResult() {
+        val id = usbResult?.id ?: return
+        viewModelScope.launch { usbHistoryMutex.withLock {
+            usbResult = null
+            try { applyUsbHistory(withContext(Dispatchers.IO) { usbHistoryStore.dismiss(id) }) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { message = getApplication<Application>().getString(R.string.usb_history_save_failed) }
+        } }
+    }
+    private fun usbFailed(files: List<File>, reason: String, drive: UsbExporter.Drive? = null,
+        diagnostics: String = "", problem: UsbTransferProblem? = null) {
+        val record = UsbTransferRecord(drive = drive?.label ?: "USB",
+            failures = files.map { it.name to reason }.ifEmpty { listOf("USB" to reason) }, technical = diagnostics, problemHint = problem)
+        viewModelScope.launch { publishUsbResult(record) }
+    }
+    private suspend fun usbCompleted(drive: UsbExporter.Drive, report: UsbExporter.Report) {
+        publishUsbResult(UsbTransferRecord(drive = drive.label, files = report.files, failures = report.failures,
+            remainingBytes = report.remainingBytes, notices = report.notices,
+            technical = report.diagnostics + "\n" + report.warnings.joinToString("\n")))
+    }
     val importProgress = MutableStateFlow<DesignImportProgress?>(null)
     var importReport by mutableStateOf<DesignImportReport?>(null)
         private set
@@ -127,6 +169,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     fun cancelImport() { importDecisions.cancel(); importJob?.cancel() }
 
     init {
+        viewModelScope.launch { usbHistoryMutex.withLock {
+            try { applyUsbHistory(withContext(Dispatchers.IO) { usbHistoryStore.read() }) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { message = app.getString(R.string.usb_history_load_failed) }
+        } }
         viewModelScope.launch {
             withContext(Dispatchers.IO) { library.seedSampleIfEmpty() }
             refresh()
@@ -147,12 +194,17 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             if (drives.none { it.uuid == waiting.uuid }) {
                 usbPermissionEpoch++
                 cancelUsbPermission?.invoke(); cancelUsbPermission = null; permissionDrive = null
+                val pending = pendingExport
                 pendingExport = emptyList(); busy = false
-                message = getApplication<Application>().getString(R.string.usb_direct_disconnected)
+                usbFailed(pending, getApplication<Application>().getString(R.string.usb_direct_disconnected), waiting, problem = UsbTransferProblem.DISCONNECTED)
             }
         }
         directSpaceRequest?.let { waiting ->
-            if (drives.none { it.uuid == waiting.drive.uuid }) directSpaceRequest = null
+            if (drives.none { it.uuid == waiting.drive.uuid }) {
+                directSpaceRequest = null
+                usbFailed(waiting.plan.payloads.map { File(it.source) },
+                    getApplication<Application>().getString(R.string.usb_direct_disconnected), waiting.drive, problem = UsbTransferProblem.DISCONNECTED)
+            }
         }
     }
 
@@ -260,7 +312,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
      * Designs are first checked against the machine in settings.
      */
     fun exportToUsb(files: List<File> = selection.toList()) {
-        if (files.isEmpty() || busy || directSpaceRequest != null || driveChoice != null || accessRequest != null || preflightWarnings != null) return
+        if (files.isEmpty() || busy || usbResult != null || directSpaceRequest != null || driveChoice != null || accessRequest != null || preflightWarnings != null) return
         val requested = files.toList()
         busy = true
         viewModelScope.launch {
@@ -280,7 +332,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 busy = false
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                message = getApplication<Application>().getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName)
+                usbFailed(requested, e.message ?: e.javaClass.simpleName)
                 return@launch
             }
             busy = false
@@ -304,7 +356,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         refreshDrives()
         val res = getApplication<Application>().resources
         when (drives.size) {
-            0 -> message = res.getString(R.string.usb_none)
+            0 -> usbFailed(files, res.getString(R.string.usb_none), problem = UsbTransferProblem.NO_DEVICE)
             1 -> exportTo(drives.single(), files)
             else -> { pendingExport = files; driveChoice = drives }
         }
@@ -332,14 +384,16 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     fun onAccessResult(tree: Uri?) {
         val drive = accessRequest ?: return
         accessRequest = null
-        val res = getApplication<Application>().resources
-        when {
-            tree == null -> pendingExport = emptyList()
-            !usb.remember(drive, tree) -> {
-                message = res.getString(R.string.usb_wrong_folder, drive.label)
-                pendingExport = emptyList()
-            }
-            else -> write(drive, tree, pendingExport)
+        val files = pendingExport
+        pendingExport = emptyList()
+        if (tree == null) return // Cancelling the picker is not a failed transfer.
+        try {
+            if (usb.remember(drive, tree)) write(drive, tree, files)
+            else usbFailed(files, getApplication<Application>().getString(R.string.usb_wrong_folder, drive.label),
+                drive, problem = UsbTransferProblem.FOLDER)
+        } catch (e: Exception) {
+            usbFailed(files, e.message ?: e.javaClass.simpleName, drive,
+                problem = if (e is SecurityException) UsbTransferProblem.PERMISSION else null)
         }
     }
 
@@ -359,15 +413,21 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 pendingExport = emptyList()
                 busy = false
                 if (granted) writeDirect(drive, pending)
-                else message = getApplication<Application>().getString(R.string.usb_direct_permission_denied)
+                else usbFailed(pending, getApplication<Application>().getString(R.string.usb_direct_permission_denied), drive, problem = UsbTransferProblem.PERMISSION)
             }
         } catch (e: Exception) {
             permissionDrive = null; pendingExport = emptyList(); busy = false
-            message = getApplication<Application>().getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName)
+            usbFailed(files, e.message ?: e.javaClass.simpleName, drive)
         }
     }
 
-    internal fun cancelDirectSpace() { directSpaceRequest = null }
+    internal fun cancelDirectSpace() {
+        val request = directSpaceRequest ?: return
+        directSpaceRequest = null
+        viewModelScope.launch { publishUsbResult(UsbTransferRecord(drive = request.drive.label,
+            failures = request.plan.payloads.map { it.source to "Not enough space/root entries; export cancelled before deletion" } + request.plan.failures,
+            remainingBytes = request.plan.freeBytes, technical = request.plan.diagnostics)) }
+    }
     internal fun confirmDirectDelete(names: Set<String>) {
         val request = directSpaceRequest ?: return
         if (busy || !request.plan.canProceed(names)) return
@@ -379,56 +439,41 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         plan: DirectUsbExporter.SpacePlan? = null, deleteNames: Set<String> = emptySet()) {
         val target = drive.direct ?: return
         pendingExport = emptyList()
-        directFailure = null
         busy = true
         viewModelScope.launch {
-            val res = getApplication<Application>().resources
-            val writeSettings = SettingsPreferences(getApplication()).read().writeSettings
             try {
+                val writeSettings = SettingsPreferences(getApplication()).read().writeSettings
                 when (val result = withContext(Dispatchers.IO) {
                     if (plan == null) usb.directExporter.export(target, files, writeSettings)
                     else usb.directExporter.resume(target, plan, deleteNames)
                 }) {
                     is DirectUsbExporter.Result.NeedSpace -> directSpaceRequest = DirectSpaceRequest(drive, result.plan)
                     is DirectUsbExporter.Result.Complete -> {
-                        val report = result.report
-                        message = if (report.failures.isEmpty()) res.getString(R.string.usb_direct_exported,
-                            report.exported.size, report.exported.joinToString())
-                        else res.getString(R.string.usb_partial, report.exported.size, report.failures.size,
-                            "${report.failures.first().first}: ${report.failures.first().second}")
-                        if (report.warnings.isNotEmpty()) message = message + "\n" +
-                            res.getString(R.string.usb_direct_compatibility_warning, report.warnings.joinToString("\n"))
-                        directFailure = result.failure
+                        usbCompleted(drive, result.report)
                         selection.clear()
                     }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: DirectUsbFailure) { directFailure = e }
-            catch (e: Exception) { message = res.getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName) }
+            catch (e: Exception) {
+                usbFailed(if (plan == null) files else plan.payloads.map { File(it.source) },
+                    e.message ?: e.javaClass.simpleName, drive, (e as? DirectUsbFailure)?.diagnostics.orEmpty())
+            }
             finally { busy = false }
         }
     }
 
     private fun write(drive: UsbExporter.Drive, folder: Uri, files: List<File>) {
         pendingExport = emptyList()
+        busy = true
         viewModelScope.launch {
-            busy = true
-            val res = getApplication<Application>().resources
-            val settings = SettingsPreferences(getApplication()).read().writeSettings
-            message = runCatching { withContext(Dispatchers.IO) { usb.export(folder, files, settings) } }.fold(
-                onSuccess = { r ->
-                    when {
-                        r.failures.isEmpty() -> res.getString(R.string.usb_exported, r.exported.size, drive.label)
-                        else -> res.getString(
-                            R.string.usb_partial, r.exported.size, r.failures.size,
-                            "${r.failures.first().first}: ${r.failures.first().second}",
-                        )
-                    }
-                },
-                onFailure = { res.getString(R.string.usb_failed, it.message ?: it.javaClass.simpleName) },
-            )
-            busy = false
-            selection.clear()
+            try {
+                val settings = SettingsPreferences(getApplication()).read().writeSettings
+                val report = withContext(Dispatchers.IO) { usb.export(folder, files, settings) }
+                usbCompleted(drive, report)
+                selection.clear()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { usbFailed(files, e.message ?: e.javaClass.simpleName, drive) }
+            finally { busy = false }
         }
     }
 }

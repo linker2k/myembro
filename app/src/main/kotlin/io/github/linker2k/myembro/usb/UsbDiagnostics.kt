@@ -63,10 +63,11 @@ internal class UsbDiagnosticCapture : Fat12Volume.MountObserver {
             expected = 0
         }
     }
-    fun report(device: String, error: Exception): String = buildString {
+    fun report(device: String, error: Exception? = null): String = buildString {
         appendLine("myembro SE400 USB/FAT12 diagnostics v3")
         appendLine(device)
-        appendLine("Failure: ${error.javaClass.simpleName}: ${error.message}")
+        if (error == null) appendLine("Mount diagnostic snapshot (transfer result is recorded separately)")
+        else appendLine("Failure: ${error.javaClass.simpleName}: ${error.message}")
         val response = inquiry
         if (response != null && response.size >= 36) {
             fun field(offset: Int, size: Int) = String(response, offset, size, Charsets.US_ASCII).trim { it <= ' ' }

@@ -41,7 +41,9 @@ class UsbExporter(private val context: Context) {
     }
 
     class Report(val exported: List<String>, val converted: Int, val failures: List<Pair<String, String>>,
-        val warnings: List<String> = emptyList())
+        val warnings: List<String> = emptyList(),
+        val files: List<UsbTransferredFile> = emptyList(), val remainingBytes: Long? = null,
+        val notices: Set<UsbTransferNotice> = emptySet(), val diagnostics: String = "")
 
     fun drives(): List<Drive> {
         val mounted = storage.storageVolumes.filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
@@ -86,6 +88,8 @@ class UsbExporter(private val context: Context) {
         val existing = folder.listFiles().mapNotNull { it.name }.toMutableSet()
         val exported = mutableListOf<String>()
         val failures = mutableListOf<Pair<String, String>>()
+        val written = mutableListOf<UsbTransferredFile>()
+        val notices = mutableSetOf<UsbTransferNotice>()
         var converted = 0
         for (design in designs) {
             runCatching {
@@ -96,13 +100,31 @@ class UsbExporter(private val context: Context) {
                     ?: error("Could not create $name")
                 context.contentResolver.openOutputStream(doc.uri, "w")?.use { it.write(prepared.bytes) }
                     ?: error("Could not write $name")
-                existing += name
-                exported += name
+                val actualName = doc.name ?: name
+                existing += actualName
+                exported += actualName
+                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong())
+                if (name != prepared.fileName) notices += UsbTransferNotice.NAME_COLLISION
                 if (prepared.converted) converted++
             }.onFailure { failures += design.name to (it.message ?: it.javaClass.simpleName) }
         }
-        return Report(exported, converted, failures)
+        return Report(exported, converted, failures, files = written, remainingBytes = availableBytes(tree), notices = notices)
     }
+
+    /** Providers may omit available space; never substitute phone storage or an estimate. */
+    private fun availableBytes(tree: Uri): Long? = runCatching {
+        val authority = tree.authority ?: return@runCatching null
+        val rootId = DocumentsContract.getTreeDocumentId(tree).substringBefore(':')
+        context.contentResolver.query(DocumentsContract.buildRootsUri(authority),
+            arrayOf(DocumentsContract.Root.COLUMN_ROOT_ID, DocumentsContract.Root.COLUMN_AVAILABLE_BYTES),
+            null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getString(0).equals(rootId, ignoreCase = true) && !cursor.isNull(1))
+                    return@runCatching cursor.getLong(1).takeIf { it >= 0 }
+            }
+            null
+        }
+    }.getOrNull()
 
     /** Calls [onChange] whenever removable media is mounted or removed. Returns an unregister function. */
     fun watch(onChange: () -> Unit): () -> Unit {
