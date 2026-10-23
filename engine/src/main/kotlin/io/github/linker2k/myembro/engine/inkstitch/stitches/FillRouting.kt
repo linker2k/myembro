@@ -141,9 +141,9 @@ object FillRouting {
         return result
     }
 
-    private data class Node(val x: Double, val y: Double) { fun point() = FillPoint(x, y) }
-    private data class NodeData(var outline: Int? = null, var projection: Double = 0.0)
-    private class Edge(val id: Int, val a: Node, val b: Node, val key: String,
+    internal data class Node(val x: Double, val y: Double) { fun point() = FillPoint(x, y) }
+    internal data class NodeData(var outline: Int? = null, var projection: Double = 0.0)
+    internal class Edge(val id: Int, val a: Node, val b: Node, val key: String,
         val segment: Int? = null, val points: List<FillPoint>? = null, var weight: Double = 1.0) {
         val underpathEdges = mutableSetOf<Int>()
         fun other(node: Node) = if (node == a) b else a
@@ -152,7 +152,7 @@ object FillRouting {
         fun segment() = edge.key.startsWith("segment")
         fun outline() = listOf("outline", "extra", "initial").any(edge.key::startsWith)
     }
-    private class Graph {
+    internal class Graph {
         val nodes = linkedMapOf<Node, NodeData>()
         val edges = linkedMapOf<Int, Edge>()
         private val adjacency = linkedMapOf<Node, LinkedHashMap<Node, LinkedHashMap<String, Edge>>>()
@@ -188,7 +188,11 @@ object FillRouting {
         fun copy(): Graph {
             val copy = Graph()
             for ((node, data) in nodes) { copy.node(node.point()); copy.nodes[node] = data.copy() }
-            for (edge in edges.values) copy.add(edge.a, edge.b, edge.key, edge.segment, edge.points, edge.weight)
+            // MultiGraph.copy reinserts every adjacency in node -> neighbor -> key order.
+            // Global edge insertion order is different: it can change pick_edge's first
+            // outline neighbor and therefore reverse whole fill sections after a copy.
+            for (node in nodes.keys) for (edge in at(node))
+                copy.add(node, edge.other(node), edge.key, edge.segment, edge.points, edge.weight)
             return copy
         }
     }

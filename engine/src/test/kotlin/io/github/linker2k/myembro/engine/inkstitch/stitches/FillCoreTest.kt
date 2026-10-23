@@ -10,6 +10,18 @@ import kotlin.test.*
 
 /** Upstream v3.3.0 has no direct fill/tatami unit tests. These use hand-calculated source formulas. */
 class FillCoreTest {
+    @Test fun graphCopyUsesNetworkXNodeNeighborKeyOrderRatherThanGlobalEdgeOrder() {
+        val graph=FillRouting.Graph()
+        val a=graph.node(FillPoint(0.0,0.0)); val b=graph.node(FillPoint(10.0,0.0)); val c=graph.node(FillPoint(0.0,10.0))
+        graph.add(a,c,"outline"); graph.add(b,c,"outline"); graph.add(a,b,"outline")
+        assertEquals(listOf(c,a),graph.at(b).map { it.other(b) })
+        val copied=graph.copy()
+        assertEquals(listOf(a,c),copied.at(b).map { it.other(b) })
+        assertEquals(3,copied.edges.size)
+        assertEquals(listOf(a,b,c),copied.nodes.keys.toList())
+        graph.add(a,b,"extra")
+        assertEquals(listOf("outline","extra"),graph.copy().at(a).filter { it.other(a)==b }.map { it.key })
+    }
     private fun rectangle(x: Double = 0.0, y: Double = 0.0, width: Double = 40.0, height: Double = 20.0): Polygon =
         FillGeometry.factory.createPolygon(arrayOf(Coordinate(x,y), Coordinate(x+width,y),
             Coordinate(x+width,y+height), Coordinate(x,y+height), Coordinate(x,y)))

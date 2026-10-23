@@ -93,3 +93,45 @@ hole 관측은 양쪽 bbox 중심을 평행이동 정규화한 30–70% 사각 �
 단순 짧은 땀 차단만으로 원본 동등성을 판정하지 않는다. 공식 8mm hole dense 자체에도
 0.3mm 미만 양수 땀이 있으며, 정상 잠금/재방문은 동일점 누적을 증가시킨다.
 전체 수치와 차단 원인은 후속 결과 기록에서 보고한다.
+
+
+## 1차 기준선과 그래프 복제 교정
+
+고정 커밋 `088b3caedff0330e07988e024687270b15256972`의 깨끗한 체크아웃에서
+225/225 PES를 1분 52초에 생성했다. 원본 판독은 pyembroidery만 사용한 참고 관측이다.
+입력/출력 해시와 결과는 `/tmp/myembro-port-out/model-baseline-088b3ca/`에 보관한다.
+
+| 범위 | 건수 | 땀 수 ±5% | needle Hausdorff ≤0.2mm | 두 조건 모두 | 순서 p95≤0.3mm·최대≤1mm |
+|---|---:|---:|---:|---:|---:|
+| 전체(음성 1 포함) | 225 | 191 | 95 | 93 | 83 |
+| rectangle | 32 | 32 | 29 | 29 | 29 |
+| circle | 32 | 31 | 6 | 6 | 7 |
+| hole | 32 | 31 | 3 | 3 | 0 |
+| sharp_corner | 32 | 14 | 0 | 0 | 0 |
+| narrow_tip | 32 | 32 | 28 | 28 | 23 |
+| self_intersection | 32 | 19 | 1 | 0 | 0 |
+| crossing_strokes | 32 | 32 | 27 | 27 | 24 |
+
+이 표는 전체 동등 판정이 아니다. 잠금·제어명령 검토 등 독립 기준이 더 남아 있다.
+
+정적 대조에서 `FillRouting.Graph.copy`가 global edge 삽입순으로 복제하던 차이를 확인했다.
+원본이 쓰는 [NetworkX MultiGraph.copy](https://networkx.org/documentation/stable/_modules/networkx/classes/multigraph.html#MultiGraph.copy)는
+**node → neighbor → key** 순서로 양방향 간선을 다시 넣는다. 이 순서가 달라지면
+`pick_edge`의 첫 outline 선택이 바뀌고 같은 행 집합의 긴 섹션 순서가 바뀐다.
+A/B/C 3노드 회귀로 순서를 확인하고 이 복제를 맞췄다. 이는 source 동작 교정이며
+PE-Design 출력 패턴을 맞추는 변경이 아니다. 수정 후 전체 재생 결과는 후속 기록에 추가한다.
+
+관측된 구멍/짧은 땀 관련 사항:
+
+- hole 32건의 재료 영역 coverage 표본은 양쪽 모두 100%, 0.05mm 안쪽 구멍 내부 바늘은
+  양쪽 모두 0개였다. 따라서 현재 표본에서는 넓은 미충전 영역이 주원인이라는 근거가 없다.
+- running tolerance/양자화로 모서리를 잘라 구멍 inset을 지나는 봉제 선은 공식 22건,
+  포트 18건이었다. 이 관측을 바늘이 구멍에 꽂혔다는 뜻으로 해석하지 않는다.
+- 전체 74건에서 포트의 양수 <0.3mm 땀 수가 원본보다 많았다. hole에서는 6건이었다.
+  정상 잠금/재방문과 row/travel의 짧은 끝땀을 포함하므로 이 통계만으로 오류를 확정하지 않는다.
+- `short` 원인 후보는 행·travel 연결/순서 변화, JTS와 GEOS의 repair·경계 순서,
+  quantization이다. `stitch_row`의 raw 시작 중복 자체는 원본에도 있고 최종 0.1mm 필터가 처리한다.
+- 명시적 start/end가 행과 닿지 않는 hole에 놓이면 현재 노드를 버리는 동작과,
+  underpath 소진 후 경로가 없을 때 원본의 직선 후보→polygon clamp 복구 대신 오류를 내는
+  차이가 남아 있다. 이 225건에서는 생성 실패가 없으므로 관측된 실패라고 단정하지 않는다.
+  구멍 명령 별도 회귀를 통해 S4에서 다룰 항목이다.
