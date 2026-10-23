@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
+import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -33,13 +34,19 @@ class RedworkPipelineTest {
         val report = SewoutCheck.checkPes(bytes, options = SewoutOptions(
             placement = Placement.HOOP_COORDINATES,
             // Generated-output threshold from /tmp/myembro-quality-gate/POLICY.md: >15 / 0.5mm.
-            hotspotPenetrations = 16,
+            origin = DesignOrigin.APP_GENERATED,
         ))
         val output = File("/tmp/myembro-port-out/editor/redwork").apply { mkdirs() }
         File(output, "$name.pes").writeBytes(bytes)
         File(output, "$name.svg").writeText(result.outlineSvg)
         File(output, "$name.pbm").writeText(requireNotNull(javaClass.getResource("/redwork/$name.pbm")).readText())
         File(output, "$name.sewout.txt").writeText(report.findings.joinToString("\n") { "${it.severity}: ${it.code}: ${it.message}" })
+        // PES does not preserve generated metadata: explicitly check the app's default v1
+        // bytes with the same generated-output policy as PhotoViewModel.
+        val appReport = SewoutCheck.checkPes(PesWriter.write(result.pattern), options = SewoutOptions(
+            placement = Placement.HOOP_COORDINATES, origin = DesignOrigin.APP_GENERATED))
+        assertTrue(appReport.analysisComplete)
+        assertFalse(appReport.hasBlockingIssues, appReport.findings.filter { it.severity == Severity.BLOCKER }.joinToString())
         assertTrue(report.analysisComplete)
         assertFalse(report.hasBlockingIssues, report.findings.filter { it.severity == Severity.BLOCKER }.joinToString())
         assertContentEquals(bytes, RedworkPipeline.generate(width, height, rgb, 60.0, 0,

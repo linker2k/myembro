@@ -120,7 +120,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     ensureActive()
                     val pes = PesWriter.write(generated.pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
-                        SewoutOptions(hoop = frame, placement = Placement.HOOP_COORDINATES, hotspotPenetrations = 16))
+                        SewoutOptions(hoop = frame, placement = Placement.HOOP_COORDINATES,
+                            origin = DesignOrigin.APP_GENERATED))
                     Triple(RenderData(generated.pattern), pes, check)
                 }
                 if (version == revision) { render = output.first; bytes = output.second; report = output.third }
