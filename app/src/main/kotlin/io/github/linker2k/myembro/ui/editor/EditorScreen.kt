@@ -26,6 +26,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.SewingPosition
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
+import io.github.linker2k.myembro.ui.fonts.FontLibraryScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.rememberDesignImporter
@@ -269,13 +270,26 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             val background = remember(vm.project, vm.letteringTargetId) {
                 vm.project.copy(objects = vm.project.objects.filterNot { it.id == vm.letteringTargetId }).flatten()
             }
-            ModalBottomSheet(onDismissRequest = vm::dismissLettering,
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), sheetMaxWidth = 720.dp) {
-                key(vm.letteringTargetId) {
-                    LetteringScreen(onBack = vm::dismissLettering,
-                        onAdd = { if (vm.commitLettering(it)) { preview = 1f; activeTool = 0 } },
-                        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.96f), hoop = vm.project.hoop,
-                        backgroundPattern = background, initialObject = original)
+            key(vm.letteringTargetId) {
+                var showFonts by rememberSaveable { mutableStateOf(false) }
+                var pickedFontId by rememberSaveable { mutableStateOf<String?>(null) }
+                val closeFonts = { showFonts = false }
+                ModalBottomSheet(onDismissRequest = vm::dismissLettering,
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), sheetMaxWidth = 720.dp,
+                    properties = ModalBottomSheetProperties(shouldDismissOnBackPress = !showFonts)) {
+                    Box(Modifier.fillMaxWidth().fillMaxHeight(0.96f)) {
+                        // Keep the draft composed underneath the library: text and every setting survive a pick/back.
+                        LetteringScreen(onBack = vm::dismissLettering,
+                            onAdd = { if (vm.commitLettering(it)) { preview = 1f; activeTool = 0 } },
+                            onOpenFonts = { showFonts = true },
+                            modifier = Modifier.fillMaxSize(), hoop = vm.project.hoop,
+                            initialFontId = pickedFontId, backgroundPattern = background, initialObject = original)
+                        if (showFonts) {
+                            BackHandler(onBack = closeFonts)
+                            FontLibraryScreen(onBack = closeFonts,
+                                onPick = { id -> pickedFontId = id; closeFonts() })
+                        }
+                    }
                 }
             }
         }
