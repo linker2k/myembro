@@ -266,3 +266,36 @@ BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 
 시작 형식은 동시에 만족할 수 없다. 잠금 예외와 공통 Plan의 기본값을 합의하고,
 새틴 변형에 적용할 독립 게이트 분류를 확정한 뒤 출력 매트릭스를 다시 판정해야 한다.
 게이트나 임계값은 이 브랜치에서 수정하지 않았다.
+
+## claude-canvas S3: Ink/Stitch 자수 글꼴 (브랜치 `claude/inkfonts-s3`)
+
+S3만 담은 브랜치입니다. `origin/main`에서 출발해 `origin/codex/letter`(S2 새틴 포트)를 합친 위에 쌓았으므로 S2 병합 뒤에 병합합니다. SVG 가져오기·복제·십자수 작업은 `claude/svg-import-archive`에 보관했고 이 브랜치에는 없습니다.
+
+| 기능 | 원본 (v3.3.0 `b0edd96`) | 테스트 |
+|---|---|---|
+| 글꼴 읽기(최소 SAX 파서) | lib/lettering/{font_variant,glyph}.py, lib/svg/{guides,path,units}.py, lib/elements/utils/nodes.py | `InkStitchFontTest` |
+| 배치: 커닝, 진행, 공백, leading, letter_case, back_and_forth, 줄별 정렬 | lib/lettering/font.py | `InkStitchFontTest` |
+| 봉제 호출 | 새틴 `SatinColumn.fromSubpaths`, 채우기 `InkAutoFill`, 러닝 `InkRunning`, 마무리 `StitchPlanFinisher` (모두 letter 브랜치 포트) | 렌더 높이·색 테스트 |
+| 카탈로그·US-3 화면 | – | `InkStitchCatalogTest`, 앱 빌드 |
+
+### 차이점
+
+| 위치 | 원본 동작 | 우리 동작 | 이유 |
+|---|---|---|---|
+| 없는 글자 | default_glyph로 대체 | 그 글꼴을 고를 수 없게 함 | US-3 |
+| 레터링 높이 | 배율(%) | 'H'(없으면 가장 큰 글리프) 잉크 높이, 기록 범위로 제한 | 앱의 높이 기준 |
+| clone·도형 요소, auto_satin, color_sort, trim 옵션 | 지원 | 이 버전에서 제외(clone·도형은 세기만 함) | 다음 버전. 카탈로그 43종에는 clone·도형이 없음 |
+| 채우기 각도 | 반시계(fill.py) | `InkAutoFill`에 부호를 바꿔 넘김 | 포트의 grating이 시계 방향. embro-model/letter 확인 필요 |
+
+### 카탈로그 43종으로 줄어든 이유 (총괄·embro-letter 확인 필요)
+
+전 폰트를 기록된 최소·최대 높이에서 렌더해 본 결과, 재배포 가능하고 봉제 가능한 78종 중 35종이 생성 단계에서 거부됩니다.
+- 33종: `StitchPlanFinisher`의 0.5mm 셀 상한 8회(앱 자체 규칙, Ink/Stitch에는 없음). 예: alchemy 150mm, emilio_20 67.8mm, ambigue 11.9mm.
+- 1종(cooper_marif): 새틴 포트가 렁이 레일과 정확히 한 번씩 교차하지 않으면 거부합니다(원본은 그런 렁을 걸러 냄).
+- 1종(western_light 26.7mm): JTS TopologyException.
+
+규칙이 바뀌면 `tools/inkstitch_catalog.py`로 카탈로그와 미리보기를 다시 만듭니다.
+
+### 재현
+
+`tools/inkstitch_port_out.sh` → `/tmp/myembro-port-out/claude-canvas/fonts/*.pes`, `results.json`(matrix_sha256, commit).

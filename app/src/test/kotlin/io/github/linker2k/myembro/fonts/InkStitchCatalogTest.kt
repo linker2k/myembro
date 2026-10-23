@@ -9,7 +9,8 @@ class InkStitchCatalogTest {
     private val fonts = InkStitchCatalog.parse(File("src/main/assets/${InkStitchCatalog.ASSET}").readText())
 
     @Test fun everyFileIsPinnedAndHashed() {
-        assertTrue(fonts.size >= 50)
+        // Only fonts that sew across their whole recorded height range with the shared ports are listed.
+        assertTrue(fonts.size >= 40)
         val commit = Regex("^https://raw\\.githubusercontent\\.com/inkstitch/embroidery-fonts/[0-9a-f]{40}/src/")
         for (f in fonts) {
             assertTrue(listOf(f.url, f.metaUrl!!, f.licenseUrl).all { commit.containsMatchIn(it) }, f.id)
@@ -35,7 +36,7 @@ class InkStitchCatalogTest {
         assertTrue(fonts.all { !it.glyphs.isNullOrEmpty() })
         // No Ink/Stitch font has Hangul (docs/inkstitch-fonts.md).
         assertTrue(fonts.none { it.covers("자수") })
-        assertTrue(fonts.count { it.covers("Jung Min") } > 40)
+        assertTrue(fonts.count { it.covers("Jung Min") } >= 40)
         // Forced capitals: lowercase text is sewn in capitals, so it fits.
         val upper = fonts.first { it.letterCase == "upper" }
         assertTrue(upper.covers("abc") && upper.glyphs!!.none { it == "a" })

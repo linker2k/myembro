@@ -86,10 +86,11 @@ def main():
         # every other note is an element this engine cannot sew yet.
         missing = [u for u in (r["unsupported"].split(",") if r and r["unsupported"] else [])
                    if not u.startswith(("command:", "empty:", "text="))]
-        sewable = r is not None and not missing and not r["error"] and has_h
+        sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_h
         reason = "" if sewable else ("ltr.svg 없음(여러 파일/RTL)" if not svg.is_file() else
                                      "'H' 글리프 없음" if not has_h else
-                                     f"미지원 요소: {','.join(missing) or r['error']}" if r else "조사 누락")
+                                     f"미지원 요소: {','.join(missing)}" if r and missing else
+                                     f"봉제 실패: {r['error'] or r.get('rangeError')}" if r else "조사 누락")
         table.append((d.name, meta.get("font_license", ""), lic_name, cls, note, evidence(text), "예" if sewable else f"아니오 ({reason})"))
         if cls != "가능" or not sewable: continue
         q = lambda f: urllib.parse.quote(f"src/{d.name}/{f}")
