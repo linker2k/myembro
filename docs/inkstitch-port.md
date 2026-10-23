@@ -368,3 +368,19 @@ TTF 새틴 요청을 러닝으로 바꾸며, 새틴 요청을 타타미로 대�
 15회까지 허용하고 16회부터 차단한다. 잠금 판정 기준③은 바꾸지 않았다.
 대표 검증은 satin_column 7개 형상의 20mm 기본값만 재생성한다. 릴리스 게이트 판정은
 `check-release` 결과로 따로 보고하며 독립 승인이나 실제 봉제 통과로 주장하지 않는다.
+
+대표 7건 재판정(생성 커밋 `0ce60ae0e820985911bf43ba5b47a6a28bc52a56`):
+사각형·원·홀·자기 교차·좁은 끝·급한 꺾임·교차 획, 높이 20mm, 원본 기본값이다.
+출력과 해시는 `/tmp/myembro-port-out/letter/representative-7/manifest.json`,
+재현 입력은 같은 폴더 `inputs.json`이다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:satinOracle -PmatrixFile=/tmp/myembro-port-out/letter/representative-7/inputs.json -PportOutput=/tmp/myembro-port-out/letter/representative-7
+/tmp/myembro-quality-gate/check-release --stage S2 --matrix /tmp/myembro-port-out/letter/representative-7/release-matrix.json --json /tmp/myembro-port-out/letter/representative-7/release-report.json
+/tmp/myembro-quality-gate/quality-gate check --matrix /tmp/myembro-port-out/letter/representative-7/release-matrix.json --json /tmp/myembro-port-out/letter/representative-7/quality-report.json
+```
+
+`check-release`: **BLOCK — previous stage gate/release/user sewout confirmation pending**.
+S1 승인 대기이며 게이트 도구·단계 상태·잠금 기준은 바꾸지 않았다.
+별도 기능 진단은 기존 게이트의 5개 조건 **7/7 PASS**. 릴리스 통과나 독립 최종 승인으로
+대체하지 않는다. 다음 단계는 총괄의 S1 검토 결과에 따른다.
