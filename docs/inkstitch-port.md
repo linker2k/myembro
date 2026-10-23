@@ -421,3 +421,13 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   릴리스 매트릭스의 font 축은 `feature/shape` fixture ID이며 제품 폰트·안전 크기 범위가 아니다.
 - **S1 병합/배포 승인 대기**: Codex의 남은 게이트 검토와 사용자 실제 봉제. S2 이후로 자동 진전하지 않는다.
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
+
+
+## 별도 원본: Wu 이미지 색 양자화
+
+Ink/Stitch 자체 기능으로 표시하지 않는다. `ImageQuantizer.kt`는 Xiaolin Wu의
+Graphics Gems `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`를
+포팅한다. custom Graphics Gems 허가/원본 배포 고지는 `licenses/graphics-gems/`에 보존.
+차이점(호출별 배열·Long/Float 유지·하위 박스 Vol·입력 경계)은
+`docs/image-pipeline.md`의 Wu 표에 기록한다. 대표 RGB 3개에 대해 원본 C LUT/픽셀
+인덱스를 자동 비교하며, 앱·땀 생성에는 연결하지 않는다.

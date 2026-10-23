@@ -484,3 +484,23 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
+
+## Wu color quantizer / Graphics Gems II
+
+- Author: Xiaolin Wu; thanks to Tom Lane for documentation and bug correction.
+- Source: `gemsii/quantizer.c` (original C v2 of the 1991 Graphics Gems II algorithm),
+  https://github.com/erich666/GraphicsGems/tree/ca4898517a93b6b45444a9cda5fd50132694b864 .
+- Kotlin translation: `engine/.../inkstitch/svg/image/ImageQuantizer.kt`.
+- Upstream is the custom Graphics Gems permission below, **not MIT or public domain**.
+  Original file also states “Free to distribute, comments and suggestions are appreciated.”
+  Copyright remains with the original authors; the Kotlin translation is GPL-3.0-or-later
+  with upstream notices preserved. No native library or app integration is added.
+- Original permission and author notice are packaged under `licenses/graphics-gems/`.
+
+```text
+LICENSE
+
+This code repository predates the concept of Open Source, and predates most licenses along such lines. As such, the official license truly is:
+
+EULA: The Graphics Gems code is copyright-protected. In other words, you cannot claim the text of the code as your own and resell it. Using the code is permitted in any program, product, or library, non-commercial or commercial. Giving credit is not required, though is a nice gesture. The code comes as-is, and if there are any flaws or problems with any Gems code, nobody involved with Gems - authors, editors, publishers, or webmasters - are to be held responsible. Basically, don't be a jerk, and remember that anything free comes with no guarantee.
+```
