@@ -5,6 +5,7 @@ import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
 import io.github.linker2k.myembro.engine.model.*
+import io.github.linker2k.myembro.engine.model.Stitch
 import kotlin.math.hypot
 import kotlin.test.*
 

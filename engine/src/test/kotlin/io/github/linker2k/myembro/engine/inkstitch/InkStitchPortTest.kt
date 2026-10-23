@@ -10,6 +10,7 @@ import io.github.linker2k.myembro.engine.geometry.Polyline
 import io.github.linker2k.myembro.engine.lettering.*
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.model.*
+import io.github.linker2k.myembro.engine.model.Stitch
 import io.github.linker2k.myembro.engine.edit.*
 import kotlin.math.*
 import kotlin.test.*

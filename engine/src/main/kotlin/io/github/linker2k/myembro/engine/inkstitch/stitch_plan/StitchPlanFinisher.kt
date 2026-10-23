@@ -9,6 +9,7 @@ package io.github.linker2k.myembro.engine.inkstitch.stitch_plan
 import io.github.linker2k.myembro.engine.inkstitch.stitches.*
 import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.model.*
+import io.github.linker2k.myembro.engine.model.Stitch as MachineStitch
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
 import kotlin.math.*
 
@@ -31,9 +32,9 @@ object StitchPlanFinisher {
     private const val VERSION = "inkstitch-v1"
     private const val MARKER = "myembro.stitch-plan"
     private const val LOCKS = "myembro.lock-indices"
-    private fun point(s: Stitch) = Point(s.x / 10.0, s.y / 10.0)
-    private fun stitch(p: Point, command: Command = Command.STITCH) = Stitch((p.x * 10).roundToInt(), (p.y * 10).roundToInt(), command)
-    private data class Tagged(val stitch: Stitch, val lock: Boolean = false)
+    private fun point(s: MachineStitch) = Point(s.x / 10.0, s.y / 10.0)
+    private fun stitch(p: Point, command: Command = Command.STITCH) = MachineStitch((p.x * 10).roundToInt(), (p.y * 10).roundToInt(), command)
+    private data class Tagged(val stitch: MachineStitch, val lock: Boolean = false)
 
     /** [rebuild] strips our previous locks before applying transformed geometry or a combined generated plan. */
     fun finish(pattern: EmbPattern, options: StitchSafetyOptions = StitchSafetyOptions(), rebuild: Boolean = false, centerOutput: Boolean = false): EmbPattern {
@@ -140,8 +141,8 @@ object StitchPlanFinisher {
         } }
         val sewn = filtered.any { it.stitch.command == Command.STITCH }
         val last = filtered.lastOrNull()?.stitch
-        val commands = if (sewn) filtered.map { it.stitch } + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END)
-            else listOf(Stitch(0, 0, Command.END))
+        val commands = if (sewn) filtered.map { it.stitch } + MachineStitch(last?.x ?: 0, last?.y ?: 0, Command.END)
+            else listOf(MachineStitch(0, 0, Command.END))
         val locks = filtered.indices.filter { filtered[it].lock }.joinToString(",")
         return EmbPattern(commands, if (sewn) pattern.threads else emptyList(),
             pattern.metadata + mapOf(MARKER to VERSION, LOCKS to locks), pattern.warnings)
@@ -152,9 +153,9 @@ object StitchPlanFinisher {
         require(window > 0 && gridMm > 0)
         val result = arrayListOf<StartConcentration>()
         var start = 0
-        var points = arrayListOf<Stitch>()
+        var points = arrayListOf<MachineStitch>()
         var shorts = 0
-        var previous = Stitch(0, 0, Command.JUMP)
+        var previous = MachineStitch(0, 0, Command.JUMP)
         fun flush(end: Int) {
             if (points.isEmpty()) return
             val maxCell = points.groupingBy { floor(it.x / (gridMm * 10)).toLong() to floor(it.y / (gridMm * 10)).toLong() }.eachCount().values.max()

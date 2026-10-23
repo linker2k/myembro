@@ -466,3 +466,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   The optional `libusbcommunication` module is not included. No libaums filesystem
   factory is invoked. `engine/fat12` is an independent GPL-3.0-or-later Kotlin
   implementation; the app adapts sector I/O and handles explicit deletion consent.
+
+## Ink/Stitch ports
+
+- Source: Ink/Stitch **v3.3.0**, commit `b0edd96311ece82ee48816dc93466274b12c2a9c`:
+  https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c .
+- Ported source files are identified in each Kotlin header and `docs/inkstitch-port.md`.
+  Copyright (c) Ink/Stitch contributors; original files also credit Authors (git history).
+- License: **GPL-3.0-or-later**. Full GPL text is packaged at
+  `engine/src/main/resources/licenses/inkstitch/LICENSE` in the engine JAR/APK.
+- Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
+  No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
+  Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
