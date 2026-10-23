@@ -206,7 +206,7 @@ class FontRepository(context: Context) {
                 }
             } catch (e: UserFontException) { throw e
             } catch (e: Exception) { throw UserFontException(UserFontException.Reason.UNREADABLE, e) }
-            val sampleChars = FontQualitySummary.SAMPLE.filterNot(Char::isWhitespace)
+            val sampleChars = FontQualityGateway.sample(hangul = true) + FontQualityGateway.sample(hangul = false)
             if (geometry.missing(font, sampleChars).size == sampleChars.toSet().size) {
                 throw UserFontException(UserFontException.Reason.NO_GLYPHS)
             }

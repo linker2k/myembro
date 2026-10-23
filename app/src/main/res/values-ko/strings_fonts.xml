@@ -42,11 +42,9 @@
     <string name="fonts_grade_good">좋음</string>
     <string name="fonts_grade_caution">주의</string>
     <string name="fonts_grade_unsuitable">부적합</string>
-    <string name="fonts_min_height_unfixable">획이 닿아 있어 크기를 키워도 해결되지 않아요</string>
     <string name="fonts_min_height">권장 높이 %1$smm 이상</string>
-    <string name="fonts_sample_report">%1$dmm: 가장 얇은 곳 %2$smm · %3$d땀 · 점프 %4$d · 좁은 곳 %5$d</string>
+    <string name="fonts_sample_report">%1$dmm: 얇은 획 %2$smm · 좁은 간격 %3$smm · %4$d땀 · 점프 %5$d</string>
     <string name="fonts_reason_missing_hangul">이 글꼴에는 한글이 없어요.</string>
-    <string name="fonts_reason_not_scalable">획이 서로 닿거나 겹쳐 있어 크기를 키워도 해결되지 않아요. 다른 글꼴을 골라 보세요.</string>
     <string name="fonts_reason_missing_latin">이 글꼴에는 영문 대문자가 없어요.</string>
     <string name="fonts_analyzing">분석 중…</string>
     <string name="fonts_size_kb">%1$dKB</string>

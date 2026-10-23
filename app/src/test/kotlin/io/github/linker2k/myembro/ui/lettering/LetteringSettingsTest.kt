@@ -37,13 +37,13 @@ class LetteringSettingsTest {
             heightMm = 10.0, contourSourceHeight = 100.0, stitchStyle = StitchStyle.FILL)
         val quality = outlineTextQuality(text)
         assertEquals(0.5, quality.minStrokeMm, 0.01)
-        assertEquals(24.0, filledLetteringMinimumHeight(quality), 0.01)
-        assertEquals(Grade.UNSUITABLE, quality.grade)
+        assertEquals(20.0, filledLetteringMinimumHeight(quality), 0.01)
+        assertEquals(Grade.CAUTION, quality.grade)
     }
 
     @Test fun sa431PreviewUsesActualAspectRatioAndKeepsQualityHeightIndependentOfHoop() {
         val hoop = HoopSpec("SA431", 600, 200) // 60 × 20 mm landscape sewing area
-        val thinGlyph = listOf(listOf(0.0 to -10.0, 0.5 to -10.0, 0.5 to 0.0, 0.0 to 0.0, 0.0 to -10.0))
+        val thinGlyph = listOf(listOf(0.0 to -10.0, 0.4 to -10.0, 0.4 to 0.0, 0.0 to 0.0, 0.0 to -10.0))
         val obj = TextObject("small", text = "I", fontKind = FontKind.OUTLINE, contours = thinGlyph,
             heightMm = 10.0, contourSourceHeight = 10.0)
         val pattern = obj.localPattern()
@@ -53,7 +53,7 @@ class LetteringSettingsTest {
         assertEquals(3f, (hoop.width * viewport.scale) / (hoop.height * viewport.scale))
         val report = FontQuality.analyze(listOf(thinGlyph), 10.0, outline = true)
         assertEquals(Grade.UNSUITABLE, report.grade)
-        assertEquals(24.0, report.recommendedMinHeightMm, 0.01)
+        assertEquals(25.0, report.recommendedMinHeightMm, 0.01)
         assertTrue(letteringOutsideHoop(obj.copy(heightMm = report.recommendedMinHeightMm).localPattern(), hoop))
         assertTrue(letteringOutsideHoop(obj.copy(heightMm = 21.0).localPattern(), hoop))
         val vertical = HoopSpec("SA431 portrait", 200, 600)

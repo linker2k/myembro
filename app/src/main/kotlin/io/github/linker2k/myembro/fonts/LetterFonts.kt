@@ -6,7 +6,9 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import io.github.linker2k.myembro.engine.edit.FontKind
 import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.lettering.FontQuality
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
+import io.github.linker2k.myembro.engine.lettering.QualityLimit
 import io.github.linker2k.myembro.engine.lettering.SvgFont
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
@@ -30,7 +32,7 @@ data class LetterFont(
     val outline: Boolean get() = kind == Kind.OUTLINE
 }
 
-/** Result of the 10 mm / 20 mm sample analysis, stored beside each font as `<file>.quality.json`. */
+/** Result of the 10 mm / 20 mm analysis of the script sample, stored beside each font as `<file>.quality.json`. */
 data class FontQualitySummary(
     val grade: QualityGrade,
     val recommendedMinHeightMm: Double,
@@ -49,9 +51,8 @@ data class FontQualitySummary(
     }
 
     companion object {
-        const val SAMPLE = "가나다 ABC 자수"
-        /** Bump when the analysis changes; older stored reports are recomputed. */
-        const val ANALYSIS_VERSION = 5
+        /** Follows the engine's analysis version; older stored reports are recomputed. */
+        const val ANALYSIS_VERSION = FontQuality.VERSION
 
         fun fromJson(o: JSONObject) = FontQualitySummary(
             grade = QualityGrade.valueOf(o.getString("grade")),
@@ -61,16 +62,9 @@ data class FontQualitySummary(
             reasons = o.optJSONArray("reasons")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
         )
 
-        /** Badge: good if fine at 10 mm, caution if usable at 20 mm, otherwise unsuitable. */
-        fun of(at10: QualityReport, at20: QualityReport, missing: List<String>): FontQualitySummary {
-            var grade = when {
-                at10.grade == QualityGrade.GOOD -> QualityGrade.GOOD
-                at20.grade != QualityGrade.UNSUITABLE -> QualityGrade.CAUTION
-                else -> QualityGrade.UNSUITABLE
-            }
-            if (missing.isNotEmpty() && grade == QualityGrade.GOOD) grade = QualityGrade.CAUTION
-            return FontQualitySummary(grade, at10.recommendedMinHeightMm, at10, at20, missing + at10.reasons)
-        }
+        /** Badge by [FontQuality.fontGrade]. */
+        fun of(at10: QualityReport, at20: QualityReport, missing: List<String>): FontQualitySummary =
+            FontQualitySummary(FontQuality.fontGrade(at10, at20, missing.isNotEmpty()), at10.recommendedMinHeightMm, at10, at20, missing + at10.reasons)
 
         private fun QualityReport.toJson() = JSONObject().apply {
             putMm("minStrokeMm", minStrokeMm)
@@ -80,6 +74,10 @@ data class FontQualitySummary(
             put("tightSpots", tightSpots)
             put("grade", grade.name)
             put("reasons", JSONArray(reasons))
+            inkP10Mm?.let { put("inkP10Mm", it) }
+            gapP10Mm?.let { put("gapP10Mm", it) }
+            loopP10Mm?.let { put("loopP10Mm", it) }
+            put("limitedBy", limitedBy.name)
         }
 
         private fun reportFromJson(o: JSONObject) = QualityReport(
@@ -90,9 +88,13 @@ data class FontQualitySummary(
             tightSpots = o.getInt("tightSpots"),
             grade = QualityGrade.valueOf(o.getString("grade")),
             reasons = o.optJSONArray("reasons")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
+            inkP10Mm = o.optDouble("inkP10Mm").takeIf { it.isFinite() },
+            gapP10Mm = o.optDouble("gapP10Mm").takeIf { it.isFinite() },
+            loopP10Mm = o.optDouble("loopP10Mm").takeIf { it.isFinite() },
+            limitedBy = QualityLimit.valueOf(o.optString("limitedBy", QualityLimit.DETAIL.name)),
         )
 
-        // The engine reports "no limit" / "not fixable by scaling" as +Infinity, which JSON cannot hold.
+        // "Nothing measured" is +Infinity, which JSON cannot hold.
         private fun JSONObject.putMm(key: String, value: Double) = put(key, if (value.isFinite()) value else JSONObject.NULL)
 
         private fun JSONObject.mm(key: String) = if (isNull(key)) Double.POSITIVE_INFINITY else getDouble(key)
@@ -146,17 +148,21 @@ class LetterFontGeometry(context: Context) {
         }
     }
 
-    /** Analyzes [FontQualitySummary.SAMPLE] at 10 mm and 20 mm. */
+    /** Whether the font has Hangul (and so is analyzed with the Hangul sample). */
+    fun hasHangul(font: LetterFont): Boolean = missing(font, "가").isEmpty()
+
+    /** Analyzes the font's script sample ([FontQualityGateway.sample]) at 10 mm and 20 mm. */
     fun analyze(font: LetterFont): FontQualitySummary {
-        val sample = FontQualitySummary.SAMPLE
-        val lacking = missing(font, sample)
+        val hangul = hasHangul(font)
         val reasons = buildList {
-            if (lacking.any { it in '가'..'힣' }) add(QualityReasons.MISSING_HANGUL)
-            if (lacking.any { it in 'A'..'Z' }) add(QualityReasons.MISSING_LATIN)
+            if (!hangul) add(QualityReasons.MISSING_HANGUL)
+            if (missing(font, "A").isNotEmpty()) add(QualityReasons.MISSING_LATIN)
         }
-        val chars = sample.filter { !it.isWhitespace() && it !in lacking }
-        val at10 = FontQualityGateway.analyze(glyphContours(font, chars, 10.0), 10.0, font.outline)
-        val at20 = FontQualityGateway.analyze(glyphContours(font, chars, 20.0), 20.0, font.outline)
+        val sample = FontQualityGateway.sample(hangul)
+        val lacking = missing(font, sample)
+        val chars = sample.filter { it !in lacking }
+        val at10 = FontQualityGateway.analyze(glyphContours(font, chars, 10.0), 10.0, font.outline, hangul)
+        val at20 = FontQualityGateway.analyze(glyphContours(font, chars, 20.0), 20.0, font.outline, hangul)
         return FontQualitySummary.of(at10, at20, reasons)
     }
 
