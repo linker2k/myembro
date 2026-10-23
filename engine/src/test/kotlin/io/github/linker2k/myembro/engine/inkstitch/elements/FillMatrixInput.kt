@@ -4,7 +4,7 @@
 package io.github.linker2k.myembro.engine.inkstitch.elements
 
 import io.github.linker2k.myembro.engine.geometry.Affine2D
-import io.github.linker2k.myembro.engine.geometry.SvgPath
+import io.github.linker2k.myembro.engine.inkstitch.oracle.ManualCspPath
 import io.github.linker2k.myembro.engine.inkstitch.stitches.FillGeometry
 import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -85,8 +85,8 @@ internal object FillMatrixInput {
                     }
                     // Upstream FillStitch.original_shape uses the largest flattened path as
                     // shell and the remaining paths as holes, before make_valid and filtering.
-                    val rings=SvgPath.flatten(path,transform,0.1).map { polyline ->
-                        var points=polyline.points
+                    val rings=ManualCspPath.flatten(path,transform,0.1).map { flattened ->
+                        var points=flattened
                         if(points.size<3) {
                             val first=points.first()
                             points=listOf(first,first.copy(x=first.x+1),first.copy(y=first.y+1))

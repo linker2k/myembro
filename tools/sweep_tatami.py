@@ -75,7 +75,7 @@ def main():
                          reasons=([source['error']] if source.get('error') else []) + decision['reasons']))
     rules = {
         'schema_version': 1, 'scope': 'exact finite fixture grid only', 'default_decision': 'DENY',
-        'deployment_enabled': False, 'deployment_reason': 'Candidate only; official equivalence regression tests are failing',
+        'deployment_enabled': False, 'deployment_reason': 'Candidate only; current CI and physical sew-out approval are separate requirements',
         'continuous_range_proven': False, 'arbitrary_polygons_covered': False,
         'angle_deg': 0, 'size_grid_mm': sorted(sizes),
         'shape_definitions': {'square': 'width=height=size', 'circle': 'diameter=size',

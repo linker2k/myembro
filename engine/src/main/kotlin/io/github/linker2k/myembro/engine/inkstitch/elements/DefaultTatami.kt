@@ -26,12 +26,14 @@ object DefaultTatami {
         if (region.isEmpty) return emptyList()
         val locks = LockStitches.fromParameters(LockStitchParameters())
         val groups = mutableListOf<StitchGroup>()
+        var start: io.github.linker2k.myembro.engine.geometry.Point? = null
         // Keep each component's underlay directly before its top fill.
         for (part in polygons(region.geometry).sortedBy { it.envelopeInternal.minX }) {
             val component = PolygonRegion(part)
             for ((settings, tag) in listOf(underlay to "fill_underlay", top to "fill_top")) {
-                for (path in InkAutoFill.paths(component,settings)) {
+                for (path in InkAutoFill.paths(component,settings,start)) {
                     if (path.isEmpty()) continue
+                    start = path.last()
                     groups += StitchGroup(color=thread,stitches=path.map {
                         Stitch(it.x*PIXELS_PER_MM/10,it.y*PIXELS_PER_MM/10,setOf("tatami_fill",tag))
                     },lockStart=locks.start,lockEnd=locks.end)

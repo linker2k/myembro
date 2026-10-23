@@ -768,3 +768,15 @@ CI push 대상은 모든 브랜치, 검증 명령은 `./gradlew check`로 바꿨
 [명령/결과/범위 제한](tatami-sweep.md)에 표와 JSON을 기록했다.
 공식 동등성3건 실패는 해결하지 않은 상태이며 앱 연결/배포는 비활성이다.
 이번 단위는 여기서 멈추고 총괄 검토를 기다린다.
+
+
+### 20분 단위: 공식 동등성3건 수정
+
+간소화 InkAutoFill 그래프를 기존 TatamiFill/FillRouting 어댑터로 바꾸고,
+바탕 땀 마지막점을 top 시작점에 전달했다. 원본 running tolerance0.2mm를 적용했다.
+테스트 SVG 경계는 기존 worker의 Inkex CSP 평탄화 포트를 공유한다.
+[전후 수치/원본 대조/명령 출력](tatami-equivalence-fix.md)을 기록했다.
+`./gradlew :engine:clean :engine:check`: 509 tests, 0 failures, BUILD SUCCESSFUL in21s.
+공식3건 모두 땀수100% 일치, Hausdorff0.141422mm 미만. 외부 게이트도 PASS3/3.
+이전430스윕은 이전backend 이력이다. 새 코어 재스윕 전 허용규칙 비활성은 유지한다.
+원격 CI/실봉제 승인과 혼동하지 않는다. 이번 단위 종료, 총괄 지시 대기.

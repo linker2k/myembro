@@ -14,6 +14,15 @@ class AutoFillPortTest {
         val paths=InkAutoFill.paths(region)
         assertTrue(paths.size>=2)
         assertTrue(paths.flatten().any { it.x>150 })
-        paths.forEach { path -> path.zipWithNext().forEach { (a,b) -> assertTrue(region.offset(1e-5).coversSegment(a,b),"$a -> $b") } }
+        // Source travel() clamps its path before even_running_stitch(..., tolerance=0.2mm).
+        // Needle points remain in the polygon; straight stitch chords can cut a corner by <=0.2mm.
+        val needleArea=region.offset(1e-5)
+        val chordArea=region.offset(2.0+1e-5) // native units: 0.2mm, not a fitted oracle tolerance.
+        paths.forEach { path ->
+            path.forEach { assertTrue(needleArea.covers(it),"needle $it outside polygon") }
+            path.zipWithNext().forEach { (a,b) ->
+                assertTrue(if(a==b) chordArea.covers(a) else chordArea.coversSegment(a,b),"$a -> $b")
+            }
+        }
     }
 }

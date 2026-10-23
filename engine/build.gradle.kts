@@ -58,3 +58,9 @@ tasks.register<JavaExec>("generateTatamiSweep") {
     args(providers.gradleProperty("tatamiSweepDir").orElse("/tmp/myembro-tatami-sweep").get(),
         providers.gradleProperty("tatamiSweepSizes").orElse((5..90).joinToString(",")).get())
 }
+
+// Oracle regression tests reuse the pinned Inkex curve boundary instead of a different SVG flattener.
+sourceSets.test {
+    compileClasspath += oracleSourceSet.output
+    runtimeClasspath += oracleSourceSet.output
+}
