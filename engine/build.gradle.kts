@@ -59,3 +59,11 @@ tasks.register<JavaExec>("makeSampler") {
         providers.gradleProperty("samplerGapMm").orElse("5").get())
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
+
+tasks.register<JavaExec>("makeS4Samples") {
+    group = "verification"
+    description = "Generate original 30mm flower/house redwork samples with the S4 pipeline"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.S4SamplesCli")
+    args("/tmp/myembro-sewtest/s4")
+}
