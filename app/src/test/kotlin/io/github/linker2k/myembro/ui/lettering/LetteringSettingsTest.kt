@@ -6,6 +6,11 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.FontQuality
 import io.github.linker2k.myembro.engine.lettering.Grade
+import io.github.linker2k.myembro.engine.lettering.FontQualityReport
+import io.github.linker2k.myembro.engine.lettering.FillOptions
+import io.github.linker2k.myembro.engine.lettering.FillBorder
+import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.ui.format.Dimensions
 import kotlin.test.assertFalse
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,6 +18,29 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LetteringSettingsTest {
+    @Test fun fillWarningsKeepMeasuredRecommendationAndPracticalMinimumInBothUnits() {
+        val report = FontQualityReport(2.0, 3.0, 100, 1, 0, Grade.GOOD, emptyList())
+        assertEquals(6.0, filledLetteringMinimumHeight(report))
+        assertEquals(24.0, filledLetteringMinimumHeight(report.copy(recommendedMinHeightMm = 24.0)))
+        assertEquals(Double.POSITIVE_INFINITY, filledLetteringMinimumHeight(report.copy(recommendedMinHeightMm = Double.POSITIVE_INFINITY)))
+        assertEquals("12.7mm (½in)", Dimensions.length(12.7))
+        val options = FillOptions(0.5, 45.0, 0.3, false, FillBorder.BEAN)
+        val settings = LetteringSettings("자수", "jua", 12.7, 1.0, LetteringAlignment.CENTER,
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = StitchStyle.FILL, fillOptions = options)
+        assertEquals(options, settings.copy(text = "ㅇㅁB").fillOptions)
+    }
+
+    @Test fun editorChecksCachedOutlineQualityWithoutNeedingTheFont() {
+        val thin = listOf(0.0 to 0.0, 5.0 to 0.0, 5.0 to 100.0, 0.0 to 100.0, 0.0 to 0.0)
+        val text = TextObject("offline", text = "II", fontId = "deleted-font", fontKind = FontKind.OUTLINE,
+            contours = listOf(thin, thin.map { (x, y) -> x + 30 to y }), contourCharacters = listOf(0, 1),
+            heightMm = 10.0, contourSourceHeight = 100.0, stitchStyle = StitchStyle.FILL)
+        val quality = outlineTextQuality(text)
+        assertEquals(0.5, quality.minStrokeMm, 0.01)
+        assertEquals(24.0, filledLetteringMinimumHeight(quality), 0.01)
+        assertEquals(Grade.UNSUITABLE, quality.grade)
+    }
+
     @Test fun sa431PreviewUsesActualAspectRatioAndKeepsQualityHeightIndependentOfHoop() {
         val hoop = HoopSpec("SA431", 600, 200) // 60 × 20 mm landscape sewing area
         val thinGlyph = listOf(listOf(0.0 to -10.0, 0.5 to -10.0, 0.5 to 0.0, 0.0 to 0.0, 0.0 to -10.0))

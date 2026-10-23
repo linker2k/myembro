@@ -112,12 +112,13 @@ object LetteringFontPreview {
     suspend fun pattern(
         context: Context, fontId: String, text: String, heightMm: Double, thread: EmbThread,
         stitchStyle: StitchStyle? = null,
+        fillOptions: FillOptions = FillOptions(),
     ): EmbPattern = withContext(Dispatchers.Default) {
         val source = loadFont(context.applicationContext, fontId)
         val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
         val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
-            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle)
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle, fillOptions = fillOptions)
         prepareObject(source, settings, thread).localPattern()
     }
 }
@@ -145,6 +146,7 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
         singleLine = source.face == null,
         stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
+        fillOptions = settings.fillOptions, satinOptions = settings.satinOptions,
     )
 }
 
@@ -153,7 +155,8 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val text = normalizedLetteringText(settings.text)
     val source = loadFont(context, settings.fontId)
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
-    val pattern = placed.placedPattern()
+    val transformed = placed.placedPattern()
+    val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
     val quality = qualityFor(source, settings.fontId, text, settings.heightMm)
     val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
     val outside = letteringOutsideHoop(pattern, hoop)

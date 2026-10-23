@@ -6,6 +6,7 @@ import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 
@@ -40,6 +41,7 @@ data class TextObject(
     val singleLine: Boolean = fontKind == FontKind.HERSHEY,
     val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.RUNNING,
     val satinOptions: SatinOptions = SatinOptions(),
+    val fillOptions: FillOptions = FillOptions(),
 ) : DesignObject {
     init {
         require(lineSpacing.isFinite() && lineSpacing >= 1.0)
@@ -50,6 +52,7 @@ data class TextObject(
         require(contourBaselines.isEmpty() || contourBaselines.size == contours.size)
         require(contourBaselines.all { it.isFinite() })
         require(fontKind != FontKind.OUTLINE || characterThreads.isEmpty() || contourCharacters.size == contours.size)
+        require(stitchStyle != StitchStyle.FILL || !singleLine) { "Fill requires an outline font" }
     }
     private val pattern: EmbPattern by lazy {
         when (fontKind) {
@@ -61,6 +64,7 @@ data class TextObject(
                 baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
                 contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
                 contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = satinOptions,
+                fillOptions = fillOptions, contourCharacters = contourCharacters, outline = !singleLine,
             )
         }
     }

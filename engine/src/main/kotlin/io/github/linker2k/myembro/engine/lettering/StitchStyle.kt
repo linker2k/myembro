@@ -5,7 +5,7 @@ import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.Stitch
 
-enum class StitchStyle { RUNNING, BEAN, SATIN }
+enum class StitchStyle { RUNNING, BEAN, SATIN, FILL }
 
 /** Expand only sewn movements A→B into A→B→A→B, after quantization/subdivision. */
 internal fun EmbPattern.withStitchStyle(style: StitchStyle): EmbPattern {

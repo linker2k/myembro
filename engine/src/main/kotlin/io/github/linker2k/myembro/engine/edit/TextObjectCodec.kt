@@ -5,6 +5,8 @@ import kotlinx.serialization.json.*
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.lettering.FillOptions
+import io.github.linker2k.myembro.engine.lettering.FillBorder
 
 /** Editable lettering, including cached font outlines for offline reconstruction without Android. */
 object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject::class.java) {
@@ -18,6 +20,13 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         put("fontKind", obj.fontKind.name)
         put("singleLine", obj.singleLine)
         put("stitchStyle", obj.stitchStyle.name)
+        put("fillOptions", buildJsonObject {
+            put("densityMm", obj.fillOptions.densityMm)
+            put("angleDeg", obj.fillOptions.angleDeg)
+            put("pullCompensationMm", obj.fillOptions.pullCompensationMm)
+            put("underlay", obj.fillOptions.underlay)
+            put("border", obj.fillOptions.border.name)
+        })
         put("satinOptions", buildJsonObject {
             put("widthMm", obj.satinOptions.widthMm)
             put("densityMm", obj.satinOptions.densityMm)
@@ -70,6 +79,13 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             ?: ((data["fontKind"]?.jsonPrimitive?.content?.let(FontKind::valueOf) ?: FontKind.HERSHEY) == FontKind.HERSHEY),
         // Existing projects used running stitch; opening them must not triple the stitch count.
         stitchStyle = data["stitchStyle"]?.jsonPrimitive?.content?.let(StitchStyle::valueOf) ?: StitchStyle.RUNNING,
+        fillOptions = data["fillOptions"]?.jsonObject?.let { fill -> FillOptions(
+            densityMm = fill["densityMm"]?.jsonPrimitive?.double ?: 0.4,
+            angleDeg = fill["angleDeg"]?.jsonPrimitive?.double ?: 0.0,
+            pullCompensationMm = fill["pullCompensationMm"]?.jsonPrimitive?.double ?: 0.2,
+            underlay = fill["underlay"]?.jsonPrimitive?.boolean ?: true,
+            border = fill["border"]?.jsonPrimitive?.content?.let(FillBorder::valueOf) ?: FillBorder.RUNNING,
+        ) } ?: FillOptions(),
         satinOptions = data["satinOptions"]?.jsonObject?.let { satin -> SatinOptions(
             widthMm = satin["widthMm"]?.jsonPrimitive?.double ?: 2.0,
             densityMm = satin["densityMm"]?.jsonPrimitive?.double ?: 0.4,

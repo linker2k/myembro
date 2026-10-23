@@ -23,6 +23,10 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.Alignment as ObjectAlignment
 import io.github.linker2k.myembro.engine.edit.Axis
 import io.github.linker2k.myembro.engine.edit.densityWarning
+import io.github.linker2k.myembro.engine.edit.TextObject
+import io.github.linker2k.myembro.engine.lettering.StitchStyle
+import io.github.linker2k.myembro.ui.lettering.LetteringModeSelector
+import io.github.linker2k.myembro.ui.lettering.TextFillWarning
 import java.io.File
 import java.util.Locale
 import kotlin.math.abs
@@ -52,6 +56,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var rotation by remember(obj.id) { mutableStateOf(format(t.rotationDeg)) }
     var sx by remember(obj.id) { mutableStateOf(format(abs(t.scaleX) * 100)) }
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
+    var style by remember(obj.id) { mutableStateOf((obj as? TextObject)?.stitchStyle ?: StitchStyle.RUNNING) }
     val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,
@@ -59,6 +64,13 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
         text = {
             Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(obj.name, style = MaterialTheme.typography.bodyMedium)
+                if (obj is TextObject) {
+                    LetteringModeSelector(obj.singleLine, style, { style = it })
+                    TextFillWarning(obj, style)
+                    TextButton(onClick = { vm.openLettering(obj.id); onDismiss() }) {
+                        Text(stringResource(R.string.lettering_fill_advanced))
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NumericField(x, { x = it }, R.string.editor_property_x, Modifier.weight(1f))
                     NumericField(y, { y = it }, R.string.editor_property_y, Modifier.weight(1f))
@@ -75,7 +87,9 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(enabled = parsed != null, onClick = { parsed?.let(vm::applyProperties); onDismiss() }) {
+        confirmButton = { TextButton(enabled = parsed != null, onClick = {
+            parsed?.let { if (obj is TextObject) vm.applyTextProperties(it, style) else vm.applyProperties(it) }; onDismiss()
+        }) {
             Text(stringResource(R.string.editor_apply))
         } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) } })

@@ -32,7 +32,7 @@
     <string name="lettering_close">닫기</string>
     <string name="lettering_unsupported">이 폰트에 없는 글자가 있어요. 다른 폰트를 선택해 주세요.</string>
     <string name="lettering_outside">글자가 후프를 벗어났어요. 크기나 자간을 줄여 주세요.</string>
-    <string name="lettering_quality_height">권장 최소 글자 높이: %1$s mm</string>
+    <string name="lettering_quality_height">권장 최소 글자 높이: %1$s</string>
     <string name="lettering_quality_check">가늘거나 맞닿은 획을 확인해 주세요.</string>
     <string name="lettering_quality_hint">가는 획은 자수에서 뭉칠 수 있어요. 크기를 키우거나 굵은 폰트를 골라 보세요.</string>
     <string name="lettering_stats">%1$d땀 · 점프 %2$d회</string>
@@ -47,11 +47,26 @@
     <string name="lettering_grade_good">좋음</string>
     <string name="lettering_grade_caution">주의</string>
     <string name="lettering_grade_unsuitable">부적합</string>
-    <string name="lettering_card_minimum">권장 ≥ %1$s mm</string>
+    <string name="lettering_card_minimum">권장 ≥ %1$s</string>
     <string name="lettering_quality_pending">분석 중…</string>
     <string name="lettering_stroke_style">선 굵기</string>
     <string name="lettering_running">1겹 러닝</string>
     <string name="lettering_bean">3겹 콩땀</string>
     <string name="lettering_bean_hint">3겹 콩땀은 같은 선을 세 번 수놓아 또렷하게 표현해요.</string>
     <string name="lettering_single_line_badge">단선 · 이름 새기기·레드워크에 적합</string>
+    <string name="lettering_sewing_mode">봉제 방식</string>
+    <string name="lettering_outline_mode">외곽선</string>
+    <string name="lettering_fill_mode">채우기(태타미)</string>
+    <string name="lettering_satin_mode">새틴</string>
+    <string name="lettering_density">땀 간격</string>
+    <string name="lettering_fill_angle">채우기 각도</string>
+    <string name="lettering_pull">당김 보정</string>
+    <string name="lettering_underlay">윤곽 언더레이</string>
+    <string name="lettering_center_underlay">센터런 언더레이</string>
+    <string name="lettering_border">테두리 스티치</string>
+    <string name="lettering_border_none">없음</string>
+    <string name="lettering_satin_width">새틴 폭</string>
+    <string name="lettering_satin_hint">좁은 획은 가능한 경우 새틴으로, 넓거나 복잡한 획은 태타미로 채워요.</string>
+    <string name="lettering_satin_fallback">새틴을 적용하기 어려운 일부 획은 태타미로 채웠어요.</string>
+    <string name="lettering_fill_advanced">밀도·언더레이·테두리 설정</string>
 </resources>

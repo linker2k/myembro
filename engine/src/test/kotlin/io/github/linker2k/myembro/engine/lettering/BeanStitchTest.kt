@@ -64,7 +64,7 @@ class BeanStitchTest {
     }
 
     @Test fun bothStylesAndSingleLineSourceSurviveProjectSerialization() {
-        for (kind in FontKind.entries) for (style in StitchStyle.entries) {
+        for (kind in FontKind.entries) for (style in StitchStyle.entries.filter { it != StitchStyle.FILL }) {
             val obj = TextObject("font", text = "AB", fontKind = kind, contours = line, singleLine = true, stitchStyle = style)
             val project = Project(objects = listOf(obj))
             val restored = ProjectJson.decode(project.toJson())

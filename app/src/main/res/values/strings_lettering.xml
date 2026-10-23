@@ -32,7 +32,7 @@
     <string name="lettering_close">Close</string>
     <string name="lettering_unsupported">This font does not support part of the phrase. Choose another font.</string>
     <string name="lettering_outside">The lettering extends beyond the hoop. Reduce its height or spacing.</string>
-    <string name="lettering_quality_height">Recommended minimum height: %1$s mm</string>
+    <string name="lettering_quality_height">Recommended minimum height: %1$s</string>
     <string name="lettering_quality_check">Fine or touching strokes need a closer look.</string>
     <string name="lettering_quality_hint">Fine details may merge when sewn. Try a larger size or a bolder font.</string>
     <string name="lettering_stats">%1$d stitches · %2$d jumps</string>
@@ -47,11 +47,26 @@
     <string name="lettering_grade_good">Good</string>
     <string name="lettering_grade_caution">Caution</string>
     <string name="lettering_grade_unsuitable">Unsuitable</string>
-    <string name="lettering_card_minimum">≥ %1$s mm</string>
+    <string name="lettering_card_minimum">≥ %1$s</string>
     <string name="lettering_quality_pending">Analyzing…</string>
     <string name="lettering_stroke_style">Line weight</string>
     <string name="lettering_running">Single running</string>
     <string name="lettering_bean">Triple bean</string>
     <string name="lettering_bean_hint">Triple bean stitches trace the same line three times for a clearer finish.</string>
     <string name="lettering_single_line_badge">Single line · Great for names and redwork</string>
+    <string name="lettering_sewing_mode">Sewing mode</string>
+    <string name="lettering_outline_mode">Outline</string>
+    <string name="lettering_fill_mode">Fill (tatami)</string>
+    <string name="lettering_satin_mode">Satin</string>
+    <string name="lettering_density">Row spacing</string>
+    <string name="lettering_fill_angle">Fill angle</string>
+    <string name="lettering_pull">Pull compensation</string>
+    <string name="lettering_underlay">Contour underlay</string>
+    <string name="lettering_center_underlay">Center-run underlay</string>
+    <string name="lettering_border">Border stitches</string>
+    <string name="lettering_border_none">None</string>
+    <string name="lettering_satin_width">Satin width</string>
+    <string name="lettering_satin_hint">Satin fills narrow strokes where possible. Wider or complex shapes use tatami.</string>
+    <string name="lettering_satin_fallback">Some strokes use tatami because satin cannot safely cover their shape.</string>
+    <string name="lettering_fill_advanced">Density, underlay and border settings</string>
 </resources>
