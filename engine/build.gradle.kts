@@ -45,3 +45,13 @@ tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
     mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerBoundaryChecks")
     workingDir = rootProject.projectDir
 }
+
+// Explicit 100-case synthetic photo sweep; kept out of every normal unit-test run.
+tasks.register<JavaExec>("runRedworkSweep") {
+    group = "verification"
+    description = "Replay generated photo sweep RGB inputs through redwork and SewoutCheck"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.RedworkSweepCli")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("redworkSweepOutput").orElse("/tmp/myembro-port-out/editor/sweep").get())
+}
