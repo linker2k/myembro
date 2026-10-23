@@ -279,3 +279,22 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew \
   있으면 외부 source root가 필요 없다. 고정 개발자 PC 경로를 제품 코드에 넣지 않는다.
 - 공통 planner 병합·독립 품질 승인 후 후보를 정상 source set으로 옮긴다.
   이 후보 보관/381개 통과를 공개 element 통합이나 봉제 품질 승인 완료로 해석하지 않는다.
+
+
+### 랜덤 running helper (후속 연결용)
+
+`stitches.FillRandomRunning`은 원본 `running_stitch.py`의
+`random_running_stitch` / `stitch_curve_randomly`와 `utils/prng.py`를 별도로 포팅한다.
+스칼라·목록 길이, curve별 seed, BLAKE2s counter, 첫 땀의 무작위 phase,
+허용오차에 의해 짧아진 뒤 phase 보정을 유지한다. 좌표/길이 인수는 px이며
+`stitchLengthSigma`는 10%=0.1의 비율이다. 알려진 해시/직선 수식·코너·목록 순환·seed·끝점
+테스트 12개를 추가했다. 원본을 실행해 얻은 좌표 골든이라고 주장하지 않는다.
+
+이 helper는 **개별 fill의 랜덤 옵션에 아직 연결하지 않았다**. 위 표의
+`enable_random_stitch_length=true` 명시적 거절은 유지한다. 랜덤 분포만 구현한 것을
+randomized fill 전체/게이트 통과로 확대하지 않는다. 유한 수·진행성·자원 상한은 추가 검증한다.
+
+최종 코어 검증: 일반 `JAVA_HOME=… ./gradlew :engine:test` **393개 통과**.
+통합 후보는 별도 preview 실행에서 **391개 통과·112/112 PES 생성**했고,
+최종 외부 판정은 여전히 **BLOCK 112/112**다. 저장한 report의 PES SHA-256가 현재
+112개 후보 파일과 모두 일치하는 것도 확인했다(`docs/inkstitch-fill-gate.json`).
