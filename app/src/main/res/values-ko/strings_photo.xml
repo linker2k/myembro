@@ -1,0 +1,32 @@
+<resources>
+    <string name="photo_title">사진으로 자수</string>
+    <string name="photo_from_photo">사진으로</string>
+    <string name="photo_from_photo_hint">사진을 한 색 선화로</string>
+    <string name="photo_back">뒤로</string>
+    <string name="photo_step">%1$d / 3</string>
+    <string name="photo_crop_title">고르고, 틀에 맞추세요</string>
+    <string name="photo_preview_title">한 색으로 그린 선화</string>
+    <string name="photo_result_title">자수로 준비됐어요</string>
+    <string name="photo_crop_hint">핀치로 확대하고 드래그로 위치를 맞추세요. 왼쪽 위 점이 배경 위에 오게 해주세요.</string>
+    <string name="photo_pick">사진 고르기</string>
+    <string name="photo_pick_again">다른 사진</string>
+    <string name="photo_detail">디테일</string>
+    <string name="photo_detail_hint">디테일이 높을수록 작은 윤곽까지 남습니다.</string>
+    <string name="photo_next">다음</string>
+    <string name="photo_edit">편집기</string>
+    <string name="photo_send">보내기</string>
+    <string name="photo_pass">봉제 점검 · 통과</string>
+    <string name="photo_blocked">봉제 점검 · 차단</string>
+    <string name="photo_stats">%1$,d땀 · 약 %2$d분</string>
+    <string name="photo_time_hint">시간은 추정치입니다. 미확인 기계 사양은 가정값을 사용합니다.</string>
+    <string name="photo_check_title">봉제 점검</string>
+    <string name="photo_close">닫기</string>
+    <string name="photo_blocked_hint">후프 범위나 바늘 밀집 등 봉제 위험이 확인되어 전송할 수 없습니다. 자르기나 디테일을 바꾸거나 편집기로 이동하세요.</string>
+    <string name="photo_check_hint">선택한 기계와 후프 기준의 자동 점검입니다. 실제 봉제 전에는 같은 원단으로 시험해 주세요.</string>
+    <string name="photo_crop_accessibility">후프 틀의 사진. 두 손가락 확대와 드래그로 자르기</string>
+    <string name="photo_name">사진선화</string>
+    <string name="photo_load_failed">사진을 열 수 없습니다. 다른 사진을 골라 주세요.</string>
+    <string name="photo_generate_failed">선과 배경을 구분하기 어렵습니다. 배경이 단순한 사진이나 다른 자르기를 시도해 주세요.</string>
+    <string name="photo_save_failed">전송할 파일을 준비하지 못했습니다. 다시 시도해 주세요.</string>
+    <string name="photo_file_stem">photo_linework</string>
+</resources>
