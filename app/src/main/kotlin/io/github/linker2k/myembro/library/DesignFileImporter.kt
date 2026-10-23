@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.library
 
-import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.io.PesExport
 import java.io.File
 import java.io.IOException
@@ -17,8 +16,8 @@ data class DesignImportLimits(
     val maxFileBytes: Long = 16L * 1024 * 1024,
     val maxTotalBytes: Long = 64L * 1024 * 1024,
     val maxInputBytes: Long = 64L * 1024 * 1024,
-    val maxEntries: Int = 512,
-    val maxDesigns: Int = 100,
+    val maxEntries: Int = 4096,
+    val maxDesigns: Int = 1000,
 ) {
     init {
         require(maxFileBytes > 0 && maxTotalBytes > 0 && maxInputBytes > 0 && maxEntries > 0 && maxDesigns > 0)
@@ -27,12 +26,16 @@ data class DesignImportLimits(
 
 /**
  * Imports one design or a ZIP, flattening every entry name to a sanitized leaf file name.
- * Only PES/PEC/DST are extracted; nested archives and macOS resource forks are ignored.
+ * PES/PEC/DST and MYEMBRO projects are extracted; nested archives and macOS resource forks are ignored.
  * All files are staged and parsed before publishing; a failed archive leaves no partial import.
  * Callers should close their stream with use and call on an IO dispatcher in Android UI.
  */
 class DesignFileImporter(private val directory: File, private val limits: DesignImportLimits = DesignImportLimits()) {
-    fun import(input: InputStream, fileName: String, mimeType: String? = null): List<File> {
+    fun import(input: InputStream, fileName: String, mimeType: String? = null,
+        onSkipped: ((String) -> Unit)? = null,
+        publish: ((File, String) -> File?)? = null,
+        checkpoint: () -> Unit = {},
+    ): List<File> {
         check(directory.isDirectory || directory.mkdirs()) { "Cannot create design library" }
         val staging = Files.createTempDirectory(directory.toPath(), ".design-import-").toFile()
         val staged = mutableListOf<Pair<File, String>>()
@@ -44,6 +47,7 @@ class DesignFileImporter(private val directory: File, private val limits: Design
             val sink = output?.outputStream()
             try {
                 while (true) {
+                    checkpoint()
                     val n = source.read(buffer)
                     if (n < 0) break
                     count += n
@@ -62,7 +66,12 @@ class DesignFileImporter(private val directory: File, private val limits: Design
             val file = File(staging, "${staged.size}.tmp")
             copyEntry(source, file)
             // Avoid importing HTML/error pages or arbitrary data renamed to .pes.
-            PatternReader.read(file.readBytes(), name)
+            try {
+                DesignFormats.read(file.readBytes(), name)
+            } catch (e: Exception) {
+                if (onSkipped == null || e is java.util.concurrent.CancellationException) throw e
+                file.delete(); onSkipped(name); return
+            }
             staged += file to name
         }
         try {
@@ -79,10 +88,16 @@ class DesignFileImporter(private val directory: File, private val limits: Design
                 ((header[2] == 3.toByte() && header[3] == 4.toByte()) || (header[2] == 5.toByte() && header[3] == 6.toByte()))
             val zip = zipSignature || fileName.endsWith(".zip", true) || mimeType in ZIP_MIMES
             if (zip) {
+                if (onSkipped != null && DesignFormats.extension(fileName) != "zip") {
+                    onSkipped(fileName)
+                    return emptyList()
+                }
+                require(zipSignature) { "Invalid ZIP signature: $fileName" }
                 // Closing ZipInputStream also closes the caller's stream, as normal for archive readers.
                 ZipInputStream(stream).use { archive ->
                     var entries = 0
                     while (true) {
+                        checkpoint()
                         val entry = archive.nextEntry ?: break
                         if (++entries > limits.maxEntries) throw IOException("Too many entries in ZIP")
                         if (entry.size > limits.maxFileBytes) throw IOException("ZIP entry exceeds size limit")
@@ -93,6 +108,7 @@ class DesignFileImporter(private val directory: File, private val limits: Design
                             stage(archive, safeName(leaf))
                         } else {
                             copyEntry(archive, null) // count ignored data too, including unknown-size entries
+                            if (!ignored) onSkipped?.invoke(leaf)
                         }
                         archive.closeEntry()
                     }
@@ -100,8 +116,13 @@ class DesignFileImporter(private val directory: File, private val limits: Design
             } else {
                 stage(stream, safeName(fileName))
             }
-            require(staged.isNotEmpty()) { "No PES, PEC or DST embroidery files found" }
+            if (onSkipped == null) require(staged.isNotEmpty()) { "No embroidery files found" }
             for ((file, name) in staged) {
+                checkpoint()
+                if (publish != null) {
+                    publish(file, name)?.let(published::add)
+                    continue
+                }
                 while (true) {
                     val target = File(directory, PesExport.uniqueName(name) { File(directory, it).exists() })
                     try {
@@ -148,7 +169,7 @@ class DesignFileImporter(private val directory: File, private val limits: Design
     }
 
     companion object {
-        private val SUPPORTED = setOf("pes", "pec", "dst")
+        private val SUPPORTED = DesignFormats.extensions
         private val ZIP_MIMES = setOf("application/zip", "application/x-zip", "application/x-zip-compressed")
     }
 }

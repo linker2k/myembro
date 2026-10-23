@@ -14,10 +14,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.R
-import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.library.DesignLibrary
+import io.github.linker2k.myembro.library.DesignFormats
+import io.github.linker2k.myembro.library.DesignImportProgress
+import io.github.linker2k.myembro.library.DesignImportReport
+import io.github.linker2k.myembro.library.ImportSkip
+import io.github.linker2k.myembro.library.ImportSkipReason
+import io.github.linker2k.myembro.library.importDesigns
+import io.github.linker2k.myembro.library.ImportDecisions
+import kotlinx.coroutines.Job
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
 import io.github.linker2k.myembro.usb.DirectUsbExporter
@@ -29,6 +36,8 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val library = DesignLibrary(app)
@@ -108,11 +117,19 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     internal var directFailure by mutableStateOf<DirectUsbFailure?>(null)
         private set
     internal fun dismissDirectFailure() { directFailure = null }
+    val importProgress = MutableStateFlow<DesignImportProgress?>(null)
+    var importReport by mutableStateOf<DesignImportReport?>(null)
+        private set
+    private var importing = false
+    val importDecisions = ImportDecisions()
+    private var importJob: Job? = null
+    private var reloadJob: Job? = null
+    fun cancelImport() { importDecisions.cancel(); importJob?.cancel() }
 
     init {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { library.seedSampleIfEmpty() }
-            reload()
+            refresh()
         }
         refreshDrives()
     }
@@ -141,7 +158,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Picks up designs saved elsewhere, e.g. by the editor. */
     fun refresh() {
-        viewModelScope.launch { reload() }
+        reloadJob?.cancel()
+        reloadJob = viewModelScope.launch { reload() }
     }
 
     private suspend fun reload() {
@@ -164,7 +182,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun describe(file: File): Item = runCatching {
-        val data = RenderData(PatternReader.read(file.readBytes(), file.name))
+        val data = RenderData(DesignFormats.read(file))
         val p = data.pattern
         val size = p.bounds?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-"
         val res = getApplication<Application>().resources
@@ -177,25 +195,31 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         )
     }.getOrElse { Item(file, error = it.message ?: it.javaClass.simpleName) }
 
-    fun import(uris: List<Uri>) {
-        if (uris.isEmpty()) return
-        viewModelScope.launch {
-            val failed = withContext(Dispatchers.IO) {
-                uris.mapNotNull { uri -> runCatching { library.import(uri) }.exceptionOrNull()?.message }
+    fun import(uris: List<Uri>, tree: Uri? = null, onComplete: (DesignImportReport) -> Unit = {}) {
+        if ((uris.isEmpty() && tree == null) || importing) return
+        importing = true
+        importReport = null
+        importProgress.value = DesignImportProgress(0, null, "")
+        importJob = viewModelScope.launch {
+            try {
+                val report = getApplication<Application>().importDesigns(uris, tree, importDecisions::choose) { importProgress.value = it }
+                if (report.cancelled) return@launch
+                // Publish the summary before thumbnail generation (which can take time for large batches).
+                importReport = report
+                importProgress.value = null
+                onComplete(report)
+                refresh()
+            } catch (e: CancellationException) { throw e
+            } catch (e: Exception) {
+                importReport = DesignImportReport(emptyList(), listOf(ImportSkip(tree?.toString() ?: "", ImportSkipReason.FAILED, e.message)))
+            } finally {
+                importProgress.value = null
+                importing = false
             }
-            reload()
-            val res = getApplication<Application>().resources
-            message = if (failed.isEmpty()) res.getString(R.string.library_imported, uris.size)
-            else res.getString(R.string.library_import_failed, failed.first())
         }
     }
 
-    /** Imports a file opened from outside the app and returns the library copy (for the viewer). */
-    suspend fun importForViewing(uri: Uri): File {
-        val file = withContext(Dispatchers.IO) { library.import(uri) }
-        reload()
-        return file
-    }
+    fun dismissImportReport() { importReport = null }
 
     fun toggle(file: File) {
         if (!selection.remove(file)) selection += file
@@ -222,7 +246,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             favorites = favorites - doomed.map { it.name }.toSet()
             preferences.edit().putStringSet("favorites", favorites).apply()
             selection.clear()
-            reload()
+            refresh()
         }
     }
 
@@ -244,7 +268,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 val settings = SettingsPreferences(getApplication()).read()
                 val warnings = withContext(Dispatchers.IO) {
                     requested.flatMap { file ->
-                        val pattern = runCatching { PatternReader.read(file.readBytes(), file.name) }.getOrNull()
+                        val pattern = runCatching { DesignFormats.read(file) }.getOrNull()
                             ?: return@flatMap emptyList()
                         val name = "${file.nameWithoutExtension}.pes"
                         ExportChecks.check(pattern, name, settings, requested.size).map { "$name: $it" }

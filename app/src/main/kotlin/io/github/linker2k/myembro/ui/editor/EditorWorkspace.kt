@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.toArgb
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun EditorToolRail(navigationOnly: Boolean, enabled: Boolean, snapping: Boolean,
@@ -273,9 +275,14 @@ private fun InspectorActions(vm: EditorViewModel, enabled: Boolean) {
 @Composable
 private fun StitchInspector(vm: EditorViewModel, showJumps: Boolean, onJumps: (Boolean) -> Unit,
     preview: Float, onPreview: (Float) -> Unit, enabled: Boolean) {
-    val pattern = remember(vm.project, vm.selectedIds) {
-        if (vm.selectedIds.isEmpty()) vm.project.flatten()
-        else vm.project.copy(objects = vm.project.objects.filter { it.id in vm.selectedIds }).flatten()
+    val project = vm.project
+    val selected = vm.selectedIds
+    val pattern by produceState(EmbPattern(emptyList(), emptyList()), project, selected) {
+        value = withContext(Dispatchers.Default) {
+            val result = if (selected.isEmpty()) project.flatten()
+                else project.copy(objects = project.objects.filter { it.id in selected }).flatten()
+            result.apply { stitchCount; colorBlocks; trimCount }
+        }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         StitchStat(R.string.stat_stitches, pattern.stitchCount)
@@ -304,9 +311,12 @@ private fun StitchStat(label: Int, value: Int) {
 @Composable
 private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
     val obj = vm.selected?.takeIf { vm.selectedIds.size == 1 }
-    val threads = remember(obj, vm.project) {
-        val p = obj?.localPattern() ?: vm.project.flatten()
-        p.threads.ifEmpty { p.colorBlocks.map { it.thread } }
+    val project = vm.project
+    val threads by produceState<List<EmbThread>>(emptyList(), obj, project) {
+        value = withContext(Dispatchers.Default) {
+            val p = obj?.localPattern() ?: project.flatten()
+            p.threads.ifEmpty { p.colorBlocks.map { it.thread } }
+        }
     }
     var selectedIndex by remember(obj?.id) { mutableIntStateOf(0) }
     if (threads.isEmpty()) { Text(stringResource(R.string.editor_inspector_empty), style = MaterialTheme.typography.bodySmall); return }

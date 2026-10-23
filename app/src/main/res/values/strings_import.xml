@@ -1,0 +1,24 @@
+<resources>
+    <string name="import_title">Import designs</string>
+    <string name="import_supported">PES · PEC · DST · ZIP · MYEMBRO\nSelect several files at once.</string>
+    <string name="import_files">Choose files</string>
+    <string name="import_folder">Choose a folder</string>
+    <string name="import_folder_hint">Include subfolders; choose how to handle existing designs.</string>
+    <string name="import_duplicates_title">%1$d existing designs</string>
+    <string name="import_duplicates_hint">These designs have the same name and content. Nothing is imported until all choices are made. Cancel to keep the library unchanged.</string>
+    <string name="import_duplicate_current">%1$d / %2$d · %3$s</string>
+    <string name="import_apply_remaining">Apply to all remaining</string>
+    <string name="import_action_skip">Skip</string>
+    <string name="import_action_copy">Add a copy</string>
+    <string name="import_action_replace">Replace</string>
+    <string name="import_saving">Saving %1$d / %2$d</string>
+    <string name="import_select">Select</string>
+    <string name="import_scanning">Finding files… %1$d found</string>
+    <string name="import_progress">Importing %1$d / %2$d</string>
+    <string name="import_complete">Import complete</string>
+    <string name="import_summary">%1$d imported, %2$d skipped</string>
+    <string name="import_unsupported">Unsupported or invalid format: %1$d</string>
+    <string name="import_duplicate">Same name and content: %1$d</string>
+    <string name="import_failed">Could not read or import: %1$d</string>
+    <string name="import_more">…and %1$d more</string>
+</resources>

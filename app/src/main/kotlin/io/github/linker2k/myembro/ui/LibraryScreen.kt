@@ -69,6 +69,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -114,9 +115,9 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
     var deleting by remember { mutableStateOf<Set<File>>(emptySet()) }
     val visible = vm.visibleItems
     val snackbar = remember { SnackbarHostState() }
-    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) {
-        vm.import(it)
-    }
+    val importer = rememberDesignImporter(onFiles = { vm.import(it) }, onFolder = { vm.import(emptyList(), tree = it) })
+    val importProgress by vm.importProgress.collectAsState()
+    DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vm.onAccessResult(it.data?.data)
     }
@@ -153,7 +154,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                             Icon(Icons.Default.Delete, stringResource(R.string.library_delete))
                         }
                     } else {
-                        TextButton(onClick = { importer.launch(arrayOf("*/*")) }) {
+                        TextButton(onClick = importer) {
                             Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(stringResource(R.string.library_import))

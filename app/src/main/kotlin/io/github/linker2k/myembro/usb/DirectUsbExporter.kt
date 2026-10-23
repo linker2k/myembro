@@ -2,8 +2,8 @@
 package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
-import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
+import io.github.linker2k.myembro.library.DesignFormats
 import java.io.File
 import java.io.IOException
 
@@ -28,7 +28,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
     fun export(target: DirectUsbTarget, designs: List<File>, settings: PesWriteSettings): Result {
         val failures = mutableListOf<Pair<String, String>>()
         val payloads = designs.mapNotNull { file -> runCatching {
-            val prepared = PesExport.prepare(file.readBytes(), file.name, settings)
+            val prepared = DesignFormats.preparePes(file, settings)
             Payload(file.name, prepared.fileName, prepared.bytes, prepared.converted)
         }.onFailure { failures += file.name to (it.message ?: it.javaClass.simpleName) }.getOrNull() }
         if (payloads.isEmpty()) return Result.Complete(UsbExporter.Report(emptyList(), 0, failures))

@@ -17,6 +17,7 @@ import io.github.linker2k.myembro.R
 import android.hardware.usb.UsbManager
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
+import io.github.linker2k.myembro.library.DesignFormats
 import java.io.File
 
 /**
@@ -88,7 +89,7 @@ class UsbExporter(private val context: Context) {
         var converted = 0
         for (design in designs) {
             runCatching {
-                val prepared = PesExport.prepare(design.readBytes(), design.name, settings)
+                val prepared = DesignFormats.preparePes(design, settings)
                 val name = PesExport.uniqueName(prepared.fileName) { it in existing }
                 // octet-stream keeps the exact file name; a PES MIME type would let providers rename it.
                 val doc = folder.createFile("application/octet-stream", name)

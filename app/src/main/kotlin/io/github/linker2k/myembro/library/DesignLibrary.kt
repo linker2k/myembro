@@ -2,9 +2,6 @@
 package io.github.linker2k.myembro.library
 
 import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
-import io.github.linker2k.myembro.engine.io.PesExport
 import java.io.File
 
 /**
@@ -18,35 +15,6 @@ class DesignLibrary(private val context: Context) {
         dir.listFiles { f -> f.isFile && f.extension.lowercase() in SUPPORTED }
             ?.sortedByDescending { it.lastModified() }
             .orEmpty()
-
-    /** Copies [uri] into the library and returns the stored file; never overwrites an existing design. */
-    fun import(uri: Uri): File {
-        val resolver = context.contentResolver
-        val displayName = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
-            ?: uri.lastPathSegment?.substringAfterLast('/')
-            ?: "design.pes"
-        val safeName = displayName.replace(Regex("[/\\\\:*?\"<>|]"), "_")
-        require(safeName.substringAfterLast('.', "").lowercase() in SUPPORTED) {
-            "Unsupported file: $safeName"
-        }
-        val target = File(dir, PesExport.uniqueName(safeName) { File(dir, it).exists() })
-        resolver.openInputStream(uri)?.use { input -> target.outputStream().use { input.copyTo(it) } }
-            ?: error("Cannot read $displayName")
-        return target
-    }
-
-    /** Shared download/ZIP entry point. Run on Dispatchers.IO; may return several designs. */
-    fun importShared(uri: Uri): List<File> {
-        require(uri.scheme == "content") { "Only shared content URIs are accepted" }
-        val resolver = context.contentResolver
-        val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-            ?: uri.lastPathSegment?.substringAfterLast('/') ?: "design.pes"
-        return resolver.openInputStream(uri)?.use { input ->
-            DesignFileImporter(dir).import(input, name, resolver.getType(uri))
-        } ?: error("Cannot read $name")
-    }
 
     fun delete(file: File) {
         if (file.parentFile == dir) file.delete()
@@ -64,6 +32,6 @@ class DesignLibrary(private val context: Context) {
     companion object {
         fun isSample(file: File): Boolean = file.name.startsWith("sample_")
 
-        val SUPPORTED = setOf("pes", "pec", "dst")
+        val SUPPORTED = DesignFormats.extensions
     }
 }
