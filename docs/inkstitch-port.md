@@ -243,13 +243,13 @@ Bean 확장 전에 잠금을 넣어 잠금까지 삼중화하지 않으며, 내�
 | 위치 | 원본과 차이 | 이유/한계 |
 |---|---|---|
 | native generated bridge | 모든 명시적 JUMP/제어 명령을 경계로 보존 | 이미 needle-up으로 확정된 앱 명령을 3mm collapse로 재봉으로 바꾸지 않음; typed groups는 원본 collapse 유지 |
-| legacy 최소 길이 | 기존 샘플러 본문은 min=0, 최종 연속 동일 STITCH만 제거 | 기존의 코너·홀·최대 길이 보존; typed groups의 기본 최소 0.1mm는 변경 없음 |
-| legacy 잠금 | half 분율을 최대 1.5mm의 실제 폴리라인 길이에 적용, 코너도 왕복 | 원본 직선 탐색/0.5px +x fallback을 기존 fill에 적용하면 영역 밖/홀을 꿰맬 수 있음; 원본 InkLockStitch는 그대로 제공 |
-| legacy 짧은 경로 | 가용 경로 길이만 사용, 0길이 잠금은 만들지 않음 | 경로 밖 fallback과 중복 천공 방지; 짧은 비영 잠금은 여전히 가능 |
+| native 최소 길이 | S1부터 원본 기본 0.1mm 적용 후 정수 격자의 연속 중복 STITCH 제거 | 이전 min=0 보존 정책은 기본 경로에서 제거 |
+| native 잠금 | S1부터 원본 `InkLockStitch()` half-stitch 사용 | 별도 폴리라인 잠금 휴리스틱 제거; 원본 fallback과 방향 규칙 유지 |
+| 양자화 중복 | native 격자에서 연속 동일 STITCH 제거 | 0.1mm로 양자화된 바늘의 중복 천공 방지; 제어 명령과 JUMP 뒤 첫 STITCH 보존 |
 | native 최종 격자 | 연속 STITCH→동일 STITCH만 삭제, JUMP→첫 STITCH는 보존 | 원본 px에서 다른 점도 0.1mm 양자화 후 0길이가 될 수 있음 |
-| legacy 최대 길이 | 호출자의 maxStitchLengthMm를 정수 격자에서 재검증/분할 | 0.2mm 등 기존 레터링 API의 상한에 잠금도 맞춤; 0.1mm 대각선은 필요한 축 이동 2개로 표현 |
+| native 명시적 최대 길이 | 호출자의 maxStitchLengthMm를 정수 격자에서 재검증/분할 | 0.2mm 등 기존 레터링 API의 상한에 잠금도 맞춤; 0.1mm 대각선은 필요한 축 이동 2개로 표현 |
 | provenance | finish/lock indices/run anchors/command anchors/max length 메타데이터 추가 | 임의 잠금 모양으로 본문 좌표를 추측하지 않고, 오직 우리 잠금만 strip/rebuild |
-| native 재생성 시 타입 | finish는 legacy half 정책, custom lock 타입/파라미터는 EmbPattern에 직렬화하지 않음 | 편집 가능한 새 요소는 원본 SVG 속성을 보유해 groups로 다시 생성해야 함; native 출력만으로 원래 custom spec 복원은 미지원 |
+| native 재생성 | 기본 호출은 원본 `SewingOptions()`로 재생성; 명시적 옵션 API는 엔진에만 유지 | 앱에 상세 설정·타입 선택 UI 없음. 원본 본문을 별도로 보존하여 길이 필터를 다시 적용할 수 있음 |
 | 합성 결과 | 객체별 잠금 유지, 합성 전체에는 finished 마커를 붙이지 않음 | 서로 다른 raw/생성 패턴을 다시 전역 잠금하지 않음; 합성 파일 자체는 완성 machine pattern |
 
 ### 통합 담당 메모
@@ -306,3 +306,97 @@ PES/리포트는 build 또는 /tmp에만 생성하고 바이너리를 커밋하�
 | `ec620c1` Ripple·클립 그래프 | ripple_stitch, tatami_fill | 전용 29개, SVG 2개; release BLOCK |
 | `26aa2d3` Stroke 파사드 | elements/stroke, elements/element | 전용 13개, SVG 4개; release BLOCK |
 | `a77f591` 기존 생성 경로 연결 | 앱 고유 연결, 위 공통 후처리 | 통합 3개 및 기존 전체 회귀 통과; raw/본문/변환 보존 |
+
+
+## S1 개정 — 자동 마무리만 적용 (2026-10-24)
+
+개정한 main 작업트리 `docs/ui-stories.md`의 **실패 없는 디자인** 원칙을 따른다.
+봉제 설정 섹션, 잠금 타입 선택/미리보기, 고급 파라미터 및 점검 요약 줄은 배포하지 않는다.
+10종 잠금과 고급 파라미터 API는 원본 검증·후속 개발용 엔진 기능이며 화면에 노출하지 않는다.
+Ripple/Satin provider 연결, Bean 등 추가 생성 기능 활성화는 이번 단계에서 제외한다.
+
+- 기본 잠금: 원본 `half_stitch`, `ties=0`, `force_lock_stitches=false`.
+- 최소 땀: 0.1mm. 그룹 최소 점프: 3mm. `trim_after=false`는 원본 기본값이며,
+  기존 명시적 TRIM 및 객체 사이 TRIM은 보존한다. 근거 없는 자동 트림 거리 상수는 추가하지 않는다.
+- 기존 native 생성 bridge의 자체 폴리라인 half-lock과 min=0 기본 정책을 제거한다.
+  typed `StitchPlanBuilder`는 원본 그룹 collapse·색·trim/stop 규칙 그대로 사용한다.
+- native 패턴의 이미 명시된 JUMP는 needle-up 명령으로 보존한다. SVG 그룹 provenance가 없는
+  바늘 명령에서 빈 공간을 재봉으로 바꾸지 않으며, 이 호환 경계는 원본 그룹 collapse와 구분한다.
+- 기존 레터링/편집기의 생성 패턴은 같은 기본 후처리를 사용한다. 이전 `.myembro`의 생성
+  객체도 다시 계산한다. raw PES/PEC/DST에는 잠금/최소 길이 정리를 적용하지 않는다.
+  원본 PES 저장·공유·USB 전송의 바이트 전달은 유지한다.
+- 앱 기본값은 고정값이며 `sewing_options` 저장소나 사용자 설정을 읽지 않는다.
+  미리보기·봉제 점검·PES 내보내기는 같은 기본값을 사용한다.
+
+### 고정 SVG 매트릭스 재현
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:verifyInkstitchWorkerBoundary :engine:runInkstitchWorkerMatrix
+# 동등한 CLI (입력/출력 경로 옵션은 --help):
+python3 tools/generate_inkstitch_worker_matrix.py
+```
+
+- 입력 목록: `/tmp/myembro-quality-gate/matrix-inkstitch.json`의 `stitch_plan/`, `ties/`, `stroke/`.
+- 실제 입력: `/tmp/myembro-inkstitch-oracle/inputs/`의 materialized SVG. 원래 입력과 SVG의
+  SHA-256을 검증하며 `.oracle.json`에서는 식별·출처 필드만 읽는다.
+- 출력: `/tmp/myembro-port-out/worker/{stitch_plan,ties,stroke}/<id>.pes`.
+- 목록·입력 해시·실행 커밋·dirty 여부: 같은 폴더 `manifest.json`, `inputs.tsv`.
+- 507건 중 505건 생성, 2건은 stroke가 없고 퇴화된 fill만 있어 명시적 X.
+  fill을 임의 running으로 바꾸지 않는다. GENERATED는 동등 판정이 아니다.
+- Runner는 Inkex CSP 제어점→transform→0.1px subdivision, 전체 명령의 bbox 중심,
+  pystitch translate/scale 평가 순서와 Python 짝수 반올림을 원본처럼 적용한다.
+  공개 adapter와 편집기 배치 좌표 계약은 변경하지 않는다.
+- 원본 출력 비교용 `PesWriteSettings(inkstitchCommands=true)`는 pystitch PEC의 viewport prefix,
+  첫 JUMP 이후 trim/jump, trailing STOP duplicate 색 이벤트를 재현한다.
+  이 opt-in 프로필은 원점을 바꾸므로 앱의 기존 배치·가져오기 경로에는 적용하지 않는다.
+  일반 writer의 기본 바이트는 유지한다. 공식 PES의 모든 바이트 동일성을 주장하지 않는다.
+- 원본 Ink/Stitch/Inkex/pystitch는 읽기만 했으며 실행·의존성 설치를 하지 않았다.
+
+독립 판정 제출 커맨드(원본 실행이 아닌 embro-codex 비교 도구):
+
+```sh
+python3 /tmp/myembro-inkstitch-oracle/compare_matrix.py --ports /tmp/myembro-port-out/worker/manifest.json --report /tmp/myembro-port-out/worker/independent-comparison.json
+```
+
+PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바꾸지 않는다. 병합 판정은
+독립 담당 Codex의 비교·재보정 게이트가 맡으며, 실제 SE400 봉제 검토는 별도 완료 조건이다.
+
+### 원본 기본 잠금의 경계 사례 — 안전 승인과 구분
+
+`half_stitch`는 15개 후보 중 시작점에서 0.5mm보다 먼 점이 없으면 방향을 **+x**, 길이를
+**0.5 SVG px**로 사용한다. 따라서 `(200,198)→(198,198)` native 경로에서는 잠금 바늘이
+`(201,198)`까지 나올 수 있다(도형 경계보다 0.1mm 바깥). 원본 그대로의 동작이며 임의로
+도형 안으로 잘라 내거나 별도 폴리라인 잠금으로 대체하지 않는다.
+
+`DigitizingTest`는 실제 후처리 출력에서 추적된 기본 잠금 인덱스만 제외하고 **필터된 본문**의
+구멍·오목부·분리 영역 불변식을 검사한다. 삭제 전 본문을 복구하는 `stripGeneratedLocks`로
+검사하지 않는다. 별도 회귀는 위 fallback 좌표와 전체 잠금의 영역 포함 보장이 없음을 명시한다.
+본문 검증 통과나 oracle 동등이 잠금까지 항상 도형 안에 있다는 안전 승인을 뜻하지 않는다.
+이 경계 사례와 native bridge의 명시적 JUMP 보존은 독립 Codex 검토 항목이며, 실제 봉제는 미검증이다.
+
+### S1 독립 비교 기록
+
+`compare_matrix.py`(criteria SHA-256
+`fbbf03ab6872d767b2c996f46f3c1cf3055b0b9f8f54b4c0a35fccdc095d6b74`) 원문 결과:
+
+| 제출 기능 | 동등 | 불일치 | 미판정 |
+|---|---:|---:|---:|
+| stitch_plan | 168 | 0 | 1 |
+| ties | 168 | 0 | 1 |
+| stroke | 169 | 0 | 0 |
+
+미판정 2건은 `ORACLE_UPSTREAM_ERROR`로 공식 기준 출력의 오류다. 제출하지 않은 S2 이후
+기능은 이 기록에 포함하지 않는다. 이는 **PES-output comparison**이며 mechanical release gate,
+원본 소스 전체 감사, SE400 실제 봉제 통과와 별개의 판정이다. 최종 커밋에서 매트릭스를 재생성해
+`manifest.json`의 커밋과 clean 여부를 고정한 다음 Codex에 제출한다.
+
+### S1 자동 기본값 빌드 검증
+
+- `:engine:test` **393개 통과**, `:app:testDebugUnitTest` **171개 통과**(실패/skip 0).
+- `:app:assembleDebug` 성공. 로그: `/tmp/myembro-worker-s1-automatic-tests.log`.
+- 원본 adapter의 6개 fixture 바이트 보존 및 writer 기본 프로필의 기존 바이트 회귀 유지.
+- 앱 회귀: 고정 기본값/이전 프로젝트 재계산, 잠금 10종 옵션에도 raw PES의 바이트·땀 불변,
+  viewer/USB의 프로젝트 PES 생성 일치. 고급 타입 옵션은 테스트용 엔진 입력일 뿐 사용자 UI가 아니다.
+- 변경된 기본 잠금 때문에 이전의 전체 도형 포함 불변식은 더 이상 성립하지 않는다. 이를
+  테스트를 느슨하게 해 숨기지 않고, 실제 필터된 본문 검증과 명시적인 원본 fallback 반례로 나눴다.
+- SE400 실물 봉제는 수행하지 못했다. 최종 병합·배포 가능 판정은 독립 Codex와 사용자 실봉제 검토가 필요하다.
