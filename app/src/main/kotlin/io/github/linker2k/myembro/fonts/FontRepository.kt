@@ -56,6 +56,8 @@ data class CatalogFont(
     val letterCase: String = "",
     /** Ink/Stitch fonts: theme from font.json keywords (script, serif, sans, display). */
     val theme: String? = null,
+    /** Shipped in the APK (assets/fonts/bundled/<id>/): installed offline, never deleted. */
+    val bundled: Boolean = false,
 ) {
     /** Theme used to pick a similar font: the embroidery font's own, else "script" for script TTFs. */
     val themeKey: String? get() = theme?.takeIf { it.isNotEmpty() } ?: if (style == "script") "script" else null
@@ -116,7 +118,30 @@ class FontRepository(context: Context) {
 
     init {
         installInkStitchLoader(appContext)
+        installBundled()
     }
+
+    /**
+     * Copies the APK's bundled embroidery fonts into the font folder once, verified against the
+     * catalog's pinned sha256 like a download, so they work offline from the first launch.
+     */
+    private fun installBundled() {
+        for (font in catalog.filter { it.bundled && !isInstalled(it) }) runCatching {
+            dir.mkdirs()
+            val base = "$BUNDLED_ASSETS/${font.id}"
+            val files = listOf("ltr.svg" to (fontFile(font) to font.sha256), "font.json" to (metaFile(font)!! to font.metaSha256),
+                "LICENSE" to (licenseFile(font) to font.licenseSha256))
+            for ((name, target) in files) {
+                val (file, sha) = target
+                val bytes = appContext.assets.open("$base/$name").use { it.readBytes() }
+                check(sha == null || sha256(bytes) == sha) { "Bundled ${font.id}/$name does not match the catalog" }
+                File(dir, file.name + ".tmp").apply { writeBytes(bytes); check(renameTo(file)) }
+            }
+        }
+    }
+
+    private fun sha256(bytes: ByteArray) = java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
+        .joinToString("") { "%02x".format(it.toInt() and 255) }
 
     fun find(id: String): CatalogFont? = catalog.firstOrNull { it.id == id }
 
@@ -180,6 +205,7 @@ class FontRepository(context: Context) {
     }
 
     fun delete(font: CatalogFont) {
+        if (font.bundled) return
         fontFile(font).delete()
         licenseFile(font).delete()
         metaFile(font)?.delete()
@@ -413,6 +439,7 @@ class FontRepository(context: Context) {
 
     companion object {
         const val CATALOG_ASSET = "fonts/catalog.json"
+        const val BUNDLED_ASSETS = "fonts/bundled"
 
         /** Lets saved Ink/Stitch text objects find installed fonts by id. Idempotent. */
         fun installInkStitchLoader(context: Context) {

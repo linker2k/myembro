@@ -35,6 +35,9 @@ CONDITIONAL = {"aventurina", "bluenesia_satin", "cherryforinkstitch", "cherryfor
 NONCOMMERCIAL = {"flowery_crosses", "flowery_multicolor", "handkerchief", "ladies_present", "magic_crosses",
                  "nautical", "priscilla", "very_crossy"}
 NO_DERIVATIVES = {"infinipicto"}
+# Shipped inside the APK for offline use (2026-10-24): per theme the smallest font whose every swept
+# height passes; files copied to app/src/main/assets/fonts/bundled/<id>/ by the same pinned commit.
+BUNDLED = {"sacramarif", "chicken_scratch", "chicken_little", "medium_font", "bathaus_FI"}
 
 
 def classify(name, lic_text, json_license):
@@ -132,6 +135,7 @@ def main():
             "letterCase": meta.get("letter_case") or "",
             # Theme for the lettering quick slots, from font.json keywords.
             "theme": theme(meta.get("keywords") or []),
+            "bundled": d.name in BUNDLED,
             "glyphs": glyph_names(svg),
         })
     out.write_text(json.dumps({

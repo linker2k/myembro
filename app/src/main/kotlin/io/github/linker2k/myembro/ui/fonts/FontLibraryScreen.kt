@@ -678,7 +678,7 @@ private fun EmbroideryFontCard(
             when {
                 progress != null -> Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 installed -> {
-                    IconButton(onClick = onDelete) {
+                    if (!font.bundled) IconButton(onClick = onDelete) {
                         Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.fonts_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(onClick = onUse, enabled = usable) { Text(stringResource(R.string.fonts_use)) }

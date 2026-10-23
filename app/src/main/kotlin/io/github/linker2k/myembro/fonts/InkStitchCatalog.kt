@@ -38,6 +38,7 @@ object InkStitchCatalog {
                 glyphs = (o["glyphs"] as? kotlinx.serialization.json.JsonArray)?.map { it.jsonPrimitive.content }?.toSet(),
                 letterCase = (o["letterCase"] as? JsonPrimitive)?.content.orEmpty(),
                 theme = (o["theme"] as? JsonPrimitive)?.content,
+                bundled = (o["bundled"] as? JsonPrimitive)?.booleanOrNull ?: false,
             )
         }
 }

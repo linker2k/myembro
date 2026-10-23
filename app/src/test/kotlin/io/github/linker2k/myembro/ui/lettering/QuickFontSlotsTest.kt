@@ -42,7 +42,8 @@ class QuickFontSlotsTest {
 
     @Test fun firstOpenPicksADownloadedEmbroideryFontForLatinAndGowunForHangul() {
         val installed = fonts.filter { it.embroidery }
-        assertEquals("ink-venezia", defaultLetteringFont(emptyList(), "Jung", installed))
+        // Script first: the bundled script font is the Latin default.
+        assertEquals("ink-allegria", defaultLetteringFont(emptyList(), "Jung", installed))
         assertEquals("gowun-batang", defaultLetteringFont(emptyList(), "봄날", installed))
         assertEquals("gowun-batang", defaultLetteringFont(emptyList(), "Jung", emptyList()), "none downloaded yet")
         assertEquals("gowun-batang", defaultLetteringFont(listOf("jua"), "Jung", installed), "history wins")
