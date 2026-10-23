@@ -55,10 +55,14 @@ object LetteringFontQuality {
 
 /** Font metadata or pinned TTF sweep bounds, always capped by the app height limit. */
 internal suspend fun automaticLetteringState(context:Context,fontId:String,text:String,heightMm:Double=18.0):AutomaticLetteringState = withContext(Dispatchers.Default) {
-    val source=loadFont(context.applicationContext,fontId)
+    automaticState(context,loadFont(context.applicationContext,fontId),fontId,text,heightMm)
+}
+
+/** The one automatic decision used by both the screen and [renderLettering], so they cannot disagree. */
+private fun automaticState(context:Context,source:LoadedFont,fontId:String,text:String,heightMm:Double):AutomaticLetteringState {
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
     val limits=LetteringHeightLimits.decode(context.assets.open(LetteringHeightLimits.ASSET).bufferedReader().use { it.readText() })
-    automaticLetteringState(source.name,fontId,source.revision,normalizedLetteringText(text),heightMm,geometry,limits,
+    return automaticLetteringState(source.name,fontId,source.revision,normalizedLetteringText(text),heightMm,geometry,limits,
         source.testedRangeMm.takeIf { source.ink!=null })
 }
 
@@ -230,9 +234,7 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     sewingOptions: SewingOptions = SettingsPreferences(context).read().sewing): LetteringResult {
     val text = normalizedLetteringText(settings.text)
     val source = loadFont(context, settings.fontId)
-    val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
-    val policy=AutomaticLetteringPolicy.Shared
-    val method=policy.method(policy.candidates(settings.fontId,source.revision,geometry,text),settings.heightMm,geometry)
+    val method=automaticState(context,source,settings.fontId,text,settings.heightMm).style
     require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Lettering method is outside the supported automatic range" }
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val transformed = placed.placedPattern().withSewingDefaults(sewingOptions)

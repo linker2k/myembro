@@ -119,12 +119,25 @@ private fun LetteringContent(
     var automaticHeight by remember(fontId, text) { mutableDoubleStateOf(Double.NaN) }
     var automaticLoaded by remember(fontId, text) { mutableStateOf(false) }
     var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
-    var embroideryFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
-    var installedEmbroidery by remember { mutableStateOf<Set<String>>(emptySet()) }
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { FontRepository(context).let { repo -> repo.catalog.filter { it.predigitized } to repo.installedIds() } }
-            .let { (fonts, installed) -> embroideryFonts = fonts.sortedByDescending { it.id in installed }; installedEmbroidery = installed }
+    var catalogFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
+    var installedCatalog by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // Re-read after every font change: a library pick may have just downloaded it.
+    LaunchedEffect(fontId) {
+        withContext(Dispatchers.IO) { FontRepository(context).let { repo -> repo.catalog to repo.installedIds() } }
+            .let { (fonts, installed) -> catalogFonts = fonts; installedCatalog = installed }
     }
+    val recentFonts = remember { RecentLetteringFonts(context) }
+    var recent by remember { mutableStateOf(recentFonts.list()) }
+    // Every font the sheet shows becomes the most recent; the one before moves to the second slot.
+    LaunchedEffect(fontId) { recentFonts.use(fontId); recent = recentFonts.list() }
+    val quickFonts = remember(catalogFonts, installedCatalog) {
+        bundledLetteringFonts.map { QuickFont(it.id, embroidery = false, hangul = true, theme = BUNDLED_THEMES[it.id], covers = { true }) } +
+            catalogFonts.filter { it.predigitized || it.id in installedCatalog }.map { f ->
+                QuickFont(f.id, f.predigitized, f.korean, f.themeKey,
+                    covers = { t -> if (f.predigitized) f.covers(t) else t.none { it in '\uAC00'..'\uD7A3' } || f.korean })
+            }
+    }
+    val slotIds = quickFontSlots(fontId, recent, quickFonts, text)
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -136,10 +149,7 @@ private fun LetteringContent(
     val ranges = automatic?.heightRanges.orEmpty()
     val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
-    val permittedHeight = height <= LetteringHeightLimits.MAX_MM && automaticHeight == height && heightInputValid && when {
-        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
-        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
-    }
+    val permittedHeight = automaticHeight == height && heightInputValid && letteringHeightPermitted(automatic, height)
     val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
         spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
         curve = LetteringCurve.STRAIGHT, curvature = 0.0, lineSpacingMm = 0.0,
@@ -199,11 +209,11 @@ private fun LetteringContent(
         }
     }
     // Cards display actual running stitches, without claiming a validated sewing range.
-    LaunchedEffect(text, height, thread.color, fontId) {
+    LaunchedEffect(text, height, thread.color, fontId, slotIds) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
-        for (id in (bundledLetteringFonts.map { it.id } + fontId).distinct()) {
+        for (id in (slotIds + fontId).distinct().filter { id -> catalogFonts.none { it.id == id && it.predigitized } }) {
             try { previews[id] = LetteringFontPreview.pattern(context, id, text, height, thread, StitchStyle.RUNNING) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* An unavailable font has an empty preview. */ }
@@ -268,29 +278,21 @@ private fun LetteringContent(
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
                     }
                 }
-                // US-3: verified embroidery fonts lead; with Hangul (none of them has it) the Hangul TTFs come first.
-                val hangul = text.any { it in '\uAC00'..'\uD7A3' || it in '\u3131'..'\u318E' }
-                val ttfRow: @Composable () -> Unit = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        bundledLetteringFonts.forEach { font ->
-                            FontChoice(font, fontId == font.id, Modifier.weight(1f), fontPreviews[font.id]) { fontId = font.id }
+                // Quick slots: current font, the one used before it, and a same-theme neighbour (QuickFontSlots).
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (id in slotIds) {
+                        val catalogFont = catalogFonts.firstOrNull { it.id == id }
+                        val usable = quickFonts.firstOrNull { it.id == id }?.covers?.invoke(text) ?: true
+                        val pick = { if (catalogFont?.predigitized == true && id !in installedCatalog) onOpenFonts(text) else fontId = id }
+                        if (catalogFont?.predigitized == true) {
+                            EmbroideryFontChoice(catalogFont, fontId == id, id in installedCatalog, usable, Modifier.weight(1f), pick)
+                        } else {
+                            val name = bundledLetteringFonts.firstOrNull { it.id == id }?.name ?: catalogFont?.let { it.nameKo ?: it.name }
+                                ?: automatic?.fontName ?: id
+                            FontChoice(LetteringFont(id, name), fontId == id, Modifier.weight(1f).alpha(if (usable) 1f else 0.38f),
+                                fontPreviews[id]) { if (usable) pick() }
                         }
                     }
-                }
-                val embroideryRow: @Composable () -> Unit = {
-                    SectionLabel(stringResource(R.string.fonts_verified_embroidery))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(embroideryFonts, key = { it.id }) { font ->
-                            EmbroideryFontChoice(font, fontId == font.id, font.id in installedEmbroidery, font.covers(text)) {
-                                if (font.id in installedEmbroidery) fontId = font.id else onOpenFonts(text)
-                            }
-                        }
-                    }
-                }
-                if (hangul) { ttfRow(); embroideryRow() } else { embroideryRow(); ttfRow() }
-                if (bundledLetteringFonts.none { it.id == fontId }) {
-                    Text(automatic?.fontName ?: fontId, style = MaterialTheme.typography.titleSmall, color = colors.primary)
-                    StitchPatternPreview(fontPreviews[fontId], Modifier.fillMaxWidth().height(70.dp))
                 }
                 Text(stringResource(when (automatic?.style) {
                     StitchStyle.RUNNING -> R.string.lettering_automatic_running
@@ -390,16 +392,20 @@ private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifie
     }
 }
 
+/** Theme of each bundled TTF, for the same-theme quick slot. */
+private val BUNDLED_THEMES = mapOf("gowun-batang" to "serif", "jua" to "display", "noto-sans-kr" to "sans")
+
 /** A verified embroidery font: its bundled stitch picture; not yet downloaded opens the library, missing glyphs dim it. */
 @Composable
-private fun EmbroideryFontChoice(font: CatalogFont, selected: Boolean, installed: Boolean, usable: Boolean, onClick: () -> Unit) {
+private fun EmbroideryFontChoice(font: CatalogFont, selected: Boolean, installed: Boolean, usable: Boolean,
+    modifier: Modifier = Modifier.width(132.dp), onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
     val context = LocalContext.current
     val image = remember(font.id) {
         runCatching { context.assets.open("fonts/previews/${font.id}.png").use(android.graphics.BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
     }
-    Column(Modifier.width(132.dp).height(106.dp).alpha(if (usable) 1f else 0.38f).clip(shape)
+    Column(modifier.height(106.dp).alpha(if (usable) 1f else 0.38f).clip(shape)
         .background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
         .border(if (selected) 1.5.dp else 1.dp, if (selected) colors.primary else colors.outlineVariant, shape)
         .selectable(selected, enabled = usable, role = Role.RadioButton, onClick = onClick).padding(9.dp),

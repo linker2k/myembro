@@ -54,7 +54,12 @@ data class CatalogFont(
     val glyphs: Set<String>? = null,
     /** Ink/Stitch fonts: font.json's forced case ("upper" sews every letter as a capital). */
     val letterCase: String = "",
+    /** Ink/Stitch fonts: theme from font.json keywords (script, serif, sans, display). */
+    val theme: String? = null,
 ) {
+    /** Theme used to pick a similar font: the embroidery font's own, else "script" for script TTFs. */
+    val themeKey: String? get() = theme?.takeIf { it.isNotEmpty() } ?: if (style == "script") "script" else null
+
     /**
      * Whether every non-space character of [text] has a glyph, after the font's forced case. Glyph
      * names may be ligatures; a single character is enough for each one here. Unknown sets cover all.
