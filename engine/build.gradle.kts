@@ -45,3 +45,17 @@ tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
     mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerBoundaryChecks")
     workingDir = rootProject.projectDir
 }
+
+// Explicit local sample composition; never part of check/CI.
+tasks.register<JavaExec>("makeSampler") {
+    group = "verification"
+    description = "Pack PES samples into a single-color sewout sampler and labeled preview"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.SamplerCli")
+    workingDir = rootProject.projectDir
+    systemProperty("java.awt.headless", "true")
+    args(providers.gradleProperty("samplerOutput").orElse("/tmp/myembro-sewtest/SAMPLER").get(),
+        providers.gradleProperty("samplerMaxMm").orElse("60").get(),
+        providers.gradleProperty("samplerGapMm").orElse("5").get())
+    args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
+}

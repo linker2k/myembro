@@ -33,8 +33,9 @@ internal val SatinOptionsSaver = listSaver<SatinOptions, Any>(
 @Composable
 fun TextFillWarning(text: TextObject, style: StitchStyle) {
     if (text.singleLine || style !in listOf(StitchStyle.FILL, StitchStyle.SATIN)) return
-    val report by produceState<FontQualityReport?>(null, text) {
-        value = withContext(Dispatchers.Default) { outlineTextQuality(text) }
+    var report by remember { mutableStateOf<FontQualityReport?>(null) }
+    LaunchedEffect(text) {
+        report = withContext(Dispatchers.Default) { outlineTextQuality(text) }
     }
     report?.let { quality ->
         val height = filledLetteringMinimumHeight(quality, text.threadWeight)

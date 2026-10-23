@@ -70,6 +70,7 @@ class S1SewTestActivity : Activity() {
     }
 
     private fun export(folder: File, stem: String, label: String, project: Project, width: Int, height: Int): Pair<JSONObject, Bitmap> {
+        File(folder, "$stem.myembro").writeText(ProjectJson.encode(project))
         val source = project.flatten()
         check(!project.exceedsHoop())
         val bytes = PesWriter.write(source, PesWriteSettings()) // Same default path as app editor export.

@@ -15,7 +15,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -293,7 +293,8 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
 @Composable
 private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: SewingOptions): List<Pair<String, RenderData>> {
     val cache = remember { mutableMapOf<String, Pair<Pair<DesignObject, SewingOptions>, RenderData>>() }
-    val renders by produceState<List<Pair<String, RenderData>>>(emptyList(), objects, sewingOptions) {
+    var renders by remember { mutableStateOf<List<Pair<String, RenderData>>>(emptyList()) }
+    LaunchedEffect(objects, sewingOptions) {
         val previous = cache.toMap()
         val next = withContext(Dispatchers.Default) {
             objects.associate { obj ->
@@ -304,7 +305,7 @@ private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: Se
             }
         }
         cache.clear(); cache.putAll(next)
-        value = objects.map { it.id to next.getValue(it.id).second }
+        renders = objects.map { it.id to next.getValue(it.id).second }
     }
     return renders
 }

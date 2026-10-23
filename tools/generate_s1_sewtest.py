@@ -60,7 +60,7 @@ def main():
             time.sleep(0.5)
         else:
             raise TimeoutError('Android sewout generation did not finish in 60 seconds')
-        for name in ['manifest.json', 'overview.png'] + [stem + ext for stem in ['TXT05', 'TXT08', 'TXT12', 'CIRCLE', 'SQUARE'] for ext in ['.PES', '.png']]:
+        for name in ['manifest.json', 'overview.png'] + [stem + ext for stem in ['TXT05', 'TXT08', 'TXT12', 'CIRCLE', 'SQUARE'] for ext in ['.PES', '.png', '.myembro']]:
             content = subprocess.check_output(device + ['exec-out', 'run-as', PACKAGE, 'cat', 'files/s1/'+name])
             signature = b'#PES' if name.endswith('.PES') else b'\x89PNG\r\n\x1a\n' if name.endswith('.png') else b'{'
             if not content.startswith(signature):
@@ -70,7 +70,8 @@ def main():
         data['commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
         data['working_tree_dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
         (output/'manifest.json').write_text(json.dumps(data, ensure_ascii=False, indent=2)+'\n')
-        (output/'README.md').write_text('''# S1 자투리 천 시험 세트
+        if not (output/'README.md').exists():
+            (output/'README.md').write_text('''# S1 자투리 천 시험 세트
 
 - TXT05.PES / TXT08.PES / TXT12.PES: "ABC 가나다", 5/8/12mm, 번들 Noto Sans KR, 러닝 1회.
 - CIRCLE.PES / SQUARE.PES: 지름/한 변 10mm 러닝 윤곽.

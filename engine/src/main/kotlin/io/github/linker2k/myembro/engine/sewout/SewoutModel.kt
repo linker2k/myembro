@@ -11,6 +11,8 @@ data class Specification<T>(val value: T? = null, val source: String? = null) {
 }
 
 enum class Severity { BLOCKER, WARNING, INFO }
+/** Provenance, never inferred from a filename or PES extension. */
+enum class DesignOrigin { AUTO, APP_GENERATED, IMPORTED }
 enum class FindingCode {
     HOOP_EXCEEDED, MACHINE_AREA_EXCEEDED, HOOP_COMPATIBILITY_UNKNOWN,
     LONG_STITCH, SHORT_STITCH, MACHINE_STITCH_LENGTH_EXCEEDED, PEC_DELTA_EXCEEDED,
@@ -59,7 +61,9 @@ data class SewoutStatistics(val stitchCount: Int, val jumpCount: Int, val trimCo
     val distinctThreadCount: Int, val bounds: CheckArea?, val movementBounds: CheckArea?,
     val sewnLengthMm: Double, val jumpLengthMm: Double,
     val requiredManualCuts: Int, val possibleManualCuts: Int,
-    val densityHotspotCount: Int, val overlapCellCount: Int)
+    val densityHotspotCount: Int, val overlapCellCount: Int,
+    val peakCellPenetrations: Int = 0, val maximumConsecutiveNeedles: Int = 0,
+    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0)
 
 enum class SpeedBasis { USER_SETTING, PROFILE_MAXIMUM_DERIVED, ASSUMED }
 data class SpeedEstimate(val effectiveSpm: Double, val basis: SpeedBasis,
@@ -91,9 +95,10 @@ data class SewoutOptions(
     val hoop: HoopSpec = HoopSpec.H100,
     val placement: Placement = Placement.CENTER_DESIGN,
     val destination: Destination = Destination.TRANSFER,
-    val longStitchMm: Double = 12.1, val shortStitchMm: Double = 0.3,
-    /** Inclusive blocking thresholds: defaults mean >8 punctures per cell and >3 at one point. */
-    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 9,
+    // Frozen gate v5: 334-file corpus maximum + 0.15mm quantization allowance.
+    val longStitchMm: Double = 12.184118164618463, val shortStitchMm: Double = 0.3,
+    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >3 consecutive needles at one point. */
+    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 16,
     val repeatedPointThreshold: Int = 4, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,
@@ -107,6 +112,7 @@ data class SewoutOptions(
     val colorCutSetting: SwitchSetting = SwitchSetting.UNKNOWN,
     val maxCommands: Int = 250_000, val maxGridCells: Int = 200_000,
     val maxTracedCells: Int = 1_000_000, val maxFindings: Int = 1_000,
+    val origin: DesignOrigin = DesignOrigin.AUTO,
 ) {
     init {
         require(listOf(longStitchMm, shortStitchMm, gridMm, assumedSpm, profileSpeedFraction,
@@ -129,5 +135,13 @@ data class SewoutReport(val machine: SewoutMachine, val options: SewoutOptions,
     val inputCommands: Int, val hoopWindow: CheckArea, val speed: SpeedEstimate,
     val time: TimeEstimate, val threadUsage: ThreadEstimate,
     val compatibility: CompatibilityReport, val pesFile: PesFileInfo?) {
+    val verdict: SewoutVerdict get() = when {
+        hasBlockingIssues -> SewoutVerdict.BLOCK
+        !analysisComplete || (severityCounts[Severity.WARNING] ?: 0) > 0 -> SewoutVerdict.CAUTION
+        else -> SewoutVerdict.PASS
+    }
     val hasBlockingIssues: Boolean get() = (severityCounts[Severity.BLOCKER] ?: 0) > 0
 }
+
+/** Only actionable findings affect the compact viewer badge; reference metrics do not. */
+enum class SewoutVerdict { PASS, CAUTION, BLOCK }

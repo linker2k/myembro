@@ -238,7 +238,7 @@ internal fun SewoutTransferConfirmation(report: SewoutReport, onCancel: () -> Un
             Text(stringResource(R.string.sewout_confirm_body, report.machine.name, report.severityCounts[Severity.BLOCKER] ?: 0))
             if (!report.analysisComplete) Text(stringResource(R.string.sewout_confirm_incomplete))
         } },
-        confirmButton = { TextButton(onClick = onContinue) { Text(stringResource(R.string.sewout_transfer_anyway)) } },
+        confirmButton = { TextButton(onClick = onContinue, enabled = !report.hasBlockingIssues) { Text(stringResource(R.string.sewout_transfer_anyway)) } },
         dismissButton = { Row {
             TextButton(onClick = onReview) { Text(stringResource(R.string.sewout_review)) }
             TextButton(onClick = onCancel) { Text(stringResource(R.string.sewout_cancel)) }
