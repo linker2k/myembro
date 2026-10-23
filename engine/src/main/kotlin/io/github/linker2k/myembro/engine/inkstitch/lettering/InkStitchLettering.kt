@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package io.github.linker2k.myembro.engine.lettering
+// Ported from Ink/Stitch lib/lettering/font.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+package io.github.linker2k.myembro.engine.inkstitch.lettering
+
+import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.digitizing.RunningSettings
 import io.github.linker2k.myembro.engine.digitizing.RunningStitch
@@ -36,26 +39,36 @@ object InkStitchLettering {
         heightMm: Double,
         thread: EmbThread? = null,
         letterSpacingMm: Double = 0.0,
-        lineSpacing: Double = 1.0,
+        lineHeightMm: Double? = null,
+        alignment: TextAlignment = TextAlignment.LEFT,
     ): EmbPattern {
-        val placements = layout(font, text, heightMm, letterSpacingMm, lineSpacing)
+        val placements = layout(font, text, heightMm, letterSpacingMm, lineHeightMm, alignment)
         val sewer = Sewer(thread)
         for (p in placements) for (element in p.glyph.elements) sewer.add(element, p)
         return sewer.finish(mapOf("name" to text, "font" to font.info.name))
     }
 
-    fun layout(font: InkStitchFont, text: String, heightMm: Double, letterSpacingMm: Double = 0.0, lineSpacing: Double = 1.0): List<Placement> {
+    /**
+     * Lines step by [lineHeightMm], or by the font's `leading` when null. [alignment] shifts each
+     * line against the widest one, measured by pen advance as Ink/Stitch's text alignment does.
+     */
+    fun layout(
+        font: InkStitchFont, text: String, heightMm: Double, letterSpacingMm: Double = 0.0,
+        lineHeightMm: Double? = null, alignment: TextAlignment = TextAlignment.LEFT,
+    ): List<Placement> {
         require(heightMm.isFinite() && heightMm > 0) { "Height must be positive" }
-        require(letterSpacingMm.isFinite() && lineSpacing.isFinite() && lineSpacing > 0)
+        require(letterSpacingMm.isFinite() && (lineHeightMm == null || lineHeightMm.isFinite() && lineHeightMm > 0))
         val reference = font.referenceHeightMm ?: return emptyList()
         val mmPerUnit = InkStitchFont.MM_PER_PX * heightMm / reference
         val info = font.info
         val letterSpacing = letterSpacingMm / mmPerUnit
-        val out = ArrayList<Placement>()
+        val lines = ArrayList<Pair<List<Placement>, Double>>()
         var y = 0.0
-        for (rawLine in text.split('\n')) {
+        for (rawLine in text.replace("\r\n", "\n").replace('\r', '\n').split('\n')) {
             val line = when (info.letterCase) { "upper" -> rawLine.uppercase(); "lower" -> rawLine.lowercase(); else -> rawLine }
+            val placed = ArrayList<Placement>()
             var x = 0.0
+            var end = 0.0
             for (word in line.split(' ')) {
                 var last: String? = null
                 var i = 0
@@ -68,15 +81,25 @@ object InkStitchLettering {
                         val kern = info.kerning["$last ${glyph.name}"] ?: info.kerning[last + glyph.name] ?: 0.0
                         x += glyph.minX - kern + letterSpacing
                     }
-                    out += Placement(glyph, (x - glyph.minX) * mmPerUnit, (y - font.baseline) * mmPerUnit, mmPerUnit)
+                    placed += Placement(glyph, (x - glyph.minX) * mmPerUnit, (y - font.baseline) * mmPerUnit, mmPerUnit)
                     x += (info.advances[glyph.name] ?: info.defaultAdvance ?: glyph.maxX) - glyph.minX
+                    end = x
                     last = glyph.name
                 }
                 x += info.wordSpacing
             }
-            y += info.leading * lineSpacing
+            lines += placed to end * mmPerUnit
+            y += lineHeightMm?.let { it / mmPerUnit } ?: info.leading
         }
-        return out
+        val widest = lines.maxOfOrNull { it.second } ?: 0.0
+        return lines.flatMap { (placed, width) ->
+            val shift = when (alignment) {
+                TextAlignment.LEFT -> 0.0
+                TextAlignment.CENTER -> (widest - width) / 2
+                TextAlignment.RIGHT -> widest - width
+            }
+            placed.map { it.copy(dx = it.dx + shift) }
+        }
     }
 
     /** Joins element runs: short gaps of one color are sewn across (Ink/Stitch "collapse"), others trimmed. */
@@ -239,4 +262,17 @@ object InkStitchLettering {
     /** Ink/Stitch's default collapse length: shorter jumps are sewn as stitches. */
     private const val COLLAPSE_MM = 3.0
     private const val MAX_STITCH_MM = 7.0
+}
+
+/**
+ * Installed Ink/Stitch fonts by id, for [io.github.linker2k.myembro.engine.edit.TextObject]s that
+ * name one. The app sets [loader] (parsing takes up to a second, so results are kept).
+ */
+object InkStitchFontRegistry {
+    @Volatile var loader: ((String) -> InkStitchFont?)? = null
+    private val fonts = java.util.concurrent.ConcurrentHashMap<String, InkStitchFont>()
+
+    operator fun get(id: String): InkStitchFont? = fonts[id] ?: loader?.invoke(id)?.also { fonts[id] = it }
+    fun put(id: String, font: InkStitchFont) { fonts[id] = font }
+    fun invalidate(id: String) { fonts.remove(id) }
 }

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package io.github.linker2k.myembro.engine.lettering
+package io.github.linker2k.myembro.engine.inkstitch.lettering
+
+import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
@@ -49,6 +51,34 @@ class InkStitchSurveyTool {
             println(row)
         }
         File(out, "survey.tsv").writeText(rows.joinToString("\n") + "\n")
+    }
+
+    /**
+     * Opt-in: PES files plus a quality-gate matrix. INKSTITCH_FONTS=<checkout>/src INKSTITCH_GATE=<out dir>
+     * INKSTITCH_GATE_FONTS=a,b INKSTITCH_GATE_HEIGHTS=15,30 (mm, 'H' basis).
+     */
+    @Test fun gateMatrix() {
+        val src = System.getenv("INKSTITCH_FONTS")?.let(::File) ?: return
+        val out = System.getenv("INKSTITCH_GATE")?.let(::File) ?: return
+        val fonts = System.getenv("INKSTITCH_GATE_FONTS")?.split(',') ?: return
+        val heights = (System.getenv("INKSTITCH_GATE_HEIGHTS") ?: "15,30").split(',').map { it.trim().toDouble() }
+        val text = System.getenv("INKSTITCH_TEXT") ?: "Hamburg 2024"
+        val cases = arrayListOf<String>()
+        for (name in fonts) {
+            val dir = File(src, name)
+            val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
+            for (h in heights) {
+                val pattern = InkStitchLettering.render(font, text, h, io.github.linker2k.myembro.engine.model.EmbThread(0xFF000000.toInt()))
+                val file = File(out, "$name/${h.toInt()}mm-satin.pes").apply { parentFile.mkdirs() }
+                file.writeBytes(io.github.linker2k.myembro.engine.io.PesWriter.write(pattern))
+                cases += """{"font": "$name", "height_mm": ${h.toInt()}, "style": "satin", "path": "${file.absolutePath}"}"""
+            }
+        }
+        File(out, "matrix.json").writeText("""{"axes": {"fonts": [${fonts.joinToString { "\"$it\"" }}], "heights_mm": [${heights.joinToString { it.toInt().toString() }}], "styles": ["satin"]},
+ "cases": [
+  ${cases.joinToString(",\n  ")}
+ ]}
+""")
     }
 
     private fun draw(pattern: EmbPattern, file: File) {

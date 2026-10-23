@@ -33,10 +33,10 @@ derived from the following projects, whose notices are reproduced as their licen
 - `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
   The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
   the license beside it. No font data is in this repository or the APK.
-- `engine/.../lettering/InkStitchFont.kt` and `InkStitchLettering.kt` read the file format
-  (glyph layers, `inkstitch:*` parameters, satin rails/rungs, layout metadata) as documented
-  and as observed in the Ink/Stitch GPL-3.0 sources, which were read but not executed or
-  copied. Stitches come from this repository's own satin, tatami and running generators.
+- `engine/.../inkstitch/lettering/InkStitchFont.kt` and `InkStitchLettering.kt` are ported from
+  Ink/Stitch (https://github.com/inkstitch/inkstitch, GPL-3.0-or-later, Copyright (c) Ink/Stitch
+  contributors) at commit `16e192849e619399ce8fdefb4c4d249dacdb4db1`; each file names its source modules. The sources
+  were read, never executed. Ported behaviour and deviations: `docs/inkstitch-port.md`.
 
 ## pyembroidery
 

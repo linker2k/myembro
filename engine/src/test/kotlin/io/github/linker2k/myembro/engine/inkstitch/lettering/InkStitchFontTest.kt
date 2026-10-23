@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package io.github.linker2k.myembro.engine.lettering
+package io.github.linker2k.myembro.engine.inkstitch.lettering
+
+import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.model.Command
 import kotlin.math.abs
@@ -114,5 +116,35 @@ class InkStitchFontTest {
             listOf(0.0 to 5.0, 0.0 to 10.0) to listOf(2.0 to 5.0, 2.0 to 10.0)), options)
         assertEquals(sectioned.size, split.size)
         sectioned.zip(split).forEach { (p, q) -> assertTrue(abs(p.first - q.first) < 1e-9 && abs(p.second - q.second) < 1e-9) }
+    }
+
+    @Test fun textObjectsResolveTheFontByIdAndSurviveTheCodec() {
+        InkStitchFontRegistry.put("test-ink", font)
+        val text = io.github.linker2k.myembro.engine.edit.TextObject("t", text = "HI\nH", fontId = "test-ink", heightMm = 10.0,
+            spacing = 0.0, fontKind = io.github.linker2k.myembro.engine.edit.FontKind.INKSTITCH,
+            alignment = TextAlignment.CENTER, lineSpacing = 2.0)
+        val pattern = text.localPattern()
+        assertTrue(pattern.stitchCount > 50)
+        val decoded = io.github.linker2k.myembro.engine.edit.TextObjectCodec.decode(
+            kotlinx.serialization.json.JsonObject(io.github.linker2k.myembro.engine.edit.TextObjectCodec.encode(text)))
+            as io.github.linker2k.myembro.engine.edit.TextObject
+        assertEquals(io.github.linker2k.myembro.engine.edit.FontKind.INKSTITCH, decoded.fontKind)
+        assertEquals(pattern.stitches, decoded.localPattern().stitches)
+        val missing = text.copy(fontId = "not-installed").localPattern()
+        assertEquals(0, missing.stitchCount)
+        assertTrue(missing.warnings.isNotEmpty())
+    }
+
+    @Test fun alignmentShiftsShorterLines() {
+        val left = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.LEFT)
+        val center = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.CENTER)
+        val right = InkStitchLettering.layout(font, "HI\nH", 10.0, alignment = TextAlignment.RIGHT)
+        val shifts = left.indices.map { center[it].dx - left[it].dx }
+        assertEquals(0.0, shifts.min(), 1e-9, "the widest line stays")
+        assertTrue(shifts.max() > 0)
+        left.indices.forEach { assertEquals(2 * shifts[it], right[it].dx - left[it].dx, 1e-9) }
+        assertEquals(100 * left[0].scale, left[2].dy - left[0].dy, 1e-9, "font.json leading defaults to 100 px")
+        val spaced = InkStitchLettering.layout(font, "HI\nH", 10.0, lineHeightMm = 20.0)
+        assertEquals(20.0, spaced[2].dy - spaced[0].dy, 1e-9)
     }
 }

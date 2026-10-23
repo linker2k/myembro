@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package io.github.linker2k.myembro.engine.lettering
+// Ported from Ink/Stitch lib/lettering/font_variant.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/lettering/glyph.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/svg/guides.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/svg/path.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/elements/utils/nodes.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/elements/satin_column/satin_column.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Ported from Ink/Stitch lib/elements/satin_column/rails.py@16e192849e619399ce8fdefb4c4d249dacdb4db1 (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+package io.github.linker2k.myembro.engine.inkstitch.lettering
+
+import io.github.linker2k.myembro.engine.lettering.*
 
 import io.github.linker2k.myembro.engine.geometry.Affine2D
 import io.github.linker2k.myembro.engine.geometry.FillRule
