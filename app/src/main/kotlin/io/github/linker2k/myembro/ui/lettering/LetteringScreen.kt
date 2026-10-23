@@ -58,6 +58,8 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.MyembroThreadColors
+import io.github.linker2k.myembro.ui.settings.rememberSewingDefaults
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -101,6 +103,7 @@ private fun LetteringContent(
     backgroundPattern: EmbPattern?, onOpenFonts: (text: String) -> Unit, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
+    val sewingOptions = rememberSewingDefaults()
     val colors = MaterialTheme.colorScheme
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
@@ -167,7 +170,7 @@ private fun LetteringContent(
             busy = true
             try {
                 delay(100)
-                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop) }
+                result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop, sewingOptions) }
                 renderedKey = generationKey
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { error = context.getString(R.string.lettering_failed)

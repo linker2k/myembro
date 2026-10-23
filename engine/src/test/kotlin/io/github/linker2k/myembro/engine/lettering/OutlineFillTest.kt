@@ -6,6 +6,7 @@ import io.github.linker2k.myembro.engine.geometry.*
 import io.github.linker2k.myembro.engine.geometry.Polyline as GeometryPath
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.model.*
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.*
@@ -18,6 +19,8 @@ class OutlineFillTest {
     private val noExtras = FillOptions(pullCompensationMm = 0.0, underlay = false, border = FillBorder.NONE,
         strategy = FillStrategy.TATAMI, autoDensity = false)
     private fun assertLengths(pattern: EmbPattern) {
+        // All penetrations remain finite, nonzero and under the machine maximum.
+        // The fill-body minimum excludes deliberate short reversals/corners of locks.
         pattern.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH) {
                 val d = hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble())

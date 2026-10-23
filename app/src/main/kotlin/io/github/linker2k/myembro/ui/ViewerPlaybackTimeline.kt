@@ -51,3 +51,14 @@ internal fun viewerBlockingHighlights(
     .mapNotNull { highlight -> viewerHighlightArea(pattern, highlight)?.let { highlight to it } }
     .distinctBy { (_, area) -> (area.minX + area.maxX) / 2 to (area.minY + area.maxY) / 2 }
     .map { it.first }
+
+/** UI animation budget only: long designs preview in about 20 seconds; small inputs stay legible.
+ * This is not a sewing rule or a claimed machine speed. It never changes stitch coordinates.
+ */
+internal fun viewerPlaybackRate(needleCount: Int): Double {
+    require(needleCount >= 0)
+    return if (needleCount == 0) 0.0 else maxOf(1.0, needleCount / 20.0)
+}
+
+internal fun viewerCheckBlocked(report: io.github.linker2k.myembro.engine.sewout.SewoutReport?): Boolean =
+    report == null || sewoutNeedsConfirmation(report)

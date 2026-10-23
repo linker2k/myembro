@@ -6,8 +6,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,10 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -141,7 +136,6 @@ private fun ViewerContent(
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
                 Column {
-                    SewoutSummary(vm)
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
                             shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
@@ -201,8 +195,9 @@ private fun ViewerContent(
         })
     if (exportSheet) {
         val data = vm.render
-        val preview by produceState<android.graphics.Bitmap?>(null, data) {
-            value = data?.let { withContext(Dispatchers.Default) { Thumbnails.render(it, 240) } }
+        var preview by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        LaunchedEffect(data) {
+            preview = data?.let { withContext(Dispatchers.Default) { Thumbnails.render(it, 240) } }
         }
         ExportSheet(
             onDismissRequest = { exportSheet = false }, onSavePes = onSaveFile, onShare = onShareFile,
@@ -308,12 +303,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
                 Text(vm.frame.dimensions, style = MaterialTheme.typography.labelMedium)
             }
         }
-        if (blockers.isNotEmpty()) androidx.compose.material3.AssistChip(
-            onClick = vm::openSewout,
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 58.dp),
-            label = { Text(stringResource(R.string.playback_blocker_locations, blockers.size), color = MaterialTheme.colorScheme.error) },
-            colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surface),
-        )
+        ViewerCheckBadge(vm, modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, end = 12.dp, top = 58.dp))
         if (vm.focusedHighlight != null) TextButton(onClick = vm::clearSewoutFocus,
             modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
                 .background(MaterialTheme.colorScheme.surface, MyembroShapes.Button)) {
@@ -336,7 +326,6 @@ private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modif
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
             Column(Modifier.padding(12.dp)) {
                 ViewerPlaybackControls(vm, data)
-                OptionsRow(vm, pattern)
             }
         }
         StatsRow(pattern, vm.frame, vm.machineProfile, compactStats, vm.preservePlacement, vm.sewoutReport)
@@ -454,36 +443,5 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
-    var hoopMenu by remember { mutableStateOf(false) }
-    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box {
-            TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.frame.dimensions}") }
-            DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                val b = pattern.bounds
-                vm.availableFrames.forEach { h ->
-                    val fits = b == null || h.fits(b.width, b.height)
-                    DropdownMenuItem(
-                        text = { Column {
-                            Text((if (h.preset?.name?.startsWith("SA") == true || h.preset == null) h.spec.name + " · " else "") + h.dimensions + if (fits) "" else " ⚠")
-                            if (vm.machineProfile?.supports(h.spec) != true) Text(stringResource(R.string.machine_hoop_unsupported),
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                        } },
-                        onClick = { vm.selectFrame(h.id); hoopMenu = false },
-                    )
-                }
-            }
-        }
-        FilterChip(
-            shape = MyembroShapes.Chip,
-            selected = vm.showJumps,
-            onClick = { vm.showJumps = !vm.showJumps },
-            label = { Text(stringResource(R.string.show_jumps)) },
-        )
     }
 }

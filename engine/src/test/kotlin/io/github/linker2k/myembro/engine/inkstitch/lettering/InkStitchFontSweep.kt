@@ -14,7 +14,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Opt-in release sweep: every font × its recorded min/mid/max height × sample texts, judged by
+ * Opt-in release sweep: every font × its recorded height range in 1 mm steps (plus both ends) × sample texts, judged by
  * [SewoutCheck]. A font's allowed range is the widest run of consecutive passing heights; fonts
  * with none are dropped. Hoop findings depend on text length and the chosen hoop, not on the font,
  * so they are counted but do not narrow the range.
@@ -36,25 +36,27 @@ class InkStitchFontSweep {
                 val font = runCatching { File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) } }.getOrNull() ?: continue
                 val min = font.minHeightMm ?: continue
                 val max = font.maxHeightMm ?: continue
-                val heights = listOf(min, (min + max) / 2, max).distinct()
+                val heights = (listOf(min) + (kotlin.math.ceil(min).toInt()..kotlin.math.floor(max).toInt()).map { it.toDouble() } + max)
+                    .distinct().sorted().filter { it >= min - 1e-9 && it <= max + 1e-9 }
                 // Only texts the font can sew: the app does not offer a font for text it lacks.
                 val usable = texts.filter { t -> t.filterNot(Char::isWhitespace).all { c ->
                     val cased = when (font.info.letterCase) { "upper" -> c.uppercaseChar(); "lower" -> c.lowercaseChar(); else -> c }
                     cased.toString() in font.glyphs } }
                 if (usable.isEmpty()) continue
-                var hoopOnly = 0
-                val passes = heights.map { h ->
-                    usable.all { t ->
+                val hoopOnly = java.util.concurrent.atomic.AtomicInteger()
+                // Heights are independent: judge them in parallel; results keep height order.
+                val passes = heights.parallelStream().map { h ->
+                    usable.map { t ->
                         val codes = runCatching {
                             val report = SewoutCheck.check(InkStitchLettering.render(font, t, h), options = SewoutOptions(origin = DesignOrigin.APP_GENERATED))
                             report.findings.filter { it.severity == Severity.BLOCKER }.map { it.code }.toSet()
                         }.getOrElse { e -> setOf("ERROR:${e.javaClass.simpleName}") }
                         val blocking = codes.filter { it !in placement }
-                        if (blocking.isEmpty() && codes.isNotEmpty()) hoopOnly++
-                        if (blocking.isNotEmpty()) failures += listOf(dir.name, "%.1f".format(h), t, blocking.joinToString(",")).joinToString("\t")
+                        if (blocking.isEmpty() && codes.isNotEmpty()) hoopOnly.incrementAndGet()
+                        if (blocking.isNotEmpty()) synchronized(failures) { failures += listOf(dir.name, "%.1f".format(h), t, blocking.joinToString(",")).joinToString("\t") }
                         blocking.isEmpty()
-                    }
-                }
+                    }.all { it }
+                }.toList()
                 // Widest run of consecutive passing heights.
                 var best: IntRange? = null
                 var start = -1
@@ -67,13 +69,14 @@ class InkStitchFontSweep {
                     put("heightsMm", buildJsonArray { heights.forEach { add(JsonPrimitive(it)) } })
                     put("pass", buildJsonArray { passes.forEach { add(JsonPrimitive(it)) } })
                     put("texts", buildJsonArray { usable.forEach { add(JsonPrimitive(it)) } })
-                    put("hoopOnlyFindings", hoopOnly)
+                    put("hoopOnlyFindings", hoopOnly.get())
                     best?.let { put("allowedMinMm", heights[it.first]); put("allowedMaxMm", heights[it.last]) }
                 })
             }
         }
         File(out, "sweep.json").writeText(fonts.toString() + "\n")
         File(out, "failures.tsv").writeText(failures.joinToString("\n") + "\n")
-        println("sweep: ${fonts.size} fonts, ${failures.size - 1} failing combinations -> ${out.absolutePath}")
+        val byCode = failures.drop(1).flatMap { it.split('\t')[3].split(',') }.groupingBy { it }.eachCount()
+        println("sweep: ${fonts.size} fonts, ${failures.size - 1} failing combinations, by code $byCode -> ${out.absolutePath}")
     }
 }

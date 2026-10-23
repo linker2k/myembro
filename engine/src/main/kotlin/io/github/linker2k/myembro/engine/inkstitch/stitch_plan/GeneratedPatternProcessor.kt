@@ -14,6 +14,8 @@ object GeneratedPatternProcessor {
     const val LOCK_INDICES_KEY = "myembro.inkstitch.lock_indices"
     const val RUN_ANCHORS_KEY = "myembro.inkstitch.run_anchors"
     const val MAX_STITCH_LENGTH_MM_KEY = "myembro.inkstitch.max_stitch_length_mm"
+    const val SEWING_OPTIONS_KEY = "myembro.inkstitch.sewing_options"
+    private const val SOURCE_STITCHES_KEY = "myembro.inkstitch.source_stitches"
     private const val COMMAND_ANCHORS_KEY = "myembro.inkstitch.command_anchors"
     private const val VERSION = "v1"
 
@@ -22,34 +24,55 @@ object GeneratedPatternProcessor {
         collapse_len: Double? = null,
         min_stitch_len: Double? = 0.1,
         disable_ties: Boolean = false,
+        pecJumpTrims: Boolean = false,
+        lockAtThreadBoundaries: Boolean = false,
     ): EmbPattern {
-        val processed = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties))
-        return processed.pattern.copy(metadata = markedMetadata(processed))
+        val native = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties, lockAtThreadBoundaries))
+        val processed = if (pecJumpTrims) explicitPecJumpTrims(native) else native
+        return processed.pattern.copy(metadata = markedMetadata(processed) +
+            (SEWING_OPTIONS_KEY to SewingOptions().toJson()))
     }
 
     /** Rebuild removes only locks created by this bridge, retaining original commands and thread indices. */
-    fun finish(pattern: EmbPattern, rebuild: Boolean = false, maxStitchLengthMm: Double? = null): EmbPattern {
+    fun finish(pattern: EmbPattern, rebuild: Boolean = false, maxStitchLengthMm: Double? = null, options: SewingOptions? = null): EmbPattern {
+        // Application defaults always follow the source; old saved experimental options never opt in.
+        val sewing = options ?: SewingOptions()
         val maximum = maxStitchLengthMm ?: pattern.metadata[MAX_STITCH_LENGTH_MM_KEY]?.toDoubleOrNull()
         require(maximum == null || maximum.isFinite() && maximum >= 0.1) { "Maximum stitch length must be at least 0.1 mm" }
-        if (!rebuild && pattern.metadata[FINISHED_KEY] == VERSION && (maxStitchLengthMm == null || pattern.metadata[MAX_STITCH_LENGTH_MM_KEY]?.toDoubleOrNull() == maxStitchLengthMm)) return pattern
+        if (!rebuild && pattern.metadata[FINISHED_KEY] == VERSION && (maxStitchLengthMm == null || pattern.metadata[MAX_STITCH_LENGTH_MM_KEY]?.toDoubleOrNull() == maxStitchLengthMm) && pattern.metadata[SEWING_OPTIONS_KEY] == sewing.toJson()) return pattern
         val original = stripGeneratedLocks(pattern)
         val output = mutableListOf<MachineStitch>()
         val locks = mutableSetOf<Int>()
         val anchors = mutableMapOf<Int, NativeAnchor>()
         val run = mutableListOf<MachineStitch>()
         var threadIndex = 0
+        var summary = ProcessingSummary()
+        var previousRunEnd: MachineStitch? = null
+        var boundaryBreak = true
+        val configuredLocks = LockStitches.fromParameters(sewing.locks)
 
-        fun flushRun() {
+        fun flushRun(boundaryIndex: Int) {
             if (run.isEmpty()) return
+            val next = (boundaryIndex until original.stitches.size).firstOrNull { original.stitches[it].command == Command.STITCH }
+            val endsWithBreak = next == null || (boundaryIndex until next).any { original.stitches[it].command in setOf(Command.TRIM, Command.STOP, Command.COLOR_CHANGE, Command.END) }
+            val forced = sewing.locks.force_lock_stitches
+            val threshold = sewing.min_jump_stitch_length_mm * 10.0
+            fun distant(a: MachineStitch, b: MachineStitch) = hypot(a.x.toDouble() - b.x, a.y.toDouble() - b.y) > threshold
+            val nextIsDistant = next?.let { distant(run.last(), original.stitches[it]) } ?: false
+            val startLock = configuredLocks.start?.takeIf { previousRunEnd == null || boundaryBreak || forced || distant(run.first(), previousRunEnd!!) }
+            val endLock = configuredLocks.end?.takeIf { endsWithBreak || forced || nextIsDistant }
+            val addTrim = sewing.trim_after && next == null && (boundaryIndex until original.stitches.size).none { original.stitches[it].command == Command.TRIM }
             val group = StitchGroup(
                 color = original.threadAt(threadIndex),
                 stitches = run.map { Stitch(Units.nativeToPixels(it.x), Units.nativeToPixels(it.y)) },
-                lockStart = legacyHalfLock, lockEnd = legacyHalfLock,
+                lockStart = startLock,
+                lockEnd = endLock,
+                trimAfter = addTrim,
                 // Explicit generated jumps remain boundaries even below the source collapse threshold.
                 forceLockStitches = true,
             )
-            // Preserve already-sampled corners and maximum lengths in legacy generators.
-            val processed = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(listOf(group), min_stitch_len = 0.0))
+            val processed = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(listOf(group), collapse_len = sewing.min_jump_stitch_length_mm, min_stitch_len = sewing.min_stitch_length_mm))
+            summary += processed.summary
             val native = processed.pattern.stitches
             for ((index, stitch) in native.withIndex()) {
                 if (index == native.lastIndex && stitch.command == Command.END) continue // Adapter's synthetic END.
@@ -61,22 +84,27 @@ object GeneratedPatternProcessor {
                 if (index in processed.lockIndices) locks += output.size
                 output += stitch
             }
+            previousRunEnd = run.last()
+            boundaryBreak = false
             run.clear()
         }
 
-        for (stitch in original.stitches) {
+        for ((index, stitch) in original.stitches.withIndex()) {
             if (stitch.command == Command.STITCH) run += stitch
             else {
-                flushRun() // A single tie-off precedes each original terminator or needle-up boundary.
+                flushRun(index) // A single tie-off precedes each original terminator or needle-up boundary.
                 output += stitch
                 if (stitch.command == Command.COLOR_CHANGE) threadIndex++
+                if (stitch.command in setOf(Command.TRIM, Command.STOP, Command.COLOR_CHANGE, Command.END)) boundaryBreak = true
             }
         }
-        flushRun()
+        flushRun(original.stitches.size)
         if (output.isNotEmpty() && output.last().command != Command.END) output += output.last().copy(command = Command.END)
-        var deduplicated = deduplicate(original.copy(stitches = output), locks, anchors, emptyMap())
+        var deduplicated = deduplicate(original.copy(stitches = output), locks, anchors, emptyMap(), summary)
         if (maximum != null) deduplicated = splitToMaximum(deduplicated, maximum * 10.0)
-        val metadata = markedMetadata(deduplicated).let { if (maximum != null) it + (MAX_STITCH_LENGTH_MM_KEY to maximum.toString()) else it }
+        var metadata = markedMetadata(deduplicated).let { if (maximum != null) it + (MAX_STITCH_LENGTH_MM_KEY to maximum.toString()) else it }
+        metadata = metadata + (SOURCE_STITCHES_KEY to encodeSource(original))
+        metadata = metadata + (SEWING_OPTIONS_KEY to sewing.toJson())
         return deduplicated.pattern.copy(metadata = metadata)
     }
 
@@ -92,42 +120,11 @@ object GeneratedPatternProcessor {
             metadata = metadata + (RUN_ANCHORS_KEY to encodeAnchors(anchors))
         }
         if (COMMAND_ANCHORS_KEY in metadata) metadata = metadata + (COMMAND_ANCHORS_KEY to encodeCommands(parseCommandAnchors(metadata[COMMAND_ANCHORS_KEY]).mapValues { (_, p) -> transform(p.first, p.second) }))
-        return pattern.copy(stitches = stitches, metadata = metadata)
-    }
-
-    /** Legacy policy: same half-stitch fractions, following the real path and never an off-path fallback. */
-    private val legacyHalfLock = LockStitch { stitches, position ->
-        val input = if (position == LockPosition.END) stitches.asReversed() else stitches
-        val lengths = input.zipWithNext().map { (a, b) -> a.distance(b) }
-        val length = lengths.sum().coerceAtMost(Units.mmToPixels(1.5))
-        if (length == 0.0) emptyList() else {
-            val fractions = if (position == LockPosition.END) listOf(0.5, 1.0, 0.5, 0.0) else listOf(0.0, 0.5, 1.0, 0.5, 0.0)
-            val cumulative = mutableListOf(0.0)
-            lengths.forEach { cumulative += cumulative.last() + it }
-            val cornerIndices = (1 until input.lastIndex).filter { index ->
-                val a = input[index].point - input[index - 1].point
-                val b = input[index + 1].point - input[index].point
-                kotlin.math.abs(a.x * b.y - a.y * b.x) > 1e-9 * a.length() * b.length() || a.dot(b) < 0.0
-            }
-            var previousDistance = 0.0
-            fractions.flatMap { fraction ->
-                val distance = fraction * length
-                val corners = cornerIndices.filter { cumulative[it] > minOf(previousDistance, distance) && cumulative[it] < maxOf(previousDistance, distance) }
-                    .let { if (distance < previousDistance) it.asReversed() else it }
-                    .map { Stitch(input[it].point, tags = setOf("lock_stitch")) }
-                var remaining = distance
-                var point = input.last().point
-                for ((index, segment) in lengths.withIndex()) {
-                    if (segment > 0.0 && remaining <= segment) {
-                        point = input[index].point + (input[index + 1].point - input[index].point) * (remaining / segment)
-                        break
-                    }
-                    remaining -= segment
-                }
-                previousDistance = distance
-                corners + Stitch(point, tags = setOf("lock_stitch"))
-            }
+        if (SOURCE_STITCHES_KEY in metadata) {
+            val baseline = decodeSource(metadata.getValue(SOURCE_STITCHES_KEY), pattern)
+            metadata = metadata + (SOURCE_STITCHES_KEY to encodeSource(baseline.copy(stitches = baseline.stitches.map { s -> transform(s.x, s.y).let { s.copy(x = it.first, y = it.second) } })))
         }
+        return pattern.copy(stitches = stitches, metadata = metadata)
     }
 
     private fun splitToMaximum(processed: Processed, maximumNative: Double): Processed {
@@ -161,12 +158,15 @@ object GeneratedPatternProcessor {
                 emit(stitch, index in processed.lockIndices)
             }
         }
-        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands)
+        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary)
     }
 
     /** Removes our tagged native STITCH positions; foreign/unmarked patterns are returned untouched. */
     fun stripGeneratedLocks(pattern: EmbPattern): EmbPattern {
         if (pattern.metadata[FINISHED_KEY] != VERSION) return pattern
+        val strippedMetadata = pattern.metadata - FINISHED_KEY - LOCK_INDICES_KEY - RUN_ANCHORS_KEY - COMMAND_ANCHORS_KEY - SOURCE_STITCHES_KEY - SEWING_OPTIONS_KEY - ProcessingSummary().metadata().keys
+        // Explicit options keep their pre-filter body, so lowering the minimum regenerates lost points.
+        pattern.metadata[SOURCE_STITCHES_KEY]?.let { return decodeSource(it, pattern.copy(metadata = strippedMetadata)) }
         val locks = pattern.metadata[LOCK_INDICES_KEY].orEmpty().split(',').mapNotNull(String::toIntOrNull)
             .filter { it >= 0 && pattern.stitches.getOrNull(it)?.command == Command.STITCH }.toSet()
         val anchors = parseAnchors(pattern.metadata[RUN_ANCHORS_KEY])
@@ -206,11 +206,40 @@ object GeneratedPatternProcessor {
             } else output += commandAnchors[index]?.let { stitch.copy(x = it.first, y = it.second) } ?: stitch
         }
         finishRun()
-        return pattern.copy(stitches = output, metadata = pattern.metadata - FINISHED_KEY - LOCK_INDICES_KEY - RUN_ANCHORS_KEY - COMMAND_ANCHORS_KEY)
+        return pattern.copy(stitches = output, metadata = strippedMetadata)
     }
 
     private data class NativeAnchor(val startX: Int, val startY: Int, val endX: Int, val endY: Int)
-    private data class Processed(val pattern: EmbPattern, val lockIndices: Set<Int>, val runAnchors: Map<Int, NativeAnchor>, val commandAnchors: Map<Int, Pair<Int, Int>>)
+    private data class Processed(val pattern: EmbPattern, val lockIndices: Set<Int>, val runAnchors: Map<Int, NativeAnchor>, val commandAnchors: Map<Int, Pair<Int, Int>>, val summary: ProcessingSummary)
+
+    private fun explicitPecJumpTrims(processed: Processed): Processed {
+        val output = mutableListOf<MachineStitch>()
+        val locks = mutableSetOf<Int>()
+        val anchors = mutableMapOf<Int, NativeAnchor>()
+        val commands = mutableMapOf<Int, Pair<Int, Int>>()
+        var sewn = false
+        var lastNeedle: MachineStitch? = null
+        var active: NativeAnchor? = null
+        processed.pattern.stitches.forEachIndexed { index, stitch ->
+            if (stitch.command == Command.JUMP && sewn) {
+                val needle = requireNotNull(lastNeedle)
+                commands[output.size] = active?.let { it.endX to it.endY } ?: (needle.x to needle.y)
+                output += needle.copy(command = Command.TRIM)
+                sewn = false
+            }
+            if (index in processed.lockIndices) locks += output.size
+            processed.runAnchors[index]?.let { anchors[output.size] = it; active = it }
+            processed.commandAnchors[index]?.let { commands[output.size] = it }
+            output += stitch
+            when (stitch.command) {
+                Command.STITCH -> { sewn = true; lastNeedle = stitch }
+                Command.TRIM, Command.STOP, Command.COLOR_CHANGE, Command.END -> sewn = false
+                Command.JUMP -> Unit
+            }
+        }
+        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary)
+    }
+
 
     private fun adaptAndDeduplicate(traced: StitchPlanBuilder.TracedPlan): Processed {
         val plan = traced.plan
@@ -261,33 +290,39 @@ object GeneratedPatternProcessor {
             index++
         }
         check(index == native.stitches.size) { "Native adapter command/tag correspondence changed" }
-        return deduplicate(native, locks, anchors, commandAnchors)
+        return deduplicate(native, locks, anchors, commandAnchors, traced.summary)
     }
 
     /** Quantization can collapse distinct SVG points; remove only consecutive native needle penetrations. */
-    private fun deduplicate(pattern: EmbPattern, lockIndices: Set<Int>, runAnchors: Map<Int, NativeAnchor>, commandAnchors: Map<Int, Pair<Int, Int>>): Processed {
+    private fun deduplicate(pattern: EmbPattern, lockIndices: Set<Int>, runAnchors: Map<Int, NativeAnchor>, commandAnchors: Map<Int, Pair<Int, Int>>, summary: ProcessingSummary): Processed {
         val output = mutableListOf<MachineStitch>()
         val locks = mutableSetOf<Int>()
         val anchors = mutableMapOf<Int, NativeAnchor>()
         val commands = mutableMapOf<Int, Pair<Int, Int>>()
+        var removed = 0
         for ((index, stitch) in pattern.stitches.withIndex()) {
             val previous = output.lastOrNull()
-            if (stitch.command == Command.STITCH && previous?.command == Command.STITCH && stitch.x == previous.x && stitch.y == previous.y) continue
+            if (stitch.command == Command.STITCH && previous?.command == Command.STITCH && stitch.x == previous.x && stitch.y == previous.y) { removed++; continue }
             if (index in lockIndices) locks += output.size
             runAnchors[index]?.let { anchors[output.size] = it }
             commandAnchors[index]?.let { commands[output.size] = it }
             output += stitch
         }
-        return Processed(pattern.copy(stitches = output), locks, anchors, commands)
+        return Processed(pattern.copy(stitches = output), locks, anchors, commands, summary + ProcessingSummary(shortStitchesRemoved = removed))
     }
 
-    private fun markedMetadata(processed: Processed): Map<String, String> = processed.pattern.metadata + mapOf(
+    private fun markedMetadata(processed: Processed): Map<String, String> = processed.pattern.metadata + processed.summary.metadata() + mapOf(
         FINISHED_KEY to VERSION, LOCK_INDICES_KEY to processed.lockIndices.sorted().joinToString(","),
         RUN_ANCHORS_KEY to encodeAnchors(processed.runAnchors),
         COMMAND_ANCHORS_KEY to encodeCommands(processed.commandAnchors),
     )
     private fun encodeAnchors(anchors: Map<Int, NativeAnchor>): String = anchors.toSortedMap().entries.joinToString(";") { (i, a) -> "$i:${a.startX}:${a.startY}:${a.endX}:${a.endY}" }
     private fun encodeCommands(anchors: Map<Int, Pair<Int, Int>>): String = anchors.toSortedMap().entries.joinToString(";") { (i, a) -> "$i:${a.first}:${a.second}" }
+    private fun encodeSource(pattern: EmbPattern): String = pattern.stitches.joinToString(";") { "${it.x}:${it.y}:${it.command.ordinal}" }
+    private fun decodeSource(text: String, pattern: EmbPattern): EmbPattern = pattern.copy(stitches = if (text.isEmpty()) emptyList() else text.split(';').map {
+        val parts = it.split(':'); require(parts.size == 3) { "Invalid generated source stream" }
+        MachineStitch(parts[0].toInt(), parts[1].toInt(), Command.entries[parts[2].toInt()])
+    })
 
     private fun parseAnchors(value: String?): Map<Int, NativeAnchor> = value.orEmpty().split(';').mapNotNull { part ->
         val n = part.split(':').map { it.toIntOrNull() }

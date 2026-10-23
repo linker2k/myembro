@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Command
-import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,9 +40,6 @@ internal fun ViewerPlaybackControls(vm: ViewerViewModel, data: RenderData) {
             Text(count, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.seekPlayback(-1) }, enabled = enabled) {
-                Icon(Icons.Default.SkipPrevious, stringResource(R.string.viewer_restart))
-            }
             FilledIconButton(onClick = vm::togglePlay, enabled = enabled) {
                 Icon(if (vm.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
                     stringResource(if (vm.playing) R.string.pause else R.string.play))
@@ -59,33 +55,13 @@ internal fun ViewerPlaybackControls(vm: ViewerViewModel, data: RenderData) {
                     modifier = Modifier.onSizeChanged { thumbWidth = it.width }) },
                 modifier = Modifier.weight(1f).semantics { contentDescription = sliderLabel; stateDescription = count },
             )
-            IconButton(onClick = { vm.seekPlayback(timeline.endIndex) }, enabled = enabled) {
-                Icon(Icons.Default.SkipNext, stringResource(R.string.viewer_finish))
-            }
         }
-        // Align the event ruler with the slider's thumb travel, excluding the three buttons.
+        // Keep the event ruler aligned with the single play button and the slider thumb travel.
         Row(Modifier.fillMaxWidth()) {
-            Spacer(Modifier.width(96.dp))
-            PlaybackRuler(timeline, Modifier.weight(1f).padding(horizontal = rulerInset).height(10.dp))
             Spacer(Modifier.width(48.dp))
+            PlaybackRuler(timeline, Modifier.weight(1f).padding(horizontal = rulerInset).height(10.dp))
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf(1, 4, 16).forEach { multiplier ->
-                val label = stringResource(R.string.playback_multiplier, multiplier)
-                val description = stringResource(R.string.playback_speed_description, multiplier)
-                FilterChip(selected = vm.playbackMultiplier == multiplier, onClick = { vm.selectPlaybackSpeed(multiplier) },
-                    label = { Text(label) }, shape = MyembroShapes.Chip,
-                    modifier = Modifier.semantics { contentDescription = description })
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            LegendMarker(true)
-            Text(stringResource(R.string.playback_color_marks, timeline.colorChanges), style = MaterialTheme.typography.labelSmall)
-            LegendMarker(false)
-            Text(stringResource(R.string.playback_trim_marks, timeline.trims), style = MaterialTheme.typography.labelSmall)
-        }
-        Text(stringResource(R.string.playback_rate, vm.playbackSpm), style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+
     }
 }
 
@@ -103,15 +79,5 @@ private fun PlaybackRuler(timeline: ViewerPlaybackTimeline, modifier: Modifier) 
                 drawPath(diamond.apply { reset(); moveTo(x, 0f); lineTo(x + r, r); lineTo(x, r * 2); lineTo(x - r, r); close() }, colorChange)
             } else drawLine(trim, Offset(x, 0f), Offset(x, size.height), strokeWidth = 2.dp.toPx())
         }
-    }
-}
-
-@Composable
-private fun LegendMarker(colorChange: Boolean) {
-    val color = if (colorChange) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary
-    Canvas(Modifier.size(8.dp)) {
-        if (colorChange) drawPath(Path().apply { moveTo(size.width / 2, 0f); lineTo(size.width, size.height / 2)
-            lineTo(size.width / 2, size.height); lineTo(0f, size.height / 2); close() }, color)
-        else drawLine(color, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), 2.dp.toPx())
     }
 }

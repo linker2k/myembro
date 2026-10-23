@@ -10,8 +10,8 @@ import java.io.ByteArrayOutputStream
 internal object PesV6Writer {
     private data class Segment(val flag: Int, val color: Int, val points: List<Pair<Int, Int>>)
 
-    fun write(pattern: EmbPattern): ByteArray {
-        val p = PecWriter.normalizePreservingThreads(pattern)
+    fun write(pattern: EmbPattern, inkstitchCommands: Boolean = false): ByteArray {
+        val p = PecWriter.normalizePreservingThreads(pattern, inkstitchCommands)
         val chart = arrayListOf(p.threadAt(0))
         var thread = 0
         val editorStitches = p.stitches.map { s ->
@@ -34,7 +34,7 @@ internal object PesV6Writer {
             body.u16(0); body.u16(0)
         }
         val pecOffset = body.size()
-        val payload = PecWriter.writePayload(p)
+        val payload = PecWriter.writePayload(p, inkstitchCommands)
         body.write(payload)
         // Upstream color_info includes the count byte followed by PEC palette indices.
         val count = (payload[48].toInt() and 255) + 1

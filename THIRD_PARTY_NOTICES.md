@@ -34,6 +34,19 @@ derived from the following projects, whose notices are reproduced as their licen
   No paper text/images, OpenCV binaries/source tables, or commercial font/design data
   are included in the repository or distributed application.
 
+
+## Ink/Stitch satin-column conceptual reference
+
+- Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),
+  consulted 2026-10-22: paired rails, same-rail zigzag spacing, per-side pull compensation,
+  maximum-length split stitches, center-walk and zigzag underlay.
+- Project/source: https://github.com/inkstitch/inkstitch;
+  [upstream GPL v3 license](https://github.com/inkstitch/inkstitch/blob/main/LICENSE).
+- `engine/.../lettering/SatinColumn.kt` is an independent Kotlin implementation under
+  this repository's GPL-3.0-or-later license. No Ink/Stitch source code, images, font
+  data, or other assets were copied into that implementation; no remote code was executed.
+  The newer source-derived ports under `engine/.../inkstitch/` are separately attributed below.
+
 ## Ink/Stitch embroidery fonts (downloaded data; stitch previews bundled)
 
 - Source: https://github.com/inkstitch/embroidery-fonts at commit
@@ -44,10 +57,6 @@ derived from the following projects, whose notices are reproduced as their licen
   the license beside it. No font file is in this repository or the APK; `assets/fonts/previews/` holds one
   small picture per font of its stitches (the sample "Abc"), rendered from that font under its own
   license (OFL-1.1, CC BY / BY-SA, GPL-3.0 or public domain, as listed in the catalog with its authors).
-- The Ink/Stitch font reader and lettering layout under `engine/.../inkstitch/lettering/` are ported from Ink/Stitch
-  (https://github.com/inkstitch/inkstitch, GPL-3.0-or-later, Copyright (c) Ink/Stitch contributors) at
-  v3.3.0, commit `b0edd96311ece82ee48816dc93466274b12c2a9c`; each file names its source modules. The sources
-  were read, never executed. Ported behaviour and deviations: `docs/inkstitch-port.md`.
 
 ## pyembroidery
 
@@ -117,11 +126,6 @@ may download on demand. Policy:
 | Permanent Marker (Font Diner), Satisfy (Sideshow), Yellowtail (Astigmatic) | outline TTF (Latin) | Apache-2.0 | https://github.com/google/fonts @ `45e3d5269e4a17d823f6d84470bc084dc5ae46f6` (`apache/`) |
 | Playfair Display v1.200 (Claus Eggers Sørensen) | outline TTF (Latin), static Regular | OFL-1.1 | https://github.com/google/fonts @ `d08233f9c581786e8c834a1f0695a4f27869c119` |
 | Oswald, Dancing Script Bold, Fredoka, Baloo 2, Comfortaa Bold, Cinzel, Caveat Bold | outline TTF (Latin), static instances | OFL-1.1 | googlefonts/OswaldFont @ `89795261`, googlefonts/DancingScript @ `291f87c0`, hafontia-zz/Fredoka-One @ `35c584ff`, yanone/Baloo2-Variable @ `da523dfa`, alexeiva/comfortaa @ `4aa21cfb`, NDISCOVER/Cinzel @ `8271e162`, googlefonts/caveat @ `59745e81` (full hashes in `catalog.json`) |
-
-## Ink/Stitch (planned)
-
-Digitizing algorithms will be ported from https://github.com/inkstitch/inkstitch
-(GPL-3.0-or-later). Each ported file will record its upstream path and commit.
 
 ## Hershey Futural single-stroke font data
 
@@ -493,3 +497,42 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
+
+## inkex path-number compatibility
+
+Ink/Stitch v3.3.0 pins Inkscape extensions/inkex at `EXTENSIONS_AT_INKSCAPE_1.4.1`.
+Its `inkex/paths/interfaces.py:PathCommand.number_template` uses six significant digits;
+our font path canonicalization follows that serialization rule. Source:
+https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
+The referenced source is GPL-2.0-or-later, Copyright (C) 2018 Martin Owens and
+Copyright (C) 2023 Jonathan Neuhauser. No inkex package is bundled, installed or executed.
+The surrounding Ink/Stitch glyph port remains GPL-3.0-or-later as identified in its header.
+
+## Ink/Stitch fixed font-oracle test fixtures
+
+`engine/src/test/resources/inkstitch/font-equivalence/` contains the public upstream generic
+A/B test-font input and a subset of independently decoded official v3.3.0 output coordinates.
+Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/tests/lettering/fonts/testfont .
+Copyright Ink/Stitch contributors. Upstream repository license GPL-3.0-or-later and the input's
+declared SIL OFL-1.1 text are included beside the data. Source metadata is retained; the one
+reversible=false newline correction and all provenance/hashes are recorded in PROVENANCE.md.
+Test resources only: no catalog font, personal design or runtime dependency is bundled by this addition.
+
+## Inkex manual cubic-superpath boundary (oracle runner only)
+
+- Project: Inkscape extensions / Inkex, `EXTENSIONS_AT_INKSCAPE_1.4.1`.
+- Fixed source: `2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892`, the Inkex tag pinned by Ink/Stitch v3.3.0's `requirements.txt`.
+- Sources: [inkex/paths/arc.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/paths/arc.py), [inkex/paths/path.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/paths/path.py).
+- Copyright (C) 2018 Martin Owens; Copyright (C) 2023 Jonathan Neuhauser.
+- Original license: **GPL-2.0-or-later**. This compatible later-version option is exercised for distribution of the Kotlin derivative under **GPL-3.0-or-later**; see the repository [LICENSE](LICENSE) for the GPL v3 text.
+- Ported use: `engine/src/oracle/.../ManualCspPath.kt` reproduces the arc-to-CSP sector/node rules and manual subpath closure. It is separate from custom lock paths, which use SVG `Path.end_points` semantics.
+- Only source text was inspected. Inkex/Ink/Stitch modules were not imported or executed and no dependencies were installed.
+
+The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `beziersplitatt`, `maxdist`) and `inkex/transforms.py` (`DirectedLineSegment.distance_to_point`) at commit `2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892`, under GPL-2.0-or-later with the GPL v3 later-version option exercised here. Additional original notices: Copyright (C) 2005 Aaron Spike; Copyright (C) 2010 Nick Drobchenko; Copyright (C) 2006 Jean-Francois Barraud; Copyright (C) 2010 Alvin Penner. Sources: [bezier.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/bezier.py), [transforms.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/transforms.py). These controls are transformed before fixed 0.1 SVG-px source subdivision; manual node and custom-lock endpoint semantics remain separate.
+
+## Pystitch output boundary and opt-in writer profile
+
+- Source: [inkstitch/pystitch v1.0.1](https://github.com/inkstitch/pystitch/tree/8fc0b113e02ea81d9a507bfad3f7fd624a8895bd), commit `8fc0b113e02ea81d9a507bfad3f7fd624a8895bd`.
+- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
+- License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
+- Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.

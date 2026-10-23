@@ -109,4 +109,7 @@
     <string name="sewout_rule_color_count">색 단계 수 제한</string>
     <string name="sewout_rule_file_size">파일 크기 제한</string>
     <string name="sewout_rule_thumbnail">PEC 썸네일</string>
+    <string name="sewout_badge_pass">통과</string>
+    <string name="sewout_badge_caution">주의</string>
+    <string name="sewout_badge_block">차단</string>
 </resources>

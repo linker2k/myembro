@@ -17,6 +17,9 @@ import io.github.linker2k.myembro.fonts.FontCmap
 import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.fonts.LetterFont
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
+import io.github.linker2k.myembro.ui.settings.withSewingDefaults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -191,7 +194,7 @@ object LetteringFontPreview {
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
         val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
             false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle, fillOptions = fillOptions, threadWeight = threadWeight)
-        prepareObject(source, settings, thread).localPattern()
+        prepareObject(source, settings, thread).localPattern().withSewingDefaults(SettingsPreferences(context).read().sewing)
     }
 }
 
@@ -229,7 +232,8 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
 }
 
 /** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
-internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec): LetteringResult {
+internal fun renderLettering(context: Context, settings: LetteringSettings, thread: EmbThread, hoop: HoopSpec,
+    sewingOptions: SewingOptions = SettingsPreferences(context).read().sewing): LetteringResult {
     val text = normalizedLetteringText(settings.text)
     val source = loadFont(context, settings.fontId)
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
@@ -237,7 +241,7 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     val method=policy.method(policy.candidates(settings.fontId,source.revision,geometry,text),settings.heightMm)
     require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Satin validation range is unconfirmed; use running stitch" }
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
-    val transformed = placed.placedPattern()
+    val transformed = placed.placedPattern().withSewingDefaults(sewingOptions)
     val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
     val quality: FontQualityReport? = null // Heuristic quality remains a separate catalog API, never an approval.
     val lacking = text.codePoints().toArray().filter { !Character.isWhitespace(it) && !source.supports(it) }.distinct()

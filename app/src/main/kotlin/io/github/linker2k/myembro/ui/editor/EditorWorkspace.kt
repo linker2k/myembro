@@ -281,10 +281,12 @@ private fun StitchInspector(vm: EditorViewModel, showJumps: Boolean, onJumps: (B
     preview: Float, onPreview: (Float) -> Unit, enabled: Boolean) {
     val project = vm.project
     val selected = vm.selectedIds
-    val pattern by produceState(EmbPattern(emptyList(), emptyList()), project, selected) {
-        value = withContext(Dispatchers.Default) {
-            val result = if (selected.isEmpty()) project.flatten()
-                else project.copy(objects = project.objects.filter { it.id in selected }).flatten()
+    val sewingOptions = vm.settings.sewing
+    var pattern by remember { mutableStateOf<EmbPattern>(EmbPattern(emptyList(), emptyList())) }
+    LaunchedEffect(project, selected, sewingOptions) {
+        pattern = withContext(Dispatchers.Default) {
+            val result = if (selected.isEmpty()) project.flatten(sewingOptions)
+                else project.copy(objects = project.objects.filter { it.id in selected }).flatten(sewingOptions)
             result.apply { stitchCount; colorBlocks; trimCount }
         }
     }
@@ -316,8 +318,9 @@ private fun StitchStat(label: Int, value: Int) {
 private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
     val obj = vm.selected?.takeIf { vm.selectedIds.size == 1 }
     val project = vm.project
-    val threads by produceState<List<EmbThread>>(emptyList(), obj, project) {
-        value = withContext(Dispatchers.Default) {
+    var threads by remember { mutableStateOf<List<EmbThread>>(emptyList()) }
+    LaunchedEffect(obj, project) {
+        threads = withContext(Dispatchers.Default) {
             val p = obj?.localPattern() ?: project.flatten()
             p.threads.ifEmpty { p.colorBlocks.map { it.thread } }
         }

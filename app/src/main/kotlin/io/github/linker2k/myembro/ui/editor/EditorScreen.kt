@@ -267,8 +267,14 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         if (vm.letteringOpen) {
             val original = vm.letteringObject
-            val background = remember(vm.project, vm.letteringTargetId) {
-                vm.project.copy(objects = vm.project.objects.filterNot { it.id == vm.letteringTargetId }).flatten()
+            val projectSnapshot = vm.project
+            val letteringTarget = vm.letteringTargetId
+            val sewingOptions = vm.settings.sewing
+            var background by remember { mutableStateOf<io.github.linker2k.myembro.engine.model.EmbPattern?>(null) }
+            LaunchedEffect(projectSnapshot, letteringTarget, sewingOptions) {
+                background = withContext(Dispatchers.Default) {
+                    projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget }).flatten(sewingOptions)
+                }
             }
             key(vm.letteringTargetId) {
                 var showFonts by rememberSaveable { mutableStateOf(false) }

@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.edit.*
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.*
