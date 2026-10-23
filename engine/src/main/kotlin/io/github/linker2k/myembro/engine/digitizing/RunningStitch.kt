@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.digitizing
 
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
 import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.geometry.Polyline
 import io.github.linker2k.myembro.engine.model.*
@@ -72,7 +73,7 @@ internal class StitchRuns(private val thread: EmbThread) {
     }
     fun finish(metadata: Map<String, String>): EmbPattern {
         val last = stitches.lastOrNull()
-        return EmbPattern(stitches + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END),
-            if (last == null) emptyList() else listOf(thread), metadata)
+        return StitchPlanFinisher.finish(EmbPattern(stitches + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END),
+            if (last == null) emptyList() else listOf(thread), metadata))
     }
 }
