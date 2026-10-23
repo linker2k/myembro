@@ -8,7 +8,10 @@ import kotlin.math.hypot
 /** Functional boundary checks from the frozen quality-gate v5 lock_geometry.py.
  * Accept short sewn returns or 2–3 boundary needles; do not require brand-specific bytes.
  * Ordinary JUMPs do not create new threads and cannot supply a sewn return leg. */
-internal fun checkThreadLocks(stitches: List<Stitch>, findings: Findings, severity: Severity) {
+internal data class ThreadLockCounts(val sections: Int, val startMissing: Int, val endMissing: Int)
+
+internal fun checkThreadLocks(stitches: List<Stitch>, findings: Findings, severity: Severity): ThreadLockCounts {
+    var sections = 0; var startMissing = 0; var endMissing = 0; var needles = 0
     data class Needle(val point: NeedlePoint, val from: NeedlePoint, val index: Int)
     var prior = NeedlePoint(0.0, 0.0)
     val section = mutableListOf<Needle>()
@@ -50,7 +53,12 @@ internal fun checkThreadLocks(stitches: List<Stitch>, findings: Findings, severi
     }
     fun flush() {
         if (section.isEmpty()) return
+        // v5 metric(): zero-only control placeholders do not constitute a sewn thread section.
+        // Their needles are still counted by density and consecutive-repeat checks.
+        if (section.none { it.point != it.from }) { section.clear(); return }
+        sections++
         for (start in listOf(true,false)) if (!locked(start)) {
+            if (start) startMissing++ else endMissing++
             val seq = if (start) section.take(16) else section.takeLast(16)
             findings.add(FindingCode.MISSING_LOCK_STITCH, severity,
                 if (start) "실 시작 잠금 땀을 확인하지 못했습니다." else "실 끝 잠금 땀을 확인하지 못했습니다.",
@@ -58,12 +66,18 @@ internal fun checkThreadLocks(stitches: List<Stitch>, findings: Findings, severi
         }
         section.clear()
     }
+    fun result(): ThreadLockCounts {
+        if (needles > 0 && sections == 0) findings.add(FindingCode.MISSING_LOCK_STITCH, severity,
+            "실 시작 잠금을 확인할 봉제 구간이 없습니다.")
+        return ThreadLockCounts(sections,startMissing,endMissing)
+    }
     for ((index, stitch) in stitches.withIndex()) {
         val p = NeedlePoint(stitch.x.toDouble(),stitch.y.toDouble())
-        if (stitch.command == Command.STITCH) section += Needle(p,prior,index)
+        if (stitch.command == Command.STITCH) { needles++; section += Needle(p,prior,index) }
         else if (stitch.command in setOf(Command.TRIM,Command.STOP,Command.COLOR_CHANGE,Command.END)) flush()
         prior = p
-        if (stitch.command == Command.END) return
+        if (stitch.command == Command.END) return result()
     }
     flush()
+    return result()
 }

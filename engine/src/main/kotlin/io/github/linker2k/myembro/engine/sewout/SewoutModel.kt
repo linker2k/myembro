@@ -61,7 +61,9 @@ data class SewoutStatistics(val stitchCount: Int, val jumpCount: Int, val trimCo
     val distinctThreadCount: Int, val bounds: CheckArea?, val movementBounds: CheckArea?,
     val sewnLengthMm: Double, val jumpLengthMm: Double,
     val requiredManualCuts: Int, val possibleManualCuts: Int,
-    val densityHotspotCount: Int, val overlapCellCount: Int)
+    val densityHotspotCount: Int, val overlapCellCount: Int,
+    val peakCellPenetrations: Int = 0, val maximumConsecutiveNeedles: Int = 0,
+    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0)
 
 enum class SpeedBasis { USER_SETTING, PROFILE_MAXIMUM_DERIVED, ASSUMED }
 data class SpeedEstimate(val effectiveSpm: Double, val basis: SpeedBasis,
