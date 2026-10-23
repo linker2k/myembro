@@ -146,9 +146,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     var progress by mutableIntStateOf(0)
     var playing by mutableStateOf(false)
 
-    var playbackMultiplier by mutableIntStateOf(1)
-        private set
-    val playbackSpm: Double get() = sewoutReport?.speed?.effectiveSpm?.takeIf { it.isFinite() && it > 0 } ?: 400.0
+    /** Automatic UI preview rate, independent of machine speed and stitch generation. */
+    val playbackRate: Double get() = viewerPlaybackRate(render?.playback?.needleCount ?: 0)
     private var pending = 0.0
     var showJumps by mutableStateOf(false)
 
@@ -342,11 +341,6 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         progress = commandIndex.coerceIn(-1, render?.playback?.endIndex ?: -1)
     }
 
-    fun selectPlaybackSpeed(multiplier: Int) {
-        require(multiplier in listOf(1, 4, 16))
-        playbackMultiplier = multiplier
-    }
-
     fun togglePlay() {
         val timeline = render?.playback ?: return
         if (timeline.needleCount == 0) return
@@ -359,7 +353,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     fun tick(seconds: Float) {
         if (!playing || !seconds.isFinite() || seconds <= 0) return
         val timeline = render?.playback ?: return
-        pending += playbackSpm / 60 * playbackMultiplier * seconds
+        pending += playbackRate * seconds
         val steps = pending.coerceAtMost(Int.MAX_VALUE.toDouble()).toInt()
         pending -= steps
         progress = timeline.advance(progress, steps)
