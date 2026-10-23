@@ -469,16 +469,32 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Potrace-derived binary contour and polygon core (engine-only partial port)
 
-- Source: Potrace 1.16, Copyright (C) 2001–2019 Peter Selinger.
-- Official release: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
-- Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
-  (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
-- Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
-  `OptimalPolygon.kt`, `CurveFitter.kt` and `CurveOptimizer.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
-  and `src/auxiliary.h`. Modified 2026 by myembro contributors.
-- License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
-  GPL-3.0-or-later application. Upstream permission is stated in its README;
-  the complete upstream GPL v2 text is packaged as `licenses/potrace/COPYING` in the engine JAR/APK.
-- This is an unfinished, internal algorithm port, not an endorsed or finished Potrace product.
-  No original executable, native library or new dependency is bundled. No application entry point.
-  See `docs/image-pipeline.md` for the exact implemented stages and differences.
+
+The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `beziersplitatt`, `maxdist`) and `inkex/transforms.py` (`DirectedLineSegment.distance_to_point`) at commit `2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892`, under GPL-2.0-or-later with the GPL v3 later-version option exercised here. Additional original notices: Copyright (C) 2005 Aaron Spike; Copyright (C) 2010 Nick Drobchenko; Copyright (C) 2006 Jean-Francois Barraud; Copyright (C) 2010 Alvin Penner. Sources: [bezier.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/bezier.py), [transforms.py](https://gitlab.com/inkscape/extensions/-/blob/2044255c7a79a0d0b5fb20cb8b0f573ed1ae7892/inkex/transforms.py). These controls are transformed before fixed 0.1 SVG-px source subdivision; manual node and custom-lock endpoint semantics remain separate.
+
+## Pystitch output boundary and opt-in writer profile
+
+- Source: [inkstitch/pystitch v1.0.1](https://github.com/inkstitch/pystitch/tree/8fc0b113e02ea81d9a507bfad3f7fd624a8895bd), commit `8fc0b113e02ea81d9a507bfad3f7fd624a8895bd`.
+- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
+- License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
+- Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
+
+## Wu color quantizer / Graphics Gems II
+
+- Author: Xiaolin Wu; thanks to Tom Lane for documentation and bug correction.
+- Source: `gemsii/quantizer.c` (original C v2 of the 1991 Graphics Gems II algorithm),
+  https://github.com/erich666/GraphicsGems/tree/ca4898517a93b6b45444a9cda5fd50132694b864 .
+- Kotlin translation: `engine/.../inkstitch/svg/image/ImageQuantizer.kt`.
+- Upstream is the custom Graphics Gems permission below, **not MIT or public domain**.
+  Original file also states “Free to distribute, comments and suggestions are appreciated.”
+  Copyright remains with the original authors; the Kotlin translation is GPL-3.0-or-later
+  with upstream notices preserved. No native library or app integration is added.
+- Original permission and author notice are packaged under `licenses/graphics-gems/`.
+
+```text
+LICENSE
+
+This code repository predates the concept of Open Source, and predates most licenses along such lines. As such, the official license truly is:
+
+EULA: The Graphics Gems code is copyright-protected. In other words, you cannot claim the text of the code as your own and resell it. Using the code is permitted in any program, product, or library, non-commercial or commercial. Giving credit is not required, though is a nice gesture. The code comes as-is, and if there are any flaws or problems with any Gems code, nobody involved with Gems - authors, editors, publishers, or webmasters - are to be held responsible. Basically, don't be a jerk, and remember that anything free comes with no guarantee.
+```
