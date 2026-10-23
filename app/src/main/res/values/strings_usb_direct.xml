@@ -1,4 +1,10 @@
 <resources>
+    <string name="usb_diagnostics_title">USB export failed — diagnostics</string>
+    <string name="usb_diagnostics_hint">Copy or share this report for analysis. It includes the device identity, capacity, boot sector and BPB fields.</string>
+    <string name="usb_diagnostics_copy">Copy diagnostics</string>
+    <string name="usb_diagnostics_share">Share</string>
+    <string name="usb_diagnostics_copied">Diagnostics copied</string>
+    <string name="usb_direct_compatibility_warning">RAM disk compatibility warning: %1$s</string>
     <string name="usb_direct_drive">SE400 direct connection · %1$s</string>
     <string name="usb_direct_notice">Connect the powered-on SE400 USB-B port to the phone using USB/OTG, then allow USB access. Android may not show this RAM disk in the folder picker; use SE400 direct connection. PES names are converted to unique uppercase 8.3 names. Files disappear when the machine is powered off. Only FAT12 is supported; the app never formats the device.</string>
     <string name="usb_direct_disconnected">The direct USB device was disconnected. Reconnect it and try again.</string>

@@ -1,4 +1,10 @@
 <resources>
+    <string name="usb_diagnostics_title">USB 내보내기 실패 — 진단 정보</string>
+    <string name="usb_diagnostics_hint">분석할 수 있도록 진단 정보를 복사하거나 공유해 주세요. 장치 이름·용량·부트섹터·BPB 필드가 포함됩니다.</string>
+    <string name="usb_diagnostics_copy">진단 정보 복사</string>
+    <string name="usb_diagnostics_share">공유</string>
+    <string name="usb_diagnostics_copied">진단 정보를 복사했습니다</string>
+    <string name="usb_direct_compatibility_warning">램디스크 호환성 경고: %1$s</string>
     <string name="usb_direct_drive">SE400 직접 연결 · %1$s</string>
     <string name="usb_direct_notice">전원을 켠 SE400의 USB-B 포트를 USB/OTG로 휴대폰에 연결하고 USB 접근을 허용하세요. 폴더 선택기에 보이지 않는 램디스크는 SE400 직접 연결을 사용합니다. PES는 중복 없는 대문자 8.3 파일명으로 저장됩니다. 미싱 전원을 끄면 파일이 지워집니다. FAT12만 지원하며 포맷하지 않습니다.</string>
     <string name="usb_direct_disconnected">직접 연결 USB가 분리되었습니다. 다시 연결한 뒤 시도하세요.</string>

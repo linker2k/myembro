@@ -21,6 +21,7 @@ import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
 import io.github.linker2k.myembro.usb.DirectUsbExporter
+import io.github.linker2k.myembro.usb.DirectUsbFailure
 import io.github.linker2k.myembro.export.ExportChecks
 import java.io.File
 import java.util.Locale
@@ -104,6 +105,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private var permissionDrive: UsbExporter.Drive? = null
     private var cancelUsbPermission: (() -> Unit)? = null
     private var usbPermissionEpoch = 0L
+    internal var directFailure by mutableStateOf<DirectUsbFailure?>(null)
+        private set
+    internal fun dismissDirectFailure() { directFailure = null }
 
     init {
         viewModelScope.launch {
@@ -351,6 +355,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         plan: DirectUsbExporter.SpacePlan? = null, deleteNames: Set<String> = emptySet()) {
         val target = drive.direct ?: return
         pendingExport = emptyList()
+        directFailure = null
         busy = true
         viewModelScope.launch {
             val res = getApplication<Application>().resources
@@ -367,10 +372,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                             report.exported.size, report.exported.joinToString())
                         else res.getString(R.string.usb_partial, report.exported.size, report.failures.size,
                             "${report.failures.first().first}: ${report.failures.first().second}")
+                        if (report.warnings.isNotEmpty()) message = message + "\n" +
+                            res.getString(R.string.usb_direct_compatibility_warning, report.warnings.joinToString("\n"))
+                        directFailure = result.failure
                         selection.clear()
                     }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: DirectUsbFailure) { directFailure = e }
             catch (e: Exception) { message = res.getString(R.string.usb_failed, e.message ?: e.javaClass.simpleName) }
             finally { busy = false }
         }

@@ -13,7 +13,10 @@ import kotlin.math.min
  * Not journaled: disconnect/power loss can interrupt metadata updates. After any I/O failure this
  * instance is poisoned; remount and inspect rather than retrying writes against stale allocation.
  */
-class Fat12Volume private constructor(private val device: BlockDevice, val geometry: Geometry, private val boot: ByteArray) {
+class Fat12Volume private constructor(private val device: BlockDevice, val geometry: Geometry,
+    private val boot: ByteArray, private val mountWarnings: MutableList<String>) {
+    /** Firmware-generated RAM disks can have nonstandard descriptive BPB fields. No repair is done. */
+    val warnings: List<String> get() = mountWarnings.toList()
     data class Geometry(val startSector: Long, val totalSectors: Long, val bytesPerSector: Int,
         val sectorsPerCluster: Int, val reservedSectors: Int, val fatCount: Int, val sectorsPerFat: Int,
         val rootEntryCount: Int, val rootSectors: Int, val clusterCount: Int) {
@@ -32,6 +35,8 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     }
     class NoSpace(val requiredBytes: Long, val freeBytes: Long, val requiredEntries: Int, val freeEntries: Int) :
         IOException("FAT12 space/root entries insufficient: $requiredBytes/$freeBytes bytes, $requiredEntries/$freeEntries entries")
+    class MountFailure(val superfloppyReason: String, val mbrReason: String, cause: Exception) :
+        IOException("Superfloppy failed: $superfloppyReason; MBR failed: $mbrReason", cause)
 
     private var fat = read(geometry.fatSector, geometry.sectorsPerFat)
     private var root = read(geometry.rootSector, geometry.rootSectors)
@@ -51,7 +56,9 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         for (copy in 1 until geometry.fatCount) {
             checkDisk(fat.contentEquals(read(geometry.fatSector + copy.toLong() * geometry.sectorsPerFat, geometry.sectorsPerFat)), "FAT copies disagree; repair is not supported")
         }
-        checkDisk(fatEntry(0) == (0xF00 or u8(boot, 21)) && fatEntry(1) >= 0xFF8, "Invalid FAT reserved entries")
+        checkDisk(fatEntry(0) and 0xF00 == 0xF00 && fatEntry(1) >= 0xFF8, "Invalid FAT reserved entries")
+        if (fatEntry(0) and 255 != u8(boot, 21)) mountWarnings +=
+            "BPB media byte differs from FAT[0]: BPB=0x%02X FAT=0x%02X (unchanged)".format(u8(boot, 21), fatEntry(0) and 255)
         validateChains()
     }
 
@@ -239,6 +246,9 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         try { action(); device.flush() } catch (e: Exception) { poisoned = true; throw e }
     }
     private fun writeVerified(lba: Long, bytes: ByteArray) {
+        checkDisk(bytes.isNotEmpty() && bytes.size % device.sectorSize == 0 && lba >= geometry.startSector &&
+            bytes.size.toLong() / device.sectorSize <= geometry.startSector + geometry.totalSectors - lba &&
+            bytes.size.toLong() / device.sectorSize <= device.sectorCount - lba, "Block write out of bounds")
         device.writeSectors(lba, bytes)
         device.flush()
         checkDisk(read(lba, bytes.size / device.sectorSize).contentEquals(bytes), "FAT12 sector read-back differs at $lba")
@@ -249,30 +259,62 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         fun mount(device: BlockDevice): Fat12Volume {
             checkDisk(device.sectorSize in setOf(512, 1024, 2048, 4096) && device.sectorCount > 0, "Unsupported block geometry")
             val zero = checkedRead(device, 0, 1)
-            val superGeometry = runCatching { parse(zero, device, 0, device.sectorCount) }.getOrNull()
-            if (superGeometry != null) return Fat12Volume(device, superGeometry, zero)
-            checkDisk(u16(zero, 510) == 0xAA55, "No FAT12 BPB or MBR signature; no formatting is performed")
-            val entry = (0..3).map { 446 + it * 16 }.firstOrNull { u8(zero, it + 4) != 0 && u32(zero, it + 12) != 0L }
-                ?: throw IOException("No FAT12 superfloppy or first partition")
-            checkDisk(u8(zero, entry + 4) == 1 && u8(zero, entry) in setOf(0, 0x80), "First partition is not a primary FAT12 partition")
-            val start = u32(zero, entry + 8); val count = u32(zero, entry + 12)
-            checkDisk(start > 0 && start < device.sectorCount && count <= device.sectorCount - start, "MBR partition out of device bounds")
-            val boot = checkedRead(device, start, 1)
-            return Fat12Volume(device, parse(boot, device, start, count), boot)
+            val superFailure = try {
+                val parsed = parse(zero, device, 0, device.sectorCount)
+                return Fat12Volume(device, parsed.geometry, zero, parsed.warnings)
+            } catch (e: IOException) { e }
+            try {
+                checkDisk(!(u8(zero, 0) in setOf(0xEB, 0xE9) && plausibleBpb(zero, device)),
+                    "Not an MBR: FAT boot jump and plausible BPB; partition-table bytes are boot code")
+                checkDisk(u16(zero, 510) == 0xAA55, "Not an MBR: missing 0xAA55 signature")
+                val entry = (0..3).map { 446 + it * 16 }
+                    .firstOrNull { u8(zero, it + 4) != 0 || u32(zero, it + 12) != 0L }
+                    ?: throw IOException("Not an MBR: no partition entries")
+                checkDisk(u8(zero, entry) in setOf(0, 0x80) && u8(zero, entry + 4) == 1,
+                    "Not an MBR: first partition needs boot flag 0/0x80 and FAT12 type 0x01")
+                val start = u32(zero, entry + 8); val count = u32(zero, entry + 12)
+                checkDisk(start > 0 && start < device.sectorCount && count > 0 && count <= device.sectorCount - start,
+                    "MBR partition out of device bounds: start=$start count=$count device=${device.sectorCount}")
+                val boot = checkedRead(device, start, 1)
+                val parsed = parse(boot, device, start, count)
+                return Fat12Volume(device, parsed.geometry, boot, parsed.warnings)
+            } catch (e: IOException) {
+                throw MountFailure(superFailure.message ?: superFailure.javaClass.simpleName,
+                    e.message ?: e.javaClass.simpleName, e).apply { addSuppressed(superFailure) }
+            }
         }
 
-        private fun parse(b: ByteArray, device: BlockDevice, start: Long, available: Long): Geometry {
-            checkDisk(u16(b, 510) == 0xAA55 && u8(b, 0) in setOf(0xEB, 0xE9), "Invalid FAT boot sector")
+        private data class Parsed(val geometry: Geometry, val warnings: MutableList<String>)
+
+        private fun plausibleBpb(b: ByteArray, device: BlockDevice): Boolean {
+            val spc = u8(b, 13)
+            return u16(b, 11) == device.sectorSize && spc in 1..128 && spc and (spc - 1) == 0 &&
+                u16(b, 14) > 0 && u8(b, 16) in 1..2 && u16(b, 17) > 0 && u16(b, 22) > 0
+        }
+
+        private fun parse(b: ByteArray, device: BlockDevice, start: Long, available: Long): Parsed {
+            checkDisk(u16(b, 510) == 0xAA55, "Invalid FAT boot sector signature (expected 0xAA55)")
+            val warnings = mutableListOf<String>()
+            if (u8(b, 0) !in setOf(0xEB, 0xE9)) warnings += "Nonstandard FAT boot jump: 0x%02X (unchanged)".format(u8(b, 0))
+            if (u8(b, 21) != 0xF0 && u8(b, 21) !in 0xF8..0xFF)
+                warnings += "Nonstandard BPB media byte: 0x%02X (unchanged)".format(u8(b, 21))
             val size = u16(b, 11); val spc = u8(b, 13); val reserved = u16(b, 14); val copies = u8(b, 16)
             val roots = u16(b, 17); val total = u16(b, 19).toLong().takeIf { it != 0L } ?: u32(b, 32)
             val spf = u16(b, 22)
             checkDisk(size == device.sectorSize && spc in 1..128 && spc and (spc - 1) == 0 && reserved > 0 && copies in 1..2 && roots > 0 && spf > 0, "Invalid FAT12 BPB geometry")
             val rootSectors = (roots * 32 + size - 1) / size
             val metadata = reserved.toLong() + copies.toLong() * spf + rootSectors
-            checkDisk(total > metadata && total <= available && total <= device.sectorCount - start, "FAT12 volume out of bounds")
-            val clusters = ((total - metadata) / spc).toInt()
-            checkDisk(clusters in 1..4084 && spf.toLong() * size >= ((clusters + 2L) * 3 + 1) / 2 && spf.toLong() * size <= 1_048_576, "Volume is not a valid FAT12 layout")
-            return Geometry(start, total, size, spc, reserved, copies, spf, roots, rootSectors, clusters)
+            checkDisk(total > metadata, "FAT12 BPB total=$total does not cover metadata=$metadata")
+            // Validate the declared layout too: clamping must never disguise a FAT16/32 volume.
+            val declaredClusters = (total - metadata) / spc
+            checkDisk(declaredClusters in 1..4084 && spf.toLong() * size >= ((declaredClusters + 2) * 3 + 1) / 2 &&
+                spf.toLong() * size <= 1_048_576, "Volume is not a valid FAT12 layout (clusters=$declaredClusters FAT bytes=${spf.toLong() * size})")
+            val boundedTotal = minOf(total, available, device.sectorCount - start)
+            if (boundedTotal != total) warnings += "BPB total sectors=$total clamped to device/partition sectors=$boundedTotal (boot sector unchanged)"
+            checkDisk(boundedTotal > metadata, "FAT12 device ends inside metadata: available=$boundedTotal metadata=$metadata")
+            val clusters = ((boundedTotal - metadata) / spc).toInt()
+            checkDisk(clusters in 1..4084, "No complete FAT12 data clusters inside device bounds")
+            return Parsed(Geometry(start, boundedTotal, size, spc, reserved, copies, spf, roots, rootSectors, clusters), warnings)
         }
         private fun checkedRead(d: BlockDevice, lba: Long, count: Int): ByteArray {
             checkDisk(count > 0 && lba >= 0 && count.toLong() <= d.sectorCount - lba, "Block read out of bounds")

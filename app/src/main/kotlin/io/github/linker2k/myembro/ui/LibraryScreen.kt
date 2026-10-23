@@ -271,6 +271,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
     }
 
     DirectUsbSpaceDialog(vm)
+    DirectUsbFailureDialog(vm)
 
     vm.driveChoice?.let { choices ->
         AlertDialog(

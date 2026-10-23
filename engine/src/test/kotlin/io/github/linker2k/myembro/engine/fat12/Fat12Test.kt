@@ -13,7 +13,9 @@ class Fat12Test {
         override val sectorSize = 512
         override val sectorCount get() = file.length() / sectorSize
         var writes = 0
+        val reads = mutableListOf<Long>()
         override fun readSectors(lba: Long, count: Int): ByteArray = RandomAccessFile(file, "r").use {
+            reads += lba
             it.seek(lba * sectorSize); ByteArray(count * sectorSize).also(it::readFully)
         }
         override fun writeSectors(lba: Long, data: ByteArray) {
@@ -214,6 +216,144 @@ class Fat12Test {
         assertFailsWith<IOException> { fs.writeFile("B.PES", byteArrayOf(2)) }
         assertEquals(writes, disk.writes)
         assertFailsWith<IOException> { Fat12Volume.mount(disk) }
+    }
+
+    @Test fun `nonstandard firmware jump and OEM mount with warning and boot bytes never change`() = image { disk ->
+        val bytes = disk.file.readBytes().also { it[0] = 0; it.fill(0, 3, 11) }
+        disk.file.writeBytes(bytes)
+        val fs = Fat12Volume.mount(disk)
+        assertTrue(fs.warnings.any { it.contains("boot jump") })
+        val name = fs.writeFile("firmware.pes", byteArrayOf(1, 2, 3)).name
+        assertContentEquals(byteArrayOf(1, 2, 3), Fat12Volume.mount(disk).readFile(name))
+        assertContentEquals(bytes.copyOfRange(0, 512), disk.readSectors(0, 1))
+    }
+
+    @Test fun `nonstandard media and BPB FAT media mismatch are warnings without media repair`() = image { disk ->
+        val bytes = disk.file.readBytes().also { it[21] = 0 }
+        disk.file.writeBytes(bytes)
+        val fs = Fat12Volume.mount(disk)
+        assertTrue(fs.warnings.any { it.contains("Nonstandard BPB media") })
+        assertTrue(fs.warnings.any { it.contains("differs from FAT[0]") })
+        fs.writeFile("media.pes", byteArrayOf(5, 6))
+        assertEquals(0, disk.readSectors(0, 1)[21].toInt())
+        val g = fs.geometry
+        assertContentEquals(bytes.copyOfRange(g.fatSector.toInt() * 512, g.fatSector.toInt() * 512 + 3),
+            disk.readSectors(g.fatSector, 1).copyOfRange(0, 3))
+        // Even a standard media byte may disagree with firmware's FAT media value.
+        val standard = disk.file.readBytes().also { it[21] = 0xF0.toByte() }
+        disk.file.writeBytes(standard)
+        assertTrue(Fat12Volume.mount(disk).warnings.any { it.contains("differs from FAT[0]") })
+    }
+
+    @Test fun `BPB capacity above READ CAPACITY clamps and can fill only actual device sectors`() = image { disk ->
+        val original = disk.file.readBytes()
+        disk.file.writeBytes(original.copyOf(952 * 512)) // SE400-like 476 KiB device, 480 KiB BPB.
+        val fs = Fat12Volume.mount(disk)
+        assertEquals(952L, fs.geometry.totalSectors)
+        assertEquals(952 * 512L, fs.capacityBytes)
+        assertTrue(fs.warnings.any { it.contains("clamped") })
+        val data = ByteArray(fs.freeBytes.toInt()) { (it * 11).toByte() }
+        val name = fs.writeFile("full.pes", data).name
+        assertContentEquals(data, Fat12Volume.mount(disk).readFile(name))
+        assertEquals(0L, fs.freeBytes)
+        assertTrue(951L in disk.reads)
+        assertTrue(disk.reads.all { it in 0..951 })
+        assertContentEquals(original.copyOfRange(0, 512), disk.readSectors(0, 1))
+        val before = disk.file.readBytes()
+        assertFailsWith<Fat12Volume.NoSpace> { fs.writeFile("extra.pes", byteArrayOf(1)) }
+        assertContentEquals(before, disk.file.readBytes())
+    }
+
+    @Test fun `32 bit BPB capacity also clamps without changing boot sector`() = image { disk ->
+        val bytes = disk.file.readBytes().also {
+            it[19] = 0; it[20] = 0
+            val total = 968
+            repeat(4) { n -> it[32 + n] = (total ushr (n * 8)).toByte() }
+        }
+        disk.file.writeBytes(bytes)
+        val fs = Fat12Volume.mount(disk)
+        assertEquals(960L, fs.geometry.totalSectors)
+        assertTrue(fs.warnings.any { it.contains("968 clamped") })
+        fs.writeFile("small.pes", byteArrayOf(1))
+        assertContentEquals(bytes.copyOfRange(0, 512), disk.readSectors(0, 1))
+    }
+
+    @Test fun `partition BPB is clamped to partition length and never writes the following disk area`() = image { partition ->
+        val payload = partition.file.readBytes().also { it[19] = 0xC8.toByte(); it[20] = 3 } // 968 BPB sectors.
+        val start = 63
+        val mbr = ByteArray(start * 512).also {
+            it[450] = 1; it[510] = 0x55; it[511] = 0xAA.toByte()
+            repeat(4) { n -> it[454 + n] = (start ushr (n * 8)).toByte(); it[458 + n] = (960 ushr (n * 8)).toByte() }
+        }
+        val tail = ByteArray(128 * 512) { 0x7E }
+        val whole = File(partition.file.parentFile, "bounded-mbr.img").apply { writeBytes(mbr + payload + tail) }
+        val disk = Disk(whole)
+        val fs = Fat12Volume.mount(disk)
+        assertEquals(960L, fs.geometry.totalSectors)
+        assertTrue(fs.warnings.any { it.contains("968 clamped") })
+        val data = ByteArray(fs.freeBytes.toInt()) { 0x31 }
+        val name = fs.writeFile("full.pes", data).name
+        assertContentEquals(data, Fat12Volume.mount(disk).readFile(name))
+        assertContentEquals(tail, disk.readSectors(start + 960L, 128))
+        assertContentEquals(mbr, disk.readSectors(0, start))
+        assertContentEquals(payload.copyOfRange(0, 512), disk.readSectors(start.toLong(), 1))
+    }
+
+    @Test fun `FAT boot code is never mistaken for MBR when plausible BPB fails bounds`() = image { disk ->
+        val bytes = disk.file.readBytes().also {
+            it[19] = 1; it[20] = 0 // Plausible BPB fields, invalid total below metadata.
+            it[446] = 0; it[450] = 1
+            repeat(4) { n -> it[454 + n] = (1 ushr (n * 8)).toByte(); it[458 + n] = (1 ushr (n * 8)).toByte() }
+        }
+        disk.file.writeBytes(bytes)
+        val failure = assertFailsWith<Fat12Volume.MountFailure> { Fat12Volume.mount(disk) }
+        assertTrue(failure.message!!.contains("Superfloppy failed:"))
+        assertTrue(failure.superfloppyReason.contains("metadata"))
+        assertTrue(failure.mbrReason.contains("Not an MBR"))
+        assertEquals(listOf(0L), disk.reads)
+        assertEquals(0, disk.writes)
+    }
+
+    @Test fun `invalid MBR flags and non FAT12 types are rejected before partition bounds`() = image { disk ->
+        for ((flag, type) in listOf(0x7F to 1, 0 to 6, 0x80 to 0x0B)) {
+            val bytes = ByteArray(512).also {
+                it[446] = flag.toByte(); it[450] = type.toByte(); it[458] = 1
+                it[510] = 0x55; it[511] = 0xAA.toByte()
+            }
+            disk.file.writeBytes(bytes)
+            val failure = assertFailsWith<Fat12Volume.MountFailure> { Fat12Volume.mount(disk) }
+            assertTrue(failure.mbrReason.contains("Not an MBR"))
+            assertTrue(failure.superfloppyReason.contains("geometry"))
+        }
+        assertEquals(0, disk.writes)
+    }
+
+    @Test fun `clamping still rejects FAT16 declared clusters undersized FAT and missing signature`() = image { disk ->
+        val original = disk.file.readBytes()
+        for (changed in listOf(
+            original.copyOf().also { it[19] = 0x88.toByte(); it[20] = 0x13 }, // 5000 sectors -> FAT16 cluster range.
+            original.copyOf().also { it[22] = 1; it[23] = 0 }, // FAT is too short for declared cluster count.
+            original.copyOf().also { it[510] = 0 },
+        )) {
+            disk.file.writeBytes(changed)
+            assertFailsWith<IOException> { Fat12Volume.mount(disk) }
+        }
+        assertEquals(0, disk.writes)
+    }
+
+    @Test fun `diagnostics contain all 512 boot bytes and numeric BPB fields`() = image { disk ->
+        val boot = disk.readSectors(0, 1).also { "OEM%TEST".toByteArray().copyInto(it, 3) }
+        val report = Fat12Diagnostics.bootSector(boot)
+        assertTrue(report.contains("BytesPerSector=512"))
+        assertTrue(report.contains("TotalSectors16=960"))
+        assertTrue(report.contains("NumberOfFATs=2"))
+        assertTrue(report.contains("OEM=OEM%TEST"))
+        assertTrue(report.contains("01F0:"))
+        val rows = report.lines().filter { it.matches(Regex("[0-9A-F]{4}: .*")) }
+        assertEquals(32, rows.size)
+        val restored = rows.flatMap { it.substringAfter(": ").split(' ') }.map { it.toInt(16).toByte() }.toByteArray()
+        assertContentEquals(boot, restored)
+        assertTrue(Fat12Diagnostics.bootSector(byteArrayOf(1)).contains("sector0 bytes=1"))
     }
 
 }
