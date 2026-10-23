@@ -1606,3 +1606,86 @@ CI는 main의 모든 브랜치 push 트리거와 전체 engine-test-results 아�
 - 카탈로그 `app/src/main/assets/fonts/inkstitch-catalog.json`: 재배포 가능한 글꼴의 고정 URL·sha256, 글리프 이름, 허용 높이 범위. `tools/inkstitch_catalog.py`가 만듭니다.
 - 허용 높이: `InkStitchFontSweep`(opt-in 엔진 테스트)가 글꼴 기록 범위를 1mm 간격으로, 텍스트 3종을 `SewoutCheck`로 판정하고, 가장 긴 연속 통과 구간을 씁니다. 결과는 `docs/inkstitch-font-sweep.json`에 둡니다. 후프 초과는 범위를 줄이지 않고 따로 셉니다(총괄 확인).
 - 목록 UI: "검증된 자수 글꼴"을 맨 앞에 두고(이름과 땀 미리보기), 입력 글자가 없는 글꼴은 흐리게·선택 불가로 둡니다. 높이 슬라이더는 허용 범위로 제한합니다.
+
+### 글꼴 92/96의 잔여4건 계산 분해
+
+대상은 독립 비교 `latest-letter-fonts/df7da347cda358092a4ee29c19fe256474f12913/`의
+`forceBoundaryLocks=false` 4건이다. testfont·압축·multifile·압축multifile 모두
+**150mm BAAB**이며 원인은 동일하다. 정책상 시작 잠금을 강제하는 true 결과와 혼합하지 않는다.
+
+| 지표 | 공식 / 포트 (4건 공통) |
+|---|---|
+| 바늘 수 | 850 / 850 |
+| Hausdorff (bbox 중심 평행이동만) | 0.1mm |
+| 전체 트림 | 8 / 7 |
+| 첫 바늘 command index (0부터) | 4 / 1 |
+| 첫 바늘 이후 제어 순서·수 | 일치 (TRIM 7 / 7) |
+| 첫 바늘 이후 제어 위치 최대 편차 | 0.0mm |
+
+공식 초기 명령은 `J(-184.6,75) → J(-297.1,75) → T(-297.1,75) →
+J(-409.6,75) → S`(mm)이며 포트는 `J(0,-75) → S`다.
+공식 첫 J는 PEC viewport 위치 prefix이고, 다음 **225mm** 위치 이동은 축당 최대
+**204.7mm**를 넘어 **112.5mm 두 구간**으로 나뉜다. 따라서 첫 실제 바늘 전에만
+추가 trimjump가 하나 생긴다. 전체850개 바늘 경로와 봉제 중 트림7개에는 차이가 없다.
+
+원본 대조(읽기만):
+- Ink/Stitch `lib/output.py:write_embroidery_file`
+  @b0edd96311ece82ee48816dc93466274b12c2a9c: origin translate, full_jump/trims 출력 설정.
+- pystitch `PecWriter.py:pec_encode`, `MAX_JUMP_DISTANCE=2047`
+  @8fc0b113e02ea81d9a507bfad3f7fd624a8895bd: init에서 첫 J만 jump, 이후 J는 trimjump.
+- 같은 커밋 `EmbEncoder.py:interpolate_gap_stitches`, `jump_to`: 축 최대 길이로 ceil 분할.
+- 포트 `io/PecWriter.kt:normalizePattern`의 원점에서 시작하는 이동 정규화와 비교.
+
+**허용 차이로 문서화**: 첫 바늘 이전의 절대 배치/PEC 직렬화에서 생긴 needle-up 트림1개다.
+글자 경로를 바꾸거나 앱 PES 원점을 공식 SVG의 배치로 억지로 옮기지 않는다.
+공식 비교기의 `TRIM_STOP_COLOR_ORDER`와 **92/96 판정은 변경하지 않았고**,
+독립 판정자가 이 분해 근거를 검토해야 한다. 일반 트림 누락의 포괄 예외로 확대하지 않는다.
+
+재현: `python3 tools/breakdown-font-residuals.py` (JSON/gzip 읽기만, 최대10건).
+입력 PES SHA·캐시 identity를 검사하고 처음 바늘 이후 모든 제어 명령과 좌표를 비교한다.
+출력: `/tmp/myembro-port-out/letter/font-residuals/residuals.{json,md}`.
+검증: 4건 모두 `INITIAL_NEEDLE_UP_TRIM_ONLY`, unresolved0, 스크립트 종료0.
+엔진 생성 로직·게이트·오라클 캐시는 수정하지 않았다.
+
+### 글꼴 NPE7건·bean/fill 연결 회귀
+
+원인: `InkStitchLettering.render`가 파라미터의 keys를 순회하면서 `params[key]!!`를
+호출했다. accessor는 빈/공백 속성에서 null을 반환하므로 NPE가 났다.
+원본 `lib/elements/element.py:get_param`@b0edd96311ece82ee48816dc93466274b12c2a9c는
+`.strip()` 후 빈 값이면 default를 사용한다. 이제 빈 속성을 제외하고 해당 포트의 기본값을 쓴다.
+7글꼴 모두 빈 속성이 있었다: chicken_scratch164, digory_doodles_bean193,
+emilio_20_applique8, emilio_20_bold8, manga_impact347, precious10, roaring_twenties_KOR_small368개.
+Roaring Twenties에는 `.&` 숫자도 있어 `get_float_param`처럼 SVG 숫자 실패 시
+기본값으로 처리하는 `SatinParametersCodec.decodeSvg`를 추가했다. 프로젝트 `decode`는
+기존 엄격한 입력 검증·round-trip 계약을 유지한다.
+
+연결(새 스티치 알고리즘 구현 없음):
+- InkRun → worker `elements/Stroke` + `StrokeParameters.fromAttributes`: bean/repeats,
+  전체 subpath의 종료 trim/stop을 원본 facade처럼 마지막 그룹에 한 번 적용한다.
+- InkFill → model의 staging/s2s3 **4899d66**의 `FillParameters`, `FillUnderlay`,
+  `TatamiFill/FillRouting`과 관련 파일을 변경 없이 가져왔다. JGraphT 및 라이선스도
+  같은 snapshot의 의존성과 고지를 따른다. 기존 native `InkAutoFill`은 변경하지 않았다.
+- `FontTatami`는 좌표·그룹 연결 어댑터다. SVG px를 유지하고 SVG fill-rule로
+  영역/홀을 구성하며, 컴포넌트별 언더레이→본 채움, 원본 최근접 다음 컴포넌트 끝 위치,
+  태그 jump 분리, 색·원본 잠금/최소 길이·trim/stop을 S1 한 번에 넘긴다.
+  원본 대조: `fill_stitch.py:to_stitch_groups/do_underlay/do_tatami_fill` (동일 고정 upstream).
+  본 단위는 기본 tatami/auto_fill만 연결한다. 다른 fill_method를 임의로 태타미로 바꾸지 않는다.
+
+`InkFontElementRegressionTest`: CI에서 외부 파일 없이 빈 속성·잘못된 숫자·bean·
+홀 있는 fill/PES 왕복4건 실행. 별도 로컬 글꼴7건은 환경변수로 release 데이터 경로를
+지정해 실행하며 입력 폰트는 저장소에 번들하지 않는다. KOR_small도 실제 스윕처럼
+**Hamburg**로 재현한다(이 글꼴의 기록은 Latin이며 가나다를 지원한다고 가정하지 않는다).
+model의 FillParameters/FillCore/FillUnderlay/FillRandomRunning 테스트도 그대로 포함했다.
+
+```sh
+INKSTITCH_REGRESSION_ROOT=/tmp/myembro-port-out/letter/font-crashes/inputs \
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check
+```
+
+결과: 엔진502개·앱 Debug/Release 각177개 실패0, Lint 및 전체check 통과.
+로컬7글꼴 모두 렌더·PES 왕복 통과, 기존 고정 오라클4건 통과.
+Hamburg 땀 수: chicken1370, digory1870, applique23914, bold18588,
+manga1743, precious5289, KOR_small826.
+재현 파일·입력 해시·빈 속성 예시·전후 XML·출력:
+`/tmp/myembro-port-out/letter/font-crashes/`. 이는 crash/연결 회귀 판정이며
+독립 게이트·실제 봉제·전체 카탈로그 인증으로 확대하지 않는다.

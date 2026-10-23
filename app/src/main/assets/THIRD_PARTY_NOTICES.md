@@ -47,6 +47,17 @@ derived from the following projects, whose notices are reproduced as their licen
   data, or other assets were copied into that implementation; no remote code was executed.
   The newer source-derived ports under `engine/.../inkstitch/` are separately attributed below.
 
+## Ink/Stitch embroidery fonts (downloaded data; stitch previews bundled)
+
+- Source: https://github.com/inkstitch/embroidery-fonts at commit
+  `c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8`; per-font licenses (OFL-1.1, CC BY-SA, CC BY,
+  CC0/public domain, GPL-3.0) are listed in `docs/inkstitch-fonts.md`.
+- `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
+  The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
+  the license beside it. No font file is in this repository or the APK; `assets/fonts/previews/` holds one
+  small picture per font of its stitches (the sample "Abc"), rendered from that font under its own
+  license (OFL-1.1, CC BY / BY-SA, GPL-3.0 or public domain, as listed in the catalog with its authors).
+
 ## pyembroidery
 
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)
@@ -486,6 +497,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
+- Fill ports cover `lib/stitches/{fill,tatami_fill,contour_fill,guided_fill,circular_fill,
+  linear_gradient_fill,meander_fill,tartan_fill}.py`, fill-travel running stitch helpers,
+  `lib/elements/fill_stitch.py`, `lib/utils/{geometry,smoothing,clamp_path,prng}.py`,
+  `lib/stitches/utils/connect_geometries.py`, `lib/tiles.py` and `lib/tartan/utils.py`.
+  The JTS-backed multigraph, shortest paths and BLAKE2s subset are translated
+  implementations. Weighted perfect matching for Euler augmentation uses JGraphT
+  Blossom V (license selection and transitive dependencies below).
+- Data: 75 original `tiles/*/tile.svg` files are redistributed under GPL-3.0-or-later
+  in `engine/src/main/resources/inkstitch/tiles/`. Source-path notices were added as
+  XML comments; an index and `ORIGIN.txt` record the pinned source. No preview images,
+  fonts, private embroidery files or upstream executable code are bundled with them.
+- Changes and explicit unsupported settings are listed in `docs/inkstitch-port.md`.
+  The previous app fill implementations remain in use until independent quality approval.
+
+
+## JGraphT core and transitive libraries
+
+- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
+  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
+  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
+  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
+  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
+  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
+  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
+  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
+  traversal are Kotlin ports. Public dependency binaries are used; upstream source
+  archives were only read to verify notices.
+- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
+  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
+  source is available from the pinned repository and the published Maven sources JAR.
+- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
+  Dimitrios Michail and contributors. Full license and source notice are packaged at
+  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
+- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
+  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+
+## inkex path-number compatibility
+
+Ink/Stitch v3.3.0 pins Inkscape extensions/inkex at `EXTENSIONS_AT_INKSCAPE_1.4.1`.
+Its `inkex/paths/interfaces.py:PathCommand.number_template` uses six significant digits;
+our font path canonicalization follows that serialization rule. Source:
+https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
+The referenced source is GPL-2.0-or-later, Copyright (C) 2018 Martin Owens and
+Copyright (C) 2023 Jonathan Neuhauser. No inkex package is bundled, installed or executed.
+The surrounding Ink/Stitch glyph port remains GPL-3.0-or-later as identified in its header.
+
+## Ink/Stitch fixed font-oracle test fixtures
+
+`engine/src/test/resources/inkstitch/font-equivalence/` contains the public upstream generic
+A/B test-font input and a subset of independently decoded official v3.3.0 output coordinates.
+Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/tests/lettering/fonts/testfont .
+Copyright Ink/Stitch contributors. Upstream repository license GPL-3.0-or-later and the input's
+declared SIL OFL-1.1 text are included beside the data. Source metadata is retained; the one
+reversible=false newline correction and all provenance/hashes are recorded in PROVENANCE.md.
+Test resources only: no catalog font, personal design or runtime dependency is bundled by this addition.
 
 ## Inkex manual cubic-superpath boundary (oracle runner only)
 
@@ -505,3 +574,38 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
+
+## Hangul strict-writing stroke tables — local sweep tooling only (MIT)
+
+- Source: [juunini/count-korean-stroke-js](https://github.com/juunini/count-korean-stroke-js/blob/5f595640db4a059caf0d535fc72a4751a706e077/index.ts), commit `5f595640db4a059caf0d535fc72a4751a706e077`.
+- Copyright (c) 2025 Juunini; MIT license reproduced in
+  [`tools/licenses/count-korean-stroke-MIT.txt`](tools/licenses/count-korean-stroke-MIT.txt).
+- `tools/sweep_korean_ttf.py` translates the `strict=true` initial/vowel/final
+  stroke tables to rank the common supported Hangul syllables. This is a
+  reproducible writing-stroke convention, not a claim that handwriting has one
+  universal stroke count. Upstream JavaScript was read, never executed.
+- Tooling only; no new font binaries, private fonts or embroidery designs bundled.
+
+## JGraphT core and transitive libraries
+
+- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
+  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
+  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
+  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
+  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
+  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
+  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
+  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
+  traversal are Kotlin ports. Public dependency binaries are used; upstream source
+  archives were only read to verify notices.
+- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
+  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
+  source is available from the pinned repository and the published Maven sources JAR.
+- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
+  Dimitrios Michail and contributors. Full license and source notice are packaged at
+  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
+- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
+  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .

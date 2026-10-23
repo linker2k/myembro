@@ -6,7 +6,8 @@ import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.inkstitch.elements.SatinColumn
 import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParametersCodec
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
-import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
+import io.github.linker2k.myembro.engine.inkstitch.elements.Stroke
+import io.github.linker2k.myembro.engine.inkstitch.elements.StrokeParameters
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.inkstitch.utils.Point as SvgPoint
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
@@ -32,7 +33,7 @@ object InkStitchLettering {
             val boundary=groups.isEmpty() || groups.last().trimAfter || groups.last().stopAfter || groups.last().color!= (thread ?: EmbThread(element.color))
             // Product policy uses the upstream force flag only at a real thread boundary.
             // Coordinator policy also sets upstream ties=0 here: force alone only enables lock_end.
-            val attrs=params.names.associateWith { params[it]!! }.let {
+            val attrs=params.names.mapNotNull { key -> params[key]?.let { key to it } }.toMap().let {
                 if(forceBoundaryLocks && boundary) it + mapOf("force_lock_stitches" to "true", "ties" to "0") else it
             }
             val effective=InkStitchParams(attrs)
@@ -42,23 +43,15 @@ object InkStitchLettering {
             val previous=groups.lastOrNull()?.stitches?.lastOrNull()
             val made=when(element) {
                 is InkSatin -> SatinColumn.fromSubpaths(element.subpaths.map { it.map(::px) },
-                    SatinParametersCodec.decode(attrs),element.nodePaths.map { it.map(::px) },color=color,
+                    SatinParametersCodec.decodeSvg(attrs),element.nodePaths.map { it.map(::px) },color=color,
                     trim_after=params.bool("trim_after",false),stop_after=params.bool("stop_after",false),
                     lockStart=locks.start,lockEnd=locks.end,
                     force_lock_stitches=effective.bool("force_lock_stitches",false)).toStitchGroups(previous)
-                is InkRun -> element.paths.map { path ->
-                    require((params.number("repeats") ?: 1.0)==1.0 && params.values("bean_stitch_repeats").all { it==0.0 }) { "Repeats/bean lettering is deferred" }
-                    val base=InkRunning.even(path.points.map(::px).map { Point(it.x,it.y) },
-                        Units.mmToPixels(params.number("running_stitch_length_mm") ?: 2.5),
-                        Units.mmToPixels(params.number("running_stitch_tolerance_mm") ?: .2))
-                    StitchGroup(color,base.map { Stitch(SvgPoint(it.x,it.y)) },
-                        trimAfter=params.bool("trim_after",false),stopAfter=params.bool("stop_after",false),
-                        lockStart=locks.start,lockEnd=locks.end,
-                        minStitchLengthMm=params.number("min_stitch_length_mm"),
-                        minJumpLengthMm=params.number("min_jump_stitch_length_mm"),
-                        forceLockStitches=effective.bool("force_lock_stitches",false))
-                }
-                is InkFill -> error("Fill lettering is unavailable before S4")
+                is InkRun -> Stroke(element.paths.map { path -> path.points.map(::px) }, color,
+                    StrokeParameters.fromAttributes(attrs), lockStart=locks.start, lockEnd=locks.end)
+                    .toStitchGroups(previous)
+                is InkFill -> FontTatami.stitchGroups(element, { q -> px(q) }, attrs, color, previous)
+
             }
             groups+=made
         }

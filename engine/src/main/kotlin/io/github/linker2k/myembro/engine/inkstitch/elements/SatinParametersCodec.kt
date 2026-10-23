@@ -48,6 +48,29 @@ object SatinParametersCodec {
         p.min_stitch_length_mm?.toString().let { value -> if(value!=null) put("min_stitch_length_mm",value) }
         p.min_jump_stitch_length_mm?.toString().let { value -> if(value!=null) put("min_jump_stitch_length_mm",value) }
     }
+    /** element.py get_float/int/split_float_param: invalid SVG numbers use defaults.
+     * Keep decode() strict for persisted project data and round-trip validation. */
+    fun decodeSvg(attributes: Map<String,String>): SatinParameters {
+        val scalar = encode(defaults).filterValues { it.toDoubleOrNull() != null }.keys +
+            setOf("max_stitch_length_mm", "min_random_split_length_mm", "min_stitch_length_mm", "min_jump_stitch_length_mm")
+        val pairs = setOf("pull_compensation_mm", "pull_compensation_percent", "push_compensation_mm",
+            "random_width_decrease_percent", "random_width_increase_percent", "contour_underlay_inset_mm",
+            "contour_underlay_inset_percent", "zigzag_underlay_inset_mm", "zigzag_underlay_inset_percent")
+        val normalized = attributes.mapNotNull { (key, raw) ->
+            val value=raw.trim()
+            val valid=when {
+                value.isEmpty() -> false
+                key=="center_walk_underlay_repeats" -> value.toIntOrNull()!=null
+                key in scalar -> value.toDoubleOrNull()?.isFinite()==true
+                key in pairs || key=="short_stitch_inset" -> value.split(Regex("\\s+")).let { parts ->
+                    (key !in pairs || parts.size in 1..2) && parts.all { it.toDoubleOrNull()?.isFinite()==true } }
+                else -> true
+            }
+            if(valid) key to value else null
+        }.toMap()
+        return decode(normalized)
+    }
+
     fun decode(attributes:Map<String,String>):SatinParameters {
         fun text(name:String)=attributes[name]
         fun numbers(value:String)=value.trim().split(Regex("[\\s,]+")).filter(String::isNotBlank).map(String::toDouble)
