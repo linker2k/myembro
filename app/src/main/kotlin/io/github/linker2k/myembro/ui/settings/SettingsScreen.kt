@@ -67,7 +67,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.pm.PackageInfoCompat
+import androidx.compose.ui.text.style.TextAlign
+import io.github.linker2k.myembro.BuildConfig
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.theme.HoopPreview
 import io.github.linker2k.myembro.ui.theme.ThemeMode
@@ -209,8 +210,6 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                         Column {
                             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold)
-                            Text(stringResource(R.string.settings_version, version.versionName.orEmpty(),
-                                PackageInfoCompat.getLongVersionCode(version)), style = MaterialTheme.typography.bodySmall)
                             Text(stringResource(R.string.settings_app_description), style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -222,6 +221,9 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     SettingRow(Icons.Default.Description, stringResource(R.string.settings_open_source),
                         stringResource(R.string.settings_notices_description)) { licenseAsset = "THIRD_PARTY_NOTICES.md" }
                 }
+                Text(stringResource(R.string.settings_version, version.versionName.orEmpty(), BuildConfig.GIT_COMMIT),
+                    Modifier.fillMaxWidth().padding(top = 8.dp), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
         }
         if (machineDialog) MachineDialog(settings.machineModel, onDismiss = { machineDialog = false }) {

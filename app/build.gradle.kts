@@ -50,6 +50,15 @@ val generateMyembroBrandColors by tasks.registering {
     }
 }
 
+// Release builds pass -PmyembroVersion=<tag without v>; the commit count keeps versionCode increasing on main.
+fun git(vararg args: String): String? = providers.exec {
+    commandLine("git", *args)
+    isIgnoreExitValue = true
+}.standardOutput.asText.get().trim().ifEmpty { null }
+val myembroVersion = providers.gradleProperty("myembroVersion").getOrElse("0.1.0-dev")
+val gitCommit = git("rev-parse", "--short", "HEAD") ?: "unknown"
+val gitCommitCount = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 1
+
 android {
     namespace = "io.github.linker2k.myembro"
     compileSdk = 35
@@ -59,8 +68,9 @@ android {
         applicationId = "io.github.linker2k.myembro"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = gitCommitCount
+        versionName = myembroVersion
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
     }
 
     buildTypes {
@@ -78,6 +88,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
