@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Bean expansion port: Ink/Stitch 16e192849e619399ce8fdefb4c4d249dacdb4db1,
+// lib/stitches/running_stitch.py: bean_stitch (repeats=[1]); Copyright (c) 2010 Authors.
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.model.Command

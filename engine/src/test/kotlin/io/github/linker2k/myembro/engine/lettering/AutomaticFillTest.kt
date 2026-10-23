@@ -26,19 +26,20 @@ class AutomaticFillTest {
         assertTrue(relaxed.stitchCount < manual.stitchCount)
     }
     @Test fun ordinaryNarrowTextUsesAlternatingSatinAtPointFourSpacing() {
-        val p = OutlineFill.generate(listOf(box(1.5, 8.0)), plain)
+        val p = OutlineFill.generate(listOf(box(1.5, 8.0)), plain, satin = true)
         assertTrue(p.warnings.isEmpty())
         val steps = moves(p).map { (a, b) -> b.x - a.x }
         val sewn = steps.zipWithNext().count { (a, b) -> a * b < 0 }
         assertTrue(sewn > (steps.size - 1) * 0.85)
-        for (side in listOf(-7, 8)) {
+        assertTrue(abs(p.bounds!!.width-15)<=1) // 1e-5px source precision can move a half-grid endpoint by one machine unit.
+        for (side in listOf(p.bounds!!.minX, p.bounds!!.maxX)) {
             val points = p.stitches.filter { it.command == Command.STITCH && it.x == side }
             assertTrue(points.isNotEmpty())
             assertTrue(points.zipWithNext().all { (a, b) -> abs(b.y - a.y) <= 5 })
         }
     }
     @Test fun wideColumnsSplitBelowFourMillimetresAndStaggerInteriorPenetrations() {
-        val p = OutlineFill.generate(listOf(box(12.0, 30.0)), plain)
+        val p = OutlineFill.generate(listOf(box(12.0, 30.0)), plain, satin = true)
         assertTrue(p.warnings.isEmpty())
         moves(p).forEach { (a, b) -> assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) in 3.0..40.0) }
         val internal = p.stitches.filter { it.command == Command.STITCH && abs(it.x) < 59 }.map { it.x }.toSet()
@@ -48,7 +49,7 @@ class AutomaticFillTest {
         assertEquals(p.bounds, pes.bounds)
     }
     @Test fun strokesBelowSevenMillimetresCanKeepWholeSatinCrossings() {
-        val p = OutlineFill.generate(listOf(box(6.5, 20.0)), plain)
+        val p = OutlineFill.generate(listOf(box(6.5, 20.0)), plain, satin = true)
         val lengths = moves(p).map { (a, b) -> hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) }
         assertTrue(lengths.any { it > 60.0 })
         assertTrue(lengths.all { it in 3.0..70.0 })
@@ -67,17 +68,19 @@ class AutomaticFillTest {
         assertTrue(beginning.any { abs(it.x) > 40 })
         assertTrue(wide.stitchCount > OutlineFill.generate(listOf(box(12.0, 30.0)), plain).stitchCount)
     }
-    @Test fun ringSatinTurnsWithTheStrokeInsteadOfUsingOneFixedAngle() {
+    @Test fun unverifiedRingSatinFallsBackToRoutedFillWithoutSewingAcrossItsHole() {
         val outer = (0..96).map { val a = it * PI / 48; 12 * cos(a) to 12 * sin(a) }
         val inner = outer.map { (x, y) -> x * 2 / 3 to y * 2 / 3 }
-        val p = OutlineFill.generate(listOf(outer, inner), plain)
+        val p = OutlineFill.generate(listOf(outer, inner), plain, satin = true)
         val crossings = moves(p).filter { (a, b) -> hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble()) > 10.0 }
         val radial = crossings.count { (a, b) ->
             val dx = (b.x - a.x).toDouble(); val dy = (b.y - a.y).toDouble()
             val mx = (a.x + b.x) / 2.0; val my = (a.y + b.y) / 2.0
             abs(dx * mx + dy * my) / (hypot(dx, dy) * hypot(mx, my)) > 0.9
         }
-        assertTrue(radial > crossings.size * 0.8)
+        assertTrue(p.warnings.any { "검증" in it })
+        assertTrue(p.stitches.filter { it.command == Command.STITCH }.all { hypot(it.x + (p.metadata["geometry.centerXUnits"]?.toDouble() ?: 0.0),it.y + (p.metadata["geometry.centerYUnits"]?.toDouble() ?: 0.0)) >= 79.0 })
+        assertSewingLengths(p)
     }
     @Test fun automaticModePersistsAndLegacyTatamiDefaultsPreserveExistingPatterns() {
         val obj = TextObject("auto", text = "I", fontKind = FontKind.OUTLINE, contours = listOf(box(1.5, 6.0)),

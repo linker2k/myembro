@@ -19,11 +19,11 @@ class BeanStitchTest {
     @Test fun everySewnMoveGoesForwardBackForwardWithoutTriplingItsAnchor() {
         val running = straight(StitchStyle.RUNNING)
         val bean = straight(StitchStyle.BEAN)
-        val sewn = bean.stitches.filter { it.command == Command.STITCH }
-        assertEquals(listOf(-25, 0, 25), running.stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(listOf(-25, 0, -25, 0, 25, 0, 25), sewn.map { it.x })
+        val sewn = bodyStitches(bean)
+        assertEquals(listOf(0, 25), bodyStitches(running).map { it.x })
+        assertEquals(listOf(0, -25, 0, 25, 0, 25), sewn.map { it.x })
         assertTrue(sewn.all { it.y == 0 })
-        assertEquals(1 + 3 * (running.stitchCount - 1), bean.stitchCount)
+        assertEquals(3 * bodyStitches(running).size, bodyStitches(bean).size)
         assertEquals(running.bounds, bean.bounds)
         assertEquals(running.stitches.last(), bean.stitches.last())
     }
@@ -40,7 +40,7 @@ class BeanStitchTest {
         assertEquals(running.stitches.filter { it.command != Command.STITCH }, bean.stitches.filter { it.command != Command.STITCH })
         assertEquals(running.threads, bean.threads)
         assertEquals(running.bounds, bean.bounds)
-        assertEquals(2 + 3 * (running.stitchCount - 2), bean.stitchCount)
+        assertEquals(3 * bodyStitches(running).size, bodyStitches(bean).size)
         bean.stitches.zipWithNext().forEach { (a, b) ->
             if (b.command == Command.STITCH) assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 25.0)
         }
@@ -49,14 +49,14 @@ class BeanStitchTest {
         assertTrue(bean.trimCount > 0)
     }
 
-    @Test fun newSingleLineFontsDefaultToBeanWhileOutlinesKeepRunning() {
+    @Test fun newSingleLineFontsDefaultToBeanWhileOutlinesUseAutoFill() {
         val hershey = TextObject("hershey", text = "Ab")
         assertTrue(hershey.singleLine)
         assertEquals(StitchStyle.BEAN, hershey.stitchStyle)
         assertEquals(LetteringEngine.generate("Ab").stitches, hershey.localPattern().stitches)
         assertTrue(hershey.localPattern().stitchCount > hershey.copy(stitchStyle = StitchStyle.RUNNING).localPattern().stitchCount)
         val outline = TextObject("outline", fontKind = FontKind.OUTLINE, contours = line)
-        assertEquals(StitchStyle.RUNNING, outline.stitchStyle)
+        assertEquals(StitchStyle.FILL, outline.stitchStyle)
         val svg = TextObject("svg", fontKind = FontKind.OUTLINE, contours = line, singleLine = true)
         assertEquals(StitchStyle.BEAN, svg.stitchStyle)
         assertEquals(straight(StitchStyle.RUNNING).stitches,

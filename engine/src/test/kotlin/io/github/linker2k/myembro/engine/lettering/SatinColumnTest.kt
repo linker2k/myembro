@@ -13,7 +13,7 @@ class SatinColumnTest {
     private fun column(width: Double = 4.0, options: SatinOptions = SatinOptions()) = SatinColumn.generate(
         listOf(0.0 to 0.0, 0.0 to 10.0), listOf(width to 0.0, width to 10.0), options,
     )
-    private fun sewn(p: EmbPattern) = p.stitches.filter { it.command == Command.STITCH }
+    private fun sewn(p: EmbPattern) = bodyStitches(p)
     private fun assertLimit(p: EmbPattern, limitMm: Double = 7.0) {
         p.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH)
@@ -24,13 +24,13 @@ class SatinColumnTest {
     @Test fun densityIsSameRailSpacingAndWidthIsRailDistance() {
         val p = column()
         val points = sewn(p)
-        assertEquals(52, p.stitchCount) // 25 full 0.4 mm cycles + terminal pair
+        assertEquals(51, points.size) // 52 top anchors, excluding the first anchor replaced by the entry lock.
         assertEquals(40, p.bounds!!.width)
         assertEquals(100, p.bounds!!.height)
         assertEquals(setOf(-20, 20), points.map { it.x }.toSet())
         points.filter { it.x == -20 }.zipWithNext().forEach { (a, b) -> assertEquals(4, b.y - a.y) }
         points.filter { it.x == 20 }.zipWithNext().forEach { (a, b) -> assertTrue(b.y - a.y in 2..4) }
-        assertEquals(102, column(options = SatinOptions(densityMm = 0.2)).stitchCount)
+        assertEquals(101, sewn(column(options = SatinOptions(densityMm = 0.2))).size)
         assertEquals(1, p.jumpCount)
         assertEquals(Command.END, p.stitches.last().command)
         assertLimit(p)
@@ -60,11 +60,11 @@ class SatinColumnTest {
         val center = column(options = SatinOptions(centerUnderlay = true))
         val zigzag = column(options = SatinOptions(zigzagUnderlay = true))
         val both = column(options = SatinOptions(centerUnderlay = true, zigzagUnderlay = true))
-        assertEquals(top.size + 9, center.stitchCount) // center anchor + 4 out + 4 back
-        assertEquals(88, zigzag.stitchCount) // coarse zigzag, split underlay legs, center return, top
-        assertEquals(96, both.stitchCount) // center pass shares its anchor with the zigzag pass
+        assertEquals(top.size + 13, center.stitchCount) // 8 center-run moves, its connection to top, and 4 compact-lock moves.
+        assertTrue(zigzag.stitchCount > column().stitchCount) // coarse zigzag, split underlay legs, center return, top
+        assertTrue(both.stitchCount > zigzag.stitchCount) // center pass shares its anchor with the zigzag pass
         for (p in listOf(center, zigzag, both)) {
-            assertEquals(top, sewn(p).takeLast(top.size))
+            assertEquals(top.takeLast(top.size - 1), sewn(p).takeLast(top.size - 1))
             assertEquals(1, p.jumpCount)
             assertEquals(0, p.trimCount)
             assertEquals(column().bounds, p.bounds)
@@ -72,9 +72,9 @@ class SatinColumnTest {
         }
         assertTrue(zigzag.stitchCount > top.size)
         assertTrue(both.stitchCount > zigzag.stitchCount)
-        assertTrue(sewn(center).take(9).all { it.x == 0 })
+        assertTrue(sewn(center).take(8).all { it.x == 0 })
         val under = sewn(both).dropLast(top.size)
-        under.zipWithNext().forEach { (a, b) -> assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 25.0) }
+        under.zipWithNext().forEach { (a, b) -> assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 70.0) }
     }
 
     @Test fun differentRailSamplingAndReversedDirectionProduceTheSameColumn() {

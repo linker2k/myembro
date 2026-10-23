@@ -156,7 +156,7 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
         characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
         singleLine = source.face == null,
-        stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
+        stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.FILL,
         fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
     )
 }
