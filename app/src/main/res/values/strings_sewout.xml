@@ -79,6 +79,7 @@
     <string name="sewout_finding_density_hotspot">Needle penetrations are dense here. Review for thread or fabric problems.</string>
     <string name="sewout_finding_repeated_penetration">The needle repeatedly enters the same position.</string>
     <string name="sewout_finding_overlap_accumulation">Several stitch paths or color stages accumulate in this area.</string>
+    <string name="sewout_finding_missing_lock_stitch">Lock stitch not found where sewing starts or restarts (start, after a trim or color change). Check for a short back-and-forth tie-in.</string>
     <string name="sewout_finding_empty_design">There are no needle-down stitches to sew.</string>
     <string name="sewout_finding_empty_color_stage">A color stage contains no needle-down stitches.</string>
     <string name="sewout_finding_reader_warning">The file reader reported a problem.</string>

@@ -14,7 +14,7 @@ enum class Severity { BLOCKER, WARNING, INFO }
 enum class FindingCode {
     HOOP_EXCEEDED, MACHINE_AREA_EXCEEDED, HOOP_COMPATIBILITY_UNKNOWN,
     LONG_STITCH, SHORT_STITCH, MACHINE_STITCH_LENGTH_EXCEEDED, PEC_DELTA_EXCEEDED,
-    DENSITY_HOTSPOT, REPEATED_PENETRATION, OVERLAP_ACCUMULATION,
+    DENSITY_HOTSPOT, REPEATED_PENETRATION, OVERLAP_ACCUMULATION, MISSING_LOCK_STITCH,
     EMPTY_DESIGN, EMPTY_COLOR_STAGE, READER_WARNING, INVALID_PES, MISSING_THUMBNAIL, ANALYSIS_LIMIT,
     STITCH_LIMIT_EXCEEDED, COLOR_LIMIT_EXCEEDED, FILE_SIZE_EXCEEDED,
     PES_VERSION_UNCONFIRMED, COLOR_LIMIT_UNCONFIRMED, STITCH_LIMIT_UNCONFIRMED,
@@ -92,8 +92,9 @@ data class SewoutOptions(
     val placement: Placement = Placement.CENTER_DESIGN,
     val destination: Destination = Destination.TRANSFER,
     val longStitchMm: Double = 12.1, val shortStitchMm: Double = 0.3,
-    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 12,
-    val repeatedPointThreshold: Int = 3, val overlapPassThreshold: Int = 6,
+    /** Inclusive blocking thresholds: defaults mean >8 punctures per cell and >3 at one point. */
+    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 9,
+    val repeatedPointThreshold: Int = 4, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,
     val jumpMmPerSecond: Double = 50.0, val jumpOverheadSeconds: Double = 0.2,

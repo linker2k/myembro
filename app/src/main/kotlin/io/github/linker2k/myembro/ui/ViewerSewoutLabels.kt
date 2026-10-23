@@ -15,6 +15,7 @@ internal fun FindingCode.labelRes(): Int = when (this) {
     FindingCode.DENSITY_HOTSPOT -> R.string.sewout_finding_density_hotspot
     FindingCode.REPEATED_PENETRATION -> R.string.sewout_finding_repeated_penetration
     FindingCode.OVERLAP_ACCUMULATION -> R.string.sewout_finding_overlap_accumulation
+    FindingCode.MISSING_LOCK_STITCH -> R.string.sewout_finding_missing_lock_stitch
     FindingCode.EMPTY_DESIGN -> R.string.sewout_finding_empty_design
     FindingCode.EMPTY_COLOR_STAGE -> R.string.sewout_finding_empty_color_stage
     FindingCode.READER_WARNING -> R.string.sewout_finding_reader_warning

@@ -79,6 +79,7 @@
     <string name="sewout_finding_density_hotspot">바늘 진입이 밀집된 영역입니다. 실 끊김이나 원단 손상을 확인해 주세요.</string>
     <string name="sewout_finding_repeated_penetration">같은 위치에 바늘이 반복 진입합니다.</string>
     <string name="sewout_finding_overlap_accumulation">여러 봉제 구간 또는 색 단계가 겹쳐 누적됩니다.</string>
+    <string name="sewout_finding_missing_lock_stitch">봉제 시작·트림 뒤·색 교체 뒤 재시작에서 잠금 땀을 찾지 못했습니다. 시작부의 짧은 왕복 고정을 확인하세요.</string>
     <string name="sewout_finding_empty_design">봉제할 바늘땀이 없습니다.</string>
     <string name="sewout_finding_empty_color_stage">바늘땀이 없는 색 단계가 있습니다.</string>
     <string name="sewout_finding_reader_warning">파일을 읽는 중 확인된 문제입니다.</string>
