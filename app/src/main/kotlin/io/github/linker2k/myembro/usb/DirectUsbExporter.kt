@@ -2,14 +2,13 @@
 package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
-import io.github.linker2k.myembro.engine.fat12.ShortNames
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.library.DesignFormats
 import java.io.File
 import java.io.IOException
 
 internal class DirectUsbExporter(private val access: DirectUsbAccess) {
-    data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean)
+    data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean, val designLabel: String? = null)
     data class SpacePlan(val fingerprint: String, val candidates: List<Fat12Volume.Entry>,
         val payloads: List<Payload>, val failures: List<Pair<String, String>>, val freeBytes: Long,
         val requiredBytes: Long, val freeEntries: Int, val clusterBytes: Int, val diagnostics: String = "") {
@@ -30,7 +29,10 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
         val failures = mutableListOf<Pair<String, String>>()
         val payloads = designs.mapNotNull { file -> runCatching {
             val prepared = DesignFormats.preparePes(file, settings)
-            Payload(file.name, prepared.fileName, prepared.bytes, prepared.converted)
+            // Only parse a content label if the actual filename contains no meaningful design name.
+            val label = if (UsbDesignNames.needsDesignLabel(file.name))
+                runCatching { DesignFormats.read(file).metadata["name"] }.getOrNull() else null
+            Payload(file.name, prepared.fileName, prepared.bytes, prepared.converted, label)
         }.onFailure { failures += file.name to (it.message ?: it.javaClass.simpleName) }.getOrNull() }
         if (payloads.isEmpty()) return Result.Complete(UsbExporter.Report(emptyList(), 0, failures))
         return access.open(target).use { session ->
@@ -76,10 +78,12 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             var failure: DirectUsbFailure? = null
             for ((index, payload) in payloads.withIndex()) {
                 try {
-                    val preferred = ShortNames.unique(payload.name, emptyList())
-                    val entry = fs.writeFile(payload.name, payload.bytes)
+                    val preferred = UsbDesignNames.unique(payload.source, emptyList(), payload.designLabel)
+                    val name = UsbDesignNames.unique(payload.source, fs.listRoot().map { it.name }, payload.designLabel)
+                    val entry = fs.writeFile(name, payload.bytes)
                     exported += entry.name
-                    written += UsbTransferredFile(entry.name, entry.size)
+                    written += UsbTransferredFile(entry.name, entry.size,
+                        usbAllocatedBytes(entry.size, fs.geometry.clusterBytes), fs.geometry.clusterBytes, payload.source)
                     if (entry.name != preferred) notices += UsbTransferNotice.NAME_COLLISION
                     remaining = fs.freeBytes
                     if (payload.converted) converted++
@@ -92,7 +96,8 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
                 }
             }
             return Result.Complete(UsbExporter.Report(exported, converted, failures, fs.warnings,
-                written, remaining, notices, failure?.diagnostics ?: session.diagnostics()), failure)
+                written, remaining, notices, (failure?.diagnostics ?: session.diagnostics()) +
+                    "\nUsable data bytes: ${fs.geometry.clusterCount} x ${fs.geometry.clusterBytes} = ${fs.geometry.clusterCount.toLong() * fs.geometry.clusterBytes}; free bytes=$remaining; used bytes=${remaining?.let { fs.geometry.clusterCount.toLong() * fs.geometry.clusterBytes - it } ?: "unknown"}"), failure)
         }
     }
 }

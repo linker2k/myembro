@@ -1,8 +1,8 @@
 <resources>
     <string name="usb_result_title">USB transfer result</string>
-    <string name="usb_result_success_one">✔ %1$s sent (%2$s)</string>
-    <string name="usb_result_success_many">✔ %1$d files sent (%2$s)</string>
-    <string name="usb_result_partial">%1$d sent · %2$d failed (%3$s sent)</string>
+    <string name="usb_result_success_one">✔ %1$s sent</string>
+    <string name="usb_result_success_many">✔ %1$d files sent</string>
+    <string name="usb_result_partial">%1$d sent · %2$d failed</string>
     <string name="usb_result_failure">USB transfer failed</string>
     <string name="usb_result_remaining">Remaining space: %1$s</string>
     <string name="usb_result_unknown">Unknown</string>
@@ -22,4 +22,6 @@
     <string name="usb_history_save_failed">The result is shown, but transfer history could not be saved.</string>
     <string name="usb_history_load_failed">USB transfer history could not be loaded.</string>
     <string name="usb_result_problem_folder">Choose a folder on the USB drive you selected.</string>
+    <string name="usb_result_sizes">File %1$s · Disk %2$s (%3$s units)</string>
+    <string name="usb_result_sizes_unknown">File %1$s · Disk %2$s</string>
 </resources>

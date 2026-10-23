@@ -7,7 +7,7 @@ import java.util.Locale
 /** ASCII uppercase 8.3 only. Collisions use _1, _2…; never emits LFN directory entries. */
 object ShortNames {
     private fun clean(s: String): String = Normalizer.normalize(s, Normalizer.Form.NFKD)
-        .uppercase(Locale.ROOT).filter { it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-' }
+        .uppercase(Locale.ROOT).filter { it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-' || it == '~' }
 
     fun unique(original: String, existing: Collection<String>): String {
         val leaf = original.replace('\\', '/').substringAfterLast('/')

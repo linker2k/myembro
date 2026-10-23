@@ -7,8 +7,9 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
 
-/** Sizes are PES bytes actually written, not source-file sizes or allocated cluster sizes. */
-data class UsbTransferredFile(val name: String, val size: Long)
+/** File bytes and verified FAT data-cluster allocation are separate; SAF/old logs may not know allocation. */
+data class UsbTransferredFile(val name: String, val size: Long,
+    val allocatedBytes: Long? = null, val allocationUnitBytes: Int? = null, val sourceName: String? = null)
 
 enum class UsbTransferOutcome { SUCCESS, PARTIAL, FAILURE }
 enum class UsbTransferNotice { NAME_COLLISION, FILESYSTEM }
@@ -25,6 +26,9 @@ data class UsbTransferRecord(
     val technical: String = "",
     val problemHint: UsbTransferProblem? = null,
 ) {
+    val allocatedBytes: Long? get() = files.takeIf { it.isNotEmpty() && it.all { f -> f.allocatedBytes != null } }
+        ?.sumOf { it.allocatedBytes!! }
+    val allocationUnitBytes: Int? get() = files.map { it.allocationUnitBytes }.distinct().singleOrNull()
     val outcome: UsbTransferOutcome get() = when {
         files.isEmpty() -> UsbTransferOutcome.FAILURE
         failures.isNotEmpty() -> UsbTransferOutcome.PARTIAL
@@ -45,7 +49,10 @@ data class UsbTransferRecord(
     fun diagnostics(): String = buildString {
         appendLine("myembro USB transfer $id")
         appendLine("Time (epoch ms): $time\nDrive: $drive\nResult: $outcome")
-        files.forEach { appendLine("Sent: ${it.name}; ${it.size} bytes") }
+        files.forEach {
+            appendLine("Sent: ${it.name}; ${it.size} bytes; allocated=${it.allocatedBytes ?: "unknown"} bytes; cluster=${it.allocationUnitBytes ?: "unknown"} bytes; source=${it.sourceName ?: "unknown"}")
+        }
+        appendLine("Size units: KB=1024 bytes; summaries rounded; allocation is summed per file")
         failures.forEach { appendLine("Failed: ${it.first}: ${it.second}") }
         appendLine("Remaining bytes: ${remainingBytes ?: "unknown"}")
         notices.forEach { appendLine("Notice: $it") }
@@ -67,7 +74,9 @@ internal class UsbTransferHistory(private val file: File) {
                 id = r.getValue("id").jsonPrimitive.content, time = r.getValue("time").jsonPrimitive.long,
                 drive = r.getValue("drive").jsonPrimitive.content,
                 files = r.getValue("files").jsonArray.map { f -> f.jsonObject.let {
-                    UsbTransferredFile(it.getValue("name").jsonPrimitive.content, it.getValue("size").jsonPrimitive.long)
+                    UsbTransferredFile(it.getValue("name").jsonPrimitive.content, it.getValue("size").jsonPrimitive.long,
+                        it["allocatedBytes"]?.jsonPrimitive?.longOrNull, it["allocationUnitBytes"]?.jsonPrimitive?.intOrNull,
+                        it["sourceName"]?.jsonPrimitive?.contentOrNull)
                 } },
                 failures = r.getValue("failures").jsonArray.map { f -> f.jsonArray.let { it[0].jsonPrimitive.content to it[1].jsonPrimitive.content } },
                 remainingBytes = r["remainingBytes"]?.jsonPrimitive?.longOrNull,
@@ -91,7 +100,12 @@ internal class UsbTransferHistory(private val file: File) {
             putJsonArray("records") { state.records.forEach { r -> add(buildJsonObject {
                 put("id", r.id); put("time", r.time); put("drive", r.drive)
                 put("remainingBytes", r.remainingBytes?.let(::JsonPrimitive) ?: JsonNull)
-                putJsonArray("files") { r.files.forEach { f -> add(buildJsonObject { put("name", f.name); put("size", f.size) }) } }
+                putJsonArray("files") { r.files.forEach { f -> add(buildJsonObject {
+                    put("name", f.name); put("size", f.size)
+                    put("allocatedBytes", f.allocatedBytes?.let(::JsonPrimitive) ?: JsonNull)
+                    put("allocationUnitBytes", f.allocationUnitBytes?.let(::JsonPrimitive) ?: JsonNull)
+                    put("sourceName", f.sourceName?.let(::JsonPrimitive) ?: JsonNull)
+                }) } }
                 putJsonArray("failures") { r.failures.forEach { f -> add(buildJsonArray { add(f.first); add(f.second) }) } }
                 putJsonArray("notices") { r.notices.forEach { add(it.name) } }
                 put("technical", r.technical)
