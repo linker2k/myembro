@@ -108,7 +108,8 @@ private fun loadFont(context: Context, id: String): LoadedFont {
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double): FontQualityReport {
     val codes = normalizedLetteringText(text).codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }.sorted()
     val sample = codes.joinToString("") { String(Character.toChars(it)) }
-    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null)) {
+    return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null),
+        FontQuality.detailFloorMm(sample)) {
         codes.map { code -> source.glyph(String(Character.toChars(code))).map { path ->
             path.map { (x, y) -> x * heightMm / source.reference to y * heightMm / source.reference }
         } }

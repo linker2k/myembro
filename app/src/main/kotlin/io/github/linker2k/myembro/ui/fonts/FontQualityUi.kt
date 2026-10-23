@@ -42,28 +42,22 @@ fun QualityBadge(grade: QualityGrade, modifier: Modifier = Modifier) {
 fun reasonText(key: String): String = when (key) {
     QualityReasons.MISSING_HANGUL -> stringResource(R.string.fonts_reason_missing_hangul)
     QualityReasons.MISSING_LATIN -> stringResource(R.string.fonts_reason_missing_latin)
-    QualityReasons.NOT_SCALABLE -> stringResource(R.string.fonts_reason_not_scalable)
     else -> key
 }
 
 fun mm(value: Double): String = if (value.isFinite()) String.format(Locale.ROOT, "%.1f", value).removeSuffix(".0") else "—"
 
-/** "Recommended height" line: null when any height works, a warning when scaling cannot help. */
+/** "Recommended height" line; null for a report without a usable height. */
 @Composable
-fun minHeightText(recommendedMm: Double): String? = when {
-    recommendedMm <= 0.0 -> null
-    !recommendedMm.isFinite() -> stringResource(R.string.fonts_min_height_unfixable)
-    else -> stringResource(R.string.fonts_min_height, mm(recommendedMm))
-}
+fun minHeightText(recommendedMm: Double): String? =
+    if (recommendedMm > 0.0 && recommendedMm.isFinite()) stringResource(R.string.fonts_min_height, mm(recommendedMm)) else null
 
 /** Recommended height, reasons and the per-size sample numbers. */
 @Composable
 fun QualityDetails(summary: FontQualitySummary, modifier: Modifier = Modifier) {
     Column(modifier) {
         minHeightText(summary.recommendedMinHeightMm)?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
-        // The heading already says when scaling cannot help.
-        summary.reasons.filterNot { it == QualityReasons.NOT_SCALABLE }
-            .forEach { Text("• " + reasonText(it), style = MaterialTheme.typography.bodySmall) }
+        summary.reasons.forEach { Text("• " + reasonText(it), style = MaterialTheme.typography.bodySmall) }
         listOfNotNull(summary.at10?.let { 10 to it }, summary.at20?.let { 20 to it }).forEach { (h, r) -> SampleLine(h, r) }
     }
 }
@@ -71,7 +65,8 @@ fun QualityDetails(summary: FontQualitySummary, modifier: Modifier = Modifier) {
 @Composable
 private fun SampleLine(heightMm: Int, r: QualityReport) {
     Text(
-        stringResource(R.string.fonts_sample_report, heightMm, mm(r.minStrokeMm), r.stitchCount, r.jumpCount, r.tightSpots),
+        stringResource(R.string.fonts_sample_report, heightMm, mm(r.inkP10Mm ?: Double.NaN), mm(r.gapP10Mm ?: r.loopP10Mm ?: Double.NaN),
+            r.stitchCount, r.jumpCount),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

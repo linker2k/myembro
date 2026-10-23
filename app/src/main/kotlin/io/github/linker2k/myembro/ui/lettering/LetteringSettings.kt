@@ -49,7 +49,7 @@ internal fun outlineTextQuality(text: TextObject): FontQualityReport {
     val glyphs = text.contours.indices.groupBy { text.contourCharacters.getOrNull(it) ?: 0 }.values.map { indices ->
         indices.map { index -> text.contours[index].map { (x, y) -> x * scale to y * scale } }
     }
-    return FontQuality.analyze(glyphs, text.heightMm, outline = true)
+    return FontQuality.analyze(glyphs, text.heightMm, outline = true, detailFloorMm = FontQuality.detailFloorMm(text.text))
 }
 
 /** Extra offset for lines shorter than the longest one; inputs share the same font units. */

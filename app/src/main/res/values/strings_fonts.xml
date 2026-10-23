@@ -42,11 +42,9 @@
     <string name="fonts_grade_good">Good</string>
     <string name="fonts_grade_caution">Caution</string>
     <string name="fonts_grade_unsuitable">Unsuitable</string>
-    <string name="fonts_min_height_unfixable">Even larger letters will not separate touching strokes</string>
     <string name="fonts_min_height">Recommended height ≥ %1$s mm</string>
-    <string name="fonts_sample_report">%1$d mm: thinnest part %2$s mm · %3$d stitches · %4$d jumps · %5$d tight spots</string>
+    <string name="fonts_sample_report">%1$d mm: thin strokes %2$s mm · narrow gaps %3$s mm · %4$d stitches · %5$d jumps</string>
     <string name="fonts_reason_missing_hangul">No Korean letters in this font.</string>
-    <string name="fonts_reason_not_scalable">Strokes touch or overlap, so larger letters will not fix it. Try another font.</string>
     <string name="fonts_reason_missing_latin">No Latin capitals in this font.</string>
     <string name="fonts_analyzing">Analyzing…</string>
     <string name="fonts_size_kb">%1$d KB</string>

@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
-/** revision must change when font bytes or the glyph extractor changes (e.g. SHA-256 + version). */
+/**
+ * revision must change when font bytes or the glyph extractor changes (e.g. SHA-256 + version).
+ * The analysis version is part of the key, so reports of an older [FontQuality] are never reused.
+ */
 data class FontQualityKey(
     val fontId: String,
     val revision: String,
     val sampleText: String,
     val heightMm: Double,
     val outline: Boolean,
+    val analysisVersion: Int = FontQuality.VERSION,
 ) {
     init {
         require(fontId.isNotBlank() && revision.isNotBlank())
@@ -26,8 +30,9 @@ class FontQualityCache(private val maxEntries: Int = 64) {
     @Synchronized
     fun getOrAnalyze(
         key: FontQualityKey,
+        detailFloorMm: Double = FontQuality.LATIN_DETAIL_MM,
         glyphContours: () -> List<List<List<Pair<Double, Double>>>>,
-    ): FontQualityReport = reports[key] ?: FontQuality.analyze(glyphContours(), key.heightMm, key.outline).also {
+    ): FontQualityReport = reports[key] ?: FontQuality.analyze(glyphContours(), key.heightMm, key.outline, detailFloorMm).also {
         put(key, it)
     }
 
