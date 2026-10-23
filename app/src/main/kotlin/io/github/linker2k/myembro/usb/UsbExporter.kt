@@ -39,7 +39,8 @@ class UsbExporter(private val context: Context) {
         val isDirect: Boolean get() = direct != null
     }
 
-    class Report(val exported: List<String>, val converted: Int, val failures: List<Pair<String, String>>)
+    class Report(val exported: List<String>, val converted: Int, val failures: List<Pair<String, String>>,
+        val warnings: List<String> = emptyList())
 
     fun drives(): List<Drive> {
         val mounted = storage.storageVolumes.filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }

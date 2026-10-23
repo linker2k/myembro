@@ -59,14 +59,29 @@ internal class DirectUsbAccess(private val context: Context) {
     fun open(target: DirectUsbTarget): Session {
         if (devices().none { it.id == target.id }) throw IOException("USB device disconnected")
         if (!hasPermission(target)) throw IOException("USB permission missing")
-        val communication = UsbCommunicationFactory.createUsbCommunication(manager, target.device, target.usbInterface, target.output, target.input)
+        val capture = UsbDiagnosticCapture()
+        val description = "USB VID=0x%04X PID=0x%04X".format(target.device.vendorId, target.device.productId) +
+            "; manufacturer=${target.device.manufacturerName}; product=${target.device.productName}"
+        val communication = DiagnosticUsbCommunication(UsbCommunicationFactory.createUsbCommunication(
+            manager, target.device, target.usbInterface, target.output, target.input), capture)
         try {
             val driver = BlockDeviceDriverFactory.createBlockDevice(communication, 0)
             driver.init()
-            return Session(Fat12Volume.mount(LibaumsBlockDevice(driver)), communication)
-        } catch (e: Exception) { communication.close(); throw e }
+            val block = LibaumsBlockDevice(driver)
+            capture.blocks = block.sectorCount; capture.blockSize = block.sectorSize
+            capture.sector0 = block.readSectors(0, 1)
+            val volume = Fat12Volume.mount(block)
+            capture.warnings = volume.warnings
+            return Session(volume, communication) { error -> DirectUsbFailure(error, capture.report(description, error)) }
+        } catch (e: Exception) {
+            runCatching { communication.close() }.exceptionOrNull()?.let(e::addSuppressed)
+            throw DirectUsbFailure(e, capture.report(description, e))
+        }
     }
-    class Session(val volume: Fat12Volume, private val transport: Closeable) : Closeable {
-        override fun close() = transport.close()
+    class Session(val volume: Fat12Volume, private val transport: Closeable,
+        val failure: (Exception) -> DirectUsbFailure) : Closeable {
+        override fun close() {
+            try { transport.close() } catch (e: Exception) { throw failure(e) }
+        }
     }
 }
