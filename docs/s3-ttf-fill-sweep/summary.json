@@ -1,0 +1,2113 @@
+{
+  "status": "COMPLETE",
+  "expected_cases": 11250,
+  "completed_cases": 8888,
+  "passed_cases": 7708,
+  "blocked_cases": 1180,
+  "pending_cases": 0,
+  "omitted_after_first_blocker": 2362,
+  "coarse_completed_cases": 4950,
+  "coarse_passed_cases": 4263,
+  "coarse_blocked_cases": 687,
+  "refinement_completed_cases": 3938,
+  "refinement_passed_cases": 3445,
+  "refinement_blocked_cases": 493,
+  "height_checks_expected": 375,
+  "height_checks_complete": 375,
+  "elapsed_wall_seconds": 1405.8436477184296,
+  "reason_counts_can_overlap": true,
+  "failed_cases_by_reason": {
+    "DENSITY_HOTSPOT": 36,
+    "HOOP_EXCEEDED": 1145,
+    "MACHINE_AREA_EXCEEDED": 535
+  },
+  "profiles": [
+    {
+      "font_id": "gowun-batang",
+      "font_sha256": "466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "jua",
+      "font_sha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "noto-sans-kr",
+      "font_sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 9,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "DENSITY_HOTSPOT": 9
+      },
+      "anchor_states": {
+        "5.0": "BLOCK",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "BLOCK",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [
+        5.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 26.25,
+        "max_mm": 90.0,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gowun-dodum",
+      "font_sha256": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 1,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 1,
+        "MACHINE_AREA_EXCEEDED": 1
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 68.75,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "do-hyeon",
+      "font_sha256": "35644be7f28e0a68a447b1f7af351dcde5674b870f24f7b5f43e26d00b4ab653",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "nanum-gothic",
+      "font_sha256": "76f45ef4a6bcff344c837c95a7dcc26e017e38b5846d5ae0cdcb5b86be2e2d31",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "nanum-pen-script",
+      "font_sha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+      "complete": true,
+      "completed_cases": 780,
+      "blocked_cases": 462,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 462,
+        "MACHINE_AREA_EXCEEDED": 297
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "BLOCK",
+        "51.0": "BLOCK",
+        "52.0": "BLOCK",
+        "53.0": "BLOCK",
+        "54.0": "BLOCK",
+        "55.0": "BLOCK",
+        "56.0": "BLOCK",
+        "57.0": "BLOCK",
+        "58.0": "BLOCK",
+        "59.0": "BLOCK",
+        "60.0": "BLOCK",
+        "61.0": "BLOCK",
+        "62.0": "BLOCK",
+        "63.0": "BLOCK",
+        "64.0": "BLOCK",
+        "65.0": "BLOCK",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 49.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gaegu",
+      "font_sha256": "aa52c98336f7c62e2896fc8b12b56a75d5b476d88a2f104b0980f4f7ce0adfc3",
+      "complete": true,
+      "completed_cases": 756,
+      "blocked_cases": 66,
+      "omitted_after_first_blocker": 24,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 66,
+        "MACHINE_AREA_EXCEEDED": 6
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0,
+        47.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "27.0": "PASS",
+        "28.0": "PASS",
+        "29.0": "PASS",
+        "30.0": "PASS",
+        "31.0": "PASS",
+        "32.0": "PASS",
+        "33.0": "PASS",
+        "34.0": "PASS",
+        "35.0": "PASS",
+        "36.0": "PASS",
+        "37.0": "PASS",
+        "38.0": "PASS",
+        "39.0": "PASS",
+        "40.0": "PASS",
+        "41.0": "PASS",
+        "42.0": "PASS",
+        "43.0": "PASS",
+        "44.0": "PASS",
+        "45.0": "PASS",
+        "46.0": "PASS",
+        "47.0": "BLOCK",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        47.0,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 46.0,
+        "sampled_heights": 22
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "black-han-sans",
+      "font_sha256": "31960809284026681774a8e52dc19ebcad26cf69b0ad9d560f288296fbb52739",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "sunflower",
+      "font_sha256": "6e216d6b2f77a850f6b73be25633d09e03385dfa63a3a632f9e7d83a90ea7f79",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 30,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 30
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 68.75,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gamja-flower",
+      "font_sha256": "ece32819ed58536355a49a095b0cdfdd3b8ef9081c5ed9ca1cef8f5d999ae1ac",
+      "complete": true,
+      "completed_cases": 423,
+      "blocked_cases": 74,
+      "omitted_after_first_blocker": 357,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 74,
+        "MACHINE_AREA_EXCEEDED": 36
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "PASS",
+        "51.0": "PASS",
+        "52.0": "PASS",
+        "53.0": "PASS",
+        "54.0": "PASS",
+        "55.0": "BLOCK",
+        "56.0": "BLOCK",
+        "57.0": "BLOCK",
+        "58.0": "BLOCK",
+        "59.0": "BLOCK",
+        "60.0": "BLOCK",
+        "61.0": "BLOCK",
+        "62.0": "BLOCK",
+        "63.0": "BLOCK",
+        "64.0": "BLOCK",
+        "65.0": "BLOCK",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 54.0,
+        "sampled_heights": 10
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "hi-melody",
+      "font_sha256": "360d2c0a880918aa48328d1d9219f5390788d09a1c9353e12b471de018673ae6",
+      "complete": true,
+      "completed_cases": 305,
+      "blocked_cases": 77,
+      "omitted_after_first_blocker": 475,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 77,
+        "MACHINE_AREA_EXCEEDED": 27
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0,
+        50.0,
+        51.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "PASS",
+        "51.0": "PASS",
+        "52.0": "BLOCK",
+        "53.0": "BLOCK",
+        "54.0": "BLOCK",
+        "55.0": "BLOCK",
+        "56.0": "BLOCK",
+        "57.0": "BLOCK",
+        "58.0": "BLOCK",
+        "59.0": "BLOCK",
+        "60.0": "BLOCK",
+        "61.0": "BLOCK",
+        "62.0": "BLOCK",
+        "63.0": "BLOCK",
+        "64.0": "BLOCK",
+        "65.0": "BLOCK",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 51.0,
+        "sampled_heights": 7
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "poor-story",
+      "font_sha256": "831ab87f7b5463f9cd83ac249bf386816f3a478f1d226427c88cac907adb7ee2",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 30,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 30,
+        "MACHINE_AREA_EXCEEDED": 16
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 68.75,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "single-day",
+      "font_sha256": "716ff67a4b0675b35c26d60a4bb83173f7d153ab754474ed36c3369593ca1ca8",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 30,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 30,
+        "MACHINE_AREA_EXCEEDED": 14
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 68.75,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "yeon-sung",
+      "font_sha256": "49ac2a11009f5f58307d377911eb45d210cf4c1d379d9eca38fb4cdad5491ef6",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "stylish",
+      "font_sha256": "3ea2e4c9d0183fdcc1362039305ef30fa8bb5154f030b303a029059a44a8516c",
+      "complete": true,
+      "completed_cases": 531,
+      "blocked_cases": 69,
+      "omitted_after_first_blocker": 249,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 69,
+        "MACHINE_AREA_EXCEEDED": 37
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "PASS",
+        "51.0": "PASS",
+        "52.0": "PASS",
+        "53.0": "PASS",
+        "54.0": "PASS",
+        "55.0": "PASS",
+        "56.0": "PASS",
+        "57.0": "PASS",
+        "58.0": "PASS",
+        "59.0": "PASS",
+        "60.0": "BLOCK",
+        "61.0": "BLOCK",
+        "62.0": "BLOCK",
+        "63.0": "BLOCK",
+        "64.0": "BLOCK",
+        "65.0": "BLOCK",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 59.0,
+        "sampled_heights": 15
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "song-myung",
+      "font_sha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gugi",
+      "font_sha256": "c0b1f979979cfc309fb2438fa9464f96173353e0c4842cc7a5919658184ed9d3",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 2,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 2,
+        "MACHINE_AREA_EXCEEDED": 2
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 68.75,
+        "sampled_heights": 4
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "cute-font",
+      "font_sha256": "c403227fe6288a8c1423ca48e93fd7efc81e3b81053f7d17adcf659bd95fa4c3",
+      "complete": true,
+      "completed_cases": 339,
+      "blocked_cases": 70,
+      "omitted_after_first_blocker": 441,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 70,
+        "MACHINE_AREA_EXCEEDED": 29
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "BLOCK",
+        "51.0": "BLOCK",
+        "52.0": "BLOCK",
+        "53.0": "BLOCK",
+        "54.0": "BLOCK",
+        "55.0": "BLOCK",
+        "56.0": "BLOCK",
+        "57.0": "BLOCK",
+        "58.0": "BLOCK",
+        "59.0": "BLOCK",
+        "60.0": "BLOCK",
+        "61.0": "BLOCK",
+        "62.0": "BLOCK",
+        "63.0": "BLOCK",
+        "64.0": "BLOCK",
+        "65.0": "BLOCK",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 49.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "east-sea-dokdo",
+      "font_sha256": "8cebb39d375134fdbcedef9bf4ec4f6c3f02c39ed0aacd6e83f7a0f435e593b2",
+      "complete": true,
+      "completed_cases": 240,
+      "blocked_cases": 76,
+      "omitted_after_first_blocker": 540,
+      "failed_cases_by_reason": {
+        "DENSITY_HOTSPOT": 27,
+        "HOOP_EXCEEDED": 50,
+        "MACHINE_AREA_EXCEEDED": 16
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "BLOCK",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0,
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0,
+        21.0,
+        22.0,
+        23.0,
+        24.0,
+        25.0,
+        26.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        6.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "6.0": "PASS",
+        "7.0": "BLOCK",
+        "8.0": "BLOCK",
+        "9.0": "BLOCK",
+        "10.0": "BLOCK",
+        "11.0": "BLOCK",
+        "12.0": "BLOCK",
+        "13.0": "BLOCK",
+        "14.0": "BLOCK",
+        "15.0": "BLOCK",
+        "16.0": "BLOCK",
+        "17.0": "BLOCK",
+        "18.0": "BLOCK",
+        "19.0": "BLOCK",
+        "20.0": "BLOCK",
+        "21.0": "BLOCK",
+        "22.0": "BLOCK",
+        "23.0": "BLOCK",
+        "24.0": "BLOCK",
+        "25.0": "BLOCK",
+        "26.0": "BLOCK",
+        "26.25": "BLOCK",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0,
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0,
+        21.0,
+        22.0,
+        23.0,
+        24.0,
+        25.0,
+        26.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 6.0,
+        "sampled_heights": 2
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "dokdo",
+      "font_sha256": "5b3a3d8d28af31fa9adec3fc5da81a88b52e1ff39ed3930c1db787aa4e79c36d",
+      "complete": true,
+      "completed_cases": 751,
+      "blocked_cases": 58,
+      "omitted_after_first_blocker": 29,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 58,
+        "MACHINE_AREA_EXCEEDED": 18
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0,
+        47.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "27.0": "PASS",
+        "28.0": "PASS",
+        "29.0": "PASS",
+        "30.0": "PASS",
+        "31.0": "PASS",
+        "32.0": "PASS",
+        "33.0": "PASS",
+        "34.0": "PASS",
+        "35.0": "PASS",
+        "36.0": "PASS",
+        "37.0": "PASS",
+        "38.0": "PASS",
+        "39.0": "PASS",
+        "40.0": "PASS",
+        "41.0": "PASS",
+        "42.0": "PASS",
+        "43.0": "PASS",
+        "44.0": "PASS",
+        "45.0": "PASS",
+        "46.0": "PASS",
+        "47.0": "BLOCK",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        47.0,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 46.0,
+        "sampled_heights": 22
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "kirang-haerang",
+      "font_sha256": "d677d28d466989017c520f00a2a7794ea581ea3d9fa9a830fbb44f1015eac72d",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "nanum-myeongjo",
+      "font_sha256": "7ed9e8653a8ed04285d51dc343ffea6eb3d9c73afc27383ea8929ee4ffd03205",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "nanum-myeongjo-bold",
+      "font_sha256": "bc9ed8e60d93fe6db054b8fb988481b625f2eef8cb2317ad0e9834681b8fe3f3",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "nanum-brush-script",
+      "font_sha256": "27ceaf578c96f594cdf07fe0181b251790acbb746a164e45c1f6473f89911a31",
+      "complete": true,
+      "completed_cases": 706,
+      "blocked_cases": 47,
+      "omitted_after_first_blocker": 74,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 47,
+        "MACHINE_AREA_EXCEEDED": 19
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0,
+        66.0,
+        67.0,
+        68.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        48.0,
+        49.0,
+        50.0,
+        51.0,
+        52.0,
+        53.0,
+        54.0,
+        55.0,
+        56.0,
+        57.0,
+        58.0,
+        59.0,
+        60.0,
+        61.0,
+        62.0,
+        63.0,
+        64.0,
+        65.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "48.0": "PASS",
+        "49.0": "PASS",
+        "50.0": "PASS",
+        "51.0": "PASS",
+        "52.0": "PASS",
+        "53.0": "PASS",
+        "54.0": "PASS",
+        "55.0": "PASS",
+        "56.0": "PASS",
+        "57.0": "PASS",
+        "58.0": "PASS",
+        "59.0": "PASS",
+        "60.0": "PASS",
+        "61.0": "PASS",
+        "62.0": "PASS",
+        "63.0": "PASS",
+        "64.0": "PASS",
+        "65.0": "PASS",
+        "66.0": "BLOCK",
+        "67.0": "BLOCK",
+        "68.0": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        66.0,
+        67.0,
+        68.0,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 65.0,
+        "sampled_heights": 21
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gothic-a1",
+      "font_sha256": "211151bea98098c579610ab1114bb1bfe909057207db561f357b896d076c21ac",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "gothic-a1-bold",
+      "font_sha256": "2e883fa0ae548000996258b4101f2bb732a28b197264f49621a2cb16d6e9f126",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "dongle",
+      "font_sha256": "2966e7a9d312a868e2b5477bf9a3e59b8ce16beb76e7e52305ab5897d1ce9741",
+      "complete": true,
+      "completed_cases": 607,
+      "blocked_cases": 79,
+      "omitted_after_first_blocker": 173,
+      "failed_cases_by_reason": {
+        "HOOP_EXCEEDED": 79,
+        "MACHINE_AREA_EXCEEDED": 17
+      },
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "refinement_heights_mm": [
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0,
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0,
+        47.0
+      ],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        27.0,
+        28.0,
+        29.0,
+        30.0,
+        31.0,
+        32.0,
+        33.0,
+        34.0,
+        35.0,
+        36.0,
+        37.0,
+        38.0,
+        39.0,
+        40.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "27.0": "PASS",
+        "28.0": "PASS",
+        "29.0": "PASS",
+        "30.0": "PASS",
+        "31.0": "PASS",
+        "32.0": "PASS",
+        "33.0": "PASS",
+        "34.0": "PASS",
+        "35.0": "PASS",
+        "36.0": "PASS",
+        "37.0": "PASS",
+        "38.0": "PASS",
+        "39.0": "PASS",
+        "40.0": "PASS",
+        "41.0": "BLOCK",
+        "42.0": "BLOCK",
+        "43.0": "BLOCK",
+        "44.0": "BLOCK",
+        "45.0": "BLOCK",
+        "46.0": "BLOCK",
+        "47.0": "BLOCK",
+        "47.5": "BLOCK",
+        "68.75": "BLOCK",
+        "90.0": "BLOCK"
+      },
+      "blocked_sampled_heights_mm": [
+        41.0,
+        42.0,
+        43.0,
+        44.0,
+        45.0,
+        46.0,
+        47.0,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 40.0,
+        "sampled_heights": 16
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "orbit",
+      "font_sha256": "5d0206fb0a9e3eeac51aff8d4a6dbb7613d63fc435f1a51f96dc35cefb5f9f87",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "hahmlet",
+      "font_sha256": "25baa38c6f288919e6b3400ab77c9fdd9042d74206a38a96cca2b6059f0d0880",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "ibm-plex-sans-kr",
+      "font_sha256": "53750379270312368cf7641901f43a98dd892e3d9d5798cf25cdc245c85c71c0",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "ibm-plex-sans-kr-bold",
+      "font_sha256": "9d82a8be5330f6d7b53121262867b402baca672eb69b852928f06d185d357f7d",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    },
+    {
+      "font_id": "noto-serif-kr",
+      "font_sha256": "5ea012e15cb7eacc1f680aee1703f3b164791b1443ea3e52b65080cca5d179cf",
+      "complete": true,
+      "completed_cases": 150,
+      "blocked_cases": 0,
+      "omitted_after_first_blocker": 0,
+      "failed_cases_by_reason": {},
+      "anchor_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "refinement_heights_mm": [],
+      "passing_sampled_heights_mm": [
+        5.0,
+        26.25,
+        47.5,
+        68.75,
+        90.0
+      ],
+      "height_states": {
+        "5.0": "PASS",
+        "26.25": "PASS",
+        "47.5": "PASS",
+        "68.75": "PASS",
+        "90.0": "PASS"
+      },
+      "blocked_sampled_heights_mm": [],
+      "pending_heights_mm": [],
+      "longest_sampled_passing_interval": {
+        "min_mm": 5.0,
+        "max_mm": 90.0,
+        "sampled_heights": 5
+      },
+      "interpolation_verified": false
+    }
+  ],
+  "identity": {
+    "commit": "6121c75be3320d52c00b1902df9bc9fdbff686ef",
+    "fonts_sha256": "5b5acc72e809e535d34c104781a59c1aaf887e489e122d67d4ba6e36fc801757",
+    "selection_sha256": "054aa0de9cc764f36e6b1c7015ee00e670bf176af671f42f8d4b5fd0e747e889",
+    "runtime": [
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/fail-fast-runner",
+        "sha256": "4b37f05c54f8a824ab99b643d46ae9022f5a6a0d8293236f623798e31ef7a6c0"
+      },
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-1",
+        "sha256": "d61aa4f16950b27a95c2b74dede0f6baf05483f03a1f9e77252b3c30ec938317"
+      },
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-2",
+        "sha256": "b8ec887e22cf9b0926e2146cc40564cf898b0c6169876ecb19f90407e00e74b2"
+      },
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-4",
+        "sha256": "bd8b22f6dcc184e33738cc075b83a7b29d6f1d762997cdeba7ba769220dbfc43"
+      },
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-5",
+        "sha256": "be6a02173d6ff530267bc6462a8b63a449054461286dd05b3fedc03a6a9e6474"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test-junit/2.0.21/977fd8384b1557420643e28be93a0faf30d99f7a/kotlin-test-junit-2.0.21.jar",
+        "sha256": "49e2b46d14c47417eb2f19eec0ad21c86d90b81fbd84a5cdb118483d380d87f9"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test/2.0.21/c6ea143e356327ddfda57e53e829c553e3b45b64/kotlin-test-2.0.21.jar",
+        "sha256": "a897b28c6a3ea8ec8f00ed766941a0c0df993d7f65908875879868e08ceb8985"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm/1.7.3/1f226780b845ff9206474c05159245d861556249/kotlinx-serialization-core-jvm-1.7.3.jar",
+        "sha256": "f0adde45864144475385cf4aa7e0b7feb27f61fcf9472665ed98cc971b06b1eb"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm/1.7.3/6701e8c68d9e82387ce72ee96e8ddf058208d58f/kotlinx-serialization-json-jvm-1.7.3.jar",
+        "sha256": "b1e9138499ed8d20375edda3f2b1c95f3103a258eff6af9edc5ea07100f2b29c"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.0.21/618b539767b4899b4660a83006e052b63f1db551/kotlin-stdlib-2.0.21.jar",
+        "sha256": "f31cc53f105a7e48c093683bbd5437561d1233920513774b470805641bedbc09"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.locationtech.jts/jts-core/1.20.0/25b72c9548a328cb1aea8a6b89d710a31ade5403/jts-core-1.20.0.jar",
+        "sha256": "6a783d8f9dba3d3cf7265435f134402f63c05838aa6cbcc4297ad3a5b2842baf"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.2/bea9b92d4ff37111f8e3d58cd8cf0714e5c83774/jgrapht-core-1.5.2.jar",
+        "sha256": "dfa596e9f0d0838f1b5e81dd0cd60e3a76c2c290ac25a0a029ffde58cf5e4c14"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar",
+        "sha256": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.14/2f97e59108979ba44e71ab1f8166722e62bc6d96/jheaps-0.14.jar",
+        "sha256": "49a9898da3758659388f1333c53ccadb6fbd142a7d18aa7b1a33577090684279"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.apfloat/apfloat/1.10.1/a32c54f97317c72c9377bb4f2cdecd52fe6329a/apfloat-1.10.1.jar",
+        "sha256": "a1480f560f37355f6c0458c523bda46658da4cd3e23cc64e309fedcd7b0782ba"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/junit/junit/4.13.2/8ac9e16d933b6fb43bc7f576336b8f4d7eb5ba12/junit-4.13.2.jar",
+        "sha256": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3"
+      },
+      {
+        "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar",
+        "sha256": "66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9"
+      },
+      {
+        "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-19",
+        "sha256": "8ca2f2407b6a72d75658057bc76368773067f2775a9babd0d2b4e87e098bc45c"
+      }
+    ],
+    "workers_default": 8,
+    "font_count": 33,
+    "characters": 30,
+    "min_mm": 5,
+    "max_mm": 90,
+    "coarse_heights_mm": [
+      5.0,
+      26.25,
+      47.5,
+      68.75,
+      90.0
+    ],
+    "expected_coarse_cases": 4950,
+    "boundary": "JVM AWT extracts the same pinned TTF/OTF files at 1000px, flattens at0.2px; cap reference=자 as app; Android extraction is not executed",
+    "pipeline": "LetteringEngine.fromContours FILL -> PES v6 -> SewoutCheck.checkPes(APP_GENERATED), default SE400/100mm/frozen POLICY",
+    "identity_created_at": 1792790220.839429,
+    "refinement_runner_source_sha256": "dac5602cf4d859f5219c0526f368c48e2a209f5c3c40e05ac6b2e37330e4a29b",
+    "refinement_optimization": "Only runner changed: first witnessed BLOCK excludes a height. PASS still needs all30. Existing engine/writer/gate classpath entries retain initial SHA256."
+  }
+}

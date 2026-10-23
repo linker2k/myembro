@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Transferred unchanged from myembro codex/letter b7106ec361eb5a75eaac54b0cba450cf1041a554; source introduced at c8d2f4f0b66376f3d0a70f313ba3717b4559dcdd.
 // Copyright (c) 2010 Ink/Stitch Authors (see upstream git history); Kotlin changes: myembro contributors.
 // Ported from Ink/Stitch lib/stitches/running_stitch.py@b0edd96311ece82ee48816dc93466274b12c2a9c (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
 // lib/stitches/running_stitch.py: AngleInterval, take_stitch, cut_segment_with_angle/circle,

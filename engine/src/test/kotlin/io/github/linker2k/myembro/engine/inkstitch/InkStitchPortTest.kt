@@ -60,6 +60,8 @@ class InkStitchPortTest {
         val start=placed.stitches.takeWhile { it.command != Command.STITCH }.last()
         val prefix=placed.stitches.withIndex().filter { it.index in locks }.take(3).map { it.value }
         assertEquals(start.x to start.y,prefix.first().x to prefix.first().y)
+        // Source half_stitch adapts to the first qualifying segment, clamped to0.5..1.5mm (plus native rounding).
+        assertTrue(prefix.maxOf { hypot((it.x-start.x).toDouble(),(it.y-start.y).toDouble()) } in 4.0..16.0)
         val body = GeneratedPatternProcessor.stripGeneratedLocks(placed)
         val expected = GeneratedPatternProcessor.finish(body)
         val expectedLocks = expected.metadata.getValue(GeneratedPatternProcessor.LOCK_INDICES_KEY).split(',').map(String::toInt)

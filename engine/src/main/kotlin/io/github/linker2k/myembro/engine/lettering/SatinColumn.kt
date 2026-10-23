@@ -71,6 +71,16 @@ object SatinColumn {
     ): EmbPattern {
         val left = clean(leftRail).map { Point(it.first, it.second) }
         val right = clean(rightRail).map { Point(it.first, it.second) }
+        // Measure rail separation, not the longer diagonal zigzag stitch (auto-rules width domain).
+        val factory=org.locationtech.jts.geom.GeometryFactory()
+        fun rail(path:List<Point>)=factory.createLineString(path.map { org.locationtech.jts.geom.Coordinate(it.x,it.y) }.toTypedArray())
+        val width=if(left.size<2 || right.size<2) 0.0 else {
+            val l=rail(left);val r=rail(right)
+            maxOf(left.maxOf { a -> factory.createPoint(org.locationtech.jts.geom.Coordinate(a.x,a.y)).distance(r) },
+                right.maxOf { b -> factory.createPoint(org.locationtech.jts.geom.Coordinate(b.x,b.y)).distance(l) })
+        }
+        if(TatamiLettering.methodForWidth(if(kotlin.math.abs(width-6.0)<1e-9) 6.0 else width)==StitchStyle.FILL)
+            return TatamiLettering.generateGlyphs(listOf(OutlineGlyph(listOf(leftRail+rightRail.asReversed()),thread)))
         val groups = if (left.size >= 2 && right.size >= 2)
             InkSatin.element(left,right,options,rungs,thread).toStitchGroups(null) else emptyList()
         return GeneratedPatternProcessor.fromGroups(groups).centeredGenerated()

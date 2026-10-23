@@ -1,0 +1,98 @@
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Task :engine:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :engine:processResources UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateMyembroBrandColors UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues
+> Task :app:extractProguardFiles
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResValues
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:mergeDebugResources
+> Task :engine:compileKotlin
+> Task :engine:compileJava NO-SOURCE
+> Task :engine:classes UP-TO-DATE
+> Task :app:mergeReleaseResources
+> Task :engine:jar
+> Task :app:packageReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :app:parseReleaseLocalResources
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileRelease
+> Task :app:javaPreCompileReleaseUnitTest
+> Task :app:processReleaseManifestForPackage
+> Task :engine:processOracleResources NO-SOURCE
+> Task :engine:processTestResources
+> Task :engine:compileOracleKotlin
+> Task :engine:compileOracleJava NO-SOURCE
+> Task :engine:oracleClasses UP-TO-DATE
+> Task :app:processDebugResources
+> Task :app:processReleaseResources
+> Task :engine:compileTestKotlin
+> Task :engine:compileTestJava NO-SOURCE
+> Task :engine:testClasses
+> Task :app:compileDebugKotlin
+> Task :app:compileReleaseKotlin
+> Task :engine:test
+> Task :app:compileDebugJavaWithJavac
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:generateDebugLintReportModel
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest
+> Task :app:processReleaseJavaRes
+> Task :engine:check
+> Task :app:bundleReleaseClassesToCompileJar
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:compileReleaseUnitTestKotlin
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processReleaseUnitTestJavaRes
+> Task :app:testReleaseUnitTest
+> Task :app:test
+> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:lintAnalyzeDebug
+
+> Task :app:lintReportDebug
+Wrote HTML report to file:///home/gosh2/workspace/hoonyjung/myembro-model/app/build/reports/lint-results-debug.html
+
+> Task :app:lintDebug
+> Task :app:lint
+> Task :app:check
+
+BUILD SUCCESSFUL in 1m 10s
+67 actionable tasks: 58 executed, 9 up-to-date

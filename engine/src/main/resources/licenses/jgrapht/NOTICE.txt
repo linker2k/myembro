@@ -1,0 +1,6 @@
+JGraphT core 1.5.2
+Copyright 2003-2023 Barak Naveh and Contributors.
+Blossom V port: Copyright 2018-2023 Timofey Chudakov and Contributors.
+Distributed unmodified under the LGPL-2.1-or-later option.
+https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2
+Source archive: https://repo.maven.apache.org/maven2/org/jgrapht/jgrapht-core/1.5.2/jgrapht-core-1.5.2-sources.jar

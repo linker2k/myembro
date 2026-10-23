@@ -48,7 +48,13 @@ class AutomaticLetteringPolicy(private val profiles:List<ValidatedLetteringProfi
         candidates.filter { heightMm in it.heights }.sortedBy { if(it.style==StitchStyle.SATIN)0 else 1 }.firstOrNull()
 
     /** S2 coordinator policy for unconfirmed fonts; this is not a certified size interval. */
-    fun method(candidates:List<ValidatedLetteringProfile>,heightMm:Double):StitchStyle = select(candidates,heightMm)?.style ?: StitchStyle.RUNNING
+    fun method(candidates:List<ValidatedLetteringProfile>,heightMm:Double,
+        geometry:LetteringGeometry?=null,measuredStrokeWidths:ValidatedHeightRange?=null):StitchStyle {
+        if(heightMm in TatamiLettering.MIN_HEIGHT_MM..TatamiLettering.MAX_HEIGHT_MM &&
+            (geometry==LetteringGeometry.OUTLINE || measuredStrokeWidths?.maxMm?.let { it>TatamiLettering.MAX_SATIN_WIDTH_MM }==true))
+            return StitchStyle.FILL
+        return select(candidates,heightMm)?.style ?: StitchStyle.RUNNING
+    }
 
     companion object {
         val Shared:AutomaticLetteringPolicy by lazy {

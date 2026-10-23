@@ -91,4 +91,6 @@
     <string name="lettering_validated_range">검증 범위: %1$s</string>
     <string name="lettering_satin_unconfirmed_running">새틴 검증 범위 미확인 · 러닝 적용</string>
     <string name="lettering_height_invalid">0보다 큰 유효한 높이(mm)를 입력해 주세요.</string>
+    <string name="lettering_automatic_fill">자동 · 채우기</string>
+    <string name="lettering_fill_size_range">채우기 높이 · %1$s</string>
 </resources>

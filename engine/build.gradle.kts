@@ -9,8 +9,60 @@ kotlin {
 dependencies {
     // Dual EPL/EDL; distributed under EDL-1.0 (see THIRD_PARTY_NOTICES.md).
     implementation("org.locationtech.jts:jts-core:1.20.0")
+    // NetworkX Euler augmentation replacement: LGPL-2.1-or-later option (see notices).
+    implementation("org.jgrapht:jgrapht-core:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     testImplementation(libs.kotlin.test)
+}
+
+// Standalone replay of fixed SVG matrix inputs through OUR JVM engine only.
+// Official Ink/Stitch binaries and Python modules are never launched by this task.
+val oracleSourceSet = sourceSets.create("oracle")
+oracleSourceSet.compileClasspath += sourceSets.main.get().output
+oracleSourceSet.runtimeClasspath += sourceSets.main.get().output
+configurations[oracleSourceSet.implementationConfigurationName].extendsFrom(configurations.implementation.get())
+configurations[oracleSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations.runtimeOnly.get())
+
+tasks.register<JavaExec>("runInkstitchWorkerMatrix") {
+    group = "verification"
+    description = "Generate worker matrix PES and identity manifest using the Kotlin port"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerMatrixCli")
+    workingDir = rootProject.projectDir
+    maxHeapSize = "1g"
+    args(
+        providers.gradleProperty("workerMatrix").orElse("/tmp/myembro-quality-gate/matrix-inkstitch.json").get(),
+        providers.gradleProperty("workerOracleRoot").orElse("/tmp/myembro-inkstitch-oracle").get(),
+        providers.gradleProperty("workerOutput").orElse("/tmp/myembro-port-out/worker").get(),
+        providers.gradleProperty("workerFeatures").orElse("stitch_plan,ties,stroke").get(),
+        providers.gradleProperty("workerOnlyId").orElse("").get(),
+    )
+}
+
+
+tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
+    group = "verification"
+    description = "Check analytic SVG-to-manual-CSP boundary fixtures without running Ink/Stitch"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerBoundaryChecks")
+    workingDir = rootProject.projectDir
+}
+
+// Extended local input sweep; deliberately not a dependency of the <=10-case CI test tier.
+tasks.register<JavaExec>("generateTatamiSweep") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.elements.TatamiSweepFixtures")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("tatamiSweepDir").orElse("/tmp/myembro-tatami-sweep").get(),
+        providers.gradleProperty("tatamiSweepSizes").orElse((5..90).joinToString(",")).get())
+}
+
+// Oracle regression tests reuse the pinned Inkex curve boundary instead of a different SVG flattener.
+sourceSets.test {
+    compileClasspath += oracleSourceSet.output
+    runtimeClasspath += oracleSourceSet.output
 }
 
 // Replays only our engine against the frozen SVG inputs. Never invokes Ink/Stitch Python/binaries.
@@ -45,38 +97,6 @@ tasks.register<Test>("fontDefaultsAudit") {
     systemProperty("myembro.defaultsAudit", providers.gradleProperty("defaultsAudit").orElse("/tmp/myembro-port-out/letter/font-defaults").get())
     outputs.upToDateWhen { false }
 }
-// Standalone replay of fixed SVG matrix inputs through OUR JVM engine only.
-// Official Ink/Stitch binaries and Python modules are never launched by this task.
-val oracleSourceSet = sourceSets.create("oracle")
-oracleSourceSet.compileClasspath += sourceSets.main.get().output
-oracleSourceSet.runtimeClasspath += sourceSets.main.get().output
-configurations[oracleSourceSet.implementationConfigurationName].extendsFrom(configurations.implementation.get())
-configurations[oracleSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations.runtimeOnly.get())
-
-tasks.register<JavaExec>("runInkstitchWorkerMatrix") {
-    group = "verification"
-    description = "Generate worker matrix PES and identity manifest using the Kotlin port"
-    classpath = oracleSourceSet.runtimeClasspath
-    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerMatrixCli")
-    workingDir = rootProject.projectDir
-    maxHeapSize = "1g"
-    args(
-        providers.gradleProperty("workerMatrix").orElse("/tmp/myembro-quality-gate/matrix-inkstitch.json").get(),
-        providers.gradleProperty("workerOracleRoot").orElse("/tmp/myembro-inkstitch-oracle").get(),
-        providers.gradleProperty("workerOutput").orElse("/tmp/myembro-port-out/worker").get(),
-        providers.gradleProperty("workerFeatures").orElse("stitch_plan,ties,stroke").get(),
-        providers.gradleProperty("workerOnlyId").orElse("").get(),
-    )
-}
-
-
-tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
-    group = "verification"
-    description = "Check analytic SVG-to-manual-CSP boundary fixtures without running Ink/Stitch"
-    classpath = oracleSourceSet.runtimeClasspath
-    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerBoundaryChecks")
-    workingDir = rootProject.projectDir
-}
 
 // Explicit local sample composition; never part of check/CI.
 tasks.register<JavaExec>("makeSampler") {
@@ -90,4 +110,15 @@ tasks.register<JavaExec>("makeSampler") {
         providers.gradleProperty("samplerMaxMm").orElse("60").get(),
         providers.gradleProperty("samplerGapMm").orElse("5").get())
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
+}
+
+// Writes a classpath for a separately launched, frozen local JVM sweep; never a check dependency.
+tasks.register("koreanTtfSweepClasspath") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"), tasks.named("oracleClasses"))
+    doLast {
+        val out = file(providers.gradleProperty("koreanTtfSweepClasspath").orElse("/tmp/myembro-ttf-fill-sweep-reduced/classpath.txt").get())
+        out.parentFile.mkdirs()
+        out.writeText(sourceSets.test.get().runtimeClasspath.asPath)
+    }
 }
