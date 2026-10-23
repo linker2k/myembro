@@ -585,3 +585,27 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
   reproducible writing-stroke convention, not a claim that handwriting has one
   universal stroke count. Upstream JavaScript was read, never executed.
 - Tooling only; no new font binaries, private fonts or embroidery designs bundled.
+
+## JGraphT core and transitive libraries
+
+- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
+  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
+  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
+  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
+  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
+  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
+  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
+  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
+  traversal are Kotlin ports. Public dependency binaries are used; upstream source
+  archives were only read to verify notices.
+- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
+  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
+  source is available from the pinned repository and the published Maven sources JAR.
+- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
+  Dimitrios Michail and contributors. Full license and source notice are packaged at
+  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
+- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
+  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
