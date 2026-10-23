@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Explicit candidate integration only. Does not alter the normal engine source set.
+// Usage: ./gradlew -I tools/inkstitch-fill-preview.gradle \
+//   -PfillPlannerSourceRoot=/path/to/worker/engine/src/main/kotlin :engine:test :engine:exportFillQualityFixtures
+// The worker sources are read-only compile inputs; they are never copied or committed here.
+gradle.projectsEvaluated {
+    def engine = gradle.rootProject.project(':engine')
+    def packagePath = 'io/github/linker2k/myembro/engine/inkstitch/'
+    def shared = ['stitch_plan/LockStitches.kt', 'stitch_plan/StitchPlanBuilder.kt', 'svg/PathEndPoints.kt']
+    def missing = shared.findAll { !engine.file('src/main/kotlin/' + packagePath + it).isFile() }
+    def external = engine.providers.gradleProperty('fillPlannerSourceRoot').orNull
+    if (!missing.isEmpty() && external == null) {
+        throw new GradleException('Fill preview awaits the shared planner commit; set -PfillPlannerSourceRoot explicitly to preview its Kotlin source directory.')
+    }
+    def sourceFiles = missing.collect { new File(external, packagePath + it) }
+    sourceFiles.each { if (!it.isFile()) throw new GradleException('Missing shared planner preview source: ' + it) }
+    engine.tasks.named('compileKotlin').configure {
+        source(engine.file('src/inkstitchPreview/kotlin'))
+        sourceFiles.each { source(it) }
+    }
+    engine.tasks.named('compileTestKotlin').configure {
+        source(engine.file('src/inkstitchPreviewTest/kotlin'))
+    }
+    engine.tasks.register('exportFillQualityFixtures', JavaExec) {
+        dependsOn(engine.tasks.named('testClasses'))
+        classpath = engine.sourceSets.test.runtimeClasspath
+        mainClass.set('io.github.linker2k.myembro.engine.inkstitch.elements.FillQualityFixtures')
+        args(engine.providers.gradleProperty('fillAuditDir').getOrElse('/tmp/myembro-fill-quality'))
+    }
+}

@@ -1,0 +1,36 @@
+{
+  "kind": "summary-of-independent-check-release-output",
+  "source_tag": "v3.3.0",
+  "source_commit": "b0edd96311ece82ee48816dc93466274b12c2a9c",
+  "candidate_commits": [
+    "99087da",
+    "d373677",
+    "629d162"
+  ],
+  "scope": "112 public SVG fill candidates; temporary unmerged shared planner integration",
+  "verdict": "BLOCK",
+  "cases": 112,
+  "blocked": 112,
+  "threshold_sha256": "313eaf7dd85125d5c0340f9d87b5c14ca6cc9a640faf360214c0d300c2b4bca9",
+  "reason_counts": {
+    "TEXT_START_SEQUENCE_MISSING": 112,
+    "START_LOCK_MISSING": 112,
+    "body_short_lt03_ratio": 38,
+    "body_tiny_lt027_ratio": 33,
+    "END_LOCK_MISSING": 72,
+    "short_lt03_ratio": 11,
+    "CELL_DENSITY": 5,
+    "UNEXPLAINED_ZERO": 1
+  },
+  "long_stitch_failures": 0,
+  "unreadable_failures": 0,
+  "maximum_decoded_sewn_move_mm": 4.1012193308819755,
+  "full_report_location": "/tmp/myembro-fill-quality/release-report.json",
+  "limitations": [
+    "Not a quality pass or merge approval",
+    "Source half_stitch defaults do not satisfy this gates text start/lock sequence",
+    "Several cases also exceed body-short or density thresholds",
+    "External planner WIP was compiled read-only; it is not redistributed here"
+  ],
+  "verified_current_pes_hashes": true
+}

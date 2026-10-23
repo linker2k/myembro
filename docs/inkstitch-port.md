@@ -227,7 +227,13 @@ v3.3.0에서 이전 `auto_fill.py`는 **`lib/stitches/tatami_fill.py`**로 이�
 legacy gate schema의 `fonts` 축에는 `방법:도형` ID를 넣는다. 폰트 검증으로 주장하지 않는다.
 
 ```sh
-JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :engine:exportFillQualityFixtures
+# Normal committed engine (independent core):
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test
+# Explicit integration candidate; provide the shared planner source root until it is merged:
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew \
+  -I tools/inkstitch-fill-preview.gradle \
+  -PfillPlannerSourceRoot=/path/to/worker/engine/src/main/kotlin \
+  :engine:test :engine:exportFillQualityFixtures
 /tmp/myembro-quality-gate/check-release --matrix /tmp/myembro-fill-quality/matrix.json \
   --json /tmp/myembro-fill-quality/release-report.json
 ```
@@ -255,3 +261,21 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :engine:expor
 - 결과: `/tmp/myembro-fill-quality/{matrix.json,release-report.json,gate.log}`.
   전체 생성 연결 API/추가 통합 회귀는 공통 후처리 병합 후 별도 커밋한다.
   우선 공통 후처리에 독립적인 채움 코어를 기능별 커밋으로 제공한다.
+
+
+### 커밋된 코어와 통합 후보의 구분
+
+- `99087da`: tatami/legacy 행·연결 그래프·언더레이·공통 파라미터.
+- `d373677`: contour/guided/meander 및 GPL 타일 데이터.
+- `629d162`: circular/linear gradient/tartan.
+- 위 3커밋은 깨끗한 별도 체크아웃에서 **일반 `./gradlew :engine:test` 381개 통과**.
+  공통 planner WIP나 임시 제외 필터를 쓰지 않았다.
+- `FillStitch`/`FillAdapters`와 element/PES 통합 테스트는
+  `engine/src/inkstitchPreview{,Test}/kotlin/`에 **통합 후보**로 보관한다.
+  아직 없는 공통 후처리 API를 참조하므로 일반 엔진 빌드/배포 소스에는 포함하지 않는다.
+  저수준 fill API와 `FillParameters`/`FillUnderlay`는 일반 엔진에서 바로 사용할 수 있다.
+- 후보 검증은 저장소의 `tools/inkstitch-fill-preview.gradle`에 **명시적으로** source root를
+  주입해 실행한다. 이 스크립트는 worker 파일을 복사/수정하지 않으며 main에 공통 3파일이
+  있으면 외부 source root가 필요 없다. 고정 개발자 PC 경로를 제품 코드에 넣지 않는다.
+- 공통 planner 병합·독립 품질 승인 후 후보를 정상 source set으로 옮긴다.
+  이 후보 보관/381개 통과를 공개 element 통합이나 봉제 품질 승인 완료로 해석하지 않는다.
