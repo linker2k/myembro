@@ -477,7 +477,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
   (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
 - Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
-  `OptimalPolygon.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
+  `OptimalPolygon.kt` and `CurveFitter.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
   and `src/auxiliary.h`. Modified 2026 by myembro contributors.
 - License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
   GPL-3.0-or-later application. Upstream permission is stated in its README;

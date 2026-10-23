@@ -15,7 +15,7 @@ internal data class BinaryContour(val points: List<PixelPoint>, val area: Long, 
 /**
  * Engine-only partial port: findpath, majority, xor_path and bitmap decomposition.
  * Input rows are bottom-up, like potrace_bitmap_t. The caller's mask is never modified.
- * Only the upstream default MINORITY turn policy is exposed. Tree ordering/Bezier are not yet ported.
+ * Only the upstream default MINORITY turn policy is exposed. Tree ordering is not yet ported; curve fitting is a separate stage.
  */
 internal object BinaryContourTracer {
     fun trace(width: Int, height: Int, pixels: BooleanArray, turdsize: Int = 2): List<BinaryContour> {

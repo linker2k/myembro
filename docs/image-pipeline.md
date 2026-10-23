@@ -11,8 +11,9 @@
   간주하지 않는다. 기존 98% 점유율, 종횡비 3, 0.6/6mm 폭, 0.5mm² 같은 실험값은 재사용하지 않는다.
 - 잠금·밀도·바탕 땀·당김 보정·각도·땀 종류 선택 UI를 만들지 않는다. 원본 기본값과
   codex가 근거를 확인한 자동 규칙만 사용한다. 미확인 규칙에 임의 값을 넣지 않는다.
-- 원본은 읽기만 한다. Potrace/ImageJ/libimagequant 또는 Ink/Stitch를 실행하거나 의존성을
-  설치하지 않았다. 아래 첫 포팅 단위에 Kotlin 엔진 코드와 라이선스 전문을 추가했다.
+- Ink/Stitch/ImageJ/libimagequant 실행·의존성 설치는 하지 않는다. Potrace는 최신 지시의
+  원본 비교를 위해 아래 2차 단위에서 작은 입력 3개만 원본 C로 실행했다. Kotlin 엔진 코드와
+  라이선스 전문을 보존하며, 앱에는 연결하지 않는다.
 
 ## 사용자 흐름: 3단계만
 
@@ -156,3 +157,22 @@ S5 구현은 S2/S4 및 비교용 oracle 준비 뒤의 별도 작업이며, 현�
 | 경로 계층 | `pathlist_to_tree`의 부모/자식 재정렬은 미구현. 현재는 분해 탐색 순서와 원본 양/음 부호만 반환한다 |
 | 정책/API | 기본 MINORITY만 노출. 다른 turnpolicy와 진행률 콜백·C 메모리 오류 반환은 이 단위 범위 밖 |
 | 다각형 | 원본과 같이 0번 경계 점을 포함하는 non-cyclic bestpolygon. 최종 곡선/벡터라고 표시하지 않는다 |
+
+
+## 2차 포팅 단위 — 꼭짓점 보정·곡선화
+
+- `CurveFitter.kt`: 동일 고정 커밋의 `pointslope`, `adjust_vertices`, `reverse`, `smooth`를
+  이식했다. 공분산 고유벡터, 특이 행렬의 직교 축 추가, 1픽셀 정사각형 경계 최소화,
+  음수 경로 반전, 원본 `alphamax=1.0`의 코너/Bezier 분기를 유지한다.
+- 원본 비교 3개: 6×4 사각형, 5×5 계단, 7×7 구멍 영역. 원본 C의 수정 없는 소스를
+  임시 API 호출기로 실행했다. 소스 실행은 이번 명시적 원본 비교 요청 범위에 한정하며,
+  Ink/Stitch 실행이나 의존성 설치는 없다.
+- 경계/다각형/양·음 부호/면적 정확히 일치. 보정 꼭짓점·Bézier 제어점·alpha/alpha0/beta는
+  절대오차 `1e-10` 안에서 일치한다. 비교 테스트 3개 포함 엔진 테스트 **296개 통과**.
+- 원본은 `opticurve=0`으로 **구현된 1–4단계**만 비교했다. 기본값 `opticurve=1`의
+  최종 최적 곡선과 동등하다는 뜻이 아니다. 5단계 최적화와 경로 계층은 아직 미구현이다.
+- 재현: `tools/potrace/generate-stage4-goldens.sh /path/to/potrace-1.16`;
+  출력 `/tmp/myembro-port-out/editor/potrace-stage4/`. 입력·원본 골든·해시는
+  `engine/src/test/resources/potrace/README.md` 참조. 일반 테스트에는 C 실행이 필요 없다.
+- 새 땀/PES/앱 진입점 없음. 독립 봉제 품질 게이트 대상도 아니며 통과를 주장하지 않는다.
+- 다음 20분 단위 제안: 원본 `opti_penalty`/`opticurve`의 첫 부분 포팅.

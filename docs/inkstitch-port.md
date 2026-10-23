@@ -153,3 +153,14 @@ Ink/Stitch에 없는 사진 입력 준비 기능이며, Ink/Stitch 코드를 포
 
 대표 Kotlin 기능 테스트 8개와 엔진 전체 테스트 293개 통과. 원본 실행/독립 게이트는
 실행하지 않았고 동등성·봉제 품질 통과를 주장하지 않는다. 새 PES/앱 진입점도 없다.
+
+
+### S5 곡선화 후속 단위
+
+동일 Potrace 커밋의 `pointslope`/`adjust_vertices`/`reverse`/`smooth`를
+`CurveFitter.kt`로 포팅했다. 위 표의 vertex adjustment·Bezier 미구현 상태를 갱신한다.
+곡선 최적화(stage 5)와 계층 트리는 여전히 미구현이며 앱 미연결이다.
+작은 PBM 3개에 대해 수정하지 않은 원본 C를 `opticurve=0`으로 실행해 비교했다:
+경계·다각형 정확히 일치, 꼭짓점·제어점·alpha/beta 절대오차 1e-10 이내.
+새 비교 테스트 3개 포함 엔진 테스트 296개 통과. 재현 명령/해시는
+`engine/src/test/resources/potrace/README.md` 참조. 독립 봉제 품질 통과 주장은 없다.
