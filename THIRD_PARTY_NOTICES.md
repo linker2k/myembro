@@ -469,3 +469,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 - Original sources are read only: no Ink/Stitch/Inkscape execution or dependency installation.
   No Python runtime, NumPy, Shapely or NetworkX dependency is bundled by these ports.
   Existing JTS core (EDL-1.0; see above) supplies the geometry replacement.
+
+## Potrace-derived binary contour and polygon core (engine-only partial port)
+
+- Source: Potrace 1.16, Copyright (C) 2001–2019 Peter Selinger.
+- Official release: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
+- Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
+  (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
+- Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
+  `OptimalPolygon.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
+  and `src/auxiliary.h`. Modified 2026 by myembro contributors.
+- License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
+  GPL-3.0-or-later application. Upstream permission is stated in its README;
+  the complete upstream GPL v2 text is packaged as `licenses/potrace/COPYING` in the engine JAR/APK.
+- This is an unfinished, internal algorithm port, not an endorsed or finished Potrace product.
+  No original executable, native library or new dependency is bundled. No application entry point.
+  See `docs/image-pipeline.md` for the exact implemented stages and differences.

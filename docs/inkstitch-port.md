@@ -134,3 +134,22 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
   `/tmp/myembro-worker-contract-matrix.json`, `/tmp/myembro-worker-contract-gate.json`에 기록한다.
 - 이 판정은 **수동 SVG 어댑터 smoke**만 대상으로 한다. 아직 미연결된 잠금/Stroke/Ripple이나
   모든 폰트 릴리스가 통과했다고 확대 해석하지 않는다.
+
+
+## S5 별도 원본: 흑백 윤곽·다각형 부분 포팅
+
+Ink/Stitch에 없는 사진 입력 준비 기능이며, Ink/Stitch 코드를 포팅한 것으로 표시하지 않는다.
+원본 Potrace 1.16 / 미러 커밋 `886392d351417d6753aff61de08e294d1506e502`,
+`src/decompose.c`, `src/trace.c`, `src/bitmap.h`, `src/auxiliary.h`에서 엔진 내부
+`BinaryContourTracer` / `OptimalPolygon`으로 옮겼다. GPL-2.0-or-later 출처와 전문을 보존한다.
+상세 해시·재현 명령은 [image-pipeline.md](image-pipeline.md)의 첫 포팅 단위 참조.
+
+| 위치 | 원본과 차이 | 이유/한계 |
+|---|---|---|
+| 흑백 비트맵 | BooleanArray, XOR 기준 x=0, 입력 복사 | 워드 저장만 대체; 교차 패리티 유지 |
+| 경로 면적 | Long 유지, C API의 INT_MAX 포화 생략 | 중간 엔진 API이며 기존 PES API에 미연결 |
+| 분해 결과 | 탐색 순서와 양/음 부호, 계층 트리 없음 | 이번 단위는 기본 MINORITY 추적까지만 이식 |
+| 다각형 이후 | vertex adjustment·Bezier·곡선 최적화 없음 | 불완전한 중간 결과를 제품 경로에 연결하지 않음 |
+
+대표 Kotlin 기능 테스트 8개와 엔진 전체 테스트 293개 통과. 원본 실행/독립 게이트는
+실행하지 않았고 동등성·봉제 품질 통과를 주장하지 않는다. 새 PES/앱 진입점도 없다.
