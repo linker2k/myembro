@@ -1,0 +1,3175 @@
+{
+  "schema_version": 1,
+  "scope": "exact finite fixture grid only",
+  "default_decision": "DENY",
+  "deployment_enabled": false,
+  "deployment_reason": "Candidate only; official equivalence regression tests are failing",
+  "continuous_range_proven": false,
+  "arbitrary_polygons_covered": false,
+  "angle_deg": 0,
+  "size_grid_mm": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90
+  ],
+  "shape_definitions": {
+    "square": "width=height=size",
+    "circle": "diameter=size",
+    "donut": "outer diameter=size; inner=0.4*size",
+    "star": "five points; outer diameter=size; inner/outer radius=0.45; top vertex up",
+    "block_h": "height=size; width=0.8*size; bar width=0.2*size"
+  },
+  "gate_sources_sha256": {
+    "gate.py": "a49e0bd4c8ae485e6ea7d0eb1a05692c47d71c20f389223211c7f7e4a5c4319a",
+    "lock_geometry.py": "5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42",
+    "thresholds.json": "a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848",
+    "POLICY.md": "47f03940d266d713f2d99f54a47e4e2e2797d128cd6f007759cc69a8aa6ca1b2"
+  },
+  "shapes": {
+    "square": {
+      "allowed_sampled_sizes_mm": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "excluded_sampled_sizes_mm": [],
+      "minimum_passing_sample_mm": 5,
+      "minimum_verified_area_mm2": 25.0,
+      "minimum_failed_sample_mm": null,
+      "all_larger_samples_pass_from_mm": 5,
+      "interpolation_allowed": false
+    },
+    "circle": {
+      "allowed_sampled_sizes_mm": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "excluded_sampled_sizes_mm": [],
+      "minimum_passing_sample_mm": 5,
+      "minimum_verified_area_mm2": 19.5617974356229,
+      "minimum_failed_sample_mm": null,
+      "all_larger_samples_pass_from_mm": 5,
+      "interpolation_allowed": false
+    },
+    "donut": {
+      "allowed_sampled_sizes_mm": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "excluded_sampled_sizes_mm": [],
+      "minimum_passing_sample_mm": 5,
+      "minimum_verified_area_mm2": 16.4465043602345,
+      "minimum_failed_sample_mm": null,
+      "all_larger_samples_pass_from_mm": 5,
+      "interpolation_allowed": false
+    },
+    "star": {
+      "allowed_sampled_sizes_mm": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "excluded_sampled_sizes_mm": [],
+      "minimum_passing_sample_mm": 5,
+      "minimum_verified_area_mm2": 8.265730110362902,
+      "minimum_failed_sample_mm": null,
+      "all_larger_samples_pass_from_mm": 5,
+      "interpolation_allowed": false
+    },
+    "block_h": {
+      "allowed_sampled_sizes_mm": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "excluded_sampled_sizes_mm": [],
+      "minimum_passing_sample_mm": 5,
+      "minimum_verified_area_mm2": 12.0,
+      "minimum_failed_sample_mm": null,
+      "all_larger_samples_pass_from_mm": 5,
+      "interpolation_allowed": false
+    }
+  },
+  "allowed_combinations": [
+    {
+      "shape": "square",
+      "size_mm": 5,
+      "angle_deg": 0,
+      "area_mm2": 25.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 6,
+      "angle_deg": 0,
+      "area_mm2": 36.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 7,
+      "angle_deg": 0,
+      "area_mm2": 49.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 8,
+      "angle_deg": 0,
+      "area_mm2": 64.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 9,
+      "angle_deg": 0,
+      "area_mm2": 81.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 10,
+      "angle_deg": 0,
+      "area_mm2": 100.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 11,
+      "angle_deg": 0,
+      "area_mm2": 121.00000000000004
+    },
+    {
+      "shape": "square",
+      "size_mm": 12,
+      "angle_deg": 0,
+      "area_mm2": 144.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 13,
+      "angle_deg": 0,
+      "area_mm2": 169.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 14,
+      "angle_deg": 0,
+      "area_mm2": 196.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 15,
+      "angle_deg": 0,
+      "area_mm2": 225.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 16,
+      "angle_deg": 0,
+      "area_mm2": 256.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 17,
+      "angle_deg": 0,
+      "area_mm2": 289.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 18,
+      "angle_deg": 0,
+      "area_mm2": 324.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 19,
+      "angle_deg": 0,
+      "area_mm2": 361.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 20,
+      "angle_deg": 0,
+      "area_mm2": 400.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 21,
+      "angle_deg": 0,
+      "area_mm2": 441.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 22,
+      "angle_deg": 0,
+      "area_mm2": 484.00000000000017
+    },
+    {
+      "shape": "square",
+      "size_mm": 23,
+      "angle_deg": 0,
+      "area_mm2": 528.9999999999999
+    },
+    {
+      "shape": "square",
+      "size_mm": 24,
+      "angle_deg": 0,
+      "area_mm2": 576.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 25,
+      "angle_deg": 0,
+      "area_mm2": 625.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 26,
+      "angle_deg": 0,
+      "area_mm2": 676.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 27,
+      "angle_deg": 0,
+      "area_mm2": 729.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 28,
+      "angle_deg": 0,
+      "area_mm2": 784.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 29,
+      "angle_deg": 0,
+      "area_mm2": 841.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 30,
+      "angle_deg": 0,
+      "area_mm2": 900.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 31,
+      "angle_deg": 0,
+      "area_mm2": 961.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 32,
+      "angle_deg": 0,
+      "area_mm2": 1024.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 33,
+      "angle_deg": 0,
+      "area_mm2": 1089.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 34,
+      "angle_deg": 0,
+      "area_mm2": 1156.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 35,
+      "angle_deg": 0,
+      "area_mm2": 1225.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 36,
+      "angle_deg": 0,
+      "area_mm2": 1296.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 37,
+      "angle_deg": 0,
+      "area_mm2": 1369.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 38,
+      "angle_deg": 0,
+      "area_mm2": 1444.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 39,
+      "angle_deg": 0,
+      "area_mm2": 1521.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 40,
+      "angle_deg": 0,
+      "area_mm2": 1600.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 41,
+      "angle_deg": 0,
+      "area_mm2": 1680.9999999999993
+    },
+    {
+      "shape": "square",
+      "size_mm": 42,
+      "angle_deg": 0,
+      "area_mm2": 1764.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 43,
+      "angle_deg": 0,
+      "area_mm2": 1849.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 44,
+      "angle_deg": 0,
+      "area_mm2": 1936.0000000000007
+    },
+    {
+      "shape": "square",
+      "size_mm": 45,
+      "angle_deg": 0,
+      "area_mm2": 2025.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 46,
+      "angle_deg": 0,
+      "area_mm2": 2115.9999999999995
+    },
+    {
+      "shape": "square",
+      "size_mm": 47,
+      "angle_deg": 0,
+      "area_mm2": 2209.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 48,
+      "angle_deg": 0,
+      "area_mm2": 2304.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 49,
+      "angle_deg": 0,
+      "area_mm2": 2401.0000000000005
+    },
+    {
+      "shape": "square",
+      "size_mm": 50,
+      "angle_deg": 0,
+      "area_mm2": 2500.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 51,
+      "angle_deg": 0,
+      "area_mm2": 2600.9999999999995
+    },
+    {
+      "shape": "square",
+      "size_mm": 52,
+      "angle_deg": 0,
+      "area_mm2": 2704.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 53,
+      "angle_deg": 0,
+      "area_mm2": 2809.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 54,
+      "angle_deg": 0,
+      "area_mm2": 2916.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 55,
+      "angle_deg": 0,
+      "area_mm2": 3025.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 56,
+      "angle_deg": 0,
+      "area_mm2": 3136.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 57,
+      "angle_deg": 0,
+      "area_mm2": 3249.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 58,
+      "angle_deg": 0,
+      "area_mm2": 3364.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 59,
+      "angle_deg": 0,
+      "area_mm2": 3481.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 60,
+      "angle_deg": 0,
+      "area_mm2": 3600.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 61,
+      "angle_deg": 0,
+      "area_mm2": 3721.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 62,
+      "angle_deg": 0,
+      "area_mm2": 3844.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 63,
+      "angle_deg": 0,
+      "area_mm2": 3969.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 64,
+      "angle_deg": 0,
+      "area_mm2": 4096.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 65,
+      "angle_deg": 0,
+      "area_mm2": 4225.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 66,
+      "angle_deg": 0,
+      "area_mm2": 4356.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 67,
+      "angle_deg": 0,
+      "area_mm2": 4489.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 68,
+      "angle_deg": 0,
+      "area_mm2": 4624.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 69,
+      "angle_deg": 0,
+      "area_mm2": 4761.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 70,
+      "angle_deg": 0,
+      "area_mm2": 4900.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 71,
+      "angle_deg": 0,
+      "area_mm2": 5041.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 72,
+      "angle_deg": 0,
+      "area_mm2": 5184.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 73,
+      "angle_deg": 0,
+      "area_mm2": 5329.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 74,
+      "angle_deg": 0,
+      "area_mm2": 5476.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 75,
+      "angle_deg": 0,
+      "area_mm2": 5625.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 76,
+      "angle_deg": 0,
+      "area_mm2": 5776.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 77,
+      "angle_deg": 0,
+      "area_mm2": 5929.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 78,
+      "angle_deg": 0,
+      "area_mm2": 6084.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 79,
+      "angle_deg": 0,
+      "area_mm2": 6241.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 80,
+      "angle_deg": 0,
+      "area_mm2": 6400.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 81,
+      "angle_deg": 0,
+      "area_mm2": 6561.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 82,
+      "angle_deg": 0,
+      "area_mm2": 6723.999999999997
+    },
+    {
+      "shape": "square",
+      "size_mm": 83,
+      "angle_deg": 0,
+      "area_mm2": 6889.000000000003
+    },
+    {
+      "shape": "square",
+      "size_mm": 84,
+      "angle_deg": 0,
+      "area_mm2": 7056.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 85,
+      "angle_deg": 0,
+      "area_mm2": 7225.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 86,
+      "angle_deg": 0,
+      "area_mm2": 7396.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 87,
+      "angle_deg": 0,
+      "area_mm2": 7568.999999999997
+    },
+    {
+      "shape": "square",
+      "size_mm": 88,
+      "angle_deg": 0,
+      "area_mm2": 7744.000000000003
+    },
+    {
+      "shape": "square",
+      "size_mm": 89,
+      "angle_deg": 0,
+      "area_mm2": 7921.0
+    },
+    {
+      "shape": "square",
+      "size_mm": 90,
+      "angle_deg": 0,
+      "area_mm2": 8100.0
+    },
+    {
+      "shape": "circle",
+      "size_mm": 5,
+      "angle_deg": 0,
+      "area_mm2": 19.5617974356229
+    },
+    {
+      "shape": "circle",
+      "size_mm": 6,
+      "angle_deg": 0,
+      "area_mm2": 28.18649636292303
+    },
+    {
+      "shape": "circle",
+      "size_mm": 7,
+      "angle_deg": 0,
+      "area_mm2": 38.38330277906816
+    },
+    {
+      "shape": "circle",
+      "size_mm": 8,
+      "angle_deg": 0,
+      "area_mm2": 50.15213890209944
+    },
+    {
+      "shape": "circle",
+      "size_mm": 9,
+      "angle_deg": 0,
+      "area_mm2": 63.492893569459824
+    },
+    {
+      "shape": "circle",
+      "size_mm": 10,
+      "angle_deg": 0,
+      "area_mm2": 78.39634745074008
+    },
+    {
+      "shape": "circle",
+      "size_mm": 11,
+      "angle_deg": 0,
+      "area_mm2": 94.87059394371454
+    },
+    {
+      "shape": "circle",
+      "size_mm": 12,
+      "angle_deg": 0,
+      "area_mm2": 112.926579445369
+    },
+    {
+      "shape": "circle",
+      "size_mm": 13,
+      "angle_deg": 0,
+      "area_mm2": 132.54349836903336
+    },
+    {
+      "shape": "circle",
+      "size_mm": 14,
+      "angle_deg": 0,
+      "area_mm2": 153.73141476938844
+    },
+    {
+      "shape": "circle",
+      "size_mm": 15,
+      "angle_deg": 0,
+      "area_mm2": 176.5023303146536
+    },
+    {
+      "shape": "circle",
+      "size_mm": 16,
+      "angle_deg": 0,
+      "area_mm2": 200.83296818871224
+    },
+    {
+      "shape": "circle",
+      "size_mm": 17,
+      "angle_deg": 0,
+      "area_mm2": 226.73467400155434
+    },
+    {
+      "shape": "circle",
+      "size_mm": 18,
+      "angle_deg": 0,
+      "area_mm2": 254.2074701582177
+    },
+    {
+      "shape": "circle",
+      "size_mm": 19,
+      "angle_deg": 0,
+      "area_mm2": 283.251372808243
+    },
+    {
+      "shape": "circle",
+      "size_mm": 20,
+      "angle_deg": 0,
+      "area_mm2": 313.8663930629818
+    },
+    {
+      "shape": "circle",
+      "size_mm": 21,
+      "angle_deg": 0,
+      "area_mm2": 346.05253797869744
+    },
+    {
+      "shape": "circle",
+      "size_mm": 22,
+      "angle_deg": 0,
+      "area_mm2": 379.8098113527129
+    },
+    {
+      "shape": "circle",
+      "size_mm": 23,
+      "angle_deg": 0,
+      "area_mm2": 415.1382143697255
+    },
+    {
+      "shape": "circle",
+      "size_mm": 24,
+      "angle_deg": 0,
+      "area_mm2": 452.0377461275806
+    },
+    {
+      "shape": "circle",
+      "size_mm": 25,
+      "angle_deg": 0,
+      "area_mm2": 490.5084040657364
+    },
+    {
+      "shape": "circle",
+      "size_mm": 26,
+      "angle_deg": 0,
+      "area_mm2": 530.5501843149207
+    },
+    {
+      "shape": "circle",
+      "size_mm": 27,
+      "angle_deg": 0,
+      "area_mm2": 572.1630819827615
+    },
+    {
+      "shape": "circle",
+      "size_mm": 28,
+      "angle_deg": 0,
+      "area_mm2": 615.3470913872711
+    },
+    {
+      "shape": "circle",
+      "size_mm": 29,
+      "angle_deg": 0,
+      "area_mm2": 660.1022062477355
+    },
+    {
+      "shape": "circle",
+      "size_mm": 30,
+      "angle_deg": 0,
+      "area_mm2": 706.4284198407472
+    },
+    {
+      "shape": "circle",
+      "size_mm": 31,
+      "angle_deg": 0,
+      "area_mm2": 754.3257251276373
+    },
+    {
+      "shape": "circle",
+      "size_mm": 32,
+      "angle_deg": 0,
+      "area_mm2": 803.776839261916
+    },
+    {
+      "shape": "circle",
+      "size_mm": 33,
+      "angle_deg": 0,
+      "area_mm2": 854.8162022273605
+    },
+    {
+      "shape": "circle",
+      "size_mm": 34,
+      "angle_deg": 0,
+      "area_mm2": 907.4266486636968
+    },
+    {
+      "shape": "circle",
+      "size_mm": 35,
+      "angle_deg": 0,
+      "area_mm2": 961.608170117839
+    },
+    {
+      "shape": "circle",
+      "size_mm": 36,
+      "angle_deg": 0,
+      "area_mm2": 1017.3607582521229
+    },
+    {
+      "shape": "circle",
+      "size_mm": 37,
+      "angle_deg": 0,
+      "area_mm2": 1074.6658009623125
+    },
+    {
+      "shape": "circle",
+      "size_mm": 38,
+      "angle_deg": 0,
+      "area_mm2": 1133.5604679614726
+    },
+    {
+      "shape": "circle",
+      "size_mm": 39,
+      "angle_deg": 0,
+      "area_mm2": 1194.0261870405673
+    },
+    {
+      "shape": "circle",
+      "size_mm": 40,
+      "angle_deg": 0,
+      "area_mm2": 1256.062949830651
+    },
+    {
+      "shape": "circle",
+      "size_mm": 41,
+      "angle_deg": 0,
+      "area_mm2": 1319.6511366658283
+    },
+    {
+      "shape": "circle",
+      "size_mm": 42,
+      "angle_deg": 0,
+      "area_mm2": 1384.8299820770917
+    },
+    {
+      "shape": "circle",
+      "size_mm": 43,
+      "angle_deg": 0,
+      "area_mm2": 1451.579854333087
+    },
+    {
+      "shape": "circle",
+      "size_mm": 44,
+      "angle_deg": 0,
+      "area_mm2": 1519.880258512091
+    },
+    {
+      "shape": "circle",
+      "size_mm": 45,
+      "angle_deg": 0,
+      "area_mm2": 1589.7722157908602
+    },
+    {
+      "shape": "circle",
+      "size_mm": 46,
+      "angle_deg": 0,
+      "area_mm2": 1661.235182029064
+    },
+    {
+      "shape": "circle",
+      "size_mm": 47,
+      "angle_deg": 0,
+      "area_mm2": 1734.2691497924825
+    },
+    {
+      "shape": "circle",
+      "size_mm": 48,
+      "angle_deg": 0,
+      "area_mm2": 1808.852929434985
+    },
+    {
+      "shape": "circle",
+      "size_mm": 49,
+      "angle_deg": 0,
+      "area_mm2": 1885.0289682312882
+    },
+    {
+      "shape": "circle",
+      "size_mm": 50,
+      "angle_deg": 0,
+      "area_mm2": 1962.7759909287388
+    },
+    {
+      "shape": "circle",
+      "size_mm": 51,
+      "angle_deg": 0,
+      "area_mm2": 2042.0721409622604
+    },
+    {
+      "shape": "circle",
+      "size_mm": 52,
+      "angle_deg": 0,
+      "area_mm2": 2122.961227027357
+    },
+    {
+      "shape": "circle",
+      "size_mm": 53,
+      "angle_deg": 0,
+      "area_mm2": 2205.3987007100022
+    },
+    {
+      "shape": "circle",
+      "size_mm": 54,
+      "angle_deg": 0,
+      "area_mm2": 2289.429850987201
+    },
+    {
+      "shape": "circle",
+      "size_mm": 55,
+      "angle_deg": 0,
+      "area_mm2": 2375.0319566803837
+    },
+    {
+      "shape": "circle",
+      "size_mm": 56,
+      "angle_deg": 0,
+      "area_mm2": 2462.1818896362574
+    },
+    {
+      "shape": "circle",
+      "size_mm": 57,
+      "angle_deg": 0,
+      "area_mm2": 2550.9260473159175
+    },
+    {
+      "shape": "circle",
+      "size_mm": 58,
+      "angle_deg": 0,
+      "area_mm2": 2641.241143745826
+    },
+    {
+      "shape": "circle",
+      "size_mm": 59,
+      "angle_deg": 0,
+      "area_mm2": 2733.1035735372225
+    },
+    {
+      "shape": "circle",
+      "size_mm": 60,
+      "angle_deg": 0,
+      "area_mm2": 2826.5607083976515
+    },
+    {
+      "shape": "circle",
+      "size_mm": 61,
+      "angle_deg": 0,
+      "area_mm2": 2921.5645544299045
+    },
+    {
+      "shape": "circle",
+      "size_mm": 62,
+      "angle_deg": 0,
+      "area_mm2": 3018.16372409089
+    },
+    {
+      "shape": "circle",
+      "size_mm": 63,
+      "angle_deg": 0,
+      "area_mm2": 3116.333805959874
+    },
+    {
+      "shape": "circle",
+      "size_mm": 64,
+      "angle_deg": 0,
+      "area_mm2": 3216.0502064025322
+    },
+    {
+      "shape": "circle",
+      "size_mm": 65,
+      "angle_deg": 0,
+      "area_mm2": 3317.362307823481
+    },
+    {
+      "shape": "circle",
+      "size_mm": 66,
+      "angle_deg": 0,
+      "area_mm2": 3420.2201687287784
+    },
+    {
+      "shape": "circle",
+      "size_mm": 67,
+      "angle_deg": 0,
+      "area_mm2": 3524.674284486308
+    },
+    {
+      "shape": "circle",
+      "size_mm": 68,
+      "angle_deg": 0,
+      "area_mm2": 3630.699287785745
+    },
+    {
+      "shape": "circle",
+      "size_mm": 69,
+      "angle_deg": 0,
+      "area_mm2": 3738.269746788047
+    },
+    {
+      "shape": "circle",
+      "size_mm": 70,
+      "angle_deg": 0,
+      "area_mm2": 3847.436748504976
+    },
+    {
+      "shape": "circle",
+      "size_mm": 71,
+      "angle_deg": 0,
+      "area_mm2": 3958.148703921142
+    },
+    {
+      "shape": "circle",
+      "size_mm": 72,
+      "angle_deg": 0,
+      "area_mm2": 4070.457697900232
+    },
+    {
+      "shape": "circle",
+      "size_mm": 73,
+      "angle_deg": 0,
+      "area_mm2": 4184.311163601531
+    },
+    {
+      "shape": "circle",
+      "size_mm": 74,
+      "angle_deg": 0,
+      "area_mm2": 4299.76214329715
+    },
+    {
+      "shape": "circle",
+      "size_mm": 75,
+      "angle_deg": 0,
+      "area_mm2": 4416.757132221777
+    },
+    {
+      "shape": "circle",
+      "size_mm": 76,
+      "angle_deg": 0,
+      "area_mm2": 4535.350090769705
+    },
+    {
+      "shape": "circle",
+      "size_mm": 77,
+      "angle_deg": 0,
+      "area_mm2": 4655.486614988502
+    },
+    {
+      "shape": "circle",
+      "size_mm": 78,
+      "angle_deg": 0,
+      "area_mm2": 4777.221545268848
+    },
+    {
+      "shape": "circle",
+      "size_mm": 79,
+      "angle_deg": 0,
+      "area_mm2": 4900.527313049512
+    },
+    {
+      "shape": "circle",
+      "size_mm": 80,
+      "angle_deg": 0,
+      "area_mm2": 5025.3765107381605
+    },
+    {
+      "shape": "circle",
+      "size_mm": 81,
+      "angle_deg": 0,
+      "area_mm2": 5151.824234208816
+    },
+    {
+      "shape": "circle",
+      "size_mm": 82,
+      "angle_deg": 0,
+      "area_mm2": 5279.814990217971
+    },
+    {
+      "shape": "circle",
+      "size_mm": 83,
+      "angle_deg": 0,
+      "area_mm2": 5409.404662150554
+    },
+    {
+      "shape": "circle",
+      "size_mm": 84,
+      "angle_deg": 0,
+      "area_mm2": 5540.536985939073
+    },
+    {
+      "shape": "circle",
+      "size_mm": 85,
+      "angle_deg": 0,
+      "area_mm2": 5673.268599001828
+    },
+    {
+      "shape": "circle",
+      "size_mm": 86,
+      "angle_deg": 0,
+      "area_mm2": 5807.542499407264
+    },
+    {
+      "shape": "circle",
+      "size_mm": 87,
+      "angle_deg": 0,
+      "area_mm2": 5943.416046199343
+    },
+    {
+      "shape": "circle",
+      "size_mm": 88,
+      "angle_deg": 0,
+      "area_mm2": 6080.831531479418
+    },
+    {
+      "shape": "circle",
+      "size_mm": 89,
+      "angle_deg": 0,
+      "area_mm2": 6219.847004561225
+    },
+    {
+      "shape": "circle",
+      "size_mm": 90,
+      "angle_deg": 0,
+      "area_mm2": 6360.404082432262
+    },
+    {
+      "shape": "donut",
+      "size_mm": 5,
+      "angle_deg": 0,
+      "area_mm2": 16.4465043602345
+    },
+    {
+      "shape": "donut",
+      "size_mm": 6,
+      "angle_deg": 0,
+      "area_mm2": 23.69560384125943
+    },
+    {
+      "shape": "donut",
+      "size_mm": 7,
+      "angle_deg": 0,
+      "area_mm2": 32.26527028064238
+    },
+    {
+      "shape": "donut",
+      "size_mm": 8,
+      "angle_deg": 0,
+      "area_mm2": 42.1553598867223
+    },
+    {
+      "shape": "donut",
+      "size_mm": 9,
+      "angle_deg": 0,
+      "area_mm2": 53.365731847924444
+    },
+    {
+      "shape": "donut",
+      "size_mm": 10,
+      "angle_deg": 0,
+      "area_mm2": 65.8871585894043
+    },
+    {
+      "shape": "donut",
+      "size_mm": 11,
+      "angle_deg": 0,
+      "area_mm2": 79.72773772782018
+    },
+    {
+      "shape": "donut",
+      "size_mm": 12,
+      "angle_deg": 0,
+      "area_mm2": 94.89842692869894
+    },
+    {
+      "shape": "donut",
+      "size_mm": 13,
+      "angle_deg": 0,
+      "area_mm2": 111.3784356210304
+    },
+    {
+      "shape": "donut",
+      "size_mm": 14,
+      "angle_deg": 0,
+      "area_mm2": 129.17784460435325
+    },
+    {
+      "shape": "donut",
+      "size_mm": 15,
+      "angle_deg": 0,
+      "area_mm2": 148.31583395173053
+    },
+    {
+      "shape": "donut",
+      "size_mm": 16,
+      "angle_deg": 0,
+      "area_mm2": 168.7548511887124
+    },
+    {
+      "shape": "donut",
+      "size_mm": 17,
+      "angle_deg": 0,
+      "area_mm2": 190.5133695014704
+    },
+    {
+      "shape": "donut",
+      "size_mm": 18,
+      "angle_deg": 0,
+      "area_mm2": 213.59143037938404
+    },
+    {
+      "shape": "donut",
+      "size_mm": 19,
+      "angle_deg": 0,
+      "area_mm2": 237.9970815731845
+    },
+    {
+      "shape": "donut",
+      "size_mm": 20,
+      "angle_deg": 0,
+      "area_mm2": 263.7142541608823
+    },
+    {
+      "shape": "donut",
+      "size_mm": 21,
+      "angle_deg": 0,
+      "area_mm2": 290.7510439417516
+    },
+    {
+      "shape": "donut",
+      "size_mm": 22,
+      "angle_deg": 0,
+      "area_mm2": 319.1161081466318
+    },
+    {
+      "shape": "donut",
+      "size_mm": 23,
+      "angle_deg": 0,
+      "area_mm2": 348.7920599040579
+    },
+    {
+      "shape": "donut",
+      "size_mm": 24,
+      "angle_deg": 0,
+      "area_mm2": 379.7969427774397
+    },
+    {
+      "shape": "donut",
+      "size_mm": 25,
+      "angle_deg": 0,
+      "area_mm2": 412.1120566149963
+    },
+    {
+      "shape": "donut",
+      "size_mm": 26,
+      "angle_deg": 0,
+      "area_mm2": 445.7468500921755
+    },
+    {
+      "shape": "donut",
+      "size_mm": 27,
+      "angle_deg": 0,
+      "area_mm2": 480.71096563900227
+    },
+    {
+      "shape": "donut",
+      "size_mm": 28,
+      "angle_deg": 0,
+      "area_mm2": 516.9849307237505
+    },
+    {
+      "shape": "donut",
+      "size_mm": 29,
+      "angle_deg": 0,
+      "area_mm2": 554.58871502577
+    },
+    {
+      "shape": "donut",
+      "size_mm": 30,
+      "angle_deg": 0,
+      "area_mm2": 593.5018403953783
+    },
+    {
+      "shape": "donut",
+      "size_mm": 31,
+      "angle_deg": 0,
+      "area_mm2": 633.7452330754154
+    },
+    {
+      "shape": "donut",
+      "size_mm": 32,
+      "angle_deg": 0,
+      "area_mm2": 675.2802311389432
+    },
+    {
+      "shape": "donut",
+      "size_mm": 33,
+      "angle_deg": 0,
+      "area_mm2": 718.1630711278317
+    },
+    {
+      "shape": "donut",
+      "size_mm": 34,
+      "angle_deg": 0,
+      "area_mm2": 762.3543911343801
+    },
+    {
+      "shape": "donut",
+      "size_mm": 35,
+      "angle_deg": 0,
+      "area_mm2": 807.8767553484505
+    },
+    {
+      "shape": "donut",
+      "size_mm": 36,
+      "angle_deg": 0,
+      "area_mm2": 854.7072249067334
+    },
+    {
+      "shape": "donut",
+      "size_mm": 37,
+      "angle_deg": 0,
+      "area_mm2": 902.8504559392891
+    },
+    {
+      "shape": "donut",
+      "size_mm": 38,
+      "angle_deg": 0,
+      "area_mm2": 952.3200306463725
+    },
+    {
+      "shape": "donut",
+      "size_mm": 39,
+      "angle_deg": 0,
+      "area_mm2": 1003.1212665722379
+    },
+    {
+      "shape": "donut",
+      "size_mm": 40,
+      "angle_deg": 0,
+      "area_mm2": 1055.2299816419388
+    },
+    {
+      "shape": "donut",
+      "size_mm": 41,
+      "angle_deg": 0,
+      "area_mm2": 1108.6509994625626
+    },
+    {
+      "shape": "donut",
+      "size_mm": 42,
+      "angle_deg": 0,
+      "area_mm2": 1163.3988596196566
+    },
+    {
+      "shape": "donut",
+      "size_mm": 43,
+      "angle_deg": 0,
+      "area_mm2": 1219.4788648638144
+    },
+    {
+      "shape": "donut",
+      "size_mm": 44,
+      "angle_deg": 0,
+      "area_mm2": 1276.8453635855183
+    },
+    {
+      "shape": "donut",
+      "size_mm": 45,
+      "angle_deg": 0,
+      "area_mm2": 1335.5647456326424
+    },
+    {
+      "shape": "donut",
+      "size_mm": 46,
+      "angle_deg": 0,
+      "area_mm2": 1395.5909028657434
+    },
+    {
+      "shape": "donut",
+      "size_mm": 47,
+      "angle_deg": 0,
+      "area_mm2": 1456.9495785865395
+    },
+    {
+      "shape": "donut",
+      "size_mm": 48,
+      "angle_deg": 0,
+      "area_mm2": 1519.606984637116
+    },
+    {
+      "shape": "donut",
+      "size_mm": 49,
+      "angle_deg": 0,
+      "area_mm2": 1583.5916843336006
+    },
+    {
+      "shape": "donut",
+      "size_mm": 50,
+      "angle_deg": 0,
+      "area_mm2": 1648.909597865757
+    },
+    {
+      "shape": "donut",
+      "size_mm": 51,
+      "angle_deg": 0,
+      "area_mm2": 1715.511541857465
+    },
+    {
+      "shape": "donut",
+      "size_mm": 52,
+      "angle_deg": 0,
+      "area_mm2": 1783.4687779772355
+    },
+    {
+      "shape": "donut",
+      "size_mm": 53,
+      "angle_deg": 0,
+      "area_mm2": 1852.7091932423095
+    },
+    {
+      "shape": "donut",
+      "size_mm": 54,
+      "angle_deg": 0,
+      "area_mm2": 1923.305748539429
+    },
+    {
+      "shape": "donut",
+      "size_mm": 55,
+      "angle_deg": 0,
+      "area_mm2": 1995.2221453276707
+    },
+    {
+      "shape": "donut",
+      "size_mm": 56,
+      "angle_deg": 0,
+      "area_mm2": 2068.420546645419
+    },
+    {
+      "shape": "donut",
+      "size_mm": 57,
+      "angle_deg": 0,
+      "area_mm2": 2142.9762375655237
+    },
+    {
+      "shape": "donut",
+      "size_mm": 58,
+      "angle_deg": 0,
+      "area_mm2": 2218.8517439303982
+    },
+    {
+      "shape": "donut",
+      "size_mm": 59,
+      "angle_deg": 0,
+      "area_mm2": 2296.0081862399707
+    },
+    {
+      "shape": "donut",
+      "size_mm": 60,
+      "angle_deg": 0,
+      "area_mm2": 2374.5229622700704
+    },
+    {
+      "shape": "donut",
+      "size_mm": 61,
+      "angle_deg": 0,
+      "area_mm2": 2454.3180209185816
+    },
+    {
+      "shape": "donut",
+      "size_mm": 62,
+      "angle_deg": 0,
+      "area_mm2": 2535.472061952345
+    },
+    {
+      "shape": "donut",
+      "size_mm": 63,
+      "angle_deg": 0,
+      "area_mm2": 2617.945874891226
+    },
+    {
+      "shape": "donut",
+      "size_mm": 64,
+      "angle_deg": 0,
+      "area_mm2": 2701.6990691353335
+    },
+    {
+      "shape": "donut",
+      "size_mm": 65,
+      "angle_deg": 0,
+      "area_mm2": 2786.8121235085605
+    },
+    {
+      "shape": "donut",
+      "size_mm": 66,
+      "angle_deg": 0,
+      "area_mm2": 2873.2197893498924
+    },
+    {
+      "shape": "donut",
+      "size_mm": 67,
+      "angle_deg": 0,
+      "area_mm2": 2960.956298199204
+    },
+    {
+      "shape": "donut",
+      "size_mm": 68,
+      "angle_deg": 0,
+      "area_mm2": 3050.0283212917443
+    },
+    {
+      "shape": "donut",
+      "size_mm": 69,
+      "angle_deg": 0,
+      "area_mm2": 3140.378419829925
+    },
+    {
+      "shape": "donut",
+      "size_mm": 70,
+      "angle_deg": 0,
+      "area_mm2": 3232.0896571177054
+    },
+    {
+      "shape": "donut",
+      "size_mm": 71,
+      "angle_deg": 0,
+      "area_mm2": 3325.0946860266044
+    },
+    {
+      "shape": "donut",
+      "size_mm": 72,
+      "angle_deg": 0,
+      "area_mm2": 3419.4289536075776
+    },
+    {
+      "shape": "donut",
+      "size_mm": 73,
+      "angle_deg": 0,
+      "area_mm2": 3515.072703274457
+    },
+    {
+      "shape": "donut",
+      "size_mm": 74,
+      "angle_deg": 0,
+      "area_mm2": 3612.0627984386288
+    },
+    {
+      "shape": "donut",
+      "size_mm": 75,
+      "angle_deg": 0,
+      "area_mm2": 3710.328712381031
+    },
+    {
+      "shape": "donut",
+      "size_mm": 76,
+      "angle_deg": 0,
+      "area_mm2": 3809.9579924585664
+    },
+    {
+      "shape": "donut",
+      "size_mm": 77,
+      "angle_deg": 0,
+      "area_mm2": 3910.879663657695
+    },
+    {
+      "shape": "donut",
+      "size_mm": 78,
+      "angle_deg": 0,
+      "area_mm2": 4013.13118744549
+    },
+    {
+      "shape": "donut",
+      "size_mm": 79,
+      "angle_deg": 0,
+      "area_mm2": 4116.719304638009
+    },
+    {
+      "shape": "donut",
+      "size_mm": 80,
+      "angle_deg": 0,
+      "area_mm2": 4221.599671476245
+    },
+    {
+      "shape": "donut",
+      "size_mm": 81,
+      "angle_deg": 0,
+      "area_mm2": 4327.809673648491
+    },
+    {
+      "shape": "donut",
+      "size_mm": 82,
+      "angle_deg": 0,
+      "area_mm2": 4435.328798294846
+    },
+    {
+      "shape": "donut",
+      "size_mm": 83,
+      "angle_deg": 0,
+      "area_mm2": 4544.195653203735
+    },
+    {
+      "shape": "donut",
+      "size_mm": 84,
+      "angle_deg": 0,
+      "area_mm2": 4654.335957154152
+    },
+    {
+      "shape": "donut",
+      "size_mm": 85,
+      "angle_deg": 0,
+      "area_mm2": 4765.841950338131
+    },
+    {
+      "shape": "donut",
+      "size_mm": 86,
+      "angle_deg": 0,
+      "area_mm2": 4878.639040096993
+    },
+    {
+      "shape": "donut",
+      "size_mm": 87,
+      "angle_deg": 0,
+      "area_mm2": 4992.766284289541
+    },
+    {
+      "shape": "donut",
+      "size_mm": 88,
+      "angle_deg": 0,
+      "area_mm2": 5108.202154252636
+    },
+    {
+      "shape": "donut",
+      "size_mm": 89,
+      "angle_deg": 0,
+      "area_mm2": 5224.986816413842
+    },
+    {
+      "shape": "donut",
+      "size_mm": 90,
+      "angle_deg": 0,
+      "area_mm2": 5343.043324180139
+    },
+    {
+      "shape": "star",
+      "size_mm": 5,
+      "angle_deg": 0,
+      "area_mm2": 8.265730110362902
+    },
+    {
+      "shape": "star",
+      "size_mm": 6,
+      "angle_deg": 0,
+      "area_mm2": 11.902651358922581
+    },
+    {
+      "shape": "star",
+      "size_mm": 7,
+      "angle_deg": 0,
+      "area_mm2": 16.20083101631129
+    },
+    {
+      "shape": "star",
+      "size_mm": 8,
+      "angle_deg": 0,
+      "area_mm2": 21.16026908252903
+    },
+    {
+      "shape": "star",
+      "size_mm": 9,
+      "angle_deg": 0,
+      "area_mm2": 26.7809655575758
+    },
+    {
+      "shape": "star",
+      "size_mm": 10,
+      "angle_deg": 0,
+      "area_mm2": 33.06292044145161
+    },
+    {
+      "shape": "star",
+      "size_mm": 11,
+      "angle_deg": 0,
+      "area_mm2": 40.006133734156464
+    },
+    {
+      "shape": "star",
+      "size_mm": 12,
+      "angle_deg": 0,
+      "area_mm2": 47.610605435690324
+    },
+    {
+      "shape": "star",
+      "size_mm": 13,
+      "angle_deg": 0,
+      "area_mm2": 55.87633554605323
+    },
+    {
+      "shape": "star",
+      "size_mm": 14,
+      "angle_deg": 0,
+      "area_mm2": 64.80332406524516
+    },
+    {
+      "shape": "star",
+      "size_mm": 15,
+      "angle_deg": 0,
+      "area_mm2": 74.39157099326613
+    },
+    {
+      "shape": "star",
+      "size_mm": 16,
+      "angle_deg": 0,
+      "area_mm2": 84.64107633011612
+    },
+    {
+      "shape": "star",
+      "size_mm": 17,
+      "angle_deg": 0,
+      "area_mm2": 95.55184007579516
+    },
+    {
+      "shape": "star",
+      "size_mm": 18,
+      "angle_deg": 0,
+      "area_mm2": 107.1238622303032
+    },
+    {
+      "shape": "star",
+      "size_mm": 19,
+      "angle_deg": 0,
+      "area_mm2": 119.35714279364032
+    },
+    {
+      "shape": "star",
+      "size_mm": 20,
+      "angle_deg": 0,
+      "area_mm2": 132.25168176580644
+    },
+    {
+      "shape": "star",
+      "size_mm": 21,
+      "angle_deg": 0,
+      "area_mm2": 145.80747914680163
+    },
+    {
+      "shape": "star",
+      "size_mm": 22,
+      "angle_deg": 0,
+      "area_mm2": 160.02453493662586
+    },
+    {
+      "shape": "star",
+      "size_mm": 23,
+      "angle_deg": 0,
+      "area_mm2": 174.90284913527898
+    },
+    {
+      "shape": "star",
+      "size_mm": 24,
+      "angle_deg": 0,
+      "area_mm2": 190.4424217427613
+    },
+    {
+      "shape": "star",
+      "size_mm": 25,
+      "angle_deg": 0,
+      "area_mm2": 206.64325275907257
+    },
+    {
+      "shape": "star",
+      "size_mm": 26,
+      "angle_deg": 0,
+      "area_mm2": 223.5053421842129
+    },
+    {
+      "shape": "star",
+      "size_mm": 27,
+      "angle_deg": 0,
+      "area_mm2": 241.02869001818232
+    },
+    {
+      "shape": "star",
+      "size_mm": 28,
+      "angle_deg": 0,
+      "area_mm2": 259.21329626098066
+    },
+    {
+      "shape": "star",
+      "size_mm": 29,
+      "angle_deg": 0,
+      "area_mm2": 278.05916091260804
+    },
+    {
+      "shape": "star",
+      "size_mm": 30,
+      "angle_deg": 0,
+      "area_mm2": 297.5662839730645
+    },
+    {
+      "shape": "star",
+      "size_mm": 31,
+      "angle_deg": 0,
+      "area_mm2": 317.73466544235004
+    },
+    {
+      "shape": "star",
+      "size_mm": 32,
+      "angle_deg": 0,
+      "area_mm2": 338.5643053204645
+    },
+    {
+      "shape": "star",
+      "size_mm": 33,
+      "angle_deg": 0,
+      "area_mm2": 360.055203607408
+    },
+    {
+      "shape": "star",
+      "size_mm": 34,
+      "angle_deg": 0,
+      "area_mm2": 382.2073603031806
+    },
+    {
+      "shape": "star",
+      "size_mm": 35,
+      "angle_deg": 0,
+      "area_mm2": 405.02077540778225
+    },
+    {
+      "shape": "star",
+      "size_mm": 36,
+      "angle_deg": 0,
+      "area_mm2": 428.4954489212128
+    },
+    {
+      "shape": "star",
+      "size_mm": 37,
+      "angle_deg": 0,
+      "area_mm2": 452.6313808434726
+    },
+    {
+      "shape": "star",
+      "size_mm": 38,
+      "angle_deg": 0,
+      "area_mm2": 477.4285711745613
+    },
+    {
+      "shape": "star",
+      "size_mm": 39,
+      "angle_deg": 0,
+      "area_mm2": 502.8870199144791
+    },
+    {
+      "shape": "star",
+      "size_mm": 40,
+      "angle_deg": 0,
+      "area_mm2": 529.0067270632258
+    },
+    {
+      "shape": "star",
+      "size_mm": 41,
+      "angle_deg": 0,
+      "area_mm2": 555.7876926208014
+    },
+    {
+      "shape": "star",
+      "size_mm": 42,
+      "angle_deg": 0,
+      "area_mm2": 583.2299165872065
+    },
+    {
+      "shape": "star",
+      "size_mm": 43,
+      "angle_deg": 0,
+      "area_mm2": 611.3333989624402
+    },
+    {
+      "shape": "star",
+      "size_mm": 44,
+      "angle_deg": 0,
+      "area_mm2": 640.0981397465034
+    },
+    {
+      "shape": "star",
+      "size_mm": 45,
+      "angle_deg": 0,
+      "area_mm2": 669.5241389393952
+    },
+    {
+      "shape": "star",
+      "size_mm": 46,
+      "angle_deg": 0,
+      "area_mm2": 699.6113965411159
+    },
+    {
+      "shape": "star",
+      "size_mm": 47,
+      "angle_deg": 0,
+      "area_mm2": 730.3599125516662
+    },
+    {
+      "shape": "star",
+      "size_mm": 48,
+      "angle_deg": 0,
+      "area_mm2": 761.7696869710452
+    },
+    {
+      "shape": "star",
+      "size_mm": 49,
+      "angle_deg": 0,
+      "area_mm2": 793.8407197992533
+    },
+    {
+      "shape": "star",
+      "size_mm": 50,
+      "angle_deg": 0,
+      "area_mm2": 826.5730110362903
+    },
+    {
+      "shape": "star",
+      "size_mm": 51,
+      "angle_deg": 0,
+      "area_mm2": 859.9665606821565
+    },
+    {
+      "shape": "star",
+      "size_mm": 52,
+      "angle_deg": 0,
+      "area_mm2": 894.0213687368516
+    },
+    {
+      "shape": "star",
+      "size_mm": 53,
+      "angle_deg": 0,
+      "area_mm2": 928.7374352003758
+    },
+    {
+      "shape": "star",
+      "size_mm": 54,
+      "angle_deg": 0,
+      "area_mm2": 964.1147600727293
+    },
+    {
+      "shape": "star",
+      "size_mm": 55,
+      "angle_deg": 0,
+      "area_mm2": 1000.1533433539113
+    },
+    {
+      "shape": "star",
+      "size_mm": 56,
+      "angle_deg": 0,
+      "area_mm2": 1036.8531850439226
+    },
+    {
+      "shape": "star",
+      "size_mm": 57,
+      "angle_deg": 0,
+      "area_mm2": 1074.214285142763
+    },
+    {
+      "shape": "star",
+      "size_mm": 58,
+      "angle_deg": 0,
+      "area_mm2": 1112.2366436504321
+    },
+    {
+      "shape": "star",
+      "size_mm": 59,
+      "angle_deg": 0,
+      "area_mm2": 1150.920260566931
+    },
+    {
+      "shape": "star",
+      "size_mm": 60,
+      "angle_deg": 0,
+      "area_mm2": 1190.265135892258
+    },
+    {
+      "shape": "star",
+      "size_mm": 61,
+      "angle_deg": 0,
+      "area_mm2": 1230.2712696264143
+    },
+    {
+      "shape": "star",
+      "size_mm": 62,
+      "angle_deg": 0,
+      "area_mm2": 1270.9386617694001
+    },
+    {
+      "shape": "star",
+      "size_mm": 63,
+      "angle_deg": 0,
+      "area_mm2": 1312.2673123212144
+    },
+    {
+      "shape": "star",
+      "size_mm": 64,
+      "angle_deg": 0,
+      "area_mm2": 1354.257221281858
+    },
+    {
+      "shape": "star",
+      "size_mm": 65,
+      "angle_deg": 0,
+      "area_mm2": 1396.9083886513306
+    },
+    {
+      "shape": "star",
+      "size_mm": 66,
+      "angle_deg": 0,
+      "area_mm2": 1440.220814429632
+    },
+    {
+      "shape": "star",
+      "size_mm": 67,
+      "angle_deg": 0,
+      "area_mm2": 1484.1944986167628
+    },
+    {
+      "shape": "star",
+      "size_mm": 68,
+      "angle_deg": 0,
+      "area_mm2": 1528.8294412127225
+    },
+    {
+      "shape": "star",
+      "size_mm": 69,
+      "angle_deg": 0,
+      "area_mm2": 1574.125642217511
+    },
+    {
+      "shape": "star",
+      "size_mm": 70,
+      "angle_deg": 0,
+      "area_mm2": 1620.083101631129
+    },
+    {
+      "shape": "star",
+      "size_mm": 71,
+      "angle_deg": 0,
+      "area_mm2": 1666.7018194535756
+    },
+    {
+      "shape": "star",
+      "size_mm": 72,
+      "angle_deg": 0,
+      "area_mm2": 1713.9817956848512
+    },
+    {
+      "shape": "star",
+      "size_mm": 73,
+      "angle_deg": 0,
+      "area_mm2": 1761.9230303249562
+    },
+    {
+      "shape": "star",
+      "size_mm": 74,
+      "angle_deg": 0,
+      "area_mm2": 1810.5255233738903
+    },
+    {
+      "shape": "star",
+      "size_mm": 75,
+      "angle_deg": 0,
+      "area_mm2": 1859.789274831653
+    },
+    {
+      "shape": "star",
+      "size_mm": 76,
+      "angle_deg": 0,
+      "area_mm2": 1909.7142846982451
+    },
+    {
+      "shape": "star",
+      "size_mm": 77,
+      "angle_deg": 0,
+      "area_mm2": 1960.300552973666
+    },
+    {
+      "shape": "star",
+      "size_mm": 78,
+      "angle_deg": 0,
+      "area_mm2": 2011.5480796579163
+    },
+    {
+      "shape": "star",
+      "size_mm": 79,
+      "angle_deg": 0,
+      "area_mm2": 2063.4568647509955
+    },
+    {
+      "shape": "star",
+      "size_mm": 80,
+      "angle_deg": 0,
+      "area_mm2": 2116.026908252903
+    },
+    {
+      "shape": "star",
+      "size_mm": 81,
+      "angle_deg": 0,
+      "area_mm2": 2169.25821016364
+    },
+    {
+      "shape": "star",
+      "size_mm": 82,
+      "angle_deg": 0,
+      "area_mm2": 2223.1507704832056
+    },
+    {
+      "shape": "star",
+      "size_mm": 83,
+      "angle_deg": 0,
+      "area_mm2": 2277.704589211602
+    },
+    {
+      "shape": "star",
+      "size_mm": 84,
+      "angle_deg": 0,
+      "area_mm2": 2332.919666348826
+    },
+    {
+      "shape": "star",
+      "size_mm": 85,
+      "angle_deg": 0,
+      "area_mm2": 2388.796001894879
+    },
+    {
+      "shape": "star",
+      "size_mm": 86,
+      "angle_deg": 0,
+      "area_mm2": 2445.333595849761
+    },
+    {
+      "shape": "star",
+      "size_mm": 87,
+      "angle_deg": 0,
+      "area_mm2": 2502.532448213472
+    },
+    {
+      "shape": "star",
+      "size_mm": 88,
+      "angle_deg": 0,
+      "area_mm2": 2560.3925589860137
+    },
+    {
+      "shape": "star",
+      "size_mm": 89,
+      "angle_deg": 0,
+      "area_mm2": 2618.9139281673824
+    },
+    {
+      "shape": "star",
+      "size_mm": 90,
+      "angle_deg": 0,
+      "area_mm2": 2678.096555757581
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 5,
+      "angle_deg": 0,
+      "area_mm2": 12.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 6,
+      "angle_deg": 0,
+      "area_mm2": 17.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 7,
+      "angle_deg": 0,
+      "area_mm2": 23.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 8,
+      "angle_deg": 0,
+      "area_mm2": 30.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 9,
+      "angle_deg": 0,
+      "area_mm2": 38.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 10,
+      "angle_deg": 0,
+      "area_mm2": 48.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 11,
+      "angle_deg": 0,
+      "area_mm2": 58.08000000000002
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 12,
+      "angle_deg": 0,
+      "area_mm2": 69.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 13,
+      "angle_deg": 0,
+      "area_mm2": 81.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 14,
+      "angle_deg": 0,
+      "area_mm2": 94.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 15,
+      "angle_deg": 0,
+      "area_mm2": 108.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 16,
+      "angle_deg": 0,
+      "area_mm2": 122.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 17,
+      "angle_deg": 0,
+      "area_mm2": 138.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 18,
+      "angle_deg": 0,
+      "area_mm2": 155.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 19,
+      "angle_deg": 0,
+      "area_mm2": 173.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 20,
+      "angle_deg": 0,
+      "area_mm2": 192.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 21,
+      "angle_deg": 0,
+      "area_mm2": 211.68
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 22,
+      "angle_deg": 0,
+      "area_mm2": 232.32000000000008
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 23,
+      "angle_deg": 0,
+      "area_mm2": 253.91999999999993
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 24,
+      "angle_deg": 0,
+      "area_mm2": 276.48
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 25,
+      "angle_deg": 0,
+      "area_mm2": 300.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 26,
+      "angle_deg": 0,
+      "area_mm2": 324.48
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 27,
+      "angle_deg": 0,
+      "area_mm2": 349.92
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 28,
+      "angle_deg": 0,
+      "area_mm2": 376.32
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 29,
+      "angle_deg": 0,
+      "area_mm2": 403.68
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 30,
+      "angle_deg": 0,
+      "area_mm2": 432.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 31,
+      "angle_deg": 0,
+      "area_mm2": 461.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 32,
+      "angle_deg": 0,
+      "area_mm2": 491.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 33,
+      "angle_deg": 0,
+      "area_mm2": 522.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 34,
+      "angle_deg": 0,
+      "area_mm2": 554.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 35,
+      "angle_deg": 0,
+      "area_mm2": 588.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 36,
+      "angle_deg": 0,
+      "area_mm2": 622.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 37,
+      "angle_deg": 0,
+      "area_mm2": 657.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 38,
+      "angle_deg": 0,
+      "area_mm2": 693.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 39,
+      "angle_deg": 0,
+      "area_mm2": 730.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 40,
+      "angle_deg": 0,
+      "area_mm2": 768.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 41,
+      "angle_deg": 0,
+      "area_mm2": 806.8799999999997
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 42,
+      "angle_deg": 0,
+      "area_mm2": 846.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 43,
+      "angle_deg": 0,
+      "area_mm2": 887.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 44,
+      "angle_deg": 0,
+      "area_mm2": 929.2800000000003
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 45,
+      "angle_deg": 0,
+      "area_mm2": 972.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 46,
+      "angle_deg": 0,
+      "area_mm2": 1015.6799999999997
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 47,
+      "angle_deg": 0,
+      "area_mm2": 1060.32
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 48,
+      "angle_deg": 0,
+      "area_mm2": 1105.92
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 49,
+      "angle_deg": 0,
+      "area_mm2": 1152.4800000000002
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 50,
+      "angle_deg": 0,
+      "area_mm2": 1200.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 51,
+      "angle_deg": 0,
+      "area_mm2": 1248.4799999999998
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 52,
+      "angle_deg": 0,
+      "area_mm2": 1297.92
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 53,
+      "angle_deg": 0,
+      "area_mm2": 1348.32
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 54,
+      "angle_deg": 0,
+      "area_mm2": 1399.68
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 55,
+      "angle_deg": 0,
+      "area_mm2": 1452.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 56,
+      "angle_deg": 0,
+      "area_mm2": 1505.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 57,
+      "angle_deg": 0,
+      "area_mm2": 1559.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 58,
+      "angle_deg": 0,
+      "area_mm2": 1614.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 59,
+      "angle_deg": 0,
+      "area_mm2": 1670.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 60,
+      "angle_deg": 0,
+      "area_mm2": 1728.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 61,
+      "angle_deg": 0,
+      "area_mm2": 1786.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 62,
+      "angle_deg": 0,
+      "area_mm2": 1845.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 63,
+      "angle_deg": 0,
+      "area_mm2": 1905.12
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 64,
+      "angle_deg": 0,
+      "area_mm2": 1966.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 65,
+      "angle_deg": 0,
+      "area_mm2": 2028.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 66,
+      "angle_deg": 0,
+      "area_mm2": 2090.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 67,
+      "angle_deg": 0,
+      "area_mm2": 2154.72
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 68,
+      "angle_deg": 0,
+      "area_mm2": 2219.52
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 69,
+      "angle_deg": 0,
+      "area_mm2": 2285.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 70,
+      "angle_deg": 0,
+      "area_mm2": 2352.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 71,
+      "angle_deg": 0,
+      "area_mm2": 2419.68
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 72,
+      "angle_deg": 0,
+      "area_mm2": 2488.32
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 73,
+      "angle_deg": 0,
+      "area_mm2": 2557.92
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 74,
+      "angle_deg": 0,
+      "area_mm2": 2628.48
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 75,
+      "angle_deg": 0,
+      "area_mm2": 2700.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 76,
+      "angle_deg": 0,
+      "area_mm2": 2772.48
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 77,
+      "angle_deg": 0,
+      "area_mm2": 2845.92
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 78,
+      "angle_deg": 0,
+      "area_mm2": 2920.32
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 79,
+      "angle_deg": 0,
+      "area_mm2": 2995.68
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 80,
+      "angle_deg": 0,
+      "area_mm2": 3072.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 81,
+      "angle_deg": 0,
+      "area_mm2": 3149.28
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 82,
+      "angle_deg": 0,
+      "area_mm2": 3227.5199999999986
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 83,
+      "angle_deg": 0,
+      "area_mm2": 3306.720000000001
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 84,
+      "angle_deg": 0,
+      "area_mm2": 3386.88
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 85,
+      "angle_deg": 0,
+      "area_mm2": 3468.0
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 86,
+      "angle_deg": 0,
+      "area_mm2": 3550.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 87,
+      "angle_deg": 0,
+      "area_mm2": 3633.119999999999
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 88,
+      "angle_deg": 0,
+      "area_mm2": 3717.1200000000013
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 89,
+      "angle_deg": 0,
+      "area_mm2": 3802.08
+    },
+    {
+      "shape": "block_h",
+      "size_mm": 90,
+      "angle_deg": 0,
+      "area_mm2": 3888.0
+    }
+  ]
+}

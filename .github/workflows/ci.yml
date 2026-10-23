@@ -20,6 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: FAT12 image test tools
         run: sudo apt-get update && sudo apt-get install -y dosfstools
+      - name: Tatami sweep rule calculator tests
+        run: python3 -m unittest discover -s tools/tests -p test_tatami_sweep.py
       - name: JVM tests
         run: ./gradlew check
       - name: Build debug APK

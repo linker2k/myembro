@@ -47,3 +47,14 @@ tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
     mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.WorkerBoundaryChecks")
     workingDir = rootProject.projectDir
 }
+
+// Extended local input sweep; deliberately not a dependency of the <=10-case CI test tier.
+tasks.register<JavaExec>("generateTatamiSweep") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.elements.TatamiSweepFixtures")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("tatamiSweepDir").orElse("/tmp/myembro-tatami-sweep").get(),
+        providers.gradleProperty("tatamiSweepSizes").orElse((5..90).joinToString(",")).get())
+}
