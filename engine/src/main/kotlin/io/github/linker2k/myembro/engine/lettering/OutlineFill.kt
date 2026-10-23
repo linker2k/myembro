@@ -93,9 +93,9 @@ object OutlineFill {
             if (automatic && (columns.isEmpty() || remainder.area > region.area * 0.05))
                 builder.warnings += "일부 복잡한 윤곽은 태타미로 보완했습니다."
             if (!remainder.isEmpty) {
-                val fill = TatamiFill.generate(remainder, TatamiSettings(
+                val fill = io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.stripGeneratedLocks(TatamiFill.generate(remainder, TatamiSettings(
                     angleDegrees = options.angleDeg, rowSpacing = density * 10, stitchLength = 35.0, underlay = false,
-                ), glyph.thread)
+                ), glyph.thread))
                 var run = arrayListOf<Point>()
                 for (stitch in fill.stitches) {
                     if (stitch.command == Command.STITCH) run += Point(stitch.x.toDouble(), stitch.y.toDouble())
@@ -236,7 +236,8 @@ private class FillStitches {
         val cy = if (sewn.isEmpty()) 0 else (sewn.minOf { it.y }.toLong() + sewn.maxOf { it.y }).div(2).toInt()
         val centered = stitches.map { it.copy(x = it.x - cx, y = it.y - cy) }
         val last = centered.lastOrNull()
-        return EmbPattern(centered + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END), threads,
-            mapOf("name" to "Filled lettering"), warnings.toList())
+        return io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.finish(
+            EmbPattern(centered + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END), threads,
+                mapOf("name" to "Filled lettering"), warnings.toList()))
     }
 }

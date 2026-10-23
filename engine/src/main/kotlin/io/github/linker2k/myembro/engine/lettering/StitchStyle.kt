@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.Stitch
@@ -8,9 +9,9 @@ import io.github.linker2k.myembro.engine.model.Stitch
 enum class StitchStyle { RUNNING, BEAN, SATIN, FILL }
 
 /** Expand only sewn movements A→B into A→B→A→B, after quantization/subdivision. */
-internal fun EmbPattern.withStitchStyle(style: StitchStyle): EmbPattern {
+internal fun EmbPattern.withStitchStyle(style: StitchStyle, maxStitchLengthMm: Double? = null): EmbPattern {
     // SATIN is constructed from geometry before sampling, never from sewn movements.
-    if (style != StitchStyle.BEAN) return this
+    if (style != StitchStyle.BEAN) return GeneratedPatternProcessor.finish(this, maxStitchLengthMm = maxStitchLengthMm)
     val result = ArrayList<Stitch>()
     var previous: Stitch? = null
     for (stitch in stitches) {
@@ -24,5 +25,5 @@ internal fun EmbPattern.withStitchStyle(style: StitchStyle): EmbPattern {
         }
         previous = stitch
     }
-    return EmbPattern(result, threads, metadata, warnings)
+    return GeneratedPatternProcessor.finish(EmbPattern(result, threads, metadata, warnings), maxStitchLengthMm = maxStitchLengthMm)
 }

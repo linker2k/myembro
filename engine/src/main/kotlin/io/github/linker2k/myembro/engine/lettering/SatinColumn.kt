@@ -96,7 +96,7 @@ object SatinColumn {
         val points = columnPoints(leftRail, rightRail, options)
         val builder = RunningStitches(options.maxStitchLengthMm, true, simplifyPaths = false)
         if (points.isNotEmpty()) builder.stroke(points.map { (x, y) -> x * 10 to y * 10 }, thread)
-        return builder.finish(thread)
+        return builder.finish(thread).withStitchStyle(StitchStyle.SATIN, options.maxStitchLengthMm)
     }
 
     /** Offset a flattened centerline, then sew it as satin. Closed paths retain a closed seam. */

@@ -32,7 +32,10 @@ class DigitizingTest {
 
     @Test fun tatamiDefaultsHaveFourUnitSpacingFortyUnitStitchesAndStaggeredRows() {
         val pattern = TatamiFill.generate(SvgPath.polygons("M0 0H200V20H0Z"), TatamiSettings(underlay = false))
-        val sewn = pattern.stitches.filter { it.command == Command.STITCH }
+        // Row phases describe the fill body. Lock penetrations follow the row geometry
+        // but are intentionally not constrained to the tatami stagger positions.
+        val sewn = io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.stripGeneratedLocks(pattern)
+            .stitches.filter { it.command == Command.STITCH }
         assertEquals(listOf(2, 6, 10, 14, 18), sewn.map { it.y }.distinct())
         for ((row, y) in listOf(2, 6, 10, 14, 18).withIndex()) {
             val interior = sewn.filter { it.y == y && it.x > 0 && it.x < 200 }.map { it.x }
