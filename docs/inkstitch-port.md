@@ -387,8 +387,38 @@ letter 파일의 기존 Settings 기본값(0.4mm/3.5mm)을 그대로 쓰는 대�
 분리 성분/빈 입력(레이어 순서·빈 결과). `DefaultTatamiTest` 3개 통과. 전체 매트릭스는 실행하지 않았다.
 letter의 커밋 `b7106ec`에서 InkAutoFill/InkRunning을 읽기 전용으로 추출해 컴파일했다
 (InkAutoFill 도입 커밋 `1cbdd569747032a48075ca16e732629b15555d6c`).
-letter 통합 전 preview 실행에는 `-PfillTatamiSourceRoot=/path/to/letter-source-root`가 필요하다.
+당시 preview에는 `fillTatamiSourceRoot`가 필요했으나, 아래 소유권 이전으로 제거했다.
 
 이 API 준비는 letter backend의 공식 동등성/실제 봉제 통과나 S4 적용을 뜻하지 않는다.
 특히 현재 backend는 시작점 지정 인수가 없어, 바탕 땀 마지막점을 top 경로 생성에 전달하는
 계약 보강은 별도 단위로 검토할 수 있다. 이번 단위는 여기서 멈추고 총괄 결정을 기다린다.
+
+
+### 15분 단위: InkAutoFill model 소유권 이전
+
+`stitches/InkAutoFill.kt`를 model의 일반 `src/main`으로 가져왔다. letter의
+커밋 `b7106ec361eb5a75eaac54b0cba450cf1041a554`에 저장된 파일을 사용했으며,
+원래 도입 커밋은 `1cbdd569747032a48075ca16e732629b15555d6c`다.
+직접 의존하는 공용 러닝 유틸 `InkRunning.kt`도 같은 경로에 포함했다
+(도입: `c8d2f4f0b66376f3d0a70f313ba3717b4559dcdd`). 각 파일 머리에 이전 출처와
+원본 Ink/Stitch 경로·고정 커밋·GPL 표기를 남겼다. 알고리즘/기본값은 변경하지 않았다.
+앞으로 InkAutoFill 수정은 model 담당이며, letter S2는 해당 생성기를 중복 추가하지 않는다.
+InkRunning은 공유 의존 유틸로 동일 FQCN/파일을 사용한다.
+
+기존 letter의 `AutoFillPortTest`도 출처를 기록하고 옮겼다. 일반 `:engine:test`는
+letter 작업트리나 외부 소스 없이 컴파일·실행한다. `DefaultTatami`는 여전히 preview로,
+S1 미병합 소스 입력만 필요하다. `fillTatamiSourceRoot` 옵션과 외부 letter 입력은 제거했다.
+UI/기존 제품 경로 연결 및 시작점 계약 변경은 이번 단위에 포함하지 않는다.
+
+재현 명령(JDK 17):
+
+```sh
+./gradlew :engine:test --console=plain
+./gradlew -I tools/inkstitch-fill-preview.gradle \
+  -PfillPlannerSourceRoot=/tmp/myembro-port-out/model/dependencies/source \
+  :engine:test --tests '*DefaultTatamiTest*' --console=plain
+```
+
+검증 결과: 외부 소스를 지정하지 않은 일반 엔진 테스트 **395개 통과**, S1 소스만 지정한
+preview `DefaultTatamiTest` **3개 통과**. 두 생성/유틸 파일은 출처 주석을 제외하고
+letter의 기록된 커밋과 byte-for-byte 동일함도 확인했다. 전체 매트릭스는 실행하지 않았다.

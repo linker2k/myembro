@@ -14,7 +14,7 @@ import org.locationtech.jts.geom.Polygon
 /**
  * S4 preview API: source-default tatami plus underlay, with no user settings.
  * Input is the existing engine PolygonRegion (0.1mm); groups use shared SVG-pixel units.
- * Reuses letter's InkAutoFill; no second scanline/graph generator is implemented here.
+ * Reuses model-owned InkAutoFill; no second scanline/graph generator is implemented here.
  * The caller applies S1 StitchPlanBuilder once after combining all object groups.
  */
 object DefaultTatami {
