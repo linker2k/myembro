@@ -25,7 +25,7 @@ object LetteringEngine {
      * apart (default 1.5). [arcDeg] bends the baseline; [arcRadiusMm], when set, replaces
      * angle magnitude with a physical radius, retaining the angle's direction.
      * [characterThreads] indices count code points after CR/LF and tab normalization.
-     * Single-line Hershey defaults to [StitchStyle.BEAN]; select RUNNING for one pass.
+     * New lettering defaults to [StitchStyle.RUNNING]; bean remains an explicit legacy option.
      * SATIN offsets each bent stroke by [satinOptions]' width; its separate maximum
      * stitch length replaces [stitchLengthMm] for this style only.
      * Unsupported Unicode code points become '?' and are reported in warnings.
@@ -43,7 +43,7 @@ object LetteringEngine {
         alignment: TextAlignment = TextAlignment.CENTER,
         arcRadiusMm: Double? = null,
         characterThreads: Map<Int, EmbThread> = emptyMap(),
-        stitchStyle: StitchStyle = StitchStyle.BEAN,
+        stitchStyle: StitchStyle = StitchStyle.RUNNING,
         satinOptions: SatinOptions = SatinOptions(),
     ): EmbPattern {
         require(stitchStyle != StitchStyle.FILL) { "FILL requires closed outline contours" }
@@ -228,8 +228,8 @@ object LetteringEngine {
 internal class RunningStitches(
     stitchLengthMm: Double,
     private val trimBetweenStrokes: Boolean,
-    private val mergeToleranceMm: Double = 0.05,
-    private val simplifyPaths: Boolean = true,
+    private val mergeToleranceMm: Double = 0.2,
+    private val simplifyPaths: Boolean = false,
     private val minSegmentMm: Double = 0.0,
     private val stitchStyle: StitchStyle = StitchStyle.RUNNING,
     private val satinOptions: SatinOptions = SatinOptions(),
@@ -265,7 +265,7 @@ internal class RunningStitches(
         }
         val path = reduced
         val running = if (stitchStyle == StitchStyle.SATIN || !resamplePaths) path else
-            InkRunning.even(path.map { Point(it.first, it.second) }, maxLength, if (simplifyPaths) mergeToleranceMm * 10 else 0.0)
+            InkRunning.even(path.map { Point(it.first, it.second) }, maxLength, mergeToleranceMm * 10)
                 .map { it.x to it.y }
         val sampled = running.map { (x, y) -> quantize(x, y) }
         if (sampled.isEmpty()) return

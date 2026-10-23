@@ -36,7 +36,7 @@
 
 ## 명시적인 앱 정책과 차이
 
-- **외곽선 기본은 auto-fill + 윤곽 러닝**이다. 이전의 TTF 래스터 중심선 추정 새틴은
+- **개정 S2의 외곽선 기본은 러닝**이다. auto-fill은 명시적 레거시 요청/후속 S4 대상이다. 이전의 TTF 래스터 중심선 추정 새틴은
   생성 경로에서 제거했다. `OutlineColumns`는 과거 실험 API이며 새틴 생성에 쓰지 않는다.
 - TTF에서 SATIN을 요청하면 사각형도 포함해 auto-fill로 전환하고 경고한다.
   별도로 검증된 명시적 레일/렁만 새틴 코어에 전달한다.
@@ -65,7 +65,7 @@
 - 기존 앱 러닝/빈/채우기는 S1의 native `finish` 어댑터를 쓴다. 이미 샘플링한
   모서리를 유지하며 실제 경로를 따라 half-stitch를 생성한다. 이것은 SVG 원본
   잠금의 벡터 fallback과 다를 수 있다(S1 소유 차이). 임의 JUMP도 기존 생성 경계로 유지한다.
-- 새틴 UI는 `SatinParameters`의 41개 source 이름·기본값을 저장한다. 기존 프로젝트의
+- 새틴 엔진 API는 `SatinParameters`의 41개 source 이름·기본값을 저장한다(상세 UI는 취소). 기존 프로젝트의
   legacy `SatinOptions`는 max 7mm 등 저장값을 명시적으로 매핑한다. 신규 선택은 source
   기본값(max 없음)을 쓴다. mm→px는 코어에서 한 번, px→0.1mm는 공통 어댑터에서 한 번이다.
   split 길이는 source float 경로 기준으로, 양자화 뒤에는 최대 약 0.15mm 오차가 가능하다.

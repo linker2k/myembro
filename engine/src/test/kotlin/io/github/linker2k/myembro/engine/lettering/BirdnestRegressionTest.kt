@@ -10,7 +10,7 @@ import kotlin.test.*
 
 class BirdnestRegressionTest {
     @Test fun publicScriptAt34MmUsesAutoFillInsteadOfUnvalidatedSkeletonSatin() {
-        val text=LetteringAuditGlyphs.script()
+        val text=LetteringAuditGlyphs.script(style=StitchStyle.FILL)
         val p=text.localPattern()
         assertSewingLengths(p)
         val cells=bodyStitches(p).groupingBy { floor(it.x/5.0).toInt() to floor(it.y/5.0).toInt() }.eachCount()

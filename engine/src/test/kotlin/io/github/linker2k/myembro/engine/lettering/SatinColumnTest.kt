@@ -126,7 +126,7 @@ class SatinColumnTest {
         }
         val old = TextObject("legacy", text = "AB")
         assertEquals(SatinOptions(autoDensity = false), (TextObjectCodec.decode(JsonObject(TextObjectCodec.encode(old).filterKeys { it != "satinOptions" })) as TextObject).satinOptions)
-        assertEquals(StitchStyle.BEAN, old.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, old.stitchStyle)
     }
 
     @Test fun emptyDegenerateAndInvalidInputsAreHandled() {
