@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -19,6 +20,14 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.res.stringResource
+import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.engine.sewout.Highlight
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.model.Bounds
 
@@ -41,17 +50,34 @@ fun StitchCanvas(
     hoopColor: Int,
     frame: HoopSpec? = null,
     preservePlacement: Boolean = false,
+    highlight: Highlight? = null,
+    focusRequest: Int = 0,
 ) {
     val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
     val needleColor = MaterialTheme.colorScheme.primary.toArgb()
-    val bounds = data.pattern.bounds ?: Bounds(0, 0, 1, 1)
+    val highlightColor = MaterialTheme.colorScheme.primary.toArgb()
+    val highlightFill = MaterialTheme.colorScheme.primary.copy(alpha = .16f).toArgb()
+    val highlightDescription = stringResource(R.string.sewout_highlight_description)
+    val bounds = remember(data) { viewerMovementBounds(data.pattern) ?: Bounds(0, 0, 1, 1) }
     val cx = if (preservePlacement) 0f else (bounds.minX.toLong() + bounds.maxX) / 2f
     val cy = if (preservePlacement) 0f else (bounds.minY.toLong() + bounds.maxY) / 2f
 
     // User zoom/pan on top of the fit-to-hoop transform. Reset whenever the design or fit request changes.
     var zoom by remember(data, fitRequest) { mutableFloatStateOf(1f) }
     var pan by remember(data, fitRequest) { mutableStateOf(Offset.Zero) }
+
+    var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+    val highlightArea = remember(data, highlight) { highlight?.let { viewerHighlightArea(data.pattern, it) } }
+    LaunchedEffect(data, fitRequest, focusRequest, highlightArea, canvasSize, frame, preservePlacement) {
+        val area = highlightArea ?: return@LaunchedEffect
+        if (canvasSize.width == 0 || canvasSize.height == 0) return@LaunchedEffect
+        val fit = viewerCanvasFit(bounds, frame?.width?.toFloat() ?: hoop.widthMm * 10f,
+            frame?.height?.toFloat() ?: hoop.heightMm * 10f, preservePlacement, canvasSize.width.toFloat(), canvasSize.height.toFloat())
+        val camera = viewerFocusCamera(area, fit, cx, cy, canvasSize.width.toFloat(), canvasSize.height.toFloat())
+        zoom = camera.zoom
+        pan = Offset(camera.panX, camera.panY)
+    }
 
     val stitchPaint = remember {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -73,7 +99,9 @@ fun StitchCanvas(
     val needlePaint = remember(needleColor) { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = needleColor } }
 
     Canvas(
-        modifier
+        modifier.onSizeChanged { canvasSize = it }.semantics {
+            if (highlightArea != null) contentDescription = highlightDescription
+        }
             .pointerInput(data, fitRequest) {
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val newZoom = (zoom * zoomChange).coerceIn(0.5f, 40f)
@@ -89,9 +117,7 @@ fun StitchCanvas(
     ) {
         val hoopW = frame?.width?.toFloat() ?: (hoop.widthMm * 10f)
         val hoopH = frame?.height?.toFloat() ?: (hoop.heightMm * 10f)
-        val viewW = maxOf(hoopW, if (preservePlacement) maxOf(kotlin.math.abs(bounds.minX.toFloat()), kotlin.math.abs(bounds.maxX.toFloat())) * 2 else bounds.width.toFloat())
-        val viewH = maxOf(hoopH, if (preservePlacement) maxOf(kotlin.math.abs(bounds.minY.toFloat()), kotlin.math.abs(bounds.maxY.toFloat())) * 2 else bounds.height.toFloat())
-        val fit = minOf(size.width / viewW, size.height / viewH) * 0.92f
+        val fit = viewerCanvasFit(bounds, hoopW, hoopH, preservePlacement, size.width, size.height)
         val scale = fit * zoom
 
         drawIntoCanvas { c ->
@@ -123,6 +149,18 @@ fun StitchCanvas(
                 jumpPaint.strokeWidth = 1.5f / scale
                 val jumps = data.segmentsUpTo(data.jumpLineEnds, progress)
                 if (jumps > 0) canvas.drawLines(data.jumpLines, 0, jumps * 4, jumpPaint)
+            }
+
+            highlightArea?.let { area ->
+                val left = area.minX.toFloat(); val top = area.minY.toFloat()
+                val right = maxOf(area.maxX.toFloat(), left + 1); val bottom = maxOf(area.maxY.toFloat(), top + 1)
+                val overlay = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = highlightFill; style = Paint.Style.FILL }
+                canvas.drawRect(left, top, right, bottom, overlay)
+                overlay.color = highlightColor; overlay.style = Paint.Style.STROKE; overlay.strokeWidth = 2.dp.toPx() / scale
+                canvas.drawRect(left, top, right, bottom, overlay)
+                val from = highlight?.from; val to = highlight?.to
+                if (from != null && to != null) canvas.drawLine(from.x.toFloat(), from.y.toFloat(), to.x.toFloat(), to.y.toFloat(), overlay)
+                canvas.drawCircle(((area.minX + area.maxX) / 2).toFloat(), ((area.minY + area.maxY) / 2).toFloat(), 10.dp.toPx() / scale, overlay)
             }
 
             // Needle position while the design is only partly sewn.
