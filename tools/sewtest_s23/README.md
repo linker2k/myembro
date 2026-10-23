@@ -1,6 +1,6 @@
 # S2 + S3 public sewout sampler generator
 
-Run after local integration of letter `8bb03dd`, model `ab23976` (automatic outline
+Run after local integration of letter `0a60ff0`, model `ab23976` (automatic outline
 tatami), canvas `9469c9b` catalog and worker `2b89226`. The script never merges branches.
 It builds an isolated application ID, uses an emulator's actual Android glyph
 outlines and our engine, pulls the candidates and uninstalls that isolated app.
@@ -25,6 +25,6 @@ keeping the 12mm size. Sampler labels: 1 Jung, 2 circle15, 3 Min, 4 square15,
 The labels are PNG annotations only. One black 40wt thread, 5mm gaps and trims
 between items. Existing encoded internal trims are preserved.
 
-First result: 59.4×55.5mm, 4,423 stitches, 6 trims, Python gate v5 PASS 1/1;
-seven individual source files PASS 7/7. Time estimate: 4423/400×60 + 6×10
-= 723.45 seconds (12min03s), excluding setup. These are code checks, not a sewout claim.
+Updated result (0a60ff0): 59.4×55.5mm, 4,439 stitches, 15 trims, Python gate v5 PASS 1/1;
+seven individual source files PASS 7/7. Time estimate: 4439/400×60 + 15×10
+= 815.85 seconds (13min36s), excluding setup. These are code checks, not a sewout claim.
