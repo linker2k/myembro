@@ -20,9 +20,19 @@ internal class UsbDiagnosticCapture {
     private var inquiry: ByteArray? = null
     private var capacity: ByteArray? = null
     var sector0: ByteArray? = null
+    var partitionStart: Long? = null
+        private set
+    var partitionBoot: ByteArray? = null
+        private set
     var blocks: Long? = null
     var blockSize: Int? = null
     var warnings: List<String> = emptyList()
+
+    /** Called before BPB parsing, so the report survives a malformed partition boot sector. */
+    fun bootSector(lba: Long, bytes: ByteArray) {
+        if (lba == 0L) sector0 = bytes.copyOf()
+        else { partitionStart = lba; partitionBoot = bytes.copyOf() }
+    }
 
     fun outgoing(buffer: ByteBuffer) {
         val b = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
@@ -45,7 +55,7 @@ internal class UsbDiagnosticCapture {
         }
     }
     fun report(device: String, error: Exception): String = buildString {
-        appendLine("myembro SE400 USB/FAT12 diagnostics v1")
+        appendLine("myembro SE400 USB/FAT12 diagnostics v2")
         appendLine(device)
         appendLine("Failure: ${error.javaClass.simpleName}: ${error.message}")
         val response = inquiry
@@ -66,6 +76,8 @@ internal class UsbDiagnosticCapture {
         warnings.forEach { appendLine("Warning: $it") }
         sector0?.let { append(Fat12Diagnostics.bootSector(it)) }
             ?: appendLine("sector0 / BPB: unavailable (미확인; read failed before capture)")
+        partitionBoot?.let { append(Fat12Diagnostics.bootSector(it, "partition start sector (LBA $partitionStart)")) }
+            ?: appendLine("partition start sector / BPB: unavailable (미확인; no partition or read failed before capture)")
     }
 }
 

@@ -71,4 +71,26 @@ class UsbDiagnosticsTest {
         assertTrue(report.contains("blockCount=4294967296"))
         assertTrue(report.contains("sector0 / BPB: unavailable"))
     }
+
+    @Test fun `failed partition BPB report includes LBA 32 bytes and separately labeled fields`() {
+        val capture = UsbDiagnosticCapture()
+        val zero = ByteArray(512).also {
+            it[446] = 0x80.toByte(); it[450] = 1; it[454] = 0x20
+            it[458] = 0xDB.toByte(); it[459] = 3; it[510] = 0x55; it[511] = 0xAA.toByte()
+        }
+        val partition = ByteArray(512).also {
+            it[11] = 0; it[12] = 2; it[13] = 1; it[14] = 1; it[16] = 2
+            it[17] = 0xE0.toByte(); it[19] = 0xDB.toByte(); it[20] = 3; it[22] = 3
+        } // Deliberately missing signature: capture must still survive parsing failure.
+        capture.bootSector(0, zero); capture.bootSector(32, partition)
+        partition[11] = 0x7F // Diagnostic snapshots do not alias the driver's read buffer.
+        val report = capture.report("SE400", IOException("BPB signature failed"))
+        assertTrue(report.contains("sector0 first 512 bytes (hex):"))
+        assertTrue(report.contains("0: boot=0x80 type=0x01 start=32 sectors=987"))
+        assertTrue(report.contains("partition start sector (LBA 32) first 512 bytes (hex):"))
+        assertTrue(report.contains("BPB (partition start sector (LBA 32) interpreted as boot sector):"))
+        assertTrue(report.contains("BytesPerSector=512"))
+        assertTrue(report.contains("TotalSectors16=987"))
+        assertEquals(2, report.lines().count { it.startsWith("01F0:") })
+    }
 }

@@ -69,8 +69,7 @@ internal class DirectUsbAccess(private val context: Context) {
             driver.init()
             val block = LibaumsBlockDevice(driver)
             capture.blocks = block.sectorCount; capture.blockSize = block.sectorSize
-            capture.sector0 = block.readSectors(0, 1)
-            val volume = Fat12Volume.mount(block)
+            val volume = Fat12Volume.mount(block, capture::bootSector)
             capture.warnings = volume.warnings
             return Session(volume, communication) { error -> DirectUsbFailure(error, capture.report(description, error)) }
         } catch (e: Exception) {
