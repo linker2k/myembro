@@ -3,6 +3,8 @@ package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.io.PatternReader
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.ProcessingSummary
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -70,13 +72,18 @@ data class Project(
      * transform applied, a trim + jump between objects, and a color change only where the
      * thread actually changes.
      */
-    fun flatten(): EmbPattern {
+    fun flatten(sewingOptions: SewingOptions? = null): EmbPattern {
+        val resolvedSewingOptions = sewingOptions ?: SewingOptions()
         val stitches = ArrayList<Stitch>()
         val threads = ArrayList<EmbThread>()
+        var summary: ProcessingSummary? = null
         for (obj in objects.filter { it.visible }) {
             // Generated objects have already been finished. Imported sewing remains verbatim;
             // neither kind may be locked again merely because objects are being composed.
-            val raw = obj.placedPattern()
+            val source = obj.placedPattern()
+            val generated = source.metadata[GeneratedPatternProcessor.FINISHED_KEY] == "v1"
+            val raw = if (generated) GeneratedPatternProcessor.finish(source, options = resolvedSewingOptions) else source
+            ProcessingSummary.fromPattern(raw)?.let { summary = (summary ?: ProcessingSummary()) + it }
             // END terminates the source, even if malformed input has trailing stitches.
             val placed = EmbPattern(raw.stitches.takeWhile { it.command != Command.END }, raw.threads)
             placed.colorBlocks.forEach { block ->
@@ -101,7 +108,8 @@ data class Project(
         }
         val end = stitches.lastOrNull()
         stitches += Stitch(end?.x ?: 0, end?.y ?: 0, Command.END)
-        return EmbPattern(stitches, threads)
+        val metadata = summary?.let { it.metadata() + (ProcessingSummary.COMPOSITE_KEY to "v1") }.orEmpty()
+        return EmbPattern(stitches, threads, metadata)
     }
 }
 
