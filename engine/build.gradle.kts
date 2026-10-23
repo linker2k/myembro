@@ -91,3 +91,6 @@ tasks.register<JavaExec>("makeSampler") {
         providers.gradleProperty("samplerGapMm").orElse("5").get())
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
+
+// Release sweeps render many patterns in parallel.
+tasks.test { maxHeapSize = "3g" }
