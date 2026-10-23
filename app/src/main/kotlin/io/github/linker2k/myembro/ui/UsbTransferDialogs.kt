@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.text.format.Formatter
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +37,8 @@ internal fun UsbTransferDialogs(vm: LibraryViewModel) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(transferTime(record.time), style = MaterialTheme.typography.labelMedium)
                             Text(transferSummary(record), style = MaterialTheme.typography.bodyMedium)
+                            Text(transferSizes(record.files.sumOf { it.size }, record.allocatedBytes, record.allocationUnitBytes),
+                                style = MaterialTheme.typography.bodySmall)
                             Text((record.files.map { it.name } + record.failures.map { it.first }).distinct().joinToString(),
                                 maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                             Text(record.drive, style = MaterialTheme.typography.bodySmall)
@@ -56,16 +57,22 @@ internal fun UsbTransferDialogs(vm: LibraryViewModel) {
 
 @Composable
 private fun transferSummary(record: UsbTransferRecord): String {
-    val context = LocalContext.current
     val first = record.files.firstOrNull()
-    val size = Formatter.formatShortFileSize(context, record.files.sumOf { it.size })
     return when (record.outcome) {
         UsbTransferOutcome.SUCCESS -> if (record.files.size == 1)
-            stringResource(R.string.usb_result_success_one, first!!.name, size)
-        else stringResource(R.string.usb_result_success_many, record.files.size, size)
-        UsbTransferOutcome.PARTIAL -> stringResource(R.string.usb_result_partial, record.files.size, record.failures.size, size)
+            stringResource(R.string.usb_result_success_one, first!!.name)
+        else stringResource(R.string.usb_result_success_many, record.files.size)
+        UsbTransferOutcome.PARTIAL -> stringResource(R.string.usb_result_partial, record.files.size, record.failures.size)
         UsbTransferOutcome.FAILURE -> stringResource(R.string.usb_result_failure)
     }
+}
+
+@Composable
+private fun transferSizes(fileBytes: Long, allocatedBytes: Long?, unitBytes: Int?): String {
+    val fileSize = formatUsbBytes(fileBytes)
+    return if (allocatedBytes != null && unitBytes != null)
+        stringResource(R.string.usb_result_sizes, fileSize, formatUsbBytes(allocatedBytes), formatUsbBytes(unitBytes.toLong()))
+    else stringResource(R.string.usb_result_sizes_unknown, fileSize, stringResource(R.string.usb_result_unknown))
 }
 
 @Composable
@@ -80,8 +87,9 @@ private fun TransferResultDialog(record: UsbTransferRecord, persistent: Boolean,
         text = { Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(transferSummary(record), style = MaterialTheme.typography.bodyLarge)
+            if (record.files.isNotEmpty()) Text(transferSizes(record.files.sumOf { it.size }, record.allocatedBytes, record.allocationUnitBytes))
             Text(stringResource(R.string.usb_result_remaining, record.remainingBytes?.let {
-                Formatter.formatShortFileSize(context, it)
+                formatUsbBytes(it)
             } ?: stringResource(R.string.usb_result_unknown)))
             if (record.failures.isNotEmpty()) Text(stringResource(when (record.problem) {
                 UsbTransferProblem.SPACE -> R.string.usb_result_problem_space
@@ -102,7 +110,7 @@ private fun TransferResultDialog(record: UsbTransferRecord, persistent: Boolean,
             if (details) {
                 Text(transferTime(record.time) + "\n" + record.drive, style = MaterialTheme.typography.bodySmall)
                 record.files.forEach { Text(stringResource(R.string.usb_result_file, it.name,
-                    Formatter.formatShortFileSize(context, it.size)), style = MaterialTheme.typography.bodyMedium) }
+                    transferSizes(it.size, it.allocatedBytes, it.allocationUnitBytes)), style = MaterialTheme.typography.bodyMedium) }
                 // Names, exact byte counts, raw failure reasons and firmware notes are deliberately folded.
                 SelectionContainer { Text(diagnosticText, style = MaterialTheme.typography.bodySmall) }
             }

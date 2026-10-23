@@ -30,19 +30,35 @@ class UsbTransferHistoryTest {
         try {
             val store = UsbTransferHistory(dir.resolve("history.json"))
             val record = UsbTransferRecord(id = "partial", time = 1_792_723_400_000, drive = "SE400 직접 연결",
-                files = listOf(UsbTransferredFile("LEMON_1.PES", 12_345)),
+                files = listOf(UsbTransferredFile("LEMON~1.PES", 12_345, 16384, 4096, "Embroidery Lemon.pes")),
                 failures = listOf("안 된 도안.pes" to "FAT12 file read-back differs: BROKEN.PES"),
                 notices = setOf(UsbTransferNotice.NAME_COLLISION), technical = "FAT1: 00 00 00\nMBR length clamped\n\"raw\"")
             store.add(record)
             val restored = store.read().pending!!
             assertEquals(record, restored)
+            assertEquals(16384L, restored.allocatedBytes)
+            assertEquals(4096, restored.allocationUnitBytes)
+            assertContains(restored.diagnostics(), "allocated=16384 bytes; cluster=4096 bytes; source=Embroidery Lemon.pes")
             assertEquals(UsbTransferOutcome.PARTIAL, restored.outcome)
             assertEquals(UsbTransferProblem.VERIFY, restored.problem)
             assertNull(restored.remainingBytes)
-            assertContains(restored.diagnostics(), "Sent: LEMON_1.PES; 12345 bytes")
+            assertContains(restored.diagnostics(), "Sent: LEMON~1.PES; 12345 bytes")
             assertContains(restored.diagnostics(), "Remaining bytes: unknown")
             assertContains(restored.diagnostics(), "안 된 도안.pes")
             assertContains(restored.diagnostics(), record.technical)
+        } finally { dir.deleteRecursively() }
+    }
+
+    @Test fun `legacy logs without allocation fields remain readable and unknown instead of assuming 4KB`() {
+        val dir = Files.createTempDirectory("usb-history-legacy").toFile()
+        try {
+            val file = dir.resolve("history.json")
+            file.writeText("""{"pendingId":"old","records":[{"id":"old","time":1,"drive":"USB","files":[{"name":"EMBROIDE.PES","size":10120}],"failures":[],"remainingBytes":389120,"notices":[],"technical":"old log"}]}""")
+            val record = UsbTransferHistory(file).read().pending!!
+            assertEquals(10120L, record.files.single().size)
+            assertNull(record.allocatedBytes)
+            assertNull(record.allocationUnitBytes)
+            assertNull(record.files.single().sourceName)
         } finally { dir.deleteRecursively() }
     }
 

@@ -103,7 +103,7 @@ class UsbExporter(private val context: Context) {
                 val actualName = doc.name ?: name
                 existing += actualName
                 exported += actualName
-                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong())
+                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong(), sourceName = design.name)
                 if (name != prepared.fileName) notices += UsbTransferNotice.NAME_COLLISION
                 if (prepared.converted) converted++
             }.onFailure { failures += design.name to (it.message ?: it.javaClass.simpleName) }
