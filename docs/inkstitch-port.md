@@ -955,3 +955,46 @@ J(-409.6,75) → S`(mm)이며 포트는 `J(0,-75) → S`다.
 출력: `/tmp/myembro-port-out/letter/font-residuals/residuals.{json,md}`.
 검증: 4건 모두 `INITIAL_NEEDLE_UP_TRIM_ONLY`, unresolved0, 스크립트 종료0.
 엔진 생성 로직·게이트·오라클 캐시는 수정하지 않았다.
+
+### 글꼴 NPE7건·bean/fill 연결 회귀
+
+원인: `InkStitchLettering.render`가 파라미터의 keys를 순회하면서 `params[key]!!`를
+호출했다. accessor는 빈/공백 속성에서 null을 반환하므로 NPE가 났다.
+원본 `lib/elements/element.py:get_param`@b0edd96311ece82ee48816dc93466274b12c2a9c는
+`.strip()` 후 빈 값이면 default를 사용한다. 이제 빈 속성을 제외하고 해당 포트의 기본값을 쓴다.
+7글꼴 모두 빈 속성이 있었다: chicken_scratch164, digory_doodles_bean193,
+emilio_20_applique8, emilio_20_bold8, manga_impact347, precious10, roaring_twenties_KOR_small368개.
+Roaring Twenties에는 `.&` 숫자도 있어 `get_float_param`처럼 SVG 숫자 실패 시
+기본값으로 처리하는 `SatinParametersCodec.decodeSvg`를 추가했다. 프로젝트 `decode`는
+기존 엄격한 입력 검증·round-trip 계약을 유지한다.
+
+연결(새 스티치 알고리즘 구현 없음):
+- InkRun → worker `elements/Stroke` + `StrokeParameters.fromAttributes`: bean/repeats,
+  전체 subpath의 종료 trim/stop을 원본 facade처럼 마지막 그룹에 한 번 적용한다.
+- InkFill → model의 staging/s2s3 **4899d66**의 `FillParameters`, `FillUnderlay`,
+  `TatamiFill/FillRouting`과 관련 파일을 변경 없이 가져왔다. JGraphT 및 라이선스도
+  같은 snapshot의 의존성과 고지를 따른다. 기존 native `InkAutoFill`은 변경하지 않았다.
+- `FontTatami`는 좌표·그룹 연결 어댑터다. SVG px를 유지하고 SVG fill-rule로
+  영역/홀을 구성하며, 컴포넌트별 언더레이→본 채움, 원본 최근접 다음 컴포넌트 끝 위치,
+  태그 jump 분리, 색·원본 잠금/최소 길이·trim/stop을 S1 한 번에 넘긴다.
+  원본 대조: `fill_stitch.py:to_stitch_groups/do_underlay/do_tatami_fill` (동일 고정 upstream).
+  본 단위는 기본 tatami/auto_fill만 연결한다. 다른 fill_method를 임의로 태타미로 바꾸지 않는다.
+
+`InkFontElementRegressionTest`: CI에서 외부 파일 없이 빈 속성·잘못된 숫자·bean·
+홀 있는 fill/PES 왕복4건 실행. 별도 로컬 글꼴7건은 환경변수로 release 데이터 경로를
+지정해 실행하며 입력 폰트는 저장소에 번들하지 않는다. KOR_small도 실제 스윕처럼
+**Hamburg**로 재현한다(이 글꼴의 기록은 Latin이며 가나다를 지원한다고 가정하지 않는다).
+model의 FillParameters/FillCore/FillUnderlay/FillRandomRunning 테스트도 그대로 포함했다.
+
+```sh
+INKSTITCH_REGRESSION_ROOT=/tmp/myembro-port-out/letter/font-crashes/inputs \
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check
+```
+
+결과: 엔진502개·앱 Debug/Release 각177개 실패0, Lint 및 전체check 통과.
+로컬7글꼴 모두 렌더·PES 왕복 통과, 기존 고정 오라클4건 통과.
+Hamburg 땀 수: chicken1370, digory1870, applique23914, bold18588,
+manga1743, precious5289, KOR_small826.
+재현 파일·입력 해시·빈 속성 예시·전후 XML·출력:
+`/tmp/myembro-port-out/letter/font-crashes/`. 이는 crash/연결 회귀 판정이며
+독립 게이트·실제 봉제·전체 카탈로그 인증으로 확대하지 않는다.
