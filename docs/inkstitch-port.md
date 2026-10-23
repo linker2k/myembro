@@ -915,3 +915,43 @@ main의 Lint 수정·S1 처리 통계/옵션을 병합했다. S2 PEC 트림과 �
 `./gradlew check`: **BUILD SUCCESSFUL**. 엔진450개, 앱 Debug177개·Release177개 실패0,
 Android Lint 통과. 공식 고정 오라클4건도 땀 수·트림·좌표 검사를 유지한다.
 CI는 main의 모든 브랜치 push 트리거와 전체 engine-test-results 아티팩트를 따른다.
+
+### 글꼴 92/96의 잔여4건 계산 분해
+
+대상은 독립 비교 `latest-letter-fonts/df7da347cda358092a4ee29c19fe256474f12913/`의
+`forceBoundaryLocks=false` 4건이다. testfont·압축·multifile·압축multifile 모두
+**150mm BAAB**이며 원인은 동일하다. 정책상 시작 잠금을 강제하는 true 결과와 혼합하지 않는다.
+
+| 지표 | 공식 / 포트 (4건 공통) |
+|---|---|
+| 바늘 수 | 850 / 850 |
+| Hausdorff (bbox 중심 평행이동만) | 0.1mm |
+| 전체 트림 | 8 / 7 |
+| 첫 바늘 command index (0부터) | 4 / 1 |
+| 첫 바늘 이후 제어 순서·수 | 일치 (TRIM 7 / 7) |
+| 첫 바늘 이후 제어 위치 최대 편차 | 0.0mm |
+
+공식 초기 명령은 `J(-184.6,75) → J(-297.1,75) → T(-297.1,75) →
+J(-409.6,75) → S`(mm)이며 포트는 `J(0,-75) → S`다.
+공식 첫 J는 PEC viewport 위치 prefix이고, 다음 **225mm** 위치 이동은 축당 최대
+**204.7mm**를 넘어 **112.5mm 두 구간**으로 나뉜다. 따라서 첫 실제 바늘 전에만
+추가 trimjump가 하나 생긴다. 전체850개 바늘 경로와 봉제 중 트림7개에는 차이가 없다.
+
+원본 대조(읽기만):
+- Ink/Stitch `lib/output.py:write_embroidery_file`
+  @b0edd96311ece82ee48816dc93466274b12c2a9c: origin translate, full_jump/trims 출력 설정.
+- pystitch `PecWriter.py:pec_encode`, `MAX_JUMP_DISTANCE=2047`
+  @8fc0b113e02ea81d9a507bfad3f7fd624a8895bd: init에서 첫 J만 jump, 이후 J는 trimjump.
+- 같은 커밋 `EmbEncoder.py:interpolate_gap_stitches`, `jump_to`: 축 최대 길이로 ceil 분할.
+- 포트 `io/PecWriter.kt:normalizePattern`의 원점에서 시작하는 이동 정규화와 비교.
+
+**허용 차이로 문서화**: 첫 바늘 이전의 절대 배치/PEC 직렬화에서 생긴 needle-up 트림1개다.
+글자 경로를 바꾸거나 앱 PES 원점을 공식 SVG의 배치로 억지로 옮기지 않는다.
+공식 비교기의 `TRIM_STOP_COLOR_ORDER`와 **92/96 판정은 변경하지 않았고**,
+독립 판정자가 이 분해 근거를 검토해야 한다. 일반 트림 누락의 포괄 예외로 확대하지 않는다.
+
+재현: `python3 tools/breakdown-font-residuals.py` (JSON/gzip 읽기만, 최대10건).
+입력 PES SHA·캐시 identity를 검사하고 처음 바늘 이후 모든 제어 명령과 좌표를 비교한다.
+출력: `/tmp/myembro-port-out/letter/font-residuals/residuals.{json,md}`.
+검증: 4건 모두 `INITIAL_NEEDLE_UP_TRIM_ONLY`, unresolved0, 스크립트 종료0.
+엔진 생성 로직·게이트·오라클 캐시는 수정하지 않았다.
