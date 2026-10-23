@@ -122,3 +122,6 @@ tasks.register("koreanTtfSweepClasspath") {
         out.writeText(sourceSets.test.get().runtimeClasspath.asPath)
     }
 }
+
+// Release sweeps render many patterns in parallel.
+tasks.test { maxHeapSize = "3g" }

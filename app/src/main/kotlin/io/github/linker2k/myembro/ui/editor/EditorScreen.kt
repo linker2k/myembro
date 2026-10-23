@@ -279,6 +279,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             key(vm.letteringTargetId) {
                 var showFonts by rememberSaveable { mutableStateOf(false) }
                 var pickedFontId by rememberSaveable { mutableStateOf<String?>(null) }
+                var fontsText by rememberSaveable { mutableStateOf("") }
                 val closeFonts = { showFonts = false }
                 ModalBottomSheet(onDismissRequest = vm::dismissLettering,
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), sheetMaxWidth = 720.dp,
@@ -287,13 +288,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         // Keep the draft composed underneath the library: text and every setting survive a pick/back.
                         LetteringScreen(onBack = vm::dismissLettering,
                             onAdd = { if (vm.commitLettering(it)) { preview = 1f; activeTool = 0 } },
-                            onOpenFonts = { showFonts = true },
+                            onOpenFonts = { text -> fontsText = text; showFonts = true },
                             modifier = Modifier.fillMaxSize(), hoop = vm.project.hoop,
                             initialFontId = pickedFontId, backgroundPattern = background, initialObject = original)
                         if (showFonts) {
                             BackHandler(onBack = closeFonts)
                             FontLibraryScreen(onBack = closeFonts,
-                                onPick = { id -> pickedFontId = id; closeFonts() })
+                                onPick = { id -> pickedFontId = id; closeFonts() }, text = fontsText)
                         }
                     }
                 }

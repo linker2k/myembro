@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
@@ -67,7 +68,8 @@ import kotlinx.coroutines.withContext
 /**
  * Standalone lettering route. The host adds [onAdd]'s object to its editor/history and
  * closes the route. [backgroundPattern] can show the current project in the hoop.
- * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only.
+ * Return a picked installed font through [initialFontId]; [onOpenFonts] is navigation only and gets
+ * the current text, so the library can dim embroidery fonts that lack its characters.
  * Download/import UI stays with the host; every host must provide its font-library route.
  * A supplied [initialFontId] takes precedence over the object font after a library pick.
  * [initialObject] reopens an existing text object with its settings; the host keeps its id
@@ -77,7 +79,7 @@ import kotlinx.coroutines.withContext
 fun LetteringScreen(
     onBack: () -> Unit,
     onAdd: (TextObject) -> Unit,
-    onOpenFonts: () -> Unit,
+    onOpenFonts: (text: String) -> Unit,
     modifier: Modifier = Modifier,
     hoop: HoopSpec = HoopSpec.H100,
     initialText: String = "봄날",
@@ -96,7 +98,7 @@ fun LetteringScreen(
 private fun LetteringContent(
     onBack: () -> Unit, onAdd: (TextObject) -> Unit, modifier: Modifier,
     hoop: HoopSpec, initialText: String, initialFontId: String,
-    backgroundPattern: EmbPattern?, onOpenFonts: () -> Unit, initialObject: TextObject?,
+    backgroundPattern: EmbPattern?, onOpenFonts: (text: String) -> Unit, initialObject: TextObject?,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -233,7 +235,8 @@ private fun LetteringContent(
             LetteringCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel(stringResource(R.string.lettering_fonts), Modifier.weight(1f))
-                    TextButton(onClick = onOpenFonts, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                    TextButton(onClick = { onOpenFonts(text) },
+                        contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(stringResource(R.string.lettering_all_fonts), style = MaterialTheme.typography.labelMedium)
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
                     }
@@ -463,8 +466,8 @@ private fun decimal(value: Double): String = String.format(Locale.getDefault(), 
 
 @Preview(showBackground = true, widthDp = 411, heightDp = 1000)
 @Composable
-private fun LetteringLightPreview() { MyembroTheme(darkTheme = false) { LetteringScreen({}, {}, onOpenFonts = {}) } }
+private fun LetteringLightPreview() { MyembroTheme(darkTheme = false) { LetteringScreen({}, {}, onOpenFonts = { _ -> }) } }
 
 @Preview(showBackground = true, widthDp = 411, heightDp = 1000)
 @Composable
-private fun LetteringDarkPreview() { MyembroTheme(darkTheme = true) { LetteringScreen({}, {}, onOpenFonts = {}) } }
+private fun LetteringDarkPreview() { MyembroTheme(darkTheme = true) { LetteringScreen({}, {}, onOpenFonts = { _ -> }) } }

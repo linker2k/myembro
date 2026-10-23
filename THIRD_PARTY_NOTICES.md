@@ -47,6 +47,17 @@ derived from the following projects, whose notices are reproduced as their licen
   data, or other assets were copied into that implementation; no remote code was executed.
   The newer source-derived ports under `engine/.../inkstitch/` are separately attributed below.
 
+## Ink/Stitch embroidery fonts (downloaded data; stitch previews bundled)
+
+- Source: https://github.com/inkstitch/embroidery-fonts at commit
+  `c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8`; per-font licenses (OFL-1.1, CC BY-SA, CC BY,
+  CC0/public domain, GPL-3.0) are listed in `docs/inkstitch-fonts.md`.
+- `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
+  The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
+  the license beside it. No font file is in this repository or the APK; `assets/fonts/previews/` holds one
+  small picture per font of its stitches (the sample "Abc"), rendered from that font under its own
+  license (OFL-1.1, CC BY / BY-SA, GPL-3.0 or public domain, as listed in the catalog with its authors).
+
 ## pyembroidery
 
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)

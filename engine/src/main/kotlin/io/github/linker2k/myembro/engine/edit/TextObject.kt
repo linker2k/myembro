@@ -2,6 +2,8 @@
 package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchLettering
 import io.github.linker2k.myembro.engine.lettering.LetteringEngine
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
@@ -11,7 +13,8 @@ import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 
-enum class FontKind { HERSHEY, OUTLINE }
+/** INKSTITCH: a pre-digitized Ink/Stitch font resolved by [fontId] through [InkStitchFontRegistry]. */
+enum class FontKind { HERSHEY, OUTLINE, INKSTITCH }
 
 /** Editable text. Height and extra character spacing are in mm. */
 data class TextObject(
@@ -78,6 +81,11 @@ data class TextObject(
                 contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = resolvedSatin,
                 fillOptions = resolvedFill, contourCharacters = contourCharacters, outline = !singleLine,
             )
+            // The font carries its own stitch types and parameters; style, weight and density settings do not apply.
+            FontKind.INKSTITCH -> InkStitchFontRegistry[fontId]?.let { font ->
+                InkStitchLettering.render(font, text, heightMm, thread, letterSpacingMm = spacing,
+                    lineHeightMm = lineSpacing * heightMm, alignment = alignment)
+            } ?: EmbPattern(emptyList(), emptyList(), warnings = listOf("Ink/Stitch font $fontId is not installed"))
         }
     }
 

@@ -82,6 +82,7 @@
     <string name="lettering_contour_underlay">Contour underlay</string>
     <string name="lettering_zigzag_underlay">Zigzag underlay</string>
     <string name="lettering_unsafe_density">Too many needle penetrations in a 0.5mm cell (%1$d; limit %2$d). Increase letter size or spacing.</string>
+    <string name="lettering_missing_glyphs">Not in this font (left out): %1$s</string>
 
     <string name="lettering_automatic_running">Automatic · Running</string>
     <string name="lettering_automatic_satin">Automatic · Satin</string>
