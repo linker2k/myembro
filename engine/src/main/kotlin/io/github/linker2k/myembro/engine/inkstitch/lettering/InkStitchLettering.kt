@@ -31,9 +31,9 @@ object InkStitchLettering {
             val params=element.params
             val boundary=groups.isEmpty() || groups.last().trimAfter || groups.last().stopAfter || groups.last().color!= (thread ?: EmbThread(element.color))
             // Product policy uses the upstream force flag only at a real thread boundary.
-            // As in element.py, this flag alone does not override ties=3 for lock_start.
+            // Coordinator policy also sets upstream ties=0 here: force alone only enables lock_end.
             val attrs=params.names.associateWith { params[it]!! }.let {
-                if(forceBoundaryLocks && boundary) it + ("force_lock_stitches" to "true") else it
+                if(forceBoundaryLocks && boundary) it + mapOf("force_lock_stitches" to "true", "ties" to "0") else it
             }
             val effective=InkStitchParams(attrs)
             val locks=LockStitches.fromParameters(LockStitchParameters.fromAttributes(attrs))

@@ -486,3 +486,16 @@ Hausdorff 수치만 대표4건(최대10건 제한)에 다시 계산한다. 원�
 출력은 `/tmp/myembro-port-out/letter/font-defaults/breakdown/cases.{json,md}`다.
 공식 raw 기본값 비교에는 `forceBoundaryLocks=false`를 명시한다. 이는 승인된 제품 경계 force
 정책과 원본 기본값을 혼동하지 않기 위한 재현 인자이며 UI 설정을 추가하지 않는다.
+
+#### 총괄 후속 확정: 첫 요소 ties=0 + force 적용
+
+총괄 답변으로 시작·trim/stop·색 변경 뒤 첫 요소에 `ties=0`도 함께 적용했다.
+원본 `LockStitches.fromParameters`가 기본 half_stitch를 만들며 S1 후처리는 한 번뿐이다.
+내부 요소의 ties는 보존한다. 비교용 raw 기본값 모드(`forceBoundaryLocks=false`)에서는
+이 두 제품 정책 override를 모두 생략한다. 출력용 배치 SVG에도 동일한 두 속성을 기록했다.
+첫 바늘이 S1 lock 태그를 갖는 회귀 테스트와 전체 엔진360개 테스트가 통과했다.
+
+**Jung Min 12mm: 기존 --text 게이트 PASS**, 공식 오라클 출력은 아직 없어 미판정이다.
+20/30mm는 이번 판정 범위에서 제외했다. 대표 기본값 분해는 AB 4/10/20mm 42/42,65/66,89/91,
+같은 reversible=false 메타데이터의 두 줄10mm 130/132다. 완전 동등 통과는 아니며
+PEC 출력 트림 계약과 glyph 직렬화 정밀도 차이는 별도 후속 작업으로 남는다.

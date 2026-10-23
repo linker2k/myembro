@@ -24,7 +24,9 @@ class InkFontNameReproductionTest {
             assertTrue(elements.any { it is InkSatin })
             assertFalse(elements.any { it is InkFill })
             val pattern=InkStitchLettering.render(font,"Jung Min",height,EmbThread(0xFF000000.toInt()))
-            assertTrue(pattern.metadata.getValue(GeneratedPatternProcessor.LOCK_INDICES_KEY).isNotBlank())
+            val lockIndices=pattern.metadata.getValue(GeneratedPatternProcessor.LOCK_INDICES_KEY).split(',').map(String::toInt).toSet()
+            val firstNeedle=pattern.stitches.indexOfFirst { it.command==io.github.linker2k.myembro.engine.model.Command.STITCH }
+            assertTrue(firstNeedle in lockIndices,"The first thread start must use S1 half_stitch")
             val id="aventurina-jung-min-${height.toInt()}mm"
             val file=root.resolve("$id.pes").apply { writeBytes(PesWriter.write(pattern)) }
             assertEquals(pattern.stitchCount,PesReader.read(file.readBytes()).stitchCount)
