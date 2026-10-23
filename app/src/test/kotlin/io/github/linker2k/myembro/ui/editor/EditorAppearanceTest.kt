@@ -34,6 +34,7 @@ class EditorAppearanceTest {
         assertEquals(a.source.stitches, recolored.source.stitches)
         assertEquals(a.transform, recolored.transform)
         assertNull(recolored.sourceBytes)
+        assertTrue(recolored.sourceThreadsEdited)
         assertContentEquals(byteArrayOf(1, 2, 3), a.sourceBytes)
         val session = EditorSession(Project(objects = listOf(a)))
         session.commit(session.project.replace(recolored))

@@ -55,3 +55,13 @@ from `placedPattern()` with `HOOP_BOUNDARY_TOLERANCE_MM` (0.05 mm) tolerance.
 Snaps use inward-rounded `sewingArea.snapBounds`; the rounded decorative hoop is
 not the sewing boundary. The editor suppresses overflow warnings during gestures
 and evaluates the final snapshot after pointer-up.
+
+
+Imported-source migration: `ProjectJson.decode(text, sourceResolver = resolver)` rereads embedded
+bytes first, then optionally resolves `sourceFileName` through an app-owned `ProjectSourceResolver`.
+New threads/reader results are accepted only when command count and every x/y coordinate match.
+Matched external bytes are retained in the restored object. Missing/mismatched originals preserve
+saved data. Set `StitchObject.sourceThreadsEdited = true` for explicit thread edits; dropping
+`sourceBytes` alone no longer prevents the optional library resolver from refreshing threads.
+The app's file/SAF and automatic draft readers share this migration. See `docs/colors.md` for legacy
+unmarked recoloring and display-only invalid-name fallbacks.

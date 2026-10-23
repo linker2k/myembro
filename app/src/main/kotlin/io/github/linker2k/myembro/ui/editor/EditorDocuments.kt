@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui.editor
 
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.ProjectJson
+import io.github.linker2k.myembro.engine.edit.ProjectSourceResolver
 import java.io.File
 
 /** A replacement is only installed after its reader succeeds. The old History survives failures. */
@@ -31,10 +32,14 @@ internal class EditorDocuments {
     }
 }
 
+/** File/SAF project opening and automatic recovery share the same source migration. */
+internal fun readEditorProject(text: String, sourceResolver: ProjectSourceResolver? = null): Project =
+    ProjectJson.decode(text, sourceResolver = sourceResolver)
+
 /** One recoverable editable snapshot; atomic rename keeps the previous draft on write failure. */
-internal class EditorDraftStore(private val directory: File) {
+internal class EditorDraftStore(private val directory: File, private val sourceResolver: ProjectSourceResolver? = null) {
     private val target get() = File(directory, "editor.myembro")
-    fun read(): Project? = if (target.isFile) ProjectJson.decode(target.readText()) else null
+    fun read(): Project? = if (target.isFile) readEditorProject(target.readText(), sourceResolver) else null
     fun write(project: Project?) {
         if (project == null) {
             check(!target.exists() || target.delete()) { "Could not clear editor draft" }

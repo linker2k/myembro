@@ -182,6 +182,8 @@ data class StitchObject(
     /** Optional original PES/PEC/DST bytes, retained verbatim by .myembro serialization. */
     val sourceBytes: ByteArray? = null,
     val sourceFileName: String? = null,
+    /** Explicit user recoloring must survive reader migrations and library source resolution. */
+    val sourceThreadsEdited: Boolean = false,
 ) : DesignObject {
     private val centered: EmbPattern by lazy { recenter(source) }
 

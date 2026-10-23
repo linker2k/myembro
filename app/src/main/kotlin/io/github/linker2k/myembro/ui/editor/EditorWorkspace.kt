@@ -318,7 +318,7 @@ private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         threads.forEachIndexed { i, thread -> ThreadSwatch(thread, i == index, enabled) { selectedIndex = i } }
     }
-    Text(listOfNotNull(current.brand, current.catalogNumber, current.description).joinToString(" · ").ifBlank { current.hex },
+    Text(current.displayDetails,
         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (obj != null) {
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -340,7 +340,7 @@ private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
 
 @Composable
 private fun ThreadSwatch(thread: EmbThread, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val label = listOfNotNull(thread.description, thread.hex).joinToString(" ")
+    val label = listOf(thread.displayName, thread.hex).distinct().joinToString(" ")
     // Thread RGB is design data; all UI chrome still comes from the theme.
     Box(Modifier.size(40.dp).clickable(enabled = enabled, onClick = onClick).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
         Surface(Modifier.size(32.dp), shape = CircleShape, color = Color(thread.color),

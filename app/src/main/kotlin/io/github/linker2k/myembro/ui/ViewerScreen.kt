@@ -406,7 +406,7 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
                     Box(Modifier.size(32.dp).background(Color(block.thread.color), CircleShape)
                         .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape))
                 }
-                Text(block.thread.description ?: block.thread.hex,
+                Text(block.thread.displayName,
                     style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(stringResource(R.string.viewer_thread_stitches, counts[i]),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
