@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.edit
 
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
-import io.github.linker2k.myembro.engine.model.Stitch
-import kotlin.math.roundToInt
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchLettering
@@ -46,7 +43,7 @@ data class TextObject(
     val contourBaselines: List<Double> = emptyList(),
     /** Also true for imported single-line SVGs stored as precomputed contours. */
     val singleLine: Boolean = fontKind == FontKind.HERSHEY,
-    val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.FILL,
+    val stitchStyle: StitchStyle = StitchStyle.RUNNING,
     val satinOptions: SatinOptions = SatinOptions(),
     val fillOptions: FillOptions = FillOptions(),
     val threadWeight: ThreadWeight = ThreadWeight.WT40,
@@ -68,7 +65,9 @@ data class TextObject(
         satinOptions = satinOptions.copy(autoDensity = true),
     )
     private val pattern: EmbPattern by lazy {
-        val resolvedSatin = satinOptions.copy(densityMm = satinOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
+        val spacingMm = satinOptions.densityForHeight(heightMm, threadWeight)
+        val resolvedSatin = satinOptions.copy(densityMm = spacingMm, autoDensity = false,
+            parameters = satinOptions.parameters?.let { if (satinOptions.autoDensity) it.copy(zigzag_spacing_mm = spacingMm) else it })
         val resolvedFill = fillOptions.copy(densityMm = fillOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
         when (fontKind) {
             FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
@@ -77,6 +76,7 @@ data class TextObject(
             FontKind.OUTLINE -> LetteringEngine.fromContours(
                 contours, heightMm, arcDeg = arcDeg, thread = thread,
                 baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
+                simplify = false, mergeToleranceMm = 0.2, // Ink/Stitch stroke getter default, no extra Douglas–Peucker pass.
                 contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
                 contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = resolvedSatin,
                 fillOptions = resolvedFill, contourCharacters = contourCharacters, outline = !singleLine,
@@ -90,14 +90,6 @@ data class TextObject(
     }
 
     override fun localPattern(): EmbPattern = pattern
-    /** Rebuild machine-length locks AFTER placement/scaling; imported StitchObjects are never rewritten. */
-    override fun placedPattern(): EmbPattern {
-        val placed = pattern.stitches.map { s ->
-            val (x, y) = transform.apply(s.x.toDouble(), s.y.toDouble())
-            Stitch(x.roundToInt(), y.roundToInt(), s.command)
-        }
-        return StitchPlanFinisher.finish(EmbPattern(placed, pattern.threads, pattern.metadata, pattern.warnings), rebuild = true)
-    }
     override fun withId(id: String): TextObject = copy(id = id)
     override fun withTransform(t: Transform): TextObject = copy(transform = t)
     override fun withVisible(v: Boolean): TextObject = copy(visible = v)

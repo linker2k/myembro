@@ -63,7 +63,7 @@ class OutlineLetteringTest {
             if (s.command == Command.JUMP) {
                 if (i > 0) assertEquals(Command.TRIM, pattern.stitches[i - 1].command)
                 start = s.x to s.y
-                assertTrue(hypot((s.x-pattern.stitches[i+1].x).toDouble(),(s.y-pattern.stitches[i+1].y).toDouble()) in 3.0..5.0)
+                assertEquals(s.x to s.y,pattern.stitches[i+1].x to pattern.stitches[i+1].y) // Source half-stitch anchor.
             }
             if (s.command == Command.TRIM || s.command == Command.END) {
                 assertEquals(start, s.x to s.y, "each contour returns to its own start")
@@ -119,12 +119,12 @@ class OutlineLetteringTest {
             contours = listOf(box(), box(150.0)), contourCharacters = listOf(0, 1), heightMm = 10.0, thread = thread,
         )
         assertEquals(listOf(thread), obj.localPattern().threads)
-        assertEquals(104, assertNotNull(obj.localPattern().bounds).height)
+        assertEquals(100, assertNotNull(obj.localPattern().bounds).height)
         val pattern = Project(objects = listOf(obj)).flatten()
         val decoded = PesReader.read(PesWriter.write(pattern))
         assertEquals(pattern.bounds, decoded.bounds)
         assertEquals(pattern.stitchCount, decoded.stitchCount)
         assertTrue(decoded.trimCount > 0)
-        assertEquals(204, assertNotNull(obj.copy(heightMm = 20.0).localPattern().bounds).height)
+        assertEquals(200, assertNotNull(obj.copy(heightMm = 20.0).localPattern().bounds).height)
     }
 }

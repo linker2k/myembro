@@ -47,4 +47,14 @@ class SatinElementContractTest {
         assertTrue(zig.dropLast(1).flatMap { it.stitchTags }.any { "split_stitch" in it })
     }
 
+    @Test fun defaultSatinUsesWorkerHalfStitchAndDoesNotApplyAnEightPunctureGeneratorCap() {
+        val group=SatinColumn(listOf(point(0.0,0.0),point(0.0,1.0)),
+            listOf(point(1.0,0.0),point(1.0,1.0)),SatinParameters(zigzag_spacing_mm=.05)).toStitchGroups(null).single()
+        assertEquals("half_stitch", (group.lockStart as InkLockStitch).lock_id)
+        assertEquals("half_stitch", (group.lockEnd as InkLockStitch).lock_id)
+        val plan=GeneratedPatternProcessor.fromGroups(listOf(group))
+        assertTrue(plan.stitchCount>20)
+        assertTrue(plan.metadata.getValue(GeneratedPatternProcessor.LOCK_INDICES_KEY).isNotBlank())
+    }
+
 }

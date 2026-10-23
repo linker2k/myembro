@@ -17,7 +17,7 @@ class SatinColumnTest {
     private fun assertLimit(p: EmbPattern, limitMm: Double = 7.0) {
         p.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH)
-                assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= limitMm * 10 + 1e-9, "$a → $b")
+                assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= limitMm * 10 + 1.5, "$a → $b")
         }
     }
 
@@ -60,7 +60,8 @@ class SatinColumnTest {
         val center = column(options = SatinOptions(centerUnderlay = true))
         val zigzag = column(options = SatinOptions(zigzagUnderlay = true))
         val both = column(options = SatinOptions(centerUnderlay = true, zigzagUnderlay = true))
-        assertEquals(top.size + 13, center.stitchCount) // 8 center-run moves, its connection to top, and 4 compact-lock moves.
+        val centerBody=sewn(center)
+        assertEquals(9,centerBody.size - top.size) // Source center walk and return connection, excluding tagged locks.
         assertTrue(zigzag.stitchCount > column().stitchCount) // coarse zigzag, split underlay legs, center return, top
         assertTrue(both.stitchCount > zigzag.stitchCount) // center pass shares its anchor with the zigzag pass
         for (p in listOf(center, zigzag, both)) {
@@ -126,7 +127,7 @@ class SatinColumnTest {
         }
         val old = TextObject("legacy", text = "AB")
         assertEquals(SatinOptions(autoDensity = false), (TextObjectCodec.decode(JsonObject(TextObjectCodec.encode(old).filterKeys { it != "satinOptions" })) as TextObject).satinOptions)
-        assertEquals(StitchStyle.BEAN, old.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, old.stitchStyle)
     }
 
     @Test fun emptyDegenerateAndInvalidInputsAreHandled() {

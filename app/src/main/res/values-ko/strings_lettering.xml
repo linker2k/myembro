@@ -31,7 +31,7 @@
     <string name="lettering_gold">골드</string>
     <string name="lettering_close">닫기</string>
     <string name="lettering_unsupported">이 폰트에 없는 글자가 있어요. 다른 폰트를 선택해 주세요.</string>
-    <string name="lettering_outside">글자가 후프를 벗어났어요. 크기나 자간을 줄여 주세요.</string>
+    <string name="lettering_outside">글자가 후프를 벗어났어요. 크기를 줄이거나 문구를 짧게 해 주세요.</string>
     <string name="lettering_quality_height">권장 최소 글자 높이: %1$s</string>
     <string name="lettering_quality_check">가늘거나 맞닿은 획을 확인해 주세요.</string>
     <string name="lettering_quality_hint">가는 획은 자수에서 뭉칠 수 있어요. 크기를 키우거나 굵은 폰트를 골라 보세요.</string>
@@ -83,4 +83,13 @@
     <string name="lettering_zigzag_underlay">지그재그 언더레이</string>
     <string name="lettering_unsafe_density">0.5mm 셀에 바늘이 집중돼 생성을 막았습니다(%1$d회, 상한 %2$d회). 글자 크기나 간격을 늘려 주세요.</string>
     <string name="lettering_missing_glyphs">이 글꼴에 없는 글자(빠짐): %1$s</string>
+
+    <string name="lettering_automatic_running">자동 · 러닝</string>
+    <string name="lettering_automatic_satin">자동 · 새틴</string>
+    <string name="lettering_automatic_unconfirmed">자동 · 미확인</string>
+    <string name="lettering_range_unconfirmed">검증 범위 미확인</string>
+    <string name="lettering_checking_range">검증 범위 확인 중…</string>
+    <string name="lettering_validated_range">검증 범위: %1$s</string>
+    <string name="lettering_satin_unconfirmed_running">새틴 검증 범위 미확인 · 러닝 적용</string>
+    <string name="lettering_height_invalid">0보다 큰 유효한 높이(mm)를 입력해 주세요.</string>
 </resources>

@@ -9,7 +9,7 @@ import io.github.linker2k.myembro.engine.geometry.PolygonRegion
 import io.github.linker2k.myembro.engine.geometry.Polyline
 import io.github.linker2k.myembro.engine.inkstitch.elements.SatinColumn
 import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkAutoFill
 import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
@@ -28,7 +28,7 @@ import kotlin.math.roundToInt
  * Text in an [InkStitchFont], laid out as Ink/Stitch lettering does (glyph extents, `horiz_adv_x`,
  * kerning pairs, word spacing, leading, back-and-forth lines) and sewn by the shared Ink/Stitch ports
  * with each element's `inkstitch:*` parameters: satin columns by the satin port, running stitch and
- * tatami fill by the stitch ports, then the common stitch-plan finisher (ties, collapse, minimum
+ * tatami fill by the stitch ports, then the common generated-pattern processor (ties, collapse, minimum
  * lengths). Geometry scales with the text; stitch lengths and spacings stay in mm.
  */
 object InkStitchLettering {
@@ -54,7 +54,7 @@ object InkStitchLettering {
         val placements = layout(font, text, heightMm, letterSpacingMm, lineHeightMm, alignment, backAndForth)
         val sewer = Sewer(thread)
         for (p in placements) for (element in p.glyph.elements) sewer.add(element, p)
-        return StitchPlanFinisher.finish(sewer.pattern(mapOf("name" to text, "font" to font.info.name)), centerOutput = true)
+        return GeneratedPatternProcessor.finish(sewer.pattern(mapOf("name" to text, "font" to font.info.name)))
     }
 
     /**
@@ -146,6 +146,12 @@ object InkStitchLettering {
         }
 
         fun pattern(metadata: Map<String, String>): EmbPattern {
+            val sewn = stitches.filter { it.command == Command.STITCH }
+            if (sewn.isNotEmpty()) {
+                val cx = (sewn.minOf { it.x } + sewn.maxOf { it.x }) / 2
+                val cy = (sewn.minOf { it.y } + sewn.maxOf { it.y }) / 2
+                for (i in stitches.indices) stitches[i] = stitches[i].let { it.copy(x = it.x - cx, y = it.y - cy) }
+            }
             val last = stitches.lastOrNull()
             if (trimPending && last != null) stitches += last.copy(command = Command.TRIM)
             return EmbPattern(stitches + Stitch(last?.x ?: 0, last?.y ?: 0, Command.END), threads.toList(), metadata)

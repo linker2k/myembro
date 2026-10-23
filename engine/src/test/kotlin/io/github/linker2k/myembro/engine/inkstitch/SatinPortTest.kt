@@ -53,9 +53,10 @@ class SatinPortTest {
         assertEquals(4.0,top(SatinParameters(swap_satin_rails=true)).first().x,3e-6)
         val rails=pairs(a,b,rungs=listOf(MmRung(Point(-1.0,5.0),Point(5.0,7.0))))
         assertTrue(rails.any { abs(it.first.y-it.second.y)>1.0 })
-        assertFailsWith<IllegalArgumentException> {
-            layers(a,b,rungs=listOf(MmRung(Point(0.0,3.0),Point(4.0,7.0)),MmRung(Point(0.0,7.0),Point(4.0,3.0))))
-        }
+        // Source flattened_sections sorts cuts independently, even for crossing rung input.
+        val crossing=layers(a,b,rungs=listOf(MmRung(Point(0.0,3.0),Point(4.0,7.0)),MmRung(Point(0.0,7.0),Point(4.0,3.0))))
+        val sorted=layers(a,b,rungs=listOf(MmRung(Point(0.0,3.0),Point(4.0,3.0)),MmRung(Point(0.0,7.0),Point(4.0,7.0))))
+        assertPoints(sorted.last().points,crossing.last().points)
     }
     @Test fun subpathRailDetectionAndSynthesizedNodeRungsUseTheSameLadder() {
         val rung=MmRung(Point(-1.0,5.0),Point(5.0,7.0))

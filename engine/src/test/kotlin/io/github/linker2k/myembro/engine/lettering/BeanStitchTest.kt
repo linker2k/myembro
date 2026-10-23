@@ -49,16 +49,16 @@ class BeanStitchTest {
         assertTrue(bean.trimCount > 0)
     }
 
-    @Test fun newSingleLineFontsDefaultToBeanWhileOutlinesUseAutoFill() {
+    @Test fun newLetteringUsesRunningAndKeepsBeanAsAnExplicitLegacyOption() {
         val hershey = TextObject("hershey", text = "Ab")
         assertTrue(hershey.singleLine)
-        assertEquals(StitchStyle.BEAN, hershey.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, hershey.stitchStyle)
         assertEquals(LetteringEngine.generate("Ab").stitches, hershey.localPattern().stitches)
-        assertTrue(hershey.localPattern().stitchCount > hershey.copy(stitchStyle = StitchStyle.RUNNING).localPattern().stitchCount)
+        assertTrue(hershey.copy(stitchStyle = StitchStyle.BEAN).localPattern().stitchCount > hershey.localPattern().stitchCount)
         val outline = TextObject("outline", fontKind = FontKind.OUTLINE, contours = line)
-        assertEquals(StitchStyle.FILL, outline.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, outline.stitchStyle)
         val svg = TextObject("svg", fontKind = FontKind.OUTLINE, contours = line, singleLine = true)
-        assertEquals(StitchStyle.BEAN, svg.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, svg.stitchStyle)
         assertEquals(straight(StitchStyle.RUNNING).stitches,
             LetteringEngine.fromContours(line, 5.0, sourceHeight = 5.0).stitches)
     }

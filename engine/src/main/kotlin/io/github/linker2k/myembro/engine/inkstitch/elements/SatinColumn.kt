@@ -10,6 +10,7 @@ import io.github.linker2k.myembro.engine.inkstitch.utils.Point
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.InkLockStitch
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitch
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.geometry.Point as GeometryPoint
@@ -46,8 +47,8 @@ class SatinColumn(
     private val nextStitch:Point? = null,
     private val trim_after:Boolean = false,
     private val stop_after:Boolean = false,
-    private val lockStart:LockStitch? = null,
-    private val lockEnd:LockStitch? = null,
+    private val lockStart:LockStitch? = InkLockStitch(),
+    private val lockEnd:LockStitch? = InkLockStitch(),
     private val force_lock_stitches:Boolean = false,
 ) : EmbroideryElement {
     data class Rung(val a: Point, val b: Point, val points: List<Point> = listOf(a,b))
@@ -123,25 +124,43 @@ class SatinColumn(
         private fun sections(left:List<Point>,right:List<Point>,rungs:List<Rung>):List<Pair<Rail,Rail>> {
             val a=Rail(left);val b=Rail(right)
             if(rungs.isEmpty()) return listOf(a to b)
-            val cuts=rungs.map { rung ->
-                val crossing=line(rung.points)
-                // Reject ambiguous rungs; unlike upstream we do not silently discard a user's direction constraint.
-                fun intersection(rail:Rail):Coordinate {
-                    val hit=rail.geometry.intersection(crossing)
-                    if(hit.numPoints==1)return hit.coordinate
-                    // Original nearest_points survives precision-grid rounding at a touching endpoint.
-                    if(hit.isEmpty && rail.geometry.distance(crossing)<=.00002)
-                        return DistanceOp.nearestPoints(rail.geometry,crossing)[0]
-                    throw IllegalArgumentException("Each rung must intersect each rail exactly once")
+            val cuts = listOf(arrayListOf<Double>(), arrayListOf<Double>())
+            for (rung in rungs) {
+                val crossing = line(rung.points)
+                val intersections = crossing.intersection(factory.createMultiLineString(arrayOf(a.geometry,b.geometry)))
+                // flattened_sections: upstream ignores rungs with more than two point intersections.
+                if (intersections is MultiPoint && intersections.numGeometries > 2) continue
+                for ((i,rail) in listOf(a,b).withIndex())
+                    cuts[i] += rail.index.project(DistanceOp.nearestPoints(crossing,rail.geometry)[1])
+            }
+            // geometry.py:cut_multiple sorts each rail's cuts independently, preserving empty slots.
+            fun cutMultiple(rail: Rail, distances: List<Double>): List<Rail?> {
+                val segments = mutableListOf<Rail?>(rail)
+                var distanceSoFar = 0.0
+                var trailingEmpty = 0
+                for (distance in distances.sorted()) {
+                    val segment = requireNotNull(segments.removeAt(segments.lastIndex))
+                    val d = distance - distanceSoFar
+                    val (before,after) = when {
+                        d <= 0.0 -> null to segment
+                        d >= segment.length -> segment to null
+                        else -> Rail(segment.index.extractLine(0.0,d).coordinates.map(::point)) to
+                            Rail(segment.index.extractLine(d,segment.length).coordinates.map(::point))
+                    }
+                    segments += before
+                    if (after == null) trailingEmpty++ else {
+                        if (before != null) distanceSoFar += before.length
+                        segments += after
+                    }
                 }
-                a.index.project(intersection(a)) to b.index.project(intersection(b))
-            }.sortedBy { it.first }.filter { it.first>1e-9 && it.second>1e-9 && it.first<a.length-1e-9 && it.second<b.length-1e-9 }
-            val all=listOf(0.0 to 0.0)+cuts+(a.length to b.length)
-            require(all.zipWithNext().all { (p,q)->q.first>p.first && q.second>p.second }) { "Crossing or repeated rungs" }
-            return all.zipWithNext().map { (p,q)->
-                Rail(a.index.extractLine(p.first,q.first).coordinates.map(::point)) to Rail(b.index.extractLine(p.second,q.second).coordinates.map(::point))
+                repeat(trailingEmpty) { segments += null }
+                return segments
+            }
+            return cutMultiple(a,cuts[0]).zip(cutMultiple(b,cuts[1])).mapNotNull { (x,y) ->
+                if (x == null || y == null) null else x to y
             }
         }
+
         private fun separation(a:Point,b:Point,oldA:Point,oldB:Point):Double {
             val v=oldB-oldA
             if(v.norm()<.01*PX) return line(listOf(a,b)).distance(factory.createPoint(Coordinate(oldA.x,oldA.y)))
@@ -461,7 +480,7 @@ class SatinColumn(
         fun fromSubpaths(subpaths:List<List<Point>>,parameters:SatinParameters=SatinParameters(),
             nodePaths:List<List<Point>> = subpaths,color:EmbThread?=null,startPoint:Point?=null,endPoint:Point?=null,
             nextStitch:Point?=null,trim_after:Boolean=false,stop_after:Boolean=false,
-            lockStart:LockStitch?=null,lockEnd:LockStitch?=null,force_lock_stitches:Boolean=false):SatinColumn {
+            lockStart:LockStitch?=InkLockStitch(),lockEnd:LockStitch?=InkLockStitch(),force_lock_stitches:Boolean=false):SatinColumn {
             val (a,b,rungs)=ladder(subpaths,parameters,nodePaths)
             return SatinColumn(a,b,parameters,rungs,color,startPoint,endPoint,nextStitch,trim_after,stop_after,lockStart,lockEnd,force_lock_stitches)
         }

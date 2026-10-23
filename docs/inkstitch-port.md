@@ -166,9 +166,8 @@ StitchPlan -> 기존 EmbPattern/PES 어댑터
 공통 그룹의 잠금·최소 땀·트림·점프 정책을 한 번 적용해야 한다.
 `SatinColumn`은 이제 `EmbroideryElement`를 구현한다. `toStitchGroups(previousStitch)`가
 worker의 실제 `StitchGroup`을 반환한다. 레이어 간 러닝을 연결하고 색·태그·trim/stop·
-주입된 LockStitch·min length·force lock 설정을 보존한다. 공통 계약은 수동 DTO/어댑터여서
-아직 잠금/필터를 실행하지 않는다. 공통 PlanBuilder가 도착하면 앱의 임시
-`elements.InkSatin`/`stitch_plan.StitchPlanFinisher` 경계를 교체한다.
+주입된 LockStitch·min length·force lock 설정을 보존한다. S2는 S1 worker의
+`StitchPlanBuilder`/`GeneratedPatternProcessor`에 연결한다. 그룹 DTO 자체는 수동 계약이다.
 
 ### 폰트 파서 연결 예
 
@@ -222,21 +221,21 @@ BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 
 |---|---|---|
 | SVG 입력 | 코어는 SVG px 폴리라인과 원래 노드 목록을 받음 | Inkex의 path parsing/flattening은 canvas 담당. Bézier 엔진을 중복 구현하지 않음 |
 | 기하 | Shapely 대신 기존 JTS 1.20.0. 레일은 동일한 1e-5 SVG px precision grid 적용 | 교차·project·substring·offset의 수치 tie-break가 다를 수 있음. 바이트 동일성 미검증 |
-| 렁 | 다중 교차·교차 렁을 무시하지 않고 예외로 거절 | 방향 제약을 몰래 버려 부채꼴 경로를 생성하지 않기 위한 보수적 차이 |
+| 렁 | 원본처럼 >2점 교차 렁 무시, 각 레일 cut 정렬 후 zip, 빈 구간 제외 | 이전 crossing-rung 강제 거절 정책 제거. JTS 수치 오차는 별도 비교 대상 |
 | 불량 입력 | 점/명령 수 예산 초과·비유한 값은 거절 | 모바일 자원 제한; 원본의 무제한 크기 지원을 주장하지 않음 |
 | raw 코어 최소 길이 | 속성 미지정은 null로 유지하고 random split 계산에서만 metadata 기본 0.1mm를 사용; 전체 최소 땀 필터는 아직 적용하지 않음 | 원본도 그룹→StitchPlan 경계에서 전체 필터를 적용. worker 계약 소유권 유지 |
-| 공통 타입 연결 | `SatinColumn : EmbroideryElement`, 실제 공유 StitchGroup 반환. lockStart/End는 팩토리가 만든 객체를 주입받음 | worker의 수동 계약 병합 완료; 기본 잠금 팩토리/전체 PlanBuilder 알고리즘은 아직 미연결 |
+| 공통 타입 연결 | `SatinColumn : EmbroideryElement` → S1 공통 builder. 기본은 source half_stitch; null 주입으로 해제 가능 | worker d4c6776 통합, 임시 Finisher 삭제 |
 | raw 코어 잠금/트림 | `lock_start/end`, `trim_after`, `stop_after`는 geometric layer에 삽입하지 않음 | 공통 StitchGroup/Plan에서 적용할 속성. 중복 잠금 방지 |
 | center-walk tolerance | 원본 getter/속성은 노출하되 중심선 계산은 원본처럼 `running_stitch_tolerance_mm` 사용 | v3.3.0 `_get_center_line_stitches` 실제 동작과 일치 |
 | running tolerance | UI decorator 0.1과 달리 getter 기본 **0.2mm** 사용 | v3.3.0 런타임 기본에 맞춤 |
-| 앱 어댑터 | max 7mm, 폭 >7mm이면 max 4mm split, short distance 0.3mm, compact lock 0.4mm | 이전 사용자 요구에 따른 앱 정책. SVG 코어 기본과 분리 |
-| 앱 최소 땀 | 정수화 후 <0.3mm는 needle-up 이동으로 유지, 0길이 바늘 제거 | 좌표를 없애 새 대각선이 홀을 가로지르는 일을 방지. **원본 duplicate filter와 다름** |
-| 앱 과밀 | 한 객체 0.5mm 셀 누적 8회/연속 6회 초과 시 예외 | 기존 보수적 정책. 독립 게이트의 4위상/15회와 다름. 통과 증명으로 대신하지 않음 |
-| 앱 외곽선 | TTF 자동 중심선 새틴을 기본에서 제거. 사각 기둥 검증 실패 시 auto-fill | 이전 교차·끝점 부채꼴 실기 불량 차단. TTF 기둥 분해 포팅을 주장하지 않음 |
+| 앱 어댑터 | 기존 프로젝트의 legacy 필드만 source DTO로 매핑. 신규 선택은 source 기본값 | 폭 >7mm 강제4mm·short distance0.3·compact0.4 정책 제거 |
+| 앱 채우기 초안 | 레거시 FillStitches는 아직 0.3mm 본문 모서리 병합을 사용 | S4 정식 auto-fill로 대체할 영역; 잠금은 S1 소유이며 일괄0.3mm 강제가 아님 |
+| 과밀 | 생성기에서 바늘을 지우거나 셀8회 예외로 차단하지 않음 | 독립 gate/sew-out 진단 책임. source 잠금 포함 관찰값을 제출 |
+| 앱 외곽선 | TTF SATIN 요청은 사각형 포함 전부 auto-fill+경고. UI에서 신규 선택 제거 | convert/auto-route 검증 전 자동 중심선 기둥 생성 금지 |
 | 기존 선→새틴 | `lettering.SatinColumn.rails`의 독립 miter offset은 아직 남아 있음 | 2단계의 원본 convert-to-satin 포팅 대상. 새 SVG 코어 구현으로 오인하지 않음 |
 | auto-fill 초안 | 일정 간격/고정 stagger만, bounded exact odd matching, 이동 smoothing 생략 | 이전 안전 초안. fill 담당자가 정식 파라미터/모듈로 이어받을 영역; 상세는 stitch-algorithms.md |
 
-## 테스트·독립 게이트 상태
+## 이전 검증 기록 — 3bbaaa4, 현재 S2 결과가 아님
 
 - v3.3.0 `tests/` 21개 파일을 확인했다. SatinColumn 대응 테스트가 없어 복제할 원본
   입출력 fixture는 없다. `SatinPortTest`는 수기 좌표, 수식, 순서, 난수 벡터 10개다.
@@ -266,6 +265,125 @@ BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 
 시작 형식은 동시에 만족할 수 없다. 잠금 예외와 공통 Plan의 기본값을 합의하고,
 새틴 변형에 적용할 독립 게이트 분류를 확정한 뒤 출력 매트릭스를 다시 판정해야 한다.
 게이트나 임계값은 이 브랜치에서 수정하지 않았다.
+
+
+## S2 개정 적용과 재현 (2026-10-24)
+
+현재 기준은 main 작업트리 `docs/ui-stories.md`의 **실패 없는 디자인** 개정안이다.
+이전 US-3/4 상세 설정·고급 탭 작업은 취소했다. S1 사용자 검토 전 S2 main 병합/릴리스는 보류한다.
+
+- S1 `384b259` 갱신판 `d4c6776`은 의존 커밋 `3405b63`으로 가져왔다.
+  b798af7 임시 compact 잠금은 삭제했고 S1 공통 후처리를 사용한다.
+- UI 입력은 글자·글꼴·높이·색만이다. 종류/밀도/바탕 땀/실 굵기/빈/곡선/자간/정렬 설정은 노출하지 않는다.
+  새틴 코어의 전체 파라미터 API는 포팅 검증과 기존 데이터 해석을 위해 남기지만 신규 생성은 원본 기본값만 쓴다.
+- TTF 자체 자동 새틴은 기본에서 제외했다. 새틴은 명시적 SatinColumn과 검증된 글꼴의 레일/렁만 대상이다.
+  새 TextObject와 LetteringEngine 기본은 RUNNING이다. FILL/BEAN은 기존 저장 파일의 명시적 요청을 해석할 뿐 신규 UI 기본이 아니다.
+- 기본 러닝은 Ink/Stitch stroke getter의 길이 2.5mm·허용오차 0.2mm다. 추가 Douglas–Peucker 단계를 적용하지 않는다.
+- FontQuality의 자체 권장 높이는 기본 결정·높이 제한에 사용하지 않는다. 3b6ec12 TTF 분석도 승인 근거가 아니다.
+
+### 자동 규칙의 단일 입력
+
+embro-codex의 `/tmp/myembro-quality-gate/auto-rules.md`를 확인했다. 안전한 글자 높이·새틴 폭의
+수치 경계는 **미확인**이다. PES 전체 bbox나 4–150mm 비교 매트릭스를 안전 범위로 일반화하지 않는다.
+총괄의 추가 결정에 따라 미확인 글꼴은 S2에서 **새틴을 막고 러닝만 허용**한다. 이는 러닝의 모든 높이가
+실기 검증됐다는 뜻이 아니다. 확인되지 않은 5–50mm 등의 범위를 새로 만들지 않는다.
+
+```sh
+python3 tools/import-lettering-rules.py /tmp/myembro-quality-gate/auto-rules.md
+```
+
+이 도구는 문서의 명시적 fenced JSON `{ "schemaVersion": 1, "profiles": [...] }`만 가져온다.
+표/본문의 숫자는 추론하지 않는다. 현재 승인 프로필은 0개다. 런타임의 유일한 규칙 입력은
+`engine/src/main/resources/lettering/validated-ranges.json`이며, 원문 이름·SHA256을 기록한 배포 스냅샷이다.
+새 수치가 승인되면 이 명령으로 갱신하고 리뷰한다. 별도 하드코딩 범위나 FontQuality fallback은 없다.
+프로필은 fontId·파일 내용 SHA256+추출 버전·글리프 코드포인트·방식·높이 범위·근거를 묶는다.
+SATIN은 SATIN_COLUMNS 기하와 검증된 폭 범위도 필요하다. TTF를 기둥으로 추정하지 않는다.
+S3 자수 글꼴 메타데이터 연결은 파서 담당의 후속 작업이다.
+
+확정 범위가 있으면 높이 슬라이더를 그 범위로 제한한다. 현재 미확인 상태는 안내와 러닝 높이 숫자 입력을
+사용한다(총괄 허용). 비유한/0 이하 높이·없는 글리프·후프 밖 결과는 추가할 수 없다.
+
+### defaults-v2 재현
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:satinOracle --console=plain
+```
+
+현재 `/tmp/myembro-quality-gate/matrix-inkstitch.json`의 satin_column 56개 SVG를 읽는다.
+매트릭스 SHA256 `17f10563b6743539dba46f6db294f6f63b5f2db29b74d251c6521404755a5fe0`.
+각 case가 지정한 input과 input_sha256을 그대로 검증한다. 출력은 `/tmp/myembro-port-out/letter/`의
+PES 56개·`inputs.txt`·`manifest.json`이며 commit/dirty/branch/stage/입출력 해시를 기록한다.
+`-PmatrixFile=… -PportOutput=…`로 입력 문서/출력 위치만 바꾼다. 원본 실행·설치·기준 변경은 하지 않는다.
+현재 공식 oracle은 이전 매트릭스에 고정돼 있어 **defaults-v2 공식 동등성 판정은 대기**다.
+
+이전 파라미터 매트릭스의 유효 224/224는 공식 비교 도구의 동등 기준을 통과했다(불일치0).
+zero-rails 음성1건은 거절/미판정이었다. 이 기록은
+`/tmp/myembro-port-out/letter/legacy-parameter-matrix/`에 보존했다.
+현재 defaults-v2나 제품의 안전한 높이/폭 범위를 인증한 결과로 쓰지 않는다.
+`-PmatrixFile=`는 이전 frozen oracle SVG 225건을 재생한다.
+
+`svg.ViewBoxTransform`은 원본 `lib/svg/units.py:get_viewbox_transform`의 6자리 %f 축척과
+translate @ scale 순서를 보존한다. curve flatten tolerance는 0.1 SVG px다.
+일반 SVG viewport 계산으로 대체하면 정확한 split 경계와 봉제 순서가 달라진다.
+
+### Jung Min 및 검증 상태
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 MYEMBRO_START_AUDIT=/tmp/myembro-birdnest/s2-running ./gradlew :engine:test --tests '*LetteringAuditTool' --rerun-tasks
+/tmp/myembro-quality-gate/quality-gate check /tmp/myembro-birdnest/s2-running/script-34.pes --text --style running --json /tmp/myembro-birdnest/s2-running/quality-v2.json
+```
+
+공개 OFL Dancing Script Bold, Jung Min, 34mm, 40wt의 개정 러닝 결과는 **531땀·트림8·S0 9개**다.
+현재 v2 진단은 **BLOCK: UNEXPLAINED_ZERO 9/531**. 셀 집중·시작/끝/트림 잠금 검사는 통과했다.
+S1의 시작 앵커를 PE-Design 수열에 맞춰 삭제하지 않았다. 시작20땀 TSV와 생성 잠금 태그 추적 JSON을
+함께 제출한다. 추적 JSON은 PES 레코드 인덱스나 독립 승인으로 가장하지 않는다.
+PNG는 `/tmp/myembro-birdnest/s2-running.png`. 개인 PES와 개인 렌더링은 커밋하지 않는다.
+이전 fill 진단 PASS는 `/tmp/myembro-birdnest/s2/`의 별도 과거 기록이며 개정 S2 통과가 아니다.
+
+자체 회귀는 엔진354개·앱167개 및 APK debug 빌드 성공. 임시 API35 에뮬레이터에서 4입력,
+자동 러닝/미확인 안내, 높이0 추가 차단·정상값 복원 후 활성화를 확인했다.
+**S2 완료/릴리스 승인 아님:** defaults-v2 공식 비교, 위 S0 판정 검토, S1 사용자 검토·SE400 실제 봉제가 남았다.
+
+
+### 총괄의 검증 정책 재개정 — 현재 단위 종료
+
+수백 건 동등성 매트릭스 검증은 중단한다. 위 매트릭스와 v2 S0 비율 BLOCK은 과거 진단 기록이다.
+S0 비율·짧은 땀 비율·길이 분포·새틴 간격 통계는 차단 조건이 아니다. 현재 새 기준으로 재판정했다고
+주장하지 않는다. 이후 검증은 대표 사례 10개 이내에서 땀 수·모양을 확인하고, 실제 실패 조건인
+0.5mm 셀 밀집·같은 점 연속 천공·기능적 시작/끝 잠금·최대 땀 길이·파일 유효성/후프 범위만 다룬다.
+최종 판정은 사용자 실제 봉제다. 이번 단위는 코드·재현 산출물·간소화 UI를 push한 지점에서 종료하며
+다음 검증 단위는 총괄 결정 후 진행한다.
+
+### S2 정리: S1 잠금과 담당 범위
+
+새틴은 worker S1 `InkLockStitch()`의 기본 `half_stitch`를 시작·끝에 전달하고
+`GeneratedPatternProcessor.fromGroups` 하나만 거친다. 자체 COMPACT/0.4mm 왕복 잠금은 없다.
+회귀 테스트는 양쪽 `lock_id=half_stitch`와 S1 잠금 태그 생성을 확인한다.
+
+S4 타타미 구현은 `digitizing/OutlineTextFill.kt`로 분리했으며 model 담당이다.
+기존 저장 객체 호환을 위한 `lettering/OutlineFill` 계약·위임은 유지한다. S2에서는 확정되지 않은
+TTF 새틴 요청을 러닝으로 바꾸며, 새틴 요청을 타타미로 대체하지 않는다.
+
+생성기에 자체 0.5mm 셀당 8회 거부 조건을 두지 않는다. 봉제 점검 기본값은 게이트와 동일하게
+15회까지 허용하고 16회부터 차단한다. 잠금 판정 기준③은 바꾸지 않았다.
+대표 검증은 satin_column 7개 형상의 20mm 기본값만 재생성한다. 릴리스 게이트 판정은
+`check-release` 결과로 따로 보고하며 독립 승인이나 실제 봉제 통과로 주장하지 않는다.
+
+대표 7건 재판정(생성 커밋 `0ce60ae0e820985911bf43ba5b47a6a28bc52a56`):
+사각형·원·홀·자기 교차·좁은 끝·급한 꺾임·교차 획, 높이 20mm, 원본 기본값이다.
+출력과 해시는 `/tmp/myembro-port-out/letter/representative-7/manifest.json`,
+재현 입력은 같은 폴더 `inputs.json`이다.
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:satinOracle -PmatrixFile=/tmp/myembro-port-out/letter/representative-7/inputs.json -PportOutput=/tmp/myembro-port-out/letter/representative-7
+/tmp/myembro-quality-gate/check-release --stage S2 --matrix /tmp/myembro-port-out/letter/representative-7/release-matrix.json --json /tmp/myembro-port-out/letter/representative-7/release-report.json
+/tmp/myembro-quality-gate/quality-gate check --matrix /tmp/myembro-port-out/letter/representative-7/release-matrix.json --json /tmp/myembro-port-out/letter/representative-7/quality-report.json
+```
+
+`check-release`: **BLOCK — previous stage gate/release/user sewout confirmation pending**.
+S1 승인 대기이며 게이트 도구·단계 상태·잠금 기준은 바꾸지 않았다.
+별도 기능 진단은 기존 게이트의 5개 조건 **7/7 PASS**. 릴리스 통과나 독립 최종 승인으로
+대체하지 않는다. 다음 단계는 총괄의 S1 검토 결과에 따른다.
 
 ## claude-canvas S3: Ink/Stitch 자수 글꼴 (브랜치 `claude/inkfonts-s3`)
 

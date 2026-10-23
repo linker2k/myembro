@@ -11,10 +11,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
-import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,20 +39,18 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
-import io.github.linker2k.myembro.engine.lettering.Grade
-import io.github.linker2k.myembro.engine.lettering.FontQualityReport
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
-import io.github.linker2k.myembro.engine.lettering.FillOptions
-import io.github.linker2k.myembro.engine.lettering.FillStrategy
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters
+import kotlin.math.abs
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.ThreadRendering
 import io.github.linker2k.myembro.engine.model.Command
@@ -107,132 +104,98 @@ private fun LetteringContent(
     val colors = MaterialTheme.colorScheme
     var text by rememberSaveable { mutableStateOf(initialText) }
     var fontId by rememberSaveable(initialFontId) { mutableStateOf(initialFontId) }
-    val initial = initialObject
-    var threadWeightName by rememberSaveable { mutableStateOf((initial?.threadWeight ?: ThreadWeight.WT40).name) }
-    val threadWeight = ThreadWeight.valueOf(threadWeightName)
-    var height by rememberSaveable { mutableFloatStateOf(initial?.heightMm?.toFloat() ?: 18f) }
-    var spacing by rememberSaveable { mutableFloatStateOf(initial?.spacing?.toFloat() ?: 1.2f) }
-    var alignmentIndex by rememberSaveable { mutableIntStateOf(initial?.alignment?.ordinal ?: 1) }
-    var curved by rememberSaveable { mutableStateOf(initial != null && (initial.arcDeg != 0.0 || initial.arcRadiusMm != null)) }
-    var curveIndex by rememberSaveable { mutableIntStateOf(if (initial != null && initial.arcDeg < 0) 0 else 1) }
-    // TextObject stores line spacing as a multiple of the height; the screen edits the gap in mm.
-    var lineSpacing by rememberSaveable { mutableFloatStateOf(initial?.let { ((it.lineSpacing - 1) * it.heightMm).toFloat() } ?: 9f) }
-    var radius by rememberSaveable { mutableFloatStateOf(initial?.arcRadiusMm?.toFloat() ?: 45f) }
-    var selectedCharacter by rememberSaveable { mutableIntStateOf(-1) }
-    var characterColors by rememberSaveable {
-        mutableStateOf(HashMap(initial?.characterThreads?.mapValues { it.value.color } ?: emptyMap()))
-    }
-    var fontReports by remember { mutableStateOf<Map<String, FontQualityReport>>(emptyMap()) }
-    var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
-    var stitchStyleName by rememberSaveable(fontId) {
-        mutableStateOf(initial?.takeIf { it.fontId == fontId }?.stitchStyle?.name)
-    }
-    var fillOptions by rememberSaveable(stateSaver = FillOptionsSaver) { mutableStateOf(initial?.fillOptions ?: FillOptions()) }
-    var satinOptions by rememberSaveable(stateSaver = SatinOptionsSaver) { mutableStateOf(initial?.satinOptions ?: SatinOptions()) }
+    var height by rememberSaveable { mutableDoubleStateOf(initialObject?.heightMm ?: 18.0) }
+    var heightDraft by rememberSaveable { mutableStateOf((initialObject?.heightMm ?: 18.0).toString()) }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
+    var keepInitialThread by rememberSaveable { mutableStateOf(initialObject != null) }
     var fitText by rememberSaveable { mutableStateOf(false) }
+    var automatic by remember(fontId, text) { mutableStateOf<AutomaticLetteringState?>(null) }
+    var automaticHeight by remember(fontId, text) { mutableDoubleStateOf(Double.NaN) }
+    var automaticLoaded by remember(fontId, text) { mutableStateOf(false) }
+    var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(true) }
-    val alignment = LetteringAlignment.entries[alignmentIndex]
-    val settings = LetteringSettings(text, fontId, height.toDouble(), spacing.toDouble(), alignment,
-        curved, if (curveIndex == 1) LetteringCurve.ARCH else LetteringCurve.BELOW, 35.0,
-        lineSpacing.toDouble(), radius.coerceAtLeast(height).toDouble(), characterColors.toMap(), stitchStyleName?.let(StitchStyle::valueOf),
-        fillOptions, satinOptions, threadWeight)
+    var busy by remember { mutableStateOf(false) }
     val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
     val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
-    // An existing object keeps its own thread unless the user picks a swatch.
-    var keepInitialThread by rememberSaveable { mutableStateOf(initial != null) }
-    val thread = if (keepInitialThread && initial != null) initial.thread
+    val thread = if (keepInitialThread && initialObject != null) initialObject.thread
         else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
-    val threadColor = if (keepInitialThread && initial != null) Color(initial.thread.color) else swatches[threadIndex]
-    // Stale results are never submitted while a newer generation is pending.
+    val ranges = automatic?.heightRanges.orEmpty()
+    val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
+    val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
+    val permittedHeight = automaticHeight == height && heightInputValid && when {
+        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
+        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN) && ranges.any { it.contains(height) }
+    }
+    val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
+        spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
+        curve = LetteringCurve.STRAIGHT, curvature = 0.0, lineSpacingMm = 0.0,
+        characterColors = emptyMap(), stitchStyle = automatic?.style ?: StitchStyle.RUNNING,
+        satinOptions = SatinOptions(parameters = SatinParameters(), autoDensity = false),
+        threadWeight = ThreadWeight.WT40)
     val generationKey = settings to thread.color
     var renderedKey by remember { mutableStateOf<Pair<LetteringSettings, Int>?>(null) }
-    val ready = !busy && renderedKey == generationKey && text.isNotBlank() && error == null &&
+    val ready = permittedHeight && !busy && renderedKey == generationKey && text.isNotBlank() && error == null &&
         result?.pattern?.bounds != null && result?.unsupported != true && result?.outsideHoop != true
     val add = {
         if (ready) result?.let { onAdd(it.textObject.copy(id = UUID.randomUUID().toString())) }
         Unit
     }
     BackHandler(onBack = onBack)
-    // Embroidery fonts carry their own letter spacing (script joins would break): start from none.
-    LaunchedEffect(fontId) {
-        if (initial?.fontId != fontId && withContext(Dispatchers.IO) { FontRepository(context).find(fontId)?.predigitized } == true) spacing = 0f
+    LaunchedEffect(fontId, text, height) {
+        try {
+            automatic = automaticLetteringState(context, fontId, text, height)
+            automaticHeight = height
+        } catch (cancelled: CancellationException) { throw cancelled
+        } catch (_: Exception) { automatic = null
+        } finally { automaticLoaded = true }
     }
-    LaunchedEffect(generationKey, hoop) {
-        busy = true
+    LaunchedEffect(automatic, height) {
+        if (ranges.isNotEmpty()) {
+            height = ranges.minBy { abs(it.clamp(height) - height) }.clamp(height)
+            heightDraft = height.toString()
+        }
+    }
+    LaunchedEffect(generationKey, automatic, automaticHeight, heightInputValid, hoop) {
         error = null
-        if (text.isBlank()) {
-            result = null
-            renderedKey = generationKey
+        result = null
+        if (text.isBlank() || !permittedHeight) {
             busy = false
+            renderedKey = null
         } else {
+            busy = true
             try {
                 delay(100)
                 result = withContext(Dispatchers.Default) { renderLettering(context, settings, thread, hoop) }
                 renderedKey = generationKey
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                error = if (failure is UnsafeStitchPlanException) context.getString(R.string.lettering_unsafe_density, failure.penetrations, failure.limit)
-                    else context.getString(R.string.lettering_failed)
-                result = null
-            } finally {
-                busy = false
-            }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { error = context.getString(R.string.lettering_failed)
+            } finally { busy = false }
         }
     }
-    LaunchedEffect(text, height, threadWeight) {
-        fontReports = emptyMap()
-        delay(150)
-        val reports = mutableMapOf<String, FontQualityReport>()
-        for (font in bundledLetteringFonts) {
-            try { reports[font.id] = LetteringFontQuality.analyze(context, font.id, text.ifBlank { "자수봄날Aa012" }, height.toDouble(), threadWeight) }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { /* Unavailable cards retain the pending label. */ }
-        }
-        fontReports = reports
-    }
-    LaunchedEffect(text, height, thread.color, settings.stitchStyle, fillOptions, threadWeight) {
+    // Cards display actual running stitches, without claiming a validated sewing range.
+    LaunchedEffect(text, height, thread.color, fontId) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
-        for (font in bundledLetteringFonts) {
-            try { previews[font.id] = LetteringFontPreview.pattern(context, font.id, text, height.toDouble(), thread, settings.stitchStyle, fillOptions, threadWeight) }
+        for (id in (bundledLetteringFonts.map { it.id } + fontId).distinct()) {
+            try { previews[id] = LetteringFontPreview.pattern(context, id, text, height, thread, StitchStyle.RUNNING) }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { /* Font loading errors remain visible in the main preview. */ }
+            catch (_: Exception) { /* An unavailable font has an empty preview. */ }
         }
         fontPreviews = previews
     }
-    Scaffold(
-        modifier = modifier,
-        containerColor = colors.background,
+    val current = result.takeIf { renderedKey == generationKey && !busy && permittedHeight }
+    Scaffold(modifier = modifier, containerColor = colors.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.lettering_title), style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
-                actions = { Button(onClick = add, enabled = ready, contentPadding = PaddingValues(horizontal = 18.dp)) {
-                    Text(stringResource(R.string.lettering_done))
-                } },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background),
-            )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background))
         },
         bottomBar = {
             Surface(color = colors.background) {
-                Column {
-                val filling = result?.singleLine == false && settings.stitchStyle in listOf(StitchStyle.FILL, StitchStyle.SATIN)
-                val recommended = result?.quality?.let { if (filling) filledLetteringMinimumHeight(it, threadWeight) else it.recommendedMinHeightMm } ?: 0.0
-                if (renderedKey == generationKey && !busy && result != null &&
-                    (result!!.quality.grade != Grade.GOOD || filling && height < recommended)) {
-                    val message = if (recommended.isFinite() && recommended > 0 && recommended <= 300.0)
-                        stringResource(R.string.lettering_quality_height, Dimensions.length(recommended))
-                    else stringResource(R.string.lettering_quality_check)
-                    Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        Notice(message, detail = stringResource(R.string.lettering_quality_hint), error = false)
-                    }
-                }
                 Button(onClick = add, enabled = ready,
                     modifier = Modifier.navigationBarsPadding().imePadding().padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth().height(54.dp),
                     shape = MaterialTheme.shapes.large) {
@@ -241,14 +204,12 @@ private fun LetteringContent(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(if (busy) R.string.lettering_preparing else R.string.lettering_add), style = MaterialTheme.typography.titleSmall)
                 }
-                }
             }
-        },
-    ) { padding ->
+        }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.fillMaxWidth().height(300.dp)) {
-                HoopPreview(result?.pattern, backgroundPattern, hoop, fitText, threadColor, curved,
+            Box(Modifier.fillMaxWidth().height(280.dp)) {
+                HoopPreview(current?.pattern, backgroundPattern, hoop, fitText,
                     Modifier.fillMaxSize().semantics { contentDescription = context.getString(R.string.lettering_preview) })
                 Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = MaterialTheme.shapes.small,
                     color = colors.surface.copy(alpha = 0.9f)) {
@@ -264,11 +225,7 @@ private fun LetteringContent(
             LetteringCard {
                 SectionLabel(stringResource(R.string.lettering_text))
                 OutlinedTextField(value = text, onValueChange = {
-                    if (it.codePointCount(0, it.length) <= 80) {
-                        characterColors = remapCharacterColors(text, it, characterColors)
-                        selectedCharacter = -1
-                        text = it
-                    }
+                    if (it.codePointCount(0, it.length) <= 80) text = it
                 }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 5,
                     placeholder = { Text(stringResource(R.string.lettering_placeholder)) },
                     trailingIcon = { Text(stringResource(R.string.lettering_character_count, text.codePointCount(0, text.length)),
@@ -286,116 +243,74 @@ private fun LetteringContent(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     bundledLetteringFonts.forEach { font ->
-                        FontChoice(font, fontId == font.id, Modifier.weight(1f), fontReports[font.id], fontPreviews[font.id]) { fontId = font.id }
+                        FontChoice(font, fontId == font.id, Modifier.weight(1f), fontPreviews[font.id]) { fontId = font.id }
                     }
                 }
                 if (bundledLetteringFonts.none { it.id == fontId }) {
-                    Text(result?.takeIf { it.textObject.fontId == fontId }?.fontName ?: fontId,
-                        style = MaterialTheme.typography.titleSmall, color = colors.primary)
-                    val active = result?.takeIf { it.textObject.fontId == fontId }
-                    if (active?.singleLine == true) SingleLineFontBadge()
-                    StitchPatternPreview(active?.pattern, Modifier.fillMaxWidth().height(70.dp))
-                    active?.let { FontQualityBadge(it.quality) }
+                    Text(automatic?.fontName ?: fontId, style = MaterialTheme.typography.titleSmall, color = colors.primary)
+                    StitchPatternPreview(fontPreviews[fontId], Modifier.fillMaxWidth().height(70.dp))
                 }
+                Text(stringResource(when (automatic?.style) {
+                    StitchStyle.RUNNING -> R.string.lettering_automatic_running
+                    StitchStyle.SATIN -> R.string.lettering_automatic_satin
+                    else -> R.string.lettering_automatic_unconfirmed
+                }), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
-            result?.takeIf { it.textObject.fontId == fontId && it.predigitized && it.missing.isNotEmpty() }?.let { active -> LetteringCard {
-                Text(stringResource(R.string.lettering_missing_glyphs, active.missing),
-                    style = MaterialTheme.typography.bodySmall, color = colors.error)
-            } }
-            result?.takeIf { it.textObject.fontId == fontId && !it.predigitized }?.let { active -> LetteringCard {
-                val style = settings.stitchStyle ?: if (active.singleLine) StitchStyle.BEAN else StitchStyle.FILL
-                ThreadWeightSelector(threadWeight) {
-                    if (it != threadWeight) {
-                        threadWeightName = it.name
-                        fillOptions = fillOptions.copy(autoDensity = true)
-                        satinOptions = satinOptions.copy(autoDensity = true)
-                    }
-                }
-                LetteringModeSelector(active.singleLine, style, { stitchStyleName = it.name })
-                if (active.singleLine && style == StitchStyle.BEAN) {
-                    Text(stringResource(R.string.lettering_bean_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                }
-                if (!active.singleLine && style in listOf(StitchStyle.FILL, StitchStyle.SATIN)) {
-                    val shownOptions = if (style == StitchStyle.SATIN) fillOptions.copy(strategy = FillStrategy.AUTO) else fillOptions
-                    FillSettingsControls(shownOptions, settings.heightMm, threadWeight) {
-                        if (style == StitchStyle.SATIN && it.strategy == FillStrategy.TATAMI)
-                            stitchStyleName = StitchStyle.FILL.name
-                        fillOptions = it
-                    }
-                    if (style == StitchStyle.SATIN) Text(stringResource(R.string.lettering_satin_hint),
-                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                } else if (active.singleLine && style == StitchStyle.SATIN) {
-                    SatinSettingsControls(satinOptions, settings.heightMm, threadWeight) { satinOptions = it }
-                }
-            } }
             LetteringCard {
-                // Some embroidery fonts are tested only above 50 mm.
-                // US-3: an embroidery font moves only within the heights its digitizer recorded (font.json scales).
-                val tested = result?.takeIf { it.textObject.fontId == fontId }?.testedRangeMm
-                val range = tested?.let { it.start.toFloat()..it.endInclusive.toFloat() } ?: 5f..50f
-                LaunchedEffect(range) { if (height !in range) height = height.coerceIn(range) }
-                SettingSlider(stringResource(R.string.lettering_height), height.coerceIn(range), range, if (tested != null) 0.5f else 1f, "mm", showInches = true) { height = it }
-                SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
-                SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.lettering_align), style = MaterialTheme.typography.titleSmall)
-                    ChoiceRow(listOf(stringResource(R.string.lettering_left), stringResource(R.string.lettering_center), stringResource(R.string.lettering_right)),
-                        alignmentIndex, Modifier.weight(1f), icons = listOf(Icons.AutoMirrored.Filled.FormatAlignLeft, Icons.Default.FormatAlignCenter, Icons.AutoMirrored.Filled.FormatAlignRight)) {
-                        alignmentIndex = it
-                    }
-                }
-            }
-            // Ink/Stitch fonts are laid out straight (along-path layout is a later port).
-            if (result?.takeIf { it.textObject.fontId == fontId }?.predigitized != true) LetteringCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SectionLabel(stringResource(R.string.lettering_curved), Modifier.weight(1f))
-                    Switch(curved, onCheckedChange = { curved = it }, modifier = Modifier.semantics {
-                        contentDescription = context.getString(R.string.lettering_curved)
+                SectionLabel(stringResource(R.string.lettering_height))
+                if (ranges.isNotEmpty() && automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN)) {
+                    val minimum = ranges.minOf { it.minMm }
+                    val maximum = ranges.maxOf { it.maxMm }
+                    Text(Dimensions.length(height), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.lettering_validated_range, ranges.joinToString(" · ") {
+                        if (it.minMm == it.maxMm) Dimensions.length(it.minMm)
+                        else "${Dimensions.length(it.minMm)} – ${Dimensions.length(it.maxMm)}"
+                    }), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    if (minimum < maximum) Slider(height.toFloat(), onValueChange = { value ->
+                        val proposed = value.toDouble()
+                        height = ranges.minBy { abs(it.clamp(proposed) - proposed) }.clamp(proposed)
+                    }, valueRange = minimum.toFloat()..maximum.toFloat(), modifier = Modifier.semantics {
+                        contentDescription = context.getString(R.string.lettering_height)
+                        stateDescription = Dimensions.length(height)
                     })
-                }
-                if (curved) {
-                    ChoiceRow(listOf(stringResource(R.string.lettering_arc_below), stringResource(R.string.lettering_arc_above)),
-                        curveIndex, Modifier.fillMaxWidth()) { curveIndex = it }
-                    SettingSlider(stringResource(R.string.lettering_radius), radius.coerceAtLeast(height), height.coerceAtLeast(15f)..150f, 5f, "mm") { radius = it }
-                }
+                } else if (ranges.isEmpty() && automatic?.style == StitchStyle.RUNNING) {
+                    Text(stringResource(R.string.lettering_satin_unconfirmed_running),
+                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    OutlinedTextField(heightDraft, onValueChange = { value ->
+                        heightDraft = value
+                        value.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }?.let { height = it }
+                    }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        label = { Text(stringResource(R.string.lettering_height)) }, suffix = { Text("mm") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = parsedHeight == null,
+                        supportingText = {
+                            Text(if (parsedHeight == null) stringResource(R.string.lettering_height_invalid)
+                                else Dimensions.length(parsedHeight))
+                        })
+                } else Text(stringResource(if (automaticLoaded) R.string.lettering_range_unconfirmed else R.string.lettering_checking_range),
+                    style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             LetteringCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SectionLabel(stringResource(R.string.lettering_thread), Modifier.weight(1f))
-                    Text(stringResource(R.string.lettering_thread_count), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-                }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(selected = selectedCharacter == -1, onClick = { selectedCharacter = -1 },
-                        label = { Text(stringResource(R.string.lettering_all_characters)) })
-                    normalizedLetteringText(text).codePoints().toArray().forEachIndexed { index, code ->
-                        if (!Character.isWhitespace(code)) FilterChip(selected = selectedCharacter == index,
-                            onClick = { selectedCharacter = index },
-                            label = { Text("${index + 1} · ${String(Character.toChars(code))}") },
-                            leadingIcon = { Box(Modifier.size(10.dp).background(Color(characterColors[index] ?: thread.color), CircleShape)) })
-                    }
-                }
-                Text(stringResource(if (selectedCharacter < 0) R.string.lettering_apply_all else R.string.lettering_apply_character),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                SectionLabel(stringResource(R.string.lettering_thread))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     swatches.forEachIndexed { index, color ->
-                        val selectedColor = if (selectedCharacter < 0) thread.color else characterColors[selectedCharacter] ?: thread.color
-                        ThreadChip(color, threadNames[index], selectedColor == color.toArgb()) {
-                            if (selectedCharacter < 0) { threadIndex = index; keepInitialThread = false; characterColors = hashMapOf() }
-                            else characterColors = HashMap(characterColors).apply { put(selectedCharacter, color.toArgb()) }
+                        ThreadChip(color, threadNames[index], thread.color == color.toArgb()) {
+                            threadIndex = index
+                            keepInitialThread = false
                         }
                     }
                 }
             }
-            val current = result.takeIf { renderedKey == generationKey && !busy }
-            if (error != null) Notice(error ?: "", error = true)
-            if (current?.unsupported == true) Notice(stringResource(R.string.lettering_unsupported), error = true)
-            if (current?.outsideHoop == true) Notice(stringResource(R.string.lettering_outside), error = true)
-            if (current?.pattern?.warnings?.isNotEmpty() == true) Notice(stringResource(R.string.lettering_satin_fallback), error = false)
-            if (current != null) {
-                Text(stringResource(R.string.lettering_stats, current.pattern.stitchCount, current.pattern.jumpCount),
-                    Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
-                    color = colors.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            val status = when {
+                error != null -> error
+                current?.unsupported == true -> stringResource(R.string.lettering_unsupported)
+                current?.outsideHoop == true -> stringResource(R.string.lettering_outside)
+                else -> null
             }
+            status?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
+            current?.let { Text(stringResource(R.string.lettering_stats, it.pattern.stitchCount, it.pattern.jumpCount),
+                Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
+                color = colors.onSurfaceVariant, style = MaterialTheme.typography.labelSmall) }
             Spacer(Modifier.height(4.dp))
         }
     }
@@ -414,10 +329,10 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifier, quality: FontQualityReport?, preview: EmbPattern?, onClick: () -> Unit) {
+private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifier, preview: EmbPattern?, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
-    Column(modifier.height(140.dp).clip(shape).background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
+    Column(modifier.height(106.dp).clip(shape).background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
         .border(if (selected) 1.5.dp else 1.dp, if (selected) colors.primary else colors.outlineVariant, shape)
         .selectable(selected, role = Role.RadioButton, onClick = onClick).padding(9.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -426,8 +341,6 @@ private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifie
                 Modifier.size(16.dp), tint = if (selected) colors.primary else colors.outline)
         }
         StitchPatternPreview(preview, Modifier.fillMaxWidth().height(58.dp))
-        if (quality != null) FontQualityBadge(quality) else Text(stringResource(R.string.lettering_quality_pending),
-            style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
     }
 }
 
@@ -438,32 +351,6 @@ fun SingleLineFontBadge(modifier: Modifier = Modifier) {
     Surface(modifier, shape = MaterialTheme.shapes.small, color = colors.secondaryContainer) {
         Text(stringResource(R.string.lettering_single_line_badge), Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelSmall, color = colors.onSecondaryContainer)
-    }
-}
-
-/** Reusable catalog/installed-font card badge; reports come from LetteringFontQuality or FontQualityCache. */
-@Composable
-fun FontQualityBadge(report: FontQualityReport, modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
-    val label = stringResource(when (report.grade) {
-        Grade.GOOD -> R.string.lettering_grade_good
-        Grade.CAUTION -> R.string.lettering_grade_caution
-        Grade.UNSUITABLE -> R.string.lettering_grade_unsuitable
-    })
-    val minimum = if (report.recommendedMinHeightMm.isFinite() && report.recommendedMinHeightMm in 0.001..300.0)
-        stringResource(R.string.lettering_card_minimum, Dimensions.length(report.recommendedMinHeightMm)) else ""
-    Surface(modifier, shape = MaterialTheme.shapes.extraSmall, color = when (report.grade) {
-        Grade.GOOD -> colors.secondaryContainer
-        Grade.CAUTION -> colors.tertiaryContainer
-        Grade.UNSUITABLE -> colors.errorContainer
-    }) {
-        Text(listOf(label, minimum).filter { it.isNotEmpty() }.joinToString(" · "), Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            color = when (report.grade) {
-                Grade.GOOD -> colors.onSecondaryContainer
-                Grade.CAUTION -> colors.onTertiaryContainer
-                Grade.UNSUITABLE -> colors.onErrorContainer
-            })
     }
 }
 
@@ -505,23 +392,6 @@ internal fun SettingSlider(label: String, value: Float, range: ClosedFloatingPoi
 }
 
 @Composable
-private fun ChoiceRow(labels: List<String>, selected: Int, modifier: Modifier, icons: List<androidx.compose.ui.graphics.vector.ImageVector> = emptyList(), onSelect: (Int) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(modifier.border(1.dp, colors.outlineVariant, MaterialTheme.shapes.small)) {
-        labels.forEachIndexed { index, label ->
-            Row(Modifier.weight(1f).heightIn(min = 46.dp)
-                .background(if (selected == index) colors.primaryContainer else colors.surface, MaterialTheme.shapes.small)
-                .selectable(selected == index, role = Role.RadioButton, onClick = { onSelect(index) }).padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                icons.getOrNull(index)?.let { Icon(it, null, Modifier.size(16.dp), tint = if (selected == index) colors.primary else colors.onSurfaceVariant) }
-                Text(label, Modifier.padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall,
-                    color = if (selected == index) colors.primary else colors.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
 private fun ThreadChip(color: Color, label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column(Modifier.widthIn(min = 58.dp).selectable(selected, role = Role.RadioButton, onClick = onClick)
@@ -543,23 +413,9 @@ private fun ThreadChip(color: Color, label: String, selected: Boolean, onClick: 
     }
 }
 
-@Composable
-private fun Notice(message: String, detail: String? = null, error: Boolean) {
-    val colors = MaterialTheme.colorScheme
-    Surface(color = if (error) colors.errorContainer else colors.tertiaryContainer, shape = MaterialTheme.shapes.medium) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Default.Info, null, Modifier.size(19.dp), tint = if (error) colors.onErrorContainer else colors.onTertiaryContainer)
-            Column {
-                Text(message, style = MaterialTheme.typography.labelMedium, color = if (error) colors.onErrorContainer else colors.onTertiaryContainer)
-                if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.onTertiaryContainer)
-            }
-        }
-    }
-}
-
 /** Theme-token fabric and hoop; every sewn line comes from the actual output pattern. */
 @Composable
-private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: HoopSpec, fitText: Boolean, thread: Color, curved: Boolean, modifier: Modifier) {
+private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: HoopSpec, fitText: Boolean, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     Canvas(modifier) {
         val radius = minOf(size.width * 0.42f, size.height * 0.45f)
@@ -574,7 +430,6 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             while (x < center.x + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(x, center.y - radius), Offset(x, center.y + radius), 0.5.dp.toPx()); x += grid }
             var y = center.y - radius
             while (y < center.y + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(center.x - radius, y), Offset(center.x + radius, y), 0.5.dp.toPx()); y += grid }
-            val b = pattern?.bounds
             val viewport = letteringViewport(radius * 1.35f, pattern, hoop, fitText)
             val scale = viewport.scale
             fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
@@ -596,11 +451,7 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             }
             background?.let { drawPattern(it, colors.secondary.copy(alpha = 0.55f)) }
             pattern?.let { drawPattern(it, null) }
-            if (curved && b != null) {
-                drawLine(colors.secondary.copy(alpha = 0.6f), point(b.minX.toDouble(), b.maxY.toDouble()) + Offset(0f, 10.dp.toPx()),
-                    point(b.maxX.toDouble(), b.maxY.toDouble()) + Offset(0f, 10.dp.toPx()), 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())))
-            }
+
         }
         drawCircle(wood, radius, center, style = Stroke(9.dp.toPx()))
         drawCircle(colors.surface.copy(alpha = 0.45f), radius - 3.dp.toPx(), center, style = Stroke(1.dp.toPx()))

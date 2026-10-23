@@ -2,7 +2,6 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.edit.*
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.UnsafeStitchPlanException
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.model.*
 import java.awt.font.FontRenderContext
@@ -10,11 +9,12 @@ import java.io.File
 import java.util.Locale
 import kotlin.math.*
 import kotlin.test.Test
+import kotlinx.serialization.json.*
 
 /** OFL-generated geometry only; never reads the user's PES as a test fixture. */
 internal object LetteringAuditGlyphs {
-    fun script(text: String = "Jung Min", height: Double = 34.0): TextObject = outline(
-        File("src/test/resources/fonts/dancing-script-bold/DancingScript-Bold.ttf"), text, height, StitchStyle.FILL)
+    fun script(text: String = "Jung Min", height: Double = 34.0, style:StitchStyle = StitchStyle.RUNNING): TextObject = outline(
+        File("src/test/resources/fonts/dancing-script-bold/DancingScript-Bold.ttf"), text, height, style)
     fun outline(file: File, text: String, height: Double, style: StitchStyle): TextObject {
         val font = AwtGlyphs.load(file)
         val ref = AwtGlyphs.contours(font, if (font.canDisplay('자')) "자" else "H").flatten()
@@ -42,6 +42,15 @@ class LetteringAuditTool {
         fun dump(name: String, input: EmbPattern) {
             val bytes = PesWriter.write(input)
             File(out, "$name.pes").writeBytes(bytes)
+            val lockIndices=input.metadata[io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.LOCK_INDICES_KEY]
+                .orEmpty().split(',').mapNotNull(String::toIntOrNull).toSet()
+            File(out,"$name-generation-provenance.json").writeText(buildJsonObject {
+                put("note","Generator trace only; source indices are not PES record indices and are not an independent approval")
+                put("commands",buildJsonArray { input.stitches.forEachIndexed { index,stitch -> add(buildJsonObject {
+                    put("index",index);put("x_mm",stitch.x/10.0);put("y_mm",stitch.y/10.0)
+                    put("command",stitch.command.name);put("source_lock_tag",index in lockIndices)
+                }) } })
+            }.toString())
             val p = PesReader.read(bytes)
             val cells = hashMapOf<Pair<Int, Int>, Int>(); val points = hashMapOf<Pair<Int, Int>, Int>()
             var previous = Stitch(0, 0, Command.JUMP)
@@ -82,11 +91,7 @@ class LetteringAuditTool {
             summary += row; println(row)
         }
         fun generated(name: String, obj: TextObject) {
-            try { dump(name, obj.localPattern()) }
-            catch (unsafe: UnsafeStitchPlanException) {
-                summary += "$name\tBLOCKED\t0\t0\t0\t${unsafe.penetrations}\t0\t0\t0"
-                File(out, "$name-blocked.txt").writeText(unsafe.message.orEmpty())
-            }
+            dump(name, obj.localPattern())
         }
         System.getenv("MYEMBRO_PRIVATE_PES")?.let { dump("private-input", PesReader.read(File(it).readBytes())) }
         val script = LetteringAuditGlyphs.script()

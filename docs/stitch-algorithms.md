@@ -28,23 +28,22 @@
 | `InkAutoFill.kt` | `lib/stitches/tatami_fill.py` | `build_fill_stitch_graph`, `tag_nodes_with_outline_and_projection`, `add_edges_between_outline_nodes`, `graph_make_valid`, `find_stitch_path`, `pick_edge`, `collapse_sequential_outline_edges` |
 | `InkAutoFill.kt` | `lib/stitches/tatami_fill.py` | `build_travel_edges`, `process_travel_edges`, `travel`, `path_to_stitches` |
 | `OutlineFill.kt` | `lib/elements/fill_stitch.py` | `fill_underlay_angle` / `fill_underlay_row_spacing` (교차 90°, 본 땀 간격의 3배) |
-| `InkLock.kt` | `lib/stitch_plan/lock_stitch.py` | `RelativeLock`, `AbsoluteLock`, `SVGLock`, `half_stitch`, `back_forth`, `LOCK_DEFAULTS`의 고정 SVG 끝점 |
-| `StitchPlanFinisher.kt` | `lib/stitch_plan/stitch_plan.py`, `color_block.py` | `stitch_groups_to_stitch_plan`, `filter_duplicate_stitches` |
+| `LockStitches.kt` (S1 worker) | `lib/stitch_plan/lock_stitch.py` | `RelativeLock`, `AbsoluteLock`, `SVGLock`, `LOCK_DEFAULTS` |
+| `StitchPlanBuilder.kt`, `GeneratedPatternProcessor.kt` (S1 worker) | `lib/stitch_plan/stitch_plan.py`, `color_block.py` | `stitch_groups_to_stitch_plan`, `filter_duplicate_stitches`, 기존 0.1mm 패턴 어댑터 |
 
 원본 링크 기준 경로:
 `https://github.com/inkstitch/inkstitch/blob/b0edd96311ece82ee48816dc93466274b12c2a9c/`
 
 ## 명시적인 앱 정책과 차이
 
-- **외곽선 기본은 auto-fill + 윤곽 러닝**이다. 이전의 TTF 래스터 중심선 추정 새틴은
+- **개정 S2의 외곽선 기본은 러닝**이다. auto-fill은 명시적 레거시 요청/후속 S4 대상이다. 이전의 TTF 래스터 중심선 추정 새틴은
   생성 경로에서 제거했다. `OutlineColumns`는 과거 실험 API이며 새틴 생성에 쓰지 않는다.
-- 외곽선에서 SATIN을 요청해도 구멍이 없고, 회전 최소 사각형과 면적 차이가 0.5% 이내이며,
-  폭 ≥0.6mm, 길이 ≥폭의 1.5배인 기둥만 허용한다. 나머지는 경고와 함께 auto-fill이다.
-  이 판정은 앱의 보수적 허용 정책이며, Ink/Stitch의 TTF 자동 새틴 기능을 포팅한 것이 아니다.
+- TTF에서 SATIN을 요청하면 사각형도 포함해 auto-fill로 전환하고 경고한다.
+  별도로 검증된 명시적 레일/렁만 새틴 코어에 전달한다.
 - 명시적 두 레일/렁 새틴은 원본처럼 10점 비교로 레일 방향을 맞추고, 렁 사이에서 양쪽
   구간을 함께 보간한다. 간격은 직전 횡단 땀의 법선 방향에서 긴 쪽을 기준으로 최대 두 번
   보정한다. 원본의 sawtooth short-stitch 기본 인셋은 폭의 15%다.
-  앱은 원본 0.25mm 대신 0.30mm 근접 기준을 사용한다.
+  새틴 기본 근접 기준은 원본과 같은 0.25mm다.
 - pull compensation은 새틴 양쪽 레일에 mm로 적용한다. 채우기의 보정은 기존 앱의
   바깥 경계 버퍼 + 원래 홀 보존 정책을 유지한다. 원본의 그레이팅 재구성 기반 fill 보정과
   같다고 주장하지 않는다. center-walk/contour/zigzag 언더레이는 API로 지원한다.
@@ -57,43 +56,34 @@
   간선 300,000개, 그레이팅 100,000줄을 넘으면 실패시킨다. 원본의 범용 Blossom 구현이나
   무제한 문제 크기를 포팅한 것은 아니다. 목표 함수는
   [NetworkX 공식 eulerize 설명/소스](https://networkx.org/documentation/stable/_modules/networkx/algorithms/euler.html#eulerize)로 대조했다.
-- 잠금 종류는 HALF_STITCH, BACK_FORTH, ARROW/BOWTIE/CROSS/STAR/SIMPLE/TRIANGLE/ZIGZAG와
-  앱의 COMPACT를 제공한다. 원본 기본은 `half_stitch = "0 0.5 1 0.5 0"`이며, 방향 길이는
-  0.5–1.5mm로 제한한다. 앱 기본은 원본 Custom/AbsoluteLock 경로 **`"1 -1"`**, 0.40mm다.
-  시작과 끝에서 앞뒤 **2땀**으로 잠그고, 처음의 무이동 바늘 명령은 제거한다.
-  다른 잠금 형태에도 동일한 최종 최소 길이·과밀 검사가 적용된다.
-- 원본 최소 땀 기본 0.10mm 대신 **정수 양자화 뒤 0.30mm**를 사용하며 잠금 땀과 JUMP
-  직후에도 예외를 두지 않는다. 짧은 모서리의 바늘 명령은 제거하되 위치는 needle-up으로
-  유지한다. 좌표 자체까지 없애 홀을 가로지르는 새 대각선을 만들지 않기 위한 안전 차이다.
-- 원본처럼 최초 시작, TRIM/색 변경/STOP 뒤, 3mm를 넘는 분리 이동에서 잠금을 적용한다.
-  tie-off가 TRIM/색 변경보다 먼저다. 일반 JUMP에 자동 TRIM을 추정하지 않는다.
-  SE400에서 TRIM 요청이 실제 절단되는지는 기계 기능/설정의 별도 문제다.
-- 모든 machine-pattern 생성은 공통 후처리를 거친다. 좌표 변환/배치 후에는 잠금 길이를
-  다시 생성한다. **가져온 PES/StitchObject와 범용 PES writer는 변경하지 않는다.**
+- **b798af7의 임시 `InkLock`/`StitchPlanFinisher`는 제거했다.** S1 `384b259`의
+  갱신판 `d4c6776`을 의존 커밋으로 가져와 `GeneratedPatternProcessor`를 사용한다.
+  별도 compact 0.4mm·본문/잠금 일괄 0.3mm 강제·셀 8회 생성 예외는 없다.
+- 명시적 새틴은 source `StitchGroup` → `fromGroups`를 통해 기본 half_stitch,
+  그룹 최소 길이·최소 점프·trim/stop을 처리한다. 전역 최소 길이는 0.1mm다.
+  S0과 짧은 source 잠금은 PE-Design 바이트 수열에 맞춰 제거하거나 대체하지 않는다.
+- 기존 앱 러닝/빈/채우기는 S1의 native `finish` 어댑터를 쓴다. 이미 샘플링한
+  모서리를 유지하며 실제 경로를 따라 half-stitch를 생성한다. 이것은 SVG 원본
+  잠금의 벡터 fallback과 다를 수 있다(S1 소유 차이). 임의 JUMP도 기존 생성 경계로 유지한다.
+- 새틴 엔진 API는 `SatinParameters`의 41개 source 이름·기본값을 저장한다(상세 UI는 취소). 기존 프로젝트의
+  legacy `SatinOptions`는 max 7mm 등 저장값을 명시적으로 매핑한다. 신규 선택은 source
+  기본값(max 없음)을 쓴다. mm→px는 코어에서 한 번, px→0.1mm는 공통 어댑터에서 한 번이다.
+  split 길이는 source float 경로 기준으로, 양자화 뒤에는 최대 약 0.15mm 오차가 가능하다.
+- 임의 회전/축척은 S1이 기록한 잠금만 제거 후 다시 계획한다. 정수 격자를 보존하는
+  변환은 provenance도 함께 변환한다. **가져온 PES와 범용 PES writer는 변경하지 않는다.**
 
-## 과밀 기준과 embro-model 공유 기록
+## 과밀·시작부 관찰과 embro-model 공유 기준
 
-main의 최신 sew-out 동작은 [sewout-check.md](sewout-check.md)가 우선한다.
-아래는 레터링 생성 경계에서 사용하는 보수적 기준과 공유 제안 이력이다.
-이 기준은 제조사 보증값이 아닌 앱의 보수적 **휴리스틱**이다. 실물 봉제 유효성은 미확인이다.
+실제 판정은 [sewout-check.md](sewout-check.md)와 embro-codex의 고정 게이트가 소유한다.
+`PatternStartAnalysis.starts`는 처음/트림·색 변경·STOP 뒤 첫 20개 STITCH의 셀 최대,
+같은 좌표 최대, 0.3mm 미만 수를 읽기만 한다. 출력 바늘을 삭제하거나 생성 차단하지 않는다.
+S1의 정상 잠금과 본문을 구분해야 하며 S0/0.28mm 고정 수열을 필수로 해서는 안 된다.
 
-1. 좌표 단위는 0.1mm, 셀은 0.5mm. 셀 키는 `(floor(x/5), floor(y/5))`다.
-   STITCH만 바늘 찌름으로 세며 JUMP/TRIM은 제외한다. 음수도 floor를 사용한다.
-2. 한 생성 객체의 **전체 누적 셀 8회 초과** 또는 같은 셀 **연속 6회 초과**면 생성 차단한다.
-   바늘 명령을 임의로 지워 구멍 수만 줄이는 방식으로 통과시키지 않는다.
-3. 최초 시작과 TRIM/색 변경/STOP 이후 각각 첫 **20개 STITCH**를 따로 분석한다.
-   `StitchPlanFinisher.starts(pattern)`은 시작/끝 command index, 실제 바늘 수,
-   셀 최대, 동일 좌표 최대, 0.3mm 미만 개수를 반환한다. JUMP는 20개에 포함하지 않는다.
-4. sew-out check에는 `START_CONCENTRATION` 경고를 추가하는 것을 권장한다.
-   첫 20개 중 셀 8회 초과 또는 동일 좌표 4회 초과, 0길이/초단 땀 발생을 highlight한다.
-   정상 잠금 2–4회가 있으므로 “같은 점 2회”만으로 새둥지라고 단정하면 안 된다.
-5. 객체·글자 경계가 없는 PES에서는 재시작 창과 **전체 도안 누적 셀 검사**를 함께 쓴다.
-   최초 사용자 파일은 연속 셀 최대 3회였지만 누적 셀 38회였다. 연속 검사만으로 놓친다.
-6. 셀 위상에 따라 숫자가 달라지므로 결과/보고서에 기준 원점과 셀 크기를 남긴다.
-   프로젝트의 객체 겹침은 개별 생성 검사를 통과해도 누적이 늘 수 있다. 범용 sew-out
-   엔진이 최종 PES/Project에서 별도로 검사해야 한다.
-7. 이 API는 안전 확정 판정이 아니다. 장력·윗실 끼우기·바늘·원단·심지 등 기계 조건은
-   파일만으로 배제할 수 없다. 원점의 needle-up 이동을 실제 바늘 찌름으로 세지 않는다.
+0.5mm 셀은 x/y 각각 0·0.25mm 이동한 네 위상에서 비교한다. 사용자 불량 파일은 한 셀
+38회였으나 연속 최대는 3회였으므로 누적 검사가 필요하다. 현재 독립 게이트는 정상 코퍼스
+파일 최대의 p99를 올림한 15회를 사용한다. 기존 8회/연속6회 생성 차단은 폐기한 실험 기준이다.
+짧은 땀 수는 원시 값과 잠금 제외 값을 함께 보고한다. 일반 PES에는 객체 ID가 없으므로
+객체 시작 구간을 아는 생성자가 gate matrix에 `object_start_runs`를 선언한다.
 
 ## 검증 방식
 
@@ -103,7 +93,7 @@ main의 최신 sew-out 동작은 [sewout-check.md](sewout-check.md)가 우선한
 
 - 러닝의 직선/곡선 오차·45° 모서리·최대 길이, 빈의 앞–뒤–앞 좌표.
 - 잠금 형태의 고정 좌표, 트림 전후 순서, 최소 땀, 배치/확대 후 잠금 길이.
-- 반전 레일·명시적 렁·교차 렁 거절·새틴 밀도·pull compensation·세 종류 언더레이.
+- 반전 레일·명시적 렁·원본처럼 각 레일별 렁 정렬·새틴 밀도·pull compensation·세 종류 언더레이.
 - auto-fill의 홀/분리 영역·다각도·채움 줄·경로 기하·반복 생성 결정성.
 - Dancing Script Bold(OFL, 고정 SHA-256) `Jung Min` 34mm, 40wt와 한글/영문 10–30mm.
 - 개인 파일·추출 좌표·렌더링·감사 덤프는 `/tmp/myembro-birdnest`에만 둔다.

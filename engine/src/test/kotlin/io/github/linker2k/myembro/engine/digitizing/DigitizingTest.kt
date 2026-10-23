@@ -81,7 +81,7 @@ class DigitizingTest {
         assertTrue(TatamiFill.generate(narrow).stitchCount > 0)
         assertEquals(0, TatamiFill.generate(PolygonRegion.empty()).stitchCount)
         assertEquals(0, RunningStitch.generate(emptyList()).stitchCount)
-        assertEquals(0, RunningStitch.generate(listOf(Polyline(listOf(Point(1.0, 1.0))))).stitchCount) // no zero-length anchor
+        assertEquals(1, RunningStitch.generate(listOf(Polyline(listOf(Point(1.0, 1.0))))).stitchCount) // source retains an isolated anchor
     }
 
     @Test fun invalidSettingsAndExcessiveWorkAreRejected() {
