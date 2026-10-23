@@ -31,7 +31,8 @@ class AutomaticFillTest {
         val steps = moves(p).map { (a, b) -> b.x - a.x }
         val sewn = steps.zipWithNext().count { (a, b) -> a * b < 0 }
         assertTrue(sewn > (steps.size - 1) * 0.85)
-        for (side in listOf(-7, 8)) {
+        assertTrue(abs(p.bounds!!.width-15)<=1) // 1e-5px source precision can move a half-grid endpoint by one machine unit.
+        for (side in listOf(p.bounds!!.minX, p.bounds!!.maxX)) {
             val points = p.stitches.filter { it.command == Command.STITCH && it.x == side }
             assertTrue(points.isNotEmpty())
             assertTrue(points.zipWithNext().all { (a, b) -> abs(b.y - a.y) <= 5 })

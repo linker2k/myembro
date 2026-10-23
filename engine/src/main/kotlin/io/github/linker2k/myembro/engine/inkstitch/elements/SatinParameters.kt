@@ -3,7 +3,7 @@
 @file:Suppress("PropertyName")
 package io.github.linker2k.myembro.engine.inkstitch.elements
 
-/** Names are inkstitch:* attributes. Coordinates/lengths are mm; angles and percentages are unscaled. */
+/** Names are inkstitch:* attributes. Length attributes are mm; angles and percentages are unscaled. */
 data class SatinParameters(
     val satin_method: String = "satin_column",
     val zigzag_spacing_mm: Double = 0.4,
@@ -45,8 +45,8 @@ data class SatinParameters(
     val zigzag_underlay_inset_mm: Pair<Double,Double>? = null,
     val zigzag_underlay_inset_percent: Pair<Double,Double>? = null,
     val zigzag_underlay_max_stitch_length_mm: Double? = null,
-    val min_stitch_length_mm: Double = 0.1,
-    val min_jump_stitch_length_mm: Double = 3.0,
+    val min_stitch_length_mm: Double? = null,
+    val min_jump_stitch_length_mm: Double? = null,
 ) {
     init {
         require(satin_method in setOf("satin_column","e_stitch","s_stitch","zigzag"))
@@ -55,8 +55,8 @@ data class SatinParameters(
         val finite = listOf(zigzag_spacing_mm,short_stitch_distance_mm,split_staggers,random_split_jitter_percent,
             random_zigzag_spacing_percent,running_stitch_length_mm,running_stitch_tolerance_mm,running_stitch_position,
             center_walk_underlay_stitch_length_mm,center_walk_underlay_stitch_tolerance_mm,center_walk_underlay_position,
-            contour_underlay_stitch_length_mm,contour_underlay_stitch_tolerance_mm,zigzag_underlay_spacing_mm,min_stitch_length_mm,min_jump_stitch_length_mm) + short_stitch_inset +
-            listOfNotNull(max_stitch_length_mm,min_random_split_length_mm,zigzag_underlay_max_stitch_length_mm) +
+            contour_underlay_stitch_length_mm,contour_underlay_stitch_tolerance_mm,zigzag_underlay_spacing_mm) + short_stitch_inset +
+            listOfNotNull(max_stitch_length_mm,min_random_split_length_mm,zigzag_underlay_max_stitch_length_mm,min_stitch_length_mm,min_jump_stitch_length_mm) +
             listOfNotNull(pull_compensation_mm,pull_compensation_percent,push_compensation_mm,random_width_decrease_percent,
                 random_width_increase_percent,contour_underlay_inset_mm,contour_underlay_inset_percent,
                 zigzag_underlay_inset_mm,zigzag_underlay_inset_percent).flatMap { listOf(it.first,it.second) }

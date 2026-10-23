@@ -6,7 +6,7 @@
   `b0edd96311ece82ee48816dc93466274b12c2a9c` (안정 태그 v3.3.0).
 - `LICENSE`의 GPL v3 전문과 `lib/stitches/running_stitch.py`,
   `lib/stitch_plan/stitch_plan.py`의 **GNU GPL version 3.0 or later** 표시를 직접 확인했다.
-  라이선스 전문 사본은 `engine/src/main/resources/third_party/inkstitch/LICENSE`에 있다.
+  라이선스 전문 사본은 `engine/src/main/resources/licenses/inkstitch/LICENSE`에 있다.
   원본의 Authors/copyright 표시와 파일·함수·커밋은 각 포팅 파일 주석에도 남겼다.
 - 원본 저장소는 `/tmp`에서 **읽기만** 했다. 원본 Python 실행, 의존성 설치,
   Inkscape/Ink/Stitch 실행, 원본으로 골든 생성은 하지 않았다.
@@ -71,8 +71,10 @@
 - 모든 machine-pattern 생성은 공통 후처리를 거친다. 좌표 변환/배치 후에는 잠금 길이를
   다시 생성한다. **가져온 PES/StitchObject와 범용 PES writer는 변경하지 않는다.**
 
-## 과밀 기준과 embro-model 공유 계약
+## 과밀 기준과 embro-model 공유 기록
 
+main의 최신 sew-out 동작은 [sewout-check.md](sewout-check.md)가 우선한다.
+아래는 레터링 생성 경계에서 사용하는 보수적 기준과 공유 제안 이력이다.
 이 기준은 제조사 보증값이 아닌 앱의 보수적 **휴리스틱**이다. 실물 봉제 유효성은 미확인이다.
 
 1. 좌표 단위는 0.1mm, 셀은 0.5mm. 셀 키는 `(floor(x/5), floor(y/5))`다.

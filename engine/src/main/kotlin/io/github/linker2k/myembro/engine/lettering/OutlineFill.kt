@@ -3,7 +3,7 @@ package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin
 import io.github.linker2k.myembro.engine.inkstitch.stitches.*
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
 import io.github.linker2k.myembro.engine.digitizing.RunningSettings
 import io.github.linker2k.myembro.engine.digitizing.RunningStitch
 import io.github.linker2k.myembro.engine.digitizing.TatamiFill

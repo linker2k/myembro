@@ -16,7 +16,7 @@ class OutlineColumnsTest {
         val points = InkSatin.pairs(column.leftRail.map { Point(it.first, it.second) },
             column.rightRail.map { Point(it.first, it.second) },
             listOf(InkSatin.Rung(Point(-1.0, 3.0), Point(4.0, 3.0))), 0.4)
-        points.forEach { (a, b) -> assertEquals(a.y, b.y, 1e-6) }
+        points.forEach { (a, b) -> assertEquals(a.y, b.y, 1e-5) }
     }
     private fun box(x: Double, y: Double, w: Double, h: Double) = listOf(x to y, x + w to y, x + w to y + h, x to y + h, x to y)
     @Test fun straightOutlineProducesCenterlineAndPairedNormalRails() {

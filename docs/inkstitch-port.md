@@ -5,7 +5,7 @@
 - 공통 기준: **Ink/Stitch v3.3.0**, 커밋 **`b0edd96311ece82ee48816dc93466274b12c2a9c`**.
 - 공식 안정 릴리스: https://github.com/inkstitch/inkstitch/releases/tag/v3.3.0 .
 - 소스: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c .
-- embro-letter의 현재 신규 포트도 이 커밋을 사용한다. 이전 `docs/stitch-algorithms.md`의
+- embro-letter의 현재 신규 포트도 이 커밋을 사용한다. 이전 초안의
   개발 커밋 `16e192849e619399ce8fdefb4c4d249dacdb4db1`과 혼동하지 않는다.
 - `/tmp/myembro-inkstitch-source`에서 `git show <고정커밋>:<path>`로 **읽기만** 한다.
   Ink/Stitch/Inkscape/Python 모듈 실행, 원본 테스트 실행, 원본 의존성 설치는 하지 않는다.
@@ -147,7 +147,7 @@ trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트�
 
 ## 새틴의 공통 계약 연결
 
-공통 계약은 main `cef0156`에서 병합했다. 위의 worker 계약이 우선하며 같은 이름의 모델을 중복 생성하지 않는다.
+공통 계약은 main `cef0156`에서 병합했다. 위의 worker 계약이 우선하며 같은 이름의 모델을 중복 생성하지 않는다. 코어와 공유 모델은 모두 SVG px를 사용한다.
 
 ```text
 Stitch(x, y, tags: jump/trim/stop/lock/...)
@@ -158,30 +158,34 @@ EmbroideryElement.toStitchGroups(previousStitch)
 StitchPlan -> 기존 EmbPattern/PES 어댑터
 ```
 
-연결 위치는 `inkstitch.elements.SatinColumn.generateLayers()`다.
+폰트 연결 위치는 `inkstitch.elements.SatinColumn.fromSubpaths()`이며 직접 레일을 아는 호출자는 생성자를 쓴다.
 `SatinLayer(points, tags, stitchTags)`는 **기하 중간 결과**이며 공통 StitchGroup을
 대체하지 않는다. 바늘별 `satin_column_edge`, `satin_split_stitch`, `peak_a/peak_b` 태그와
 레이어별 `satin_center_walk`, `satin_contour_underlay`, `satin_zigzag_underlay`를 유지한다.
 공통 어댑터는 같은 색의 언더레이/본 땀을 합치고 필요한 러닝 연결을 만든 뒤,
 공통 그룹의 잠금·최소 땀·트림·점프 정책을 한 번 적용해야 한다.
-기존 앱 연결용 `elements.InkSatin`과 `stitch_plan.StitchPlanFinisher`는 이전 실기 불량
-대응의 임시 호환 경계다. 공통 계약이 main에 들어오면 이 경계를 교체한다.
+`SatinColumn`은 이제 `EmbroideryElement`를 구현한다. `toStitchGroups(previousStitch)`가
+worker의 실제 `StitchGroup`을 반환한다. 레이어 간 러닝을 연결하고 색·태그·trim/stop·
+주입된 LockStitch·min length·force lock 설정을 보존한다. 공통 계약은 수동 DTO/어댑터여서
+아직 잠금/필터를 실행하지 않는다. 공통 PlanBuilder가 도착하면 앱의 임시
+`elements.InkSatin`/`stitch_plan.StitchPlanFinisher` 경계를 교체한다.
 
 ### 폰트 파서 연결 예
 
 ```kotlin
-val layers = SatinColumn.generateFromSubpaths(
-    subpaths = flattenedPathsInMm,
+val groups = SatinColumn.fromSubpaths(
+    subpaths = flattenedPathsInSvgPixels,
     parameters = SatinParameters(zigzag_spacing_mm = 0.4),
-    nodePaths = originalBezierEndpointsInMm,
-)
-// layers -> 공통 StitchGroup(color=SVG stroke color, stitches=points+tags, ...)
+    nodePaths = originalBezierEndpointsInSvgPixels,
+    color = svgStrokeColor,
+).toStitchGroups(previousStitch)
 ```
 
 SVG의 path들을 임의 순서로 받을 수 있다. `rail_indices` 방식으로 레일을 찾으며,
 렁이 없으면 원래 Bézier 끝점으로 합성한다. **flattening으로 추가한 점을 원래 노드로
 전달하지 않는다.** 직접 레일·렁을 알고 있으면 `generateLayers(left, right, ..., rungs)`를 쓴다.
-`previousStitch`, `nextStitch`, 명시적 `startPoint/endPoint`도 mm다.
+`previousStitch`, `nextStitch`, 명시적 `startPoint/endPoint`도 SVG px다.
+`SatinParameters`의 `_mm` 속성만 mm이며 private pixel getter에서 한 번 변환한다.
 `random_seed`가 빈 SVG에서는 호출자가 원본처럼 element ID를 기본 seed로 넣는다.
 TTF 외곽선은 이 폰트 API로 가장하지 않으며 기본은 auto-fill + 윤곽 러닝이다.
 
@@ -206,7 +210,7 @@ TTF 외곽선은 이 폰트 API로 가장하지 않으며 기본은 auto-fill + 
 `SatinParameters` 필드명·단위는 SVG 속성에 대응한다. 쌍 값은 첫/둘째 레일 순서,
 `short_stitch_inset`은 **% 목록**, `pull_compensation_percent`도 **%**다.
 원본 기본: spacing 0.4mm, short distance 0.25mm, inset 15%, split `default`,
-max stitch 없음, center/contour/zigzag 언더레이 꺼짐, 각 러닝 길이 3mm,
+max stitch 없음, center/contour/zigzag 언더레이 꺼짐, 언더레이 러닝 길이 3mm,
 center repeats 2, contour inset 0.4mm, zigzag spacing 3mm다.
 랜덤 split의 jitter는 최대 100%, 위상·폭·간격 난수는 원본의 BLAKE2s 카운터 스트림을 쓴다.
 BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 독립 Kotlin 구현이며
@@ -216,11 +220,12 @@ BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 
 
 | 위치 | 차이 | 이유/영향 |
 |---|---|---|
-| SVG 입력 | 코어는 변환된 mm 폴리라인과 원래 노드 목록을 받음 | Inkex의 path parsing/flattening은 canvas 담당. Bézier 엔진을 중복 구현하지 않음 |
-| 기하 | Shapely 대신 기존 JTS 1.20.0, 1e-5 SVG px precision snap은 아직 없음 | 교차·project·substring·offset의 수치 tie-break가 다를 수 있음. 바이트 동일성 미검증 |
+| SVG 입력 | 코어는 SVG px 폴리라인과 원래 노드 목록을 받음 | Inkex의 path parsing/flattening은 canvas 담당. Bézier 엔진을 중복 구현하지 않음 |
+| 기하 | Shapely 대신 기존 JTS 1.20.0. 레일은 동일한 1e-5 SVG px precision grid 적용 | 교차·project·substring·offset의 수치 tie-break가 다를 수 있음. 바이트 동일성 미검증 |
 | 렁 | 다중 교차·교차 렁을 무시하지 않고 예외로 거절 | 방향 제약을 몰래 버려 부채꼴 경로를 생성하지 않기 위한 보수적 차이 |
 | 불량 입력 | 점/명령 수 예산 초과·비유한 값은 거절 | 모바일 자원 제한; 원본의 무제한 크기 지원을 주장하지 않음 |
-| raw 코어 최소 길이 | `min_stitch_length_mm=0.1`은 random split 끝점 필터에 사용; 전체 최소 땀 필터는 아직 적용하지 않음 | 원본도 그룹→StitchPlan 경계에서 전체 필터를 적용. worker 계약 소유권 유지 |
+| raw 코어 최소 길이 | 속성 미지정은 null로 유지하고 random split 계산에서만 metadata 기본 0.1mm를 사용; 전체 최소 땀 필터는 아직 적용하지 않음 | 원본도 그룹→StitchPlan 경계에서 전체 필터를 적용. worker 계약 소유권 유지 |
+| 공통 타입 연결 | `SatinColumn : EmbroideryElement`, 실제 공유 StitchGroup 반환. lockStart/End는 팩토리가 만든 객체를 주입받음 | worker의 수동 계약 병합 완료; 기본 잠금 팩토리/전체 PlanBuilder 알고리즘은 아직 미연결 |
 | raw 코어 잠금/트림 | `lock_start/end`, `trim_after`, `stop_after`는 geometric layer에 삽입하지 않음 | 공통 StitchGroup/Plan에서 적용할 속성. 중복 잠금 방지 |
 | center-walk tolerance | 원본 getter/속성은 노출하되 중심선 계산은 원본처럼 `running_stitch_tolerance_mm` 사용 | v3.3.0 `_get_center_line_stitches` 실제 동작과 일치 |
 | running tolerance | UI decorator 0.1과 달리 getter 기본 **0.2mm** 사용 | v3.3.0 런타임 기본에 맞춤 |
@@ -235,15 +240,17 @@ BLAKE2s는 [RFC 7693 §§2–3](https://www.rfc-editor.org/rfc/rfc7693.html)의 
 
 - v3.3.0 `tests/` 21개 파일을 확인했다. SatinColumn 대응 테스트가 없어 복제할 원본
   입출력 fixture는 없다. `SatinPortTest`는 수기 좌표, 수식, 순서, 난수 벡터 10개다.
-- `SatinFixtureTool`: 저장소의 공개 합성 SVG에서 7종의 PES/명시적 축 매트릭스 생성.
+- `SatinElementContractTest` 3개: SVG px·태그·색·주입 잠금·trim/stop·null 기본값과 실제 공통 패턴 어댑터 연결.
+- `SatinFixtureTool`: 저장소의 공개 합성 SVG → SatinColumn 요소 → 실제 공유 그룹/어댑터 → 7종의 PES/명시적 축 매트릭스 생성.
   `MYEMBRO_SATIN_FIXTURES=/tmp/... ./gradlew :engine:test --tests '*SatinFixtureTool'`.
 - `BirdnestRegressionTest`: 공개 OFL Dancing Script Bold, `Jung Min`, 34mm, 40wt.
   검증되지 않은 SATIN 요청도 auto-fill과 동일한 출력으로 fallback함을 검사한다.
   0.3mm 미만 땀 0, 단일 위상 셀 최대 ≤8, 끝 잠금, PES v1/v6 왕복을 검사한다.
-- 전체 자체 회귀: 엔진 **289개**, 앱 **167개** 성공, `:app:assembleDebug` 성공.
+- 전체 자체 회귀: 엔진 **309개**, 앱 **167개** 성공, `:app:assembleDebug` 성공.
 - 감사 203개 중 200개 생성, 3개 과밀 차단. 생성된 결과의 0.3mm 미만 땀은 0개,
-  단일 위상 셀 최대 8회. `Jung Min`은 5,389땀·셀 최대 7회. 이것은 **자체 회귀 수치**다.
-- 비교 PNG: `/tmp/myembro-birdnest/before.png`, `after-final.png`.
+  단일 위상 셀 최대 8회. `Jung Min`은 5,389땀·단일 위상 셀 최대 7회.
+  독립 게이트의 4위상 셀 최대는 8회다. 시작 형식 차단을 해소한 것은 아니다.
+- 비교 PNG: `/tmp/myembro-birdnest/before.png`, `after.png`.
   개인 파일·추출 좌표·개인 렌더링은 커밋하지 않는다.
 - 독립 실행: `/tmp/myembro-quality-gate/check-release --matrix … --json …`.
   결과는 **BLOCK**. 합성 새틴 0/7, `Jung Min` auto-fill 0/1이다.

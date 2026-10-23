@@ -2,14 +2,17 @@
 package io.github.linker2k.myembro.engine.inkstitch
 
 import io.github.linker2k.myembro.engine.geometry.Point
+import io.github.linker2k.myembro.engine.inkstitch.svg.Units
+import io.github.linker2k.myembro.engine.inkstitch.utils.Point as SvgPoint
 import io.github.linker2k.myembro.engine.inkstitch.elements.*
-import io.github.linker2k.myembro.engine.inkstitch.stitches.InkRunning
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.EmbPatternAdapter
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlan
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.ColorBlock
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchPlanFinisher
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.*
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.math.roundToInt
 import kotlin.test.*
 
 /** Fixed SVG input -> geometric layers -> existing EmbPattern/PES adapter, pending worker StitchGroup contract. */
@@ -33,15 +36,11 @@ class SatinFixtureTool {
             "s-stitch" to SatinParameters(max_stitch_length_mm=7.0,satin_method="s_stitch"),
             "zigzag" to SatinParameters(max_stitch_length_mm=7.0,satin_method="zigzag"))
         for((name,p) in cases) {
-            val layers=SatinColumn.generateLayers(paths[0],paths[1],p,paths.drop(2).map { SatinColumn.Rung(it[0],it[1]) })
-            assertTrue(layers.last().points.size>=150)
-            val points=arrayListOf<Point>()
-            for(layer in layers) {
-                if(points.isNotEmpty())points+=InkRunning.split(points.last(),layer.points.first(),2.5)
-                points+=layer.points
-            }
-            val needles=points.map { Stitch((it.x*10).roundToInt(),(it.y*10).roundToInt(),Command.STITCH) }
-            val raw=EmbPattern(listOf(needles.first().copy(command=Command.JUMP))+needles+needles.last().copy(command=Command.END),listOf(EmbThread(0xFF000000.toInt())))
+            fun Point.svg()=SvgPoint(Units.mmToPixels(x),Units.mmToPixels(y))
+            val group=SatinColumn.fromSubpaths(paths.map { path->path.map { it.svg() } },p,
+                color=EmbThread(0xFF000000.toInt())).toStitchGroups(null).single()
+            assertTrue(group.stitches.size>=150)
+            val raw=EmbPatternAdapter.toEmbPattern(StitchPlan(listOf(ColorBlock(group.color,group.stitches))))
             val safe=StitchPlanFinisher.finish(raw)
             out?.resolve("$name.pes")?.writeBytes(PesWriter.write(safe))
         }

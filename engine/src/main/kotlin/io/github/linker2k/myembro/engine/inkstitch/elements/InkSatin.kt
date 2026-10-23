@@ -4,13 +4,17 @@ package io.github.linker2k.myembro.engine.inkstitch.elements
 
 import io.github.linker2k.myembro.engine.geometry.Point
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.inkstitch.svg.Units
+import io.github.linker2k.myembro.engine.inkstitch.utils.Point as SvgPoint
 
 /** Existing lettering API adapter. Core SVG defaults remain in SatinParameters. */
 object InkSatin {
+    private fun Point.svg()=SvgPoint(Units.mmToPixels(x),Units.mmToPixels(y))
+    private fun SvgPoint.mm()=Point(Units.pixelsToMm(x),Units.pixelsToMm(y))
     data class Rung(val a:Point,val b:Point)
     fun paths(left:List<Point>,right:List<Point>,options:SatinOptions,rungs:List<Rung> = emptyList()):List<List<Point>> {
-        val paired = if(left.size>=2 && right.size>=2) SatinColumn.plotPointsOnRails(left,right) else emptyList()
-        val maximum=minOf(options.maxStitchLengthMm, if(paired.any { it.first.distance(it.second)>7.0 })4.0 else 7.0)
+        val paired = if(left.size>=2 && right.size>=2) SatinColumn.plotPointsOnRails(left.map { it.svg() },right.map { it.svg() }) else emptyList()
+        val maximum=minOf(options.maxStitchLengthMm, if(paired.any { it.first.distance(it.second)>Units.mmToPixels(7.0) })4.0 else 7.0)
         val p=SatinParameters(zigzag_spacing_mm=options.densityMm,
             pull_compensation_mm=options.pullCompensationMm to options.pullCompensationMm,
             max_stitch_length_mm=maximum, short_stitch_distance_mm=0.3,
@@ -22,17 +26,17 @@ object InkSatin {
             zigzag_underlay=options.zigzagUnderlay,
             zigzag_underlay_spacing_mm=options.underlayDensityMm,
             zigzag_underlay_max_stitch_length_mm=options.maxStitchLengthMm)
-        return SatinColumn.generateLayers(left,right,p,rungs.map { SatinColumn.Rung(it.a,it.b) }).map { it.points }
+        return SatinColumn.generateLayers(left.map { it.svg() },right.map { it.svg() },p,rungs.map { SatinColumn.Rung(it.a.svg(),it.b.svg()) }).map { layer->layer.points.map { it.mm() } }
     }
     internal fun pairs(left:List<Point>,right:List<Point>,rungs:List<Rung>,spacing:Double,offsetMm:Double=0.0):List<Pair<Point,Point>> =
-        SatinColumn.plotPointsOnRails(left,right,SatinParameters(zigzag_spacing_mm=spacing,pull_compensation_mm=offsetMm to offsetMm),rungs.map { SatinColumn.Rung(it.a,it.b) })
+        SatinColumn.plotPointsOnRails(left.map { it.svg() },right.map { it.svg() },SatinParameters(zigzag_spacing_mm=spacing,pull_compensation_mm=offsetMm to offsetMm),rungs.map { SatinColumn.Rung(it.a.svg(),it.b.svg()) }).map { it.first.mm() to it.second.mm() }
     internal fun shorten(pairs:List<Pair<Point,Point>>,distanceMm:Double=0.3,insetFraction:Double=0.15):List<Pair<Point,Point>> {
         var a:Point?=null;var b:Point?=null
         return pairs.map { (x,y)->
             val inset=minOf(insetFraction*x.distance(y),7.0/3)
             val dx=if(a==null || x.distance(a!!)>=distanceMm){a=x;0.0}else -inset
             val dy=if(b==null || y.distance(b!!)>=distanceMm){b=y;0.0}else -inset
-            SatinColumn.offsetPoints(x,y,dx to dy)
+            SatinColumn.offsetPoints(x.svg(),y.svg(),Units.mmToPixels(dx) to Units.mmToPixels(dy)).let { it.first.mm() to it.second.mm() }
         }
     }
 }

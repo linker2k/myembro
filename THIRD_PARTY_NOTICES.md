@@ -11,7 +11,7 @@ derived from the following projects, whose notices are reproduced as their licen
   rails/rungs/short-stitch/underlay, deterministic graph auto-fill, and lock/plan processing.
   Each file names its original functions. See [docs/stitch-algorithms.md](docs/stitch-algorithms.md)
   for exact scope, app safety differences and verification limits.
-- Upstream GPL v3 LICENSE copied verbatim to `engine/src/main/resources/third_party/inkstitch/LICENSE`;
+- Upstream GPL v3 LICENSE copied verbatim to `engine/src/main/resources/licenses/inkstitch/LICENSE`;
   source files explicitly permit version 3 or later. No Python runtime or upstream dependencies bundled.
 
 ## Dancing Script Bold — regression tests only (OFL-1.1)
