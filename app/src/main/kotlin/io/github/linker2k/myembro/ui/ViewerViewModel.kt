@@ -46,7 +46,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         private set
     val canExport: Boolean get() = render != null && !loading && !exporting && shareUri == null
 
-    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String)
+    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String, val generated: Boolean)
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
     private var sourceName: String = ""
@@ -54,6 +54,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private var openedFileStamp: Pair<Long, Long>? = null
     private var loadJob: Job? = null
     private var loadVersion = 0
+    private var projectSource: Pair<String?, ByteArray>? = null
 
     /** Editor overwrite may change the library file while this viewer remains on the back stack. */
     fun ensureSourceCurrent(): Boolean {
@@ -86,8 +87,10 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         if (next.machineModel != settings.machineModel || next.defaultFrame.id != settings.defaultFrame.id) {
             selectedFrameId = next.defaultFrame.id
         }
+        val exportVersionChanged = settings.pesVersion != next.pesVersion
         settings = next
-        refreshSewout()
+        val project = projectSource
+        if (exportVersionChanged && project != null) load { project } else refreshSewout()
     }
 
     var sewoutReport by mutableStateOf<SewoutReport?>(null)
@@ -112,7 +115,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         val pattern = render?.pattern ?: return
         if (highlight == null || viewerHighlightArea(pattern, highlight) == null) return
         playing = false
-        progress = pattern.stitches.lastIndex
+        progress = render!!.playback.endIndex
         focusedHighlight = highlight
         focusRequest++
         sewoutSheetOpen = false
@@ -131,7 +134,12 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         checkingSewout = true
         sewoutJob = viewModelScope.launch {
             try {
-                val report = withContext(Dispatchers.Default) { checkViewerSewout(pattern, machine, selectedHoop, placed, pes) }
+                val identity = sourceBytes
+                val report = withContext(Dispatchers.Default) {
+                    val origin = if (identity != null && io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).contains(identity))
+                        DesignOrigin.APP_GENERATED else SewoutCheck.originOf(pattern)
+                    checkViewerSewout(pattern, machine, selectedHoop, placed, pes, origin)
+                }
                 if (version == sewoutVersion) sewoutReport = report
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (error: Exception) {
@@ -146,9 +154,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     var progress by mutableIntStateOf(0)
     var playing by mutableStateOf(false)
 
-    /** Machine commands (stitches, jumps, trims…) advanced per second while playing. */
-    var speed by mutableIntStateOf(400)
-    private var pending = 0f
+    /** Automatic UI preview rate, independent of machine speed and stitch generation. */
+    val playbackRate: Double get() = viewerPlaybackRate(render?.playback?.needleCount ?: 0)
+    private var pending = 0.0
     var showJumps by mutableStateOf(false)
 
     fun open(uri: Uri) {
@@ -263,7 +271,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         val output = if (suggestCopy) suggestDesignName(name) {
             File(getApplication<Application>().filesDir, "designs/$it.pes").exists()
         } else name
-        return ExportRequest(source, sourceName, "$output.pes")
+        return ExportRequest(source, sourceName, "$output.pes",
+            render?.pattern?.let(SewoutCheck::originOf) == DesignOrigin.APP_GENERATED)
     }
 
     private fun <T> export(request: ExportRequest, write: (ByteArray) -> T, onSuccess: (T) -> Unit) {
@@ -275,7 +284,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                     // Normalize/encode before opening the destination, so validation errors
                     // cannot truncate an existing document. Encoding and all writes run on IO.
                     val settings = settingsPreferences.read().writeSettings
-                    write(PesExport.prepare(request.source, request.sourceName, settings).bytes)
+                    val bytes = PesExport.prepare(request.source, request.sourceName, settings).bytes
+                    val origins = io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication())
+                    write(bytes).also { if (request.generated || origins.contains(request.source)) origins.record(bytes) }
                 }
                 onSuccess(result)
             } catch (cancelled: CancellationException) {
@@ -291,6 +302,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private fun load(source: () -> Pair<String?, ByteArray>) {
         val version = ++loadVersion
         loadJob?.cancel()
+        projectSource = null
         loadJob = viewModelScope.launch {
             loading = true
             sewoutVersion++
@@ -305,10 +317,19 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     val (name, bytes) = source()
-                    name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")))
+                    val current = settingsPreferences.read()
+                    name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")),
+                        current.sewing, current.writeSettings)
                 }
             }.onSuccess { (name, opened) ->
                 if (version != loadVersion) return@onSuccess
+                // An export-version edit during generation must not publish an older result.
+                val current = settingsPreferences.read()
+                if (opened.projectSource != null && (opened.sewingOptions != current.sewing || opened.writeSettings?.version != current.pesVersion)) {
+                    load { name to opened.projectSource }
+                    return@onSuccess
+                }
+                projectSource = opened.projectSource?.let { name to it }
                 fileName = name
                 sourceBytes = opened.source
                 sourceName = opened.sourceName
@@ -316,7 +337,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 preservePlacement = opened.hoop != null
                 val data = RenderData(opened.pattern)
                 render = data
-                progress = data.pattern.stitches.lastIndex
+                progress = data.playback.endIndex
+                pending = 0.0
                 refreshSewout()
             }.onFailure {
                 if (it is CancellationException) throw it
@@ -333,21 +355,29 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun pausePlayback() { playing = false; pending = 0.0 }
+
+    fun seekPlayback(commandIndex: Int) {
+        pausePlayback()
+        progress = commandIndex.coerceIn(-1, render?.playback?.endIndex ?: -1)
+    }
+
     fun togglePlay() {
-        val data = render ?: return
-        if (!playing && progress >= data.pattern.stitches.lastIndex) progress = 0
-        pending = 0f
+        val timeline = render?.playback ?: return
+        if (timeline.needleCount == 0) return
+        if (!playing && progress >= timeline.endIndex) progress = -1
+        pending = 0.0
         playing = !playing
     }
 
-    /** Advance playback by [seconds] of wall time; stops at the end. */
+    /** Wall-clock animation only; source stitches and export bytes remain unchanged. */
     fun tick(seconds: Float) {
-        val last = render?.pattern?.stitches?.lastIndex ?: return
-        // Carry the fractional part so slow speeds stay accurate at any frame rate.
-        pending += speed * seconds
-        val steps = pending.toInt()
+        if (!playing || !seconds.isFinite() || seconds <= 0) return
+        val timeline = render?.playback ?: return
+        pending += playbackRate * seconds
+        val steps = pending.coerceAtMost(Int.MAX_VALUE.toDouble()).toInt()
         pending -= steps
-        progress = (progress + steps).coerceAtMost(last)
-        if (progress == last) playing = false
+        progress = timeline.advance(progress, steps)
+        if (progress >= timeline.endIndex) pausePlayback()
     }
 }

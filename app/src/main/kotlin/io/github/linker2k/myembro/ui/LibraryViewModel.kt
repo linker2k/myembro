@@ -320,7 +320,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 val settings = SettingsPreferences(getApplication()).read()
                 val warnings = withContext(Dispatchers.IO) {
                     requested.flatMap { file ->
-                        val pattern = runCatching { DesignFormats.read(file) }.getOrNull()
+                        val pattern = runCatching { DesignFormats.read(file, settings.sewing) }.getOrNull()
                             ?: return@flatMap emptyList()
                         val name = "${file.nameWithoutExtension}.pes"
                         ExportChecks.check(pattern, name, settings, requested.size).map { "$name: $it" }
@@ -442,9 +442,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         busy = true
         viewModelScope.launch {
             try {
-                val writeSettings = SettingsPreferences(getApplication()).read().writeSettings
+                val settings = SettingsPreferences(getApplication()).read()
                 when (val result = withContext(Dispatchers.IO) {
-                    if (plan == null) usb.directExporter.export(target, files, writeSettings)
+                    if (plan == null) usb.directExporter.export(target, files, settings.writeSettings, settings.sewing)
                     else usb.directExporter.resume(target, plan, deleteNames)
                 }) {
                     is DirectUsbExporter.Result.NeedSpace -> directSpaceRequest = DirectSpaceRequest(drive, result.plan)
@@ -467,8 +467,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         busy = true
         viewModelScope.launch {
             try {
-                val settings = SettingsPreferences(getApplication()).read().writeSettings
-                val report = withContext(Dispatchers.IO) { usb.export(folder, files, settings) }
+                val settings = SettingsPreferences(getApplication()).read()
+                val report = withContext(Dispatchers.IO) { usb.export(folder, files, settings.writeSettings, settings.sewing) }
                 usbCompleted(drive, report)
                 selection.clear()
             } catch (e: CancellationException) { throw e }

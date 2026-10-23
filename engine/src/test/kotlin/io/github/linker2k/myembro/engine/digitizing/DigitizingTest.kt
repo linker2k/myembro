@@ -55,18 +55,34 @@ class DigitizingTest {
         }
     }
 
-    @Test fun holesConcavityAndDisconnectedComponentsAreNeverSewnAcross() {
+    @Test fun filteredFillBodyNeverSewsAcrossHolesConcavityOrDisconnectedComponents() {
         val cases = listOf("$square $hole", "M0 0H200V40H40V200H0Z", "M0 0H80V80H0Z M120 0H200V80H120Z")
         for (path in cases) for (angle in listOf(0.0, 37.0, 90.0, -25.0)) {
             val region = SvgPath.polygons(path, FillRule.EVEN_ODD)
             val pattern = TatamiFill.generate(region, TatamiSettings(angleDegrees = angle))
             assertTrue(pattern.stitchCount > 0)
-            assertInside(pattern, region)
+            // Check the ACTUAL filtered body, not stripGeneratedLocks(), which restores
+            // the pre-filter baseline. Ink/Stitch's half-stitch fallback can extend a lock
+            // outside the region; that source behavior has a separate explicit regression.
+            val lockIndices = pattern.metadata[io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.LOCK_INDICES_KEY]
+                .orEmpty().split(',').mapNotNull(String::toIntOrNull).toSet()
+            assertInside(EmbPattern(pattern.stitches.filterIndexed { index, _ -> index !in lockIndices }, pattern.threads), region)
             assertTrue(pattern.trimCount > 0)
         }
         val donut = TatamiFill.generate(SvgPath.polygons("$square $hole", FillRule.EVEN_ODD), TatamiSettings(underlay = false))
         assertTrue(donut.jumpCount > 1) // Generic scanlines jump across counters.
         assertTrue(donut.trimCount > 1)
+    }
+
+    @Test fun sourceHalfStitchFallbackIsNotARegionContainmentGuarantee() {
+        val region = SvgPath.polygons(square)
+        val pattern = io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.finish(
+            EmbPattern(listOf(Stitch(200, 198, Command.JUMP), Stitch(200, 198, Command.STITCH),
+                Stitch(198, 198, Command.STITCH), Stitch(198, 198, Command.END)), listOf(thread)))
+        // Source lock_stitch.py uses +x 0.5 SVG px when no candidate is >0.5mm.
+        // Preserve that behavior openly: it can quantize to a needle 0.1mm outside.
+        assertTrue(pattern.stitches.any { it.command == Command.STITCH && it.x == 201 && it.y == 198 })
+        assertFailsWith<AssertionError> { assertInside(pattern, region) }
     }
 
     @Test fun underlayRunsInsideEdgeBeforeFillAndHandlesCollapsedInsets() {

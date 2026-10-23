@@ -5,7 +5,6 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/myembro_brand_background</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:fontFamily">@font/myembro_sans</item>
     </style>
     <style name="Theme.Myembro.Starting" parent="Theme.Myembro.Starting.Light" />
@@ -16,7 +15,6 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/myembro_light_background</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:fontFamily">@font/myembro_sans</item>
     </style>
     <style name="Theme.Myembro.Starting.Light" parent="Theme.SplashScreen">
@@ -24,7 +22,6 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/myembro_splash_animated_light</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="postSplashScreenTheme">@style/Theme.Myembro.Light</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
@@ -35,7 +32,6 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/myembro_dark_background</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:fontFamily">@font/myembro_sans</item>
     </style>
     <style name="Theme.Myembro.Starting.Dark" parent="Theme.SplashScreen">
@@ -43,7 +39,6 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/myembro_splash_animated_dark</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="postSplashScreenTheme">@style/Theme.Myembro.Dark</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>

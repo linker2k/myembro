@@ -109,4 +109,7 @@
     <string name="sewout_rule_color_count">Color-stage limit</string>
     <string name="sewout_rule_file_size">File-size limit</string>
     <string name="sewout_rule_thumbnail">PEC thumbnail</string>
+    <string name="sewout_badge_pass">Pass</string>
+    <string name="sewout_badge_caution">Caution</string>
+    <string name="sewout_badge_block">Blocked</string>
 </resources>

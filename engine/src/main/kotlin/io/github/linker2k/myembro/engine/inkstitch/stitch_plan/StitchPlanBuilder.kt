@@ -10,7 +10,7 @@ import java.util.IdentityHashMap
 /** Explicit Ink/Stitch postprocessing; the data contract and lossless adapter never invoke it implicitly. */
 object StitchPlanBuilder {
     internal data class RunAnchor(val start: Stitch, val end: Stitch)
-    internal data class TracedPlan(val plan: StitchPlan, val anchors: IdentityHashMap<Stitch, RunAnchor>)
+    internal data class TracedPlan(val plan: StitchPlan, val anchors: IdentityHashMap<Stitch, RunAnchor>, val summary: ProcessingSummary = ProcessingSummary())
     /** Global lengths remain mm, matching the original function arguments; stitches are SVG px. */
     fun fromGroups(
         groups: List<StitchGroup>,
@@ -29,6 +29,13 @@ object StitchPlanBuilder {
         // Source's UI exit and empty-group indexing are unsuitable for a reusable pure engine.
         val nonempty = groups.filter { it.stitches.isNotEmpty() }
         val anchors = IdentityHashMap<Stitch, RunAnchor>()
+        fun boundaryGroup(group: StitchGroup) = if (lockAtThreadBoundaries) group.copy(
+            lockStart = group.lockStart ?: InkLockStitch(), lockEnd = group.lockEnd ?: InkLockStitch()) else group
+        var lockLocations = 0
+        var removed = 0
+        fun lock(group: StitchGroup, position: LockPosition): List<Stitch> = boundaryGroup(group).lockStitches(position, disable_ties).also {
+            if (it.isNotEmpty()) lockLocations++
+        }
         if (nonempty.isEmpty()) return TracedPlan(StitchPlan(), anchors)
         val blocks = mutableListOf<MutableBlock>()
         var block = MutableBlock(nonempty.first().color).also(blocks::add)
@@ -36,15 +43,10 @@ object StitchPlanBuilder {
         var needTieIn = true
         var activeJump: Stitch? = null
 
-        // Product policy: ties=0 at actual thread boundaries, including PEC trimjump restarts.
-        // Keep source geometry, custom enabled locks and force flags; use the original half_stitch.
-        fun boundaryGroup(group: StitchGroup) = if (lockAtThreadBoundaries) group.copy(
-            lockStart = group.lockStart ?: InkLockStitch(), lockEnd = group.lockEnd ?: InkLockStitch()) else group
-
         for (group in nonempty) {
             if (!sameColor(block.color, group.color)) {
                 if (!needTieIn) {
-                    block.stitches += boundaryGroup(previous!!).lockStitches(LockPosition.END, disable_ties)
+                    block.stitches += lock(previous!!, LockPosition.END)
                     needTieIn = true
                 }
                 block.command { it.copy(colorChange = true) }
@@ -55,13 +57,13 @@ object StitchPlanBuilder {
                 val threshold = previousGroup.minJumpLengthMm?.takeIf { it != 0.0 }
                     ?.let(Units::mmToPixels) ?: collapsePixels
                 if (previousGroup.forceLockStitches || distance > threshold) {
-                    block.stitches += boundaryGroup(previousGroup).lockStitches(LockPosition.END, disable_ties)
+                    block.stitches += lock(previousGroup, LockPosition.END)
                     needTieIn = true
                 }
             }
 
             if (needTieIn) {
-                val locks = boundaryGroup(group).lockStitches(LockPosition.START, disable_ties)
+                val locks = lock(group, LockPosition.START)
                 val jump = (locks.firstOrNull() ?: group.stitches.first()).copy(jump = true)
                 block.stitches += jump
                 anchors[jump] = RunAnchor(group.stitches.first(), group.stitches.last())
@@ -76,16 +78,16 @@ object StitchPlanBuilder {
             activeJump?.let { jump -> anchors[jump] = anchors.getValue(jump).copy(end = group.stitches.last()) }
 
             if (group.trimAfter || group.stopAfter) {
-                block.stitches += boundaryGroup(group).lockStitches(LockPosition.END, disable_ties)
+                block.stitches += lock(group, LockPosition.END)
                 needTieIn = true
             }
             if (group.trimAfter) block.command { it.copy(trim = true) }
             if (group.stopAfter) block.command { it.copy(stop = true) }
             previous = group
         }
-        if (!needTieIn) block.stitches += boundaryGroup(previous!!).lockStitches(LockPosition.END, disable_ties)
+        if (!needTieIn) block.stitches += lock(previous!!, LockPosition.END)
         val filtered = blocks.filter { it.stitches.isNotEmpty() }.map {
-            ColorBlock(it.color, filterDuplicateStitches(it.stitches, minPixels))
+            ColorBlock(it.color, filterDuplicateStitches(it.stitches, minPixels) { removed++ })
         }
         // A synthetic JUMP without a lock tag can itself be removed by source filtering.
         // Its body then belongs to the preceding surviving run; trace the resulting endpoint.
@@ -99,13 +101,13 @@ object StitchPlanBuilder {
             }
             if (raw.isTerminator) survivingJump = null
         }
-        return TracedPlan(StitchPlan(filtered), anchors)
+        return TracedPlan(StitchPlan(filtered), anchors, ProcessingSummary(lockLocations, removed))
     }
 
     private fun sameColor(a: EmbThread?, b: EmbThread?): Boolean =
         if (a == null || b == null) a == b else a.sameColor(b)
 
-    private fun filterDuplicateStitches(input: List<Stitch>, globalMinimumPixels: Double): List<Stitch> {
+    private fun filterDuplicateStitches(input: List<Stitch>, globalMinimumPixels: Double, removed: () -> Unit): List<Stitch> {
         if (input.isEmpty()) return input
         val kept = mutableListOf(input.first())
         for (stitch in input.drop(1)) {
@@ -113,7 +115,10 @@ object StitchPlanBuilder {
             if (!kept.last().isJump && !stitch.isStop && !stitch.isTrim && !stitch.isColorChange && !stitch.isEnd && !stitch.isLock) {
                 val minimum = stitch.minStitchLengthMm?.takeIf { it != 0.0 }
                     ?.let(Units::mmToPixels) ?: globalMinimumPixels
-                if (stitch.distance(kept.last()) <= minimum) continue
+                if (stitch.distance(kept.last()) <= minimum) {
+                    if (!stitch.isJump) removed()
+                    continue
+                }
             }
             kept += stitch
         }

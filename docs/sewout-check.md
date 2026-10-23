@@ -1,3 +1,21 @@
+> **POLICY v5 (2026-10-24)** — 아래 초기 정책을 대체합니다. 생성 출력: 0.5mm 셀 15회 초과,
+> 같은 점 연속 바늘 3회 초과, 실 시작·끝 잠금 미확인은 차단. 가져온 PES: 주의, 단 셀 밀집 30회 초과는 차단.
+> 최대 땀은 동결 게이트의 12.184118164618463mm(334파일 실측 최대+0.15mm); 파일 유효성·후프/기종 제한은 유지.
+> 밀집은 x/y 각각 0·0.25mm 네 격자 위상을 확인하며, 중간에 다른 바늘 위치를 지난 재방문은 연속 반복이 아닙니다.
+> 잠금은 동결 `lock_geometry.py`의 1mm 이내 왕복/2–3회 경계 바늘 또는 기존 기능적 3mm 잠금으로 판정합니다.
+> 짧은 땀·겹침은 INFO 참고 지표. 배지는 통과/주의/차단이며, 차단 상태에서는 전송을 우회할 수 없습니다.
+> 출처는 엔진 생성 마커와 앱이 내보낸 PES의 SHA-256 기록으로 확인합니다. 확장자·파일명으로 추측하지 않습니다.
+> 기록 이전의 출처 불명 PES는 가져온 파일로 취급합니다. 점검은 바늘/파일을 수정하지 않습니다.
+
+
+고정 Python gate v5와의 회귀 비교는 `GateV5ParityTest`에서 공개 S1 샘플러 및 합성 경계값
+총 10종을 사용합니다. 동일 PES 바이트의 SHA-256, 판정(생성/가져오기), 땀 수·4위상 밀집·연속 반복·
+잠금 누락·최대 길이를 비교합니다. 가져오기 판정은 v5 자체 옵션이 아닌 POLICY 어댑터의 계산값입니다.
+CI는 저장된 기대값을 읽고, 갱신은 `tools/refresh_sewout_gate_reference.py`로 명시적으로 실행합니다.
+PEC 선언 블록 범위를 벗어난 END/명령은 차단하며 TRIM+JUMP 결합 플래그도 보존합니다.
+제어 명령용 0길이 구간은 잠금 기회에서 제외하되 밀집/연속 바늘 집계에는 포함합니다.
+최초 바늘의 원점 이동도 실제 PES의 최대 땀 길이에 포함합니다. 공개 `PesReader` API는 유지합니다.
+
 # 봉제 전 검증 — Sew-out Check
 
 2026-10-23. 순수 JVM `:engine`의 `engine.sewout` API입니다. 입력 명령을 순서대로 따라가며
@@ -194,3 +212,24 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test
 밀도 차단 78곳, 동일 좌표 차단 113곳, 시작 잠금 미확인 경고 22곳이며 분석은 완료됐습니다.
 짧은 땀 경고 256개는 길이가 있는 0.3mm 미만 땀 255개와 0거리 반복 1개입니다.
 부채꼴 새틴 모양 자체를 분류하는 검사는 추가하지 않았으며 바늘 진입 누적으로 차단합니다.
+
+## 자동 정책 회귀 (2026-10-24)
+
+- `SewoutSafetyTest`: 15/16, 30/31/38, 3/4 경계값, 네 위상 밀집, 시작·끝 잠금, 출처, 파일·후프·최대 땀, 생략된 차단 결과.
+- `S1PolicyRegressionTest`: 실제 Android 앱의 “ABC 가나다” 5/8/12mm와 원·사각, 총 5개 `.myembro`
+  입력을 재생성 → 기본 PES v1 → `SewoutCheck` 생성 기준 통과 assert.
+- 공식 v3.3.0 ties 사각형·stitch_plan 모서리 2개는 땀수 ±5%·대칭 Hausdorff ≤0.2mm assert.
+  bbox 중심 평행이동만 정규화하며 회전·스케일을 맞추지 않음. 총 7개 대표 사례, 큰 매트릭스 실행 없음.
+- 출처·입력 해시는 `engine/src/test/resources/{sewout/s1,inkstitch-oracle}/PROVENANCE.json`.
+  개인 도안이나 CI의 `/tmp` 의존성은 없음. 원본 프로그램은 실행하지 않음.
+- `./gradlew check`에서 자동 실행. CI는 모든 push·PR에서 같은 명령과 APK 빌드를 실행.
+
+근거: `/tmp/myembro-quality-gate/POLICY.md`와 동결 게이트 v5.
+
+고정 기준 SHA-256: thresholds.json `a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848`, lock_geometry.py `5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42`.
+
+검증 명령: `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check :app:assembleDebug --console=plain`.
+실행 출력: **BUILD SUCCESSFUL in 46s**, 엔진 401개·앱 debug/release 각각 172개 실패 0.
+JUnit에서 자동 추출한 대표 7건 결과: `/tmp/myembro-sewout-policy-results.json`.
+전체 check에서 발견된 기존 API-27 테마 항목은 v27 리소스로 분리하고, 비동기 UI 로딩은 명시적 remember/LaunchedEffect
+상태 갱신으로 정리했다. lint 검사를 끄거나 기준을 낮추지 않았다.

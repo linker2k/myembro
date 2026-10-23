@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -52,13 +53,22 @@ fun StitchCanvas(
     preservePlacement: Boolean = false,
     highlight: Highlight? = null,
     focusRequest: Int = 0,
+    blockerHighlights: List<Highlight> = emptyList(),
+    onBlockerTap: ((Highlight) -> Unit)? = null,
 ) {
     val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
     val needleColor = MaterialTheme.colorScheme.primary.toArgb()
-    val highlightColor = MaterialTheme.colorScheme.primary.toArgb()
-    val highlightFill = MaterialTheme.colorScheme.primary.copy(alpha = .16f).toArgb()
+    val blockingColor = MaterialTheme.colorScheme.error.toArgb()
+    val highlightSchemeColor = if (highlight != null && highlight in blockerHighlights) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val highlightColor = highlightSchemeColor.toArgb()
+    val highlightFill = highlightSchemeColor.copy(alpha = .16f).toArgb()
     val highlightDescription = stringResource(R.string.sewout_highlight_description)
+    val blockerAreas = remember(data, blockerHighlights) {
+        blockerHighlights.mapNotNull { h -> viewerHighlightArea(data.pattern, h)?.let { h to it } }
+    }
+    val blockerDescription = stringResource(R.string.playback_blocker_description, blockerAreas.size)
+    val currentBlockerTap by rememberUpdatedState(onBlockerTap)
     val bounds = remember(data) { viewerMovementBounds(data.pattern) ?: Bounds(0, 0, 1, 1) }
     val cx = if (preservePlacement) 0f else (bounds.minX.toLong() + bounds.maxX) / 2f
     val cy = if (preservePlacement) 0f else (bounds.minY.toLong() + bounds.maxY) / 2f
@@ -100,7 +110,8 @@ fun StitchCanvas(
 
     Canvas(
         modifier.onSizeChanged { canvasSize = it }.semantics {
-            if (highlightArea != null) contentDescription = highlightDescription
+            if (blockerAreas.isNotEmpty()) contentDescription = blockerDescription
+            else if (highlightArea != null) contentDescription = highlightDescription
         }
             .pointerInput(data, fitRequest) {
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
@@ -111,8 +122,23 @@ fun StitchCanvas(
                     zoom = newZoom
                 }
             }
-            .pointerInput(data, fitRequest) {
-                detectTapGestures(onDoubleTap = { zoom = 1f; pan = Offset.Zero })
+            .pointerInput(data, fitRequest, blockerAreas, frame, hoop, preservePlacement) {
+                detectTapGestures(onDoubleTap = { zoom = 1f; pan = Offset.Zero }, onTap = { tap ->
+                    val fit = viewerCanvasFit(bounds, frame?.width?.toFloat() ?: hoop.widthMm * 10f,
+                        frame?.height?.toFloat() ?: hoop.heightMm * 10f, preservePlacement, size.width.toFloat(), size.height.toFloat())
+                    val scale = fit * zoom
+                    val nearest = blockerAreas.minByOrNull { (_, area) ->
+                        val x = ((area.minX + area.maxX) / 2 - cx) * scale + size.width / 2f + pan.x
+                        val y = ((area.minY + area.maxY) / 2 - cy) * scale + size.height / 2f + pan.y
+                        kotlin.math.hypot(x - tap.x, y - tap.y)
+                    }
+                    if (nearest != null) {
+                        val area = nearest.second
+                        val x = ((area.minX + area.maxX) / 2 - cx) * scale + size.width / 2f + pan.x
+                        val y = ((area.minY + area.maxY) / 2 - cy) * scale + size.height / 2f + pan.y
+                        if (kotlin.math.hypot(x - tap.x, y - tap.y) <= 24.dp.toPx()) currentBlockerTap?.invoke(nearest.first)
+                    }
+                })
             },
     ) {
         val hoopW = frame?.width?.toFloat() ?: (hoop.widthMm * 10f)
@@ -151,6 +177,14 @@ fun StitchCanvas(
                 if (jumps > 0) canvas.drawLines(data.jumpLines, 0, jumps * 4, jumpPaint)
             }
 
+            val blockerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = blockingColor; style = Paint.Style.STROKE; strokeWidth = 2.dp.toPx() / scale
+            }
+            blockerAreas.forEach { (_, area) ->
+                canvas.drawCircle(((area.minX + area.maxX) / 2).toFloat(), ((area.minY + area.maxY) / 2).toFloat(),
+                    10.dp.toPx() / scale, blockerPaint)
+            }
+
             highlightArea?.let { area ->
                 val left = area.minX.toFloat(); val top = area.minY.toFloat()
                 val right = maxOf(area.maxX.toFloat(), left + 1); val bottom = maxOf(area.maxY.toFloat(), top + 1)
@@ -165,7 +199,7 @@ fun StitchCanvas(
 
             // Needle position while the design is only partly sewn.
             val stitches = data.pattern.stitches
-            if (progress < stitches.lastIndex) {
+            if (stitches.isNotEmpty() && progress < data.playback.endIndex) {
                 val s = stitches[progress.coerceIn(0, stitches.lastIndex)]
                 canvas.drawCircle(s.x.toFloat(), s.y.toFloat(), 6f / scale, needlePaint)
             }

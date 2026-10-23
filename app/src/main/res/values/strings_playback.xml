@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_title">Stitch preview</string>
+    <string name="playback_seek">Sewing order</string>
+    <string name="playback_stitch_count">%1$,d / %2$,d stitches</string>
+    <string name="playback_blocker_description">Blocking problems marked with red circles: %1$d locations</string>
+    <string name="playback_check_pass">Pass</string>
+    <string name="playback_check_blocked">Blocked</string>
+    <string name="playback_check_blocked_reason">Review the check before transferring.</string>
+</resources>

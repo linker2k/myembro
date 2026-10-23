@@ -1,0 +1,159 @@
+{
+  "tool_version": 5,
+  "sources": {
+    "gate.py": "a49e0bd4c8ae485e6ea7d0eb1a05692c47d71c20f389223211c7f7e4a5c4319a",
+    "lock_geometry.py": "5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42",
+    "thresholds.json": "a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848",
+    "POLICY.md": "47f03940d266d713f2d99f54a47e4e2e2797d128cd6f007759cc69a8aa6ca1b2"
+  },
+  "cases": {
+    "density16": {
+      "sha256": "3ec0fef0408a3c16415ac66992c2d94510d19eacfe4a30efd02a2d8a63bf5ec2",
+      "verdict": "BLOCK",
+      "reasons": [
+        "CELL_DENSITY: 16 > 15 needles/0.5mm cell"
+      ],
+      "metrics": {
+        "stitch_count": 16,
+        "cell_peak_05mm": 16,
+        "max_same_point_consecutive": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 0.316227766016838
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "density30": {
+      "sha256": "69ba24627140d8ed63f9c7daa77f3776c0159febbccf86065e3be5dd8a1c2ab5",
+      "verdict": "BLOCK",
+      "reasons": [
+        "CELL_DENSITY: 30 > 15 needles/0.5mm cell"
+      ],
+      "metrics": {
+        "stitch_count": 30,
+        "cell_peak_05mm": 30,
+        "max_same_point_consecutive": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 0.5656854249492381
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "density31": {
+      "sha256": "495b1545f7fe7fa7a3edede78938926543e4034f8d203a4e38a36657941e77e7",
+      "verdict": "BLOCK",
+      "reasons": [
+        "CELL_DENSITY: 31 > 15 needles/0.5mm cell"
+      ],
+      "metrics": {
+        "stitch_count": 31,
+        "cell_peak_05mm": 31,
+        "max_same_point_consecutive": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 0.5656854249492381
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "hoop101": {
+      "sha256": "abf6e2e1db490df616e84106c4866675d58addb5b4badfe92d66c0101f2d01b7",
+      "verdict": "BLOCK",
+      "reasons": [
+        "HOOP_RANGE: design extent [101.0, 0.0] exceeds SE400 100x100 mm"
+      ],
+      "metrics": {
+        "stitch_count": 29,
+        "cell_peak_05mm": 2,
+        "max_same_point_consecutive": 2,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 4.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "invalid_length": {
+      "sha256": "1ee0d0d444d64efbb12b0f13ed835f7ec64b621d0a00ebcaba8607154fe71a6e",
+      "verdict": "BLOCK",
+      "imported_policy_verdict": "BLOCK",
+      "reasons": [
+        "UNREADABLE_OR_INVALID_PES: PEC stitch-block length exceeds file"
+      ]
+    },
+    "long_first": {
+      "sha256": "d365185cad7e6c0d3efa2e0851a0ca5bec9f3bbe390b73233f4eb3bb8d76d509",
+      "verdict": "BLOCK",
+      "reasons": [
+        "LONG_STITCH: 20.000 > 12.184mm"
+      ],
+      "metrics": {
+        "stitch_count": 4,
+        "cell_peak_05mm": 2,
+        "max_same_point_consecutive": 2,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 20.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "missing_end": {
+      "sha256": "305a3887ef2d341c9cc85aaed59e1d0161531c654642728518a9332393601f13",
+      "verdict": "BLOCK",
+      "reasons": [
+        "END_LOCK_MISSING: 1/1 trim/color/stop/final boundaries"
+      ],
+      "metrics": {
+        "stitch_count": 4,
+        "cell_peak_05mm": 2,
+        "max_same_point_consecutive": 2,
+        "start_lock_missing": 0,
+        "end_lock_missing": 1,
+        "maximum_stitch_mm": 4.0
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "repeat3": {
+      "sha256": "558fa1b61ce5023294937826001a53fc872b644b292ec0e63de4933497b7d94f",
+      "verdict": "PASS",
+      "reasons": [],
+      "metrics": {
+        "stitch_count": 5,
+        "cell_peak_05mm": 3,
+        "max_same_point_consecutive": 3,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 4.0
+      },
+      "imported_policy_verdict": "PASS"
+    },
+    "repeat4": {
+      "sha256": "6037f6a781e88d84e49a6377cdf9fded385bff61ab2be06317c228a6da5ee602",
+      "verdict": "BLOCK",
+      "reasons": [
+        "SAME_POINT_REPEAT: 4 > 3"
+      ],
+      "metrics": {
+        "stitch_count": 6,
+        "cell_peak_05mm": 4,
+        "max_same_point_consecutive": 4,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 4.0
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "sampler": {
+      "sha256": "124a4b0db5cade5ef8a8322389c428fb3af4cf5a6ed2a69e34aa26cbf2926519",
+      "verdict": "PASS",
+      "reasons": [],
+      "metrics": {
+        "stitch_count": 723,
+        "cell_peak_05mm": 11,
+        "max_same_point_consecutive": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 2.5
+      },
+      "imported_policy_verdict": "PASS"
+    }
+  }
+}

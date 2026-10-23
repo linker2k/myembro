@@ -1,0 +1,181 @@
+{
+    "format": "myembro",
+    "version": 1,
+    "hoop": {
+        "name": "100×100",
+        "width": 1000,
+        "height": 1000
+    },
+    "objects": [
+        {
+            "type": "stitch",
+            "id": "SQUARE",
+            "name": "SQUARE",
+            "visible": true,
+            "transform": {
+                "x": 0.0,
+                "y": 0.0,
+                "rotationDeg": 0.0,
+                "scaleX": 1.0,
+                "scaleY": 1.0
+            },
+            "sourcePattern": {
+                "stitches": [
+                    [
+                        -50,
+                        -50,
+                        "JUMP"
+                    ],
+                    [
+                        -50,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -42,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -35,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -42,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -25,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        0,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        25,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        50,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        50,
+                        -25,
+                        "STITCH"
+                    ],
+                    [
+                        50,
+                        0,
+                        "STITCH"
+                    ],
+                    [
+                        50,
+                        25,
+                        "STITCH"
+                    ],
+                    [
+                        50,
+                        50,
+                        "STITCH"
+                    ],
+                    [
+                        25,
+                        50,
+                        "STITCH"
+                    ],
+                    [
+                        0,
+                        50,
+                        "STITCH"
+                    ],
+                    [
+                        -25,
+                        50,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        50,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        25,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        0,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -25,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -42,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -35,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -42,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -50,
+                        "STITCH"
+                    ],
+                    [
+                        -50,
+                        -50,
+                        "END"
+                    ]
+                ],
+                "threads": [
+                    {
+                        "color": -16777216,
+                        "description": "Black"
+                    }
+                ],
+                "metadata": {
+                    "name": "Running stitch",
+                    "myembro.inkstitch.summary.lock_locations": "2",
+                    "myembro.inkstitch.summary.short_stitches_removed": "1",
+                    "myembro.inkstitch.finished": "v1",
+                    "myembro.inkstitch.lock_indices": "1,2,3,4,5,22,23,24,25",
+                    "myembro.inkstitch.run_anchors": "0:-50:-50:-50:-50",
+                    "myembro.inkstitch.command_anchors": "",
+                    "myembro.inkstitch.source_stitches": "-50:-50:1;-50:-50:0;-25:-50:0;0:-50:0;25:-50:0;50:-50:0;50:-25:0;50:0:0;50:25:0;50:50:0;25:50:0;0:50:0;-25:50:0;-50:50:0;-50:25:0;-50:0:0;-50:-25:0;-50:-50:0;-50:-50:5",
+                    "myembro.inkstitch.sewing_options": "{\"min_stitch_length_mm\":0.1,\"min_jump_stitch_length_mm\":3.0,\"trim_after\":false,\"ties\":0,\"force_lock_stitches\":false,\"lock_start\":\"half_stitch\",\"lock_end\":\"half_stitch\",\"lock_custom_start\":\"\",\"lock_custom_end\":\"\",\"lock_start_scale_mm\":0.7,\"lock_end_scale_mm\":0.7,\"lock_start_scale_percent\":100.0,\"lock_end_scale_percent\":100.0}"
+                },
+                "warnings": []
+            }
+        }
+    ]
+}

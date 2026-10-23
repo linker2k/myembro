@@ -64,14 +64,15 @@ class GeneratedPatternProcessorTest {
         assertPatternEquals(source, GeneratedPatternProcessor.stripGeneratedLocks(finished))
     }
 
-    @Test fun explicitShortJumpRemainsNeedleUpAndBothSidesGetLocks() {
+    @Test fun explicitShortJumpRemainsNeedleUpWhileSourceMinimumSuppressesInnerLocks() {
         val source = EmbPattern(listOf(machine(0, command = Command.JUMP), machine(0), machine(20), machine(21, command = Command.JUMP), machine(21), machine(41)), listOf(red))
         val finished = GeneratedPatternProcessor.finish(source)
         assertEquals(listOf(0, 21), finished.stitches.filter { it.command == Command.JUMP }.map { it.x })
         val boundary = finished.stitches.indexOf(machine(21, command = Command.JUMP))
         val locks = finished.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY]!!.split(',').map(String::toInt).toSet()
-        assertTrue(boundary - 1 in locks)
-        assertTrue(boundary + 1 in locks)
+        assertFalse(boundary - 1 in locks)
+        assertFalse(boundary + 1 in locks)
+        assertEquals(2, ProcessingSummary.fromPattern(finished)!!.lockLocations)
         assertEquals(Command.END, finished.stitches.last().command)
         assertPatternEquals(finished, GeneratedPatternProcessor.finish(finished, rebuild = true))
     }
@@ -161,14 +162,14 @@ class GeneratedPatternProcessorTest {
         assertEquals(listOf(0, 100, 140), trimmed.stitches.filter { it.command == Command.STITCH }.map { it.x })
     }
 
-    @Test fun legacyLocksFollowActualCornersAndShortRunsWithoutPositiveXFallback() {
+    @Test fun defaultLocksRetainSourceHalfPixelFallbackRatherThanClipToLegacyGeometry() {
         val points = listOf(machine(0, command = Command.JUMP), machine(0), machine(2), machine(2, 2), machine(2, 2, Command.END))
         val finished = GeneratedPatternProcessor.finish(EmbPattern(points, listOf(red)))
         val sewn = finished.stitches.filter { it.command == Command.STITCH }
-        assertTrue(sewn.all { it.x in 0..2 && it.y in 0..2 && (it.y == 0 || it.x == 2) })
-        assertTrue(finished.stitches.zipWithNext().all { (a, b) -> a.command != Command.STITCH || b.command != Command.STITCH || a.x == b.x || a.y == b.y })
+        // Source RelativeLock cannot find a point >0.5mm away, so it uses +x,0.5px.
+        assertTrue(sewn.any { it.x == 3 && it.y == 2 })
         val shortBoundary = EmbPattern(listOf(machine(200, 198, Command.JUMP), machine(200, 198), machine(198, 198), machine(198, 198, Command.END)), listOf(red))
-        assertTrue(GeneratedPatternProcessor.finish(shortBoundary).stitches.all { it.x in 198..200 && it.y == 198 })
+        assertTrue(GeneratedPatternProcessor.finish(shortBoundary).stitches.any { it.command == Command.STITCH && it.x == 201 && it.y == 198 })
         assertEquals(points, GeneratedPatternProcessor.stripGeneratedLocks(finished).stitches)
     }
 

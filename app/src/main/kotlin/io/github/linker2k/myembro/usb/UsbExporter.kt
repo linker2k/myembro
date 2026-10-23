@@ -18,6 +18,7 @@ import android.hardware.usb.UsbManager
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.library.DesignFormats
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.io.File
 
 /**
@@ -83,7 +84,7 @@ class UsbExporter(private val context: Context) {
     }
 
     /** Writes each design as PES into [tree]. Blocking: call from a background dispatcher. */
-    fun export(tree: Uri, designs: List<File>, settings: PesWriteSettings = PesWriteSettings()): Report {
+    fun export(tree: Uri, designs: List<File>, settings: PesWriteSettings = PesWriteSettings(), sewingOptions: SewingOptions? = null): Report {
         val folder = DocumentFile.fromTreeUri(context, tree) ?: error("Cannot open the USB folder")
         val existing = folder.listFiles().mapNotNull { it.name }.toMutableSet()
         val exported = mutableListOf<String>()
@@ -93,7 +94,7 @@ class UsbExporter(private val context: Context) {
         var converted = 0
         for (design in designs) {
             runCatching {
-                val prepared = DesignFormats.preparePes(design, settings)
+                val prepared = DesignFormats.preparePes(design, settings, sewingOptions)
                 val name = PesExport.uniqueName(prepared.fileName) { it in existing }
                 // octet-stream keeps the exact file name; a PES MIME type would let providers rename it.
                 val doc = folder.createFile("application/octet-stream", name)

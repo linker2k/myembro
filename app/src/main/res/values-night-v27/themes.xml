@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.Myembro" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/myembro_brand_background</item>
+        <item name="android:colorAccent">@color/myembro_brand_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/myembro_brand_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:fontFamily">@font/myembro_sans</item>
+    </style>
+    <style name="Theme.Myembro.Starting" parent="Theme.Myembro.Starting.Dark" />
+</resources>

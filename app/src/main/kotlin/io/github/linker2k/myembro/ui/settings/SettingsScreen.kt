@@ -51,7 +51,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -382,8 +382,9 @@ private fun RadioOption(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun LicenseDialog(asset: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val result by produceState<Result<String>?>(null, asset) {
-        value = try {
+    var result by remember { mutableStateOf<Result<String>?>(null) }
+    LaunchedEffect(asset) {
+        result = try {
             Result.success(withContext(Dispatchers.IO) { context.assets.open(asset).bufferedReader().use { it.readText() } })
         } catch (cancelled: CancellationException) {
             throw cancelled
