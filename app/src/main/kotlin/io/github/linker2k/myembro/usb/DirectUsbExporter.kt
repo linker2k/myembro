@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.usb
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.library.DesignFormats
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.io.File
 import java.io.IOException
 
@@ -25,10 +26,10 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
         data class NeedSpace(val plan: SpacePlan) : Result
     }
 
-    fun export(target: DirectUsbTarget, designs: List<File>, settings: PesWriteSettings): Result {
+    fun export(target: DirectUsbTarget, designs: List<File>, settings: PesWriteSettings, sewingOptions: SewingOptions? = null): Result {
         val failures = mutableListOf<Pair<String, String>>()
         val payloads = designs.mapNotNull { file -> runCatching {
-            val prepared = DesignFormats.preparePes(file, settings)
+            val prepared = DesignFormats.preparePes(file, settings, sewingOptions)
             // Only parse a content label if the actual filename contains no meaningful design name.
             val label = if (UsbDesignNames.needsDesignLabel(file.name))
                 runCatching { DesignFormats.read(file).metadata["name"] }.getOrNull() else null

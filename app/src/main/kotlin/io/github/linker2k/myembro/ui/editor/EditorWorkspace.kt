@@ -281,10 +281,11 @@ private fun StitchInspector(vm: EditorViewModel, showJumps: Boolean, onJumps: (B
     preview: Float, onPreview: (Float) -> Unit, enabled: Boolean) {
     val project = vm.project
     val selected = vm.selectedIds
-    val pattern by produceState(EmbPattern(emptyList(), emptyList()), project, selected) {
+    val sewingOptions = vm.settings.sewing
+    val pattern by produceState(EmbPattern(emptyList(), emptyList()), project, selected, sewingOptions) {
         value = withContext(Dispatchers.Default) {
-            val result = if (selected.isEmpty()) project.flatten()
-                else project.copy(objects = project.objects.filter { it.id in selected }).flatten()
+            val result = if (selected.isEmpty()) project.flatten(sewingOptions)
+                else project.copy(objects = project.objects.filter { it.id in selected }).flatten(sewingOptions)
             result.apply { stitchCount; colorBlocks; trimCount }
         }
     }

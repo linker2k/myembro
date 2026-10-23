@@ -54,6 +54,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private var openedFileStamp: Pair<Long, Long>? = null
     private var loadJob: Job? = null
     private var loadVersion = 0
+    private var projectSource: Pair<String?, ByteArray>? = null
 
     /** Editor overwrite may change the library file while this viewer remains on the back stack. */
     fun ensureSourceCurrent(): Boolean {
@@ -86,8 +87,10 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         if (next.machineModel != settings.machineModel || next.defaultFrame.id != settings.defaultFrame.id) {
             selectedFrameId = next.defaultFrame.id
         }
+        val exportVersionChanged = settings.pesVersion != next.pesVersion
         settings = next
-        refreshSewout()
+        val project = projectSource
+        if (exportVersionChanged && project != null) load { project } else refreshSewout()
     }
 
     var sewoutReport by mutableStateOf<SewoutReport?>(null)
@@ -291,6 +294,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private fun load(source: () -> Pair<String?, ByteArray>) {
         val version = ++loadVersion
         loadJob?.cancel()
+        projectSource = null
         loadJob = viewModelScope.launch {
             loading = true
             sewoutVersion++
@@ -305,10 +309,19 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     val (name, bytes) = source()
-                    name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")))
+                    val current = settingsPreferences.read()
+                    name to readViewerDesign(bytes, name, DesignSourceResolver(File(getApplication<Application>().filesDir, "designs")),
+                        current.sewing, current.writeSettings)
                 }
             }.onSuccess { (name, opened) ->
                 if (version != loadVersion) return@onSuccess
+                // An export-version edit during generation must not publish an older result.
+                val current = settingsPreferences.read()
+                if (opened.projectSource != null && (opened.sewingOptions != current.sewing || opened.writeSettings?.version != current.pesVersion)) {
+                    load { name to opened.projectSource }
+                    return@onSuccess
+                }
+                projectSource = opened.projectSource?.let { name to it }
                 fileName = name
                 sourceBytes = opened.source
                 sourceName = opened.sourceName

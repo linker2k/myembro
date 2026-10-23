@@ -23,6 +23,6 @@ internal fun editorExportProblems(project: Project, settings: EmbroiderySettings
     if (settings.machineProfile == null) problems += "machine_unknown"
     else if (editorHoops(settings.machineProfile).none { it.sameArea(project.hoop) }) problems += "hoop_unsupported"
     if (project.exceedsHoop()) problems += "hoop_overflow"
-    problems += ExportChecks.check(project.flatten(), fileName, settings)
+    problems += ExportChecks.check(project.flatten(settings.sewing), fileName, settings)
     return problems
 }
