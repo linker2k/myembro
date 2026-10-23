@@ -341,8 +341,8 @@ python3 tools/generate_inkstitch_worker_matrix.py
   SHA-256을 검증하며 `.oracle.json`에서는 식별·출처 필드만 읽는다.
 - 출력: `/tmp/myembro-port-out/worker/{stitch_plan,ties,stroke}/<id>.pes`.
 - 목록·입력 해시·실행 커밋·dirty 여부: 같은 폴더 `manifest.json`, `inputs.tsv`.
-- 507건 중 505건 생성, 2건은 stroke가 없고 퇴화된 fill만 있어 명시적 X.
-  fill을 임의 running으로 바꾸지 않는다. GENERATED는 동등 판정이 아니다.
+- 활성 `defaults-v2`: 168건(각 기능 56건) 전부 생성. 이 SVG에는 기본값을 덮어쓰는 숫자 속성을 주입하지 않는다.
+  이전 탐색 매트릭스 507건/505개 생성 기록은 과거 기록이며 새 기본값 판정에 섞지 않는다. GENERATED는 동등 판정이 아니다.
 - Runner는 Inkex CSP 제어점→transform→0.1px subdivision, 전체 명령의 bbox 중심,
   pystitch translate/scale 평가 순서와 Python 짝수 반올림을 원본처럼 적용한다.
   공개 adapter와 편집기 배치 좌표 계약은 변경하지 않는다.
@@ -374,7 +374,7 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
 본문 검증 통과나 oracle 동등이 잠금까지 항상 도형 안에 있다는 안전 승인을 뜻하지 않는다.
 이 경계 사례와 native bridge의 명시적 JUMP 보존은 독립 Codex 검토 항목이며, 실제 봉제는 미검증이다.
 
-### S1 독립 비교 기록
+### 이전 탐색 매트릭스 독립 비교 기록 (matrix-v1, 이력)
 
 `compare_matrix.py`(criteria SHA-256
 `fbbf03ab6872d767b2c996f46f3c1cf3055b0b9f8f54b4c0a35fccdc095d6b74`) 원문 결과:
@@ -400,3 +400,24 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
 - 변경된 기본 잠금 때문에 이전의 전체 도형 포함 불변식은 더 이상 성립하지 않는다. 이를
   테스트를 느슨하게 해 숨기지 않고, 실제 필터된 본문 검증과 명시적인 원본 fallback 반례로 나눴다.
 - SE400 실물 봉제는 수행하지 못했다. 최종 병합·배포 가능 판정은 독립 Codex와 사용자 실봉제 검토가 필요하다.
+
+### 활성 기본값 매트릭스 defaults-v2 제출
+
+작업 중 독립 Codex가 매트릭스를 개정했다. Runner는 새 scope의 독립 동결 파일
+`/tmp/myembro-inkstitch-oracle/out/defaults-v2/oracle-freeze.json`을 선택하고, 각 identity record의
+동결 SHA-256·scope·id 및 원본 SVG와 materialized SVG의 **바이트 동일성**을 검사한다.
+원본/좌표/PES 출력은 생성 입력으로 사용하지 않는다. 이전 scope도 명시적으로 지원하되 자료를 섞지 않는다.
+
+- 활성 matrix SHA-256: `17f10563b6743539dba46f6db294f6f63b5f2db29b74d251c6521404755a5fe0`.
+- 입력: `inputs/defaults-v2--<id>.svg`. 출력과 재현 커맨드는 위와 동일하다.
+- **stitch_plan 56/56, ties 56/56, stroke 56/56 동등**, 불일치·미판정 0.
+- 기계적 릴리스 게이트 v2 (`check-release --stage S1`): **144 PASS / 24 BLOCK**.
+  threshold SHA-256: `cb9c68f379056ec8215c9e7673cedb5a5d166b47484923ef710c9b870bb5aff1`.
+- 같은 독립 검사기에 **공식 Ink/Stitch 출력**을 제출해도 같은 24개 `crossing_strokes`가 BLOCK이다.
+  세 구간의 시작 S0가 `UNEXPLAINED_ZERO`로 집계되고 작은 4–10mm 입력에서는 본문 짧은 땀 비율도 차단된다.
+  functional 시작/끝 잠금은 검출된다. 이 결과를 임의 예외로 통과시키거나 원본 기본값을 변경하지 않는다.
+- `independent-comparison.json`, `release-matrix.json`, `release-gate.json`,
+  `reference-release-matrix.json`, `reference-mechanical-gate.json`은 `/tmp/myembro-port-out/worker/`에 둔다.
+  릴리스 매트릭스의 font 축은 `feature/shape` fixture ID이며 제품 폰트·안전 크기 범위가 아니다.
+- **S1 병합/배포 승인 대기**: Codex의 남은 게이트 검토와 사용자 실제 봉제. S2 이후로 자동 진전하지 않는다.
+  코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.

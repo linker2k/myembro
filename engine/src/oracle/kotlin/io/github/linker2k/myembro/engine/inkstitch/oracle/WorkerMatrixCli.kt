@@ -44,7 +44,10 @@ object WorkerMatrixCli {
         val matrixBytes = matrixFile.readBytes()
         val matrixHash = sha(matrixBytes)
         val matrix = json.parseToJsonElement(matrixBytes.decodeToString()).jsonObject
-        val frozenFile = File(oracleRoot, "oracle-freeze.json")
+        val scope = matrix["scope_revision"]?.jsonPrimitive?.content
+        require(scope == null || scope == "defaults-v2") { "Unsupported matrix scope: $scope" }
+        val oracleOutput = File(oracleRoot, if (scope == "defaults-v2") "out/defaults-v2" else "out")
+        val frozenFile = if (scope == "defaults-v2") File(oracleOutput, "oracle-freeze.json") else File(oracleRoot, "oracle-freeze.json")
         val frozen = json.parseToJsonElement(frozenFile.readText()).jsonObject
         require(frozen.getValue("matrix_sha256").jsonPrimitive.content == matrixHash) { "Frozen matrix SHA256 mismatch" }
         val selected = matrix.getValue("cases").jsonArray.map { it.jsonObject }.filter {
@@ -58,8 +61,8 @@ object WorkerMatrixCli {
             val feature = case.getValue("feature").jsonPrimitive.content
             require(id.matches(Regex("[A-Za-z0-9_-]+"))) { "Unsafe matrix case ID" }
             val original = File(case.getValue("input").jsonPrimitive.content).canonicalFile
-            val svg = File(oracleRoot, "inputs/$id.svg")
-            val record = File(oracleRoot, "out/$feature/$id.oracle.json")
+            val svg = File(oracleRoot, "inputs/${if (scope == "defaults-v2") "defaults-v2--" else ""}$id.svg")
+            val record = File(oracleOutput, "$feature/$id.oracle.json")
             val destination = File(output, "$feature/$id.pes").apply { parentFile.mkdirs() }
             if (destination.exists()) check(destination.delete()) { "Cannot remove stale output $destination" }
             val row = linkedMapOf<String, JsonElement>(
@@ -71,12 +74,21 @@ object WorkerMatrixCli {
                 val originalHash = sha(original.readBytes())
                 require(originalHash == case.getValue("input_sha256").jsonPrimitive.content) { "Matrix input SHA256 mismatch" }
                 val official = json.parseToJsonElement(record.readText()).jsonObject
-                val mapping = official.getValue("mapping").jsonObject
                 require(official.getValue("matrix_sha256").jsonPrimitive.content == matrixHash)
-                require(mapping.getValue("source_sha256").jsonPrimitive.content == originalHash)
                 val inputBytes = svg.readBytes()
                 val derivedHash = sha(inputBytes)
-                require(mapping.getValue("materialized_sha256").jsonPrimitive.content == derivedHash) { "Materialized SVG SHA256 mismatch" }
+                if (scope == "defaults-v2") {
+                    val records = frozen.getValue("oracle_records_sha256").jsonObject
+                    require(records.getValue(record.path).jsonPrimitive.content == sha(record.readBytes())) { "Oracle identity record changed" }
+                    require(official.getValue("id").jsonPrimitive.content == id)
+                    require(official.getValue("scope_revision").jsonPrimitive.content == scope)
+                    require(File(official.getValue("input").jsonPrimitive.content).canonicalFile == svg.canonicalFile)
+                    require(official.getValue("input_sha256").jsonPrimitive.content == derivedHash && originalHash == derivedHash) { "Default SVG must be an unchanged copy of the matrix input" }
+                } else {
+                    val mapping = official.getValue("mapping").jsonObject
+                    require(mapping.getValue("source_sha256").jsonPrimitive.content == originalHash)
+                    require(mapping.getValue("materialized_sha256").jsonPrimitive.content == derivedHash) { "Materialized SVG SHA256 mismatch" }
+                }
                 row["materialized_sha256"] = JsonPrimitive(derivedHash)
                 row["oracle_status"] = official.getValue("status")
                 identityLines += "$id\t$originalHash\t$derivedHash"
@@ -114,6 +126,7 @@ object WorkerMatrixCli {
         val dirty = command("git", "status", "--porcelain").isNotEmpty()
         val manifest = buildJsonObject {
             put("schema_version", 1); put("owner", "embro-worker"); put("branch", command("git", "branch", "--show-current"))
+            put("scope_revision", scope ?: "matrix-v1")
             put("matrix", matrixFile.path); put("matrix_sha256", matrixHash)
             put("input_list_sha256", sha(inputList.toByteArray()))
             put("commit", commit); put("working_tree_dirty", dirty); put("source_commit", SOURCE_COMMIT)
