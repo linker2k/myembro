@@ -281,9 +281,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 var pickedFontId by rememberSaveable { mutableStateOf<String?>(null) }
                 var fontsText by rememberSaveable { mutableStateOf("") }
                 val closeFonts = { showFonts = false }
-                ModalBottomSheet(onDismissRequest = vm::dismissLettering,
-                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), sheetMaxWidth = 720.dp,
-                    properties = ModalBottomSheetProperties(shouldDismissOnBackPress = !showFonts)) {
+                ModalBottomSheet(onDismissRequest = {},
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                        confirmValueChange = { it != SheetValue.Hidden }), sheetMaxWidth = 720.dp,
+                    dragHandle = null,
+                    properties = ModalBottomSheetProperties(shouldDismissOnBackPress = false)) {
                     Box(Modifier.fillMaxWidth().fillMaxHeight(0.96f)) {
                         // Keep the draft composed underneath the library: text and every setting survive a pick/back.
                         LetteringScreen(onBack = vm::dismissLettering,

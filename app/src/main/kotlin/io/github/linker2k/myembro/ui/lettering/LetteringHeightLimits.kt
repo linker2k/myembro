@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
-import io.github.linker2k.myembro.engine.lettering.ValidatedHeightRange
+import io.github.linker2k.myembro.engine.lettering.*
 import kotlinx.serialization.json.*
 
 /** App restriction data, independent of the engine's wider generation/oracle input range. */
@@ -37,4 +37,29 @@ internal class LetteringHeightLimits private constructor(private val profiles: M
             return LetteringHeightLimits(profiles)
         }
     }
+}
+
+/** The display, slider and Add guard all consume this capped range, including restored/legacy state. */
+internal data class AutomaticLetteringState(
+    val fontName: String,
+    val style: StitchStyle?,
+    private val sourceRanges: List<ValidatedHeightRange>,
+) {
+    val heightRanges: List<ValidatedHeightRange> = LetteringHeightLimits.capRanges(sourceRanges)
+}
+
+/** Pure counterpart called directly by the Android font-loading entry point. */
+internal fun automaticLetteringState(
+    fontName: String, fontId: String, revision: String, text: String, heightMm: Double,
+    geometry: LetteringGeometry, limits: LetteringHeightLimits,
+    inkRange: ClosedFloatingPointRange<Double>? = null,
+    policy: AutomaticLetteringPolicy = AutomaticLetteringPolicy.Shared,
+): AutomaticLetteringState {
+    inkRange?.takeIf { it.start > 0 && it.endInclusive.isFinite() }?.let {
+        return AutomaticLetteringState(fontName, StitchStyle.SATIN, listOf(ValidatedHeightRange(it.start, it.endInclusive)))
+    }
+    val candidates = policy.candidates(fontId, revision, geometry, text)
+    val ranges = if (geometry == LetteringGeometry.OUTLINE) limits.outlineRanges(fontId, revision)
+        else candidates.map { it.heights }.distinct()
+    return AutomaticLetteringState(fontName, policy.method(candidates, heightMm, geometry), ranges)
 }

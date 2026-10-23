@@ -154,3 +154,27 @@ snapshot and its sampling limitations remain unchanged.
   JUnit XML: engine **586**, app Debug **187**, Release **187**;
   failures/errors/skips **0**. Android Lint passed.
   [Full command output](checks/model-ttf-height-limits-check.log).
+
+## Gowun Batang screen regression (2026-10-24)
+
+- Base: staging `be02ff3`, which already contains `522038c`. Its source path has no
+  5–90mm TTF fallback. The inspected emulator's installed APK (versionCode 243,
+  SHA-256 `b012a9ec33801afa3dab7d0e592144ef04cefc0dd9568cb4705e132bf9dbd690`)
+  **does not contain** `assets/lettering/ttf-fill-height-ranges.json`. VersionCode
+  alone was insufficient to identify whether the range change was installed.
+- The Android loader now delegates to a pure automatic-state resolver tested
+  directly with the actual bundled Gowun Batang file's SHA-256, text `자수`, and
+  requested heights 18/60/90mm: style FILL, displayed/slider range **5–60mm**,
+  90mm clamps to60. Noto's 26.25mm minimum and East Sea Dokdo's 6mm maximum are
+  tested through the same automatic path.
+- `AutomaticLetteringState` itself caps every exposed range, including copied
+  or legacy 5–90mm input. The screen's range label, slider and Add guard all
+  consume that same capped property. No independent 90mm display fallback remains.
+- `./gradlew check :app:assembleDebug --console=plain`:
+  **BUILD SUCCESSFUL in 28s**, 86 tasks (42 executed, 44 up-to-date).
+  [Full output](checks/model-gowun-height-check.log).
+- The newly assembled `app/build/outputs/apk/debug/app-debug.apk` was opened as a
+  ZIP: its range asset matches the source byte-for-byte, Gowun's packaged font
+  SHA matches its profile, and the packaged interval is exactly5–60mm.
+  The shared emulator was inspected read-only; the new APK must be installed
+  before retaking the canvas screenshot.

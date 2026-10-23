@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
-import io.github.linker2k.myembro.engine.lettering.ValidatedHeightRange
+import io.github.linker2k.myembro.engine.lettering.*
 import kotlinx.serialization.json.*
 import java.io.File
 import java.security.MessageDigest
@@ -56,4 +56,34 @@ class LetteringHeightLimitsTest {
         val duplicate = JsonObject(root + ("profiles" to JsonArray(rows + rows.first())))
         assertFailsWith<IllegalArgumentException> { LetteringHeightLimits.decode(duplicate.toString()) }
     }
+
+    @Test fun gowunBatangAutomaticFillScreenUsesActualBundledHashAndSixtyMillimetres() {
+        val font = File("src/main/res/font/gowun_batang.ttf")
+        val sha = MessageDigest.getInstance("SHA-256").digest(font.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
+        for (height in listOf(18.0, 60.0, 90.0)) {
+            val state = automaticLetteringState("고운바탕", "gowun-batang", "$sha:glyph-extractor-v3", "자수", height,
+                LetteringGeometry.OUTLINE, limits)
+            assertEquals(StitchStyle.FILL, state.style)
+            assertEquals(listOf(ValidatedHeightRange(5.0, 60.0)), state.heightRanges)
+            assertEquals(60.0, state.heightRanges.single().clamp(90.0))
+        }
+    }
+
+    @Test fun automaticFillScreenPreservesFontSpecificMinimumAndMaximum() {
+        for ((id, expected) in listOf("noto-sans-kr" to ValidatedHeightRange(26.25, 60.0),
+            "east-sea-dokdo" to ValidatedHeightRange(5.0, 6.0))) {
+            val row = rows.single { it.jsonObject.getValue("fontId").jsonPrimitive.content == id }.jsonObject
+            val state = automaticLetteringState(id, id, row.getValue("fontSha256").jsonPrimitive.content + ":glyph-extractor-v3",
+                "자수", 18.0, LetteringGeometry.OUTLINE, limits)
+            assertEquals(StitchStyle.FILL, state.style)
+            assertEquals(listOf(expected), state.heightRanges)
+        }
+    }
+
+    @Test fun displayStateNeverExposesLegacyNinetyMillimetreBounds() {
+        val state = AutomaticLetteringState("고운바탕", StitchStyle.FILL, listOf(ValidatedHeightRange(5.0, 90.0)))
+        assertEquals(listOf(ValidatedHeightRange(5.0, 60.0)), state.heightRanges)
+        assertEquals(60.0, state.copy(fontName = "restored").heightRanges.single().maxMm)
+    }
+
 }
