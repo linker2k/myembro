@@ -6,7 +6,7 @@
 gradle.projectsEvaluated {
     def engine = gradle.rootProject.project(':engine')
     def packagePath = 'io/github/linker2k/myembro/engine/inkstitch/'
-    def shared = ['stitch_plan/LockStitches.kt', 'stitch_plan/StitchPlanBuilder.kt', 'svg/PathEndPoints.kt']
+    def shared = ['stitch_plan/LockStitches.kt', 'stitch_plan/StitchPlanBuilder.kt', 'stitch_plan/SewingOptions.kt', 'stitch_plan/GeneratedPatternProcessor.kt', 'svg/PathEndPoints.kt']
     def missing = shared.findAll { !engine.file('src/main/kotlin/' + packagePath + it).isFile() }
     def external = engine.providers.gradleProperty('fillPlannerSourceRoot').orNull
     if (!missing.isEmpty() && external == null) {
@@ -26,5 +26,15 @@ gradle.projectsEvaluated {
         classpath = engine.sourceSets.test.runtimeClasspath
         mainClass.set('io.github.linker2k.myembro.engine.inkstitch.elements.FillQualityFixtures')
         args(engine.providers.gradleProperty('fillAuditDir').getOrElse('/tmp/myembro-fill-quality'))
+    }
+    engine.tasks.register('exportFillOracleMatrix', JavaExec) {
+        dependsOn(engine.tasks.named('testClasses'))
+        classpath = engine.sourceSets.test.runtimeClasspath
+        mainClass.set('io.github.linker2k.myembro.engine.inkstitch.elements.FillOracleMatrix')
+        maxHeapSize = '3g'
+        ['matrix', 'owner', 'oracle-input-dir', 'output-dir', 'results-json', 'commit', 'case-filter', 'dependency-manifest'].each { name ->
+            def value = engine.providers.gradleProperty('fillMatrix.' + name).orNull
+            if (value != null) args('--' + name, value)
+        }
     }
 }
