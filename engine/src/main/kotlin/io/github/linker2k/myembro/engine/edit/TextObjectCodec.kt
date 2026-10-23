@@ -5,6 +5,7 @@ import kotlinx.serialization.json.*
 import io.github.linker2k.myembro.engine.lettering.TextAlignment
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.lettering.SatinOptions
+import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParametersCodec
 import io.github.linker2k.myembro.engine.lettering.FillOptions
 import io.github.linker2k.myembro.engine.lettering.FillBorder
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
@@ -33,6 +34,7 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("autoDensity", obj.fillOptions.autoDensity)
         })
         put("satinOptions", buildJsonObject {
+            obj.satinOptions.parameters?.let { parameters -> put("parameters", buildJsonObject { SatinParametersCodec.encode(parameters).forEach { (key,value)->put(key,value) } }) }
             put("widthMm", obj.satinOptions.widthMm)
             put("densityMm", obj.satinOptions.densityMm)
             put("maxStitchLengthMm", obj.satinOptions.maxStitchLengthMm)
@@ -42,6 +44,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("underlayStitchLengthMm", obj.satinOptions.underlayStitchLengthMm)
             put("underlayDensityMm", obj.satinOptions.underlayDensityMm)
             put("autoDensity", obj.satinOptions.autoDensity)
+            put("contourUnderlay", obj.satinOptions.contourUnderlay)
+            put("underlayInsetMm", obj.satinOptions.underlayInsetMm)
         })
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
@@ -105,6 +109,9 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             underlayStitchLengthMm = satin["underlayStitchLengthMm"]?.jsonPrimitive?.double ?: 2.5,
             underlayDensityMm = satin["underlayDensityMm"]?.jsonPrimitive?.double ?: 1.5,
             autoDensity = satin["autoDensity"]?.jsonPrimitive?.boolean ?: false,
+            contourUnderlay = satin["contourUnderlay"]?.jsonPrimitive?.boolean ?: false,
+            underlayInsetMm = satin["underlayInsetMm"]?.jsonPrimitive?.double ?: 0.4,
+            parameters = satin["parameters"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content }?.let(SatinParametersCodec::decode),
         ) } ?: SatinOptions(autoDensity = false),
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,

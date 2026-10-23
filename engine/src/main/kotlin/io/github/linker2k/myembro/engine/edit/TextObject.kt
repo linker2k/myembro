@@ -40,7 +40,7 @@ data class TextObject(
     val contourBaselines: List<Double> = emptyList(),
     /** Also true for imported single-line SVGs stored as precomputed contours. */
     val singleLine: Boolean = fontKind == FontKind.HERSHEY,
-    val stitchStyle: StitchStyle = if (singleLine) StitchStyle.BEAN else StitchStyle.RUNNING,
+    val stitchStyle: StitchStyle = StitchStyle.RUNNING,
     val satinOptions: SatinOptions = SatinOptions(),
     val fillOptions: FillOptions = FillOptions(),
     val threadWeight: ThreadWeight = ThreadWeight.WT40,
@@ -62,7 +62,9 @@ data class TextObject(
         satinOptions = satinOptions.copy(autoDensity = true),
     )
     private val pattern: EmbPattern by lazy {
-        val resolvedSatin = satinOptions.copy(densityMm = satinOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
+        val spacingMm = satinOptions.densityForHeight(heightMm, threadWeight)
+        val resolvedSatin = satinOptions.copy(densityMm = spacingMm, autoDensity = false,
+            parameters = satinOptions.parameters?.let { if (satinOptions.autoDensity) it.copy(zigzag_spacing_mm = spacingMm) else it })
         val resolvedFill = fillOptions.copy(densityMm = fillOptions.densityForHeight(heightMm, threadWeight), autoDensity = false)
         when (fontKind) {
             FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
@@ -71,6 +73,7 @@ data class TextObject(
             FontKind.OUTLINE -> LetteringEngine.fromContours(
                 contours, heightMm, arcDeg = arcDeg, thread = thread,
                 baseline = contourBaseline, sourceHeight = contourSourceHeight, arcRadiusMm = arcRadiusMm,
+                simplify = false, mergeToleranceMm = 0.2, // Ink/Stitch stroke getter default, no extra Douglas–Peucker pass.
                 contourThreads = if (contourCharacters.isEmpty()) emptyList() else contourCharacters.map { characterThreads[it] ?: thread },
                 contourBaselines = contourBaselines, stitchStyle = stitchStyle, satinOptions = resolvedSatin,
                 fillOptions = resolvedFill, contourCharacters = contourCharacters, outline = !singleLine,

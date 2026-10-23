@@ -31,7 +31,7 @@
     <string name="lettering_gold">골드</string>
     <string name="lettering_close">닫기</string>
     <string name="lettering_unsupported">이 폰트에 없는 글자가 있어요. 다른 폰트를 선택해 주세요.</string>
-    <string name="lettering_outside">글자가 후프를 벗어났어요. 크기나 자간을 줄여 주세요.</string>
+    <string name="lettering_outside">글자가 후프를 벗어났어요. 크기를 줄이거나 문구를 짧게 해 주세요.</string>
     <string name="lettering_quality_height">권장 최소 글자 높이: %1$s</string>
     <string name="lettering_quality_check">가늘거나 맞닿은 획을 확인해 주세요.</string>
     <string name="lettering_quality_hint">가는 획은 자수에서 뭉칠 수 있어요. 크기를 키우거나 굵은 폰트를 골라 보세요.</string>
@@ -66,17 +66,29 @@
     <string name="lettering_border">테두리 스티치</string>
     <string name="lettering_border_none">없음</string>
     <string name="lettering_satin_width">새틴 폭</string>
-    <string name="lettering_satin_hint">획 방향을 따라 채워요. 넓은 획은 엇갈린 분할 새틴을 사용해요.</string>
+    <string name="lettering_satin_hint">새틴은 검증된 일정 폭 기둥에만 적용하며, 나머지는 자동 채우기를 사용합니다.</string>
     <string name="lettering_satin_fallback">일부 복잡한 윤곽은 태타미로 보완했어요.</string>
     <string name="lettering_fill_advanced">밀도·언더레이·테두리 설정</string>
-    <string name="lettering_auto_fill">획 따라 자동</string>
-    <string name="lettering_fixed_tatami">고정 각도 태타미</string>
+    <string name="lettering_auto_fill">자동 채우기(경로 연결)</string>
+    <string name="lettering_fixed_tatami">자동 채우기(윤곽 이동)</string>
     <string name="lettering_auto_density">실 굵기·작은 글자 자동 간격</string>
-    <string name="lettering_auto_underlay">센터런·가장자리 언더레이</string>
+    <string name="lettering_auto_underlay">채우기 언더레이(교차 방향)</string>
     <string name="lettering_thread_weight">실 굵기</string>
     <string name="lettering_weight_40">40wt(기본)</string>
     <string name="lettering_weight_50">50wt</string>
     <string name="lettering_weight_60">60wt(가는 실)</string>
     <string name="lettering_fine_thread_hint">바늘 65/9 권장 · 밑실은 기존 설정 유지</string>
     <string name="lettering_weight_min_feature">권장 최소 획 폭·간격: %1$.2fmm(추정)</string>
+    <string name="lettering_contour_underlay">윤곽 언더레이</string>
+    <string name="lettering_zigzag_underlay">지그재그 언더레이</string>
+    <string name="lettering_unsafe_density">0.5mm 셀에 바늘이 집중돼 생성을 막았습니다(%1$d회, 상한 %2$d회). 글자 크기나 간격을 늘려 주세요.</string>
+
+    <string name="lettering_automatic_running">자동 · 러닝</string>
+    <string name="lettering_automatic_satin">자동 · 새틴</string>
+    <string name="lettering_automatic_unconfirmed">자동 · 미확인</string>
+    <string name="lettering_range_unconfirmed">검증 범위 미확인</string>
+    <string name="lettering_checking_range">검증 범위 확인 중…</string>
+    <string name="lettering_validated_range">검증 범위: %1$s</string>
+    <string name="lettering_satin_unconfirmed_running">새틴 검증 범위 미확인 · 러닝 적용</string>
+    <string name="lettering_height_invalid">0보다 큰 유효한 높이(mm)를 입력해 주세요.</string>
 </resources>

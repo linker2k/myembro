@@ -24,9 +24,13 @@ object GeneratedPatternProcessor {
         collapse_len: Double? = null,
         min_stitch_len: Double? = 0.1,
         disable_ties: Boolean = false,
+        pecJumpTrims: Boolean = false,
+        lockAtThreadBoundaries: Boolean = false,
     ): EmbPattern {
-        val processed = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties))
-        return processed.pattern.copy(metadata = markedMetadata(processed))
+        val native = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties, lockAtThreadBoundaries))
+        val processed = if (pecJumpTrims) explicitPecJumpTrims(native) else native
+        return processed.pattern.copy(metadata = markedMetadata(processed) +
+            (SEWING_OPTIONS_KEY to SewingOptions().toJson()))
     }
 
     /** Rebuild removes only locks created by this bridge, retaining original commands and thread indices. */
@@ -207,6 +211,35 @@ object GeneratedPatternProcessor {
 
     private data class NativeAnchor(val startX: Int, val startY: Int, val endX: Int, val endY: Int)
     private data class Processed(val pattern: EmbPattern, val lockIndices: Set<Int>, val runAnchors: Map<Int, NativeAnchor>, val commandAnchors: Map<Int, Pair<Int, Int>>, val summary: ProcessingSummary)
+
+    private fun explicitPecJumpTrims(processed: Processed): Processed {
+        val output = mutableListOf<MachineStitch>()
+        val locks = mutableSetOf<Int>()
+        val anchors = mutableMapOf<Int, NativeAnchor>()
+        val commands = mutableMapOf<Int, Pair<Int, Int>>()
+        var sewn = false
+        var lastNeedle: MachineStitch? = null
+        var active: NativeAnchor? = null
+        processed.pattern.stitches.forEachIndexed { index, stitch ->
+            if (stitch.command == Command.JUMP && sewn) {
+                val needle = requireNotNull(lastNeedle)
+                commands[output.size] = active?.let { it.endX to it.endY } ?: (needle.x to needle.y)
+                output += needle.copy(command = Command.TRIM)
+                sewn = false
+            }
+            if (index in processed.lockIndices) locks += output.size
+            processed.runAnchors[index]?.let { anchors[output.size] = it; active = it }
+            processed.commandAnchors[index]?.let { commands[output.size] = it }
+            output += stitch
+            when (stitch.command) {
+                Command.STITCH -> { sewn = true; lastNeedle = stitch }
+                Command.TRIM, Command.STOP, Command.COLOR_CHANGE, Command.END -> sewn = false
+                Command.JUMP -> Unit
+            }
+        }
+        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary)
+    }
+
 
     private fun adaptAndDeduplicate(traced: StitchPlanBuilder.TracedPlan): Processed {
         val plan = traced.plan

@@ -24,9 +24,10 @@ internal val FillOptionsSaver = listSaver<FillOptions, Any>(
 )
 internal val SatinOptionsSaver = listSaver<SatinOptions, Any>(
     save = { listOf(it.widthMm, it.densityMm, it.maxStitchLengthMm, it.pullCompensationMm, it.centerUnderlay,
-        it.zigzagUnderlay, it.underlayStitchLengthMm, it.underlayDensityMm, it.autoDensity) },
+        it.zigzagUnderlay, it.underlayStitchLengthMm, it.underlayDensityMm, it.autoDensity, it.contourUnderlay, it.underlayInsetMm) },
     restore = { SatinOptions(it[0] as Double, it[1] as Double, it[2] as Double, it[3] as Double,
-        it[4] as Boolean, it[5] as Boolean, it[6] as Double, it[7] as Double, it.getOrNull(8) as? Boolean ?: false) },
+        it[4] as Boolean, it[5] as Boolean, it[6] as Double, it[7] as Double, it.getOrNull(8) as? Boolean ?: false,
+        it.getOrNull(9) as? Boolean ?: false, it.getOrNull(10) as? Double ?: 0.4) },
 )
 
 /** The editor's direct mode picker carries the same small-letter warning as the full route. */
@@ -127,6 +128,15 @@ internal fun SatinSettingsControls(options: SatinOptions, heightMm: Double, thre
         Text(stringResource(R.string.lettering_center_underlay), style = MaterialTheme.typography.bodyMedium)
         Switch(options.centerUnderlay, { onChange(options.copy(centerUnderlay = it)) })
     }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.lettering_contour_underlay), style = MaterialTheme.typography.bodyMedium)
+        Switch(options.contourUnderlay, { onChange(options.copy(contourUnderlay = it)) })
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.lettering_zigzag_underlay), style = MaterialTheme.typography.bodyMedium)
+        Switch(options.zigzagUnderlay, { onChange(options.copy(zigzagUnderlay = it)) })
+    }
+
 }
 
 /** Shared by creation and existing-text properties; changing weight restores automatic spacing. */

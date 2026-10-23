@@ -3,6 +3,26 @@
 myembro is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). It contains code
 derived from the following projects, whose notices are reproduced as their licenses require.
 
+## Ink/Stitch algorithm ports (GPL-3.0-or-later)
+
+- Source: https://github.com/inkstitch/inkstitch, stable tag v3.3.0, commit `b0edd96311ece82ee48816dc93466274b12c2a9c`.
+- Copyright (c) 2010 Authors; additional authors are recorded in upstream git history.
+- Kotlin adaptations in `engine/.../inkstitch/` port running/bean, explicit satin
+  rails/rungs/short-stitch/underlay, deterministic graph auto-fill, and lock/plan processing.
+  Each file names its original functions. See [docs/stitch-algorithms.md](docs/stitch-algorithms.md)
+  for exact scope, app safety differences and verification limits.
+- Upstream GPL v3 LICENSE copied verbatim to `engine/src/main/resources/licenses/inkstitch/LICENSE`;
+  source files explicitly permit version 3 or later. No Python runtime or upstream dependencies bundled.
+
+## Dancing Script Bold — regression tests only (OFL-1.1)
+
+- Copyright 2016 The Dancing Script Project Authors, Reserved Font Name “Dancing Script”.
+- Unmodified TTF from Google Fonts/Impallari Type, pinned to
+  https://github.com/googlefonts/DancingScript/tree/291f87c05206179b6bfd53735a5638b5cc84e3b3.
+- SHA-256 `ea80fedd89e84c4b572f0d780416956e84b0354d0df2d7985fe1883956677dc4`.
+- Font and complete OFL text: `engine/src/test/resources/fonts/dancing-script-bold/`.
+  This is a public-font-generated regression input, not the user's private embroidery file.
+
 ## Outline thinning algorithm reference
 
 - Zicheng Guo and Richard W. Hall, *Parallel thinning with two-subiteration algorithms*,
@@ -13,6 +33,7 @@ derived from the following projects, whose notices are reproduced as their licen
   Its small lookup masks are generated from those equations, not copied tables.
   No paper text/images, OpenCV binaries/source tables, or commercial font/design data
   are included in the repository or distributed application.
+
 
 ## Ink/Stitch satin-column conceptual reference
 
