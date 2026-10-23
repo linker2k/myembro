@@ -780,3 +780,12 @@ CI push 대상은 모든 브랜치, 검증 명령은 `./gradlew check`로 바꿨
 공식3건 모두 땀수100% 일치, Hausdorff0.141422mm 미만. 외부 게이트도 PASS3/3.
 이전430스윕은 이전backend 이력이다. 새 코어 재스윕 전 허용규칙 비활성은 유지한다.
 원격 CI/실봉제 승인과 혼동하지 않는다. 이번 단위 종료, 총괄 지시 대기.
+
+
+### 계산 단위: 수정 backend430조합 재스윕
+
+`JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing`
+출력: `GATE: 430/430 PASS; 0 BLOCK`. 생성은 BUILD SUCCESSFUL in1m12s, 생성 오류0건.
+backend e154303, 같은5도형×5–90mm 정수크기×기본각도0°.
+[자동 계산 표·실패 목록·허용 JSON](tatami-sweep.md)을 현재 backend 결과로 갱신했다.
+엔진/임계값/테스트 변경은 없고 앱 연결/배포 활성화도 하지 않았다. 여기서 마무리하고 지시 대기.

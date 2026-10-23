@@ -1,7 +1,6 @@
 # 타타미 확장 스윕 — 로컬 전용
 
-> 이전 backend의 이력이다. [동등성 수정](tatami-equivalence-fix.md)에서 backend를 바꿨으므로
-> 새 실행 없이 이430조합 결과를 현재 backend에 적용할 수 없다. 허용 규칙은 배포 비활성이다.
+> backend `e154303`으로 재스윕한 현재 결과다. 알고리즘 변경 없이 동일한430조합을 계산했다.
 
 CI의 대표 사례(공식 기본값 사각·원·구멍 3건 + smoke 3건)는 유지한다.
 확장 스윕 태스크는 `check`의 의존성이 아니며 단계 릴리스 전 로컬에서 별도로 실행한다.
@@ -12,7 +11,7 @@ CI의 대표 사례(공식 기본값 사각·원·구멍 3건 + smoke 3건)는 �
 ```sh
 export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
 python3 -m unittest discover -s tools/tests -p test_tatami_sweep.py
-python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-1mm
+python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing
 ```
 
 스크립트가 `./gradlew :engine:generateTatamiSweep`를 호출한 후 독립된 외부
@@ -47,32 +46,37 @@ SHA256을 기록하고 검사 중 변경되면 규칙 발행을 중단한다. �
 중간 실패나 전체 실패로부터 허위 안전 범위를 만들지 않는지 단위 테스트로 확인한다.
 중단된 실행은 INCOMPLETE/DENY 규칙만 남기며 이전 실행의 허용 목록을 재사용하지 않는다.
 
-허용 JSON은 후보 규칙이며 앱에 연결하지 않는다. 현재 공식 동등성 회귀 테스트3개가
-실패하는 상태라 `deployment_enabled=false`를 기록한다. 게이트 통과는 공식 동등성/CI 녹색/
+허용 JSON은 후보 규칙이며 앱에 연결하지 않아 `deployment_enabled=false`를 유지한다.
+공식 동등성3건은 backend 수정 단위에서 통과했다. 게이트 통과는 원격 CI 녹색/
 실제 봉제 승인과 별도 판정이다. 스윕 결과만으로 이를 통과했다고 보고하지 않는다.
 
-## 실행 출력
+## 새 backend 재스윕 출력
 
 ```text
-python3 -m unittest discover -s tools/tests -p test_tatami_sweep.py
-Ran 3 tests
-OK
-
-python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-1mm
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing
+BUILD SUCCESSFUL in 1m 12s
 GATE: 430/430 PASS; 0 BLOCK
+
+# gate.log의 마지막 판정
+PASS 430/430 cases passed
 ```
 
-| 도형 | 통과 | 최소 통과 표본 mm | 최소 표본 면적 mm² | 최대 셀 밀집 | 첫 실패 크기 |
-|---|---:|---:|---:|---:|---|
-| square | 86/86 | 5 | 25.000 | 9 | 없음 |
-| circle | 86/86 | 5 | 19.562 | 8 | 없음 |
-| donut | 86/86 | 5 | 16.447 | 11 | 없음 |
-| star | 86/86 | 5 | 8.266 | 14 | 없음 |
-| block_h | 86/86 | 5 | 12.000 | 9 | 없음 |
+| 도형 | 통과/전체 | 최소 통과 표본 mm | 첫 실패 크기 | 최대 셀 밀집 | 최대 연속 동일점 | 최대 땀 mm |
+|---|---:|---:|---|---:|---:|---:|
+| square | 86/86 | 5 | 없음 | 8 | 1 | 4.001250 |
+| circle | 86/86 | 5 | 없음 | 10 | 1 | 4.101219 |
+| donut | 86/86 | 5 | 없음 | 10 | 1 | 4.101219 |
+| star | 86/86 | 5 | 없음 | 9 | 1 | 4.101219 |
+| block_h | 86/86 | 5 | 없음 | 7 | 1 | 4.101219 |
 
-판정 원본과 모든 후보 PES는 `/tmp/myembro-tatami-sweep-1mm/`에 있다.
-저장소에는 [계산 요약](tatami-sweep-results/summary.json),
-[허용 규칙](tatami-sweep-results/fill-allowed-regions.json),
-[실패 목록](tatami-sweep-results/failures.json)을 보관한다.
-최대 동일점 연속2회, 최대 땀4.102mm 미만이다. 게이트 로그의 짧은 땀 지표는 참고값이다.
-5mm보다 작은 입력은 이번 범위 밖이므로 실패 최소 크기는 발견되지 않았다고 기록한다.
+생성 오류0건, 실패 목록은 `[]`다. 원/도넛/별/H에 보이는 짧은 땀 통계는 참고 지표이며 차단 사유가 아니다.
+5mm 미만은 미검사이므로 실제 최소 안전 크기를 찾았다고 해석하지 않는다.
+
+- [기계 판정 요약·출처·게이트 SHA256](tatami-sweep-results/summary.json)
+- [새 backend의 유한 표본 허용 JSON](tatami-sweep-results/fill-allowed-regions.json)
+- [실패 목록](tatami-sweep-results/failures.json)
+
+전체 원본 판정 `gate.json/log`, 생성 `generation.json/log`, 후보430개 PES는
+`/tmp/myembro-tatami-sweep-source-routing/`에 있다. 이전 backend 결과는
+`/tmp/myembro-tatami-sweep-1mm/`와 커밋4f21a67에 이력으로 남는다.
+이번 단위는 계산과 결과 기록만 수행했다. 엔진/임계값/테스트/CI 설정은 변경하지 않았다.

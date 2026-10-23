@@ -3,7 +3,7 @@
   "scope": "exact finite fixture grid only",
   "default_decision": "DENY",
   "deployment_enabled": false,
-  "deployment_reason": "Candidate only; official equivalence regression tests are failing",
+  "deployment_reason": "Candidate only; current CI and physical sew-out approval are separate requirements",
   "continuous_range_proven": false,
   "arbitrary_polygons_covered": false,
   "angle_deg": 0,
