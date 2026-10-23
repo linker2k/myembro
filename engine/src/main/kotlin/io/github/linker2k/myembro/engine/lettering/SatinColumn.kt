@@ -153,12 +153,31 @@ object SatinColumn {
         val forward = distance(left.first(), right.first()) + distance(left.last(), right.last())
         val backward = distance(left.first(), right.last()) + distance(left.last(), right.first())
         if (backward < forward) right = right.reversed()
-        val a = Rail(left)
-        val b = Rail(right)
-        val length = maxOf(a.length, b.length)
+        return sectionPoints(listOf(left to right), options)
+    }
+
+    /**
+     * Satin over consecutive rail sections, e.g. rails cut at the rungs of a digitized column. Both
+     * rails of a section are paired by normalized arc length, so a rung is always sewn as a stitch
+     * direction. Rails must already run the same way. One section is the plain two-rail column.
+     * [compensationPercent] adds that share of the local width on each side of the top layer;
+     * [contourInsetMm] adds an edge-walk underlay (up one rail, back the other) inset by that much.
+     * [compensationMm] may be negative (narrower than the rails), unlike [SatinOptions.pullCompensationMm].
+     */
+    internal fun sectionPoints(
+        sections: List<Pair<List<Pair<Double, Double>>, List<Pair<Double, Double>>>>,
+        options: SatinOptions,
+        compensationPercent: Double = 0.0,
+        contourInsetMm: Double? = null,
+        compensationMm: Double = options.pullCompensationMm,
+    ): List<Pair<Double, Double>> {
+        val parts = sections.map { (l, r) -> Rail(clean(l)) to Rail(clean(r)) }
+            .filter { (a, b) -> a.points.isNotEmpty() && b.points.isNotEmpty() && maxOf(a.length, b.length) > 1e-9 }
+        if (parts.isEmpty()) return emptyList()
+        val rails = Sections(parts)
+        val length = rails.length
         fun pair(t: Double, scale: Double = 1.0, compensation: Double = 0.0): Pair<Pair<Double, Double>, Pair<Double, Double>> {
-            val p = a.at(t)
-            val q = b.at(t)
+            val (p, q) = rails.at(t)
             val width = distance(p, q)
             val factor = scale / 2 + if (width > 1e-9) compensation / width else 0.0
             val center = mix(p, q, 0.5)
@@ -170,20 +189,24 @@ object SatinColumn {
             require(count.isFinite() && count <= 1_000_000) { "Satin column is too long/dense" }
             return count.toInt().coerceAtLeast(1)
         }
-        fun zigzag(spacing: Double, widthScale: Double, compensation: Double): List<Pair<Double, Double>> {
+        fun zigzag(spacing: Double, widthScale: Double, compensation: Double, percent: Double = 0.0): List<Pair<Double, Double>> {
             val n = cycles(spacing)
+            fun at(t: Double): Pair<Pair<Double, Double>, Pair<Double, Double>> {
+                val extra = if (percent != 0.0) rails.at(t).let { (p, q) -> distance(p, q) } * percent / 100 else 0.0
+                return pair(t, widthScale, compensation + extra)
+            }
             return buildList {
                 for (i in 0 until n) {
-                    add(pair(i.toDouble() / n, widthScale, compensation).first)
-                    add(pair((i + 0.5) / n, widthScale, compensation).second)
+                    add(at(i.toDouble() / n).first)
+                    add(at((i + 0.5) / n).second)
                 }
-                add(pair(1.0, widthScale, compensation).first)
-                add(pair(1.0, widthScale, compensation).second)
+                add(at(1.0).first)
+                add(at(1.0).second)
             }
         }
         // Include rail vertices in center travel, so returns never cut across a corner.
-        val knots = (a.fractions() + b.fractions()).distinct().sorted()
-        val center = knots.map { mix(a.at(it), b.at(it), 0.5) }
+        val knots = rails.knots()
+        val center = knots.map { t -> rails.at(t).let { (p, q) -> mix(p, q, 0.5) } }
         val result = ArrayList<Pair<Double, Double>>()
         fun underlay(path: List<Pair<Double, Double>>) {
             val joined = if (result.isEmpty()) path else listOf(result.last()) + path
@@ -194,10 +217,13 @@ object SatinColumn {
             }
         }
         if (options.centerUnderlay) underlay(center + center.asReversed().drop(1))
+        if (contourInsetMm != null) {
+            underlay(knots.map { pair(it, 1.0, -contourInsetMm).first } + knots.asReversed().map { pair(it, 1.0, -contourInsetMm).second })
+        }
         if (options.zigzagUnderlay) {
             underlay(listOf(center.first()) + zigzag(options.underlayDensityMm, 0.6, 0.0) + center.asReversed())
         }
-        val top = zigzag(options.densityMm, 1.0, options.pullCompensationMm)
+        val top = zigzag(options.densityMm, 1.0, compensationMm, compensationPercent)
         if (result.isNotEmpty()) underlay(listOf(top.first()))
         result += top
         return result
@@ -214,15 +240,39 @@ object SatinColumn {
         val lengths = DoubleArray(points.size).apply {
             for (i in 1 until points.size) this[i] = this[i - 1] + distance(points[i - 1], points[i])
         }
-        val length = lengths.last()
-        fun fractions(): List<Double> = lengths.map { it / length }
+        val length = lengths.lastOrNull() ?: 0.0
+        fun fractions(): List<Double> = if (length > 0) lengths.map { it / length } else listOf(0.0, 1.0)
         fun at(t: Double): Pair<Double, Double> {
+            if (length <= 0) return points.first()
             val target = t.coerceIn(0.0, 1.0) * length
             val index = lengths.binarySearch(target)
             if (index >= 0) return points[index]
             val end = (-index - 1).coerceIn(1, points.lastIndex)
             return mix(points[end - 1], points[end], (target - lengths[end - 1]) / (lengths[end] - lengths[end - 1]))
         }
+    }
+
+    /** Rail pairs laid end to end; a section's share of t is its longer rail's share of the length. */
+    private class Sections(private val parts: List<Pair<Rail, Rail>>) {
+        private val starts = DoubleArray(parts.size + 1).apply {
+            parts.forEachIndexed { i, (a, b) -> this[i + 1] = this[i] + maxOf(a.length, b.length) }
+        }
+        val length = starts.last()
+        private fun local(t: Double): Pair<Int, Double> {
+            val target = t.coerceIn(0.0, 1.0) * length
+            var i = 0
+            while (i < parts.lastIndex && target > starts[i + 1]) i++
+            return i to ((target - starts[i]) / (starts[i + 1] - starts[i])).coerceIn(0.0, 1.0)
+        }
+        fun at(t: Double): Pair<Pair<Double, Double>, Pair<Double, Double>> {
+            val (i, u) = local(t)
+            return parts[i].first.at(u) to parts[i].second.at(u)
+        }
+        fun knots(): List<Double> = if (parts.size == 1) parts[0].let { (a, b) -> (a.fractions() + b.fractions()).distinct().sorted() }
+        else parts.indices.flatMap { i ->
+            val (a, b) = parts[i]
+            (a.fractions() + b.fractions()).map { (starts[i] + it * (starts[i + 1] - starts[i])) / length }
+        }.distinct().sorted()
     }
 
     private fun mix(a: Pair<Double, Double>, b: Pair<Double, Double>, t: Double) =

@@ -292,7 +292,8 @@ class FontRepository(context: Context) {
         return runCatching { SvgFont.parse(fontFile(font).readText()) }.getOrNull()
     }
 
-    private fun fetch(
+    /** Pinned https download checked against [sha256]; also used by [InkStitchFonts]. */
+    internal fun fetch(
         url: String, out: File, sha256: String?, id: String, expectedSize: Long?, onProgress: (Float) -> Unit,
     ) {
         require(url.startsWith("https://")) { "Only https downloads are allowed: $url" }

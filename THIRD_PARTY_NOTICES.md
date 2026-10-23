@@ -25,6 +25,19 @@ derived from the following projects, whose notices are reproduced as their licen
   this repository's GPL-3.0-or-later license. No Ink/Stitch source code, images, font
   data, or other assets were copied or bundled; no remote code was executed.
 
+## Ink/Stitch embroidery fonts (downloaded data, not bundled)
+
+- Source: https://github.com/inkstitch/embroidery-fonts at commit
+  `c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8`; per-font licenses (OFL-1.1, CC BY-SA, CC BY,
+  CC0/public domain, GPL-3.0) are listed in `docs/inkstitch-fonts.md`.
+- `app/src/main/assets/fonts/inkstitch-catalog.json` holds only pinned URLs and sha256 values.
+  The app downloads a chosen font's `ltr.svg`, `font.json` and `LICENSE` to the device and keeps
+  the license beside it. No font data is in this repository or the APK.
+- `engine/.../lettering/InkStitchFont.kt` and `InkStitchLettering.kt` read the file format
+  (glyph layers, `inkstitch:*` parameters, satin rails/rungs, layout metadata) as documented
+  and as observed in the Ink/Stitch GPL-3.0 sources, which were read but not executed or
+  copied. Stitches come from this repository's own satin, tatami and running generators.
+
 ## pyembroidery
 
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)
