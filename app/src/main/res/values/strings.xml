@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">myembro</string>
+    <string name="app_name" translatable="false">myembro</string>
     <string name="open_file">Open file</string>
     <string name="open_sample">Open sample</string>
     <string name="save_pes">Save as PES</string>

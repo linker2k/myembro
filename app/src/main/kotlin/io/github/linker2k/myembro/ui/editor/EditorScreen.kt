@@ -270,8 +270,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             val projectSnapshot = vm.project
             val letteringTarget = vm.letteringTargetId
             val sewingOptions = vm.settings.sewing
-            val background by produceState<io.github.linker2k.myembro.engine.model.EmbPattern?>(null, projectSnapshot, letteringTarget, sewingOptions) {
-                value = withContext(Dispatchers.Default) {
+            var background by remember { mutableStateOf<io.github.linker2k.myembro.engine.model.EmbPattern?>(null) }
+            LaunchedEffect(projectSnapshot, letteringTarget, sewingOptions) {
+                background = withContext(Dispatchers.Default) {
                     projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget }).flatten(sewingOptions)
                 }
             }
