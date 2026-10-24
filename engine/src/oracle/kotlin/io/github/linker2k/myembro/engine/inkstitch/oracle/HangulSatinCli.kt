@@ -26,7 +26,7 @@ import kotlin.math.*
 /** Explicit sample runner, never an app/default style choice. Width must be provided by the caller. */
 object HangulSatinCli {
     @JvmStatic fun main(args:Array<String>) {
-        require(args.size==3) { "Usage: INPUT_DIRECTORY OUTPUT_STEM STROKE_WIDTH_MM|trace" }
+        require(args.size in 3..4) { "Usage: INPUT_DIRECTORY OUTPUT_STEM STROKE_WIDTH_MM|trace [no-preview]" }
         val input=File(args[0]);val stem=File(args[1]);stem.parentFile.mkdirs()
         val metadata=Json.parseToJsonElement(File(input,"input.json").readText()).jsonObject
         val pixelsPerMm=metadata.getValue("pixels_per_mm").jsonPrimitive.double
@@ -120,6 +120,7 @@ object HangulSatinCli {
         }
         File(stem.path+"-centerline.json").writeText(Json { prettyPrint=true }.encodeToString(JsonObject.serializer(),pathReport))
         fun preview(pattern:EmbPattern?,label:String,file:File,offsetX:Double=0.0,offsetY:Double=0.0) {
+            if(args.getOrNull(3)=="no-preview") return
             val image=BufferedImage(1300,800,BufferedImage.TYPE_INT_RGB)
             val g=image.createGraphics();g.color=Color.WHITE;g.fillRect(0,0,image.width,image.height)
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)

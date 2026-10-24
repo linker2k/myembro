@@ -146,3 +146,13 @@ tasks.register<JavaExec>("hangulSatinSample") {
         providers.gradleProperty("hangulOutput").orElse("/tmp/myembro-sewtest/krs/KRSAT1").get(),
         providers.gradleProperty("strokeWidthMm").orElse("trace").get())
 }
+
+// Explicit 5×30×3 public-font calculation; never a check/CI dependency.
+tasks.register<JavaExec>("hangulSatinSweep") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HangulSatinSweepCli")
+    systemProperty("java.awt.headless", "true")
+    maxHeapSize = "2g"
+    args(providers.gradleProperty("hangulSweepRoot").orElse("/tmp/myembro-port-out/letter/hangul-sweep-v1").get())
+}
