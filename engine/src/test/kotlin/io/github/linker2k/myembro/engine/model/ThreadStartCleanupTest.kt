@@ -15,7 +15,8 @@ class ThreadStartCleanupTest {
         assertEquals(expected,output.stitches)
         assertEquals(input,source.stitches)
         assertSame(output,GeneratedPatternProcessor.forSewout(output))
-        for(v in PesVersion.entries)assertEquals(expected,PesReader.read(PesWriter.write(source,v)).stitches)
+        val viewport = listOf(s(5,0),s(10,0),s(5,0),s(0,0),s(20,0),s(20,0,Command.END))
+        for(v in PesVersion.entries)assertEquals(viewport,PesReader.read(PesWriter.write(source,v)).stitches)
     }
     @Test fun samePlaceTrimRestartJoinsSewingButDistantRestartRetainsTrim() {
         val source=listOf(s(10),s(20),s(20,c=Command.TRIM),s(20,c=Command.JUMP),s(20),s(25),s(30),s(25))

@@ -90,7 +90,7 @@
       "imported_policy_verdict": "CAUTION"
     },
     "invalid_length": {
-      "sha256": "d0306e4155bfccb724ec1bffb8408c59aec77f487e119f9acfec6e9d9b0da9a8",
+      "sha256": "d78ef82c3258bbd7283bc99e7457173761d5fe579339c070446e18c7130d19c3",
       "verdict": "BLOCK",
       "imported_policy_verdict": "BLOCK",
       "reasons": [
@@ -98,7 +98,7 @@
       ]
     },
     "long_first": {
-      "sha256": "5ae6d2bbbd63a7556beabd25fd338e4da0d48f5aaf8b41c5636e6baa46de5710",
+      "sha256": "7ecd62c7d5f381da024d50f20fe5305f89c56554904f6207c0f59042631ce57b",
       "verdict": "BLOCK",
       "reasons": [
         "LONG_STITCH: 20.000 > 12.184mm",
@@ -118,7 +118,7 @@
       "imported_policy_verdict": "BLOCK"
     },
     "repeat3": {
-      "sha256": "e18cbd07bdd05d4781941939dfe67597432e1d00f53d4c91900d31ce99941494",
+      "sha256": "c4814887a63ee031ccb5f4db854026194f0ee0252025ca7c3cf639e6da920f4b",
       "verdict": "BLOCK",
       "reasons": [
         "THREAD_START_LOCK_MISSING: no short return or 2–3 repeated boundary needles",

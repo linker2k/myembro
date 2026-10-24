@@ -48,7 +48,7 @@ class InkstitchWriterProfileTest {
         assertEquals(0, PesReader.read(PesWriter.write(source)).trimCount)
         val placed = pattern(s(26, Command.JUMP, 26), s(26, y = 26), s(66, y = 26), s(66, Command.END, 26))
         assertEquals(listOf(0, 40), PesReader.read(write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(listOf(66), PesReader.read(PesWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
+        assertEquals(listOf(40), PesReader.read(PesWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
     }
 
     @Test fun colorsPrecedeImplicitTrimAndTerminalExplicitTrimHasNoBytes() {

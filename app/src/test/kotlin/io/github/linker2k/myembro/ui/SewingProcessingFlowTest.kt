@@ -58,7 +58,7 @@ class SewingProcessingFlowTest {
         assertContentEquals(before, bytes)
         assertEquals(custom, enabled.sewingOptions)
         assertEquals(project.flatten(custom).stitches, enabled.pattern.stitches)
-        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(enabled.pattern).stitchCount, PatternReader.read(enabled.source, enabled.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(enabled.pattern).stitchCount, PatternReader.read(enabled.source, enabled.sourceName).stitchCount)
     }
 
     @Test fun `USB project preparation uses the same defaults as the viewer and raw PES passes through`() {

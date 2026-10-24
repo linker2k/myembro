@@ -173,8 +173,8 @@ class LetteringTest {
         val pattern = Project(objects = listOf(TextObject(id = "export", text = "Sew!", arcDeg = 45.0))).flatten()
         val read = PesReader.read(PesWriter.write(pattern))
         assertNotNull(read.bounds)
-        assertEquals(pattern.bounds, read.bounds)
-        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern).stitchCount, read.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, read.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).stitchCount, read.stitchCount)
         assertTrue(read.trimCount > 0)
     }
 

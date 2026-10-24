@@ -206,7 +206,7 @@ object PecWriter {
     }
 
     /** PEC block without #PEC0001, suitable for embedding in a PES container. */
-    internal fun writePayload(pattern: EmbPattern, inkstitchCommands: Boolean = false): ByteArray {
+    internal fun writePayload(pattern: EmbPattern, inkstitchCommands: Boolean = false, topLeftViewport: Boolean = false): ByteArray {
         val p = if (inkstitchCommands) normalizeInkstitch(pattern) else normalize(pattern)
         val palette = p.threads.map { thread ->
             (1 until PecThreads.SET.size).first { PecThreads.forIndex(it) == thread }
@@ -275,8 +275,8 @@ object PecWriter {
         colorIndices.forEach(output::write)
         while (output.size() < 512) output.write(0x20)
         check(output.size() == 512)
-        val minX = p.stitches.minOf { it.x }
-        val minY = p.stitches.minOf { it.y }
+        val minX = if (topLeftViewport) 0 else p.stitches.minOf { it.x }
+        val minY = if (topLeftViewport) 0 else p.stitches.minOf { it.y }
         val maxX = p.stitches.maxOf { it.x }
         val maxY = p.stitches.maxOf { it.y }
         output.u16(0)

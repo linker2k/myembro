@@ -27,7 +27,7 @@ class GatePolicyParityTest {
             "density30" to pes(List(30) { it%5 to (it/5)%5 }),
             "density31" to pes(List(31) { it%5 to (it/5)%5 }),
             "repeat3" to line(0,0,0,40,40),
-            "long_first" to line(200,200,240,240),
+            "long_first" to line(200,200,0,0),
             "invalid_length" to valid.copyOf().also { for (i in 0..2) it[pointer+514+i]=0x7f },
         )
     }

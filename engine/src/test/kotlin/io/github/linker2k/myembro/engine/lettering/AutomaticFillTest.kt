@@ -44,8 +44,8 @@ class AutomaticFillTest {
         val internal = p.stitches.filter { it.command == Command.STITCH && abs(it.x) < 59 }.map { it.x }.toSet()
         assertTrue(internal.size >= 5, "Split positions must not form one straight seam: $internal")
         val pes = PesReader.read(PesWriter.write(p))
-        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(p).stitchCount, pes.stitchCount)
-        assertEquals(p.bounds, pes.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).stitchCount, pes.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).bounds, pes.bounds)
     }
     @Test fun strokesBelowSevenMillimetresCanKeepWholeSatinCrossings() {
         val p = OutlineFill.generate(listOf(box(6.5, 20.0)), plain)

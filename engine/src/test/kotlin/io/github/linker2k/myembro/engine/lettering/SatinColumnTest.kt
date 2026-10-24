@@ -125,8 +125,8 @@ class SatinColumnTest {
             assertEquals(project, restored)
             assertEquals(project.flatten().stitches, restored.flatten().stitches)
             val pes = PesReader.read(PesWriter.write(p))
-            assertEquals(p.bounds, pes.bounds)
-            assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(p).stitchCount, pes.stitchCount)
+            assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).bounds, pes.bounds)
+            assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).stitchCount, pes.stitchCount)
         }
         val old = TextObject("legacy", text = "AB")
         assertEquals(SatinOptions(autoDensity = false), (TextObjectCodec.decode(JsonObject(TextObjectCodec.encode(old).filterKeys { it != "satinOptions" })) as TextObject).satinOptions)

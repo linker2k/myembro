@@ -19,7 +19,7 @@ class ViewerReviewFlowTest {
         assertEquals(200, opened.pattern.bounds!!.width)
         assertEquals(1, opened.pattern.colorBlocks.size)
         assertEquals("lemon.pes", opened.sourceName)
-        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(opened.pattern).stitchCount, PatternReader.read(opened.source, opened.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(opened.pattern).stitchCount, PatternReader.read(opened.source, opened.sourceName).stitchCount)
         assertTrue(viewerFits(opened.pattern, p.hoop, true))
     }
     @Test fun `off-centre design too far outside hoop cannot pass by dimensions alone`() {

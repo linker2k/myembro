@@ -83,7 +83,7 @@ class EditorSessionTest {
         val project = Project(objects = listOf(obj(),
             obj("b").withTransform(Transform(x = 300.0)), obj("hidden").withVisible(false)))
         val roundTrip = PatternReader.read(PesWriter.write(project.flatten()), "composition.pes")
-        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(project.flatten()).stitchCount, roundTrip.stitchCount)
-        assertEquals(500, roundTrip.stitches.maxOf { it.x } - roundTrip.stitches.minOf { it.x })
+        assertEquals(PesWriter.prepareForOutput(project.flatten()).stitchCount, roundTrip.stitchCount)
+        assertEquals(500, roundTrip.stitches.maxOf { it.x } - minOf(0, roundTrip.stitches.minOf { it.x }))
     }
 }
