@@ -1,5 +1,7 @@
 # 한글 TTF → 중심선 → 원본 새틴 변환: 착수 전 조사
 
+> **보류 — 사용자 결정(2026-10-24):** 한글 새틴·공용 중심선 엔진은 다음 버전 후보로 보존한다. 완료한 thinning 이식·골든·테스트만 해당 브랜치에 유지하고, 앱 연결·후속 구현·추가 검증 작업은 재개 지시 전까지 중단한다. 아래 계획/다음 단위 제안은 보류된 기록이다.
+
 - **원본·라이선스:** 공식 [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), 커밋 `1a232b27818a46a05cd25edec09e2f77c4e9ac01` 고정; `src/thin-image.c`는 Martin Weber, LGPL-2.1-or-later, `src/{autotrace,fit,curve}.c`는 GPL-2.0-or-later(각 파일 헤더)로 GPL-3 결합 가능하며 프로젝트 전체를 LGPL이라고 표시하지 않는다. README/COPYING/COPYING.LIB와 파일별 고지를 보존하고 헤더 없는 보조 파일의 출처 범위는 구현 전 함께 대조한다.
 - **범위·근거:** [Inkscape 연결 코드](https://inkscape.gitlab.io/inkscape/doxygen/inkscape-autotrace_8cpp_source.html)는 `at_splines_new_full` 및 centerline 옵션을 사용한다(동일 라이브러리 계열임을 확인했으며 Inkscape 내장본과 위 태그의 바이트 동일성은 미확인). `src/autotrace.c`의 순서대로 Rosenfeld `thin-image.c` → `pxl-outline.c::find_centerline_pixels` → `fit.c`와 curve/spline/vector 보조 연산을 이식하고, 폭 보존은 원본 `image-proc.c` 거리맵 경로만 조사한다; 관련 8개 C 파일은 `wc -l` 합계 4,225줄, GUI·이미지 코덱·새 알고리즘은 제외한다.
 - **원본 비교 계획:** 고정 C 소스를 로컬 작은 호출기로 실행해 동일 흑백 입력 5개(직선·T분기·X교차·고리·배포 허가된 앱 한글 TTF의 굵은 ‘한’ 래스터)를 Kotlin과 공유하고, thinning 마스크·경로/분기/개폐·순서·세그먼트 수와 제어점 float/ULP 차이를 코드로 기록·검사한다; `centerline=true` 외 기본값은 `new_fitting_opts` 그대로이며 `preserve_width=true` 비교는 원본 옵션의 별도 축으로 분리한다. 결과·입력/실행 파일 해시·컴파일 옵션은 `/tmp/myembro-port-out/editor/autotrace/`에 남기고, 이후 PES 단계는 P1–P8(후프 정수 상한 포함)을 실제 바이트 게이트로 검사한다; 이번 단위에서는 원본 실행·의존성 설치·제품 코드 착수 없음.
