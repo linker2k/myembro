@@ -36,6 +36,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -93,6 +95,7 @@ import io.github.linker2k.myembro.fonts.QualityReasons
 import io.github.linker2k.myembro.fonts.UserFontException
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import java.util.Locale
+import io.github.linker2k.myembro.engine.model.EmbPattern
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -103,12 +106,19 @@ enum class FontFilter { KOREAN, LATIN, SCRIPT, SINGLE_LINE, OUTLINE }
 
 /** What a card can preview once its font is installed. */
 sealed interface FontPreview {
+    data class Stitches(val pattern: EmbPattern) : FontPreview
     data class Outline(val typeface: Typeface) : FontPreview
     data class Strokes(val strokes: List<List<Pair<Double, Double>>>) : FontPreview
 }
 
 class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     val repo = FontRepository(app)
+    private val settings = io.github.linker2k.myembro.ui.settings.SettingsPreferences(app)
+    var favorites by mutableStateOf(settings.read().favoriteFontIds)
+        private set
+    private val stopObserving = settings.observe { favorites = settings.read().favoriteFontIds }
+    fun toggleFavorite(id: String) = settings.toggleFavoriteFont(id)
+    override fun onCleared() { stopObserving(); super.onCleared() }
     private val geometry = LetterFontGeometry(app)
     val fonts: List<CatalogFont> = repo.catalog
     /** Stored or precomputed quality of installed catalog fonts, by catalog id. */
@@ -125,6 +135,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
     /** Download progress 0..1 for fonts currently downloading. */
     val progress = mutableStateMapOf<String, Float>()
     val previews = mutableStateMapOf<String, FontPreview>()
+    val previewFailed = mutableStateMapOf<String, Boolean>()
 
     /** One-shot snackbar text; the screen clears it after showing. */
     var message by mutableStateOf<String?>(null)
@@ -134,15 +145,12 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             val ids = withContext(Dispatchers.IO) { repo.installedIds() }
             fonts.forEach { installed[it.id] = it.id in ids }
             // The catalog's precomputed numbers show before download; installed fonts replace them below.
-            fonts.forEach { f -> repo.precomputedQuality(f)?.let { qualities[f.id] = it } }
+            fonts.filterNot { it.hangulSatin }.forEach { f -> repo.precomputedQuality(f)?.let { qualities[f.id] = it } }
+            // Preview generation must not wait for expensive legacy fontq analysis of earlier fonts.
             fonts.filter { it.id in ids }.forEach { font ->
-                loadPreview(font)
-                // The full report replaces the catalog numbers; missing or outdated reports are recomputed.
-                // Quality is advisory, so failures are ignored.
-                withContext(Dispatchers.IO) {
-                    runCatching { FontQualitySummary.read(repo.fontFile(font)) ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
-                }?.let { qualities[font.id] = it }
+                launch { loadPreview(font) }
             }
+            launch { fonts.filter { it.id in ids && !it.hangulSatin }.forEach { loadQuality(it) } }
             userFonts += withContext(Dispatchers.IO) { repo.userFonts() }
             userFonts.forEach { loadUserPreview(it) }
         }
@@ -237,10 +245,7 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 installed[font.id] = true
                 loadPreview(font)
-                // Quality is advisory: a failed analysis must not undo a verified download.
-                withContext(Dispatchers.IO) {
-                    runCatching { FontQualitySummary.read(repo.fontFile(font)) ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
-                }?.let { qualities[font.id] = it }
+                if (!font.hangulSatin) loadQuality(font)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ChecksumMismatchException) {
@@ -259,22 +264,39 @@ class FontLibraryViewModel(app: Application) : AndroidViewModel(app) {
             installed[font.id] = false
             previews.remove(font.id)
             qualities.remove(font.id)
-            repo.precomputedQuality(font)?.let { qualities[font.id] = it }
+            if (!font.hangulSatin) repo.precomputedQuality(font)?.let { qualities[font.id] = it }
         }
     }
 
     suspend fun licenseText(font: CatalogFont): String? = withContext(Dispatchers.IO) { repo.licenseText(font) }
 
-    private suspend fun loadPreview(font: CatalogFont) {
-        val preview = withContext(Dispatchers.IO) {
-            when (font.kind) {
-                CatalogFont.Kind.OUTLINE_TTF -> repo.typeface(font)?.let { FontPreview.Outline(it) }
-                CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name).map { st -> st.map { p -> p.x to -p.y } }) }
-                CatalogFont.Kind.INKSTITCH_SVG -> runCatching { repo.inkStitchFont(font)?.let { FontPreview.Strokes(inkStitchPreview(it, font.name)) } }.getOrNull()
-            }
-        }
-        if (preview != null) previews[font.id] = preview
+    private suspend fun loadQuality(font: CatalogFont) {
+        withContext(Dispatchers.IO) {
+            runCatching { FontQualitySummary.read(repo.fontFile(font)) ?: repo.analyzeInstalled(font, geometry) }.getOrNull()
+        }?.let { qualities[font.id] = it }
     }
+
+    private suspend fun loadPreview(font: CatalogFont) {
+        // A corrupt/unsupported font must not prevent previews for subsequent installed fonts.
+        previewFailed.remove(font.id)
+        try {
+            val preview = withContext(Dispatchers.Default) {
+                when (font.kind) {
+                    CatalogFont.Kind.OUTLINE_TTF -> {
+                        FontPreview.Stitches(io.github.linker2k.myembro.fonts.FontStitchPreviewCache(getApplication()).pattern(font))
+                    }
+                    CatalogFont.Kind.SINGLE_LINE_SVG -> repo.svgFont(font)?.let { FontPreview.Strokes(it.layout(font.name).map { st -> st.map { p -> p.x to -p.y } }) }
+                    CatalogFont.Kind.INKSTITCH_SVG -> repo.inkStitchFont(font)?.let { FontPreview.Strokes(inkStitchPreview(it, font.name)) }
+                }
+            }
+            if (preview != null) previews[font.id] = preview else previewFailed[font.id] = true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            previewFailed[font.id] = true
+        }
+    }
+
 }
 
 /**
@@ -368,17 +390,39 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit, text
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    val favoriteCatalog = (embroidery + list).filter { it.id in vm.favorites }
+                    val favoriteUser = userList.filter { it.id in vm.favorites }
+                    if (favoriteCatalog.isNotEmpty() || favoriteUser.isNotEmpty()) {
+                        item(key = "favorites-header") { SectionTitle(stringResource(R.string.fonts_favorites)) }
+                        items(favoriteCatalog, key = { "favorite-" + it.id }) { font ->
+                            if (font.predigitized) EmbroideryFontCard(font, text, vm.installed[font.id] == true, vm.progress[font.id],
+                                onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
+                                onDelete = { vm.delete(font) }, onLicense = { licenseFor = font }, onUse = { onPick(font.id) },
+                                favorite = true, onFavorite = { vm.toggleFavorite(font.id) })
+                            else FontCard(font, vm.installed[font.id] == true, vm.progress[font.id], vm.previews[font.id],
+                                vm.previewFailed[font.id] == true, vm.qualities[font.id],
+                                onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
+                                onDelete = { vm.delete(font) }, onLicense = { licenseFor = font }, onUse = { onPick(font.id) },
+                                favorite = true, onFavorite = { vm.toggleFavorite(font.id) })
+                        }
+                        items(favoriteUser, key = { "favorite-" + it.id }) { font ->
+                            UserFontCard(font, vm.previews[font.id], true, { vm.toggleFavorite(font.id) },
+                                { vm.deleteUserFont(font) }, { onPick(font.id) })
+                        }
+                    }
                     if (embroidery.isNotEmpty()) {
                         item(key = "embroidery-header") { SectionTitle(stringResource(R.string.fonts_verified_embroidery)) }
-                        items(embroidery, key = { it.id }) { font ->
+                        items(embroidery.filterNot { it.id in vm.favorites }, key = { it.id }) { font ->
                             EmbroideryFontCard(
                                 font = font,
-                                usable = font.covers(text),
+                                inputText = text,
                                 installed = vm.installed[font.id] == true,
                                 progress = vm.progress[font.id],
                                 onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
                                 onDelete = { vm.delete(font) },
                                 onLicense = { licenseFor = font },
+                                favorite = font.id in vm.favorites,
+                                onFavorite = { vm.toggleFavorite(font.id) },
                                 onUse = { onPick(font.id) },
                             )
                         }
@@ -386,26 +430,31 @@ fun FontLibraryScreen(onBack: () -> Unit, onPick: (fontId: String) -> Unit, text
                     }
                     if (userList.isNotEmpty()) {
                         item(key = "user-header") { SectionTitle(stringResource(R.string.fonts_my_fonts)) }
-                        items(userList, key = { it.id }) { font ->
+                        items(userList.filterNot { it.id in vm.favorites }, key = { it.id }) { font ->
                             UserFontCard(
                                 font = font,
                                 preview = vm.previews[font.id],
                                 onDelete = { vm.deleteUserFont(font) },
+                                favorite = font.id in vm.favorites,
+                                onFavorite = { vm.toggleFavorite(font.id) },
                                 onUse = { onPick(font.id) },
                             )
                         }
                         item(key = "catalog-header") { SectionTitle(stringResource(R.string.fonts_catalog)) }
                     }
-                    items(list, key = { it.id }) { font ->
+                    items(list.filterNot { it.id in vm.favorites }, key = { it.id }) { font ->
                         FontCard(
                             font = font,
                             installed = vm.installed[font.id] == true,
                             progress = vm.progress[font.id],
                             preview = vm.previews[font.id],
+                            previewFailed = vm.previewFailed[font.id] == true,
                             quality = vm.qualities[font.id],
                             onDownload = { vm.download(font, checksumMessage) { failedTemplate.format(it) } },
                             onDelete = { vm.delete(font) },
                             onLicense = { licenseFor = font },
+                            favorite = font.id in vm.favorites,
+                            onFavorite = { vm.toggleFavorite(font.id) },
                             onUse = { onPick(font.id) },
                         )
                     }
@@ -473,15 +522,16 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun UserFontCard(font: LetterFont, preview: FontPreview?, onDelete: () -> Unit, onUse: () -> Unit) {
+private fun UserFontCard(font: LetterFont, preview: FontPreview?, favorite: Boolean, onFavorite: () -> Unit, onDelete: () -> Unit, onUse: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     Column(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PreviewBox(font.name, preview)
+        PreviewBox(font.name, preview, installed = true)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            FavoriteToggle(favorite, onFavorite)
             font.quality?.let { QualityBadge(it.grade) }
         }
         val kind = stringResource(if (font.kind == LetterFont.Kind.SINGLE_LINE_SVG) R.string.fonts_kind_single_line else R.string.fonts_kind_outline)
@@ -500,12 +550,13 @@ private fun UserFontCard(font: LetterFont, preview: FontPreview?, onDelete: () -
 }
 
 @Composable
-private fun PreviewBox(label: String, preview: FontPreview?) {
+private fun PreviewBox(label: String, preview: FontPreview?, installed: Boolean, failed: Boolean = false) {
     Box(
         Modifier.fillMaxWidth().height(64.dp).background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         when (preview) {
+            is FontPreview.Stitches -> io.github.linker2k.myembro.ui.lettering.StitchPatternPreview(preview.pattern, Modifier.fillMaxSize())
             is FontPreview.Outline -> Text(
                 label,
                 fontFamily = FontFamily(preview.typeface),
@@ -515,7 +566,7 @@ private fun PreviewBox(label: String, preview: FontPreview?) {
                 overflow = TextOverflow.Ellipsis,
             )
             is FontPreview.Strokes -> StrokeText(preview.strokes, Modifier.fillMaxSize())
-            null -> Text(stringResource(R.string.fonts_preview_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            null -> Text(stringResource(if (!installed) R.string.fonts_preview_hint else if (failed) R.string.fonts_preview_failed else R.string.fonts_preview_loading), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -554,23 +605,26 @@ private fun FontCard(
     installed: Boolean,
     progress: Float?,
     preview: FontPreview?,
+    previewFailed: Boolean,
     quality: FontQualitySummary?,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onLicense: () -> Unit,
     onUse: () -> Unit,
+    favorite: Boolean,
+    onFavorite: () -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
     Column(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PreviewBox(font.nameKo ?: font.name, preview)
+        PreviewBox(font.nameKo ?: font.name, preview, installed, previewFailed)
         if (font.kind == CatalogFont.Kind.SINGLE_LINE_SVG) SingleLineFontBadge()
         // Hairline outlines only; a single-line font's tight spots are gaps, not thin strokes.
         val largeOnly = font.kind == CatalogFont.Kind.OUTLINE_TTF &&
             quality?.recommendedMinHeightMm?.let { it.isFinite() && it > LARGE_ONLY_MM } == true
-        if (largeOnly || font.thinStroke || font.thinThreadRequired) {
+        if (!font.hangulSatin && (largeOnly || font.thinStroke || font.thinThreadRequired)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (largeOnly) NoteBadge(stringResource(R.string.fonts_large_only))
                 if (font.thinStroke) NoteBadge(stringResource(R.string.fonts_thin_stroke))
@@ -597,6 +651,7 @@ private fun FontCard(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            FavoriteToggle(favorite, onFavorite)
             quality?.let {
                 QualityBadge(it.grade)
                 Spacer(Modifier.size(6.dp))
@@ -649,31 +704,41 @@ private fun FontCard(
 @Composable
 private fun EmbroideryFontCard(
     font: CatalogFont,
-    usable: Boolean,
+    inputText: String,
     installed: Boolean,
     progress: Float?,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onLicense: () -> Unit,
     onUse: () -> Unit,
+    favorite: Boolean,
+    onFavorite: () -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val usable = font.covers(inputText)
     val context = LocalContext.current
     val image = remember(font.id) {
         runCatching { context.assets.open("fonts/previews/${font.id}.png").use(BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
     }
     Column(
-        Modifier.fillMaxWidth().alpha(if (usable) 1f else 0.38f)
+        Modifier.fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (!usable) {
+            val message = if (io.github.linker2k.myembro.engine.lettering.HangulSatin.applies(inputText))
+                R.string.fonts_input_hangul_unsupported else R.string.fonts_input_unsupported
+            Text(stringResource(message, inputText.take(24)), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         // Stitches are drawn in thread colours, so the picture sits on a light fabric tone in both themes.
         Box(Modifier.fillMaxWidth().height(64.dp).background(Color(0xFFF7F4EE), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
             contentAlignment = Alignment.CenterStart) {
-            image?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(), alignment = Alignment.CenterStart) }
+            image?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(if (usable) 1f else 0.38f), alignment = Alignment.CenterStart) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(font.name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            FavoriteToggle(favorite, onFavorite)
             TextButton(onClick = onLicense) { Text(stringResource(R.string.fonts_license), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             when {
                 progress != null -> Text(stringResource(R.string.fonts_downloading, (progress * 100).toInt()), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
@@ -688,5 +753,17 @@ private fun EmbroideryFontCard(
                 }
             }
         }
+    }
+}
+
+/** Outline fontq describes fill details, never centerline satin eligibility. */
+internal val CatalogFont.hangulSatin: Boolean get() = korean && kind == CatalogFont.Kind.OUTLINE_TTF
+
+@Composable
+private fun FavoriteToggle(favorite: Boolean, onFavorite: () -> Unit) {
+    IconButton(onClick = onFavorite) {
+        Icon(if (favorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+            contentDescription = stringResource(if (favorite) R.string.fonts_unfavorite else R.string.fonts_favorite),
+            tint = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.fonts.FontRepository
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
@@ -121,10 +122,30 @@ private fun LetteringContent(
     var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
     var catalogFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
     var installedCatalog by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val favoritePreferences = remember { SettingsPreferences(context) }
+    var favorites by remember { mutableStateOf(favoritePreferences.read().favoriteFontIds) }
+    androidx.compose.runtime.DisposableEffect(favoritePreferences) {
+        val stop = favoritePreferences.observe { favorites = favoritePreferences.read().favoriteFontIds }
+        onDispose { stop() }
+    }
+    var userFontOptions by remember { mutableStateOf<List<io.github.linker2k.myembro.fonts.LetterFont>>(emptyList()) }
+    var userQuickFonts by remember { mutableStateOf<List<QuickFont>>(emptyList()) }
     // Re-read after every font change: a library pick may have just downloaded it.
-    LaunchedEffect(fontId) {
-        withContext(Dispatchers.IO) { FontRepository(context).let { repo -> repo.catalog to repo.installedIds() } }
-            .let { (fonts, installed) -> catalogFonts = fonts; installedCatalog = installed }
+    LaunchedEffect(fontId, favorites) {
+        val data = withContext(Dispatchers.IO) {
+            val repo = FontRepository(context)
+            val users = repo.userFonts().map { f ->
+                val cmap = f.file?.takeIf { f.outline }?.let(io.github.linker2k.myembro.fonts.FontCmap::read)
+                val svg = if (f.kind == io.github.linker2k.myembro.fonts.LetterFont.Kind.SINGLE_LINE_SVG) repo.userSvgFont(f) else null
+                f to QuickFont(f.id, false, cmap?.has("가") == true, null, covers = { t ->
+                    val letters = t.filterNot { it.isWhitespace() }
+                    cmap?.has(letters) ?: letters.all { svg?.supports(it) == true }
+                })
+            }
+            Triple(repo.catalog, repo.installedIds(), users)
+        }
+        catalogFonts = data.first; installedCatalog = data.second
+        userFontOptions = data.third.map { it.first }; userQuickFonts = data.third.map { it.second }
     }
     val recentFonts = remember { RecentLetteringFonts(context) }
     var recent by remember { mutableStateOf(recentFonts.list()) }
@@ -138,14 +159,14 @@ private fun LetteringContent(
     }
     // Every font the sheet shows becomes the most recent; the one before moves to the second slot.
     LaunchedEffect(fontId) { recentFonts.use(fontId); recent = recentFonts.list() }
-    val quickFonts = remember(catalogFonts, installedCatalog) {
+    val quickFonts = remember(catalogFonts, installedCatalog, userQuickFonts) {
         bundledLetteringFonts.map { QuickFont(it.id, embroidery = false, hangul = true, theme = BUNDLED_THEMES[it.id], covers = { true }) } +
             catalogFonts.filter { it.predigitized || it.id in installedCatalog }.map { f ->
                 QuickFont(f.id, f.predigitized, f.korean, f.themeKey,
                     covers = { t -> if (f.predigitized) f.covers(t) else t.none { it in '\uAC00'..'\uD7A3' } || f.korean })
-            }
+            } + userQuickFonts
     }
-    val slotIds = quickFontSlots(fontId, recent, quickFonts, text)
+    val slotIds = quickFontSlots(fontId, recent, quickFonts, text, favorites)
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -303,7 +324,7 @@ private fun LetteringContent(
                             EmbroideryFontChoice(catalogFont, fontId == id, id in installedCatalog, usable, Modifier.weight(1f), pick)
                         } else {
                             val name = bundledLetteringFonts.firstOrNull { it.id == id }?.name ?: catalogFont?.let { it.nameKo ?: it.name }
-                                ?: automatic?.fontName ?: id
+                                ?: userFontOptions.firstOrNull { it.id == id }?.name ?: automatic?.fontName ?: id
                             FontChoice(LetteringFont(id, name), fontId == id, Modifier.weight(1f).alpha(if (usable) 1f else 0.38f),
                                 fontPreviews[id]) { if (usable) pick() }
                         }

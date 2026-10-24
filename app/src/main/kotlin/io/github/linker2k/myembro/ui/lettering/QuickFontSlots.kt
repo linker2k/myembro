@@ -17,21 +17,23 @@ internal data class QuickFont(
 )
 
 /**
- * The three quick slots: [current] first, then the most recent other font (so a library pick can be
+ * The three quick slots: [current] first, then compatible favorites in catalog order, then the
+ * most recent other font (so a library pick can be
  * compared with the one before), then a same-theme neighbour of the current font. Empty slots take
  * fonts by language: embroidery fonts for Latin text, Hangul TTFs for Hangul text. Only fonts that
  * cover the text are added; the current and recent fonts stay even when they do not (shown dimmed).
  */
-internal fun quickFontSlots(current: String, recent: List<String>, fonts: List<QuickFont>, text: String): List<String> {
+internal fun quickFontSlots(current: String, recent: List<String>, fonts: List<QuickFont>, text: String, favorites: Set<String> = emptySet()): List<String> {
     val byId = fonts.associateBy { it.id }
     val slots = mutableListOf(current)
-    recent.firstOrNull { it != current && it in byId }?.let { slots += it }
+    fonts.filter { it.id in favorites && it.covers(text) && it.id != current }.take(2).forEach { slots += it.id }
+    if (slots.size < 3) recent.firstOrNull { it != current && it in byId && it !in slots }?.let { slots += it }
     val hangulText = text.any { it in '가'..'힣' || it in 'ㄱ'..'ㆎ' }
     // Latin text: verified embroidery fonts first; Hangul text: Hangul TTFs first.
     val preferred = fonts.filter { it.covers(text) }
         .sortedByDescending { if (hangulText) it.hangul else it.embroidery }
     val theme = byId[current]?.theme
-    if (theme != null) preferred.firstOrNull { it.theme == theme && it.id !in slots }?.let { slots += it.id }
+    if (slots.size < 3 && theme != null) preferred.firstOrNull { it.theme == theme && it.id !in slots }?.let { slots += it.id }
     for (f in preferred) { if (slots.size >= 3) break; if (f.id !in slots) slots += f.id }
     return slots.take(3)
 }

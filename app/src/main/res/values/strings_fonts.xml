@@ -51,4 +51,11 @@
     <string name="fonts_analyzing">Analyzing…</string>
     <string name="fonts_size_kb">%1$d KB</string>
     <string name="fonts_verified_embroidery">Verified embroidery fonts</string>
+    <string name="fonts_preview_loading">Preparing stitch preview…</string>
+    <string name="fonts_preview_failed">Stitch preview could not be generated</string>
+    <string name="fonts_input_hangul_unsupported">This font does not support Korean in “%1$s”.</string>
+    <string name="fonts_input_unsupported">This font does not support all characters in “%1$s”.</string>
+    <string name="fonts_favorite">Add font to favorites</string>
+    <string name="fonts_unfavorite">Remove font from favorites</string>
+    <string name="fonts_favorites">Favorite fonts</string>
 </resources>
