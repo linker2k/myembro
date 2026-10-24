@@ -1,54 +1,54 @@
-# 일괄 도안 가져오기
+# Batch design import
 
-홈·도안 목록·뷰어의 파일 열기·편집기의 기기 파일 가져오기 및 외부 공유를 같은 처리로 연결합니다.
-시스템 파일 선택은 `OpenMultipleDocuments`, 폴더 선택은 `OpenDocumentTree`입니다.
-편집기의 기존 도안 목록에서도 도안을 계속 추가할 수 있습니다.
+Connects file opening from Home, the design list, and the viewer, device-file import in the editor, and external sharing to the same process.
+System file selection uses `OpenMultipleDocuments`; folder selection uses `OpenDocumentTree`.
+Designs can still be added from the editor's existing design list.
 
-- 지원 파일: PES / PEC / DST / MYEMBRO 및 이 파일들을 담은 ZIP.
-- MIME에는 `application/octet-stream`, 자수 형식별 MIME, ZIP과 프로젝트용 JSON을 포함합니다.
-  MIME만으로 확장자를 정확히 제한할 수 없어 선택 뒤 확장자·시그니처·실제 파서를 함께 검사합니다.
-  DST는 `LA:`로 시작하는 512바이트 헤더를 확인합니다. 미지원·손상 파일은 건너뛴 이름과 함께 요약합니다.
-- 폴더는 하위 폴더를 포함하며 문서 ID 방문 기록으로 중복 탐색/순환을 막습니다.
-  ZIP 경로는 안전한 파일명으로 평탄화하며 중첩 ZIP은 풀지 않습니다.
-  ZIP 제한은 파일당 16MiB, 입력/전체 해제 데이터 각각 64MiB, 엔트리 4096개, 도안 1000개입니다.
+- Supported files: PES / PEC / DST / MYEMBRO and ZIP archives containing these files.
+- MIME types include `application/octet-stream`, embroidery-specific MIME types, ZIP, and project JSON.
+  MIME alone cannot precisely restrict extensions, so extensions, signatures, and actual parsers are checked after selection.
+  DST checks for a 512byte header starting with `LA:`. Unsupported/corrupt files are summarized with their skipped filenames.
+- Folders include subfolders; visited document IDs prevent duplicate traversal/cycles.
+  ZIP paths are flattened to safe filenames; nested ZIP archives are not extracted.
+  ZIP limits are 16MiB per file, 64MiB each for input/total extracted data, 4096 entries, and 1000 designs.
 
-## 중복 선택과 취소
+## Duplicate choices and cancellation
 
-SHA-256과 파일명(대소문자 무시, 파일명 정리 후)을 함께 비교합니다.
-이름만 같고 내용이 다르면 기존 파일을 보존하고 `name (1).pes`처럼 사본을 추가합니다.
-이전에 사본 이름을 붙인 도안도 원래 이름과 해시를 기록해 다음 가져오기 때 다시 비교합니다.
+Compares both SHA-256 and filenames(case-insensitive, after filename sanitization).
+If only the name matches but contents differ, preserves the existing file and adds a copy such as `name (1).pes`.
+Designs previously given copy names also retain their original names and hashes for comparison on subsequent imports.
 
-이미 목록에 같은 이름·내용이 있으면 **이미 있는 도안 N개**와 전체 이름 목록을 표시하고
-현재 도안마다 **건너뛰기 / 사본으로 추가 / 바꾸기**를 묻습니다.
-**나머지 모두에 적용**은 현재 항목부터 적용하고 앞서 고른 항목은 유지합니다.
-같은 선택/ZIP 내부에 반복된 동일 이름·내용은 한 번만 준비하며 요약에 중복으로 표시합니다.
+If the list already contains the same name and contents, shows **N existing designs** and the full name list,
+and asks **Skip / Add as copy / Replace** for each current design.
+**Apply to all remaining** applies from the current item onward and preserves earlier choices.
+Repeated identical names/contents within the same selection/ZIP are prepared only once and marked as duplicates in the summary.
 
-모든 입력을 숨김 임시 폴더에서 검증한 다음 중복 선택을 받습니다. **중복 선택 중 취소하거나
-준비 중 취소하면 새 도안도, 교체도 저장하지 않습니다.** 모든 선택이 끝난 후 저장하며,
-그동안 변경·삭제된 원본은 교체하지 않습니다. 저장 중 오류/코루틴 취소에는 새 파일을 지우고
-교체 원본과 중복 기록을 원복합니다. 저장 단계에서는 취소 버튼을 비활성화합니다.
+Validates all inputs in a hidden temporary folder before requesting duplicate choices. **Cancelling during duplicate selection or
+preparation saves neither new designs nor replacements.** Saves only after all choices are complete;
+originals changed/deleted in the meantime are not replaced. On save errors/coroutine cancellation, deletes new files and
+restores replaced originals and duplicate records. The cancel button is disabled during saving.
 
-## 백그라운드 처리와 편집기
+## Background processing and the editor
 
-제공자 쿼리·폴더 순회·검증·해시·파일 저장은 IO에서 수행하고 파일별 진행률을 표시합니다.
-중복 확인은 ViewModel에서 기다리므로 화면 회전에도 진행 중인 선택을 유지합니다.
-썸네일 생성은 저장 완료 뒤 별도로 수행하며, 많은 편집 객체의 렌더/통계는 Default에서 계산합니다.
+Provider queries, folder traversal, validation, hashing, and file saving run on IO, with per-file progress.
+Duplicate confirmation waits in the ViewModel, preserving pending choices across screen rotation.
+Thumbnails are generated separately after saving; rendering/statistics for many editor objects are computed on Default.
 
-편집기에서 여러 도안을 가져오면 파일별 독립 객체로 추가하며 한 번에 실행 취소할 수 있습니다.
-MYEMBRO 프로젝트를 추가할 때는 보이는 도안을 한 객체로 합치고, 프로젝트 열기에서 단일
-MYEMBRO를 고르면 기존 열기 경로로 편집 레이어를 보존합니다. 도안 목록·홈에서도 프로젝트를
-열 수 있고, USB 내보내기에서는 프로젝트를 PES로 변환합니다. engine 공개 API는 바꾸지 않습니다.
+Importing multiple designs in the editor adds independent objects per file, undoable in one action.
+Adding a MYEMBRO project merges the visible design into one object; selecting a single
+MYEMBRO through project opening preserves editable layers via the existing opening path. Projects can also be
+opened from the design list/Home; USB export converts projects to PES. The engine public API is unchanged.
 
-## 검증
+## Validation
 
 ```bash
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-JVM: 혼합 형식, ZIP 오류와 경로 정리, 하위 폴더/순환, 350개 도안, SHA-256 중복,
-세 선택지, 사본 이름 이력, 전체 취소, 부분 선택 취소, 저장 중 원복, 선택 중 원본 변경 거부,
-파일별 편집 객체와 실행 취소·프로젝트 왕복을 검사합니다.
+JVM: checks mixed formats, ZIP errors and path sanitization, subfolders/cycles, 350 designs, SHA-256 duplicates,
+the three choices, copy-name history, full cancellation, cancellation partway through choices, rollback during saving, rejection of originals changed during selection,
+per-file editor objects and undo/project round trips.
 
-에뮬레이터에서는 별도 QA 패키지로 홈/도안 목록의 SAF 파일 다중 선택, JPEG 선택 불가,
-재귀 폴더/ZIP 요약, 중복 목록과 전체 적용 사본 추가를 확인했습니다. 기존 도안 3개와 새 도안이
-섞인 가져오기를 취소한 뒤 도안 파일과 중복 기록의 해시가 모두 같음을 확인했습니다.
+On the emulator, a separate QA package verified SAF multi-file selection from Home/the design list, inability to select JPEG,
+recursive folder/ZIP summaries, duplicate lists, and adding copies with apply-to-all. After cancelling an import mixing
+existing designs 3 and new designs, confirmed that design-file and duplicate-record hashes were all unchanged.

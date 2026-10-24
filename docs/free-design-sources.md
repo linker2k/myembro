@@ -1,53 +1,54 @@
-# 무료 자수 도안 사이트 디렉터리와 재배포 검토
+# Free embroidery design directory and redistribution review
 
-확인일: **2026-10-22**. 무료 가격은 파일 재배포 허가가 아니다. 아래 사이트는 앱에
-도안을 추가 번들하지 않고 사용자가 브라우저에서 직접 받는 링크만 제공한다.
-사이트 원문을 읽고 작성한 한영 요약·형식·계정 조건·확인일·근거 URL은
-[`free_design_sources.json`](../app/src/main/assets/sources/free_design_sources.json)에 있다.
-사이트 소개/약관은 요약일 뿐이며 각 도안의 최신 조건과 후프 크기를 함께 확인한다.
+Checked on: **2026-10-22**. A free price does not grant permission to redistribute files. The sites below are
+provided only as links for users to download directly in their browsers; no additional designs are bundled in the app.
+Korean/English summaries, formats, account requirements, check dates, and source URLs written after reading the original sites are in
+[`free_design_sources.json`](../app/src/main/assets/sources/free_design_sources.json).
+Site descriptions/terms are summaries only; also check each design's current terms and hoop size.
 
-## 앱에 포함한 링크 (5곳)
+## Links included in the app (5 sites)
 
-| 사이트 / 무료 목록 | 직접 확인한 약관·형식·다운로드 근거 | 확인된 조건 |
+| Site / free listing | Directly checked terms, formats, and download evidence | Confirmed conditions |
 |---|---|---|
-| [Brother Sewingcraft](https://sewingcraft.brother.eu/en/inspiration-and-events/projects-and-free-patterns) | [공식 이용약관 §2·§5](https://sewingcraft.brother.eu/en/terms-of-use), 무료 페이지의 PES 다운로드 링크 | 개인용; 파일 재배포·판매용 이용 불가. 방문자도 이용 가능. 영어 페이지. |
-| [Embroidery Library](https://emblibrary.com/pages/free-embroidery-designs) | [라이선스](https://emblibrary.com/pages/licensing), [지원 형식](https://emblibrary.com/blogs/help/find-embroidery-file-formats), [계정/ZIP 다운로드](https://emblibrary.com/blogs/help/download-embroidery-design-files) | PES·DST 등 제공, 계정 주문 내역에서 ZIP 다운로드. 직접 수놓은 완제품의 제한적 판매 허용, 대량 생산·디지털 파일 공유 금지. |
-| [Urban Threads](https://urbanthreads.com/pages/free-embroidery-designs) | [라이선스](https://urbanthreads.com/pages/licensing), [실제 $0 무료 상품의 PES 포함 형식](https://urbanthreads.com/products/i-heart-ut), [계정 다운로드 절차](https://urbanthreads.com/blogs/help/downloading-instructions) | PES·DST 등 제공, 계정/무료 주문 절차. 직접 수놓은 완제품의 제한적 판매 허용, 대량 생산·파일 공유 금지. 구매 조건부 사은품과 독립 무료 목록을 구분한다. |
-| [Designs by JuJu](https://www.designsbyjuju.com/free-designs) | [2026년 이용 조건](https://www.designsbyjuju.com/terms-of-use), [계정/형식/다운로드 FAQ](https://www.designsbyjuju.com/knowledge-base) | PES·DST 등 제공, 계정/주문 절차. **무료 도안은 판매용 완제품에 사용 불가**; 해당 도안을 구매해야 판매용 이용 가능. 무료/유료 모두 파일 공유 금지. |
-| [Kreative Kiwi](https://www.kreativekiwiembroidery.co.nz/Download-Free-In-the-hoop-Embroidery-Designs) | [저작권/완제품 판매](https://www.kreativekiwiembroidery.co.nz/copy-right), [무료 상품의 PES 포함 형식](https://www.kreativekiwiembroidery.co.nz/product/free-embroidery-addict-), [무료 주문/계정 절차](https://www.kreativekiwiembroidery.co.nz/blog/How-to-Download-our-Free-Embroidery-Designs.html) | PES·DST 등 제공, 계정/무료 주문 절차. 직접 만든 완제품 판매 가능; 대량 판매는 별도 상업 라이선스 문의. 파일 재배포 금지. |
+| [Brother Sewingcraft](https://sewingcraft.brother.eu/en/inspiration-and-events/projects-and-free-patterns) | [Official terms §2·§5](https://sewingcraft.brother.eu/en/terms-of-use), PES download links on the free page | Personal use; no file redistribution or commercial use. Available to visitors without an account. English page. |
+| [Embroidery Library](https://emblibrary.com/pages/free-embroidery-designs) | [Licensing](https://emblibrary.com/pages/licensing), [supported formats](https://emblibrary.com/blogs/help/find-embroidery-file-formats), [account/ZIP downloads](https://emblibrary.com/blogs/help/download-embroidery-design-files) | PES·DST and other formats; ZIP downloads from account order history. Limited sales of finished items you embroider yourself are allowed; mass production and digital file sharing prohibited. |
+| [Urban Threads](https://urbanthreads.com/pages/free-embroidery-designs) | [Licensing](https://urbanthreads.com/pages/licensing), [formats including PES for an actual $0 free product](https://urbanthreads.com/products/i-heart-ut), [account download procedure](https://urbanthreads.com/blogs/help/downloading-instructions) | PES·DST and other formats; account/free-order process. Limited sales of finished items you embroider yourself are allowed; mass production and file sharing prohibited. Distinguishes purchase-dependent gifts from standalone free listings. |
+| [Designs by JuJu](https://www.designsbyjuju.com/free-designs) | [2026 terms of use](https://www.designsbyjuju.com/terms-of-use), [account/format/download FAQ](https://www.designsbyjuju.com/knowledge-base) | PES·DST and other formats; account/order process. **Free designs may not be used on finished items for sale**; purchase the design for commercial use. File sharing prohibited for both free and paid designs. |
+| [Kreative Kiwi](https://www.kreativekiwiembroidery.co.nz/Download-Free-In-the-hoop-Embroidery-Designs) | [Copyright/finished-item sales](https://www.kreativekiwiembroidery.co.nz/copy-right), [formats including PES for a free product](https://www.kreativekiwiembroidery.co.nz/product/free-embroidery-addict-), [free-order/account procedure](https://www.kreativekiwiembroidery.co.nz/blog/How-to-Download-our-Free-Embroidery-Designs.html) | PES·DST and other formats; account/free-order process. Sales of finished items you make yourself are allowed; inquire about a separate commercial license for volume sales. File redistribution prohibited. |
 
-Embroidery Library·Urban Threads·JuJu·Kiwi의 목록/조건/형식·다운로드 페이지는
-실제 HTTP 요청으로 200 응답과 본문을 확인했다(리다이렉트는 최종 URL 사용).
-Brother는 일반 Python HTTP 요청에 403을 반환했으나 웹 열람 도구에서 무료 목록과
-이용약관 본문을 모두 확인했다. 접근 제한을 우회하거나 계정 생성/주문/결제는 하지 않았다.
-디렉터리에는 도안 파일/사이트 이미지/로고/원격 코드를 복사하지 않았다.
+Actual HTTP requests to Embroidery Library·Urban Threads·JuJu·Kiwi listing/terms/format/download pages
+confirmed 200 responses and body content(final URLs used after redirects).
+Brother returned 403 to ordinary Python HTTP requests, but both the free listing and
+terms body were confirmed using the web browsing tool. No access restrictions were bypassed and no accounts, orders, or payments were created.
+No design files/site images/logos/remote code were copied into the directory.
 
-## 조사했으나 앱에서 제외한 후보
+## Candidates researched but excluded from the app
 
-| 후보 | 확인 결과 / 제외 사유 |
+| Candidate | Findings / reason for exclusion |
 |---|---|
-| [Janome 공식 무료 목록](https://www.janome.com/free-embroidery-designs/) | 무료 목록은 열람 도구에서 확인됨. 페이지가 두 파일을 JEF로 명시하여 PES 제공 근거가 없고, 연결된 `/terms-conditions/` 본문을 가져오지 못했다. 조건을 추측하지 않고 제외. 일반 HTTP는 403. |
-| Husqvarna Viking / Pfaff / mySewnet | 공식 mySewnet 루트·라이브러리는 HTTP 200이지만 현재 CREATIVATE 표기/로그인 중심 동적 화면. 이용 조건 URL도 HTTP 200이나 읽을 수 있는 약관 본문과 현재 무료 다운로드·PES 형식을 함께 확정하지 못했다. 브랜드별 무료 링크를 추측해 넣지 않음. |
-| [Ink/Stitch](https://inkstitch.org/) 갤러리 | 공식 홈은 HTTP 200. 홈의 OSS 소프트웨어 라이선스와 별개로, 현재 무료 도안 다운로드 갤러리·개별 도안 이용 조건을 함께 확인하지 못했으므로 제외. |
+| [Janome official free listing](https://www.janome.com/free-embroidery-designs/) | Free listing confirmed in the browsing tool. The page identifies both files as JEF, providing no evidence of PES availability; the linked `/terms-conditions/` body could not be retrieved. Excluded rather than guessing conditions. Ordinary HTTP returns 403. |
+| Husqvarna Viking / Pfaff / mySewnet | Official mySewnet root/library return HTTP 200, but currently show CREATIVATE branding and a login-focused dynamic screen. The terms URL also returns HTTP 200, but readable terms, current free downloads, and PES availability could not all be confirmed. No guessed brand-specific free links added. |
+| [Ink/Stitch](https://inkstitch.org/) gallery | Official home returns HTTP 200. Independently of the home page's OSS software license, a current free-design download gallery and individual design terms could not both be confirmed, so excluded. |
 
-사이트 변경에 대비하여 JSON에는 확인일을 표시한다. 재확인은 무료 목록·약관·형식·
-다운로드 조건 모두를 대상으로 하며 하나라도 확인되지 않으면 앱 목록에서 제외한다.
+The JSON records check dates to account for site changes. Rechecking covers free listings, terms, formats,
+and download conditions; if any remain unconfirmed, remove the site from the app list.
 
-## 앱 공유 가져오기
+## Import through app sharing
 
-공개 화면은 `FreeDesignSourcesScreen(onBack)`이며 A안 테마 토큰과 Custom Tabs를 쓴다.
-내려받은 PES/PEC/DST 또는 ZIP을 공유하면 `DesignLibrary.importShared(uri)`로
-라이브러리에 넣을 수 있다. **MainActivity 라우팅/인텐트 수신 연결은 통합 담당 작업**이며,
-[연결 메모](free-design-sources-integration.md)에 구체적인 변경 지점을 남겼다.
-Manifest의 SEND/SEND_MULTIPLE 필터, ZIP 안전 추출 함수와 단위 테스트는 준비되어 있다.
+The public screen is `FreeDesignSourcesScreen(onBack)`, using theme A tokens and Custom Tabs.
+Sharing a downloaded PES/PEC/DST or ZIP can add it to the library through `DesignLibrary.importShared(uri)`.
+**MainActivity routing/intent-receiving wiring is the integrator's task**;
+[integration notes](free-design-sources-integration.md) identify the specific change points.
+Manifest SEND/SEND_MULTIPLE filters, safe ZIP extraction functions, and unit tests are ready.
 
-## 번들된 공개 도안 출처(기존 샘플 팩)
+## Bundled public design sources(existing sample pack)
 
-이 링크 디렉터리는 기존 샘플 팩을 바꾸지 않는다. 기존 공개 데이터는
-[EmbroidePy/samples 고정 커밋](https://github.com/EmbroidePy/samples/tree/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e)의
-[MIT 라이선스](https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/LICENSE)에
-따라 `spiralbox.pes` 파생본 하나만 포함한다. 형식만 다른 동일 도안은 추가 개수로 세지 않았다.
-Brother Artspira의 계정/기기 제한 도안, 개인용 전용 도안, 종료된 무료 프로모션의 파일은 번들하지 않는다.
+This link directory does not change the existing sample pack. Existing public data includes only one
+`spiralbox.pes` derivative under the
+[MIT license](https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/LICENSE)
+of the [pinned EmbroidePy/samples commit](https://github.com/EmbroidePy/samples/tree/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e).
+The same design in different formats was not counted as additional designs.
+Brother Artspira account/device-restricted designs, personal-use-only designs, and files from expired free promotions are not bundled.
 
 ## Our starter pack
 
