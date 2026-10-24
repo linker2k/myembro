@@ -1,0 +1,56 @@
+[
+    {
+        "part": 1,
+        "height_mm": 15,
+        "kind": "fill",
+        "x_mm": 0.0,
+        "y_mm": 0.0,
+        "width_mm": 27.8,
+        "actual_height_mm": 15.1
+    },
+    {
+        "part": 2,
+        "height_mm": 15,
+        "kind": "running",
+        "x_mm": 43.5,
+        "y_mm": 0.0,
+        "width_mm": 27.8,
+        "actual_height_mm": 15.0
+    },
+    {
+        "part": 3,
+        "height_mm": 20,
+        "kind": "fill",
+        "x_mm": 0.0,
+        "y_mm": 17.0,
+        "width_mm": 37.1,
+        "actual_height_mm": 20.0
+    },
+    {
+        "part": 4,
+        "height_mm": 20,
+        "kind": "running",
+        "x_mm": 43.5,
+        "y_mm": 17.0,
+        "width_mm": 37.2,
+        "actual_height_mm": 20.0
+    },
+    {
+        "part": 5,
+        "height_mm": 25,
+        "kind": "fill",
+        "x_mm": 0.0,
+        "y_mm": 39.0,
+        "width_mm": 46.3,
+        "actual_height_mm": 25.0
+    },
+    {
+        "part": 6,
+        "height_mm": 25,
+        "kind": "running",
+        "x_mm": 43.5,
+        "y_mm": 64.9,
+        "width_mm": 46.4,
+        "actual_height_mm": 25.0
+    }
+]
