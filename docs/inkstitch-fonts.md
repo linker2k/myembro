@@ -31,7 +31,7 @@ Ink/Stitch fonts are the 1st-choice source for Latin lettering.
 - **ND (no derivatives) is also not permitted.** We cannot assert that resizing and stitch generation do not constitute an adaptation.
 - **For CC BY-SA, both the adaptation and the original font were examined.**
   - Permitted if newly created for Ink/Stitch, or if the original is public domain, OFL, Bitstream Vera, Hershey, or CC BY-SA.
-  - Conditional if the original is freeware described as "free for personal and commercial use" and the only evidence is email permission received by an Ink/Stitch contributor. We cannot confirm that the permission extends to redistribution in a third-party app. The original `learning_curve` explicitly states "no resale; no inclusion in CD-ROM collections."
+  - Conditional if the original is freeware described as "free for personal and commercial use" and the only evidence is email permission received by an Ink/Stitch contributor. We cannot confirm that the permission extends to redistribution in a 3rd-party app. The original `learning_curve` explicitly states "no resale; no inclusion in CD-ROM collections."
 - **The app does not package these files in the APK.** They are downloaded to the user's device from pinned commit URLs, and LICENSE is saved alongside the font.
   - CC BY-SA data is treated as a separate work, not mixed into the GPL code.
   - OFL's Reserved Font Name condition applies when modifying and redistributing files; we download the original files unchanged.

@@ -370,7 +370,7 @@ other files and allocated clusters also reduce free space. The actual **remainin
 so no arbitrary adjustment is made to match that display.
 
 Filename-path investigation: the actual imported filename → `DesignFormats.preparePes` → `ShortNames.unique`, which took
-the first 8 characters of the cleaned stem. The app's default filename is `design`/‘도안’; there is no code adding
+the first 8 characters of the cleaned stem. The app's default filename is `design` or its Korean equivalent; there is no code adding
 `EMBROIDERY` for USB export. The PES thread brand `EMBROIDERY` is not used for filenames either.
 Thus an input filename starting with that prefix becomes `EMBROIDE.PES`. The file's original full name was not provided,
 so its individual upstream origin could not be established.

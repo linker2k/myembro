@@ -645,8 +645,8 @@ Back confirmation→Cancel retaining the edited draft, Done→reedit, and the en
 Screenshots/XML/autosave comparisons and test output:
 `/tmp/myembro-port-out/letter/sheet-ui/` (`before.png`, `after.png`, `confirm.png`, `output.txt`).
 
-Validation: all of `./gradlew check :app:assembleDebug` passed; engine586 and appDebug/Release190 each, failures0;
-Lint passed. LetteringPreviewPlacementTest3 cases check position/rotation/size, new-text centering, and draft-change fields.
+Validation: all of `./gradlew check :app:assembleDebug` passed; 586 engine tests and 190 app tests each for Debug/Release, with 0 failures;
+Lint passed. The 3 LetteringPreviewPlacementTest cases check position/rotation/size, new-text centering, and draft-change fields.
 
 ### Hangul satin quality display in the font library (2026-10-24)
 
