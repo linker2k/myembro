@@ -52,6 +52,44 @@ object StitchTypeRule {
         }
     }
 
+    data class RegionStitches(val groups:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>, val type:Type?) {
+        val excluded:Boolean get()=type==null
+    }
+
+    /** Coordinator's failure policy, shared by canvas and editor. Cancellation is never a fallback. */
+    fun generateRegion(preferred:Type,
+        prefix:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup> = emptyList(),
+        hoop:io.github.linker2k.myembro.engine.edit.HoopSpec = io.github.linker2k.myembro.engine.edit.HoopSpec.H100,
+        validate:((List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>)->Boolean)? = null,
+        generate:(Type)->List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>):RegionStitches {
+        val attempts=when(preferred) { Type.SATIN->listOf(Type.SATIN,Type.TATAMI,Type.RUNNING)
+            Type.TATAMI->listOf(Type.TATAMI,Type.RUNNING);Type.RUNNING->listOf(Type.RUNNING) }
+        for(type in attempts) {
+            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+            try {
+                val candidate=generate(type)
+                if(candidate.isEmpty() || candidate.none { it.stitches.isNotEmpty() }) continue
+                val combined=prefix+candidate
+                val valid=validate?.invoke(combined) ?: run {
+                    val isolated=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
+                        candidate,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+                    require(isolated.stitchCount>0) { "Region disappeared during postprocessing" }
+                    val pattern=if(prefix.isEmpty()) isolated else io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
+                        combined,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+                    val bytes=io.github.linker2k.myembro.engine.io.PesWriter.write(pattern)
+                    !io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(bytes,
+                        options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(hoop=hoop,
+                            origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)).hasBlockingIssues
+                }
+                if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                if(valid) return RegionStitches(candidate,type)
+            } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled
+            } catch(interrupted:InterruptedException) { throw interrupted
+            } catch(_:Exception) { /* This region tries the next existing, validated generator. */ }
+        }
+        return RegionStitches(emptyList(),null)
+    }
+
     /** Widths of a region given in any unit; [unitsPerMm] converts to mm. */
     fun widths(region: Geometry, unitsPerMm: Double): Widths {
         val median = medianWidth(region)
