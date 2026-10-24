@@ -39,6 +39,10 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var panY by mutableFloatStateOf(0f); private set
     var style by mutableStateOf(PhotoStyle.SILHOUETTE); private set
     var detail by mutableIntStateOf(1); private set
+    /** Picture width in mm (height follows the frame aspect); recomputed only when a choice is committed. */
+    var widthMm by mutableDoubleStateOf(photoMaxWidthMm(EmbroiderySettings().defaultFrame.spec)); private set
+    /** Actual stitched width × height in mm of the step-3 result. */
+    var resultSizeMm by mutableStateOf<Pair<Double, Double>?>(null); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
@@ -51,14 +55,19 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private var revision = 0
     private var settings = EmbroiderySettings()
     val hoop: HoopSpec get() = settings.defaultFrame.spec
+    val widthRange: ClosedFloatingPointRange<Double> get() = PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
     val canSend get() = !busy && bytes != null && passed
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); invalidateResult()
     }
-    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; if (step > 0) { step = 1; prepare() } } }
+    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(widthRange); if (step > 0) { step = 1; prepare() } } }
+    fun changeSize(value: Double) {
+        val mm = Math.round(value.coerceIn(widthRange) * 10) / 10.0
+        if (mm != widthMm) { widthMm = mm; step = 1; prepare() }
+    }
     fun load(uri: Uri) {
         work?.cancel(); val version = ++revision
         busy = true; progressStage = 0; error = null
@@ -109,13 +118,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null }
+    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val edge = photoRasterSize(detail, frame.width / 10.0, frame.height / 10.0)
+        val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
+        val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
@@ -134,7 +144,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
-                    fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,(frame.width - 1) / 10.0,0,
+                    fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
                         minAreaMm2 = photoMinimumArea(detail), maxContours = 128,
                         onQuantized = { separated ->
@@ -165,7 +175,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private fun generateResult() {
         val traced = outline ?: return
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
-        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null
+        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
@@ -180,7 +190,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
                     Triple(RenderData(generated.pattern),pes,check)
                 } }
-                if (version == revision) { render=output.first; bytes=output.second; report=output.third }
+                if (version == revision) { render=output.first; bytes=output.second; report=output.third
+                    resultSizeMm=output.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
