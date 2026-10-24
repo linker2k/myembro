@@ -30,12 +30,13 @@ class UsbTransferHistoryTest {
         try {
             val store = UsbTransferHistory(dir.resolve("history.json"))
             val record = UsbTransferRecord(id = "partial", time = 1_792_723_400_000, drive = "SE400 직접 연결",
-                files = listOf(UsbTransferredFile("LEMON~1.PES", 12_345, 16384, 4096, "Embroidery Lemon.pes")),
+                files = listOf(UsbTransferredFile("LEMON~1.PES", 12_345, 16384, 4096, "Embroidery Lemon.pes", manualJumpThreadCount = 3)),
                 failures = listOf("안 된 도안.pes" to "FAT12 file read-back differs: BROKEN.PES"),
                 notices = setOf(UsbTransferNotice.NAME_COLLISION), technical = "FAT1: 00 00 00\nMBR length clamped\n\"raw\"")
             store.add(record)
             val restored = store.read().pending!!
             assertEquals(record, restored)
+            assertEquals(3, restored.manualJumpThreadCount)
             assertEquals(16384L, restored.allocatedBytes)
             assertEquals(4096, restored.allocationUnitBytes)
             assertContains(restored.diagnostics(), "allocated=16384 bytes; cluster=4096 bytes; source=Embroidery Lemon.pes")
@@ -59,6 +60,7 @@ class UsbTransferHistoryTest {
             assertNull(record.allocatedBytes)
             assertNull(record.allocationUnitBytes)
             assertNull(record.files.single().sourceName)
+            assertNull(record.manualJumpThreadCount)
         } finally { dir.deleteRecursively() }
     }
 

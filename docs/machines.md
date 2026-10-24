@@ -385,3 +385,21 @@ USB 내보내기에 `EMBROIDERY`를 붙이는 코드는 없습니다. PES 실 �
 제거하고 `LEMON.PES`, 충돌 시 `LEMON~1.PES`처럼 생성합니다. 파일명이 일반 라벨(이미 잘린 `EMBROIDE` 포함)뿐이면 실제
 도안 메타데이터 `name`을 보조로 쓰며, 그것도 없으면 `DESIGN.PES`를 씁니다. 원본 이름과 실제
 전송 이름을 진단에 함께 남기며 기존 파일은 덮어쓰지 않습니다.
+
+## SE400 이동실 절단 — 사용자 실기 확인 (2026-10-24)
+
+사용자는 SE400 실기에서 **이동실 자동 절단이 없으며 가위로 잘라야 함**을 확인했다.
+출처는 이 작업의 사용자 실기 보고이며 공식 사양으로 둔갑시키지 않는다.
+`SewoutMachines.SE400.automaticJumpTrim=false`, `manualJumpCleanup=true`에 같은 출처를 남겼다.
+색 단계 끝의 커터/커터 버튼과 이동실 자동 절단은 별도 능력이므로 기존 색 단계 커터 자료와 구분한다.
+
+표시용 데이터는 `SewoutReport.statistics.manualJumpThreadCount`와 전송 파일/기록의
+`manualJumpThreadCount`다. 여러 JUMP로 나뉜 하나의 이동은 바늘→이동→다음 바늘 연결 1개로 센다.
+초기 위치 이동·0길이 이동·후속 바늘 없는 마지막 이동·색 단계 사이 이동은 제외한다.
+TRIM 명령만으로 물리적으로 잘렸다고 가정하지 않는다. 능력 미확인·이전 기록은 null이고 0으로 꾸미지 않는다.
+실제 안내 한 줄과 문구는 이 변경에서 추가하지 않았다. PES 바이트·땀 생성에는 영향이 없다.
+
+데이터 회귀 검증: `:engine:test --tests '*JumpThreadCleanupTest' --tests '*SewoutCheckTest'`
+17건, `:app:testDebugUnitTest --tests '*UsbTransfer*Test'` 12건, 실패 0. APK 빌드 성공.
+분할 JUMP 1회 집계·초기/0길이/마지막 이동 제외·STOP/색 경계·TRIM 요청·미확인 값·이전 기록 호환을 검사했다.
+로컬 로그: `/tmp/myembro-manual-jump-final.log`.

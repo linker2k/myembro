@@ -33,6 +33,10 @@ data class MachineProfile(
     val maxFilenameCharacters: Int? = null,
     val androidOtgCableVerified: Boolean? = null,
 ) {
+    /** Capability source stays in the engine profile, including user-observed SE400 jump cleanup. */
+    val automaticJumpTrim get() = io.github.linker2k.myembro.engine.sewout.SewoutMachines.all.firstOrNull { it.id == id }?.automaticJumpTrim
+    val manualJumpCleanup get() = io.github.linker2k.myembro.engine.sewout.SewoutMachines.all.firstOrNull { it.id == id }?.manualJumpCleanup
+
     /** SA434 is a planning frame; a single machine file remains limited to maximumArea. */
     val projectHoops: List<HoopSpec> = hoops.map { it.coverage }.distinct()
     val defaultHoop: HoopSpec get() = projectHoops.firstOrNull() ?: HoopSpec.H100

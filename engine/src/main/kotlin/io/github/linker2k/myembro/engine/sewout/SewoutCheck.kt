@@ -301,7 +301,8 @@ object SewoutCheck {
             tasks.count { it.kind in setOf(TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM) && it.cutRequirement == CutRequirement.POSSIBLE },
             densityChecks.count { it.penetrations >= o.hotspotPenetrations }, cells.count { it.stageIndices.size > 1 && it.segmentPasses >= o.overlapPassThreshold },
             densityChecks.maxOfOrNull { it.penetrations } ?: 0, maximumConsecutiveNeedles, maximumStitchMm,
-            lockCounts.startMissing, lockCounts.endMissing, maximumConsecutivePositions)
+            lockCounts.startMissing, lockCounts.endMissing, maximumConsecutivePositions,
+            if (complete) JumpThreadCleanup.assess(active,machine,o.jumpTrimSetting).manualCutCount else null)
         val compatibility = compatibility(machine, o, stats, file, fileError, complete, findings)
         return SewoutReport(machine, o, stats, resultStages, tasks.toList(), cells, findings.items.sortedBy { it.severity.ordinal },
             findings.codes.toMap(), findings.severities.toMap(), findings.total-findings.items.size, complete,

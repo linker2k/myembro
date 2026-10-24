@@ -445,7 +445,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val settings = SettingsPreferences(getApplication()).read()
                 when (val result = withContext(Dispatchers.IO) {
-                    if (plan == null) usb.directExporter.export(target, files, settings.writeSettings, settings.sewing)
+                    if (plan == null) usb.directExporter.export(target, files, settings.writeSettings, settings.sewing, viewerSewoutMachine(settings.machineProfile?.id, settings.machineModel))
                     else usb.directExporter.resume(target, plan, deleteNames)
                 }) {
                     is DirectUsbExporter.Result.NeedSpace -> directSpaceRequest = DirectSpaceRequest(drive, result.plan)
@@ -469,7 +469,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val settings = SettingsPreferences(getApplication()).read()
-                val report = withContext(Dispatchers.IO) { usb.export(folder, files, settings.writeSettings, settings.sewing) }
+                val report = withContext(Dispatchers.IO) { usb.export(folder, files, settings.writeSettings, settings.sewing, viewerSewoutMachine(settings.machineProfile?.id, settings.machineModel)) }
                 usbCompleted(drive, report)
                 selection.clear()
             } catch (e: CancellationException) { throw e }

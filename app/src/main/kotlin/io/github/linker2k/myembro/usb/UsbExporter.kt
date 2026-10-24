@@ -84,7 +84,7 @@ class UsbExporter(private val context: Context) {
     }
 
     /** Writes each design as PES into [tree]. Blocking: call from a background dispatcher. */
-    fun export(tree: Uri, designs: List<File>, settings: PesWriteSettings = PesWriteSettings(), sewingOptions: SewingOptions? = null): Report {
+    fun export(tree: Uri, designs: List<File>, settings: PesWriteSettings = PesWriteSettings(), sewingOptions: SewingOptions? = null, machine: io.github.linker2k.myembro.engine.sewout.SewoutMachine? = null): Report {
         val folder = DocumentFile.fromTreeUri(context, tree) ?: error("Cannot open the USB folder")
         val existing = folder.listFiles().mapNotNull { it.name }.toMutableSet()
         val exported = mutableListOf<String>()
@@ -104,7 +104,7 @@ class UsbExporter(private val context: Context) {
                 val actualName = doc.name ?: name
                 existing += actualName
                 exported += actualName
-                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong(), sourceName = design.name)
+                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong(), sourceName = design.name, manualJumpThreadCount = machine?.let { io.github.linker2k.myembro.engine.sewout.JumpThreadCleanup.assessPes(prepared.bytes,it).manualCutCount })
                 if (name != prepared.fileName) notices += UsbTransferNotice.NAME_COLLISION
                 if (prepared.converted) converted++
             }.onFailure { failures += design.name to (it.message ?: it.javaClass.simpleName) }
