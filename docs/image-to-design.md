@@ -67,3 +67,25 @@ P1–P3은 인코딩된 PEC 원점/후프/헤더를 `PecViewportCheck`로 검사
 결정 필요: 첫 제품 경로를 검증된 타타미 중심으로 제한할지, 원형 보존 조건이 확인될 때까지 이미지 자동 새틴 전체를 시험으로 둘지. 이번 커밋은 테스트 전용이므로 기존 실루엣/외곽선 및 앱 출력에는 영향이 없다.
 
 엔진 전체 자동 테스트 결과: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 17s`; tests=714, failures=0, errors=0.
+
+## 후속 단위: model/canvas 공용 경로 통일
+
+공용 API는 아직 origin/main `98ac4ac`에 없어서 model `4126735161bea2cde2168fb2c9273a527aa0b5a6`의 `GlyphStrokeWidths.kt`, 테스트, 문서를 그대로 가져왔다. canvas 로고 경로 역시 아직 main에 없어 `652d3cafd6d61133f5104538034e29030a236bc5`의 엔진 `VectorArt.kt`만 가져왔다. 앱/번들 PES는 가져오거나 변경하지 않았다. 통합 시 이 원본 브랜치들과의 파일 중복을 별도 구현으로 취급하지 말고 아래 공용 함수 변경만 유지한다.
+
+- `VectorArt.medianWidthMm(geometryMm)`가 model `GlyphStrokeWidths.measure`를 호출한다. 이미지 영역과 SVG 채움 면 모두 이 함수로 mm 단위 중간값을 측정한다. canvas의 기존 최대 내접원 계산은 제거했다.
+- `VectorArt.classifyWidth(widthMm, rules)`만 PNG/로고의 폭 기준 비교를 수행한다. <0.9mm 러닝, 0.9–6mm 새틴(양 끝 포함), >6mm 타타미. 기본 경계 상수는 기존 `TatamiLettering`에서 가져온다. SVG에 명시된 일정 폭 stroke는 해당 물리 폭을 이 함수에 전달한다.
+- SVG fill은 원본 canvas 경로처럼 면으로 봉제한다(러닝보다 넓으면 타타미). 새틴은 명시적 SVG stroke에서 사용한다. PNG 영역에는 아직 이 SVG의 면/획 의미 정보가 없으므로 중간값만으로 분기한다. 따라서 **함수 통일과 자동 선택의 정확성은 별도 문제**다.
+- 측정값·경계값·로고 stroke 렌더·실제 launcher 로고 PES를 회귀 테스트로 검사한다. 0.9mm 바로 아래/정확히 0.9/정확히 6/6mm 바로 위도 코드로 판정한다.
+
+동일 입력을 공용 API로 다시 측정한 결과:
+
+| 입력 | 영역 | 땀 | 이전 전체 ms | 공용 API 전체 ms | 공용 중간값 및 선택 | 엔진/외부 게이트 |
+|---|---:|---:|---:|---:|---|---|
+| face.png | 4 | 1,050 | 988.68 | 1,018.17 | 노란 면 6.177mm → 타타미 | PASS/PASS |
+| robot.png | 5 | 600 | 204.67 | 208.32 | 파란 몸통 4.121mm → 새틴 | PASS/PASS |
+
+측정 로그 `/tmp/image-to-design-shared.log`, 결과 JSON은 기존 출력 디렉터리 `results.json`, 외부 게이트 JSON `quality-gate-shared.json`. 단일 실행 차이이므로 속도 개선/악화를 주장하지 않는다.
+
+**오분류 수정은 미완료다.** `GlyphStrokeWidths`는 기존 시험이 직접 호출하던 `StrokeWidthMeasurement`를 내부에서 호출하므로, 구멍이 있는 넓은 몸통의 중간값은 양쪽 모두 정확히 4.121185770351488mm다. API를 바꾸는 것만으로는 타타미로 전환되지 않는다는 점을 실측했다. 이 수치를 6mm 이상으로 임의 보정하거나, 최대 내접원·면적 등의 새 휴리스틱을 섞지 않았다. 총괄에 SVG fill처럼 면은 타타미로 유지할지, 지정한 중간값 분기와 미해결 한계를 유지할지 결정을 요청했다.
+
+최종 검증: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 18s`; tests=722, failures=0, errors=0. 외부 게이트 명령은 앞 절과 같고 `--json` 출력만 `quality-gate-shared.json`으로 바꿨으며 `PASS 2/2 cases passed`였다. 실제 로고는 같은 분류 경로로 60mm 렌더 후 PEC 원점/후프/헤더 및 앱 생성 출처 봉제 점검을 통과했다. 이 검증은 미해결 로봇 면 보존 문제를 통과 판정하지 않는다.

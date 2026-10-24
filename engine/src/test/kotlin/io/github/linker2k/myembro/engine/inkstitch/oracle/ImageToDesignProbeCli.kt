@@ -15,7 +15,7 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.autotrace.*
 import io.github.linker2k.myembro.engine.inkstitch.utils.Point as StitchPoint
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.edit.HoopSpec
-import io.github.linker2k.myembro.engine.lettering.TatamiLettering
+import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.sewout.*
 import org.locationtech.jts.geom.Coordinate
@@ -62,8 +62,13 @@ object ImageToDesignProbeCli {
                 for(i in 0 until region.geometry.numGeometries) {
                     val shape=region.geometry.getGeometryN(i)
                     val widthStart=System.nanoTime()
-                    val width=StrokeWidthMeasurement.measure(AffineTransformation.scaleInstance(.1,.1).transform(shape)).medianMm
-                    val style=TatamiLettering.methodForWidth(width)
+                    val width=VectorArt.medianWidthMm(AffineTransformation.scaleInstance(.1,.1).transform(shape))
+                    val method=VectorArt.classifyWidth(width)
+                    val style=when(method) {
+                        VectorArt.Method.TATAMI -> StitchStyle.FILL
+                        VectorArt.Method.SATIN -> StitchStyle.SATIN
+                        VectorArt.Method.RUNNING -> StitchStyle.RUNNING
+                    }
                     widthNanos+=System.nanoTime()-widthStart
                     val stitchStart=System.nanoTime()
                     val next=if(style==StitchStyle.FILL) DefaultTatami.stitchGroups(PolygonRegion(shape),thread) else {
