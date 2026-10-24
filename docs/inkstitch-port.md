@@ -310,7 +310,7 @@ and Codex is recalibrating it against functional criteria. Do not change upstrea
 
 The reproduction CLI/mapping/code and external S1 source provenance, metrics, and blocking reasons for the fixed
 225 official `fill_stitch` SVGs are recorded in [fill-matrix-reproduction.md](fill-matrix-reproduction.md).
-Two runs of `3412ebb` generated 225/225 PES with matching bytes; normal engine394/preview410 tests passed.
+Two runs of `3412ebb` generated 225/225 PES with matching bytes; normal engine 394/preview 410 tests passed.
 Matching the upstream NetworkX graph copy's node→neighbor→key insertion order improved count/Hausdorff/order,
 but there is no overall equivalence decision yet. External S1 WIP is a separate hash-pinned input;
 do not present it as included in the model commit. Independent gate/criteria were not modified.
@@ -338,7 +338,7 @@ The upstream-default-only entry point accepts geometry/thread, with no user-adju
 
 The existing official 225 cases are a **regression baseline** across profiles. Do not expand that claim to
 validation of the default product combination alone. A separate oracle fixed to the actual default combination
-(angle0,row0.25,underlay=true) is needed. Keep existing matrices/criteria unchanged and confirm an additional defaults bundle with Codex.
+(angle 0,row 0.25,underlay=true) is needed. Keep existing matrices/criteria unchanged and confirm an additional defaults bundle with Codex.
 
 Estimated engine preparation: **4–6 hours**:
 
@@ -381,7 +381,7 @@ No user settings arguments/width decisions/UI/connections to existing paths. The
 Checked letter's `stitches.InkAutoFill` and **call that generator unchanged**. Added no new scanline/graph
 algorithm; this default entry point also does not call model's separate TatamiFill/FillRouting.
 Instead of using the letter file's existing Settings defaults (0.4mm/3.5mm), explicitly set upstream fill defaults
-0°/0.25mm/4mm/4 stagger/underpath=true. Underlay uses90°/0.75mm/4mm.
+0°/0.25mm/4mm/4 stagger/underpath=true. Underlay uses 90°/0.75mm/4mm.
 Each component has underlay→top fill order and S1 default lock definitions.
 
 Validated **only 3 representative cases**: rectangle (default spacing/units/locks), hole (PES reading/no needles inside),
@@ -429,13 +429,13 @@ are byte-for-byte identical to letter's recorded commit except for provenance co
 
 The `exportDefaultTatamiSewtest` task calls existing DefaultTatami + S1 default planner to generate
 PES v6/SVG/manifest in `/tmp/myembro-sewtest/s4/`. Rectangle 20×20mm (739 stitches),
-circle diameter25mm (1,027 stitches), donut outer diameter30/inner diameter12mm (1,490 stitches), self-created bold H height20mm (616 stitches).
+circle diameter 25mm (1,027 stitches), donut outer diameter 30/inner diameter 12mm (1,490 stitches), self-created bold H height 20mm (616 stitches).
 Generation also checked our PesReader round-trip stitch counts, 100mm hoop bounds, and absence of needles inside the donut hole.
 All designs are original geometry (CC0); no private files/fonts used.
 
 External `/tmp/myembro-quality-gate/quality-gate check` v5 result: **4/4 PASS**.
-Peak density6 penetrations/0.5mm cell, maximum consecutive same-point penetrations2, maximum stitch under4.11mm;
-thread-start/end locks and hoop100×100 checks passed. Short-stitch ratio warnings are reference only.
+Peak density 6 penetrations/0.5mm cell, maximum consecutive same-point penetrations 2, maximum stitch under 4.11mm;
+thread-start/end locks and hoop 100×100 checks passed. Short-stitch ratio warnings are reference only.
 No S4 stage approval was requested; this does not mean current stage progression/release/actual sewout approval.
 `tools/render_tatami_sewtest.py` renders the actual PES read by pyembroidery at a common scale into
 `overview.png`/individual PNGs. Exact reproduction commands are recorded in the output directory README.
@@ -747,7 +747,7 @@ Do not apply to algorithms/half_stitch locks/edit coordinates. Retain explicit u
 
 After merging main's S1 planner, moved DefaultTatami and the existing 3 smoke tests into the normal source set.
 No UI/product paths connected. `DefaultTatamiOracleTest` generates official defaults-v2
-rectangle/circle/hole nominal20mm **3 cases**→PES v6→PesReader and compares them.
+rectangle/circle/hole nominal 20mm **3 cases**→PES v6→PesReader and compares them.
 Copied official PES/coordinate gzip/input SVG/upstream execution records unchanged under `engine/src/test/resources/inkstitch-oracle/`
 and recorded provenance/pinned commit/SHA256. No private designs.
 Apply only translation by subtracting each needle bbox center; calculate bidirectional Hausdorff
@@ -760,10 +760,10 @@ using point sets of all needles (including locks). No rotation/resizing/point re
 | Hole | 804/824 | 2.43% | 0.5831 | FAIL |
 
 Command: `./gradlew :engine:test --tests '*DefaultTatami*'`.
-Existing smoke3 PASS, new official equivalence3 FAIL. Criteria remain user-specified stitch count±5%/Hausdorff≤0.2mm;
+Existing smoke 3 PASS, new official equivalence 3 FAIL. Criteria remain user-specified stitch count±5%/Hausdorff≤0.2mm;
 did not ignore failing tests or raise tolerances. Metrics/candidate PES are saved automatically in
 `engine/build/tatami-oracle/`. Therefore **this commit is not ready to merge**.
-Earlier S4 external gate4/4 PASS was a functional safety-condition result, not official equivalence.
+Earlier S4 external gate 4/4 PASS was a functional safety-condition result, not official equivalence.
 
 When worker adds the POLICY.md v5 provenance-specific gate implementation, connect SewoutCheck assertions
 to these generated PES. Do not claim the current old SewoutCheck matches that policy; its call location is explicit.
@@ -771,39 +771,39 @@ Changed CI to push on all branches and validation command to `./gradlew check`. 
 Next proposed unit: compare start/end connections and underlay→top path handoff with upstream to fix the 3 mismatches.
 This unit ends with automatic detection/failure metrics recorded; await the coordinator's decision.
 
-Also ran full `:engine:check`: 509 total, PASS506; only the above official equivalence3 FAIL.
+Also ran full `:engine:check`: 509 total, 506 PASS; only the above official equivalence 3 FAIL.
 
 
 ### 20-minute unit: extended finite-input tatami sweep
 
-Generated5 shapes×5–90mm (1mm increments)=430 combinations at default angle0° and default underlay.
+Generated 5 shapes×5–90mm (1mm increments)=430 combinations at default angle 0° and default underlay.
 `python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-1mm` output:
 `GATE: 430/430 PASS; 0 BLOCK`. Decision from external frozen v5 gate; worker Kotlin policy awaits merge.
-Rule calculator3 tests output: `Ran 3 tests ... OK`. Extended generation does not run in CI.
+Rule calculator 3 tests output: `Ran 3 tests ... OK`. Extended generation does not run in CI.
 Automatically allowed JSON permits only exact samples, excluding failed/untested inputs.
 Do not generalize nonmonotonic failures into a single minimum-size rule.
 Tables/JSON are recorded in [commands/results/range limits](tatami-sweep.md).
-Official equivalence3 failures remain unresolved; app integration/distribution disabled.
+Official equivalence 3 failures remain unresolved; app integration/distribution disabled.
 Stop this unit here and await coordinator review.
 
 
-### 20-minute unit: fix official equivalence3 cases
+### 20-minute unit: fix official equivalence 3 cases
 
 Replaced the simplified InkAutoFill graph with the existing TatamiFill/FillRouting adapter,
-passing the last underlay point as the top start point. Applied upstream running tolerance0.2mm.
+passing the last underlay point as the top start point. Applied upstream running tolerance 0.2mm.
 Test SVG boundaries share the existing worker Inkex CSP flattening port.
 Recorded [before/after metrics/upstream comparison/command output](tatami-equivalence-fix.md).
-`./gradlew :engine:clean :engine:check`: 509 tests, 0 failures, BUILD SUCCESSFUL in21s.
-All official3 cases match stitch counts100%; Hausdorff under0.141422mm. External gate also PASS3/3.
-The earlier430 sweep is previous-backend history. Keep allowed rules inactive until the new core is reswept.
+`./gradlew :engine:clean :engine:check`: 509 tests, 0 failures, BUILD SUCCESSFUL in 21s.
+All official 3 cases match stitch counts 100%; Hausdorff under 0.141422mm. External gate also PASS 3/3.
+The earlier 430 sweep is previous-backend history. Keep allowed rules inactive until the new core is reswept.
 Do not confuse this with remote CI/actual sewout approval. Unit complete; await coordinator instructions.
 
 
-### Calculation unit: resweep430 combinations with corrected backend
+### Calculation unit: resweep 430 combinations with corrected backend
 
 `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing`
-Output: `GATE: 430/430 PASS; 0 BLOCK`. Generation BUILD SUCCESSFUL in1m12s, generation errors0.
-Backend e154303, same5 shapes×5–90mm integer sizes×default angle0°.
+Output: `GATE: 430/430 PASS; 0 BLOCK`. Generation BUILD SUCCESSFUL in 1m12s, 0 generation errors.
+Backend e154303, same 5 shapes×5–90mm integer sizes×default angle 0°.
 Updated [automatically calculated tables/failure lists/allowed JSON](tatami-sweep.md) with current-backend results.
 No engine/threshold/test changes; no app integration/distribution activation. Finish here and await instructions.
 # SatinColumn implementation/validation records
@@ -898,9 +898,9 @@ no additional dependencies installed. Compare against RFC `abc` and standard has
 | Raw core locks/trims | Do not insert `lock_start/end`, `trim_after`, `stop_after` into geometric layers | Attributes applied in shared StitchGroup/Plan. Prevent duplicate locks |
 | Center-walk tolerance | Expose upstream getter/attribute, but centerline calculation uses `running_stitch_tolerance_mm` as upstream does | Matches actual v3.3.0 `_get_center_line_stitches` behavior |
 | Running tolerance | Getter default **0.2mm**, unlike UI decorator 0.1 | Match v3.3.0 runtime default |
-| App adapter | Map only legacy fields of existing projects into source DTOs. New selections use source defaults | Removed width >7mm forced4mm/short distance0.3/compact0.4 policy |
-| App fill draft | Legacy FillStitches still merges body corners at 0.3mm | To be replaced by formal S4 auto-fill; locks belong to S1, not a blanket0.3mm requirement |
-| Excessive density | Generator does not delete needles or block with a cell8 exception | Independent gate/sew-out diagnostics responsibility. Submit observed values including source locks |
+| App adapter | Map only legacy fields of existing projects into source DTOs. New selections use source defaults | Removed width >7mm forced 4mm/short distance 0.3/compact 0.4 policy |
+| App fill draft | Legacy FillStitches still merges body corners at 0.3mm | To be replaced by formal S4 auto-fill; locks belong to S1, not a blanket 0.3mm requirement |
+| Excessive density | Generator does not delete needles or block with an 8-per-cell exception | Independent gate/sew-out diagnostics responsibility. Submit observed values including source locks |
 | App outlines | All TTF SATIN requests, including rectangles, use auto-fill+warning. Remove new selection from UI | No automatic centerline columns before convert/auto-route validation |
 | Existing line→satin | Independent miter offset in `lettering.SatinColumn.rails` remains | Stage 2 upstream convert-to-satin port target. Do not mistake for the new SVG core |
 | Auto-fill draft | Fixed spacing/stagger only, bounded exact odd matching, no travel smoothing | Earlier safety draft. Fill owner will take over formal parameters/modules; details in stitch-algorithms.md |
@@ -971,7 +971,7 @@ SATIN also requires SATIN_COLUMNS geometry and a validated width range. Do not i
 S3 embroidery font metadata integration is subsequent work for the parser owner.
 
 If a range is confirmed, restrict the height slider to it. Currently the unconfirmed state uses guidance and numeric running-height input
-(allowed by the coordinator). Nonfinite/heights≤0, missing glyphs, and out-of-hoop results cannot be added.
+(allowed by the coordinator). Heights that are nonfinite or ≤0, missing glyphs, and out-of-hoop results cannot be added.
 
 ### defaults-v2 reproduction
 
@@ -987,7 +987,7 @@ Verifies the input and input_sha256 specified by each case unchanged. Output in 
 The current official oracle is pinned to the previous matrix, so **defaults-v2 official equivalence is pending**.
 
 All valid 224/224 in the earlier parameter matrix passed the official comparison tool's equivalence criteria (0 mismatches).
-The zero-rails negative1 case was rejected/undecided. This record is preserved in
+The 1 zero-rails negative case was rejected/undecided. This record is preserved in
 `/tmp/myembro-port-out/letter/legacy-parameter-matrix/`.
 Do not use it as certification of current defaults-v2 or safe product height/width ranges.
 `-PmatrixFile=` replays the earlier 225 frozen oracle SVGs.
@@ -1003,15 +1003,15 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 MYEMBRO_START_AUDIT=/tmp/myembro-bir
 /tmp/myembro-quality-gate/quality-gate check /tmp/myembro-birdnest/s2-running/script-34.pes --text --style running --json /tmp/myembro-birdnest/s2-running/quality-v2.json
 ```
 
-Revised running output for public OFL Dancing Script Bold, Jung Min, 34mm, 40wt: **531 stitches/trim8/S0 9 cases**.
+Revised running output for public OFL Dancing Script Bold, Jung Min, 34mm, 40wt: **531 stitches/trim 8/S0 9 cases**.
 Current v2 diagnostic: **BLOCK: UNEXPLAINED_ZERO 9/531**. Cell concentration/start/end/post-trim lock checks passed.
-Did not remove S1 start anchors to match PE-Design sequences. Submitted the first20 stitches TSV and generated lock-tag tracking JSON
+Did not remove S1 start anchors to match PE-Design sequences. Submitted the first 20 stitches TSV and generated lock-tag tracking JSON
 together. Do not misrepresent tracking JSON as PES record indices or independent approval.
 PNG: `/tmp/myembro-birdnest/s2-running.png`. Do not commit private PES/renderings.
 Earlier fill diagnostic PASS in `/tmp/myembro-birdnest/s2/` is a separate historical record, not revised S2 passing.
 
-Local regressions: engine354/app167 and APK debug build succeeded. On a temporary API35 emulator, verified 4 inputs,
-automatic running/unconfirmed guidance, blocked addition at height0, and reactivation after restoring valid values.
+Local regressions: engine 354/app 167 and APK debug build succeeded. On a temporary API 35 emulator, verified 4 inputs,
+automatic running/unconfirmed guidance, blocked addition at height 0, and reactivation after restoring valid values.
 **Not S2 completion/release approval:** defaults-v2 official comparison, S0 decision review above, S1 user review/actual SE400 sewout remain.
 
 
@@ -1059,7 +1059,7 @@ for release passing or final independent approval. The next stage follows the co
 
 Opt-in instrumentation calls Android `automaticLetteringState` → `renderLettering` →
 `TextObject` → `PesWriter`, not an AWT substitute path. Uses the same settings as the 4-input UI
-(spacing0, centered, curve off, 40wt, upstream satin parameter defaults).
+(spacing 0, centered, curve off, 40wt, upstream satin parameter defaults).
 Only the test APK includes the existing OFL Dancing Script fixture.
 
 ```sh
@@ -1075,7 +1075,7 @@ adb -s emulator-5560 exec-out run-as io.github.linker2k.myembro tar -C files/sew
 
 Current output is the existing automatic-running baseline for TTF without approved ranges. Results table `results.md`,
 per-file gate JSON/logs, `manifest.json`, independent PES parser round-trip coordinates, and `overview.png`
-are stored in `/tmp/myembro-sewtest/s2/`. Of 7 cases, 6 PASS; only Jung Min 30mm BLOCKs because width133.8mm
+are stored in `/tmp/myembro-sewtest/s2/`. Of 7 cases, 6 PASS; only Jung Min 30mm BLOCKs because width 133.8mm
 exceeds the SE400 100mm hoop. The app renderer likewise returns outsideHoop=true.
 
 The 0.9–6.0mm width policy later adopted by the coordinator comes from the 'adopted by coordinator' section of
@@ -1115,8 +1115,8 @@ Read existing oracle criteria of stitch count 5%/symmetric Hausdorff 0.2mm, perm
 If reference files are absent, record **undecided** and do not exit successfully. Preserve provenance/file hashes in validation.json.
 
 All three currently **BLOCK: missing start lock**. Original J's first running element has `ties=3`, disabling locks.
-Did not arbitrarily override it or change gate③. At 20/30mm, widths124.6/186.8mm also exceed
-SE400 hoop bounds. Font-recorded range converted to reference H height is approximately11.09–27.73mm,
+Did not arbitrarily override it or change gate③. At 20/30mm, widths 124.6/186.8mm also exceed
+SE400 hoop bounds. Font-recorded range converted to reference H height is approximately 11.09–27.73mm,
 so 30mm is an out-of-range diagnostic sample, not a UI-permitted sample. Official comparison awaits the coordinator-designated codex output.
 
 ### Start/trim boundary force and lettering default comparison
@@ -1133,8 +1133,8 @@ Compared upstream `font.py:render_text`/`batch_lettering.py`: trim defaults to 0
 per-glyph trim default. Also compared defaults ties=0/half_stitch, force=false, back_and_forth=true.
 The 16–22 stitches missing versus official output require distinguishing the earlier canvas native flatten/relock path
 from the new S1 group path. Representative AB 4/10/20mm in the new path has **42/42, 65/66, 89/91** stitches.
-First difference moved from index0 to2/5/5 respectively. At 4mm Hausdorff0.1mm; 10/20mm1.2mm,
-so do not report complete equivalence passing. The boundary where B's exactly7.5mm segment is split into3 by the port/official4 segments
+First difference moved from index 0 to 2/5/5 respectively. Hausdorff is 0.1mm at 4mm and 1.2mm at 10/20mm,
+so do not report complete equivalence passing. The boundary where B's exactly 7.5mm segment is split into 3 by the port/official 4 segments
 and original glyph SVG serialization precision remain. No new heuristic compensation applied.
 
 Do not match trim differences (-2/-3/-3) by enabling lettering trim options. Upstream output.py uses
@@ -1152,7 +1152,7 @@ python3 tools/breakdown-fonts-representative.py
 ```
 
 This script recalculates only the same stitch count/trim/jump/first difference/bbox-center-normalized Hausdorff metrics
-as codex's `breakdown_fonts.py` for representative4 cases (at most10). It does not regenerate the original96 cases.
+as codex's `breakdown_fonts.py` for representative 4 cases (at most 10). It does not regenerate the original 96 cases.
 Output: `/tmp/myembro-port-out/letter/font-defaults/breakdown/cases.{json,md}`.
 Explicitly set `forceBoundaryLocks=false` for official raw-default comparisons. This reproduction argument prevents confusion
 between approved product boundary-force policy and upstream defaults; it adds no UI setting.
@@ -1163,25 +1163,25 @@ Per coordinator reply, also apply `ties=0` to the first element at starts/after 
 Upstream `LockStitches.fromParameters` creates default half_stitch; S1 postprocessing runs only once.
 Preserve internal-element ties. Raw-default comparison mode (`forceBoundaryLocks=false`) omits
 both product-policy overrides. Record the same two attributes in output placement SVGs too.
-Regression checking the first needle's S1 lock tag and all engine360 tests passed.
+Regression checking the first needle's S1 lock tag and all engine 360 tests passed.
 
 **Jung Min 12mm: existing --text gate PASS**; no official oracle output yet, so undecided.
 Exclude 20/30mm from this assessment. Representative default breakdown: AB 4/10/20mm 42/42,65/66,89/91;
-two-line10mm with the same reversible=false metadata 130/132. Not complete equivalence passing;
+two-line 10mm with the same reversible=false metadata 130/132. Not complete equivalence passing;
 PEC output trim contract/glyph serialization precision differences remain separate follow-up work.
 
 ### Trace and fix Hausdorff 1.2mm cause
 
-Reproduce: `python3 tools/locate-font-deviation.py`. Limited to at most10 cases; calculate nearest points in both directions
-using independent PES parser/KDTree. Output needle/command indices (from0), raw/bbox-center-normalized coordinates,
-nearest needles, previous/next2 needles, original glyph/path/subpath, and both PES hashes as JSON/tables.
+Reproduce: `python3 tools/locate-font-deviation.py`. Limited to at most 10 cases; calculate nearest points in both directions
+using independent PES parser/KDTree. Output needle/command indices (from 0), raw/bbox-center-normalized coordinates,
+nearest needles, previous/next 2 needles, original glyph/path/subpath, and both PES hashes as JSON/tables.
 Map elements by order only if original SVG subpath and official sewn-run counts match; record unresolved when collapse
 changes counts. Do not force unrelated element names onto them.
 
-Before the fix, 10mm AB's **official needle36** raw(11.3,5.0), normalized(3.8,0.0), had nearest
-port needle36 raw(12.5,-5.0), normalized(5.0,0.0), distance1.2mm.
-Element: **B / path17694 / subpath0**, first horizontal stroke. Official splits that segment into4;
-port into3. At 20mm, official needle6 in A/path17279/subpath0 also differed by1.2mm.
+Before the fix, 10mm AB's **official needle 36** raw(11.3,5.0), normalized(3.8,0.0), had nearest
+port needle 36 raw(12.5,-5.0), normalized(5.0,0.0), distance 1.2mm.
+Element: **B / path17694 / subpath0**, first horizontal stroke. Official splits that segment into 4;
+port into 3. At 20mm, official needle 6 in A/path17279/subpath0 also differed by 1.2mm.
 This is an **actual sampling path difference**, not an allowed PEC rounding/trim difference.
 
 Cause: Ink/Stitch `glyph.py:_process_group/_move_to_origin` saves paths as strings.
@@ -1190,16 +1190,16 @@ Unlike pinned dependency inkex `EXTENSIONS_AT_INKSCAPE_1.4.1`, `paths/interfaces
 This changed which side of the 7.5mm / 2.5mm boundary they lay on and thus upstream `ceil`'s segment count.
 Without adjusting numeric epsilon/stitch length, applied upstream **6-significant-digit path serialization**
 to transformed endpoints/Bezier control points before splitting. SVG viewport also reuses
-the existing upstream6-digit fixed-decimal transform helper.
+the existing upstream 6-digit fixed-decimal transform helper.
 Added an optional canonicalize argument to `SvgPath.flatten`; existing calls retain their precision.
 Arc (A/a) parameter serialization is a separate port, so those cases retain the existing path.
 
 Upstream reference: https://gitlab.com/inkscape/extensions/-/blob/EXTENSIONS_AT_INKSCAPE_1.4.1/inkex/paths/interfaces.py .
 Source/dependency code was read only, not executed/installed.
 
-After fix, AB4/10/20mm **42/42·66/66·91/91**, two-line10mm with identical metadata **132/132**.
+After fix, AB 4/10/20mm **42/42·66/66·91/91**, two-line 10mm with identical metadata **132/132**.
 All Hausdorff **0.1mm**. Only the remaining one-grid (0.1mm) coordinate difference from original coordinate serialization
-and final0.1mm grid rounding is recorded as an **allowed difference** for these representative cases.
+and final 0.1mm grid rounding is recorded as an **allowed difference** for these representative cases.
 Trim-command count differences (-2/-3/-3/-7) are a separate PEC writer contract difference, excluded from this allowance.
 Do not extend the claim to full control-command/all-font equivalence or sewout certification.
 
@@ -1209,19 +1209,19 @@ Regression uses identical A/B path input from the upstream test font to check th
 
 ### Trim boundary breakdown and preservation of upstream PEC behavior
 
-Reproduce: `python3 tools/locate-font-trims.py`. For representative4 cases, normalize actual needle coordinates
+Reproduce: `python3 tools/locate-font-trims.py`. For representative 4 cases, normalize actual needle coordinates
 before/after JUMP moves from independent PES decode by bbox center, then map to original placed SVG line/glyph/path/subpath
-endpoints. Mark official/port boundary positions as matching only within0.2mm. This is the existing
+endpoints. Mark official/port boundary positions as matching only within 0.2mm. This is the existing
 official coordinate comparison tolerance; gate unchanged. Also record both PES SHA256 in JSON.
 
-The3 missing in 10mm AB are A/path17279 internal subpath0→1, the A→B glyph boundary,
-and B/path17694 internal subpath0→1. The two-line7 also include the L1 B→L2 B line boundary.
+The 3 missing in 10mm AB are A/path17279 internal subpath0→1, the A→B glyph boundary,
+and B/path17694 internal subpath0→1. The two-line 7 also include the L1 B→L2 B line boundary.
 Thus enabling one trim per glyph cannot match upstream.
 Upstream `font.py:render_text/_add_trims`, `batch_lettering.py:setup_trim` default to
 `trim_option=0/off`. Options 1=line/2=word/3=glyph add trim_after only when selected.
-Kept this default at0.
+Kept this default at 0.
 
-Actual cause: `lib/output.py`'s full_jump setting and **pyembroidery1.5.1
+Actual cause: `lib/output.py`'s full_jump setting and **pyembroidery 1.5.1
 PecWriter.py:pec_encode**. Upstream PEC writes JUMPs after the first as trimjump.
 Did not globally change our existing writer contract that preserves ordinary JUMP. Instead,
 an **embroidery-font-only opt-in output adapter**, `GeneratedPatternProcessor.fromGroups(..., pecJumpTrims=true)`,
@@ -1230,7 +1230,7 @@ no new trim on initial/consecutive jumps. Needle coordinates/stitch counts uncha
 S1 lock/run/command anchor indices are shifted to account for added control commands.
 Upstream `StitchPlanBuilder` defaults and normal/imported-design writer defaults remain unchanged.
 
-New PEC trims exposed3 missing post-trim locks on internal elements disabled by original ties=3.
+New PEC trims exposed 3 missing post-trim locks on internal elements disabled by original ties=3.
 Added opt-in `lockAtThreadBoundaries` to apply the coordinator-confirmed thread-boundary ties=0 policy
 also **where S1 actually computes need_tie_in**. Retain existing defined custom start/end locks;
 use worker default InkLockStitch(half_stitch) only where disabled. No new lock shapes or
@@ -1238,12 +1238,12 @@ custom distance thresholds; S1 postprocessing runs once. Raw official comparison
 do not use this product override. Oracle name-placement SVGs mark ties=0 on paths,
 with force only on first elements at start/after explicit trim, preserving source's actual boundary decisions.
 
-After fix, AB4/10/20mm and two-line10mm have **trim counts 2/2·3/3·3/3·7/7**;
-**all 15 calculated boundaries match**. Stitch counts42/42·66/66·91/91·132/132 and Hausdorff0.1mm retained.
+After fix, AB 4/10/20mm and two-line 10mm have **trim counts 2/2·3/3·3/3·7/7**;
+**all 15 calculated boundaries match**. Stitch counts 42/42·66/66·91/91·132/132 and Hausdorff 0.1mm retained.
 Initial-origin jump count difference (-1) remains; do not claim full control-stream equivalence.
-Jung Min12mm now has **2,076 stitches, existing --text gate PASS**, including new trims/restart locks.
+Jung Min 12mm now has **2,076 stitches, existing --text gate PASS**, including new trims/restart locks.
 Official Jung Min output pending, so oracle equivalence undecided.
-Engine363 tests passed, including PES round-trip trims/unchanged needles/no duplicate trims/S1 lock indices/restart locks.
+Engine 363 tests passed, including PES round-trip trims/unchanged needles/no duplicate trims/S1 lock indices/restart locks.
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:fontDefaultsAudit :engine:inkFontNames
@@ -1264,9 +1264,9 @@ artifact. Normal check fails on failures/exceptions. No separate opt-in task,
 environment variables, external /tmp materials, network, Python, or Ink/Stitch execution required.
 
 `engine/src/test/resources/inkstitch/font-equivalence/` contains only **4 cases/331 needle coordinates**:
-official testfont AB4/10/20mm and two-line10mm. Includes provenance/official release/binary/PES/
+official testfont AB 4/10/20mm and two-line 10mm. Includes provenance/official release/binary/PES/
 independent decode/input hashes, newline reversible=false correction records, and GPL/OFL notices.
-Total approximately52KB; tests also enforce at most 10 cases/whole bundle under1MB.
+Total approximately 52KB; tests also enforce at most 10 cases/whole bundle under 1MB.
 Expected coordinates are a frozen subset from independent decode of codex official output, not values generated by the port.
 
 Checks: exact stitch count, symmetric Hausdorff≤0.2mm with only bbox-center translation,
@@ -1281,12 +1281,12 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test --tests '*Fon
 ```
 
 JUnit output: `engine/build/test-results/test/TEST-io.github.linker2k.myembro.engine.inkstitch.FontEquivalenceTest.xml`.
-All 4 passed with stitch counts42/42·66/66·91/91·132/132, trims2·3·3·7, Hausdorff0.1mm.
+All 4 passed with stitch counts 42/42·66/66·91/91·132/132, trims 2·3·3·7, Hausdorff 0.1mm.
 
-Validation results: **367 full engine tests passed**, pinned oracle4 cases passed.
+Validation results: **367 full engine tests passed**, pinned oracle 4 cases passed.
 Full `./gradlew check` failed on **14 app Lint errors**. Affected files are unchanged from
-HEAD before this change (6 API27 windowLightNavigationBar cases in API26 resources,
-7 Compose ProduceStateDoesNotAssignValue cases, missing1 Korean app_name translation).
+HEAD before this change (6 API 27 windowLightNavigationBar cases in API 26 resources,
+7 Compose ProduceStateDoesNotAssignValue cases, 1 missing Korean app_name translation).
 Did not disable Lint or add a baseline; full CI is blocked until the app owner fixes these.
 
 ## Lock/plan/command ports
@@ -1381,10 +1381,10 @@ The matrix's font names identify SVG fixtures; this is not an actual complete fo
 ### S3 app integration: default tatami+underlay
 
 Integrated letter S2 baseline111ae77 and connected TTF fill/rails and centerline satin exceeding 6.0mm
-to DefaultTatami→S1 groups. Added fill to automatic labels; height upper limit is sweep90mm.
+to DefaultTatami→S1 groups. Added fill to automatic labels; height upper limit is sweep 90mm.
 Recorded [implementation scope/evidence/test output](s3-fill-app-integration.md).
-`./gradlew :engine:check :app:assembleDebug :app:testDebugUnitTest`: BUILD SUCCESSFUL in19s,
-engine552/app176 failures0. Integration6 cases; external gatePASS1/1 for bundled Jua TTF Korean word for embroidery,1230 stitches.
+`./gradlew :engine:check :app:assembleDebug :app:testDebugUnitTest`: BUILD SUCCESSFUL in 19s,
+engine 552/app 176 failures 0. Integration 6 cases; external gate PASS 1/1 for bundled Jua TTF Korean word for embroidery,1230 stitches.
 Remote CI/physical approval separate; stop here and await coordinator review.
 
 
@@ -1592,8 +1592,8 @@ preserve current S1 processing statistics; record default sewing-options metadat
 so app reinvocation with the same defaults does not reprocess original font locks/trims.
 Size-transform regressions compare with coordinates obtained by applying current S1 defaults to transformed body stitches, instead of earlier fixed lock lengths.
 
-`./gradlew check`: **BUILD SUCCESSFUL**. Engine450, app Debug177/Release177, failures0;
-Android Lint passed. The4 official frozen oracle cases retain stitch-count/trim/coordinate checks too.
+`./gradlew check`: **BUILD SUCCESSFUL**. Engine 450, app Debug 177/Release 177, failures 0;
+Android Lint passed. The 4 official frozen oracle cases retain stitch-count/trim/coordinate checks too.
 CI follows main's all-branch push trigger and full engine-test-results artifacts.
 
 ### codex/model + staging/s2s3 integration (2026-10-24)
@@ -1625,7 +1625,7 @@ Rebased onto `staging/s2s3`. Font reading/layout/sewing (`engine/.../inkstitch/l
 - Allowed heights: `InkStitchFontSweep` (opt-in engine test) evaluates 3 text samples with `SewoutCheck` across each font's recorded range (60mm cap) at 2mm increments; uses the longest consecutive passing interval. Results in `docs/inkstitch-font-sweep.json`. Count hoop overflow separately rather than shrinking the range (confirmed by coordinator).
 - List UI: put "Validated embroidery fonts" first (name/stitch preview); dim and disable fonts lacking input characters. Limit the height slider to the allowed range.
 
-### Numerical breakdown of remaining4 font cases from 92/96
+### Numerical breakdown of remaining 4 font cases from 92/96
 
 Targets are the 4 `forceBoundaryLocks=false` cases in independent comparison
 `latest-letter-fonts/df7da347cda358092a4ee29c19fe256474f12913/`. testfont/compressed/multifile/compressed multifile are all
@@ -1644,7 +1644,7 @@ Official initial commands: `J(-184.6,75) → J(-297.1,75) → T(-297.1,75) →
 J(-409.6,75) → S`(mm)이며 포트는 `J(0,-75) → S`.
 The official first J is the PEC viewport position prefix; the next **225mm** position move exceeds
 per-axis maximum **204.7mm**, splitting into **112.5mm in two segments**. Thus there is
-one extra trimjump only before the first actual needle. No difference in the full850-needle path or7 trims during sewing.
+one extra trimjump only before the first actual needle. No difference in the full 850-needle path or 7 trims during sewing.
 
 Upstream comparison (read-only):
 - Ink/Stitch `lib/output.py:write_embroidery_file`
@@ -1654,25 +1654,25 @@ Upstream comparison (read-only):
 - Same commit, `EmbEncoder.py:interpolate_gap_stitches`, `jump_to`: ceil subdivision by per-axis maximum length.
 - Compare with move normalization starting at origin in port `io/PecWriter.kt:normalizePattern`.
 
-**Documented as an allowed difference**: needle-up trim1 from absolute placement/PEC serialization before the first needle.
+**Documented as an allowed difference**: 1 needle-up trim from absolute placement/PEC serialization before the first needle.
 Do not change letter paths or force the app PES origin to match official SVG placement.
 The official comparator's `TRIM_STOP_COLOR_ORDER` and **92/96 decision are unchanged**;
 the independent evaluator must review this breakdown's evidence. Do not generalize it into a blanket exception for missing trims.
 
-Reproduce: `python3 tools/breakdown-font-residuals.py` (read-only JSON/gzip, at most10 cases).
+Reproduce: `python3 tools/breakdown-font-residuals.py` (read-only JSON/gzip, at most 10 cases).
 Check input PES SHA/cache identity and compare all control commands/coordinates after the first needle.
 Output: `/tmp/myembro-port-out/letter/font-residuals/residuals.{json,md}`.
-Validation: all 4 `INITIAL_NEEDLE_UP_TRIM_ONLY`, unresolved0, script exit0.
+Validation: all 4 `INITIAL_NEEDLE_UP_TRIM_ONLY`, unresolved 0, script exit 0.
 Engine generation logic/gate/oracle caches unchanged.
 
-### Font NPE7 cases and bean/fill integration regressions
+### Font NPE 7 cases and bean/fill integration regressions
 
 Cause: `InkStitchLettering.render` called `params[key]!!` while iterating parameter keys.
 The accessor returns null for empty/whitespace attributes, causing NPE.
 Upstream `lib/elements/element.py:get_param`@b0edd96311ece82ee48816dc93466274b12c2a9c
 uses the default when empty after `.strip()`. Now exclude empty attributes and use each port's defaults.
-All7 fonts had empty attributes: chicken_scratch164, digory_doodles_bean193,
-emilio_20_applique8, emilio_20_bold8, manga_impact347, precious10, roaring_twenties_KOR_small368 cases.
+All 7 fonts had empty attributes: chicken_scratch 164, digory_doodles_bean 193,
+emilio_20_applique 8, emilio_20_bold 8, manga_impact 347, precious 10, roaring_twenties_KOR_small 368 cases.
 Roaring Twenties also contains the number `.&`; added `SatinParametersCodec.decodeSvg`,
 which uses defaults on SVG numeric parsing failure like `get_float_param`. Project `decode` retains
 existing strict input validation/round-trip contract.
@@ -1689,8 +1689,8 @@ Connections (no new stitch algorithm implementation):
   Upstream comparison: `fill_stitch.py:to_stitch_groups/do_underlay/do_tatami_fill` (same pinned upstream).
   This unit connects only default tatami/auto_fill. Do not arbitrarily replace other fill_method values with tatami.
 
-`InkFontElementRegressionTest`: runs4 cases in CI without external files for empty attributes/invalid numbers/bean/
-fill with holes/PES round trips. Separate local7-font tests use an environment variable specifying release-data paths;
+`InkFontElementRegressionTest`: runs 4 cases in CI without external files for empty attributes/invalid numbers/bean/
+fill with holes/PES round trips. Separate local 7-font tests use an environment variable specifying release-data paths;
 input fonts are not bundled in the repository. Reproduce KOR_small with **Hamburg**, as in the actual sweep
 (this font's record is Latin; do not assume Korean alphabet support).
 Included model's FillParameters/FillCore/FillUnderlay/FillRandomRunning tests unchanged too.
@@ -1700,10 +1700,10 @@ INKSTITCH_REGRESSION_ROOT=/tmp/myembro-port-out/letter/font-crashes/inputs \
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check
 ```
 
-Results: engine502/app Debug and Release177 each, failures0; Lint/full check passed.
-All local7 fonts rendered/PES round-tripped; existing frozen oracle4 passed.
-Hamburg stitch counts: chicken1370, digory1870, applique23914, bold18588,
-manga1743, precious5289, KOR_small826.
+Results: engine 502/app Debug and Release 177 each, failures 0; Lint/full check passed.
+All local 7 fonts rendered/PES round-tripped; existing frozen oracle 4 passed.
+Hamburg stitch counts: chicken 1370, digory 1870, applique 23914, bold 18588,
+manga 1743, precious 5289, KOR_small826.
 Reproduction files/input hashes/empty-attribute examples/before and after XML/output:
 `/tmp/myembro-port-out/letter/font-crashes/`. This is a crash/integration regression decision;
 do not extend it to independent gate/actual sewout/full catalog certification.
@@ -1791,23 +1791,23 @@ exempts duplicates when the previous command is JUMP or the current point is loc
 Thus this cannot be preserved simply for upstream equivalence; the app's new P4 takes priority.
 
 The default font generation path uses S1 `fromGroups`'s `omitZeroLengthMotions`.
-Exclude JUMP/needle moves of length0 against the actual motion cursor; for same-point TRIM→JUMP
+Exclude 0-length JUMP/needle moves against the actual motion cursor; for same-point TRIM→JUMP
 restarts, remove both and continue sewing. Do not change remaining half_stitch coordinates.
 Reindex locks/commands/statistics; preserve pre-removal body stitches as source metadata,
 so regeneration after translation/scaling/rotation retains starts/ends. Propagate the P4 marker to regeneration.
 Fix the generated font output itself, rather than hiding the issue in the save writer.
 
 Keep the existing `forceBoundaryLocks=false` path that measures upstream as **upstream-comparison-only**
-with product policy disabled; retain original stitch counts for the4 frozen oracle cases.
+with product policy disabled; retain original stitch counts for the 4 frozen oracle cases.
 Default app calls enable both boundary locks and P4 handling. Do not falsely report this difference as upstream equivalence
 or weaken comparators/gates. Do not apply this handling to imported PES.
 
-FontNonzeroMotionTest3 cases: two-glyph running/bean/satin/fill rendering and PES round trips,
+FontNonzeroMotionTest 3 cases: two-glyph running/bean/satin/fill rendering and PES round trips,
 same-point trim restart, regeneration after size changes/lock indices/idempotence.
 Track all JUMP/STITCH continuously from initial physical cursor(0,0), not just needle-to-needle comparisons.
-Assert **0-length needles0/JUMP0** in all representative output.
-Both2 before-fix regressions failed; after fix, full `./gradlew check` passed:
-engine589/app Debug and Release190 each, failures0; Lint and existing frozen oracle4 passed.
+Assert **0-length needle motions: 0/JUMP motions: 0** in all representative output.
+Both 2 before-fix regressions failed; after fix, full `./gradlew check` passed:
+engine 589/app Debug and Release 190 each, failures 0; Lint and existing frozen oracle 4 passed.
 Output: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` and `tests.xml`.
 
 ## Photo outline integration (editor)
@@ -1827,22 +1827,22 @@ No new stitch algorithm port or Ink/Stitch execution. Details: [photo outlines](
 `lib/utils/geometry.py`@b0edd96311ece82ee48816dc93466274b12c2a9c.
 Rail offsets use approved JTS; satin generation uses the existing SatinColumn port.
 Golden status/upstream function list/all differences are recorded in the
-“letter handoff unit1” section of `docs/hangul-centerline.md`. Revalidated AutoTrace upstream centerline10/10 exact;
+“letter handoff unit 1” section of `docs/hangul-centerline.md`. Revalidated AutoTrace upstream centerline 10/10 exact;
 7 analytical line→satin regressions passed; line→satin official-output equivalence/Korean PES remain undecided.
 
-### Korean satin routing unit1
+### Korean satin routing unit 1
 
 `stitches/utils/SatinRouteGraph.kt`: ports only graph traversal/duplicate-section underpath marking from pinned `autoroute.py:find_path/_get_shortest_path`
 and `auto_satin.py:path_to_operations`.
 Upstream graph generation/rail cutting/DOM integration incomplete; official oracle undecided.
-The7 analytical cases/differences/next dependencies and KRSAT1 motion baseline are recorded in
+The 7 analytical cases/differences/next dependencies and KRSAT1 motion baseline are recorded in
 [Korean satin routing](hangul-satin-routing.md).
 
-### Korean satin routing unit2
+### Korean satin routing unit 2
 
-`stitches/AutoSatin.kt`: connects upstream auto_satin's Section1mm subdivision/minimum connections/upstream graph
+`stitches/AutoSatin.kt`: connects upstream auto_satin's Section 1mm subdivision/minimum connections/upstream graph
 traversal/duplicate underpath/both-rail cutting/rung relocation and addition/running merge to existing ports.
 Actually generated KRSAT2 using user-specified glyph/8-direction ink component/bbox order.
 Only convert-to-satin Section defaults, not general raw SVG rails; official oracle
 equivalence undecided. Upstream functions/all differences/actual-byte jump and lock tables are
-recorded in [unit2 report](hangul-satin-krsat2.md).
+recorded in [unit 2 report](hangul-satin-krsat2.md).

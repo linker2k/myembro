@@ -40,7 +40,7 @@ PHOTO_EN_RESULT_BADGE_STATS_ACTIONS_SMOKE_PASS
 ```
 
 Verified: home sheet, actual system photo selection, crop pan, detail changes, 3/3 result,
-76 stitches/approximately1 minute, pass badge/confirmation, 1 photo-linework object in editor, library USB connection on sending.
+76 stitches/approximately 1 minute, pass badge/confirmation, 1 photo-linework object in editor, library USB connection on sending.
 English result checks Edit/Send to USB and needle count/time after scrolling.
 Emulator has no OTG, so USB transfer failure/storage-connection guidance was verified as the expected result.
 No claim of successful actual USB writes.

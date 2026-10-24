@@ -1,6 +1,6 @@
 # Fix editor text-transform latency
 
-Based on main `764c3d5`. Used synthetic fill contours and app-distributed OFL Noto Sans KR ‘가’, without private inputs.
+Based on main `764c3d5`. Used synthetic fill contours and app-distributed OFL Noto Sans KR Korean syllable Ga, without private inputs.
 
 ## Identified causes
 
@@ -31,7 +31,7 @@ Existing default placement for rotation/fractional translation also stripped gen
 | Fixed input/CPU measurement | Before-change path mean/max | Cached-matrix preview mean/max |
 |---|---:|---:|
 | JVM synthetic fill contours, 6 frames | 56.00 / 62.60ms | 0.0129 / 0.0475ms |
-| API 35 x86_64 Android, Noto Sans KR ‘가’ 490 stitches, 4 frames | 433.37 / 484.79ms | 0.443 / 1.523ms |
+| API 35 x86_64 Android, Noto Sans KR Korean syllable Ga 490 stitches, 4 frames | 433.37 / 484.79ms | 0.443 / 1.523ms |
 
 Reproduced the previous JVM path by passing new TextObject copies to the previous default placement function.
 Android compared text generation/RenderData generation/drawLines on new copies with shared-cache bounds calculations/
@@ -67,7 +67,7 @@ calculations; test rigid transforms against the rule preserving existing complet
 
 ## Actual editor smoke and final checks
 
-Added the app's public Gowun Batang ‘봄날’ sample from lettering to the editor and verified through ADB touches.
+Added the app's public Gowun Batang Korean sample Bomnal (Spring Day) from lettering to the editor and verified through ADB touches.
 `EditorTransform` debug logs record only new RenderData generation; disabled in release builds.
 
 ```

@@ -17,7 +17,7 @@ distinguish below what actual touch interaction verified from items still awaiti
 | Hoop selection | Selected default 100×100, SA431, SA434, and unsupported-frame warning. SA434 positions shown as unconfirmed. [Selection](13-frame-choices.png) |
 | Editor add/move/rotate | Empty hoop→add sample→drag X9.15/Y11.18mm→90° rotation. [Move/rotate](16-editor-moved-rotated.png) |
 | Editor save | Confirmed `.myembro` app-internal save success message. [Save](17-editor-saved.png). Test files organized under separate names |
-| Korean/English lettering | Default 봄날, English MYEMBRO input. [Korean](18-lettering-korean.png), [English](19-lettering-english.png) |
+| Korean/English lettering | Default Korean sample Bomnal (Spring Day), English MYEMBRO input. [Korean](18-lettering-korean.png), [English](19-lettering-english.png) |
 | 3-pass bean stitch | Selected installed Hershey Sans→3-pass bean stitch→add design. [Selection](20-lettering-bean.png), [Editor](21-editor-lettering.png) |
 | Dedicated picker | My designs/samples tabs, star search 3 results, selected star triple→editor. [Search](23-picker-search.png), [Result](24-picker-to-editor.png) |
 | Design library | Search, 100×100/PES/recent filters, name sorting, favorite/delete QA copy. [Search](27-library-search.png), [Favorite](28-library-favorite.png), [After deletion](29-library-deleted-before-fix.png) |
