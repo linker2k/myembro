@@ -1,62 +1,62 @@
-# KRSAT2 → KRSAT3 연결 뭉치 라우팅 비교
+# KRSAT2 → KRSAT3 connected-component routing comparison
 
-점프는 도착 뭉치/글자에 귀속, 최초 원점 이동 포함. 이동 길이는 실제 PEC JUMP 길이 합.
-이전/이후 렌더러의 명시적 뭉치 순서를 사용한다.
+Jumps belong to the destination component/glyph and include the initial move from the origin. Travel length is the sum of actual PEC JUMP lengths.
+Uses the explicit component order from the before/after renderers.
 
-| 글자 | 이전 점프 | 이후 점프 | 이전 이동(mm) | 이후 이동(mm) |
+| Glyph | Previous jumps | Updated jumps | Previous travel(mm) | Updated travel(mm) |
 |---|---:|---:|---:|---:|
-|정|3|3|29.777|16.361|
-|민|3|3|37.829|27.932|
+|Jeong|3|3|29.777|16.361|
+|Min|3|3|37.829|27.932|
 
-| 글자·뭉치(봉제순) | bbox(px) | 이전 진입 점프 | 이후 진입 점프 | 이후 내부 점프 |
+| Glyph·component(sewing order) | bbox(px) | Previous entry jumps | Updated entry jumps | Updated internal jumps |
 |---|---|---:|---:|---:|
-|정·2|[15, 17, 83, 76]|1|1|0|
-|정·0|[76, 8, 110, 77]|1|1|0|
-|정·4|[33, 81, 110, 124]|1|1|0|
-|민·3|[138, 18, 192, 72]|1|1|0|
-|민·1|[217, 8, 227, 91]|1|1|0|
-|민·5|[153, 84, 231, 120]|1|1|0|
+|Jeong·2|[15, 17, 83, 76]|1|1|0|
+|Jeong·0|[76, 8, 110, 77]|1|1|0|
+|Jeong·4|[33, 81, 110, 124]|1|1|0|
+|Min·3|[138, 18, 192, 72]|1|1|0|
+|Min·1|[217, 8, 227, 91]|1|1|0|
+|Min·5|[153, 84, 231, 120]|1|1|0|
 
-총 JUMP 6→6, 이동 67.606→44.293mm. 글자 왕복 제거, 뭉치 내부 JUMP 0. 모든 6개 run 시작/끝 잠금 PASS(최초 이동의 출발 원점에는 잠금 대상 실 없음).
-게이트 PASS, 0길이0, 원점(0,0), 셀 최대5, 최대 땀2.507987mm.
+Total JUMPs 6→6, travel 67.606→44.293mm. Eliminates backtracking between glyphs; internal component JUMPs 0. Start/end locks for all 6 runs PASS(the departure origin of the initial move has no thread requiring a lock).
+Gate PASS, 0-length0, origin(0,0), maximum per cell5, maximum stitch2.507987mm.
 
-자모 필순 인식/전통 필순 판정은 하지 않는다. 뭉치는 8방향 잉크 연결 성분이며 줄/순서 규칙은 각 렌더러 커밋 문서를 따른다.
-최종 수락은 사용자 봉제. 앱 기본값 연결은 이 실기 샘플 생성 단위에 포함하지 않음.
+Does not recognize jamo stroke order or judge traditional stroke order. Components are 8-connected ink components; line/order rules follow each renderer commit's documentation.
+Final acceptance requires user sewout. Connecting the app defaults is outside this sewout-sample generation unit.
 
-## 변경·근거
+## Changes and evidence
 
-근거는 **2026-10-24 사용자 확정 규칙**이다. 같은 글자의 두 뭉치에서
+Based on the **2026-10-24 user-confirmed rule**. For two components of the same glyph,
 `overlap=max(0,min(bottomA,bottomB)-max(topA,topB))`,
-`2*overlap >= min(heightA,heightB)`이면 같은 줄로 보고 left가 작은 뭉치를 먼저
-봉제한다. 그렇지 않으면 top이 작은 뭉치를 먼저 봉제한다. 50%를 포함하며 정수
-곱셈으로 검사해 부동소수 tolerance를 추가하지 않는다. 글자 인덱스가 최우선이다.
+if `2*overlap >= min(heightA,heightB)`, treat them as on the same line and sew the component with smaller left first.
+Otherwise sew the component with smaller top first. Includes 50%; checks using integer
+multiplication without adding floating-point tolerance. Glyph index takes highest priority.
 
-동일 줄 판정은 쌍별 관계이므로 전이적이지 않을 수 있다. 비전이 comparator를
-JVM sort에 넣지 않고 각 쌍의 선후 관계를 DAG로 풀며, 서로 모순된 배치는
-명시적으로 거부한다. 임의로 다른 tolerance나 자모 인식을 더하지 않는다.
-이것은 사용자 정렬 제약의 적용이며 새틴·러닝·잠금 알고리즘은 변경하지 않았다.
+Same-line detection is pairwise and may be non-transitive. Rather than passing a non-transitive comparator
+to JVM sort, resolves each pair's precedence constraints as a DAG and explicitly rejects contradictory layouts.
+Does not arbitrarily add other tolerances or jamo recognition.
+This applies user ordering constraints; satin/running/lock algorithms are unchanged.
 
-실제 출력의 뭉치 순서 assert:
-- 정: component2(ㅈ) → 0(ㅓ) → 4(ㅇ)
-- 민: component3(ㅁ) → 1(ㅣ) → 5(ㄴ)
+Actual output component-order assertions:
+- Jeong: component2(ㅈ) → 0(ㅓ) → 4(ㅇ)
+- Min: component3(ㅁ) → 1(ㅣ) → 5(ㄴ)
 
-위 자모 이름은 요청된 정민 샘플의 설명용 라벨이다. 엔진은 자모를 인식하지 않고
-기존 잉크 연결 성분 bbox만 사용한다. 정 상단 두 뭉치는 작은 높이59px 중59px,
-민 상단 두 뭉치는 작은 높이54px 중54px 겹쳐 각각 같은 줄로 판정된다.
+The jamo names above are explanatory labels for the requested Jeong Min sample. The engine does not recognize jamo;
+it uses only existing ink-component bboxes. Jeong's top two components overlap by59px of the smaller height59px;
+Min's top two overlap by54px of the smaller height54px, so each pair is classified as the same line.
 
-추가 회귀4건: 서로 다른 top의 상단 뭉치 좌→우, 정확히50%/50%미만 경계,
-글자 인덱스 우선·입력 순서 독립, 쌍별 제약 모순의 명시 거부.
-기존 연결 성분·AutoTrace·새틴/라우팅·PES 회귀는 유지한다.
+Additional regressions4cases: left→right top components with differing tops, exact50%/below 50% boundary,
+glyph-index priority/input-order independence, explicit rejection of contradictory pairwise constraints.
+Existing connected-component/AutoTrace/satin/routing/PES regressions remain.
 
-최종 `/tmp/myembro-sewtest/krs/KRSAT3.PES`: 624땀·5TRIM·한 색 Black40wt,
+Final `/tmp/myembro-sewtest/krs/KRSAT3.PES`: 624stitches·5TRIM·one color Black40wt,
 26.9×14.4mm. SHA256
 `c9cc6ce067b013c2e289e888df5a9dabaf3cb640d1c5d8f4c545315a914587d4`.
-KRSAT1/2는 덮어쓰지 않았다. 동일 stem `.png`는 실제 decoded-PES 렌더링이며
-`-comparison.md/json`, `-routing.json`, `-gate.json/log`도 보존했다.
-외부 gate v7 PASS: 6개 봉제 run 시작/끝 잠금 모두 존재, 셀 최대5, 0길이0,
-min(0,0)/max(269,144), header269×144 정확히 일치.
+KRSAT1/2 were not overwritten. Same-stem `.png` is an actual decoded-PES rendering;
+`-comparison.md/json`, `-routing.json`, and `-gate.json/log` were also preserved.
+External gate v7 PASS: all 6 sewing-run start/end locks present, maximum per cell5, 0-length0,
+min(0,0)/max(269,144), header269×144 match exactly.
 
-재현(새 파일명 사용):
+Reproduction(use a new filename):
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:hangulSatinSample -PhangulInput=/tmp/myembro-sewtest/krs2 -PhangulOutput=/tmp/myembro-sewtest/krs/NEWNAME -PstrokeWidthMm=1.13
@@ -65,8 +65,8 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:hangulSatinSample 
 python tools/hangul_satin/compare-components.py /tmp/myembro-sewtest/krs/KRSAT2.PES /tmp/myembro-sewtest/krs/NEWNAME.PES /tmp/myembro-sewtest/krs/NEWNAME-routing.json /tmp/myembro-sewtest/krs/NEWNAME-comparison --before-routing /tmp/myembro-sewtest/krs/KRSAT2-routing.json
 ```
 
-이전 9경로 KRSAT1 비교 모드도 유지한다. 앱 기본값 연결은 여전히 다음 단위이며,
-이 샘플 생성 변경을 앱 연결 완료로 보고하지 않는다. 최종 수락은 사용자 봉제다.
+The previous 9path KRSAT1 comparison mode remains. Connecting app defaults is still the next unit;
+this sample-generation change is not reported as completed app integration. Final acceptance requires user sewout.
 
-검증: `./gradlew check` BUILD SUCCESSFUL in37s, 엔진667·앱 Debug205/Release205
-실패0·Lint 통과. 출력 `/tmp/myembro-port-out/letter/krsat3-check.log`.
+Validation: `./gradlew check` BUILD SUCCESSFUL in37s, engine667·app Debug205/Release205
+failures0·Lint passed. Output `/tmp/myembro-port-out/letter/krsat3-check.log`.
