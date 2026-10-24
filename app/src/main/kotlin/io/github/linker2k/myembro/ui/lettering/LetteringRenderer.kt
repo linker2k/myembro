@@ -22,11 +22,16 @@ import io.github.linker2k.myembro.ui.settings.withSewingDefaults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal data class LetteringFont(val id: String, val name: String, val resource: Int = 0)
+internal data class LetteringFont(
+    val id: String, val name: String = "", val resource: Int = 0,
+    @androidx.annotation.StringRes val nameResource: Int = 0,
+) {
+    fun displayName(context: Context): String = if (nameResource != 0) context.getString(nameResource) else name
+}
 internal val bundledLetteringFonts = listOf(
-    LetteringFont("gowun-batang", "고운바탕", R.font.gowun_batang),
-    LetteringFont("jua", "둥근고딕", R.font.jua_regular),
-    LetteringFont("noto-sans-kr", "담백한 고딕", R.font.noto_sans_kr),
+    LetteringFont("gowun-batang", resource = R.font.gowun_batang, nameResource = R.string.lettering_font_gowun_batang),
+    LetteringFont("jua", resource = R.font.jua_regular, nameResource = R.string.lettering_font_jua),
+    LetteringFont("noto-sans-kr", resource = R.font.noto_sans_kr, nameResource = R.string.lettering_font_noto_sans_kr),
 )
 internal data class LetteringResult(
     val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport?,
@@ -133,7 +138,7 @@ private fun loadFont(context: Context, id: String): LoadedFont {
         else -> "bundled-hershey-v1"
     }
     return LoadedFont(face, svg, hershey, revision + ":glyph-extractor-v3",
-        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
+        bundled?.displayName(context) ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
         ink, installed?.takeIf { ink != null }?.let { f ->
             (f.recommendedMinHeightMm ?: 0.0)..(f.recommendedMaxHeightMm ?: Double.POSITIVE_INFINITY)
         }, centerlineFace = if (id == "noto-sans-kr") context.resources.getFont(R.font.myembro_sans) else face)

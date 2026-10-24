@@ -98,4 +98,8 @@
     <string name="lettering_discard_body">Your changes have not been added to the design.</string>
     <string name="lettering_weight_normal">Normal</string>
     <string name="lettering_weight_bold">Bold</string>
+    <string name="lettering_font_gowun_batang">Gowun Batang</string>
+    <string name="lettering_font_jua">Jua</string>
+    <string name="lettering_font_noto_sans_kr">Noto Sans KR</string>
+    <string name="lettering_default_text">Spring</string>
 </resources>
