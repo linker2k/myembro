@@ -7,8 +7,8 @@ is introduced in the engine.
 ## Kernel and session controller
 
 `ToolDispatcher.dispatch(project, revision, name, arguments, confirmed=false)` is
-the snapshot-in/snapshot-out preparation kernel. Its 17 supported names cover
-text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
+the snapshot-in/snapshot-out preparation kernel. Its 19 supported names cover
+font/settings queries, text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
 visibility, color, removal, frame selection, sewing checks and PES preparation.
 Successful edits return their resolved `ProjectCommand` for session publication.
 
@@ -156,3 +156,68 @@ so rendering, recoloring and placement do not depend on a mutable global registr
 This field is not embedded in project JSON; reopening uses the existing installed
 font registry. The JVM runner still needs its normal approved-font binding when
 reopening an initial project with pre-existing digitized text.
+
+## Font/settings queries and shared document storage
+
+`list_fonts` and `get_settings` are implemented by the preparation kernel and may
+run outside a turn through the bound controller. FontResolver.descriptors supplies
+IDs, display names, kinds, installation state and known source code points. The
+result compresses known code points into Unicode intervals, reports source coverage
+as unconfirmed when unavailable, and includes exact font revisions. Text/filter
+queries use the resolved source rather than fallback glyphs. Height intervals come
+from the same automaticLetteringState function used by Add and the phone screen.
+An empty range is explicitly an unconfirmed minimum under the existing running or
+centerline baseline; the existing app maximum still applies. Catalog fonts without
+local geometry are not claimed to support a query's text. Scope is the injected
+host resolver, not a search of all fonts on the PC.
+
+SettingsResolver supplies the current machine and preferred/default frame.
+get_settings returns both that default and the active project's frame, plus the
+host-injected frame choices; it does not silently replace project geometry.
+Android's adapter reads SettingsPreferences, while the JVM default uses the existing
+SE400/H100 defaults. Inject settings explicitly for another machine/profile.
+
+DocumentStore is the approved-destination boundary. Inject it into ToolDispatcher
+and use the bound controller's save_project/save_pes methods. DirectoryDocumentStore
+maps opaque IDs to host-selected JVM folders (its single-folder constructor uses
+`output`). `androidAgentDispatcher(context)` binds the actual app fonts, settings/frame choices
+and library storage. AndroidDocumentStore uses `library`, the existing files/designs folder,
+writeNamedDesign and GeneratedPesOrigins behavior. Only actual generated PES gets
+the generated-origin record; imported origins are preserved. Existing editor name
+sanitization/80-character stem rules are shared unchanged through documentSaveStem.
+Agent document names must be leaf names; paths, symlink targets (JVM) and unknown
+destination IDs are rejected. Android hosts should serialize this adapter with
+normal editor saves and refresh library/dirty-state UI after successful saves.
+
+New names save immediately under the user's save request. An existing case-insensitive
+name returns CONFIRMATION_REQUIRED with needsUserConfirmation=true, a confirmToken
+and retryArguments containing the normalized filename and overwrite=true. No bytes
+are changed. The trusted host obtains user approval then calls:
+
+```kotlin
+controller.dispatch("save_project", retryArguments, confirmToken = token)
+```
+
+This token is a host API parameter, never a new field in tools.json. It is bound
+to the tool, retry arguments, session revision, encoded payload and existing file
+content digest; a changed target/project/payload or consumed token is refused.
+`confirmed=true` alone cannot bypass save confirmation, and overwrite=false never
+replaces a file. The store also checks the expected existing version before
+publication. Cooperating host writes must be serialized; a portable filesystem-wide
+compare-and-swap against uncooperative external writers is not claimed.
+
+Only a successful bound prepare_pes or committed non-dry-run script publishes an
+opaque PES artifact ID. Artifacts contain defensive byte copies and come exclusively
+from the existing complete-PASS writer/SewoutCheck/PecViewportCheck path. save_pes
+accepts only those artifacts, and refuses them after the session revision changes.
+It never accepts arbitrary bytes or file paths as a checked artifact. A blocked
+prepare has no artifact and cannot write a file. Project saves check projectRevision
+and encode ProjectJson before opening the destination. Saves during an active turn
+are refused; filesystem writes cannot be staged inside atomic or dry-run scripts.
+The standalone snapshot kernel intentionally does not perform save side effects.
+
+Verification: MoreToolsTest exercises fresh project/PES saves, unchanged bytes on
+conflict even with a boolean confirmation, token-approved replacement, token replay,
+external target changes, stale revisions/artifacts, blocked PES, traversal/symlink
+refusal and both query outputs. Existing app save tests exercise the unchanged
+naming and named-save path. No personal designs are fixtures.

@@ -18,13 +18,15 @@ class ToolDispatcher(
     frames: Map<String, HoopSpec> = mapOf("H100" to HoopSpec.H100, "H130x180" to HoopSpec.H130x180, "H160x260" to HoopSpec.H160x260),
     assets: Map<String, ByteArray> = emptyMap(),
     private val fontResolver: FontResolver = BundledFontResolver(),
+    internal val documentStore: DocumentStore? = null,
+    private val settingsResolver: SettingsResolver = SettingsResolver { AgentSettings() },
     private val heightLimits: LetteringHeightLimits = LetteringHeightLimits.decode(
         checkNotNull(ToolDispatcher::class.java.getResourceAsStream("/lettering/ttf-fill-height-ranges.json")).bufferedReader().use { it.readText() }),
 ) {
     private val frames = frames.mapValues { (_, h) -> h.copy(positions = h.positions.toList()) }
     private val assets = assets.mapValues { it.value.copyOf() }
     data class Result(val project: Project, val output: JsonObject, val pesBytes: ByteArray? = null,
-        val preparedCommand: ProjectCommand? = null) {
+        val preparedCommand: ProjectCommand? = null, val generatedPes:Boolean=false) {
         val ok get() = output.getValue("ok").jsonPrimitive.boolean
         val code get() = output["code"]?.jsonPrimitive?.content
     }
@@ -38,6 +40,16 @@ class ToolDispatcher(
         if (schema.confirmation(name) && !confirmed) return failure("CONFIRMATION_REQUIRED", name)
         val a = arguments.jsonObject
         try {
+            if(name=="list_fonts") return Result(project,fontList(fontResolver,heightLimits,a))
+            if(name=="get_settings") {
+                val settings=settingsResolver.read()
+                fun hoop(h:HoopSpec)=buildJsonObject { put("name",h.name);put("widthMm",h.width/10.0);put("heightMm",h.height/10.0) }
+                return Result(project,buildJsonObject {
+                    put("ok",true);put("machineId",settings.machineId);put("machineName",settings.machineName)
+                    put("defaultFrameId",settings.defaultFrameId);put("defaultFrame",hoop(settings.defaultFrame));put("projectFrame",hoop(project.hoop))
+                    put("frames",JsonArray(frames.map { (id,h)->JsonObject(hoop(h)+("id" to JsonPrimitive(id))) }))
+                })
+            }
             if (name == "get_project") return Result(project, buildJsonObject { put("ok", true); put("project", summary(project, revision)) })
             if (name == "sewout_check" || name == "prepare_pes") {
                 val frame = frame(a.string("frameId"))
@@ -69,7 +81,7 @@ class ToolDispatcher(
                 val viewport = PecViewportCheck.check(bytes, frame)
                 val details = buildJsonObject { put("report", reportJson(report)); put("viewport", viewportJson(viewport)); put("placement", reportJson(placement)) }
                 if (!report.analysisComplete || report.verdict != SewoutVerdict.PASS || !viewport.valid) return failure("SEWOUT_BLOCKED", "Only complete PASS output may be released", details)
-                return Result(project, buildJsonObject { put("ok", true); put("checks", details); put("byteCount", bytes.size) }, if (name == "prepare_pes") bytes.copyOf() else null)
+                return Result(project, buildJsonObject { put("ok", true); put("checks", details); put("byteCount", bytes.size) }, if (name == "prepare_pes") bytes.copyOf() else null, generatedPes=origin==DesignOrigin.APP_GENERATED)
             }
             require(a.string("transactionId").isNotBlank()) { "transactionId must not be blank" }
             val command = when (name) {
@@ -137,7 +149,7 @@ class ToolDispatcher(
     internal fun needsConfirmation(name: String) = schema.confirmation(name)
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = setOf("list_fonts", "get_settings", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {

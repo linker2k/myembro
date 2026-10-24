@@ -16,11 +16,12 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
         val calls = mutableListOf<Call>()
     }
     private data class Receipt(val baseRevision: Long, val body: List<Call>?, val export: JsonObject?, val result: ToolDispatcher.Result)
+    private val documents=DocumentTools(session,kernel.documentStore)
     private var pending: Draft? = null
     private val receipts = mutableMapOf<String, Receipt>()
 
     /** Interactive tools: begin/stage/commit or cancel. Mutations outside an explicit turn are rejected. */
-    @Synchronized fun dispatch(name: String, arguments: JsonElement, confirmed: Boolean = false): ToolDispatcher.Result {
+    @Synchronized fun dispatch(name: String, arguments: JsonElement, confirmed: Boolean = false, confirmToken: String? = null): ToolDispatcher.Result {
         if (!kernel.knowsTool(name)) return abortError("UNKNOWN_TOOL", name)
         kernel.validateRequest(name, arguments)?.let { return abortError("INVALID_ARGUMENTS", it) }
         val a = arguments.jsonObject
@@ -40,13 +41,17 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
                 history(if(name=="undo") session.undo(revision) else session.redo(revision))
             }
             "get_project" -> snapshotResult()
+            "save_project", "save_pes" -> {
+                if(pending!=null || session.snapshot().turnInProgress) error("TURN_IN_PROGRESS","Commit or cancel before saving")
+                else documents.save(name,a,confirmToken)
+            }
             else -> {
                 if(name !in ToolDispatcher.SUPPORTED) return abortError("NOT_IMPLEMENTED",name)
                 val d=pending
                 if(d==null) {
                     // Read-only checks may run outside a turn; prepare_pes releases bytes only for a committed snapshot.
-                    if(name in setOf("sewout_check","prepare_pes")) {
-                        val s=session.snapshot();kernel.dispatch(s.project,s.revision.toString(),name,arguments,confirmed)
+                    if(name in setOf("sewout_check","prepare_pes","list_fonts","get_settings")) {
+                        val s=session.snapshot();documents.publish(kernel.dispatch(s.project,s.revision.toString(),name,arguments,confirmed))
                     } else error("NO_ACTIVE_TURN","begin_edit_turn is required")
                 } else stage(d,Call(name,arguments),confirmed)
             }
@@ -155,9 +160,10 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
         }
         if(dryRun) return ToolDispatcher.Result(session.project,buildJsonObject { put("ok",true);preview.forEach { (key,value)->put(key,value) } })
         val committed=turn(session.executeTurn(transactionId,expectedRevision,d.commands.toList()))
-        val result=committed.copy(output=buildJsonObject { committed.output.forEach { (key,value)->put(key,value) };preview.forEach { (key,value)->put(key,value) } },pesBytes=if(committed.ok) checked.pesBytes else null)
-        receipts[transactionId]=Receipt(expectedRevision,calls.toList(),exportSettings,result)
-        return result
+        val result=committed.copy(output=buildJsonObject { committed.output.forEach { (key,value)->put(key,value) };preview.forEach { (key,value)->put(key,value) } },pesBytes=if(committed.ok) checked.pesBytes else null,generatedPes=checked.generatedPes)
+        val published=documents.publish(result)
+        receipts[transactionId]=Receipt(expectedRevision,calls.toList(),exportSettings,published)
+        return published
     }
 
     private fun revision(a: JsonObject) = a.string("expectedRevision").toLongOrNull()?.takeIf { it>=0 }
@@ -189,5 +195,5 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
     }
     private fun liveReceipt(receipt: Receipt) = receipt.result.copy(project=session.project,pesBytes=null,preparedCommand=null,
         output=buildJsonObject { receipt.result.output.forEach { (key,value)->put(key,value) };put("replayed",true);put("currentRevision",session.revision.toString());put("project",ToolDispatcher.summary(session.project,session.revision.toString())) })
-    companion object { val SUPPORTED = ToolDispatcher.SUPPORTED+setOf("begin_edit_turn","commit_edit_turn","cancel_edit_turn","undo","redo") }
+    companion object { val SUPPORTED = ToolDispatcher.SUPPORTED+setOf("begin_edit_turn","commit_edit_turn","cancel_edit_turn","undo","redo","save_project","save_pes") }
 }
