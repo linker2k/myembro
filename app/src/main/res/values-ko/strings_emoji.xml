@@ -2,7 +2,7 @@
     <string name="emoji_from">이모지로</string>
     <string name="emoji_from_hint">공개 이모지 그림을 자수로</string>
     <string name="emoji_title">이모지로 자수</string>
-    <string name="emoji_search">이모지 검색 (heart, cat, flower…)</string>
+    <string name="emoji_search">이모지 검색 (하트, 고양이, 꽃…)</string>
     <string name="emoji_bundled">오프라인 30</string>
     <string name="emoji_none">찾는 이모지가 없습니다</string>
     <string name="emoji_download_name">%1$s, 내려받기 필요</string>

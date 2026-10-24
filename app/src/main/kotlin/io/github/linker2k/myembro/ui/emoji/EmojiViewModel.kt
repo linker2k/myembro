@@ -50,6 +50,10 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
     var render by mutableStateOf<RenderData?>(null); private set
     var report by mutableStateOf<SewoutReport?>(null); private set
     var sizeMm by mutableStateOf<Pair<Double, Double>?>(null); private set
+    /** Chosen embroidery width; the slider range follows the picture's aspect and the hoop. */
+    var widthMm by mutableStateOf(WIDTH_MM); private set
+    val widthRange: ClosedFloatingPointRange<Double>? get() = sizeMm?.let { (w, h) ->
+        io.github.linker2k.myembro.ui.photo.pictureWidthRange(hoop, h / w) }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
     private var work: Job? = null
 
@@ -65,7 +69,7 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
     /** Bundled set or one group; a search looks through the whole catalog by name and keywords. */
     val visible: List<CatalogEmoji> get() {
         val q = query.trim().lowercase()
-        if (q.isNotEmpty()) return all.filter { e -> q in e.name.lowercase() || e.keywords.any { q in it.lowercase() } || q == e.glyph }
+        if (q.isNotEmpty()) return all.filter { it.matches(q) }
         return if (group == null) all.filter { it.bundled } else all.filter { it.group == group }
     }
 
@@ -80,14 +84,27 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Downloads when needed, stitches at [WIDTH_MM] (within the hoop) and runs the sewing check. */
     fun pick(e: CatalogEmoji) {
+        widthMm = WIDTH_MM; sizeMm = null
+        generate(e)
+    }
+
+    /** New width from the size slider (on release): the picture is stitched again at that width. */
+    fun changeSize(mm: Double) {
+        val e = selected ?: return
+        val range = widthRange ?: return
+        val value = Math.round(mm.coerceIn(range) * 10) / 10.0
+        if (value != widthMm) { widthMm = value; generate(e) }
+    }
+
+    private fun generate(e: CatalogEmoji) {
         work?.cancel()
-        selected = e; busy = true; error = null; render = null; report = null; sizeMm = null
+        selected = e; busy = true; error = null; render = null; report = null
         val snapshot = settings
         work = viewModelScope.launch {
             try {
                 val picture = art[e.id] ?: withContext(Dispatchers.IO) { VectorArt.parseSvg(repository.svg(e)) }.also { art[e.id] = it }
                 val frame = snapshot.defaultFrame.spec
-                val width = minOf(WIDTH_MM, (minOf(frame.width, frame.height) - 1) / 10.0)
+                val width = minOf(widthMm, (minOf(frame.width, frame.height) - 1) / 10.0)
                 val result = runInterruptible(Dispatchers.Default) {
                     val pattern = VectorArt.render(picture, width, name = e.name).pattern
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)

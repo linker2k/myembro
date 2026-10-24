@@ -82,7 +82,7 @@ private fun ColumnScope.Picker(vm: EmojiViewModel) {
 
 @Composable
 private fun Cell(e: CatalogEmoji, art: VectorArt.Art?, available: Boolean, onClick: () -> Unit) {
-    val description = if (available) e.name else stringResource(R.string.emoji_download_name, e.name)
+    val description = if (available) displayName(e) else stringResource(R.string.emoji_download_name, displayName(e))
     Surface(Modifier.aspectRatio(1f).clip(MyembroShapes.Card).clickable(onClick = onClick).semantics { contentDescription = description },
         color = MaterialTheme.colorScheme.surface, shape = MyembroShapes.Card) {
         Box(Modifier.padding(10.dp), contentAlignment = Alignment.Center) {
@@ -123,7 +123,7 @@ private fun Picture(art: VectorArt.Art, modifier: Modifier) {
 
 @Composable
 private fun ColumnScope.Result(vm: EmojiViewModel, e: CatalogEmoji, onEdit: () -> Unit) {
-    Text(e.name.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.titleLarge)
+    Text(displayName(e), style = MaterialTheme.typography.titleLarge)
     val data = vm.render
     val colors = MaterialTheme.colorScheme
     Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
@@ -139,12 +139,21 @@ private fun ColumnScope.Result(vm: EmojiViewModel, e: CatalogEmoji, onEdit: () -
             style = MaterialTheme.typography.titleMedium)
         vm.sizeMm?.let { (w, h) -> Text(stringResource(R.string.photo_result_size, Dimensions.size(w, h)), style = MaterialTheme.typography.bodyMedium) }
     }
+    vm.widthRange?.let { range -> vm.sizeMm?.let { (w, _) ->
+        io.github.linker2k.myembro.ui.photo.EmbroiderySizeSlider(w, range, vm::changeSize)
+    } }
     vm.error?.let { Text(stringResource(it), color = colors.error) }
     Spacer(Modifier.weight(1f))
     Button(onClick = onEdit, enabled = !vm.busy && vm.passed, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
         Text(stringResource(R.string.emoji_edit))
     }
 }
+
+/** CLDR Korean name in a Korean UI, the Fluent (English CLDR) name otherwise. */
+@Composable
+private fun displayName(e: CatalogEmoji): String =
+    if (androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "ko" && e.ko.isNotEmpty()) e.ko
+    else e.name.replaceFirstChar { it.uppercase() }
 
 @Composable
 private fun groupLabel(group: String): String = when (group) {
