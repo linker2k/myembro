@@ -1,44 +1,50 @@
 # myembro
 
+**English** | [한국어](README.ko.md)
+
 ![myembro — open-source embroidery app for Android (view, edit, letter and digitize Brother PES designs)](docs/images/readme-banner.png)
 
 **Open-source embroidery app for Android** — view, edit, letter and digitize Brother **PES**
 designs on your phone and send them to the machine.
 
-**Open-source embroidery app for Android** — view and edit Brother **PES** designs on your phone,
-create new designs from text and photos, and send them to your embroidery machine.
+Current release: **v0.2.8** (GitHub pre-release).
+
+User guide: [docs/manual/user-guide.md](docs/manual/user-guide.md)
 
 ## Failure-free designs
 
-Before saving or transferring any app-generated PES, code checks for conditions that cause actual sewout failures
-(needle crowding within a 0.5mm cell, consecutive needle entries at the same point, missing start/end locks,
-excessive stitch length, file errors, and hoop overflow). Any violation blocks saving and transfer.
-Stitch generation ports verified originals(Ink/Stitch, Potrace, AutoTrace, and Wu quantization) with their default parameters
-rather than inventing new methods, and automated comparisons verify agreement with the originals.
-The app automatically decides potentially unsafe choices, such as stitch types and size ranges, without exposing detailed settings.
-Every generated PES is checked in code for the conditions that cause real sew-out failures and is
-blocked from saving or sending if any is found. Stitch generation ports verified originals with
-their default parameters instead of inventing new algorithms.
+Before saving or sending, every PES the app generates is checked in code for the conditions that cause
+real sew-out failures: needle crowding in a 0.5mm cell, repeated needle penetrations at the same point,
+missing start/end lock stitches, stitches longer than the maximum length, and file errors or designs
+outside the hoop. If any one is found, saving and sending are blocked. Stitch generation does not invent
+new algorithms: it ports verified originals (Ink/Stitch, Potrace, AutoTrace, Wu quantization) with their
+default parameters, and automated comparisons confirm the results match the originals. Choices that can
+fail, such as stitch type and allowed size range, are made automatically by the app; detailed settings
+are not exposed.
+
+**Hoop range:** stitch coordinates are integers in 0.1mm units starting at 0, so a 100mm hoop allows
+0–999 and blocks 1000 and above. The maximum design size is 99.9mm; the only safety margin is that 0.1mm.
+The same rule applies to every hoop.
 
 ## Features (v0.2.x)
 
-- **Viewer and stitch playback:** open PES (v1–v10), PEC, and DST; render thread colors; zoom/pan; simulate sewing; show statistics(stitch count, size, colors, trims, estimated time) and hoops
-- **Editor:** arrange designs and text, resize, rotate, and save projects
+- **Viewer:** opens PES (v1–v10), PEC and DST; thread-color rendering, zoom and pan, stitch playback, statistics (stitch count, size, colors, trims, estimated time), hoop display
+- **Editor:** place designs and lettering, resize, rotate, save projects
 - **Lettering:**
-  - Satin with 72 Ink/Stitch embroidery fonts(verified font catalog) — 72 Ink/Stitch embroidery fonts as satin
-  - TTF fonts(including Hangul): the app automatically determines stitch type(satin, fill, running) and allowed size ranges based on text size
-- **Fill:** Ink/Stitch default tatami and underlay
-- **Photo to embroidery:** monochrome silhouette(fill)/outline modes and resizing
-- **Sew-out check:** automatically blocks the failure conditions above. Imported PES bytes remain unchanged
-- **Machines:** Brother SE400 — direct transfer from the phone over a USB cable(verified on hardware), transfer history, and travel-thread cleanup guidance for machines without automatic cutting. SE600/SE700 — machine profiles(100×100mm, USB flash drive)
-- **Full backup/restore:** save and restore designs, projects, downloaded fonts, and settings in one ZIP
-- **Versions:** from v0.2.0 onward, each release is v0.2.N. Distributed as GitHub pre-releases
+  - 72 Ink/Stitch embroidery fonts as satin (verified font catalog)
+  - TTF fonts (including Korean): the app automatically chooses the stitch type (satin, fill, running) and allowed size range from the letter size
+- **Fill:** Ink/Stitch default tatami with underlay
+- **Photo to embroidery:** single-color silhouette (fill) and outline modes, size adjustment
+- **Sew-out check:** automatically blocks the failure conditions above. Imported PES files are kept byte-for-byte
+- **Machines:** Brother SE400 — direct transfer from the phone over a USB cable (confirmed on a real machine), transfer history, and guidance for tidying travel threads on models without automatic thread cutting. SE600/SE700 — machine profiles (100×100mm, USB memory)
+- **Full backup/restore:** saves and restores designs, projects, downloaded fonts and settings as one ZIP
+- **Versions:** v0.2.N for every release since v0.2.0, published as GitHub pre-releases
 
 ## Known limitations
 
-- SE400 has no automatic thread cutting; color/position travel threads must be trimmed by hand after sewing(the app provides guidance).
-- The current APK is signed with a development key. Switching to an official signing key will prevent updating over the existing app, requiring a one-time uninstall and reinstall. Back up everything through Settings beforehand.
-- SE600/SE700 profiles are based on manuals; hardware transfer is still unconfirmed.
+- The SE400 has no automatic thread cutter, so color-change and travel threads must be trimmed by hand after sewing (the app guides you).
+- The current APK is signed with a development key. When it switches to the official signing key, it cannot be installed as an update over the existing app; you will need to uninstall once and reinstall. Before that, take a full backup in Settings.
+- SE600/SE700 are profiles based on the manuals; transfer to those machines has not been tested on real hardware yet.
 
 ## Project layout
 

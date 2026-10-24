@@ -1,25 +1,25 @@
-# myembro — shared agent rules
+# myembro — Shared rules for agents
 
-All coding agents(Codex, Claude Code) read this file before working. The same rules exist in code(`engine/.../sewout/SewoutCheck`, `/tmp/myembro-quality-gate` gate). Violating files are blocked from building, saving, and transfer. This document exists to require **avoiding violations from the outset**. When changing a rule, update documentation, code, and tests together in one commit.
+Every coding agent (Codex, Claude Code) reads this file before starting work. The same rules also exist in code (`engine/.../sewout/SewoutCheck`, the `/tmp/myembro-quality-gate` gate). A file that violates them is blocked from building, saving and sending. This document exists so that you **never produce a violation in the first place**. When a rule changes, change the document, the code and the tests together in one commit.
 
-## PES/PEC output invariants (confirmed in an SE400 hardware incident)
+## PES/PEC output invariants (confirmed by real SE400 incidents)
 
-| # | Rule | Evidence |
+| # | Rule | Basis |
 |---|---|---|
-| P1 | PEC stitch coordinates must have **minimum x = 0, minimum y = 0**. The coordinate origin is the design's top-left corner; **negative coordinates are prohibited**. | All 334/334 user PE-Design designs use a top-left origin. Files written with a centered origin shifted stitches toward the top left by half the design size on SE400. At the hoop limit, the needle entered the same location more than 20 times(2026-10-24). |
-| P2 | Maximum x ≤ hoop width, maximum y ≤ hoop height. Compare **integer coordinates** in 0.1mm units without floating-point tolerance or allowance. Coordinates are 0-based integers, so the allowed interval is **0 ~ (hoop unit count − 1)**. For a 100mm hoop, allow 0–999 and prohibit 1000 and above. Whether the machine can reach exactly the 100.0mm boundary is unconfirmed; no corpus design reaches 1000, so this is conservative. **Apply identically to every hoop**, including default, machine-specific, and custom hoops. Obtain hoop values only from the app's `HoopSpec`. | The machine's hoop travel range is fixed and cannot be exceeded even by 0.1mm(user instruction 2026-10-24). |
-| P2a | **The safety margin is 0.1mm(1 unit); P2's 0–999 rule itself provides this margin.** No additional margin(the 2mm margin is discarded). Maximum design size is 99.9mm(999 units). | User decision(2026-10-24): "0.1mm is enough." Giving up 0.1mm is not a loss. |
-| P3 | PEC header width/height must exactly equal actual stitch extents. Even a 1 unit(0.1mm) difference is prohibited. | The machine uses header dimensions to position the design and determine travel limits. |
-| P4 | **0-length JUMPs and 0-length needle stitches are prohibited**, including thread starts and after trims. If restarting at the same point after trimming, remove both TRIM and JUMP and sew continuously. | The PE-Design corpus has no 0-length commands. Starts without these commands(A/B trial T1·T3) sewed normally on hardware. |
-| P5 | Consecutive entries at the same needle position must be **2 or fewer**. Include 0-length needle stitches in this count. | Corpus distribution: 1 entry in 173 files, 2 in 158, 3 in 1, and 5 in 2; p99 is 2. |
-| P6 | Use Ink/Stitch default `half_stitch` locks. Custom-designed locks are prohibited. For `ties=3`, as on a font's first element, guarantee a start lock through upstream parameters. | Equivalent to upstream Ink/Stitch v3.3.0. Normal in hardware trial T3. |
-| P7 | Needle entries must not exceed 15 in one 0.5mm cell(app output). Imported PES are blocked only above 30. | Set from corpus p99. The birdnest file had 38 entries. |
-| P8 | Maximum stitch length ≤ 12.0mm. | Corpus maximum is 12.0mm. |
+| P1 | PEC stitch coordinates must have **minimum x = 0 and minimum y = 0**. The coordinate origin is the top-left corner of the design, and **negative coordinates are forbidden**. | All 334/334 of the user's PE-Design designs use a top-left origin. A file written with a center origin had its stitches shifted up and left on the SE400 by half the design size. In that state it hit the hoop limit and stitched the same spot more than 20 times (2026-10-24). |
+| P2 | Maximum x ≤ hoop width, maximum y ≤ hoop height. Compare in **integer coordinates** of 0.1mm units, with no floating-point tolerance or margin. Coordinates are integers starting at 0, so the allowed range is **0 to (number of hoop units − 1)**. For a 100mm hoop, 0–999 is allowed and 1000 and above is forbidden. Whether the machine can reach exactly the 100.0mm boundary is unverified, and no design in the corpus reaches 1000, so the limit is set conservatively. **It applies identically to every hoop**, including the default hoop, machine-specific hoops and user-defined hoops. Hoop values come only from the app's `HoopSpec`, in one place. | The hoop travel range is fixed by the machine and cannot be exceeded by even 0.1mm (user instruction, 2026-10-24). |
+| P2a | **The safety margin is 0.1mm (1 unit), and the 0–999 rule of P2 is that margin.** No extra margin is added (the 2mm margin is dropped). The maximum design size is 99.9mm (999 units). | User decision (2026-10-24): "0.1mm is enough". Giving up 0.1mm is not a loss. |
+| P3 | The width/height in the PEC header must exactly equal the actual stitch extent. Not even a 1-unit (0.1mm) difference is allowed. | The machine places the design and sets its travel limits from the header size. |
+| P4 | **0-length JUMPs and 0-length needle penetrations (stitches) are forbidden**, including at thread start and after a trim. When stitching restarts at the same point after a trim, remove both the trim and the JUMP and continue stitching. | The PE-Design corpus has no 0-length commands. Starts without them (T1 and T3 in the A/B test) sewed normally on the real machine. |
+| P5 | Consecutive needle penetrations at the same position must be **at most 2**. 0-length penetrations count toward this. | Corpus distribution: 1 time 173 files, 2 times 158, 3 times 1, 5 times 2; p99 is 2. |
+| P6 | Lock stitches use the Ink/Stitch default `half_stitch`. Self-invented locks are forbidden. Where `ties=3`, as with the first element of a font, the start lock is guaranteed through the upstream parameter. | Equivalent to the Ink/Stitch v3.3.0 original. It was normal in real-machine test T3. |
+| P7 | A single 0.5mm cell must not receive more than 15 needle penetrations (app output). Imported PES are blocked only above 30. | Set from the corpus p99. The file that produced a bird's nest had 38. |
+| P8 | Maximum stitch length ≤ 12.0mm. | The corpus maximum is 12.0mm. |
 
 ## Working principles
 
-- Do not create new algorithms. Port verified originals(Ink/Stitch v3.3.0, potrace, Wu quantization) with their defaults and prove matching results through automated comparison.
-- Models do not judge measurable quantities. Code and tests determine results; attach commands or test output to reports.
-- Numbers in rules need evidence: upstream defaults, corpus measurements, or original code. Without evidence, label them "unconfirmed" and do not use them.
-- Never commit private designs(user PE-Design libraries, uploaded files) or use them as test fixtures. Analyze only in local `/tmp`.
-- Give hardware-test files new names every time. Use one color(40wt) per file and keep designs small, within 60×60mm.
+- Do not invent new algorithms. Port verified originals (Ink/Stitch v3.3.0, potrace, Wu quantization) with their default values as-is, and prove by automated comparison that the result matches the original.
+- Models do not judge what can be measured. Code and tests judge, and reports attach the command or test output.
+- Every number used in a rule needs a basis: an upstream default, a corpus measurement or the original code. Without a basis, mark it "unverified" and do not use it.
+- Personal designs (the user's PE-Design library, uploaded files) are never committed and never used as test fixtures. Analyze them only locally in `/tmp`.
+- Give every real-machine test file a new name. Use only one color (40wt) per file, and keep it small, within 60×60mm.
