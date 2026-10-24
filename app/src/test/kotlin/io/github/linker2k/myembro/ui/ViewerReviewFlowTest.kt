@@ -8,7 +8,7 @@ import kotlin.test.*
 
 class ViewerReviewFlowTest {
     private fun project(x: Double = 250.0) = Project(HoopSpec.H100, listOf(StitchObject("a", "lemon",
-        EmbPattern(listOf(Stitch(-100,-50,Command.STITCH), Stitch(100,50,Command.STITCH), Stitch(100,50,Command.END)),
+        EmbPattern(listOf(Stitch(-100,-50,Command.STITCH), Stitch(100,50,Command.STITCH), Stitch(-100,-50,Command.STITCH), Stitch(-100,-50,Command.END)),
             listOf(EmbThread(0xFF123456.toInt(), "thread"))), Transform(x = x))))
     @Test fun `project preview preserves hoop placement dimensions threads and PES export source`() {
         val p = project()
@@ -19,7 +19,7 @@ class ViewerReviewFlowTest {
         assertEquals(200, opened.pattern.bounds!!.width)
         assertEquals(1, opened.pattern.colorBlocks.size)
         assertEquals("lemon.pes", opened.sourceName)
-        assertEquals(opened.pattern.stitchCount, PatternReader.read(opened.source, opened.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(opened.pattern).stitchCount, PatternReader.read(opened.source, opened.sourceName).stitchCount)
         assertTrue(viewerFits(opened.pattern, p.hoop, true))
     }
     @Test fun `off-centre design too far outside hoop cannot pass by dimensions alone`() {

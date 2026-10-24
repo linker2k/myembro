@@ -34,7 +34,6 @@ derived from the following projects, whose notices are reproduced as their licen
   No paper text/images, OpenCV binaries/source tables, or commercial font/design data
   are included in the repository or distributed application.
 
-
 ## Ink/Stitch satin-column conceptual reference
 
 - Reference: [Ink/Stitch Satin Column manual](https://inkstitch.org/docs/stitches/satin-column/),
@@ -338,7 +337,6 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-
 ## Gowun Batang
 
 - Source: https://github.com/google/fonts/tree/main/ofl/gowunbatang
@@ -451,7 +449,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   `app/src/main/assets/licenses/androidx_browser_APACHE-2.0.txt`.
 - Source/release: https://developer.android.com/jetpack/androidx/releases/browser#1.8.0
 
-
 ## JTS Topology Suite (core)
 
 - Dependency: `org.locationtech.jts:jts-core:1.20.0`, unmodified JVM library.
@@ -470,7 +467,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   and intersections. SVG parsing and running/tatami generation are original myembro
   GPL-3.0-or-later code implementing the referenced W3C syntax and basic geometry;
   see docs/geometry.md for algorithm sources and limitations.
-
 
 ## libaums core
 
@@ -510,7 +506,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   fonts, private embroidery files or upstream executable code are bundled with them.
 - Changes and explicit unsupported settings are listed in `docs/inkstitch-port.md`.
   The previous app fill implementations remain in use until independent quality approval.
-
 
 ## JGraphT core and transitive libraries
 
@@ -586,26 +581,38 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
   universal stroke count. Upstream JavaScript was read, never executed.
 - Tooling only; no new font binaries, private fonts or embroidery designs bundled.
 
-## JGraphT core and transitive libraries
+## Potrace-derived binary contour and polygon core (engine-only partial port)
 
-- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
-  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
-  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
-  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
-  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
-  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
-  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
-- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
-  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
-  traversal are Kotlin ports. Public dependency binaries are used; upstream source
-  archives were only read to verify notices.
-- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
-  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
-  source is available from the pinned repository and the published Maven sources JAR.
-- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
-  Dimitrios Michail and contributors. Full license and source notice are packaged at
-  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
-  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
-- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
-  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
-  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+- Source: Potrace 1.16, Copyright (C) 2001–2019 Peter Selinger.
+- Official release: https://potrace.sourceforge.net/download/1.16/potrace-1.16.tar.gz
+- Source mirror commit: https://github.com/skyrpex/potrace/commit/886392d351417d6753aff61de08e294d1506e502
+  (`Merge with v1.16`); `src/decompose.c` and `src/trace.c` are byte-identical to the release archive.
+- Kotlin translations: `engine/.../inkstitch/svg/image/BinaryContourTracer.kt` and
+  `OptimalPolygon.kt`, `CurveFitter.kt` and `CurveOptimizer.kt`, derived from `src/decompose.c`, `src/bitmap.h`, `src/trace.c`,
+  and `src/auxiliary.h`. Modified 2026 by myembro contributors.
+- License: **GPL-2.0-or-later**, selecting GPL v3 terms for combination with this
+  GPL-3.0-or-later application. Upstream permission is stated in its README;
+  the complete upstream GPL v2 text is packaged as `licenses/potrace/COPYING` in the engine JAR/APK.
+- This is an unfinished, internal algorithm port, not an endorsed or finished Potrace product.
+  No original executable, native library or new dependency is bundled. No application entry point.
+  See `docs/image-pipeline.md` for the exact implemented stages and differences.
+
+## Wu color quantizer / Graphics Gems II
+
+- Author: Xiaolin Wu; thanks to Tom Lane for documentation and bug correction.
+- Source: `gemsii/quantizer.c` (original C v2 of the 1991 Graphics Gems II algorithm),
+  https://github.com/erich666/GraphicsGems/tree/ca4898517a93b6b45444a9cda5fd50132694b864 .
+- Kotlin translation: `engine/.../inkstitch/svg/image/ImageQuantizer.kt`.
+- Upstream is the custom Graphics Gems permission below, **not MIT or public domain**.
+  Original file also states “Free to distribute, comments and suggestions are appreciated.”
+  Copyright remains with the original authors; the Kotlin translation is GPL-3.0-or-later
+  with upstream notices preserved. No native library or app integration is added.
+- Original permission and author notice are packaged under `licenses/graphics-gems/`.
+
+```text
+LICENSE
+
+This code repository predates the concept of Open Source, and predates most licenses along such lines. As such, the official license truly is:
+
+EULA: The Graphics Gems code is copyright-protected. In other words, you cannot claim the text of the code as your own and resell it. Using the code is permitted in any program, product, or library, non-commercial or commercial. Giving credit is not required, though is a nice gesture. The code comes as-is, and if there are any flaws or problems with any Gems code, nobody involved with Gems - authors, editors, publishers, or webmasters - are to be held responsible. Basically, don't be a jerk, and remember that anything free comes with no guarantee.
+```

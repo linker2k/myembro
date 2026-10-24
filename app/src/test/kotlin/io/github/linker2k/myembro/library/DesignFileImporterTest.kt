@@ -14,7 +14,7 @@ import kotlin.test.*
 
 class DesignFileImporterTest {
     private val pattern = EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(20, 20, Command.STITCH),
-        Stitch(20, 20, Command.END)), listOf(EmbThread(0xFF123456.toInt())))
+        Stitch(0, 20, Command.STITCH), Stitch(20, 0, Command.STITCH), Stitch(20, 20, Command.END)), listOf(EmbThread(0xFF123456.toInt())))
     private val pes get() = PesWriter.write(pattern)
     private fun zip(vararg entries: Pair<String, ByteArray>): ByteArray = ByteArrayOutputStream().also { output ->
         ZipOutputStream(output).use { zip ->

@@ -13,6 +13,7 @@ internal fun FindingCode.labelRes(): Int = when (this) {
     FindingCode.MACHINE_STITCH_LENGTH_EXCEEDED -> R.string.sewout_finding_machine_stitch_length_exceeded
     FindingCode.PEC_DELTA_EXCEEDED -> R.string.sewout_finding_pec_delta_exceeded
     FindingCode.DENSITY_HOTSPOT -> R.string.sewout_finding_density_hotspot
+    FindingCode.ZERO_LENGTH_MOTION -> R.string.sewout_finding_zero_length_motion
     FindingCode.REPEATED_PENETRATION -> R.string.sewout_finding_repeated_penetration
     FindingCode.OVERLAP_ACCUMULATION -> R.string.sewout_finding_overlap_accumulation
     FindingCode.MISSING_LOCK_STITCH -> R.string.sewout_finding_missing_lock_stitch

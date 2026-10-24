@@ -68,6 +68,6 @@ class InkStitchPortTest {
         assertEquals(expectedLocks.map { expected.stitches[it] }, locks.sorted().map { placed.stitches[it] },
             "Transformed body must get current S1 source-default locks at machine scale")
         val pes=PesReader.read(PesWriter.write(placed))
-        assertEquals(placed.stitchCount,pes.stitchCount)
+        assertEquals(PesWriter.prepareForOutput(placed).stitchCount,pes.stitchCount)
     }
 }

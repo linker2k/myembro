@@ -86,10 +86,10 @@ class HoopSnapRegressionTest {
         val a = pattern(transform = Transform(x = edge.maxX - 52 + 1.49, y = 150.49))
         val other = pattern("other", a.transform.copy(y = -200.0))
         val p = Project(hoop, listOf(a, other))
-        // Integer max=491 is within the odd hoop's 0.05 mm tolerance but a snap must
-        // use the stricter inward grid edge=490, even if another object's edge is nearer.
+        // An outward integer point has no tolerance; a snap must
+        // use the inward integer grid edge, even if another object's edge is nearer.
         assertEquals(edge.maxX + 1, a.placedBounds()!!.maxX)
-        assertTrue(hoop.contains(a.placedBounds()!!))
+        assertFalse(hoop.contains(a.placedBounds()!!))
         val snapped = p.snapSelection(setOf("a"), p.snapTargets(setOf("a")), 2.0)
         assertEquals(edge.maxX, snapped.project.find("a")!!.placedBounds()!!.maxX)
         assertEquals(edge.maxX.toDouble(), snapped.guides.x)

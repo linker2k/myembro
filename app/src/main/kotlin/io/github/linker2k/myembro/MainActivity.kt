@@ -45,16 +45,22 @@ import io.github.linker2k.myembro.ui.settings.SettingsViewModel
 import io.github.linker2k.myembro.ui.sources.FreeDesignSourcesScreen
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.theme.installMyembroSplashScreen
+import io.github.linker2k.myembro.ui.photo.PhotoScreen
+import io.github.linker2k.myembro.ui.photo.PhotoViewModel
+import io.github.linker2k.myembro.engine.edit.StitchObject
+import io.github.linker2k.myembro.engine.edit.Transform
+import java.util.UUID
 import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val viewer: ViewerViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
     private val editor: EditorViewModel by viewModels()
+    private val photo: PhotoViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
     /** [PICK_DESIGN] is "start from my design" in the new-project sheet: a pick starts a project. */
-    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS }
+    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS, PHOTO }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -124,6 +130,7 @@ class MainActivity : ComponentActivity() {
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
+                        onPhoto = { photo.begin(); stack += Screen.PHOTO },
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
                     Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
@@ -134,6 +141,21 @@ class MainActivity : ComponentActivity() {
                         },
                         onBack = back,
                     )
+                    Screen.PHOTO -> PhotoScreen(photo, settings.settings, onBack = back,
+                        onEdit = {
+                            photo.render?.pattern?.let { pattern ->
+                                val b = pattern.bounds
+                                val transform = if (b == null) Transform() else Transform(
+                                    x = ((b.minX.toLong() + b.maxX) / 2).toDouble(),
+                                    y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
+                                editor.startWith(StitchObject(UUID.randomUUID().toString(), context.getString(R.string.photo_name), pattern,
+                                    transform = transform), photo.hoop)
+                                stack += Screen.EDITOR
+                            }
+                        }, onSend = { file ->
+                            library.refresh(); library.clearSelection(); library.toggle(file)
+                            stack += Screen.LIBRARY; library.exportToUsb()
+                        })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {

@@ -10,10 +10,11 @@ dependencies {
     // Dual EPL/EDL; distributed under EDL-1.0 (see THIRD_PARTY_NOTICES.md).
     implementation("org.locationtech.jts:jts-core:1.20.0")
     // NetworkX Euler augmentation replacement: LGPL-2.1-or-later option (see notices).
+
+    // model fill routing, LGPL-2.1-or-later option (see THIRD_PARTY_NOTICES).
     implementation("org.jgrapht:jgrapht-core:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     // Model tatami routing: LGPL-2.1-or-later option, see THIRD_PARTY_NOTICES.
-    implementation("org.jgrapht:jgrapht-core:1.5.2")
     testImplementation(libs.kotlin.test)
 }
 
@@ -114,6 +115,14 @@ tasks.register<JavaExec>("makeSampler") {
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
 
+// Python gate consumes dimensions emitted from the same runtime HoopSpec as the app.
+tasks.register<JavaExec>("exportGateHoop") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HoopConfigCli")
+    args(providers.gradleProperty("gateHoopOutput").orElse(layout.buildDirectory.file("hoop-spec.json").get().asFile.path).get())
+}
+
 // Writes a classpath for a separately launched, frozen local JVM sweep; never a check dependency.
 tasks.register("koreanTtfSweepClasspath") {
     group = "verification"
@@ -127,3 +136,18 @@ tasks.register("koreanTtfSweepClasspath") {
 
 // Release sweeps render many patterns in parallel.
 tasks.test { maxHeapSize = "3g" }
+
+tasks.register<JavaExec>("makeS4Samples") {
+    group = "verification"
+    description = "Generate original 30mm flower/house redwork samples with the S4 pipeline"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.S4SamplesCli")
+    args("/tmp/myembro-sewtest/s4")
+}
+
+tasks.register<JavaExec>("sweepS4Fill") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.S4FillSweepCli")
+    args("/tmp/myembro-sewtest/s4/fill-sweep")
+}

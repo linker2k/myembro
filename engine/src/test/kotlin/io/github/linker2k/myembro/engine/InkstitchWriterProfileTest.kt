@@ -12,7 +12,7 @@ class InkstitchWriterProfileTest {
     private val blue = PecThreads.forIndex(4)
     private fun s(x: Int, command: Command = Command.STITCH, y: Int = 0) = Stitch(x, y, command)
     private fun pattern(vararg commands: Stitch, threads: List<EmbThread> = listOf(red)) = EmbPattern(commands.toList(), threads)
-    private fun write(pattern: EmbPattern, version: PesVersion = PesVersion.V1) = PesWriter.write(pattern, PesWriteSettings(version, inkstitchCommands = true))
+    private fun write(pattern: EmbPattern, version: PesVersion = PesVersion.V1) = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(pattern, PesWriteSettings(version, inkstitchCommands = true))
     private fun offset(bytes: ByteArray): Int = (0..3).sumOf { (bytes[8 + it].toInt() and 255) shl (8 * it) }
     private fun codes(bytes: ByteArray): ByteArray {
         val start = offset(bytes)
@@ -24,11 +24,11 @@ class InkstitchWriterProfileTest {
 
     @Test fun explicitProfilePreservesTerminalStopButDefaultBytesRemainUnchanged() {
         val source = pattern(s(0, Command.JUMP), s(0), s(40), s(40, Command.TRIM), s(40, Command.STOP), s(40, Command.END))
-        val normal = PesWriter.write(source)
-        assertContentEquals(bytes("90 00 90 00 00 00 28 00 a0 00 a0 00 ff 00"), codes(normal))
-        assertContentEquals(normal, PesWriter.write(source, PesWriteSettings()))
-        assertContentEquals(normal, PesWriter.writeV1(source))
-        assertContentEquals(PesWriter.writeV6(source), PesWriter.write(source, PesWriteSettings(PesVersion.V6)))
+        val normal = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source)
+        assertContentEquals(bytes("28 00 ff 00"), codes(normal))
+        assertContentEquals(normal, io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesWriteSettings()))
+        assertContentEquals(normal, io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV1(source))
+        assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesWriteSettings(PesVersion.V6)))
         val compatible = write(source)
         assertContentEquals(bytes("90 00 90 00 90 00 90 00 00 00 28 00 fe b0 02 ff 00"), codes(compatible))
         assertEquals(listOf(49), colors(normal))
@@ -45,10 +45,10 @@ class InkstitchWriterProfileTest {
         val decoded = PesReader.read(compatible)
         assertEquals(2, decoded.trimCount)
         assertEquals(listOf(10, 20), decoded.stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(0, PesReader.read(PesWriter.write(source)).trimCount)
+        assertEquals(0, PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source)).trimCount)
         val placed = pattern(s(26, Command.JUMP, 26), s(26, y = 26), s(66, y = 26), s(66, Command.END, 26))
         assertEquals(listOf(0, 40), PesReader.read(write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(listOf(26, 66), PesReader.read(PesWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
+        assertEquals(listOf(40), PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
     }
 
     @Test fun colorsPrecedeImplicitTrimAndTerminalExplicitTrimHasNoBytes() {
@@ -97,7 +97,7 @@ class InkstitchWriterProfileTest {
         val output = File("build/inkstitch-writer-check").apply { mkdirs() }
         for (version in PesVersion.entries) {
             File(output, "controls-$version.pes").writeBytes(write(source, version))
-            File(output, "controls-default-$version.pes").writeBytes(PesWriter.write(source, version))
+            File(output, "controls-default-$version.pes").writeBytes(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, version))
         }
     }
 }

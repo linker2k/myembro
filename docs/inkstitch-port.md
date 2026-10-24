@@ -726,6 +726,22 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
 
 
+## SE400 최종 안전 출력 경계 (T3 실기 확인 후)
+
+기본 PES 출력은 `GeneratedPatternProcessor.forSewout`에서 제로 JUMP·제로 바늘과
+같은 위치 TRIM 재시작을 제거한다. 비제로 half_stitch 경로는 변경하지 않는다.
+이는 원본 인식 규칙과 다른 **사용자 지정 최종 출력 정책**이다. 원본 호환 oracle 프로필은 유지한다.
+근거·테스트·재시험 경로·staging 적용은 [sewout-zero-start.md](sewout-zero-start.md)에 기록했다.
+
+
+### SE400 PES 원점 정책 차이 (2026-10-24)
+
+| 경계 | 원본 비교 프로필과의 차이 | 근거 |
+|---|---|---|
+| 기본 PES v1/v6 | 최종 PEC 좌표를 좌상단 0,0으로 이동, 새로 생긴 제로 이동/바늘 제거. PEC 사각형·v6 편집 변환 일치 | 사용자 SE400의 왼쪽 한계 정지 관찰, PE-Design 로컬 바이트 비교, S23SAM4 독립 좌표 검증 |
+
+알고리즘·half_stitch 잠금·편집 좌표에는 적용하지 않는다. 명시적 원본 비교 프로필과 가져온 PES 원본은 유지한다. 경로별 자동 테스트와 예외는 [pes-viewport.md](pes-viewport.md)에 기록했다.
+
 ### 20분 단위: 기본 타타미 공식 좌표 회귀 테스트 (실패를 자동 검출)
 
 main의 S1 planner를 병합한 뒤 DefaultTatami와 기존 3개 smoke 테스트를 일반 source set으로
@@ -1689,3 +1705,105 @@ manga1743, precious5289, KOR_small826.
 재현 파일·입력 해시·빈 속성 예시·전후 XML·출력:
 `/tmp/myembro-port-out/letter/font-crashes/`. 이는 crash/연결 회귀 판정이며
 독립 게이트·실제 봉제·전체 카탈로그 인증으로 확대하지 않는다.
+
+## S5 별도 원본: 흑백 윤곽·다각형 부분 포팅
+
+Ink/Stitch에 없는 사진 입력 준비 기능이며, Ink/Stitch 코드를 포팅한 것으로 표시하지 않는다.
+원본 Potrace 1.16 / 미러 커밋 `886392d351417d6753aff61de08e294d1506e502`,
+`src/decompose.c`, `src/trace.c`, `src/bitmap.h`, `src/auxiliary.h`에서 엔진 내부
+`BinaryContourTracer` / `OptimalPolygon`으로 옮겼다. GPL-2.0-or-later 출처와 전문을 보존한다.
+상세 해시·재현 명령은 [image-pipeline.md](image-pipeline.md)의 첫 포팅 단위 참조.
+
+| 위치 | 원본과 차이 | 이유/한계 |
+|---|---|---|
+| 흑백 비트맵 | BooleanArray, XOR 기준 x=0, 입력 복사 | 워드 저장만 대체; 교차 패리티 유지 |
+| 경로 면적 | Long 유지, C API의 INT_MAX 포화 생략 | 중간 엔진 API이며 기존 PES API에 미연결 |
+| 분해 결과 | 탐색 순서와 양/음 부호, 계층 트리 없음 | 이번 단위는 기본 MINORITY 추적까지만 이식 |
+| 다각형 이후 | vertex adjustment·Bezier·곡선 최적화 없음 | 불완전한 중간 결과를 제품 경로에 연결하지 않음 |
+
+대표 Kotlin 기능 테스트 8개와 엔진 전체 테스트 293개 통과. 원본 실행/독립 게이트는
+실행하지 않았고 동등성·봉제 품질 통과를 주장하지 않는다. 새 PES/앱 진입점도 없다.
+
+
+### S5 곡선화 후속 단위
+
+동일 Potrace 커밋의 `pointslope`/`adjust_vertices`/`reverse`/`smooth`를
+`CurveFitter.kt`로 포팅했다. 위 표의 vertex adjustment·Bezier 미구현 상태를 갱신한다.
+곡선 최적화(stage 5)와 계층 트리는 여전히 미구현이며 앱 미연결이다.
+작은 PBM 3개에 대해 수정하지 않은 원본 C를 `opticurve=0`으로 실행해 비교했다:
+경계·다각형 정확히 일치, 꼭짓점·제어점·alpha/beta 절대오차 1e-10 이내.
+새 비교 테스트 3개 포함 엔진 테스트 296개 통과. 재현 명령/해시는
+`engine/src/test/resources/potrace/README.md` 참조. 독립 봉제 품질 통과 주장은 없다.
+
+
+### S5 곡선 최적화 후속 단위
+
+`CurveOptimizer.kt`가 같은 원본 커밋의 `opti_penalty`/`opticurve`와 기하 함수를
+이식한다. 기본 opticurve=1 / opttolerance=0.2px의 원본 최종 경로를 자동 비교한다.
+4개 대표 PBM의 stage 4/5 비교 8개가 통과하며, 둥근 도형에서 원본과 동일한 7→3
+곡선 병합을 assert한다. 좌표/alpha/beta 절대오차 1e-10 이내. 기존 곡선 최적화 미구현
+기록을 갱신하며, 경로 계층·SVG·자수/앱 연결은 여전히 미구현이다.
+재현: `tools/potrace/generate-stage5-goldens.sh /path/to/potrace-1.16`.
+출력 `/tmp/myembro-port-out/editor/potrace-stage5/`; 코드는 기본 엔진 테스트에 포함된다.
+
+
+## 별도 원본: Wu 이미지 색 양자화
+
+Ink/Stitch 자체 기능으로 표시하지 않는다. `ImageQuantizer.kt`는 Xiaolin Wu의
+Graphics Gems `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`를
+포팅한다. custom Graphics Gems 허가/원본 배포 고지는 `licenses/graphics-gems/`에 보존.
+차이점(호출별 배열·Long/Float 유지·하위 박스 Vol·입력 경계)은
+`docs/image-pipeline.md`의 Wu 표에 기록한다. 대표 RGB 3개에 대해 원본 C LUT/픽셀
+인덱스를 자동 비교하며, 앱·땀 생성에는 연결하지 않는다.
+
+
+## S4 사진 영역 채우기 연결 — 2026-10-24
+
+기존 검은 띠의 양쪽 윤곽 러닝은 제품 선화 경로에서 제거했다. Potrace 곡선을
+0.01 SVG-px로 평탄화한 뒤 0.1mm PolygonRegion(EVEN_ODD)으로 변환하고, 한글 TTF와
+같은 model `DefaultTatami.stitchGroups`에 넘긴다. 윗땀 0.25mm/4mm/0°,
+바탕 땀 0.75mm/4mm/90°, underpath=true 및 S1 기본값은 바꾸지 않는다.
+
+model 스냅샷 `ea5fd8d63f30db770f626ab245f9bc50bbe5bf31`의 DefaultTatami/InkAutoFill/TatamiFill/Fill/FillRouting/
+FillGeometry/FillRunning/FillPoint 8파일을 **수정 없이** 가져왔다.
+이는 독립 채우기 재구현이 아니라 S2·S3 병합 전 API 의존성 준비이며, 통합 시 같은
+model 파일을 유지한다. GPL 출처 헤더·JGraphT LGPL 선택 및 전이 라이브러리 고지·전문을 보존한다.
+
+| 연결 경계 | 차이/근거 |
+|---|---|
+| 윤곽→영역 | Potrace y-up을 SVG y-down으로 변환; SVG-px→0.1mm 후 EVEN_ODD로 구멍 보존 |
+| 출력 | 경계 러닝 대신 model 기본 타타미·바탕 땀; S1 한 번 적용 |
+| 좁은 선 | 자체 밀도/간격 보정 없음; 실제 생성+봉제 검사+외부 gate의 실패 조합만 제외 |
+| 센터라인 | autotrace 등은 다음 버전 조사 후보; 이번 기본 경로에 미적용 |
+
+재현·수치·PNG·스윕 범위는 [qa/s4-sampler.md](qa/s4-sampler.md) 참조.
+
+### P4: 글꼴 요소 JUMP 도착점의 중복 바늘 제거
+
+원본 대조 결과 **upstream도 해당 중복을 남긴다**.
+`lib/stitch_plan/stitch_plan.py:stitch_groups_to_stitch_plan`
+@b0edd96311ece82ee48816dc93466274b12c2a9c는 `lock_stitches[0]` 위치로 JUMP한 후
+잠금 목록 전체(첫 점 포함)를 추가한다. 잠금이 없어도 첫 본 땀 위치로 JUMP한 후
+본 땀 전체를 추가한다. 같은 커밋 `color_block.py:filter_duplicate_stitches`는
+이전 명령이 JUMP이거나 현재 점이 lock_stitch이면 중복 필터에서 제외한다.
+따라서 이 부분은 원본과 동일하다는 이유로 보존할 수 없고, 앱의 새 P4가 우선한다.
+
+글꼴 기본 생성 경로에서 S1 `fromGroups`의 `omitZeroLengthMotions`를 사용한다.
+실제 이동 cursor를 기준으로 JUMP/바늘의 길이0을 제외하고, 같은 점에서 TRIM→JUMP
+재시작하는 경우 둘을 없애 이어서 봉제한다. half_stitch의 나머지 좌표는 바꾸지 않는다.
+잠금/명령 인덱스·통계를 다시 매기며, 제거 전 본 땀을 source metadata로 보존해
+이동·확대·회전 후 재생성에서도 시작/끝을 잃지 않는다. P4 표식은 재생성에 전파한다.
+저장 writer에서 감추는 수정이 아니라 글꼴 생성 결과 자체를 고친다.
+
+원본을 측정하는 기존 `forceBoundaryLocks=false` 경로는 제품 정책을 끈
+**원본 비교 전용**으로 유지하며, 고정 오라클4건의 원본 땀 수를 바꾸지 않는다.
+앱 기본 호출은 경계 잠금과 P4 처리가 모두 켜져 있다. 이 차이를 원본 동등성으로
+거짓 보고하거나 비교기/게이트를 완화하지 않는다. 가져온 PES에는 이 처리를 적용하지 않는다.
+
+FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES 왕복,
+같은 점 트림 재시작, 크기 변경 재생성·잠금 인덱스·멱등성.
+물리 cursor는 최초(0,0)부터 모든 JUMP/STITCH를 연속 추적하며 바늘끼리만 비교하지 않는다.
+모든 대표 출력의 **0길이 바늘0개·JUMP0개**를 assert한다.
+수정 전 회귀2건 모두 실패, 수정 후 전체 `./gradlew check` 통과:
+엔진589·앱 Debug/Release 각190개 실패0, Lint 및 기존 고정 오라클4건 통과.
+출력: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` 및 `tests.xml`.

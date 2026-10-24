@@ -63,23 +63,23 @@ internal fun lineOffset(width: Double, maximum: Double, alignment: LetteringAlig
     LetteringAlignment.RIGHT -> (maximum - width) / 2
 }
 
-/** Align the final centered local pattern inside the hoop, keeping a 5 mm margin. */
+/** Align the final centered local pattern inside the hoop, using the exact integer hoop indices. */
 internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: LetteringAlignment): TextObject {
     val bounds = text.localPattern().bounds ?: return text
-    val room = ((hoop.width - bounds.width) / 2.0 - 50.0).coerceAtLeast(0.0)
-    val x = when (alignment) {
-        LetteringAlignment.LEFT -> -room
-        LetteringAlignment.CENTER -> 0.0
-        LetteringAlignment.RIGHT -> room
-    }
-    return text.copy(transform = Transform(x = x))
+    val left=-(hoop.width/2).toDouble();val top=-(hoop.height/2).toDouble()
+    val right=left+io.github.linker2k.myembro.engine.sewout.SewoutLimits.hoopMaxXUnits0p1mm(hoop)
+    val bottom=top+io.github.linker2k.myembro.engine.sewout.SewoutLimits.hoopMaxYUnits0p1mm(hoop)
+    val minX=left-bounds.minX;val maxX=right-bounds.maxX
+    val minY=top-bounds.minY;val maxY=bottom-bounds.maxY
+    val target=when(alignment) { LetteringAlignment.LEFT->minX;LetteringAlignment.RIGHT->maxX;LetteringAlignment.CENTER->0.0 }
+    return text.copy(transform=Transform(x=if(minX<=maxX)target.coerceIn(minX,maxX)else 0.0,
+        y=if(minY<=maxY)0.0.coerceIn(minY,maxY)else 0.0))
 }
 
 /** The preview and Add guard use the same real sewing area, including small rectangular hoops. */
 internal fun letteringOutsideHoop(pattern: EmbPattern, hoop: HoopSpec): Boolean {
     val bounds = pattern.bounds ?: return false
-    return bounds.minX < -hoop.width / 2.0 || bounds.maxX > hoop.width / 2.0 ||
-        bounds.minY < -hoop.height / 2.0 || bounds.maxY > hoop.height / 2.0
+    return !io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(hoop,bounds)
 }
 
 internal data class LetteringViewport(val scale: Float, val centerX: Double, val centerY: Double)

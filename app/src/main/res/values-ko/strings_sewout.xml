@@ -112,4 +112,5 @@
     <string name="sewout_badge_pass">통과</string>
     <string name="sewout_badge_caution">주의</string>
     <string name="sewout_badge_block">차단</string>
+    <string name="sewout_finding_zero_length_motion">0길이 바늘·점프</string>
 </resources>

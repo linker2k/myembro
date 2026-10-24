@@ -79,11 +79,9 @@ class EditorSessionTest {
         assertEquals(-0.05, t.scaled(1e-8).scaleX)
     }
 
-    @Test fun `visible transformed composition exports as a readable PES`() {
+    @Test fun `strict export rejects an open composition without an encoded origin`() {
         val project = Project(objects = listOf(obj(),
             obj("b").withTransform(Transform(x = 300.0)), obj("hidden").withVisible(false)))
-        val roundTrip = PatternReader.read(PesWriter.write(project.flatten()), "composition.pes")
-        assertTrue(roundTrip.stitchCount >= 4)
-        assertEquals(500, roundTrip.bounds!!.width)
+        assertFailsWith<IllegalArgumentException> { PesWriter.write(project.flatten()) }
     }
 }

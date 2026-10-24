@@ -40,7 +40,7 @@ data class EmbroiderySettings(
 ) {
     /** Fixed Ink/Stitch defaults; intentionally not a user preference. */
     val sewing: SewingOptions get() = SewingOptions()
-    val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion)
+    val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion, hoop = defaultFrame.spec)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
     val frames: List<FrameOption> get() = FrameCatalog.options(customFrames)
     val defaultFrame: FrameOption get() = frames.firstOrNull { it.id == defaultFrameId }

@@ -1,0 +1,14 @@
+--- a/app/src/main/kotlin/io/github/linker2k/myembro/ui/photo/PhotoViewModel.kt
++++ b/app/src/main/kotlin/io/github/linker2k/myembro/ui/photo/PhotoViewModel.kt
+@@ -115,7 +115,10 @@
+                     }
+                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
+                     pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
+-                    val generated = RedworkPipeline.generate(w, h, pixels, frame.width / 10.0, 0,
++                    val generated = RedworkPipeline.generate(w, h, pixels, minOf(
++                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignWidthUnits0p1mm(frame).toDouble(),
++                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(frame).toDouble()*frame.width/frame.height
++                    ) / 10.0, 0,
+                         EmbThread(0xFFB5492A.toInt(), getApplication<Application>().getString(R.string.photo_name)))
+                     ensureActive()
+                     val pes = PesWriter.write(generated.pattern, snapshot.writeSettings)

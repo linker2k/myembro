@@ -115,4 +115,5 @@
     <string name="editor_positions_spanning">%1$d objects span multiple sewing windows and require splitting.</string>
     <string name="editor_split_export">Export by position</string>
     <string name="editor_split_instructions">Mount the frame at each numbered position in order. Each file is checked against the selected machine before export.</string>
+    <string name="editor_safe_size_hint">Safe design area: %1$s (safety margin on every edge)</string>
 </resources>

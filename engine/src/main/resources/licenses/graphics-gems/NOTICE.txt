@@ -1,0 +1,22 @@
+/**********************************************************************
+	    C Implementation of Wu's Color Quantizer (v. 2)
+	    (see Graphics Gems vol. II, pp. 126-133)
+
+Author:	Xiaolin Wu
+	Dept. of Computer Science
+	Univ. of Western Ontario
+	London, Ontario N6A 5B7
+	wu@csd.uwo.ca
+
+Algorithm: Greedy orthogonal bipartition of RGB space for variance
+	   minimization aided by inclusion-exclusion tricks.
+	   For speed no nearest neighbor search is done. Slightly
+	   better performance can be expected by more sophisticated
+	   but more expensive versions.
+
+The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for much of
+additional documentation and a cure to a previous bug.
+
+Free to distribute, comments and suggestions are appreciated.
+**********************************************************************/	
+

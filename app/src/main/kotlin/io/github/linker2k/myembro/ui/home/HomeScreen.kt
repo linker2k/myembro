@@ -101,6 +101,7 @@ fun HomeScreen(
     letteringAvailable: Boolean = false,
     onFreeDesigns: (() -> Unit)? = null,
     onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
+    onPhoto: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -108,7 +109,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto)
     }
 }
 
@@ -123,6 +124,7 @@ private fun HomeContent(
     onCreateFromDesign: () -> Unit = onOpenLibrary, letteringAvailable: Boolean = false,
     onFreeDesigns: (() -> Unit)? = null,
     defaultFrame: FrameOption? = null, onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
+    onPhoto: (() -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -163,7 +165,7 @@ private fun HomeContent(
                 item(key = "new_project", span = { GridItemSpan(if (columns == 3) 2 else 1) }) {
                     NewProjectCard(defaultHoop, defaultFrame) { showNewProject = true }
                 }
-                if (expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns, stacked = true) }
+                if (expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns, stacked = true, onPhoto = onPhoto) }
                 item(key = "recent_heading", span = { GridItemSpan(maxLineSpan) }) {
                     SectionTitle(stringResource(R.string.home_recent), onOpenLibrary)
                 }
@@ -198,7 +200,7 @@ private fun HomeContent(
                         }
                     }
                 }
-                if (!expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns) }
+                if (!expanded) item(key = "quick_start") { QuickStart(onImport, onLettering, letteringAvailable, onFreeDesigns, onPhoto = onPhoto) }
             }
         }
     }
@@ -206,7 +208,7 @@ private fun HomeContent(
     if (showNewProject) NewProjectSheet(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
-        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto,
     )
 }
 
@@ -265,6 +267,7 @@ private fun QuickStart(
     letteringAvailable: Boolean,
     onFreeDesigns: (() -> Unit)?,
     stacked: Boolean = false,
+    onPhoto: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle(stringResource(R.string.home_quick_start))
@@ -276,7 +279,7 @@ private fun QuickStart(
             if (onFreeDesigns != null) QuickAction(Icons.Default.TravelExplore, stringResource(R.string.sources_title),
                 Modifier.fillMaxWidth(), compact = true, onClick = onFreeDesigns)
             QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.fillMaxWidth(),
-                enabled = false, compact = true, onClick = {})
+                enabled = onPhoto != null, compact = true, onClick = { onPhoto?.invoke() })
         } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             QuickAction(Icons.Default.FileOpen, stringResource(R.string.home_import), Modifier.weight(1f), onClick = onImport)
             if (letteringAvailable) QuickAction(Icons.Default.TextFields, stringResource(R.string.home_lettering),
@@ -284,7 +287,7 @@ private fun QuickStart(
             if (onFreeDesigns != null) QuickAction(Icons.Default.TravelExplore, stringResource(R.string.sources_title),
                 Modifier.weight(1f), onClick = onFreeDesigns)
             QuickAction(Icons.Default.AddPhotoAlternate, stringResource(R.string.home_photo), Modifier.weight(1f),
-                enabled = false, onClick = {})
+                enabled = onPhoto != null, onClick = { onPhoto?.invoke() })
         }
     }
 }
