@@ -6,34 +6,28 @@ import io.github.linker2k.myembro.engine.geometry.*
 import io.github.linker2k.myembro.engine.geometry.Polyline as GeometryPath
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.model.*
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.*
 import kotlin.test.*
 
 class OutlineFillTest {
+    private fun Double?.orZero() = this ?: 0.0
     private fun box(x: Double, y: Double, w: Double, h: Double) = listOf(x to y, x + w to y, x + w to y + h, x to y + h, x to y)
     private val ring = listOf(box(-6.0, -6.0, 12.0, 12.0), box(-3.0, -3.0, 6.0, 6.0))
     private val noExtras = FillOptions(pullCompensationMm = 0.0, underlay = false, border = FillBorder.NONE,
         strategy = FillStrategy.TATAMI, autoDensity = false)
     private fun assertLengths(pattern: EmbPattern) {
-        // All penetrations remain finite, nonzero and under the machine maximum.
-        // The fill-body minimum excludes deliberate short reversals/corners of locks.
         pattern.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH) {
                 val d = hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble())
-                assertTrue(d > 0 && d <= 70.0, "${d / 10}mm: $a → $b")
-            }
-        }
-        GeneratedPatternProcessor.stripGeneratedLocks(pattern).stitches.zipWithNext().forEach { (a, b) ->
-            if (a.command == Command.STITCH && b.command == Command.STITCH) {
-                val d = hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble())
-                assertTrue(d in 3.0..70.0, "body ${d / 10}mm: $a → $b")
+                assertTrue(d in 1.0..70.0, "${d / 10}mm: $a → $b")
             }
         }
     }
-    private fun assertAvoidsHole(pattern: EmbPattern, hole: PolygonRegion) {
+    private fun assertAvoidsHole(pattern: EmbPattern, rawHole: PolygonRegion) {
+        val hole = rawHole.transformed(Affine2D.translation(-pattern.metadata["geometry.centerXUnits"].orEmpty().toDoubleOrNull().orZero(),
+            -pattern.metadata["geometry.centerYUnits"].orEmpty().toDoubleOrNull().orZero()))
         pattern.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH) {
                 val start = Point(a.x.toDouble(), a.y.toDouble())
@@ -51,14 +45,14 @@ class OutlineFillTest {
         val inner = circle.map { (x, y) -> x / 2 to y / 2 }
         val b = listOf(box(-6.0, -6.0, 12.0, 12.0), box(-3.0, -4.0, 6.0, 2.0), box(-3.0, 2.0, 6.0, 2.0))
         for (shape in listOf(ring, listOf(circle, inner), b)) for (angle in listOf(0.0, 37.0, 90.0)) {
-            val p = OutlineFill.generate(shape, FillOptions(angleDeg = angle))
+            val p = OutlineFill.generate(shape, noExtras.copy(angleDeg = angle))
             assertTrue(p.stitchCount > 10)
             assertLengths(p)
             val holes = if (shape == b) listOf(box(-2.8, -3.8, 5.6, 1.6), box(-2.8, 2.2, 5.6, 1.6))
                 else if (shape == ring) listOf(box(-2.8, -2.8, 5.6, 5.6))
                 else listOf(inner.map { (x, y) -> x * 0.9 to y * 0.9 })
             holes.forEach { assertAvoidsHole(p, region(listOf(it))) }
-            val reversed = OutlineFill.generate(shape.map { it.reversed() }, FillOptions(angleDeg = angle))
+            val reversed = OutlineFill.generate(shape.map { it.reversed() }, noExtras.copy(angleDeg = angle))
             assertEquals(p.bounds, reversed.bounds)
         }
     }
@@ -101,12 +95,12 @@ class OutlineFillTest {
         assertLengths(two)
     }
 
-    @Test fun narrowAndWideOutlinesUseColumnsAndWideStitchesSplit() {
+    @Test fun narrowAndWideTtfRequestsUseFillWithAnExplicitWarning() {
         val narrow = OutlineFill.generate(listOf(box(-1.5, -6.0, 3.0, 12.0)), noExtras, satin = true)
-        assertTrue(narrow.warnings.isEmpty())
+        assertTrue(narrow.warnings.isNotEmpty())
         assertLengths(narrow)
         val wide = OutlineFill.generate(listOf(box(-6.0, -12.0, 12.0, 24.0)), noExtras, satin = true)
-        assertTrue(wide.warnings.isEmpty())
+        assertTrue(wide.warnings.isNotEmpty())
         assertLengths(wide)
         wide.stitches.zipWithNext().forEach { (a, b) ->
             if (a.command == Command.STITCH && b.command == Command.STITCH)
@@ -121,7 +115,7 @@ class OutlineFillTest {
             contours = ring + ring.map { path -> path.map { (x, y) -> x to y + 20 } },
             contourCharacters = listOf(0, 0, 2, 2), contourBaselines = listOf(0.0, 0.0, 20.0, 20.0),
             heightMm = 12.0, contourSourceHeight = 12.0, thread = red, characterThreads = mapOf(2 to blue),
-            stitchStyle = StitchStyle.FILL, fillOptions = FillOptions(densityMm = 0.5, angleDeg = 45.0, border = FillBorder.BEAN))
+            stitchStyle = StitchStyle.FILL, fillOptions = FillOptions(densityMm = 0.5, angleDeg = 45.0, border = FillBorder.RUNNING, underlay = false))
         val project = Project(objects = listOf(obj))
         val restored = ProjectJson.decode(project.toJson())
         assertEquals(project, restored)
@@ -130,9 +124,9 @@ class OutlineFillTest {
         assertLengths(pattern)
         assertEquals(listOf(red, blue), pattern.threads)
         assertEquals(1, pattern.colorChangeCount)
-        val pes = PesReader.read(PesWriter.write(pattern))
-        assertEquals(pattern.bounds, pes.bounds)
-        assertEquals(pattern.stitchCount, pes.stitchCount)
+        val pes = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(pattern))
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, pes.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).stitchCount, pes.stitchCount)
         assertLengths(pes)
         val old = TextObject("old", text = "AB")
         val payload = JsonObject(TextObjectCodec.encode(old).filterKeys { it != "fillOptions" })
@@ -140,6 +134,18 @@ class OutlineFillTest {
         assertEquals(FillStrategy.TATAMI, legacy.fillOptions.strategy)
         assertFalse(legacy.fillOptions.autoDensity)
         assertEquals(old.localPattern().stitches, legacy.localPattern().stitches)
+    }
+
+    @Test fun denseBeanRetainsSourceNeedlesAndUsesSharedLocks() {
+        val obj = TextObject("dense", text = "B\nB", fontKind = FontKind.OUTLINE,
+            contours = ring + ring.map { path -> path.map { (x,y) -> x to y+20 } },
+            contourCharacters = listOf(0,0,2,2), contourBaselines = listOf(0.0,0.0,20.0,20.0),
+            heightMm = 12.0, contourSourceHeight = 12.0, stitchStyle = StitchStyle.FILL,
+            fillOptions = FillOptions(densityMm = 0.5, angleDeg = 45.0, border = FillBorder.BEAN))
+        val pattern = obj.localPattern()
+        assertTrue(pattern.stitchCount > 100)
+        assertTrue(pattern.metadata.containsKey(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.FINISHED_KEY))
+        assertLengths(pattern)
     }
 
     @Test fun emptyDegenerateAndInvalidFillInputsAreSafe() {

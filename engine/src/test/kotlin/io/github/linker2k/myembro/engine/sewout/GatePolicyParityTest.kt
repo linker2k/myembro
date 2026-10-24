@@ -9,35 +9,36 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 /** Ten public/synthetic byte-identical cases. Python is needed only to refresh snapshots. */
-class GateV5ParityTest {
-    private fun pes(points: List<Pair<Int,Int>>): ByteArray = PesWriter.write(EmbPattern(
+class GatePolicyParityTest {
+    private fun pes(points: List<Pair<Int,Int>>): ByteArray = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(EmbPattern(
         points.map { (x,y) -> Stitch(x,y,Command.STITCH) }, listOf(EmbPattern.DEFAULT_PALETTE[0])))
     private fun resource(name: String) = javaClass.getResourceAsStream("/sewout/gate-v5/$name")!!.readBytes()
+    private fun current(name: String) = javaClass.getResourceAsStream("/sewout/gate-v6/$name")!!.readBytes()
     private fun cases(): Map<String,ByteArray> {
         fun line(vararg xs: Int) = pes(xs.map { it to 0 })
         val valid=line(0,0,40,40)
         val pointer=(0..3).sumOf { (valid[8+it].toInt() and 255) shl (8*it) }
         return linkedMapOf(
             "sampler" to resource("S1SAMPL.PES"),
-            "density16" to pes(List(16) { it%4 to it/4 }),
+            "s23sampler" to current("S23SAMPL.PES"),
+            "T1PEDS" to current("T1PEDS.PES"),
+            "T2OURS" to current("T2OURS.PES"),
+            "T3NOZRO" to current("T3NOZRO.PES"),
             "density30" to pes(List(30) { it%5 to (it/5)%5 }),
             "density31" to pes(List(31) { it%5 to (it/5)%5 }),
             "repeat3" to line(0,0,0,40,40),
-            "repeat4" to line(0,0,0,0,40,40),
-            "missing_end" to line(0,0,40,80),
-            "long_first" to line(200,200,240,240),
-            "hoop101" to pes((listOf(0,0)+(40..1000 step 40).toList()+listOf(1010,1010)).map { it to 0 }),
+            "long_first" to line(200,200,0,0),
             "invalid_length" to valid.copyOf().also { for (i in 0..2) it[pointer+514+i]=0x7f },
         )
     }
-    @Test fun tenCasesMatchFrozenPythonV5AndOriginPolicy() {
+    @Test fun tenCasesMatchPythonV6AndOriginPolicy() {
         val cases=cases()
         System.getenv("SEWOUT_PARITY_EXPORT")?.let { directory ->
             File(directory).mkdirs()
             cases.forEach { (name,bytes) -> File(directory,"$name.PES").writeBytes(bytes) }
             return // Explicit maintainer-only snapshot export, never set in CI.
         }
-        val snapshot=Json.parseToJsonElement(resource("reference.json").decodeToString()).jsonObject
+        val snapshot=Json.parseToJsonElement(current("reference.json").decodeToString()).jsonObject
         val expected=snapshot.getValue("cases").jsonObject
         assertEquals(10,cases.size)
         assertEquals(cases.keys,expected.keys)
@@ -54,7 +55,8 @@ class GateV5ParityTest {
                     fun int(key: String,actual: Int) = assertEquals(m.getValue(key).jsonPrimitive.int,actual,"$name $key")
                     int("stitch_count",s.stitchCount)
                     int("cell_peak_05mm",s.peakCellPenetrations)
-                    int("max_same_point_consecutive",s.maximumConsecutiveNeedles)
+                    int("max_same_point_consecutive",s.maximumConsecutivePositions)
+                    int("max_same_point_needle_only",s.maximumConsecutiveNeedles)
                     int("start_lock_missing",s.missingStartLocks)
                     int("end_lock_missing",s.missingEndLocks)
                     assertEquals(m.getValue("maximum_stitch_mm").jsonPrimitive.double,s.maximumStitchMm,1e-9,"$name maximum stitch")

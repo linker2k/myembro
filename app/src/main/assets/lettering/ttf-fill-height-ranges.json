@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "appMaxHeightMm": 60.0,
+  "source": "docs/s3-ttf-fill-sweep/summary.json",
+  "sourceSha256": "502166af63dc67d1cbe20992a1fb51707cdda2182d6a70ae84bacbde0053d468",
+  "basis": "Coordinator-approved slider intervals from 30-glyph sampled sweep; not exhaustive continuous/text certification",
+  "profiles": [
+    {
+      "fontId": "gowun-batang",
+      "fontSha256": "466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "jua",
+      "fontSha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "noto-sans-kr",
+      "fontSha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+      "minMm": 26.25,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "gowun-dodum",
+      "fontSha256": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "do-hyeon",
+      "fontSha256": "35644be7f28e0a68a447b1f7af351dcde5674b870f24f7b5f43e26d00b4ab653",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "nanum-gothic",
+      "fontSha256": "76f45ef4a6bcff344c837c95a7dcc26e017e38b5846d5ae0cdcb5b86be2e2d31",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "nanum-pen-script",
+      "fontSha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+      "minMm": 5.0,
+      "maxMm": 49.0
+    },
+    {
+      "fontId": "gaegu",
+      "fontSha256": "aa52c98336f7c62e2896fc8b12b56a75d5b476d88a2f104b0980f4f7ce0adfc3",
+      "minMm": 5.0,
+      "maxMm": 46.0
+    },
+    {
+      "fontId": "black-han-sans",
+      "fontSha256": "31960809284026681774a8e52dc19ebcad26cf69b0ad9d560f288296fbb52739",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "sunflower",
+      "fontSha256": "6e216d6b2f77a850f6b73be25633d09e03385dfa63a3a632f9e7d83a90ea7f79",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "gamja-flower",
+      "fontSha256": "ece32819ed58536355a49a095b0cdfdd3b8ef9081c5ed9ca1cef8f5d999ae1ac",
+      "minMm": 5.0,
+      "maxMm": 54.0
+    },
+    {
+      "fontId": "hi-melody",
+      "fontSha256": "360d2c0a880918aa48328d1d9219f5390788d09a1c9353e12b471de018673ae6",
+      "minMm": 5.0,
+      "maxMm": 51.0
+    },
+    {
+      "fontId": "poor-story",
+      "fontSha256": "831ab87f7b5463f9cd83ac249bf386816f3a478f1d226427c88cac907adb7ee2",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "single-day",
+      "fontSha256": "716ff67a4b0675b35c26d60a4bb83173f7d153ab754474ed36c3369593ca1ca8",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "yeon-sung",
+      "fontSha256": "49ac2a11009f5f58307d377911eb45d210cf4c1d379d9eca38fb4cdad5491ef6",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "stylish",
+      "fontSha256": "3ea2e4c9d0183fdcc1362039305ef30fa8bb5154f030b303a029059a44a8516c",
+      "minMm": 5.0,
+      "maxMm": 59.0
+    },
+    {
+      "fontId": "song-myung",
+      "fontSha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "gugi",
+      "fontSha256": "c0b1f979979cfc309fb2438fa9464f96173353e0c4842cc7a5919658184ed9d3",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "cute-font",
+      "fontSha256": "c403227fe6288a8c1423ca48e93fd7efc81e3b81053f7d17adcf659bd95fa4c3",
+      "minMm": 5.0,
+      "maxMm": 49.0
+    },
+    {
+      "fontId": "east-sea-dokdo",
+      "fontSha256": "8cebb39d375134fdbcedef9bf4ec4f6c3f02c39ed0aacd6e83f7a0f435e593b2",
+      "minMm": 5.0,
+      "maxMm": 6.0
+    },
+    {
+      "fontId": "dokdo",
+      "fontSha256": "5b3a3d8d28af31fa9adec3fc5da81a88b52e1ff39ed3930c1db787aa4e79c36d",
+      "minMm": 5.0,
+      "maxMm": 46.0
+    },
+    {
+      "fontId": "kirang-haerang",
+      "fontSha256": "d677d28d466989017c520f00a2a7794ea581ea3d9fa9a830fbb44f1015eac72d",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "nanum-myeongjo",
+      "fontSha256": "7ed9e8653a8ed04285d51dc343ffea6eb3d9c73afc27383ea8929ee4ffd03205",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "nanum-myeongjo-bold",
+      "fontSha256": "bc9ed8e60d93fe6db054b8fb988481b625f2eef8cb2317ad0e9834681b8fe3f3",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "nanum-brush-script",
+      "fontSha256": "27ceaf578c96f594cdf07fe0181b251790acbb746a164e45c1f6473f89911a31",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "gothic-a1",
+      "fontSha256": "211151bea98098c579610ab1114bb1bfe909057207db561f357b896d076c21ac",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "gothic-a1-bold",
+      "fontSha256": "2e883fa0ae548000996258b4101f2bb732a28b197264f49621a2cb16d6e9f126",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "dongle",
+      "fontSha256": "2966e7a9d312a868e2b5477bf9a3e59b8ce16beb76e7e52305ab5897d1ce9741",
+      "minMm": 5.0,
+      "maxMm": 40.0
+    },
+    {
+      "fontId": "orbit",
+      "fontSha256": "5d0206fb0a9e3eeac51aff8d4a6dbb7613d63fc435f1a51f96dc35cefb5f9f87",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "hahmlet",
+      "fontSha256": "25baa38c6f288919e6b3400ab77c9fdd9042d74206a38a96cca2b6059f0d0880",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "ibm-plex-sans-kr",
+      "fontSha256": "53750379270312368cf7641901f43a98dd892e3d9d5798cf25cdc245c85c71c0",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "ibm-plex-sans-kr-bold",
+      "fontSha256": "9d82a8be5330f6d7b53121262867b402baca672eb69b852928f06d185d357f7d",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    },
+    {
+      "fontId": "noto-serif-kr",
+      "fontSha256": "5ea012e15cb7eacc1f680aee1703f3b164791b1443ea3e52b65080cca5d179cf",
+      "minMm": 5.0,
+      "maxMm": 60.0
+    }
+  ]
+}

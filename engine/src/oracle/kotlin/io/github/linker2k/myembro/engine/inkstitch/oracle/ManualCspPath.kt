@@ -12,7 +12,7 @@ import kotlin.math.*
 /** The pinned Inkex cubic-superpath boundary, distinct from custom lock Path.end_points.
  * Manual returns only CSP nodes; running flattens the SAME cubic controls after transformation.
  */
-internal object ManualCspPath {
+object ManualCspPath {
     private const val MAX_NODES = 200_000
     private val token = Regex("[A-Za-z]|[-+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][-+]?[0-9]+)?")
     private data class Node(val before: Point, val point: Point, var after: Point)

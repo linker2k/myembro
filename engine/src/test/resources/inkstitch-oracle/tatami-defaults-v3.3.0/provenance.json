@@ -1,0 +1,56 @@
+{
+  "upstream": "https://github.com/inkstitch/inkstitch/tree/v3.3.0",
+  "commit": "b0edd96311ece82ee48816dc93466274b12c2a9c",
+  "source": "/tmp/myembro-inkstitch-oracle/out/defaults-v2/fill_stitch",
+  "license": "GPL-3.0-or-later; generated from original public analytic SVG fixtures, no private designs",
+  "files": [
+    {
+      "file": "fill_stitch--rectangle--020mm--upstream-default.coordinates.json.gz",
+      "sha256": "04da0185c190647bb154a3dfa55c0f1d92280147ba9eae854b13658c92795634"
+    },
+    {
+      "file": "fill_stitch--rectangle--020mm--upstream-default.oracle.json",
+      "sha256": "7e49ce0296db88f26f032558405b5be789f0961335a653083c50549655267ca4"
+    },
+    {
+      "file": "fill_stitch--rectangle--020mm--upstream-default.pes",
+      "sha256": "c4c57eeba0b62090ff05154ce911b642007a34cda91b50d8d8a4be55fede96b3"
+    },
+    {
+      "file": "fill_stitch--rectangle--020mm--upstream-default.svg",
+      "sha256": "0b4f9e98b1de0fc2e3918a21a9a987f4737fa1a7bb5628cd9e73797dce5b4230"
+    },
+    {
+      "file": "fill_stitch--circle--020mm--upstream-default.coordinates.json.gz",
+      "sha256": "2190967513a2bb8e92ee6b7d98505cb1a727a94a3dbae61d599f916a054e43b5"
+    },
+    {
+      "file": "fill_stitch--circle--020mm--upstream-default.oracle.json",
+      "sha256": "efa59cf663a9cb888f5550a0555f5cdc4d537406104a2596aceb8ddf00cffe55"
+    },
+    {
+      "file": "fill_stitch--circle--020mm--upstream-default.pes",
+      "sha256": "5a00ffe2c480b981467dc23992a361d9c7cefa8eac4322380584edcb27687c40"
+    },
+    {
+      "file": "fill_stitch--circle--020mm--upstream-default.svg",
+      "sha256": "54179d73f150a8be3ce05ade4db082c286210e0911a1cace24cd3c2bfbc23443"
+    },
+    {
+      "file": "fill_stitch--hole--020mm--upstream-default.coordinates.json.gz",
+      "sha256": "382ca7eb919211f3b849658da2266aebb8d109bb801a240a0cac68fa09bd197a"
+    },
+    {
+      "file": "fill_stitch--hole--020mm--upstream-default.oracle.json",
+      "sha256": "ec2e344eec06ac5f5bdce636c75cd29c0b84b5490df9bc2e4b77b34bb2d3958d"
+    },
+    {
+      "file": "fill_stitch--hole--020mm--upstream-default.pes",
+      "sha256": "46d3a739b91352501bcd689799fd99ee72381924964889204fd67a087e173de2"
+    },
+    {
+      "file": "fill_stitch--hole--020mm--upstream-default.svg",
+      "sha256": "b017eb15cc01db7bb326a0d4ed1e1cf3616f89c0a008a6320ae4a76269fc200e"
+    }
+  ]
+}

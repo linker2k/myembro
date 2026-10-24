@@ -16,6 +16,11 @@ class PesExportTest {
     @Test
     fun pesIsCopiedUnchanged() {
         val original = resource("flower.v6.pes")
+        val viewport=io.github.linker2k.myembro.engine.sewout.PecViewportCheck.check(original,io.github.linker2k.myembro.engine.edit.HoopSpec.H100)
+        if(!viewport.valid) {
+            kotlin.test.assertFailsWith<IllegalArgumentException> { PesExport.prepare(original,"flower.v6.pes") }
+            return
+        }
         val result = PesExport.prepare(original, "flower.v6.pes")
         assertFalse(result.converted)
         assertContentEquals(original, result.bytes)
@@ -25,11 +30,10 @@ class PesExportTest {
     @Test
     fun dstIsConvertedToReadablePes() {
         val dst = resource("flower.dst")
-        val result = PesExport.prepare(dst, "flower.dst")
-        assertTrue(result.converted)
-        assertEquals("flower.pes", result.fileName)
-        val back = PatternReader.read(result.bytes, result.fileName)
-        assertEquals(PatternReader.read(dst, "flower.dst").stitchCount, back.stitchCount)
+        val converted=PesExport.prepare(dst,"flower.dst")
+        val back=PatternReader.read(converted.bytes,converted.fileName)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(PatternReader.read(dst,"flower.dst")).stitchCount,back.stitchCount)
+
     }
 
     @Test

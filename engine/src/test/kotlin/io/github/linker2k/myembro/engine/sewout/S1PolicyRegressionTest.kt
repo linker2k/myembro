@@ -20,14 +20,19 @@ import kotlin.test.*
 /** Seven representative public inputs. All fixtures/provenance are in the repository; no /tmp dependencies. */
 class S1PolicyRegressionTest {
     private fun input(path: String) = checkNotNull(javaClass.getResourceAsStream("/$path")) { path }
-    private fun assertGate(pattern: EmbPattern) {
+    private fun assertGate(pattern: EmbPattern, expectedRepeatedBlock: Boolean = false) {
         val report = SewoutCheck.checkPes(PesWriter.write(pattern), options = SewoutOptions(origin=DesignOrigin.APP_GENERATED))
         assertTrue(report.analysisComplete)
-        assertFalse(report.hasBlockingIssues,report.findings.filter { it.severity==Severity.BLOCKER }.toString())
+        val blockers=report.findings.filter { it.severity==Severity.BLOCKER }
+        if (expectedRepeatedBlock) {
+            assertTrue(blockers.isNotEmpty())
+            assertTrue(blockers.all { it.code==FindingCode.REPEATED_PENETRATION },blockers.toString())
+        } else assertTrue(blockers.isEmpty(),blockers.toString())
     }
     private fun sewtest(stem: String) {
         val project = input("sewout/s1/$stem.myembro").bufferedReader().use { ProjectJson.decode(it.readText()) }
-        assertGate(project.flatten())
+        // The final PES safety pass removes historical redundant start commands before gate checking.
+        assertGate(project.flatten(),expectedRepeatedBlock=false)
     }
     @Test fun runningText5mm() = sewtest("TXT05")
     @Test fun runningText8mm() = sewtest("TXT08")
