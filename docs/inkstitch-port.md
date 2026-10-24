@@ -1761,3 +1761,33 @@ model 파일을 유지한다. GPL 출처 헤더·JGraphT LGPL 선택 및 전이 
 | 센터라인 | autotrace 등은 다음 버전 조사 후보; 이번 기본 경로에 미적용 |
 
 재현·수치·PNG·스윕 범위는 [qa/s4-sampler.md](qa/s4-sampler.md) 참조.
+
+### P4: 글꼴 요소 JUMP 도착점의 중복 바늘 제거
+
+원본 대조 결과 **upstream도 해당 중복을 남긴다**.
+`lib/stitch_plan/stitch_plan.py:stitch_groups_to_stitch_plan`
+@b0edd96311ece82ee48816dc93466274b12c2a9c는 `lock_stitches[0]` 위치로 JUMP한 후
+잠금 목록 전체(첫 점 포함)를 추가한다. 잠금이 없어도 첫 본 땀 위치로 JUMP한 후
+본 땀 전체를 추가한다. 같은 커밋 `color_block.py:filter_duplicate_stitches`는
+이전 명령이 JUMP이거나 현재 점이 lock_stitch이면 중복 필터에서 제외한다.
+따라서 이 부분은 원본과 동일하다는 이유로 보존할 수 없고, 앱의 새 P4가 우선한다.
+
+글꼴 기본 생성 경로에서 S1 `fromGroups`의 `omitZeroLengthMotions`를 사용한다.
+실제 이동 cursor를 기준으로 JUMP/바늘의 길이0을 제외하고, 같은 점에서 TRIM→JUMP
+재시작하는 경우 둘을 없애 이어서 봉제한다. half_stitch의 나머지 좌표는 바꾸지 않는다.
+잠금/명령 인덱스·통계를 다시 매기며, 제거 전 본 땀을 source metadata로 보존해
+이동·확대·회전 후 재생성에서도 시작/끝을 잃지 않는다. P4 표식은 재생성에 전파한다.
+저장 writer에서 감추는 수정이 아니라 글꼴 생성 결과 자체를 고친다.
+
+원본을 측정하는 기존 `forceBoundaryLocks=false` 경로는 제품 정책을 끈
+**원본 비교 전용**으로 유지하며, 고정 오라클4건의 원본 땀 수를 바꾸지 않는다.
+앱 기본 호출은 경계 잠금과 P4 처리가 모두 켜져 있다. 이 차이를 원본 동등성으로
+거짓 보고하거나 비교기/게이트를 완화하지 않는다. 가져온 PES에는 이 처리를 적용하지 않는다.
+
+FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES 왕복,
+같은 점 트림 재시작, 크기 변경 재생성·잠금 인덱스·멱등성.
+물리 cursor는 최초(0,0)부터 모든 JUMP/STITCH를 연속 추적하며 바늘끼리만 비교하지 않는다.
+모든 대표 출력의 **0길이 바늘0개·JUMP0개**를 assert한다.
+수정 전 회귀2건 모두 실패, 수정 후 전체 `./gradlew check` 통과:
+엔진589·앱 Debug/Release 각190개 실패0, Lint 및 기존 고정 오라클4건 통과.
+출력: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` 및 `tests.xml`.
