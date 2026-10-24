@@ -12,7 +12,7 @@ import io.github.linker2k.myembro.engine.lettering.FontQualityReport
 import io.github.linker2k.myembro.engine.lettering.FontQuality
 import io.github.linker2k.myembro.engine.model.EmbPattern
 
-internal enum class LetteringAlignment { LEFT, CENTER, RIGHT }
+internal typealias LetteringAlignment = io.github.linker2k.myembro.engine.lettering.LetteringAlignment
 internal enum class LetteringCurve { STRAIGHT, ARCH, CIRCLE, BELOW }
 
 internal data class LetteringSettings(
@@ -56,12 +56,8 @@ internal fun outlineTextQuality(text: TextObject): FontQualityReport {
         threadWeight = text.threadWeight)
 }
 
-/** Extra offset for lines shorter than the longest one; inputs share the same font units. */
-internal fun lineOffset(width: Double, maximum: Double, alignment: LetteringAlignment): Double = when (alignment) {
-    LetteringAlignment.LEFT -> -(maximum - width) / 2
-    LetteringAlignment.CENTER -> 0.0
-    LetteringAlignment.RIGHT -> (maximum - width) / 2
-}
+internal fun lineOffset(width: Double, maximum: Double, alignment: LetteringAlignment): Double =
+    io.github.linker2k.myembro.engine.lettering.lineOffset(width, maximum, alignment)
 
 /** Align the final centered local pattern inside the hoop, using the exact integer hoop indices. */
 internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: LetteringAlignment): TextObject {
@@ -94,8 +90,8 @@ internal fun letteringViewport(availablePx: Float, pattern: EmbPattern?, hoop: H
         bounds?.let { (it.minY.toDouble() + it.maxY) / 2 } ?: 0.0)
 }
 
-internal fun normalizedLetteringText(text: String): String = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC)
-    .replace("\r\n", "\n").replace('\r', '\n').replace("\t", "    ")
+internal fun normalizedLetteringText(text: String): String =
+    io.github.linker2k.myembro.engine.lettering.normalizedLetteringText(text)
 
 /** Keep colors on unchanged prefix/suffix characters when inserting/deleting text (code points, not UTF-16). */
 internal fun remapCharacterColors(old: String, new: String, colors: Map<Int, Int>): HashMap<Int, Int> {
@@ -115,35 +111,13 @@ internal fun remapCharacterColors(old: String, new: String, colors: Map<Int, Int
     }
 }
 
-internal data class LayoutGlyph(val index: Int, val advance: Double, val paths: List<List<Pair<Double, Double>>>)
-internal data class LetteringLayout(
-    val contours: List<List<Pair<Double, Double>>>,
-    val characters: List<Int>,
-    val baselines: List<Double>,
-)
+internal typealias LayoutGlyph = io.github.linker2k.myembro.engine.lettering.LayoutGlyph
+internal typealias LetteringLayout = io.github.linker2k.myembro.engine.lettering.LetteringLayout
 
-/** Source-unit layout shared by outline and single-line fonts, preserving character ownership. */
-internal fun layoutGlyphs(lines: List<List<LayoutGlyph>>, reference: Double, settings: LetteringSettings): LetteringLayout {
-    val gap = settings.spacingMm / settings.heightMm * reference
-    val widths = lines.map { line -> line.sumOf { it.advance } + (line.size - 1).coerceAtLeast(0) * gap }
-    val maximum = widths.maxOrNull() ?: 0.0
-    val contours = arrayListOf<List<Pair<Double, Double>>>()
-    val characters = arrayListOf<Int>()
-    val baselines = arrayListOf<Double>()
-    lines.forEachIndexed { lineIndex, line ->
-        var cursor = -widths[lineIndex] / 2 + lineOffset(widths[lineIndex], maximum, settings.alignment)
-        val baseline = lineIndex * reference * (1 + settings.lineSpacingMm / settings.heightMm)
-        line.forEach { glyph ->
-            glyph.paths.forEach { path ->
-                contours += path.map { (x, y) -> x + cursor to y + baseline }
-                characters += glyph.index
-                baselines += baseline
-            }
-            cursor += glyph.advance + gap
-        }
-    }
-    return LetteringLayout(contours, characters, baselines)
-}
+/** App settings adapter; all source-unit layout is shared with JVM callers. */
+internal fun layoutGlyphs(lines: List<List<LayoutGlyph>>, reference: Double, settings: LetteringSettings): LetteringLayout =
+    io.github.linker2k.myembro.engine.lettering.layoutGlyphs(lines, reference, settings.heightMm,
+        settings.spacingMm, settings.alignment, settings.lineSpacingMm)
 
 /** UI projection only: editing retains the editor object's transform; new text starts centered. */
 internal fun letteringPreviewObject(generated: TextObject, original: TextObject?): TextObject =
