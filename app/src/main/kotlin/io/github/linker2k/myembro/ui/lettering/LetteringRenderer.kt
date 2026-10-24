@@ -72,6 +72,7 @@ private class LoadedFont(
     val cmap: FontCmap? = null,
     val ink: InkStitchFont? = null,
     val testedRangeMm: ClosedFloatingPointRange<Double>? = null,
+    val centerlineFace: Typeface? = face,
 ) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
     fun advance(character: String): Double = when {
@@ -148,7 +149,7 @@ private fun loadFont(context: Context, id: String): LoadedFont {
         bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
         ink, installed?.takeIf { ink != null }?.let { f ->
             (f.recommendedMinHeightMm ?: 0.0)..(f.recommendedMaxHeightMm ?: Double.POSITIVE_INFINITY)
-        })
+        }, centerlineFace = if (id == "noto-sans-kr") context.resources.getFont(R.font.myembro_sans) else face)
 }
 
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double, threadWeight: ThreadWeight): FontQualityReport {
@@ -190,15 +191,21 @@ object LetteringFontPreview {
         val source = loadFont(context.applicationContext, fontId)
         val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
+        val previewStyle=if(source.face!=null && HangulSatin.applies(sample)) StitchStyle.SATIN else stitchStyle
         val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
-            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = stitchStyle, fillOptions = fillOptions, threadWeight = threadWeight)
+            false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = previewStyle, fillOptions = fillOptions, threadWeight = threadWeight)
         prepareObject(source, settings, thread).localPattern().withSewingDefaults(SettingsPreferences(context).read().sewing)
     }
 }
 
 /** Keep geometry construction shared by main preview, cards, and the added object. */
-private fun prepareObject(source: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
+private fun prepareObject(loaded: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
     val text = normalizedLetteringText(settings.text)
+    // The bundled variable file defaults to Thin. Only the new Hangul path requests the existing
+    // explicit 400 XML family, as KRSAT3 did; legacy outline/fill extraction remains unchanged.
+    val source = if(settings.stitchStyle==StitchStyle.SATIN && HangulSatin.applies(text) && loaded.centerlineFace!=loaded.face)
+        LoadedFont(loaded.centerlineFace,loaded.svg,loaded.hershey,loaded.revision+":satin400",loaded.name,loaded.cmap,loaded.ink,loaded.testedRangeMm)
+        else loaded
     if (source.ink != null) return TextObject(
         id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
         heightMm = settings.heightMm, spacing = settings.spacingMm, thread = thread, fontKind = FontKind.INKSTITCH,
@@ -213,6 +220,20 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
             lines.last() += LayoutGlyph(index, source.advance(character), source.glyph(character))
         }
     }
+    val centerline=source.face?.takeIf { HangulSatin.applies(text) && settings.stitchStyle==StitchStyle.SATIN }?.let { face ->
+        val componentIds=mutableListOf<Int>();val widths=mutableMapOf<Int,Double>()
+        val tracedLines=lines.map { line -> line.map { glyph ->
+            val code=text.codePoints().toArray()[glyph.index]
+            if(Character.isWhitespace(code)) LayoutGlyph(glyph.index,glyph.advance,emptyList()) else {
+                val traced=io.github.linker2k.myembro.lettering.AndroidCenterlineGlyph.extract(String(Character.toChars(code)),face)
+                componentIds+=traced.components
+                widths[glyph.index]=HangulSatin.measuredWidthSource(glyph.paths,source.reference)
+                LayoutGlyph(glyph.index,glyph.advance,traced.paths)
+            }
+        } }
+        val traced=layoutGlyphs(tracedLines,source.reference,settings)
+        CenterlineSatinData(traced.contours,traced.characters,componentIds,widths)
+    }
     val layout = layoutGlyphs(lines, source.reference, settings)
     return TextObject(
         id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
@@ -223,7 +244,7 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
         arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
         characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
-        singleLine = source.face == null,
+        singleLine = source.face == null, centerlineSatin = centerline,
         stitchStyle = settings.stitchStyle ?: StitchStyle.RUNNING,
         fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
     )

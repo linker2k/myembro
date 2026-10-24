@@ -57,11 +57,11 @@ class LetteringHeightLimitsTest {
         assertFailsWith<IllegalArgumentException> { LetteringHeightLimits.decode(duplicate.toString()) }
     }
 
-    @Test fun gowunBatangAutomaticFillScreenUsesActualBundledHashAndSixtyMillimetres() {
+    @Test fun gowunBatangLatinAutomaticFillScreenUsesActualBundledHashAndSixtyMillimetres() {
         val font = File("src/main/res/font/gowun_batang.ttf")
         val sha = MessageDigest.getInstance("SHA-256").digest(font.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
         for (height in listOf(18.0, 60.0, 90.0)) {
-            val state = automaticLetteringState("고운바탕", "gowun-batang", "$sha:glyph-extractor-v3", "자수", height,
+            val state = automaticLetteringState("고운바탕", "gowun-batang", "$sha:glyph-extractor-v3", "Abc", height,
                 LetteringGeometry.OUTLINE, limits)
             assertEquals(StitchStyle.FILL, state.style)
             assertEquals(listOf(ValidatedHeightRange(5.0, 60.0)), state.heightRanges)
@@ -69,12 +69,12 @@ class LetteringHeightLimitsTest {
         }
     }
 
-    @Test fun automaticFillScreenPreservesFontSpecificMinimumAndMaximum() {
+    @Test fun latinAutomaticFillScreenPreservesFontSpecificMinimumAndMaximum() {
         for ((id, expected) in listOf("noto-sans-kr" to ValidatedHeightRange(26.25, 60.0),
             "east-sea-dokdo" to ValidatedHeightRange(5.0, 6.0))) {
             val row = rows.single { it.jsonObject.getValue("fontId").jsonPrimitive.content == id }.jsonObject
             val state = automaticLetteringState(id, id, row.getValue("fontSha256").jsonPrimitive.content + ":glyph-extractor-v3",
-                "자수", 18.0, LetteringGeometry.OUTLINE, limits)
+                "Abc", 18.0, LetteringGeometry.OUTLINE, limits)
             assertEquals(StitchStyle.FILL, state.style)
             assertEquals(listOf(expected), state.heightRanges)
         }
@@ -86,4 +86,10 @@ class LetteringHeightLimitsTest {
         assertEquals(60.0, state.copy(fontName = "restored").heightRanges.single().maxMm)
     }
 
+    @Test fun hangulTtfUsesComponentSatinWithoutInheritingFillCertification() {
+        val state=automaticLetteringState("Noto Sans KR","noto-sans-kr","revision","정민",15.0,LetteringGeometry.OUTLINE,limits)
+        assertEquals(StitchStyle.SATIN,state.style)
+        assertTrue(state.centerlineSatin);assertTrue(state.heightRanges.isEmpty())
+        assertTrue(letteringHeightPermitted(state,15.0));assertFalse(letteringHeightPermitted(state,61.0))
+    }
 }
