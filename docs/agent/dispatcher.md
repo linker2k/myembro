@@ -7,7 +7,7 @@ is introduced in the engine.
 ## Kernel and session controller
 
 `ToolDispatcher.dispatch(project, revision, name, arguments, confirmed=false)` is
-the snapshot-in/snapshot-out preparation kernel. Its 17 supported names cover
+the snapshot-in/snapshot-out preparation kernel. Its supported names cover
 text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
 visibility, color, removal, frame selection, sewing checks and PES preparation.
 Successful edits return their resolved `ProjectCommand` for session publication.
@@ -156,3 +156,55 @@ so rendering, recoloring and placement do not depend on a mutable global registr
 This field is not embedded in project JSON; reopening uses the existing installed
 font registry. The JVM runner still needs its normal approved-font binding when
 reopening an initial project with pre-existing digitized text.
+
+## Design catalogs and approved imports
+
+`list_builtin_designs({})` returns `designs` rows with `id`/`assetId`, name, fileName,
+widthMm, heightMm, colorCount, stitchCount and SHA-256 (null for flattened project
+sources). Sizes/colors use the same parsed needle bounds/nonempty color blocks as
+the library. `list_designs({query, filter, sort})` uses existing library filters
+ALL/FITS_100/PES/RECENT/FAVORITES, the existing seven-day recent window, and
+RECENT/NAME/STITCHES sorting. Gallery FITS_100 is the nominal HoopSpec size filter;
+export still enforces the separate exact P2 limit. Both queries are read-only and
+may run outside an edit turn; they do not create history steps.
+
+Inject `DesignResolver` with approved `DesignAsset` entries. `add_design` resolves
+its opaque assetId and prepares `ProjectCommand.Add(StitchObject(...))` with the
+explicit objectId. Unknown IDs, including paths/URLs, return DESIGN_NOT_FOUND;
+object ID collisions use the existing DUPLICATE_ID reducer rejection. No model
+argument grants file access. Original byte arrays are copied and retained as
+sourceBytes/sourceFileName; imports are never reclassified as generated geometry.
+
+The default JVM BundledDesignResolver reads the APK's sample manifest and PES files
+plus `builtin:myembro-logo`. Its local library exposes the shipped samples again as
+`library:<sample filename>` fixtures, so JVM list_designs/add_design need no user
+filesystem access. Resources include the existing sample notices and CC0
+license. The Android binding is `ToolDispatcher(designResolver =
+AndroidDesignResolver(context), fontResolver = AndroidTextFontResolver(context))`.
+It uses BundledDesigns/DefaultLogoInstaller assets and DesignLibrary files and
+favorites. Library bytes use the existing bounded, canonical-directory
+DesignSourceResolver. Existing .myembro library entries flatten with DesignFormats,
+exactly as editor import, without pretending their JSON is original stitch bytes.
+Run this synchronous adapter on the host's serialized IO/edit executor.
+
+An unchanged single visible imported PES with identity transform, unedited threads
+and matching parsed source keeps its exact bytes and PES version after validation;
+requested writer version applies when a composition is actually encoded. Moved,
+rotated, scaled or recolored designs use the normal checked writer; original source
+bytes remain intact unless the existing recolor command invalidates them. No gate
+is relaxed: imported density blocks above 30 penetrations per 0.5mm cell; app output
+blocks above 15. The dispatcher's existing PASS-only release rule is unchanged:
+imported density 16–30 can be WARNING/CAUTION and therefore returns no prepared PES.
+Tests distinguish that release policy from the P7 blocker threshold.
+
+Reproduce logo lookup/add/move/export with:
+
+```sh
+./gradlew :engine:runAgentScenario \
+  -PagentScenario=docs/agent/scenarios/add-builtin-logo.json \
+  -PagentOutput=/tmp/myembro-design-tools-NEW
+```
+
+`DesignToolTest` covers lookup, complete catalog metadata, missing IDs, collision
+rollback, library IDs, source byte ownership/preservation, read-only history and
+imported 20/30/31 density classification using synthetic fixtures only.

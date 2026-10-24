@@ -18,6 +18,8 @@ class ToolDispatcher(
     frames: Map<String, HoopSpec> = mapOf("H100" to HoopSpec.H100, "H130x180" to HoopSpec.H130x180, "H160x260" to HoopSpec.H160x260),
     assets: Map<String, ByteArray> = emptyMap(),
     private val fontResolver: FontResolver = BundledFontResolver(),
+    private val designResolver: DesignResolver = BundledDesignResolver(),
+    private val nowMillis: () -> Long = System::currentTimeMillis,
     private val heightLimits: LetteringHeightLimits = LetteringHeightLimits.decode(
         checkNotNull(ToolDispatcher::class.java.getResourceAsStream("/lettering/ttf-fill-height-ranges.json")).bufferedReader().use { it.readText() }),
 ) {
@@ -38,6 +40,18 @@ class ToolDispatcher(
         if (schema.confirmation(name) && !confirmed) return failure("CONFIRMATION_REQUIRED", name)
         val a = arguments.jsonObject
         try {
+            if (name == "list_builtin_designs" || name == "list_designs") {
+                val designs = if (name == "list_builtin_designs") designResolver.builtins()
+                    else designResolver.designs().queryDesigns(a.string("query"),a.string("filter"),a.string("sort"),nowMillis())
+                return Result(project,buildJsonObject {
+                    put("ok",true);put("designs",JsonArray(designs.map { d -> buildJsonObject {
+                        put("id",d.id);put("assetId",d.id);put("name",d.name);put("fileName",d.fileName)
+                        put("widthMm",(d.pattern.bounds?.width ?: 0)/10.0);put("heightMm",(d.pattern.bounds?.height ?: 0)/10.0)
+                        put("colorCount",d.pattern.colorBlocks.size);put("stitchCount",d.pattern.stitchCount)
+                        put("sha256",d.sha256?.let(::JsonPrimitive) ?: JsonNull)
+                    } }))
+                })
+            }
             if (name == "get_project") return Result(project, buildJsonObject { put("ok", true); put("project", summary(project, revision)) })
             if (name == "sewout_check" || name == "prepare_pes") {
                 val frame = frame(a.string("frameId"))
@@ -63,7 +77,7 @@ class ToolDispatcher(
                 val placement = SewoutCheck.check(placed, machine, options.copy(placement = Placement.HOOP_COORDINATES))
                 if (!placement.analysisComplete || placement.hasBlockingIssues) return failure("SEWOUT_BLOCKED", "Project placement/check blocked", buildJsonObject { put("placement", reportJson(placement)) })
                 val version = if (name == "prepare_pes") PesVersion.valueOf(a.string("pesVersion")) else PesVersion.V1
-                val bytes = try { PesWriter.write(pattern, PesWriteSettings(version, hoop = frame)) }
+                val bytes = try { originalPes(project) ?: PesWriter.write(pattern, PesWriteSettings(version, hoop = frame)) }
                     catch (e: IllegalArgumentException) { return failure("SEWOUT_BLOCKED", e.message ?: "Writer blocked output") }
                 val report = SewoutCheck.checkPes(bytes, machine, options)
                 val viewport = PecViewportCheck.check(bytes, frame)
@@ -73,6 +87,12 @@ class ToolDispatcher(
             }
             require(a.string("transactionId").isNotBlank()) { "transactionId must not be blank" }
             val command = when (name) {
+                "add_design" -> {
+                    val asset=designResolver.resolve(a.string("assetId"))
+                        ?: return failure("DESIGN_NOT_FOUND","Unknown approved design ID")
+                    ProjectCommand.Add(StitchObject(a.string("objectId"),a.string("name").ifBlank { asset.name },
+                        asset.pattern,sourceBytes=asset.sourceBytes,sourceFileName=asset.fileName))
+                }
                 "add_text", "replace_text" -> {
                     val id=a.string("objectId"); val fontId=a.string("fontId")
                     val text=normalizedLetteringText(a.string("text"))
@@ -135,9 +155,17 @@ class ToolDispatcher(
     internal fun validateRequest(name: String, arguments: JsonElement): String? = schema.validate(name, arguments)
     internal fun knowsTool(name: String) = schema.contains(name)
     internal fun needsConfirmation(name: String) = schema.confirmation(name)
+    private fun originalPes(project: Project): ByteArray? {
+        val obj=project.objects.filter { it.visible }.singleOrNull() as? StitchObject ?: return null
+        if(obj.transform!=Transform() || obj.sourceThreadsEdited) return null
+        val bytes=obj.sourceBytes ?: return null
+        if(bytes.size<8 || !bytes.copyOfRange(0,4).contentEquals("#PES".toByteArray())) return null
+        val source=PesReader.read(bytes)
+        return bytes.takeIf { source.stitches==obj.source.stitches && source.threads==obj.source.threads }
+    }
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = setOf("list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {

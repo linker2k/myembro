@@ -229,3 +229,11 @@ tasks.processResources {
     from(rootProject.file("app/src/main/assets/fonts/bundled")) { into("agent/fonts") }
     from(rootProject.file("app/src/main/assets/fonts/inkstitch-catalog.json")) { into("agent/fonts") }
 }
+
+// Same redistributable sample catalog used by the Android built-in gallery.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/samples")) {
+        include("*.pes", "manifest.json", "LICENSES.md", "CC0-1.0.txt")
+        into("agent/designs")
+    }
+}
