@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.engine.agent
 import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.edit.commands.*
 import io.github.linker2k.myembro.engine.io.*
+import io.github.linker2k.myembro.engine.lettering.*
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.sewout.*
 import kotlinx.serialization.json.*
@@ -16,6 +17,9 @@ class ToolDispatcher(
     private val schema: ToolSchema = ToolSchema.bundled(),
     frames: Map<String, HoopSpec> = mapOf("H100" to HoopSpec.H100, "H130x180" to HoopSpec.H130x180, "H160x260" to HoopSpec.H160x260),
     assets: Map<String, ByteArray> = emptyMap(),
+    private val fontResolver: FontResolver = BundledFontResolver(),
+    private val heightLimits: LetteringHeightLimits = LetteringHeightLimits.decode(
+        checkNotNull(ToolDispatcher::class.java.getResourceAsStream("/lettering/ttf-fill-height-ranges.json")).bufferedReader().use { it.readText() }),
 ) {
     private val frames = frames.mapValues { (_, h) -> h.copy(positions = h.positions.toList()) }
     private val assets = assets.mapValues { it.value.copyOf() }
@@ -69,6 +73,30 @@ class ToolDispatcher(
             }
             require(a.string("transactionId").isNotBlank()) { "transactionId must not be blank" }
             val command = when (name) {
+                "add_text", "replace_text" -> {
+                    val id=a.string("objectId"); val fontId=a.string("fontId")
+                    val text=normalizedLetteringText(a.string("text"))
+                    if(text.isBlank()) throw TextToolRejection("EMPTY_TEXT","Text must contain a visible character")
+                    val font=fontResolver.resolveText(fontId,text) ?: throw TextToolRejection("FONT_NOT_FOUND","Font is not installed: $fontId")
+                    val revision=fontResolver.revision(fontId) ?: throw TextToolRejection("FONT_NOT_FOUND","Font revision is unavailable: $fontId")
+                    if(revision!=a.string("fontRevision")) throw TextToolRejection("FONT_REVISION_MISMATCH","Read the installed font revision")
+                    val missing=text.codePoints().toArray().filter { !Character.isWhitespace(it) && !font.supports(it) }.distinct()
+                    if(missing.isNotEmpty()) throw TextToolRejection("UNSUPPORTED_CHARACTERS",missing.joinToString("") { String(Character.toChars(it)) })
+                    val height=a.number("heightMm")
+                    if(height<=0) throw TextToolRejection("HEIGHT_OUT_OF_RANGE","Height must be positive")
+                    val automatic=automaticLetteringState(fontId,fontId,revision,text,height,
+                        if(font is ResolvedTextFont.OutlineSnapshot) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE,
+                        heightLimits,fontResolver.inkRange(fontId,font)).let { it.copy(singleLineWeightEnabled=singleLineWeightEnabled(
+                            font !is ResolvedTextFont.OutlineSnapshot,font is ResolvedTextFont.InkStitch,fontId)) }
+                    if(!letteringHeightPermitted(automatic,height)) throw TextToolRejection("HEIGHT_OUT_OF_RANGE","Height is outside the existing lettering policy")
+                    // Hangul centerline extraction is a host preparation concern, never silently rendered as plain satin.
+                    val style=letteringStyleForWeight(automatic,a.getValue("singleLineBold").jsonPrimitive.boolean)
+                    val obj=fontResolver.prepare(TextPreparationRequest(text,fontId,height,TextObject(id=id).spacing,
+                        LetteringAlignment.CENTER,(TextObject(id=id).lineSpacing-1)*height,
+                        EmbThread(a.string("threadColor").removePrefix("#").toInt(16) or (-1 shl 24)),stitchStyle=style),font,TextPreparationPolicy(id))
+                    if(automatic.centerlineSatin && obj.centerlineSatin==null) throw TextToolRejection("TEXT_PREPARATION_UNAVAILABLE","Resolved Hangul centerline data is required")
+                    if(name=="add_text") ProjectCommand.Add(obj) else ProjectCommand.ReplaceText(id,obj)
+                }
                 "set_object_transforms" -> {
                     val rows = a.getValue("transforms").jsonArray.map { it.jsonObject }
                     require(rows.map { it.string("objectId") }.distinct().size == rows.size) { "Duplicate transform targets" }
@@ -99,7 +127,8 @@ class ToolDispatcher(
                     put("ok", true); put("changed", result.changed); put("transactionId", a.string("transactionId")); put("changedIds", JsonArray(result.changedIds.map(::JsonPrimitive)))
                 }, preparedCommand = command)
             }
-        } catch (e: IllegalArgumentException) { return failure("INVALID_ARGUMENTS", e.message ?: "Invalid request") }
+        } catch (e: TextToolRejection) { return failure(e.code, e.message ?: e.code) }
+        catch (e: IllegalArgumentException) { return failure("INVALID_ARGUMENTS", e.message ?: "Invalid request") }
     }
     /** Bind to the same EditSession used by a host's UI/history. Keep this controller for the document lifetime. */
     fun bind(session: EditSession) = ToolTurnController(session, this)
@@ -108,7 +137,7 @@ class ToolDispatcher(
     internal fun needsConfirmation(name: String) = schema.confirmation(name)
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = setOf("add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {

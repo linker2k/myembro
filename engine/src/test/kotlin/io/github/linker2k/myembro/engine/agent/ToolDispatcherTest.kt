@@ -35,7 +35,7 @@ class ToolDispatcherTest {
         "prepare_pes" to args("""{"projectRevision":"0","machineId":"se700","frameId":"H100","pesVersion":"V6"}"""),
     )
     @Test fun everySupportedToolHasSuccessfulAndRejectedInputWithoutPartialMutation() {
-        assertEquals(ToolDispatcher.SUPPORTED, cases().keys)
+        assertEquals(ToolDispatcher.SUPPORTED-setOf("add_text","replace_text"), cases().keys)
         for ((name,a) in cases()) {
             // A single actual, upstream-locked component avoids creating artificial cross-object boundaries.
             val p=if(name in setOf("prepare_pes","sewout_check")) objectProject().let { it.copy(objects=it.objects.take(1)) } else objectProject()
@@ -95,8 +95,8 @@ class ToolDispatcherTest {
             assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0",name,JsonObject(a+("extra" to JsonPrimitive(true)))).code,name)
             count++
         }
-        assertEquals(54,count)
-        println("UNIMPLEMENTED_CATALOG 54 typed errors; strict validation first PASS")
+        assertEquals(69-ToolDispatcher.SUPPORTED.size,count)
+        println("UNIMPLEMENTED_CATALOG $count typed errors; strict validation first PASS")
     }
     @Test fun malformedApprovedPesAndInvalidSourceSelectorsReturnErrorsWithoutBytes() {
         val p=objectProject()

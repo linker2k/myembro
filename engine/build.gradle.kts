@@ -222,3 +222,10 @@ tasks.processResources {
     from(rootProject.file("app/src/main/assets/samples/sample_heart_running.pes")) { into("agent/builtins") }
     from(rootProject.file("app/src/main/assets/designs/myembro_logo.pes")) { into("agent/builtins") }
 }
+
+// Same policy data and redistributable fonts used by the phone; no network resolution.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/lettering/ttf-fill-height-ranges.json")) { into("lettering") }
+    from(rootProject.file("app/src/main/assets/fonts/bundled")) { into("agent/fonts") }
+    from(rootProject.file("app/src/main/assets/fonts/inkstitch-catalog.json")) { into("agent/fonts") }
+}
