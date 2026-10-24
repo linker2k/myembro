@@ -211,7 +211,7 @@ MyembroTheme(darkTheme = true, colorway = MyembroColorway.BOTANICAL) { /* previe
 
 ### Typeface sources
 
-Both fonts are **unmodified, unsubsetted originals** downloaded from Google Fonts and work offline.
+Both fonts are **originals without modification or subsetting** downloaded from Google Fonts and work offline.
 Hangul syllable/jamo/Latin coverage was checked. Original fonts total approximately 18MiB;
 full OFL texts are included in `assets/licenses/` and `THIRD_PARTY_NOTICES.md`.
 
