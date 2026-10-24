@@ -43,3 +43,20 @@ Validation: `./gradlew check` BUILD SUCCESSFUL43s;
 subsequent `:engine:check` BUILD SUCCESSFUL10s after trial instrumentation.
 Machine-readable measurements, placement and independent final gate output are
 in [measurements/kr-tatami-trial](measurements/kr-tatami-trial/).
+
+### 글자별 획 폭 — 사용자 봉제 결과 대조용
+
+동일한 Bold700·‘자’ 기준 높이·0.1mm 경계 샘플로 글자별로 다시 측정했다.
+단위는 mm이며, 최소값은 끝점·모서리를 포함한 **표본 최소값**이다.
+P10은 보조 지표이고, 허용 최소 획 폭 W는 아직 미확정이다.
+
+| 설정 높이 | 정 최소 | 민 최소 | 정 P10 | 민 P10 |
+|---:|---:|---:|---:|---:|
+| 15 | 0.013666 | 0.095167 | 0.512575 | 0.689934 |
+| 20 | 0.017089 | 0.092284 | 0.689254 | 0.891165 |
+| 25 | 0.020692 | 0.097608 | 0.873291 | 1.092970 |
+
+계산: 임시 JVM 측정 드라이버가 기존 `KoreanTatamiTrial.paths/region`과
+`StrokeWidthMeasurement.measure(..., 0.1)`을 호출했다. 글자별 분리 측정이므로
+앞의 ‘정민’ 전체 P10과 다르다. 고정 간격 표본 최소값은 크기에 따라 단조 증가하지
+않을 수 있다(예: ‘민’ 15→20mm). 도안·PES·앱 설정 변경 없음.
