@@ -1,61 +1,61 @@
-# US-0 단순 미리보기 스모크
+# US-0 simple preview smoke
 
-2026-10-24 개정. `main` UI 스토리 `8b18511` 기준.
-이 문서는 기존 `3a83f8d`의 배속·처음/끝 버튼 스모크를 대체한다.
+Revised 2026-10-24. Based on `main` UI story `8b18511`.
+This document replaces the speed/start/end-button smoke in existing `3a83f8d`.
 
-## 현재 동작
+## Current behavior
 
-- 재생/일시정지 버튼 하나와 슬라이더. 배속, 처음/끝, 점프 표시 조절은 제거했다.
-  후프는 저장된 프로젝트/선택된 기계의 기본값을 표시한다.
-- 전체 바늘 수에 따라 미리보기 속도를 자동 결정한다. 긴 도안의 UI 재생 목표는 약 20초,
-  작은 도안은 초당 1땀 이상이다. 이는 **UI 애니메이션 예산**이며 기계 SPM·봉제 품질 규칙이나
-  생성 파라미터가 아니다. 재봉 시간 예측은 기존 점검 보고서를 그대로 사용한다.
-- 슬라이더의 색 변경/트림 눈금은 유지한다. 탐색하면 멈추며, 끝에서 재생하면 처음으로 돌아간다.
-  홈/다른 화면으로 나갈 때 ON_PAUSE에서 정지한다.
-- 캔버스 위쪽 배지는 통과/차단 두 종류. 분석 완료 + 차단 없음이면 통과이며, 차단/불완전/
-  검증 실패는 차단이다. 검사 중에는 배지 대신 진행 표시를 보여 준다.
-- 차단은 이유 한 줄을 함께 표시한다. 배지를 누르면 기존 상세 점검 시트가 열린다.
-  위치가 있는 차단 항목의 빨간 원·탭 확대는 유지한다. 경고/미확인 정보는 상세 시트에 보존한다.
-- 가져온 PES는 수정하지 않는다. USB 차단 확인은 기존 경로로 한 번 실행한다.
+- One play/pause button and a slider. Removed playback speed/start/end/jump-display controls.
+  Hoop shows saved project/selected machine default.
+- Automatically choose preview speed by total needle count. Long-design UI playback target is approximately 20 seconds;
+  small designs use at least 1 stitch per second. This is a **UI animation budget**, not machine SPM/sewing quality rules
+  or generation parameters. Sewing-time estimates use the existing check report unchanged.
+- Keep slider color-change/trim ticks. Seeking pauses; playing from the end returns to the beginning.
+  Stop on ON_PAUSE when leaving for home/another screen.
+- Canvas top badge has two states: pass/block. Complete analysis + no blockers means pass; blockers/incomplete/
+  validation failure mean block. While checking, show progress instead of a badge.
+- Blocks also show a one-line reason. Tapping the badge opens the existing detailed check sheet.
+  Keep red circles/tap-to-zoom for located blockers. Preserve warnings/unconfirmed information in the detailed sheet.
+- Do not modify imported PES. USB blocking confirmation runs once through the existing path.
 
-## 재현
+## Reproduction
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-1. 색 변경/트림이 있는 도안을 열어 재생 버튼 하나와 슬라이더만 있는지 확인한다.
-2. 재생·일시정지, 슬라이더 탐색 후 정지, 끝에서 재생할 때 처음부터 시작하는지 확인한다.
-3. 차단 PES에서 상단 차단/이유 한 줄, 배지 탭 → 점검 목록, USB 전송 → 확인 1회 → 취소를 확인한다.
-4. 차단 없는 PES에서는 통과가 보이고 USB 콜백으로 바로 이어지는지 확인한다.
-5. ko/en, 세로/가로 600dp 이상에서 표시와 조작을 확인한다.
+1. Open a design with color changes/trims; verify only one play button and slider.
+2. Verify play/pause, pause after slider seeking, and restart from the beginning when playing at the end.
+3. For blocked PES, verify top block/one-line reason, badge tap → check list, USB transfer → 1 confirmation → cancel.
+4. For PES without blockers, verify pass and direct continuation into the USB callback.
+5. Verify display/interaction in ko/en, portrait/landscape at 600dp or larger.
 
-## 실행 결과
+## Execution results
 
-실제 앱과 구분한 `io.github.linker2k.myembro.playbackpreview`, emulator-5554.
-임시 입력은 원본 파일 보존을 확인할 수 있도록 **가져온 PES**로 시험했다.
-차단 입력 280땀, 통과 입력 260땀(둘 다 2색)이며 의도적 반복 천공 유무만 다르다.
+`io.github.linker2k.myembro.playbackpreview`, separate from the real app, emulator-5554.
+Temporary inputs were tested as **imported PES** so original-file preservation could be verified.
+Blocked input 280 stitches, passing input 260 stitches (both 2 colors); they differ only in deliberate repeated punctures.
 
-| 확인 | 결과 |
+| Check | Result |
 |---|---|
-| 자동 속도 | 각각 초당 14/13땀. 1초 tick의 바늘 수 일치, 전체 재생 종료 통과 |
-| 단일 컨트롤 | ko/en에서 배속·처음/끝 컨트롤 없음, 버튼 하나/슬라이더 노출 |
-| 실제 조작 | 재생·정지·탐색 후 정지·완료 후 재시작 통과 |
-| 차단 표시/전송 | 한국어 세로의 차단/이유 한 줄·점검 목록·USB 확인/취소 통과 |
-| 통과 표시/전송 | 영어 가로의 통과 및 비차단 USB 콜백 경로 통과 |
-| 원본 불변성 | 조작 전후 원본 PES 파일 및 표시 패턴의 PES v6 출력 바이트 일치 |
-| 최종 빌드/회귀 | 앱 테스트 172개(실패 0), 정상 applicationId `:app:assembleDebug` 통과 |
+| Automatic speed | 14/13 stitches per second respectively. Needle counts match 1-second ticks; full playback completion passed |
+| Single control | No speed/start/end controls in ko/en; one button/slider displayed |
+| Actual interaction | Play/stop/pause after seeking/restart after completion passed |
+| Block display/transfer | Korean portrait block/one-line reason/check list/USB confirmation and cancel passed |
+| Pass display/transfer | English landscape pass/nonblocking USB callback path passed |
+| Original invariance | Original PES files and displayed-pattern PES v6 output bytes match before/after interaction |
+| Final build/regressions | App tests 172 (0 failures), normal applicationId `:app:assembleDebug` passed |
 
-슬라이더 스모크는 시스템 뒤로 가기 제스처 영역을 피해 내부에서 스와이프를 시작한다.
-첫 시도에서 화면 가장자리 스와이프로 Activity를 빠져나간 테스트 입력을 수정해 재확인했다.
+Slider smoke starts swipes inside the screen, avoiding system back-gesture areas.
+Corrected the first attempt's test input, which left the Activity by swiping from the screen edge, then reverified.
 
-임시 자료:
+Temporary materials:
 
 - `/tmp/myembro-simple-playback-ui.py`, `/tmp/myembro-simple-playback-smoke.json`
 - `/tmp/myembro-simple-pass-check.py`
 - `/tmp/myembro-simple-blocked-ko.png`, `/tmp/myembro-simple-pass-en-wide.png`
 - `/tmp/myembro-playback-src/PlaybackPreviewActivity.kt`, `/tmp/myembro-playback-preview.init.gradle`
-- logcat `PlaybackQA`: `AUTO_TIMING_AND_UNCHANGED_PES_PASS`, 이후 상태 로그.
+- logcat `PlaybackQA`: `AUTO_TIMING_AND_UNCHANGED_PES_PASS`, subsequent state logs.
 
-사진 엔진·스티치 생성·PES writer는 변경하지 않았다. 이 스모크는 새 알고리즘의 품질이나
-실제 봉제 통과를 의미하지 않는다. 사진 S5 조사/계획은 `docs/image-pipeline.md`에 별도로 기록했다.
+Photo engine/stitch generation/PES writer unchanged. This smoke does not indicate new-algorithm quality
+or actual sewout passing. Photo S5 research/plans are recorded separately in `docs/image-pipeline.md`.
