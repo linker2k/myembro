@@ -11,7 +11,7 @@ internal object PesV6Writer {
     private data class Segment(val flag: Int, val color: Int, val points: List<Pair<Int, Int>>)
 
     fun write(pattern: EmbPattern, inkstitchCommands: Boolean = false): ByteArray {
-        val p = PecWriter.normalizePreservingThreads(pattern, inkstitchCommands)
+        val p = PecWriter.normalizePreservingThreads(pattern, inkstitchCommands, deferStandaloneTrims = !inkstitchCommands)
         val chart = arrayListOf(p.threadAt(0))
         var thread = 0
         val editorStitches = p.stitches.map { s ->
@@ -27,14 +27,14 @@ internal object PesV6Writer {
         header(body, p.metadata, chart, hasObjects)
         if (hasObjects) {
             body.u16(0xFFFF); body.u16(0)
-            val logs = blocks(body, editorStitches, chart)
+            val logs = blocks(body, editorStitches, chart, topLeftViewport = !inkstitchCommands)
             body.u32(0); body.u32(0)
             logs.indices.forEach { body.u32(it); body.u32(0) }
         } else {
             body.u16(0); body.u16(0)
         }
         val pecOffset = body.size()
-        val payload = PecWriter.writePayload(p, inkstitchCommands)
+        val payload = PecWriter.writePayload(p, inkstitchCommands, topLeftViewport = !inkstitchCommands)
         body.write(payload)
         // Upstream color_info includes the count byte followed by PEC palette indices.
         val count = (payload[48].toInt() and 255) + 1
@@ -66,10 +66,10 @@ internal object PesV6Writer {
         out.u16(if (objects) 1 else 0)
     }
 
-    private fun blocks(out: Buffer, stitches: List<Stitch>, chart: List<EmbThread>): List<Pair<Int, Int>> {
-        val minX = stitches.minOf { it.x }
+    private fun blocks(out: Buffer, stitches: List<Stitch>, chart: List<EmbThread>, topLeftViewport: Boolean = false): List<Pair<Int, Int>> {
+        val minX = if (topLeftViewport) 0 else stitches.minOf { it.x }
         val maxX = stitches.maxOf { it.x }
-        val minY = stitches.minOf { it.y }
+        val minY = if (topLeftViewport) 0 else stitches.minOf { it.y }
         val maxY = stitches.maxOf { it.y }
         val width = maxX - minX
         val height = maxY - minY

@@ -56,7 +56,9 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var rotation by remember(obj.id) { mutableStateOf(format(t.rotationDeg)) }
     var sx by remember(obj.id) { mutableStateOf(format(abs(t.scaleX) * 100)) }
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
-    val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)
+    val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)?.takeIf { candidate ->
+        obj.withTransform(candidate).placedPattern().bounds?.let { io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(vm.project.hoop,it) } != false
+    }
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.editor_properties)) },

@@ -122,8 +122,8 @@ class OutlineLetteringTest {
         assertEquals(100, assertNotNull(obj.localPattern().bounds).height)
         val pattern = Project(objects = listOf(obj)).flatten()
         val decoded = PesReader.read(PesWriter.write(pattern))
-        assertEquals(pattern.bounds, decoded.bounds)
-        assertEquals(pattern.stitchCount, decoded.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, decoded.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).stitchCount, decoded.stitchCount)
         assertTrue(decoded.trimCount > 0)
         assertEquals(200, assertNotNull(obj.copy(heightMm = 20.0).localPattern().bounds).height)
     }
