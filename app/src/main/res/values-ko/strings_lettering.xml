@@ -98,4 +98,8 @@
     <string name="lettering_discard_body">변경한 내용이 아직 도안에 반영되지 않았습니다.</string>
     <string name="lettering_weight_normal">보통</string>
     <string name="lettering_weight_bold">굵게</string>
+    <string name="lettering_font_gowun_batang">고운바탕</string>
+    <string name="lettering_font_jua">둥근고딕</string>
+    <string name="lettering_font_noto_sans_kr">담백한 고딕</string>
+    <string name="lettering_default_text">봄날</string>
 </resources>

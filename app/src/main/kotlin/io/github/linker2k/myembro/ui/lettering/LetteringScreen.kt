@@ -89,7 +89,7 @@ fun LetteringScreen(
     onOpenFonts: (text: String) -> Unit,
     modifier: Modifier = Modifier,
     hoop: HoopSpec = HoopSpec.H100,
-    initialText: String = "봄날",
+    initialText: String = stringResource(R.string.lettering_default_text),
     initialFontId: String? = null,
     backgroundPattern: EmbPattern? = null,
     initialObject: TextObject? = null,
@@ -324,7 +324,7 @@ private fun LetteringContent(
                         if (catalogFont?.predigitized == true) {
                             EmbroideryFontChoice(catalogFont, fontId == id, id in installedCatalog, usable, Modifier.weight(1f), pick)
                         } else {
-                            val name = bundledLetteringFonts.firstOrNull { it.id == id }?.name ?: catalogFont?.let { it.nameKo ?: it.name }
+                            val name = bundledLetteringFonts.firstOrNull { it.id == id }?.displayName(context) ?: catalogFont?.let { it.nameKo ?: it.name }
                                 ?: userFontOptions.firstOrNull { it.id == id }?.name ?: automatic?.fontName ?: id
                             FontChoice(LetteringFont(id, name), fontId == id, Modifier.weight(1f).alpha(if (usable) 1f else 0.38f),
                                 fontPreviews[id]) { if (usable) pick() }
