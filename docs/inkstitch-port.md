@@ -1706,6 +1706,78 @@ manga1743, precious5289, KOR_small826.
 `/tmp/myembro-port-out/letter/font-crashes/`. 이는 crash/연결 회귀 판정이며
 독립 게이트·실제 봉제·전체 카탈로그 인증으로 확대하지 않는다.
 
+## S5 별도 원본: 흑백 윤곽·다각형 부분 포팅
+
+Ink/Stitch에 없는 사진 입력 준비 기능이며, Ink/Stitch 코드를 포팅한 것으로 표시하지 않는다.
+원본 Potrace 1.16 / 미러 커밋 `886392d351417d6753aff61de08e294d1506e502`,
+`src/decompose.c`, `src/trace.c`, `src/bitmap.h`, `src/auxiliary.h`에서 엔진 내부
+`BinaryContourTracer` / `OptimalPolygon`으로 옮겼다. GPL-2.0-or-later 출처와 전문을 보존한다.
+상세 해시·재현 명령은 [image-pipeline.md](image-pipeline.md)의 첫 포팅 단위 참조.
+
+| 위치 | 원본과 차이 | 이유/한계 |
+|---|---|---|
+| 흑백 비트맵 | BooleanArray, XOR 기준 x=0, 입력 복사 | 워드 저장만 대체; 교차 패리티 유지 |
+| 경로 면적 | Long 유지, C API의 INT_MAX 포화 생략 | 중간 엔진 API이며 기존 PES API에 미연결 |
+| 분해 결과 | 탐색 순서와 양/음 부호, 계층 트리 없음 | 이번 단위는 기본 MINORITY 추적까지만 이식 |
+| 다각형 이후 | vertex adjustment·Bezier·곡선 최적화 없음 | 불완전한 중간 결과를 제품 경로에 연결하지 않음 |
+
+대표 Kotlin 기능 테스트 8개와 엔진 전체 테스트 293개 통과. 원본 실행/독립 게이트는
+실행하지 않았고 동등성·봉제 품질 통과를 주장하지 않는다. 새 PES/앱 진입점도 없다.
+
+
+### S5 곡선화 후속 단위
+
+동일 Potrace 커밋의 `pointslope`/`adjust_vertices`/`reverse`/`smooth`를
+`CurveFitter.kt`로 포팅했다. 위 표의 vertex adjustment·Bezier 미구현 상태를 갱신한다.
+곡선 최적화(stage 5)와 계층 트리는 여전히 미구현이며 앱 미연결이다.
+작은 PBM 3개에 대해 수정하지 않은 원본 C를 `opticurve=0`으로 실행해 비교했다:
+경계·다각형 정확히 일치, 꼭짓점·제어점·alpha/beta 절대오차 1e-10 이내.
+새 비교 테스트 3개 포함 엔진 테스트 296개 통과. 재현 명령/해시는
+`engine/src/test/resources/potrace/README.md` 참조. 독립 봉제 품질 통과 주장은 없다.
+
+
+### S5 곡선 최적화 후속 단위
+
+`CurveOptimizer.kt`가 같은 원본 커밋의 `opti_penalty`/`opticurve`와 기하 함수를
+이식한다. 기본 opticurve=1 / opttolerance=0.2px의 원본 최종 경로를 자동 비교한다.
+4개 대표 PBM의 stage 4/5 비교 8개가 통과하며, 둥근 도형에서 원본과 동일한 7→3
+곡선 병합을 assert한다. 좌표/alpha/beta 절대오차 1e-10 이내. 기존 곡선 최적화 미구현
+기록을 갱신하며, 경로 계층·SVG·자수/앱 연결은 여전히 미구현이다.
+재현: `tools/potrace/generate-stage5-goldens.sh /path/to/potrace-1.16`.
+출력 `/tmp/myembro-port-out/editor/potrace-stage5/`; 코드는 기본 엔진 테스트에 포함된다.
+
+
+## 별도 원본: Wu 이미지 색 양자화
+
+Ink/Stitch 자체 기능으로 표시하지 않는다. `ImageQuantizer.kt`는 Xiaolin Wu의
+Graphics Gems `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`를
+포팅한다. custom Graphics Gems 허가/원본 배포 고지는 `licenses/graphics-gems/`에 보존.
+차이점(호출별 배열·Long/Float 유지·하위 박스 Vol·입력 경계)은
+`docs/image-pipeline.md`의 Wu 표에 기록한다. 대표 RGB 3개에 대해 원본 C LUT/픽셀
+인덱스를 자동 비교하며, 앱·땀 생성에는 연결하지 않는다.
+
+
+## S4 사진 영역 채우기 연결 — 2026-10-24
+
+기존 검은 띠의 양쪽 윤곽 러닝은 제품 선화 경로에서 제거했다. Potrace 곡선을
+0.01 SVG-px로 평탄화한 뒤 0.1mm PolygonRegion(EVEN_ODD)으로 변환하고, 한글 TTF와
+같은 model `DefaultTatami.stitchGroups`에 넘긴다. 윗땀 0.25mm/4mm/0°,
+바탕 땀 0.75mm/4mm/90°, underpath=true 및 S1 기본값은 바꾸지 않는다.
+
+model 스냅샷 `ea5fd8d63f30db770f626ab245f9bc50bbe5bf31`의 DefaultTatami/InkAutoFill/TatamiFill/Fill/FillRouting/
+FillGeometry/FillRunning/FillPoint 8파일을 **수정 없이** 가져왔다.
+이는 독립 채우기 재구현이 아니라 S2·S3 병합 전 API 의존성 준비이며, 통합 시 같은
+model 파일을 유지한다. GPL 출처 헤더·JGraphT LGPL 선택 및 전이 라이브러리 고지·전문을 보존한다.
+
+| 연결 경계 | 차이/근거 |
+|---|---|
+| 윤곽→영역 | Potrace y-up을 SVG y-down으로 변환; SVG-px→0.1mm 후 EVEN_ODD로 구멍 보존 |
+| 출력 | 경계 러닝 대신 model 기본 타타미·바탕 땀; S1 한 번 적용 |
+| 좁은 선 | 자체 밀도/간격 보정 없음; 실제 생성+봉제 검사+외부 gate의 실패 조합만 제외 |
+| 센터라인 | autotrace 등은 다음 버전 조사 후보; 이번 기본 경로에 미적용 |
+
+재현·수치·PNG·스윕 범위는 [qa/s4-sampler.md](qa/s4-sampler.md) 참조.
+
 ### P4: 글꼴 요소 JUMP 도착점의 중복 바늘 제거
 
 원본 대조 결과 **upstream도 해당 중복을 남긴다**.
