@@ -1,6 +1,6 @@
 # Hangul satin public-font sweep
 
-| Font Regular400 | Cases | Gate PASS | Generation rejected(10/15/20mm) | Engine time(seconds) |
+| Font Regular 400 | Cases | Gate PASS | Generation rejected (10/15/20mm) | Engine time(seconds) |
 |---|---:|---:|---|---:|
 | gowun-dodum | 90 | 90 | 0 / 0 / 0 | 2.364 |
 | nanum-gothic | 90 | 90 | 0 / 0 / 0 | 1.340 |
@@ -8,20 +8,20 @@
 | gothic-a1 | 90 | 90 | 0 / 0 / 0 | 0.969 |
 | orbit | 90 | 90 | 0 / 0 / 0 | 0.901 |
 
-Total450cases: generated432 / generation rejected18 / external gate BLOCK 0.
+Total 450 cases: generated 432 / generation rejected 18 / external gate BLOCK 0.
 
 Failure reason:
-- java.lang.IllegalStateException: No satin section for fitted path: 18cases
+- java.lang.IllegalStateException: No satin section for fitted path: 18 cases
 
-All rejected18cases have a minimum path <1 SVG px (0.317607–0.952822px). No section under upstream convert-to-satin's endpoint>=1px condition; if a column cannot be generated, rejects the whole glyph rather than discarding a path to turn it into success.
+All rejected 18 cases have a minimum path <1 SVG px (0.317607–0.952822px). No section under upstream convert-to-satin's endpoint>=1px condition; if a column cannot be generated, rejects the whole glyph rather than discarding a path to turn it into success.
 
-Check coverage: generated432cases pass the external gate, 0-length needle/JUMP=0, origin min(0,0)/header/hoop checks PASS. Rejected18cases have no PES, so gate/PES 0-length/origin checks were not run.
+Check coverage: generated 432 cases pass the external gate, 0-length needle/JUMP=0, origin min(0,0)/header/hoop checks PASS. Rejected 18 cases have no PES, so gate/PES 0-length/origin checks were not run.
 
-Maximum needle count per 0.5mm cell 10; engine loop 9.957381596seconds; width measurement 9.743949678959325seconds; raster preparation 0.48675092007033527seconds. Table times sum per-glyph engine calls(including first JVM/JIT·JSON/file writing, excluding Gradle build/width measurement/raster/external gate execution). Gate wall time was not measured separately.
+Maximum needle count per 0.5mm cell 10; engine loop 9.957381596 seconds; width measurement 9.743949678959325 seconds; raster preparation 0.48675092007033527 seconds. Table times sum per-glyph engine calls (including first JVM/JIT·JSON/file writing, excluding Gradle build/width measurement/raster/external gate execution). Gate wall time was not measured separately.
 
-Font/OFL/SHA/width-measurement provenance: fonts.json / width-provenance.json. Public characters30: BBEOL, BBUL, BBEOSS, BBYEO, BBYEOS, BBAES, BBAEG, BBOM, BBONG, BBYO, BBYU, SSWAE, SSWAESS, SSWEOSS, JJOL, JJOC, JJUM, JJUNG, JJEUM, JJEUS, JJALB, CANH, MANH, DALG, GABS, SALM, ANJ, ILG, HALT, EULP
+Font/OFL/SHA/width-measurement provenance: fonts.json / width-provenance.json. Public characters 30: BBEOL, BBUL, BBEOSS, BBYEO, BBYEOS, BBAES, BBAEG, BBOM, BBONG, BBYO, BBYU, SSWAE, SSWAESS, SSWEOSS, JJOL, JJOC, JJUM, JJUNG, JJEUM, JJEUS, JJALB, CANH, MANH, DALG, GABS, SALM, ANJ, ILG, HALT, EULP
 
-Width is the existing model GlyphStrokeWidths per-glyph15mm median×height/15, with proportional sampling(15mm reference0.1mm). Normalizes each glyph's actual ink height. This calculation is not an app automatic-width rule, recommended font height, or machine-safe range. Existing upstream defaults are unchanged.
+Width is the existing model GlyphStrokeWidths per-glyph 15mm median×height/15, with proportional sampling(15mm reference 0.1mm). Normalizes each glyph's actual ink height. This calculation is not an app automatic-width rule, recommended font height, or machine-safe range. Existing upstream defaults are unchanged.
 
 Upstream fit→convert-to-satin→SatinColumn→S1→default PES writer path. No app integration. User sewout approval is separate.
 
@@ -45,14 +45,14 @@ python3 tools/hangul_satin/summarize-sweep.py /tmp/myembro-port-out/letter/hangu
 ```
 
 Retrieved and checked OFL text from pinned public Google Fonts commits; no remote code was executed.
-Selected five regular400 fonts as thin-stroke candidates; this sweep does not determine minimum stroke thickness
-or usability grades for all Hangul fonts. Raster font size128px;
+Selected five regular 400 fonts as thin-stroke candidates; this sweep does not determine minimum stroke thickness
+or usability grades for all Hangul fonts. Raster font size 128px;
 normalized per-glyph ink height to physical height. Resolution convergence verification is outside scope.
 Nanum Myeongjo failures occurred for BBUL, BBEOSS, BBYEOS, BBOM, BBONG, BBYO, BBYU, GABS.
 If even one path fails conversion, the whole glyph fails; partially generated satin is not exported as a completed glyph.
 No changes were made to discard short serif paths or arbitrarily replace them with running stitches.
 Failure details are in `summary.json` and per-glyph `.log` files.
 
-Validation: `./gradlew check` BUILD SUCCESSFUL in1m1s(engine650·app Debug/Release each205,
-failures0·Lint passed). `/tmp/myembro-port-out/letter/hangul-sweep-v1/check.log`.
+Validation: `./gradlew check` BUILD SUCCESSFUL in 1m 1s(engine 650·app Debug/Release each 205,
+failures 0·Lint passed). `/tmp/myembro-port-out/letter/hangul-sweep-v1/check.log`.
 `SWEEP_ASSERT 450 inputs / 432 gate PASS / 18 generation rejected / 432 zero-motion=0 / 432 origin=(0,0)`.

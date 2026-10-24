@@ -2,16 +2,16 @@
 
 Inputs, official coordinates, stitch count±5%, and Hausdorff≤0.2mm criteria are unchanged.
 Tests compare all coordinates and locks and also output the first differing index in ordered comparisons.
-No rotation/scaling/point removal beyond centering translation. Indices start at0.
+No rotation/scaling/point removal beyond centering translation. Indices start at 0.
 
-| Case | Before stitch-count ratio(ours/official) | Before Hausdorff mm | Before first difference | After stitch count | After Hausdorff mm | After first difference | After first difference exceeding0.2mm |
+| Case | Before stitch-count ratio(ours/official) | Before Hausdorff mm | Before first difference | After stitch count | After Hausdorff mm | After first difference | After first difference exceeding 0.2mm |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | rectangle | 0.975482 | 0.583095 | 1 | 571/571 | 0.141421 | 1 | -1 |
 | circle | 1.090634 | 0.531507 | 0 | 662/662 | 0.141421 | 0 | -1 |
 | hole | 0.975728 | 0.583095 | 1 | 824/824 | 0.141421 | 1 | -1 |
 
-`-1` means no such difference. Remaining exact-coordinate differences are at native0.1mm quantization/
-writer output-origin handling boundaries; maximum ordered error is below0.141422mm for all3cases.
+`-1` means no such difference. Remaining exact-coordinate differences are at native 0.1mm quantization/
+writer output-origin handling boundaries; maximum ordered error is below 0.141422mm for all 3 cases.
 Test assertions determine whether results are within tolerance. No byte identity is claimed.
 
 ## Upstream comparison and changes
@@ -25,17 +25,17 @@ Upstream was read only; no execution/dependency installation.
    TatamiFill/FillRouting through a native-unit compatibility adapter. No duplicate algorithm remains.
 2. `lib/elements/fill_stitch.py:do_underlay/to_stitch_groups` passes the final underlay stitch as
    top's starting_point. DefaultTatami preserves this connection as well.
-3. Upstream travel gives `even_running_stitch` the getter default0.2mm tolerance.
-   Changed the simplified code's0 to upstream0.2mm. Existing path tests check needle coordinates are inside;
+3. Upstream travel gives `even_running_stitch` the getter default 0.2mm tolerance.
+   Changed the simplified code's 0 to upstream 0.2mm. Existing path tests check needle coordinates are inside;
    segment corner deviations use this upstream tolerance(0-length segments use point covers checks).
-4. After core replacement, circle was still662/662stitches, Hausdorff0.570088mm. Test SVG arc
+4. After core replacement, circle was still 662/662 stitches, Hausdorff 0.570088mm. Test SVG arc
    flattening differed from upstream Inkex CSP. Shared the worker's already ported ManualCspPath.flatten
    from the oracle source set to compare using the same polygon Ink/Stitch receives.
    Official goldens were unchanged. Oracle code use was added only to the test classpath.
 
 `DefaultTatamiOracleTest` outputs raw underlay/top stitch counts/start/end points, postprocess needle counts,
 actual PES needle counts, official stitch counts, count_ratio, Hausdorff, first difference,
-first difference exceeding0.2mm, and ordered_max_error_mm to `engine/build/tatami-oracle/*.json`.
+first difference exceeding 0.2mm, and ordered_max_error_mm to `engine/build/tatami-oracle/*.json`.
 Before/after source results for this unit are preserved in [comparison.json](tatami-equivalence-results/comparison.json).
 
 ## Execution verdicts
@@ -49,7 +49,7 @@ ENGINE CHECK: 509 tests; 0 failures; 0 errors
 PASS 3/3 cases passed
 ```
 
-Representative3cases passed official equivalence. Worker Kotlin POLICY gate integration is separately pending.
-The previous430combination sweep is history for the old backend and cannot be reused after this core change.
+Representative 3 cases passed official equivalence. Worker Kotlin POLICY gate integration is separately pending.
+The previous 430 combination sweep is history for the old backend and cannot be reused after this core change.
 Keeps allow-rule deployment_enabled=false. The next unit must resweep the new backend.
 Remote CI green and actual sewout approval have not yet been confirmed.

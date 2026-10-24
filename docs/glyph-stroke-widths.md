@@ -30,9 +30,9 @@ in the key. The measurer explicitly throws if a small outline yields no interior
 
 ## Computed table
 
-Statically instantiated the existing public Noto Sans KR at weight700/400,
-using the existing test's 'ja' reference, flattening0.2 font unit, and boundary spacing0.1mm.
-Regular400 reproduces the S23 comparison; equivalence to the effective variation at that time is unconfirmed.
+Statically instantiated the existing public Noto Sans KR at weight 700/400,
+using the existing test's 'ja' reference, flattening 0.2 font unit, and boundary spacing 0.1mm.
+Regular 400 reproduces the S23 comparison; equivalence to the effective variation at that time is unconfirmed.
 
 | Font | Height mm | Jeong median mm | Min median mm |
 |---|---:|---:|---:|
@@ -44,11 +44,11 @@ Regular400 reproduces the S23 comparison; equivalence to the effective variation
 | NotoSansKR-700 | 25 | 2.728819 | 2.861577 |
 | NotoSansKR-400 | 15 | 1.126003 | 1.125383 |
 
-Reproduction(uses existing public test fontTools instances; no PES generation):
+Reproduction (uses existing public test fontTools instances; no PES generation):
 ```
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:koreanTtfSweepClasspath -PkoreanTtfSweepClasspath=/tmp/myembro-sewtest/kr7/classpath.txt
 java -Djava.awt.headless=true -cp "$(cat /tmp/myembro-sewtest/kr7/classpath.txt)" io.github.linker2k.myembro.engine.lettering.KoreanTatamiTrial medians /tmp/myembro-sewtest/kr7/NotoSansKR-700.ttf /tmp/myembro-sewtest/kr7/NotoSansKR-400.ttf /tmp/myembro-sewtest/kr7/median-table.md
 ```
 
-Validation: `GlyphStrokeWidthsTest` 4cases(median/glyph distinction/proportional height/holes/spaces/input validation),
+Validation: `GlyphStrokeWidthsTest` 4 cases (median/glyph distinction/proportional height/holes/spaces/input validation),
 `:engine:check` BUILD SUCCESSFUL. KRSAMP7 sewout trial is on hold.
