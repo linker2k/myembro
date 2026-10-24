@@ -260,6 +260,25 @@ class AndroidTextFontResolver(context: Context) : io.github.linker2k.myembro.eng
     private val context=context.applicationContext
     private val sources=mutableMapOf<String,LoadedFont>()
     private fun source(id:String)=sources[id] ?: runCatching { loadFont(context,id) }.getOrNull()?.also { sources[id]=it }
+    override fun descriptors():List<io.github.linker2k.myembro.engine.agent.FontDescriptor> {
+        val repo=FontRepository(context)
+        val ids=(bundledLetteringFonts.map { it.id }+HersheyFont.DEFAULT_ID+repo.catalog.map { it.id }+repo.userFonts().map { it.id }).distinct()
+        return ids.mapNotNull { id ->
+            val entry=repo.find(id);val source=source(id)
+            val kind=when {
+                source?.ink!=null || entry?.kind==CatalogFont.Kind.INKSTITCH_SVG -> "INKSTITCH"
+                source?.hershey!=null -> "HERSHEY"
+                source?.svg!=null || entry?.kind==CatalogFont.Kind.SINGLE_LINE_SVG -> "SINGLE_LINE_SVG"
+                else -> "OUTLINE"
+            }
+            val tags=entry?.scripts.orEmpty().map { it.uppercase() }.toSet()+
+                (if(entry?.themeKey=="script") setOf("SCRIPT") else emptySet())+
+                if(bundledLetteringFonts.any { it.id==id }) setOf("KOREAN","LATIN") else emptySet()
+            if(source?.face==null && source!=null) io.github.linker2k.myembro.engine.agent.fontDescriptor(id,source.resolved,source.name,tags)
+            else io.github.linker2k.myembro.engine.agent.FontDescriptor(id,source?.name ?: entry?.nameKo ?: entry?.name ?: id,kind,
+                source?.cmap?.ranges()?.flatMap { it.toList() }?.toSet(),tags,source!=null)
+        }
+    }
     override fun revision(fontId:String)=source(fontId)?.revision
     override fun resolve(fontId:String):ResolvedTextFont? = resolveText(fontId, "")
     override fun resolveText(fontId:String,text:String):ResolvedTextFont? {

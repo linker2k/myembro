@@ -9,6 +9,7 @@ import kotlinx.serialization.json.*
 /** Local fonts only. A snapshot adapter may override resolveText to extract the requested glyphs.
  * Unknown fonts return null; no fallback, download or platform types cross this interface. */
 interface FontResolver {
+    fun descriptors():List<FontDescriptor> = emptyList()
     fun resolve(fontId: String): ResolvedTextFont?
     fun revision(fontId: String): String?
     fun prepare(request: TextPreparationRequest, font: ResolvedTextFont, policy: TextPreparationPolicy): io.github.linker2k.myembro.engine.edit.TextObject =
@@ -20,11 +21,19 @@ interface FontResolver {
 
 /** JVM defaults. Inject another resolver for TTF OutlineSnapshot data; no AWT/Android dependency here. */
 class BundledFontResolver(private val snapshots: FontResolver? = null) : FontResolver {
-    private val ranges by lazy {
+    override fun descriptors():List<FontDescriptor> = (IDS+HersheyFont.DEFAULT_ID).map { id ->
+        val f=checkNotNull(resolve(id));fontDescriptor(id,f,when(f) {
+            is ResolvedTextFont.InkStitch -> f.font.info.name
+            is ResolvedTextFont.Hershey -> "Hershey Futural"
+            else -> id
+        }, if(metadata[id]?.let { entry-> listOf("theme","style").any { entry[it]?.jsonPrimitive?.content=="script" } }==true) setOf("SCRIPT") else emptySet())
+    } + snapshots?.descriptors().orEmpty()
+    private val metadata by lazy {
         val catalog=Json.parseToJsonElement(checkNotNull(javaClass.getResourceAsStream("/agent/fonts/inkstitch-catalog.json")).bufferedReader().use { it.readText() }).jsonObject
-        catalog.getValue("fonts").jsonArray.map { it.jsonObject }.filter { it.getValue("id").jsonPrimitive.content in IDS }.associate {
-            it.getValue("id").jsonPrimitive.content to (it.getValue("recommendedMinHeightMm").jsonPrimitive.double..it.getValue("recommendedMaxHeightMm").jsonPrimitive.double)
-        }
+        catalog.getValue("fonts").jsonArray.map { it.jsonObject }.associateBy { it.getValue("id").jsonPrimitive.content }
+    }
+    private val ranges by lazy {
+        metadata.filterKeys { it in IDS }.mapValues { (_,entry)->entry.getValue("recommendedMinHeightMm").jsonPrimitive.double..entry.getValue("recommendedMaxHeightMm").jsonPrimitive.double }
     }
     private val cache = mutableMapOf<String, Pair<ResolvedTextFont,String>>()
     private fun entry(id: String): Pair<ResolvedTextFont,String>? {
