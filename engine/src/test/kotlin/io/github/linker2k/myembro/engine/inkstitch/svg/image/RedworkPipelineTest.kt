@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.io.PesReader
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.sewout.*
@@ -21,11 +22,30 @@ class RedworkPipelineTest {
         }
         val result=RedworkPipeline.generate(64,64,rgb,40.0,0,EmbThread(0xFF000000.toInt(), "Black"))
         assertEquals("inkstitch-default-tatami-underlay",result.pattern.metadata["myembro.fill.backend"])
-        val needles=PesReader.read(PesWriter.write(result.pattern)).stitches.filter { it.command==Command.STITCH }
+        val bytes=PesWriter.write(result.pattern)
+        assertEncodedViewport(bytes)
+        // The model remains centered; terminal PES translates the full design to top-left.
+        val shiftX=-result.pattern.stitches.minOf { it.x }
+        val shiftY=-result.pattern.stitches.minOf { it.y }
+        val needles=PesReader.read(bytes).stitches.filter { it.command==Command.STITCH }
         assertTrue(needles.isNotEmpty())
-        assertFalse(needles.any { it.x in -39..39 && it.y in -39..39 }, "White center must remain unsewn")
+        assertFalse(needles.any { it.x in shiftX-39..shiftX+39 && it.y in shiftY-39..shiftY+39 }, "White center must remain unsewn")
         // Interior needles demonstrate area fill instead of another pair of running outlines.
-        assertTrue(needles.any { it.x in 65..110 && it.y in -20..20 })
+        assertTrue(needles.any { it.x in shiftX+65..shiftX+110 && it.y in shiftY-20..shiftY+20 })
+    }
+
+    /** Check actual encoded destinations/header, never recentered reader geometry. */
+    private fun assertEncodedViewport(bytes: ByteArray) {
+        val hoop=HoopSpec.H100
+        val viewport=PecViewportCheck.check(bytes,hoop)
+        assertTrue(viewport.valid,viewport.errors.joinToString())
+        assertEquals(0,viewport.minX)
+        assertEquals(0,viewport.minY)
+        assertTrue(viewport.maxX in 0 until hoop.width)
+        assertTrue(viewport.maxY in 0 until hoop.height)
+        assertEquals(viewport.maxX,viewport.headerWidth)
+        assertEquals(viewport.maxY,viewport.headerHeight)
+        println("PEC_VIEWPORT min=(${viewport.minX},${viewport.minY}) max=(${viewport.maxX},${viewport.maxY}) header=(${viewport.headerWidth},${viewport.headerHeight})")
     }
 
     private fun fixture(name: String) {
@@ -41,12 +61,12 @@ class RedworkPipelineTest {
         assertTrue(result.pattern.stitchCount > 10)
         assertEquals(1, result.pattern.colorBlocks.size)
         val bytes = result.copyPesBytes()
+        assertEncodedViewport(bytes)
         val parsed = PesReader.read(bytes)
         assertEquals(1, parsed.colorBlocks.size)
         assertTrue(parsed.stitches.none { it.command == Command.COLOR_CHANGE })
         assertEquals(Command.END, parsed.stitches.last().command)
         val report = SewoutCheck.checkPes(bytes, options = SewoutOptions(
-            placement = Placement.HOOP_COORDINATES,
             // Generated-output threshold from /tmp/myembro-quality-gate/POLICY.md: >15 / 0.5mm.
             origin = DesignOrigin.APP_GENERATED,
         ))
@@ -57,8 +77,9 @@ class RedworkPipelineTest {
         File(output, "$name.sewout.txt").writeText(report.findings.joinToString("\n") { "${it.severity}: ${it.code}: ${it.message}" })
         // PES does not preserve generated metadata: explicitly check the app's default v1
         // bytes with the same generated-output policy as PhotoViewModel.
-        val appReport = SewoutCheck.checkPes(PesWriter.write(result.pattern), options = SewoutOptions(
-            placement = Placement.HOOP_COORDINATES, origin = DesignOrigin.APP_GENERATED))
+        val appBytes=PesWriter.write(result.pattern)
+        assertEncodedViewport(appBytes)
+        val appReport = SewoutCheck.checkPes(appBytes, options = SewoutOptions(origin = DesignOrigin.APP_GENERATED))
         assertTrue(appReport.analysisComplete)
         assertFalse(appReport.hasBlockingIssues, appReport.findings.filter { it.severity == Severity.BLOCKER }.joinToString())
         assertTrue(report.analysisComplete)
