@@ -4,14 +4,14 @@
 
 - **Upstream/license:** Official [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), pinned commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`; `src/thin-image.c` is by Martin Weber under LGPL-2.1-or-later, and `src/{autotrace,fit,curve}.c` are GPL-2.0-or-later (per-file headers), allowing combination with GPL-3. Do not label the whole project LGPL. Preserve README/COPYING/COPYING.LIB and per-file notices, and cross-check attribution scope for headerless helper files before implementation.
 - **Scope/basis:** [Inkscape integration code](https://inkscape.gitlab.io/inkscape/doxygen/inkscape-autotrace_8cpp_source.html) uses `at_splines_new_full` and the centerline option (confirmed to be the same library family; byte identity between Inkscape's bundled version and the tag above is unconfirmed). Following `src/autotrace.c`, port Rosenfeld `thin-image.c` → `pxl-outline.c::find_centerline_pixels` → `fit.c` and curve/spline/vector helpers; investigate width preservation only through upstream `image-proc.c`'s distance-map path. The 8 relevant C files total 4,225 lines by `wc -l`, excluding GUI/image codecs/new algorithms.
-- **Upstream comparison plan:** Run pinned C sources with a small local caller and share 5 identical black-and-white inputs (straight line, T branch, X crossing, ring, thick ‘한’ raster from an app Hangul TTF licensed for redistribution) with Kotlin. Record/check thinning masks, paths/branches/open-closed status/order/segment counts, and control-point float/ULP differences in code. Except `centerline=true`, retain `new_fitting_opts` defaults; separate `preserve_width=true` comparison as another upstream-option axis. Store results/input/executable hashes/compiler options in `/tmp/myembro-port-out/editor/autotrace/`; subsequent PES stages check P1–P8 (including integer hoop upper bounds) through the actual-byte gate. No upstream execution/dependency installation/product coding in this unit.
+- **Upstream comparison plan:** Run pinned C sources with a small local caller and share 5 identical black-and-white inputs (straight line, T branch, X crossing, ring, a thick raster of the Hangul syllable han from an app Hangul TTF licensed for redistribution) with Kotlin. Record/check thinning masks, paths/branches/open-closed status/order/segment counts, and control-point float/ULP differences in code. Except `centerline=true`, retain `new_fitting_opts` defaults; separate `preserve_width=true` comparison as another upstream-option axis. Store results/input/executable hashes/compiler options in `/tmp/myembro-port-out/editor/autotrace/`; subsequent PES stages check P1–P8 (including integer hoop upper bounds) through the actual-byte gate. No upstream execution/dependency installation/product coding in this unit.
 - **Satin integration dependency:** Reuse letter's upstream port of Ink/Stitch v3.3.0 `lib/elements/utils/stroke_to_satin.py::convert_path_to_satin` (GPL-3.0-or-later) when ready. The investigated letter `409769937cff8cff7ff261aa92a05c6e33260205`'s `lettering.SatinColumn.strokeToSatin/rails` still uses custom miter offsets, so do not use it for this path. Upstream conversion takes constant `stroke_width`; varying Hangul stroke widths and intersection-branch connections remain unconfirmed dependencies. Confirm upstream options/contracts first rather than filling gaps with average widths/arbitrary rail approximations.
 - **Estimate/next unit:** Based on the code volume above, AutoTrace core + upstream comparisons: 6–10 hours; letter upstream conversion preparation/integration checks: another 2–4 hours (estimated total 8–14 hours, not a promise of quality passage). Propose the next 20 minutes for an upstream thinning caller and small fixed-input goldens. Continue stopping/reporting every 20 minutes with command/test output; do not begin implementation at this document stage.
 
 ## Unit 1 — obtaining upstream thinning goldens
 
 - Latest priority: reuse the same upstream centerline engine for both **(A) S4: bean for thick lines/running for thin lines** and **(B) Hangul: upstream convert-to-satin**. A uses only upstream parameters such as `bean_stitch_repeats`; thickness-classification thresholds are unconfirmed before measurement. This unit adds no classification/stitch-generation code.
-- Executed upstream `thin_image` unchanged. Pinned 5 inputs (straight/T/X/ring/public Noto Sans KR weight700 ‘한’) × 1/3 channels = 10 PGM/PBMs, plus source/font/executable hashes, in [test resources](../engine/src/test/resources/autotrace/thinning/README.md). Extracted only official headers matching the existing GLib/GObject runtime into `/tmp`, without system installation.
+- Executed upstream `thin_image` unchanged. Pinned 5 inputs (straight/T/X/ring/the Hangul syllable han rendered in public Noto Sans KR at weight 700) × 1/3 channels = 10 PGM/PBMs, plus source/font/executable hashes, in [test resources](../engine/src/test/resources/autotrace/thinning/README.md). Extracted only official headers matching the existing GLib/GObject runtime into `/tmp`, without system installation.
 - Reproduce: `python3 tools/autotrace/generate-thinning-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify` → `COMMITTED_GOLDENS_EXACT 10/10`, `REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5`. Output `/tmp/myembro-port-out/editor/autotrace/`; Hangul foreground 1,493→174 pixels. Not a claim of Kotlin/full-centerline/satin/PES quality passage.
 - Proposed next 20 minutes: port upstream thinning to Kotlin and test exact equality against fixed masks. Then proceed to upstream branch/path tracing; this unit stops at obtaining goldens.
 
@@ -75,9 +75,9 @@ and strict `>0` condition for destination pixels above/to the left. Closed paths
 Output uses upstream Cartesian pixel coordinates (upward y), not PES coordinates.
 
 Goldens were generated by running unmodified upstream thin-image.c → pxl-outline.c through a C caller.
-Across straight/T/X/ring/public OFL ‘한’ × gray/RGB = 10 cases, Kotlin tests compare path order, every integer coordinate,
+Across straight/T/X/ring/the Hangul syllable han from a public OFL font × gray/RGB = 10 cases, Kotlin tests compare path order, every integer coordinate,
 color, and open/clockwise exactly. Inputs reuse existing thinning PGM files, with no personal designs.
-The upstream ring has 1 closed path; ‘한’ has 6 paths. GLib uses only the existing runtime and headers extracted
+The upstream ring has 1 closed path; the Hangul syllable han has 6 paths. GLib uses only the existing runtime and headers extracted
 under `/tmp`, without system installation.
 
 Reproduce: `python3 tools/autotrace/generate-centerline-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify`.
@@ -112,40 +112,40 @@ Next ported Ink/Stitch **v3.3.0 b0edd96311ece82ee48816dc93466274b12c2a9c**'s
 `get_scores`, `local_minima`, `generate_rungs`, `_merge`, `set_first_node`.
 Also covers `lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py:get_join_style_args`,
 and `lib/utils/geometry.py:remove_duplicate_points/roll_linear_ring`.
-Upstream score101 bins, angle-squared/int32, smoothing kernel/minima, rounding to 4 places, depth20 bisection,
-1px endpoint criterion, tangent0.001, rungs at 1.2 times, and 1/2mm spacing are unchanged.
+Upstream score 101 bins, angle-squared/int32, smoothing kernel/minima, rounding to 4 places, depth 20 bisection,
+1px endpoint criterion, tangent 0.001, rungs at 1.2 times, and 1/2mm spacing are unchanged.
 JTS OffsetCurve replaces custom miter offsets; resulting rails/rungs are passed directly to the existing
 Ink/Stitch SatinColumn constructor. Upstream CLI/Inkex UI are outside this API's scope.
 
-Checked Shapely LineString.offset_curve defaults quad_segs16/mitre_limit5 against the
+Checked Shapely LineString.offset_curve defaults quad_segs 16/mitre_limit 5 against the
 [official API documentation](https://shapely.readthedocs.io/en/2.0.6/reference/shapely.LineString.html#shapely.LineString.offset_curve).
-Only when upstream SVG style explicitly specifies miter is SVG's default miter-limit4 used;
-otherwise Shapely's default5 is retained. Style code defaults to mitre.
+Only when upstream SVG style explicitly specifies miter is SVG's default miter-limit 4 used;
+otherwise Shapely's default 5 is retained. Style code defaults to mitre.
 
-**Validation scope for this unit:** StrokeToSatinTest7 cases (numeric straight rails/central rungs, 90° corner score8100,
+**Validation scope for this unit:** StrokeToSatinTest 7 cases (numeric straight rails/central rungs, 90° corner score 8100,
 miter coordinates, closed-path midpoint/split merging, node rungs, closed-extension start point, crossing-rung filtering,
 style defaults; some items share a test). These are analytical regressions of upstream formulas;
 **equivalence against official convert-to-satin output goldens is not yet determined**. Requested resource paths from the coordinator.
 Do not confuse the existing 10/10 upstream centerline-golden verdict with this undetermined status.
 
 Differences/scope:
-- Shapely/GEOS replaced by existing approved JTS1.20 OffsetCurve/LengthIndexedLine/intersection.
+- Shapely/GEOS replaced by existing approved JTS 1.20 OffsetCurve/LengthIndexedLine/intersection.
   Full numeric equivalence of curved joins/self-intersections is unconfirmed until official-output comparison.
 - Input is an explicit path in SVG px and a positive **constant strokeWidth**. No width estimation/satin-fill selection.
   Empty/duplicate-only paths return null; invalid widths are Kotlin input errors; closed-start API requires a closed ring.
 - For paths shorter than 1px, every recursively split descendant fails upstream's endpoint<1 condition,
-  so recursion that always yields an empty result is skipped early. The depth20 rule remains for paths of 1px or more and loops.
+  so recursion that always yields an empty result is skipped early. The depth 20 rule remains for paths of 1px or more and loops.
 - Returns JVM Lists; excludes SVG DOM/CLI termination/logging/progress callbacks.
 
-Full `./gradlew check`: BUILD SUCCESSFUL in50s. All 20 upstream goldens and 7 formula regressions passed.
+Full `./gradlew check`: BUILD SUCCESSFUL in 50s. All 20 upstream goldens and 7 formula regressions passed.
 JUnit/output: `/tmp/myembro-port-out/letter/hangul-unit1/output.txt`.
-Noto Sans KR400 ‘정민’15mm PES has not yet been generated. Upstream `fit.c` smoothing/
+A PES of the Hangul text Jeongmin in Noto Sans KR400 at 15mm has not yet been generated. Upstream `fit.c` smoothing/
 `image-proc.c` distance-map/preserve_width contracts are not yet in Kotlin. Plain SVG output
 `output-svg.c` does not separately record stroke-width for centerline paths, so satin is not generated using an arbitrary
 average width or 1px default. Propose small checks of official conversion outputs and upstream curve/width contracts,
 then connection to this explicit-width API. App integration/automatic selection remain deferred.
 
-## Letter handoff unit 2 — preparing Noto400 ‘정민’15mm integration
+## Letter handoff unit 2 — preparing integration of the Hangul text Jeongmin in Noto400 at 15mm
 
 Confirmed the curve contract. `convert_path_to_satin` takes a LineString, so existing upstream pixel centerline paths
 can be supplied in their original order. No new spline smoothing/custom curve fitting is added.
@@ -162,18 +162,18 @@ stroke_width. No mean/median-width mapping absent from upstream was added;
 the coordinator was asked for this trial's constant width (mm). Automatic selection remains deferred.
 
 Prepared `tools/hangul_satin/prepare-raster.py` and `:engine:hangulSatinSample`.
-The font's default weight is100, so variation400 was explicitly specified. Current results:
-- Noto Sans KR400, ‘정민’, ink-height15mm, original font SHA
+The font's default weight is 100, so variation 400 was explicitly specified. Current results:
+- Noto Sans KR400, the Hangul text Jeongmin, ink-height 15mm, original font SHA
   `194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252`
 - Upstream Kotlin thinning→centerline **9 paths**. Inputs/integer paths/PNGs:
   `/tmp/myembro-sewtest/krs/input.{json,pgm,png}`, `KRSAT1-centerline.{json,png}`.
 - Wired to call existing convert-to-satin→SatinColumn→S1→default writer once explicit width is supplied.
-  Writes PES only if the writer passes one-color40wt/60×60mm/origin/0-length/header checks and P1–P8.
+  Writes PES only if the writer passes checks for one color of 40wt thread, 60×60mm bounds, origin, 0-length moves, and headers, as well as P1–P8.
   Does not overwrite existing filenames.
 - **No PES generated yet**: awaiting width input; no claim of `.PES`/decoded-PES `.png`/quality PASS.
   Default trace mode explicitly generates only a centerline PNG.
 
-`./gradlew check :engine:hangulSatinSample`: BUILD SUCCESSFUL in44s.
+`./gradlew check :engine:hangulSatinSample`: BUILD SUCCESSFUL in 44s.
 Reproduction commands are recorded in `tools/hangul_satin/README.md`. After a width reply,
 running with `-PstrokeWidthMm=<지정값>` proceeds to generation of the requested `/tmp/myembro-sewtest/krs/KRSAT1.PES`
 and actual-byte inspection/PNG stages.
@@ -181,18 +181,18 @@ and actual-byte inspection/PNG stages.
 ## Letter handoff unit 3 — KRSAT1 generation using upstream fit
 
 The coordinator confirmed **1.13mm** as this trial's constant stroke width. Basis: model
-GlyphStrokeWidths' measured median for Noto Sans KR400 at 15mm (정1.126, 민1.125mm);
+GlyphStrokeWidths' measured median for Noto Sans KR400 at 15mm (Jeong 1.126, Min 1.125mm);
 not extended into automatic selection/general font-width estimation rules.
 
 The trial used **unmodified upstream AutoTrace C fit**. `tools/autotrace/fit_oracle.c` only calls
 thin-image→pxl-outline→`fit.c:fitted_splines`; no new smoothing algorithm was written.
-Only centerline=TRUE was set on `new_fitting_opts` defaults. preserve_width remains defaultFALSE
+Only centerline=TRUE was set on `new_fitting_opts` defaults. preserve_width remains default FALSE
 (satin width is a separately confirmed constant). Helper C files for curve/spline/vector/epsilon-equal are
 also original text from `1a232b27818a46a05cd25edec09e2f77c4e9ac01`.
 **Kotlin fit port/app integration are not yet complete**; C execution is exclusively for this local trial/
 future comparison-golden generation. Ink/Stitch Python was not run, and no dependencies were installed.
 
-Upstream fit result: **9 paths/21 segments/degree 3 curves: 14**, byte-exact on rerun.
+Upstream fit result: **9 paths/21 segments/14 curves of degree 3**, byte-exact on rerun.
 Input, each C file/caller/executable, output SHA, and compiler options are recorded in
 `/tmp/myembro-sewtest/krs/fit-provenance.json`.
 Kotlin reads original line/cubic controls and applies `output-svg.c`'s float y=height-y and
@@ -203,29 +203,29 @@ if fit.json is missing, fallback generation of PES from pixel-staircase paths is
 **Artifacts** `/tmp/myembro-sewtest/krs/KRSAT1.PES` (new name,2,298bytes),
 decoded-PES PNG `KRSAT1.png`, upstream fit centerline `KRSAT1-centerline.png`,
 inspection output `KRSAT1-check.txt`, gate JSON/text `KRSAT1-gate.{json,txt}`.
-Font input ink-height15mm and actual needle bounds **26.8×14.4mm** are reported separately.
-627 stitches/8 trims/one color of black40wt; no automatic satin/fill branching added.
+Font input ink-height 15mm and actual needle bounds **26.8×14.4mm** are reported separately.
+627 stitches/8 trims/one color of black 40wt; no automatic satin/fill branching added.
 
 | Actual-byte check | Result |
 |---|---|
-| P1/P2 origin/integer bounds | min(0,0), max(268,144), within HoopSpec100×100mm/trial60×60mm |
+| P1/P2 origin/integer bounds | min(0,0), max(268,144), within HoopSpec 100×100mm/trial 60×60mm |
 | P3 header |268×144, exactly matches actual bounds |
 | P4 0-length needle/JUMP |0 |
-| P5 consecutive same-point needles |Maximum1 |
-| P6 missing locks at start/end/before and after trims |All0, S1 half_stitch |
-| P7 0.5mm cell density |Maximum6 |
+| P5 consecutive same-point needles |Maximum 1 |
+| P6 missing locks at start/end/before and after trims |All 0, S1 half_stitch |
+| P7 0.5mm cell density |Maximum 6 |
 | P8 maximum needle length |2.4186773245mm |
 
 `quality-gate check --text --style satin` tool v7: **PASS1/1**; code/thresholds were
 not changed. This automated code verdict is separate from user physical-device approval, which remains pending.
 PES SHA256: `c26ff1bb5fdbee8c46397c2fcaba1800aa27da3b98b9b0d49d13a340fd202e79`.
-Full `./gradlew check` passed (last run13s). For the upstream fit generator/reproduction commands,
+Full `./gradlew check` passed (last run 13s). For the upstream fit generator/reproduction commands,
 see `tools/hangul_satin/README.md`. Do not overwrite KRSAT1 by regenerating it;
 use a new stem for the next physical-test file.
 
 ## Letter handoff unit 4 — AutoTrace fit Kotlin port
 
-`AutoTraceFit.kt` ports the centerline default path of `fit.c` from the same pinned AutoTrace0.31.10.
+`AutoTraceFit.kt` ports the centerline default path of `fit.c` from the same pinned AutoTrace 0.31.10.
 Covers `split_at_corners/find_corners/find_vectors/remove_adjacent_corners`,
 `remove_knee_points`, `filter`, `fit_curve/fit_with_line/fit_with_least_squares`,
 `set_initial_parameter_values`, `find_tangent/find_half_tangent`, `fit_one_spline`,
@@ -233,19 +233,19 @@ Covers `split_at_corners/find_corners/find_vectors/remove_adjacent_corners`,
 and `spline.c:evaluate_spline`. Upstream commit and GPL2+FSF notices are in the file header;
 full upstream license text remains in existing engine resources.
 
-Defaults: corner_surround4, corner_threshold100°, corner_always_threshold60°,
-filter_iterations4, tangent_surround3, error_threshold2px, line_threshold1,
-line_reversion_threshold0.01, remove_adjacent_corners=false,
+Defaults: corner_surround 4, corner_threshold 100°, corner_always_threshold 60°,
+filter_iterations 4, tangent_surround 3, error_threshold 2px, line_threshold 1,
+line_reversion_threshold 0.01, remove_adjacent_corners=false,
 centerline=true, preserve_width=false. Preserves upstream `gfloat` operation order/rounding, corner-end handling,
 filter-collapse cancellation and previous-point state, open-curve link handling, unnormalized average tangents,
 and shared tangents during recursive splitting. No custom curve smoothing or width estimation.
 
-**Goldens:** 5 existing synthetic straight/T/X/ring/OFL Noto ‘한’ inputs × 1/3 channels, 10 cases.
+**Goldens:** 5 existing synthetic inputs: straight/T/X/ring/the Hangul syllable han in OFL Noto × 1/3 channels, 10 cases.
 `tools/autotrace/generate-fit-goldens.py` calls upstream C unchanged to generate
 [fit resources](../engine/src/test/resources/autotrace/fit/README.md).
 Compares path counts/open-closed status/direction/segment order/degree/all control-point xyz as exact float bits.
 `AutoTraceFitTest`: **upstream goldens 10/10 + 1 empty-input/invalid-coordinate check passed**.
-C-golden reruns also 10/10 byte-exact. Local ‘정민’15mm was not added as a test fixture;
+C-golden reruns also 10/10 byte-exact. The local Hangul text Jeongmin at 15mm was not added as a test fixture;
 separate comparison uses `/tmp/myembro-sewtest/krs/input.pgm`: **9 paths/21 segments/84 control points,
 exact float bits** (`/tmp/myembro-port-out/letter/autotrace/fit/local-fit.log`).
 
@@ -264,6 +264,6 @@ Scope/differences from upstream:
   all-input equivalence or official-oracle equivalence for line→satin.
 
 Validation output: `/tmp/myembro-port-out/letter/autotrace/fit/verify.log`, `local-fit.log`,
-`check.log`. `./gradlew check`: **BUILD SUCCESSFUL in38s**, engine650/app Debug205/
-Release205 tests, 0 failures, Lint passed. This unit ends with fit replacement/comparison; no additional PES
+`check.log`. `./gradlew check`: **BUILD SUCCESSFUL in 38s**, engine 650/app Debug 205/
+Release 205 tests, 0 failures, Lint passed. This unit ends with fit replacement/comparison; no additional PES
 physical-test file was generated. The delivered KRSAT1 SHA256 also matches the previous record.

@@ -223,7 +223,7 @@ No check classifying the fan-shaped satin itself was added; blocking is based on
 ## Automated policy regressions (2026-10-24)
 
 - `SewoutSafetyTest`: 15/16, 30/31/38, 3/4 boundaries, four-phase density, start/end locks, provenance, file/hoop/maximum stitch, suppressed blocking results.
-- `S1PolicyRegressionTest`: Regenerate a total of 5 `.myembro` inputs from the actual Android app: “ABC 가나다” at 5/8/12mm, a circle, and a square
+- `S1PolicyRegressionTest`: Regenerate a total of 5 `.myembro` inputs from the actual Android app: “ABC” followed by the Hangul syllables ga, na, and da at 5/8/12mm, a circle, and a square
   → default PES v1 → assert passing the `SewoutCheck` generated-output criteria.
 - 2 official v3.3.0 ties rectangle/stitch_plan corner cases assert stitch count ±5% and symmetric Hausdorff ≤0.2mm.
   Only bbox-center translation is normalized; rotation/scale are not matched. A total of 7 representative cases, with no large matrix execution.
