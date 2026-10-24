@@ -7,7 +7,7 @@ is introduced in the engine.
 ## Kernel and session controller
 
 `ToolDispatcher.dispatch(project, revision, name, arguments, confirmed=false)` is
-the snapshot-in/snapshot-out preparation kernel. Its 19 supported names cover
+the snapshot-in/snapshot-out preparation kernel. Its 25 supported names cover
 font/settings queries, text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
 visibility, color, removal, frame selection, sewing checks and PES preparation.
 Successful edits return their resolved `ProjectCommand` for session publication.
@@ -221,3 +221,106 @@ conflict even with a boolean confirmation, token-approved replacement, token rep
 external target changes, stale revisions/artifacts, blocked PES, traversal/symlink
 refusal and both query outputs. Existing app save tests exercise the unchanged
 naming and named-save path. No personal designs are fixtures.
+
+## Design catalogs and approved imports
+
+`list_builtin_designs({})` returns `designs` rows with `id`/`assetId`, name, fileName,
+widthMm, heightMm, colorCount, stitchCount and SHA-256 (null for flattened project
+sources). Sizes/colors use the same parsed needle bounds/nonempty color blocks as
+the library. `list_designs({query, filter, sort})` uses existing library filters
+ALL/FITS_100/PES/RECENT/FAVORITES, the existing seven-day recent window, and
+RECENT/NAME/STITCHES sorting. Gallery FITS_100 is the nominal HoopSpec size filter;
+export still enforces the separate exact P2 limit. Both queries are read-only and
+may run outside an edit turn; they do not create history steps.
+
+Inject `DesignResolver` with approved `DesignAsset` entries. `add_design` resolves
+its opaque assetId and prepares `ProjectCommand.Add(StitchObject(...))` with the
+explicit objectId. Unknown IDs, including paths/URLs, return DESIGN_NOT_FOUND;
+object ID collisions use the existing DUPLICATE_ID reducer rejection. No model
+argument grants file access. Original byte arrays are copied and retained as
+sourceBytes/sourceFileName; imports are never reclassified as generated geometry.
+
+The default JVM BundledDesignResolver reads the APK's sample manifest and PES files
+plus `builtin:myembro-logo`. Its local library exposes the shipped samples again as
+`library:<sample filename>` fixtures, so JVM list_designs/add_design need no user
+filesystem access. Resources include the existing sample notices and CC0
+license. The Android binding is `ToolDispatcher(designResolver =
+AndroidDesignResolver(context), fontResolver = AndroidTextFontResolver(context))`.
+It uses BundledDesigns/DefaultLogoInstaller assets and DesignLibrary files and
+favorites. Library bytes use the existing bounded, canonical-directory
+DesignSourceResolver. Existing .myembro library entries flatten with DesignFormats,
+exactly as editor import, without pretending their JSON is original stitch bytes.
+Run this synchronous adapter on the host's serialized IO/edit executor.
+
+An unchanged single visible imported PES with identity transform, unedited threads
+and matching parsed source keeps its exact bytes and PES version after validation;
+requested writer version applies when a composition is actually encoded. Moved,
+rotated, scaled or recolored designs use the normal checked writer; original source
+bytes remain intact unless the existing recolor command invalidates them. No gate
+is relaxed: imported density blocks above 30 penetrations per 0.5mm cell; app output
+blocks above 15. The dispatcher's existing PASS-only release rule is unchanged:
+imported density 16–30 can be WARNING/CAUTION and therefore returns no prepared PES.
+Tests distinguish that release policy from the P7 blocker threshold.
+
+Reproduce logo lookup/add/move/export with:
+
+```sh
+./gradlew :engine:runAgentScenario \
+  -PagentScenario=docs/agent/scenarios/add-builtin-logo.json \
+  -PagentOutput=/tmp/myembro-design-tools-NEW
+```
+
+`DesignToolTest` covers lookup, complete catalog metadata, missing IDs, collision
+rollback, library IDs, source byte ownership/preservation, read-only history and
+imported 20/30/31 density classification using synthetic fixtures only.
+
+## Local emoji preparation and generated art
+
+`list_emoji({query, groupId})` uses the same EmojiCatalog/CatalogEmoji.matches as
+the picker, now in the engine with app type aliases. Empty query/group lists the
+30 bundled entries plus locally downloaded entries. A query searches the full
+catalog (including CLDR Korean names/keywords); an explicit group lists that
+catalog group. Rows carry id, name, nameKo, glyph, groupId, bundled, available,
+downloadRequired and the pinned SHA-256. Listing does not read/download SVG data.
+
+`prepare_emoji({emojiId, frameId, widthMm})` resolves only local verified bytes via
+EmojiResolver. BundledEmojiResolver loads the same shipped catalog/SVGs/MIT and
+CLDR notices; AndroidEmojiResolver calls EmojiRepository.localSvg, which never
+calls the downloading svg() API. Missing local data returns DOWNLOAD_REQUIRED
+with no resultId; unknown IDs, checksum and local read failures return
+EMOJI_NOT_FOUND, ASSET_INTEGRITY_ERROR or EMOJI_READ_FAILED. No tool downloads.
+The normal app picker remains responsible for its existing download flow.
+
+The generation path is unchanged: VectorArt.parseSvg -> VectorArt.render with
+all defaults -> checked PesWriter/SewoutCheck using APP_GENERATED origin. The
+existing pictureWidthRange formula and PhotoSizeSweep-derived 20mm minimum now
+live in the engine; app photo/emoji sliders delegate to them. Aspect comes from
+the painted envelope already used by VectorArt, not SVG viewBox whitespace.
+Out-of-policy widths return WIDTH_OUT_OF_RANGE with minWidthMm/maxWidthMm;
+accepted widths use the picker's existing 0.1mm rounding. No stitch/lock/density
+setting is exposed or changed. Existing writer/sewout blockers remain active.
+
+Successful preparation returns READY, resultId, dimensions, allowed range and
+verdict without editing a Project or history. Keep the dispatcher for the document
+lifetime: its opaque result cache retains the generated EmbPattern, source locks
+and provenance. `add_generated_art({transactionId, resultId, objectId, name})`
+resolves only this cache and submits Add(StitchObject). It does not read a PES back
+or label generated art imported; sourceBytes is null and generated P7=15 remains.
+Unknown/foreign result IDs return RESULT_NOT_FOUND. Preparation/listing may run
+outside a turn; adding requires an edit turn through the shared controller and is
+undoable once. Cached preparations are not persisted or evicted by undo/cancel;
+they confer no export permission. Final prepare_pes retains its PASS-only rule.
+
+Bind Android with `ToolDispatcher(emojiResolver = AndroidEmojiResolver(context),
+fontResolver = AndroidTextFontResolver(context), designResolver =
+AndroidDesignResolver(context))` on the serialized background executor.
+
+`prepare_photo` remains NOT_IMPLEMENTED. Its source field is now attachmentId,
+meaning only a photo already picked/granted in the app; existing frame/style/crop
+choices stay explicit. Raw path, URL, bytes and the former assetId fields fail
+closed under the strict schema. No attachment is opened by this stub.
+
+Verification: `EmojiToolTest` covers heart 20mm prepare/add/prepare_pes PASS,
+minimum/maximum ±0.1mm, Korean search, 30 bundled plus local downloads, no-fetch
+status, missing IDs, integrity/read errors, preparation/history isolation, one-step
+undo and exact source stitches/threads/metadata against the existing VectorArt path.

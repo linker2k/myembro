@@ -37,7 +37,5 @@ internal fun EmbroiderySizeSlider(widthMm: Double, range: ClosedFloatingPointRan
  * Width range for a whole picture whose height is [aspect] × width: from the photo sweep minimum
  * up to what fits the hoop's 0..(units−1) range in both directions (P2).
  */
-internal fun pictureWidthRange(hoop: HoopSpec, aspect: Double): ClosedFloatingPointRange<Double> {
-    val max = kotlin.math.floor(minOf(hoop.width - 1.0, (hoop.height - 1.0) / aspect)) / 10.0
-    return minOf(PHOTO_MIN_WIDTH_MM, max)..max
-}
+internal fun pictureWidthRange(hoop: HoopSpec, aspect: Double): ClosedFloatingPointRange<Double> =
+    io.github.linker2k.myembro.engine.geometry.pictureWidthRange(hoop, aspect)

@@ -229,3 +229,16 @@ tasks.processResources {
     from(rootProject.file("app/src/main/assets/fonts/bundled")) { into("agent/fonts") }
     from(rootProject.file("app/src/main/assets/fonts/inkstitch-catalog.json")) { into("agent/fonts") }
 }
+
+// Same redistributable sample catalog used by the Android built-in gallery.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/samples")) {
+        include("*.pes", "manifest.json", "LICENSES.md", "CC0-1.0.txt")
+        into("agent/designs")
+    }
+}
+
+// Identical local Fluent/CLDR catalog, 30 verified SVGs and their notices; no downloader in JVM tools.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/emoji")) { into("emoji") }
+}

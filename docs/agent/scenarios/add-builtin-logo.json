@@ -1,0 +1,45 @@
+{
+  "initialProject": {
+    "version": 1,
+    "hoop": {
+      "name": "100×100",
+      "width": 1000,
+      "height": 1000
+    },
+    "objects": [],
+    "format": "myembro"
+  },
+  "calls": [
+    {
+      "name": "list_builtin_designs",
+      "arguments": {}
+    },
+    {
+      "name": "add_design",
+      "arguments": {
+        "transactionId": "scenario",
+        "assetId": "builtin:myembro-logo",
+        "objectId": "logo",
+        "name": "myembro logo"
+      }
+    },
+    {
+      "name": "transform_objects",
+      "arguments": {
+        "transactionId": "scenario",
+        "objectIds": [
+          "logo"
+        ],
+        "deltaXMm": 1,
+        "deltaYMm": 2,
+        "scaleFactor": 1,
+        "rotationDeg": 0
+      }
+    }
+  ],
+  "export": {
+    "machineId": "se700",
+    "frameId": "H100",
+    "pesVersion": "V6"
+  }
+}

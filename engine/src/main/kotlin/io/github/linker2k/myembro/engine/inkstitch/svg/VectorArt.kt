@@ -222,6 +222,12 @@ object VectorArt {
     private fun footprint(shape: Shape): Geometry = listOfNotNull(
         shape.fill?.let { fillGeometry(shape) }, shape.stroke?.let { strokeGeometry(shape) }).let { UnaryUnionOp.union(it) }
 
+    /** Same painted envelope used by render, for the shared picture-width policy. */
+    fun aspectRatio(art: Art): Double {
+        val bounds = UnaryUnionOp.union(art.shapes.map(::footprint)).envelopeInternal
+        return bounds.height / bounds.width
+    }
+
     /**
      * [widthMm]: width of the whole picture (every footprint) in mm. Shapes are sewn in document
      * order, so later shapes cover earlier ones: a tatami area is clipped by everything drawn after

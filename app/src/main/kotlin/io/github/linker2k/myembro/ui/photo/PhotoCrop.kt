@@ -23,7 +23,7 @@ internal fun photoCrop(width: Int, height: Int, aspect: Double, zoom: Float, pan
  * drawings × 2 styles × 3 detail levels at 5mm steps, `PhotoSizeSweep`); below it thin lines and
  * dots vanish in tracing. Not a sewing guarantee for arbitrary photos.
  */
-internal const val PHOTO_MIN_WIDTH_MM = 20.0
+internal const val PHOTO_MIN_WIDTH_MM = io.github.linker2k.myembro.engine.geometry.PICTURE_MIN_WIDTH_MM
 
 /**
  * Traced ink width ÷ picture (frame) width. Both scale together, so the ratio does not depend on
