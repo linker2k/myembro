@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -51,7 +52,8 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     LaunchedEffect(settings) { vm.configure(settings) }
     val back = { if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.load(uri) }
+    // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.load(uri) }
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
@@ -91,7 +93,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(arrayOf("image/*")) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
                 }
             } else {
