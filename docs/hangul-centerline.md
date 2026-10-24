@@ -64,3 +64,38 @@ LGPL-2.1-or-later 출처·원문을 엔진 리소스와 APK 고지에 포함했�
 미연결이며, 전체 중심선/경로 추적·곡선화·중간값 폭 측정·새틴 변환 완료나
 봉제 품질 통과를 주장하지 않는다. 다음 단위는 원본 `find_centerline_pixels`의
 작은 입력 호출기/골든과 Kotlin 경로 추적을 분리해 진행할 것을 제안한다.
+
+
+## 단위 3 — 원본 중심선 픽셀 경로 추적
+
+`src/pxl-outline.c@1a232b27818a46a05cd25edec09e2f77c4e9ac01`의
+`find_centerline_pixels`, `find_one_centerline`, 방향 마킹·탐색·인접 수·역방향
+경로 결합을 `AutoTraceCenterline.trace`로 이식했다. 시작 방향 E/SE/S/SW,
+다음 방향 상대 순서 0/2/6/1/7/3/5, 교차점 보호, 위·왼쪽 목적 픽셀의 strict
+`>0` 조건을 원본대로 유지한다. 닫힌 경로는 시작점을 마지막에 중복하지 않는다.
+출력은 원본 Cartesian 픽셀 좌표(y 위쪽)이며 PES 좌표가 아니다.
+
+골든은 수정하지 않은 원본 thin-image.c → pxl-outline.c를 C 호출기로 실행했다.
+직선/T/X/고리/공개 OFL ‘한’ × gray/RGB = 10개에서 경로 순서·모든 정수 좌표·
+색·open/clockwise를 Kotlin 테스트가 exact 비교한다. 입력은 기존 thinning
+PGM을 재사용하며 개인 도안이 없다. 원본 고리는 closed 1경로, ‘한’은 6경로다.
+GLib는 기존 런타임과 `/tmp` 추출 헤더만 사용하며 시스템 설치는 하지 않는다.
+
+재현: `python3 tools/autotrace/generate-centerline-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify`.
+결과 `/tmp/myembro-port-out/editor/autotrace/centerline/`; 커밋된
+`engine/src/test/resources/autotrace/centerline/manifest.json`에 원본 커밋·소스/호출기/
+생성기/입출력 해시·컴파일 명령을 기록했다. `autotrace.c`는 원본 비트맵 함수를
+그대로 링크하고, 미사용 I/O/곡선화 함수는 linker gc-sections로 제외했다.
+
+차이: GLib 재할당과 비트맵 대신 호출별 JVM 배열/List를 사용하고 입력을 보존한다.
+지원 크기는 기존 thinning과 같은 각 변 1–4096px/총 1,048,576픽셀 이하다.
+진행률·취소·로그 콜백은 이 순수 JVM API 범위에서 제공하지 않는다.
+헤더에 별도 고지가 없는 pxl-outline.c는 프로젝트 GPL-2.0-or-later 문맥과
+Copyright AutoTrace contributors로 고지하고 COPYING 원문을 함께 배포한다.
+
+테스트: `./gradlew :engine:test --tests '*AutoTrace*Test'` (23개, 실패 0).
+전체 `./gradlew check` → `BUILD SUCCESSFUL in 41s` (67 actionable tasks),
+로그 `/tmp/myembro-autotrace-centerline-check.log`.
+앱/PES 미연결; 곡선 근사·폭 측정·새틴 변환·봉제 게이트는 이번 단위가 아니다.
+다음 제안: 원본 `fit.c` 중심선 곡선화의 비교 골든부터 작은 단위로 확보하고,
+원본 Ink/Stitch convert-to-satin 포트와의 입력 계약을 확인한다.
