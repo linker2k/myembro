@@ -15,7 +15,7 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.autotrace.*
 import io.github.linker2k.myembro.engine.inkstitch.utils.Point as StitchPoint
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.edit.HoopSpec
-import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
+import io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
 import io.github.linker2k.myembro.engine.sewout.*
 import org.locationtech.jts.geom.Coordinate
@@ -62,12 +62,13 @@ object ImageToDesignProbeCli {
                 for(i in 0 until region.geometry.numGeometries) {
                     val shape=region.geometry.getGeometryN(i)
                     val widthStart=System.nanoTime()
-                    val width=VectorArt.medianWidthMm(AffineTransformation.scaleInstance(.1,.1).transform(shape))
-                    val method=VectorArt.classifyWidth(width)
+                    val widths=StitchTypeRule.widths(shape,10.0)
+                    val width=widths.medianMm
+                    val method=StitchTypeRule.classify(widths)
                     val style=when(method) {
-                        VectorArt.Method.TATAMI -> StitchStyle.FILL
-                        VectorArt.Method.SATIN -> StitchStyle.SATIN
-                        VectorArt.Method.RUNNING -> StitchStyle.RUNNING
+                        StitchTypeRule.Type.TATAMI -> StitchStyle.FILL
+                        StitchTypeRule.Type.SATIN -> StitchStyle.SATIN
+                        StitchTypeRule.Type.RUNNING -> StitchStyle.RUNNING
                     }
                     widthNanos+=System.nanoTime()-widthStart
                     val stitchStart=System.nanoTime()
@@ -107,7 +108,7 @@ object ImageToDesignProbeCli {
                     if(groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
                     groups+=next
                     stitchNanos+=System.nanoTime()-stitchStart
-                    regions+=buildJsonObject { put("palette_index",color);put("thread",thread.hex);put("median_width_mm",width);put("style",style.name);put("groups",next.size) }
+                    regions+=buildJsonObject { put("palette_index",color);put("thread",thread.hex);put("median_width_mm",width);put("maximum_width_mm",widths.maxMm);put("style",style.name);put("groups",next.size) }
                 }
             }
             val pattern=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)

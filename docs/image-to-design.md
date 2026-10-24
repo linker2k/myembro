@@ -89,3 +89,42 @@ P1–P3은 인코딩된 PEC 원점/후프/헤더를 `PecViewportCheck`로 검사
 **오분류 수정은 미완료다.** `GlyphStrokeWidths`는 기존 시험이 직접 호출하던 `StrokeWidthMeasurement`를 내부에서 호출하므로, 구멍이 있는 넓은 몸통의 중간값은 양쪽 모두 정확히 4.121185770351488mm다. API를 바꾸는 것만으로는 타타미로 전환되지 않는다는 점을 실측했다. 이 수치를 6mm 이상으로 임의 보정하거나, 최대 내접원·면적 등의 새 휴리스틱을 섞지 않았다. 총괄에 SVG fill처럼 면은 타타미로 유지할지, 지정한 중간값 분기와 미해결 한계를 유지할지 결정을 요청했다.
 
 최종 검증: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 18s`; tests=722, failures=0, errors=0. 외부 게이트 명령은 앞 절과 같고 `--json` 출력만 `quality-gate-shared.json`으로 바꿨으며 `PASS 2/2 cases passed`였다. 실제 로고는 같은 분류 경로로 60mm 렌더 후 PEC 원점/후프/헤더 및 앱 생성 출처 봉제 점검을 통과했다. 이 검증은 미해결 로봇 면 보존 문제를 통과 판정하지 않는다.
+
+
+## 최종 적용: 최대 내접원 조건 추가 (이 절이 이전 미결정을 대체함)
+
+총괄 결정 2026-10-24: 최대 폭 >6.0mm면 타타미를 우선한다. 최대 폭 ≤6.0mm이면서 중간값 ≥0.9mm일 때만 새틴이며, 나머지는 러닝이다. 최대 폭은 JTS `MaximumInscribedCircle`의 지름이다. 6mm 근거는 총괄이 제시한 코퍼스 새틴 교차 p95 6.0mm이며, 0.9mm 하한은 총괄 지정 정책이다.
+
+**중복 구현 없음:** `claude/stitch-rule` 커밋 `1547f5c14c5c49334fb5551955abeee6e6762072`의 `StitchTypeRule.kt`, `VectorArt.kt`, `StitchTypeRuleTest.kt`를 그대로 사용한다. editor의 PNG 시험은 `StitchTypeRule.widths(region, 10.0)`와 `classify(widths)`를 호출한다. 로고와 PNG 양쪽에서 최대/중간값을 별도로 계산하거나 임계값을 비교하지 않는다. 이전 `VectorArt.classifyWidth`/`medianWidthMm` 래퍼는 제거했다.
+
+공용 브랜치의 중간값은 이전 model Voronoi 표본 중간값과 달리 **면적 가중 local thickness 표본 중간값**이다. 따라서 이전 표의 4.121mm와 아래 5.611mm를 같은 정의의 값이라고 비교하지 않는다. 이 정의와 JTS 탐색 정밀도도 editor에서 별도로 변경하지 않았다. 원본 공용 파일과 바이트 일치 여부를 확인했다. `GlyphStrokeWidths` 자체는 수정하지 않았다.
+
+| 대상 | 크기 기준 | 공용 중간값 mm | 공용 최대 폭 mm | 선택 |
+|---|---|---:|---:|---|
+| 실제 합성 로봇의 파란 몸통 | 30mm PNG 캔버스 | 5.610841 | 7.762527 | 타타미 |
+| 실제 앱 로고 M | 전체 로고 폭 60mm | 10.696521 | 11.911968 | 타타미 |
+| 실제 앱 로고 후프 링 | 전체 로고 폭 60mm | 5.257371 | 5.271908 | 새틴 |
+
+몸통 중간값은 여전히 6mm 미만이지만 최대 폭 조건으로 타타미가 선택되는 것을 `ImageToDesignProbeTest`에서 assert한다. 경계 0.9/6mm, 최대 폭 우선(중간값이 0.9mm 미만이어도 최대 폭 >6mm), 실제 로고 경로도 테스트한다. PNG 새틴은 기존 AutoTrace 중심선/fit → Ink/Stitch `convertPathToSatin`/`AutoSatin`을 사용하고 타타미·러닝·S1 기본값을 바꾸지 않았다.
+
+| 합성 입력 | 영역 | 이전 땀 수 → 최종 | 이전 전체 ms → 최종 | 최종 엔진/외부 게이트 |
+|---|---:|---:|---:|---|
+| face.png | 4 | 1,050 → 1,050 | 1,018.17 → 1,013.66 | PASS/PASS |
+| robot.png | 5 | 600 → 831 | 208.32 → 384.85 | PASS/PASS |
+
+로봇은 잘못 선택했던 새틴 대신 실제 면을 채우므로 땀과 시간이 늘었다. 단일 실행 시간은 워밍업 영향을 포함한다. 로고도 실제 PES를 다시 생성해 동일 외부 게이트로 검사했다. 실물 봉제 승인은 별도이며 앱/개인 입력에는 연결하지 않았다.
+
+재현:
+
+```sh
+python3 tools/image-to-design/generate-inputs.py
+export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
+IMAGE_PROBE_LOGO_OUT=/tmp/myembro-port-out/editor/image-to-design ./gradlew :engine:test :engine:imageToDesignProbe
+/tmp/myembro-quality-gate/quality-gate check \
+ /tmp/myembro-port-out/editor/image-to-design/face.pes \
+ /tmp/myembro-port-out/editor/image-to-design/robot.pes \
+ /tmp/myembro-port-out/editor/image-to-design/logo.pes \
+ --style mixed --json /tmp/myembro-port-out/editor/image-to-design/quality-gate-max.json
+```
+
+실행 출력: `BUILD SUCCESSFUL in 19s`; 엔진 tests=724, failures=0, errors=0. 외부 도구: `PASS 3/3 cases passed`. 최종 로그 `/tmp/image-to-design-canvas-rule.log`, `/tmp/image-to-design-max-gate.log`; 측정 원본 `results.json`, `logo-widths.csv`는 출력 디렉터리에 있다. 앞 절의 모델 API 단독 교체 시험과 중간 측정은 이 최종 결과를 대체하지 않는다.

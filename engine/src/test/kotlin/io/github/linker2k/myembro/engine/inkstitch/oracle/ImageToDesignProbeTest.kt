@@ -28,10 +28,12 @@ class ImageToDesignProbeTest {
             val styles=rows.flatMap { it.jsonObject.getValue("regions").jsonArray }
                 .map { it.jsonObject.getValue("style").jsonPrimitive.content }.toSet()
             assertEquals(setOf("FILL","SATIN","RUNNING"),styles)
-            // Known limitation, not shape approval: a body with eye holes has a narrow median.
+            // Regression: narrow median does not override the broad body maximum.
             val robot=rows.single { it.jsonObject.getValue("input").jsonPrimitive.content=="robot.png" }.jsonObject
             val blue=robot.getValue("regions").jsonArray.single { it.jsonObject.getValue("thread").jsonPrimitive.content=="#2584bb" }.jsonObject
-            assertEquals("SATIN",blue.getValue("style").jsonPrimitive.content)
+            assertTrue(blue.getValue("median_width_mm").jsonPrimitive.double<6.0)
+            assertTrue(blue.getValue("maximum_width_mm").jsonPrimitive.double>6.0)
+            assertEquals("FILL",blue.getValue("style").jsonPrimitive.content)
         } finally { root.deleteRecursively() }
     }
 
