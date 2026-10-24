@@ -41,7 +41,7 @@ import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import java.io.File
 import androidx.core.graphics.PathParser
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
-import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle
+
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import kotlinx.coroutines.delay
 
@@ -69,7 +69,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.photo_step, vm.step + 1), style = MaterialTheme.typography.labelLarge, color = colors.primary)
-            Text(stringResource(when(vm.step) { 0 -> R.string.photo_crop_title; 1 -> if(vm.style==PhotoStyle.OUTLINE) R.string.photo_outline_title else R.string.photo_preview_title; else -> R.string.photo_result_title }),
+            Text(stringResource(when(vm.step) { 0 -> R.string.photo_crop_title; 1 -> when(vm.style) { PhotoMode.OUTLINE -> R.string.photo_outline_title; PhotoMode.COLOR -> R.string.photo_color_title; else -> R.string.photo_preview_title }; else -> R.string.photo_result_title }),
                 style = MaterialTheme.typography.headlineSmall)
             Text(Dimensions.size(vm.hoop.width / 10.0, vm.hoop.height / 10.0), style = MaterialTheme.typography.bodySmall)
             if (vm.busy) {
@@ -81,7 +81,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     else -> R.string.photo_progress_stitches
                 }))
                 Text(stringResource(R.string.photo_elapsed,elapsed),style=MaterialTheme.typography.bodySmall)
-                Text(stringResource(if(vm.step==2 && vm.style==PhotoStyle.OUTLINE) R.string.photo_estimate_outline else if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
+                Text(stringResource(if(vm.step==2 && vm.style==PhotoMode.OUTLINE) R.string.photo_estimate_outline else if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
             }
             if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
@@ -98,27 +98,37 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 }
             } else {
                 if(vm.step==1) SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    PhotoStyle.entries.forEachIndexed { index, value ->
+                    PhotoMode.entries.forEachIndexed { index, value ->
                         SegmentedButton(selected=vm.style==value,onClick={ vm.changeStyle(value) },
-                            shape=SegmentedButtonDefaults.itemShape(index,PhotoStyle.entries.size),enabled=!vm.busy) {
-                            Text(stringResource(if(value==PhotoStyle.SILHOUETTE) R.string.photo_style_silhouette else R.string.photo_style_outline))
+                            shape=SegmentedButtonDefaults.itemShape(index,PhotoMode.entries.size),enabled=!vm.busy) {
+                            Text(stringResource(when(value) { PhotoMode.SILHOUETTE -> R.string.photo_style_silhouette; PhotoMode.OUTLINE -> R.string.photo_style_outline; PhotoMode.COLOR -> R.string.photo_style_color }))
                         }
                     }
                 }
                 val data = vm.render
-                if (vm.step == 1 && vm.outline != null) OutlinePreview(vm.outline!!,vm.style)
+                if (vm.step == 1 && vm.style != PhotoMode.COLOR && vm.outline != null) OutlinePreview(vm.outline!!,vm.style)
                 else if (vm.step == 1 && vm.separatedPreview != null) Image(vm.separatedPreview!!.asImageBitmap(),
-                    contentDescription=stringResource(R.string.photo_separated_preview),
+                    contentDescription=stringResource(if(vm.style==PhotoMode.COLOR) R.string.photo_color_preview_accessibility else R.string.photo_separated_preview),
                     modifier=Modifier.fillMaxWidth().height(300.dp),contentScale=ContentScale.Fit)
                 else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.detail,
                     Modifier.fillMaxWidth().height(300.dp), colors.background.toArgb(), colors.outline.toArgb(), frame = vm.hoop, preservePlacement = true)
                 else Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) { if (vm.busy) CircularProgressIndicator() }
                 if (vm.step == 1) {
+                    if(vm.style==PhotoMode.COLOR) {
+                        var colorDraft by remember(vm.colorCount) { mutableFloatStateOf(vm.colorCount.toFloat()) }
+                        val colorLabel=stringResource(R.string.photo_color_count,colorDraft.toInt())
+                        Text(colorLabel,style=MaterialTheme.typography.titleSmall)
+                        Slider(colorDraft,{ colorDraft=it },valueRange=2f..6f,steps=3,
+                            onValueChangeFinished={ vm.changeColorCount(colorDraft.toInt()) },enabled=!vm.busy,
+                            modifier=Modifier.semantics { contentDescription=colorLabel })
+                        Text(stringResource(R.string.photo_color_hint),style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                    } else {
                     Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
                     val detailLabel = stringResource(R.string.photo_detail)
                     Slider(vm.detail.toFloat(), { vm.changeDetail(it.toInt()) }, valueRange = 0f..2f, steps = 1,
                         modifier = Modifier.semantics { contentDescription = detailLabel })
                     Text(stringResource(R.string.photo_detail_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    }
                     // Embroidery (ink) width in mm, aspect kept. The drag only moves the label; tracing reruns once on release.
                     val range = vm.inkWidthRange
                     val ink = vm.inkWidthMm
@@ -140,6 +150,13 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         style = MaterialTheme.typography.titleMedium)
                     vm.resultSizeMm?.let { (w, h) ->
                         Text(stringResource(R.string.photo_result_size, Dimensions.size(w, h)), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    if(vm.style==PhotoMode.COLOR) {
+                        Text(stringResource(R.string.photo_threads_title),style=MaterialTheme.typography.titleMedium)
+                        vm.requiredThreads.forEach { thread ->
+                            Text(stringResource(R.string.photo_thread_row,thread.catalogNumber.orEmpty(),thread.description.orEmpty()),
+                                style=MaterialTheme.typography.bodyMedium)
+                        }
                     }
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
@@ -185,7 +202,7 @@ private fun CropPreview(vm: PhotoViewModel) {
 
 
 @Composable
-private fun OutlinePreview(outline: RedworkOutline,style: PhotoStyle) {
+private fun OutlinePreview(outline: RedworkOutline,style: PhotoMode) {
     val shape = remember(outline) {
         android.graphics.Path().apply {
             fillType = android.graphics.Path.FillType.EVEN_ODD
@@ -201,7 +218,7 @@ private fun OutlinePreview(outline: RedworkOutline,style: PhotoStyle) {
             translate(size.width / 2, size.height / 2)
             scale(factor, factor, pivot = androidx.compose.ui.geometry.Offset.Zero)
         }) {
-            if(style==PhotoStyle.OUTLINE) drawPath(shape,ink,
+            if(style==PhotoMode.OUTLINE) drawPath(shape,ink,
                 style=androidx.compose.ui.graphics.drawscope.Stroke(Units.mmToPixels(0.3).toFloat()))
             else drawPath(shape, ink)
         }

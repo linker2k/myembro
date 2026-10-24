@@ -1,7 +1,7 @@
 <resources>
-    <string name="photo_title">사진으로 자수</string>
-    <string name="photo_from_photo">사진으로</string>
-    <string name="photo_from_photo_hint">사진을 실루엣 또는 외곽선 자수로</string>
+    <string name="photo_title">사진/그림으로 자수</string>
+    <string name="photo_from_photo">사진/그림</string>
+    <string name="photo_from_photo_hint">사진·그림을 실루엣, 외곽선 또는 컬러 자수로</string>
     <string name="photo_back">뒤로</string>
     <string name="photo_step">%1$d / 3</string>
     <string name="photo_crop_title">고르고, 틀에 맞추세요</string>
@@ -53,4 +53,13 @@
     <string name="photo_outline_file_stem">photo_outline</string>
     <string name="photo_outline_name">사진외곽선</string>
     <string name="photo_estimate_outline">외곽선 생성 예상 약 2초. 이미지와 기기에 따라 달라집니다.</string>
+    <string name="photo_style_color">컬러 그림</string>
+    <string name="photo_color_title">컬러 그림 · 2–6색</string>
+    <string name="photo_color_count">색 수 · %1$d색</string>
+    <string name="photo_color_hint">투명 배경은 봉제하지 않습니다. 테두리에서 가장 많은 색은 배경으로 제외하며, Brother 64색 실에 자동으로 맞춥니다.</string>
+    <string name="photo_threads_title">필요한 실 · Brother</string>
+    <string name="photo_thread_row">%1$s · %2$s</string>
+    <string name="photo_color_file_stem">color_drawing</string>
+    <string name="photo_color_failed">봉제할 컬러 영역이 남지 않았습니다. 투명 배경 PNG나 밝은 배경의 간단한 그림을 골라주세요.</string>
+    <string name="photo_color_preview_accessibility">컬러 그림 색 분리 미리보기</string>
 </resources>
