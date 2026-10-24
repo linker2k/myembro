@@ -512,6 +512,9 @@ class SatinColumn(
             if(end!=null)layers+=SatinLayer(listOf(end),setOf("satin_column"))
             return layers
         }
+        /** auto_satin center_line/find_cut_points: original default uncompensated rail samples. */
+        fun routingPairs(left:List<Point>,right:List<Point>,parameters:SatinParameters=SatinParameters(),rungs:List<Rung> = emptyList()):List<Pair<Point,Point>> =
+            Generator(clean(left),clean(right),parameters,rungs).pairs(px(max(.01,parameters.zigzag_spacing_mm)))
         /** Exposed for exact rail/rung geometry verification, before machine quantization/safety policy. */
         fun plotPointsOnRails(left:List<Point>,right:List<Point>,parameters:SatinParameters=SatinParameters(),rungs:List<Rung> = emptyList()):List<Pair<Point,Point>> =
             Generator(clean(left),clean(right),parameters,rungs).pairs(px(max(.01,parameters.zigzag_spacing_mm)),parameters.pull_compensation_mm.pixels(),

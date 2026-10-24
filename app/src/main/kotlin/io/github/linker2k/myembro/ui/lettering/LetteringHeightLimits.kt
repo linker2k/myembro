@@ -44,6 +44,7 @@ internal data class AutomaticLetteringState(
     val fontName: String,
     val style: StitchStyle?,
     private val sourceRanges: List<ValidatedHeightRange>,
+    val centerlineSatin: Boolean = false,
 ) {
     val heightRanges: List<ValidatedHeightRange> = LetteringHeightLimits.capRanges(sourceRanges)
 }
@@ -58,6 +59,8 @@ internal fun automaticLetteringState(
     inkRange?.takeIf { it.start > 0 && it.endInclusive.isFinite() }?.let {
         return AutomaticLetteringState(fontName, StitchStyle.SATIN, listOf(ValidatedHeightRange(it.start, it.endInclusive)))
     }
+    if(geometry==LetteringGeometry.OUTLINE && HangulSatin.applies(text))
+        return AutomaticLetteringState(fontName,StitchStyle.SATIN,emptyList(),centerlineSatin=true)
     val candidates = policy.candidates(fontId, revision, geometry, text)
     val ranges = if (geometry == LetteringGeometry.OUTLINE) limits.outlineRanges(fontId, revision)
         else candidates.map { it.heights }.distinct()
@@ -72,7 +75,7 @@ internal fun automaticLetteringState(
 internal fun letteringHeightPermitted(automatic: AutomaticLetteringState?, height: Double): Boolean {
     val ranges = automatic?.heightRanges.orEmpty()
     return height <= LetteringHeightLimits.MAX_MM && when {
-        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
+        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING || automatic?.centerlineSatin==true
         else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
     }
 }

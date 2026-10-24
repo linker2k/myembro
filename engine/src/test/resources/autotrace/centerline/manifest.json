@@ -1,0 +1,115 @@
+{
+  "upstream": "AutoTrace 0.31.10",
+  "commit": "1a232b27818a46a05cd25edec09e2f77c4e9ac01",
+  "sourceFiles": {
+    "thin-image.c": "29a976bc15799ca26462e8b06636bebb689d4a6817d58e9d1040fd20b3c4ccac",
+    "pxl-outline.c": "541a11ed865dab7e0459ef35d0b1f066f10b9b4d54f1e5e661a1f92cadae8534",
+    "autotrace.c": "65910fb14bae3990badef4549e0a568f8eef3c44246a8162e968c859b536f9d1",
+    "color.c": "c0b5f9fd898ecc42f86fdb12f0b875bce24243be2805afd0b3fc738793442487",
+    "exception.c": "b2302ac0edec9698e31e5511a57f7dfcf4df2b74f664e3066b366a722d3742d1"
+  },
+  "callerSha256": "9d1fc46dad27e3ff224f78523c949140023109c237e9bdf51f6da4703b884125",
+  "generatorSha256": "34e6ba1ea6265aba7791e812fb44c9eb08988f263af2383d55703bfb4e9ea7a6",
+  "compileCommand": [
+    "cc",
+    "-std=c99",
+    "-O0",
+    "-ffp-contract=off",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-Wl,--gc-sections",
+    "-DAUTOTRACE_VERSION=\"0.31.10\"",
+    "-DAUTOTRACE_WEB=\"https://github.com/autotrace/autotrace\"",
+    "-I/tmp/myembro-autotrace-reference/src",
+    "/home/gosh2/workspace/hoonyjung/myembro-editor/tools/autotrace/centerline_oracle.c",
+    "/tmp/myembro-autotrace-reference/src/thin-image.c",
+    "/tmp/myembro-autotrace-reference/src/pxl-outline.c",
+    "/tmp/myembro-autotrace-reference/src/autotrace.c",
+    "/tmp/myembro-autotrace-reference/src/color.c",
+    "/tmp/myembro-autotrace-reference/src/exception.c",
+    "-I/tmp/myembro-autotrace-build/glib/usr/include/glib-2.0",
+    "-I/tmp/myembro-autotrace-build/glib/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+    "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0",
+    "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0",
+    "-o",
+    "/tmp/myembro-port-out/editor/autotrace/centerline/centerline-oracle"
+  ],
+  "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "runtimeLibraries": {
+    "libglib-2.0.so.0": "96ef9163aee942bdc09e6f4a1acd2fd6b178c03af824c569741440d63ac9f4f4",
+    "libgobject-2.0.so.0": "7a8981c2df678797438cc92f246402b81d185604623d12ab71c1ff1c2840e9fc"
+  },
+  "cases": [
+    {
+      "name": "bar",
+      "planes": 1,
+      "inputSha256": "136bb1a3f231f56ddfa782e2f05dd9581143b1628b37d894759b7b29b88e28c9",
+      "outputSha256": "7cc9ae84252b34eb818d3178be2617d40f07251652c7ce0532155e789f141b0c",
+      "pathCount": 1
+    },
+    {
+      "name": "bar",
+      "planes": 3,
+      "inputSha256": "136bb1a3f231f56ddfa782e2f05dd9581143b1628b37d894759b7b29b88e28c9",
+      "outputSha256": "7cc9ae84252b34eb818d3178be2617d40f07251652c7ce0532155e789f141b0c",
+      "pathCount": 1
+    },
+    {
+      "name": "tee",
+      "planes": 1,
+      "inputSha256": "c49fbddd416c5907102effd8a4cd91fe20cae2f730f3c4a80124c7e0e00db8d4",
+      "outputSha256": "fa8077e3bf6862ed8895c93ccee7fb56367326d0ed195f97dbc7f85b5a5115bb",
+      "pathCount": 2
+    },
+    {
+      "name": "tee",
+      "planes": 3,
+      "inputSha256": "c49fbddd416c5907102effd8a4cd91fe20cae2f730f3c4a80124c7e0e00db8d4",
+      "outputSha256": "fa8077e3bf6862ed8895c93ccee7fb56367326d0ed195f97dbc7f85b5a5115bb",
+      "pathCount": 2
+    },
+    {
+      "name": "cross",
+      "planes": 1,
+      "inputSha256": "cb8db9442edcb1ff89f4887eb8e68d2319dd4939ac63580a67057b6eee4f2e81",
+      "outputSha256": "c812456c39936fbb15b7a3287c1079b5acd0d27b74b745b24075658bc2ea6f83",
+      "pathCount": 2
+    },
+    {
+      "name": "cross",
+      "planes": 3,
+      "inputSha256": "cb8db9442edcb1ff89f4887eb8e68d2319dd4939ac63580a67057b6eee4f2e81",
+      "outputSha256": "c812456c39936fbb15b7a3287c1079b5acd0d27b74b745b24075658bc2ea6f83",
+      "pathCount": 2
+    },
+    {
+      "name": "loop",
+      "planes": 1,
+      "inputSha256": "f5adf39e5314216efcea3eb358f1aeb54c8a7e73c8447ad807919f07def84971",
+      "outputSha256": "98851749b251791cb4ffc1384c951b38808ce6117b91b12be2f655a88e69909c",
+      "pathCount": 1
+    },
+    {
+      "name": "loop",
+      "planes": 3,
+      "inputSha256": "f5adf39e5314216efcea3eb358f1aeb54c8a7e73c8447ad807919f07def84971",
+      "outputSha256": "98851749b251791cb4ffc1384c951b38808ce6117b91b12be2f655a88e69909c",
+      "pathCount": 1
+    },
+    {
+      "name": "hangul-han",
+      "planes": 1,
+      "inputSha256": "8d331809a3decf665072269c143b3468c30e31f4ec549b0c2357bbbbe6b60f7a",
+      "outputSha256": "6a710ca4ca5f8d707bdbe275ac76a4a215d339b76f2e5ca82073942559e002f0",
+      "pathCount": 6
+    },
+    {
+      "name": "hangul-han",
+      "planes": 3,
+      "inputSha256": "8d331809a3decf665072269c143b3468c30e31f4ec549b0c2357bbbbe6b60f7a",
+      "outputSha256": "6a710ca4ca5f8d707bdbe275ac76a4a215d339b76f2e5ca82073942559e002f0",
+      "pathCount": 6
+    }
+  ],
+  "coordinates": "Cartesian integer pixels, y upwards; ordered paths and points"
+}

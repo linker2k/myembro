@@ -621,3 +621,35 @@ This code repository predates the concept of Open Source, and predates most lice
 
 EULA: The Graphics Gems code is copyright-protected. In other words, you cannot claim the text of the code as your own and resell it. Using the code is permitted in any program, product, or library, non-commercial or commercial. Giving credit is not required, though is a nice gesture. The code comes as-is, and if there are any flaws or problems with any Gems code, nobody involved with Gems - authors, editors, publishers, or webmasters - are to be held responsible. Basically, don't be a jerk, and remember that anything free comes with no guarantee.
 ```
+
+- `org.jgrapht:jgrapht-core:1.5.2`, unmodified published JVM library.
+  Source: https://github.com/jgrapht/jgrapht/tree/jgrapht-1.5.2 .
+  Upstream offers LGPL-2.1-or-later OR EPL-2.0; myembro selects
+  **LGPL-2.1-or-later**, compatible with the application's GPL-3.0-or-later license.
+  Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
+  implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
+  This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
+  replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
+  traversal are Kotlin ports. Public dependency binaries are used; upstream source
+  archives were only read to verify notices.
+- LGPL text and source offer/link are packaged in `licenses/jgrapht/LGPL-2.1.txt`
+  and `licenses/jgrapht/NOTICE.txt` in the engine JAR/APK. No library code is modified;
+  source is available from the pinned repository and the published Maven sources JAR.
+- Transitive `org.jheaps:jheaps:0.14`: **Apache-2.0**. Copyright (C) 2014–2016
+  Dimitrios Michail and contributors. Full license and source notice are packaged at
+  `licenses/jheaps/APACHE-2.0.txt` and `licenses/jheaps/SOURCE-NOTICE.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14-sources.jar .
+- Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
+  Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
+  Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+
+## AutoTrace thinning, centerline tracing and spline fitting
+
+- Source: [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), fixed commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`, `src/thin-image.c` / `src/thin-image.h`.
+- Copyright (C) 2001, 2002 Martin Weber. Kotlin adaptation (C) 2026 myembro contributors.
+- License: **LGPL-2.1-or-later**, compatible with this GPL-3.0-or-later application; full upstream text is packaged as `licenses/autotrace/COPYING.LIB` in the engine JAR/APK. This is not a claim that all AutoTrace files are LGPL.
+- The original header credits Joseph M. Cychosz, “Efficient Binary Image Thinning using Neighborhood Maps”, Graphics Gems IV (1994).
+- `AutoTraceThinning.kt` preserves the original deletion lookup table, pass/color order, unsigned-byte scan-buffer truncation and distinct grayscale/RGB edge rules. JVM arrays replace GLib allocation; explicit per-call background replaces mutable global state; invalid/oversized inputs are rejected. No native AutoTrace/GLib runtime is bundled.
+- `AutoTraceCenterline.kt` additionally ports `src/pxl-outline.c` pixel centerline tracing from the same commit under the project **GPL-2.0-or-later** license (Copyright AutoTrace contributors); full text is packaged as `licenses/autotrace/COPYING`. Its file header has no separate license grant; project COPYING/README and the linked GPL `src/autotrace.c` bitmap helpers establish the project license context. Original ordered pixel coordinates, direction marks, path concatenation and open/closed flags are retained.
+- `AutoTraceFit.kt` ports `src/fit.c` (Copyright (C) 1992 Free Software Foundation, Inc., **GPL-2.0-or-later**) and curve/vector/spline helpers from the same commit. It preserves default centerline corner splitting, knee removal, filtering, tangents, least-squares fitting, recursive subdivision and line reversion. The existing packaged `licenses/autotrace/COPYING` applies. Source hashes, original C control-point goldens and differences are recorded in `docs/hangul-centerline.md`. Native libraries are not bundled; variable-width distance-map fitting is outside this port.

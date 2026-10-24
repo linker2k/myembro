@@ -223,7 +223,7 @@ private fun LetteringContent(
             } finally { busy = false }
         }
     }
-    // Cards display actual running stitches, without claiming a validated sewing range.
+    // Cards display actual automatic stitches, without claiming a validated sewing range.
     LaunchedEffect(text, height, thread.color, fontId, slotIds) {
         fontPreviews = emptyMap()
         delay(150)
@@ -333,8 +333,8 @@ private fun LetteringContent(
                         contentDescription = context.getString(R.string.lettering_height)
                         stateDescription = Dimensions.length(height)
                     })
-                } else if (ranges.isEmpty() && automatic?.style == StitchStyle.RUNNING) {
-                    Text(stringResource(R.string.lettering_satin_unconfirmed_running),
+                } else if (ranges.isEmpty() && (automatic?.style == StitchStyle.RUNNING || automatic?.centerlineSatin==true)) {
+                    Text(stringResource(if(automatic?.centerlineSatin==true) R.string.lettering_component_satin_note else R.string.lettering_satin_unconfirmed_running),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     OutlinedTextField(heightDraft, onValueChange = { value ->
                         heightDraft = value

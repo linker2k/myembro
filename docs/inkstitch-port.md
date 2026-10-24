@@ -1817,3 +1817,30 @@ FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES �
 | 원본과 다른 통합 범위 | 근거 |
 |---|---|
 | 순서 선택은 JGraphT 1.5.2 NearestNeighborHeuristicTSP 재사용 | 모바일의 닫힌 윤곽 전체를 보존하며 점프 앵커 거리 감소 시에만 적용; AutoRun 포트/전역 최단 동일성 주장은 하지 않음 |
+
+### StrokeToSatin 원본 포트 인계 단위
+
+`elements/utils/StrokeToSatin.kt`: `lib/elements/utils/stroke_to_satin.py`,
+`lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py`,
+`lib/utils/geometry.py`@b0edd96311ece82ee48816dc93466274b12c2a9c.
+레일 offset은 승인된 JTS, 새틴 생성은 기존 SatinColumn 포트를 사용한다.
+골든 상태·원본 함수 목록과 모든 차이점은 `docs/hangul-centerline.md`의
+“letter 인계 단위1”에 기록했다. AutoTrace 원본 centerline10/10 exact 재검증,
+선→새틴7개 수식 회귀 통과; 선→새틴 공식 출력 동등성·한글 PES는 아직 미판정이다.
+
+### 한글 새틴 라우팅 단위1
+
+`stitches/utils/SatinRouteGraph.kt`: pinned `autoroute.py:find_path/_get_shortest_path`
+및 `auto_satin.py:path_to_operations`의 그래프 순회와 중복 구간 underpath 표식만 포트.
+원본 그래프 생성·레일 절단·DOM 연결은 미완료, 공식 오라클 미판정.
+분석적7건과 차이점/다음 의존성 및 KRSAT1 이동 기준값은
+[한글 새틴 라우팅](hangul-satin-routing.md)에 기록했다.
+
+### 한글 새틴 라우팅 단위2
+
+`stitches/AutoSatin.kt`: 원본 auto_satin의 Section1mm 분할·최소 연결·원본 그래프
+순회·중복 underpath·양쪽 rail 절단·렁 재배치/추가·러닝 합치기를 기존 포트에 연결.
+사용자 지정 글자/8방향 잉크 component/bbox 순서로 KRSAT2 실제 생성.
+범용 raw SVG rails가 아닌 convert-to-satin Section 기본값 전용, 공식 오라클
+동등성 미판정. 원본 함수·모든 차이와 실제 바이트 점프/잠금 표는
+[단위2 보고](hangul-satin-krsat2.md)에 기록했다.

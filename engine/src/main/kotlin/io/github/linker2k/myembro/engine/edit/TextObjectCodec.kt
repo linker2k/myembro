@@ -47,6 +47,13 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("contourUnderlay", obj.satinOptions.contourUnderlay)
             put("underlayInsetMm", obj.satinOptions.underlayInsetMm)
         })
+        obj.centerlineSatin?.let { source -> put("centerlineSatin",buildJsonObject {
+            put("version",1)
+            put("paths",JsonArray(source.paths.map { path -> JsonArray(path.map { (x,y)->buildJsonArray { add(x);add(y) } }) }))
+            put("characters",JsonArray(source.characters.map(::JsonPrimitive)))
+            put("components",JsonArray(source.components.map(::JsonPrimitive)))
+            put("widths",buildJsonObject { source.widths.forEach { (index,width)->put(index.toString(),width) } })
+        }) }
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
         }))
@@ -72,6 +79,14 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
         transform = fields.transform,
         visible = fields.visible,
         fontKind = data["fontKind"]?.jsonPrimitive?.content?.let(FontKind::valueOf) ?: FontKind.HERSHEY,
+        centerlineSatin = data["centerlineSatin"]?.jsonObject?.let { source ->
+            require(source.getValue("version").jsonPrimitive.int==1)
+            io.github.linker2k.myembro.engine.lettering.CenterlineSatinData(
+                source.getValue("paths").jsonArray.map { path ->path.jsonArray.map { p -> val pair=p.jsonArray;require(pair.size==2);pair[0].jsonPrimitive.double to pair[1].jsonPrimitive.double } },
+                source.getValue("characters").jsonArray.map { it.jsonPrimitive.int },
+                source.getValue("components").jsonArray.map { it.jsonPrimitive.int },
+                source.getValue("widths").jsonObject.map { (key,value)->key.toInt() to value.jsonPrimitive.double }.toMap())
+        },
         contours = data["contours"]?.jsonArray?.map { contour ->
             contour.jsonArray.map { point ->
                 val pair = point.jsonArray
