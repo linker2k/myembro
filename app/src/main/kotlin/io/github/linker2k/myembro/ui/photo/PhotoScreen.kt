@@ -161,6 +161,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
             }
+            if(vm.step==2 && vm.excludedCount>0) Text(stringResource(R.string.photo_excluded_regions,vm.excludedCount),color=colors.onSurfaceVariant)
             vm.error?.let { Text(stringResource(it), color = colors.error) }
             if (vm.step < 2) Button(onClick = vm::next,
                 enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.outline != null), modifier = Modifier.fillMaxWidth()) {
@@ -168,7 +169,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             } else {
                 if (!vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onEdit, enabled = !vm.busy && vm.render != null, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
+                OutlinedButton(onClick = onEdit, enabled = !vm.busy && (vm.render?.pattern?.stitchCount ?: 0)>0, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
                 Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
                 }
             }
