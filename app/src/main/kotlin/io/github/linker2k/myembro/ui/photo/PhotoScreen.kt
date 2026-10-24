@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -51,7 +52,8 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     LaunchedEffect(settings) { vm.configure(settings) }
     val back = { if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.load(uri) }
+    // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.load(uri) }
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
@@ -91,7 +93,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(arrayOf("image/*")) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
                 }
             } else {
@@ -117,12 +119,28 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Slider(vm.detail.toFloat(), { vm.changeDetail(it.toInt()) }, valueRange = 0f..2f, steps = 1,
                         modifier = Modifier.semantics { contentDescription = detailLabel })
                     Text(stringResource(R.string.photo_detail_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    // Embroidery (ink) width in mm, aspect kept. The drag only moves the label; tracing reruns once on release.
+                    val range = vm.inkWidthRange
+                    val ink = vm.inkWidthMm
+                    if (range != null && ink != null) {
+                        var sizeDraft by remember(ink) { mutableFloatStateOf(ink.toFloat().coerceIn(range.start.toFloat(), range.endInclusive.toFloat())) }
+                        val sizeLabel = stringResource(R.string.photo_size, Dimensions.length(Math.round(sizeDraft * 10) / 10.0))
+                        Text(sizeLabel, style = MaterialTheme.typography.titleSmall)
+                        Slider(sizeDraft, { sizeDraft = it }, valueRange = range.start.toFloat()..range.endInclusive.toFloat(),
+                            onValueChangeFinished = { vm.changeSize(sizeDraft.toDouble()) }, enabled = range.endInclusive > range.start,
+                            modifier = Modifier.semantics { contentDescription = sizeLabel })
+                        Text(stringResource(R.string.photo_size_hint, Dimensions.length(range.start), Dimensions.length(range.endInclusive)),
+                            style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    }
                 } else vm.report?.let { report ->
                     AssistChip(onClick = { showCheck = true }, label = {
                         Text(stringResource(if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
                     }, colors = AssistChipDefaults.assistChipColors(labelColor = if (vm.passed) colors.primary else colors.error))
                     Text(stringResource(R.string.photo_stats, report.statistics.stitchCount, sewoutMinutes(report.time.totalSeconds)),
                         style = MaterialTheme.typography.titleMedium)
+                    vm.resultSizeMm?.let { (w, h) ->
+                        Text(stringResource(R.string.photo_result_size, Dimensions.size(w, h)), style = MaterialTheme.typography.bodyMedium)
+                    }
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
             }

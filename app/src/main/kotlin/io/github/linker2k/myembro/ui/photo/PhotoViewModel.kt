@@ -30,6 +30,7 @@ import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import io.github.linker2k.myembro.ui.viewerSewoutMachine
 import kotlinx.coroutines.*
 import java.io.File
+import kotlin.math.abs
 
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var step by mutableIntStateOf(0); private set
@@ -39,6 +40,10 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var panY by mutableFloatStateOf(0f); private set
     var style by mutableStateOf(PhotoStyle.SILHOUETTE); private set
     var detail by mutableIntStateOf(1); private set
+    /** Picture width in mm (height follows the frame aspect); recomputed only when a choice is committed. */
+    var widthMm by mutableDoubleStateOf(photoMaxWidthMm(EmbroiderySettings().defaultFrame.spec)); private set
+    /** Actual stitched width × height in mm of the step-3 result. */
+    var resultSizeMm by mutableStateOf<Pair<Double, Double>?>(null); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
@@ -51,14 +56,26 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private var revision = 0
     private var settings = EmbroiderySettings()
     val hoop: HoopSpec get() = settings.defaultFrame.spec
+    /** Ink ÷ frame width of the latest outline (kept while re-tracing); null until step 2 has traced. */
+    var inkRatio by mutableStateOf<Double?>(null); private set
+    /** Slider range and value in embroidery (ink) mm. */
+    val inkWidthRange: ClosedFloatingPointRange<Double>? get() = inkRatio?.let { photoInkWidthRange(hoop, it) }
+    val inkWidthMm: Double? get() = inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
     val canSend get() = !busy && bytes != null && passed
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
-    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; if (step > 0) { step = 1; prepare() } } }
+    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
+    /** [inkMm]: wanted embroidery width. Converted to the frame width with the size-independent ink ratio. */
+    fun changeSize(inkMm: Double) {
+        val ratio = inkRatio ?: return
+        val range = photoInkWidthRange(hoop, ratio)
+        val frame = (inkMm.coerceIn(range) / ratio).coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop))
+        if (abs(frame - widthMm) >= 0.05) { widthMm = frame; step = 1; prepare() }
+    }
     fun load(uri: Uri) {
         work?.cancel(); val version = ++revision
         busy = true; progressStage = 0; error = null
@@ -109,13 +126,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null }
+    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val edge = photoRasterSize(detail, frame.width / 10.0, frame.height / 10.0)
+        val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
+        val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
@@ -134,7 +152,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
-                    fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,(frame.width - 1) / 10.0,0,
+                    fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
                         minAreaMm2 = photoMinimumArea(detail), maxContours = 128,
                         onQuantized = { separated ->
@@ -149,13 +167,13 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         progressStage = if (next == "quantization") 1 else 2
                     }
                     val denoised=io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoRasterFilters.median3(w,h,pixels)
-                    try { trace(denoised) } catch (failure: IllegalArgumentException) {
+                    (try { trace(denoised) } catch (failure: IllegalArgumentException) {
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
-                    }
+                    }).let { it to photoInkRatio(it) }
                 }
-                if (version == revision) { outline = output }
+                if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else R.string.photo_generate_failed
@@ -165,7 +183,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private fun generateResult() {
         val traced = outline ?: return
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
-        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null
+        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
@@ -180,7 +198,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
                     Triple(RenderData(generated.pattern),pes,check)
                 } }
-                if (version == revision) { render=output.first; bytes=output.second; report=output.third }
+                if (version == revision) { render=output.first; bytes=output.second; report=output.third
+                    resultSizeMm=output.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
