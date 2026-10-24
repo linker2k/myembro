@@ -9,6 +9,8 @@ designs on your phone and send them to the machine.
 
 Current release: **v0.2.8** (GitHub pre-release).
 
+User guide: [docs/manual/user-guide.md](docs/manual/user-guide.md)
+
 ## Failure-free designs
 
 Before saving or sending, every PES the app generates is checked in code for the conditions that cause
