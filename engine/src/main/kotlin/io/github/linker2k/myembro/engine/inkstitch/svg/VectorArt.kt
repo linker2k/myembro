@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.inkstitch.svg
 
+import io.github.linker2k.myembro.engine.geometry.Affine2D
 import io.github.linker2k.myembro.engine.geometry.FillRule
 import io.github.linker2k.myembro.engine.geometry.Point as MmPoint
 import io.github.linker2k.myembro.engine.geometry.PolygonRegion
@@ -26,6 +27,9 @@ import org.locationtech.jts.operation.buffer.BufferParameters
 import org.locationtech.jts.operation.union.UnaryUnionOp
 import org.w3c.dom.Element
 import javax.xml.parsers.DocumentBuilderFactory
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * Flat vector art (logo, emoji) as embroidery: one shared path for every picture source.
@@ -36,9 +40,14 @@ import javax.xml.parsers.DocumentBuilderFactory
  * parameters; only the width classification and the occlusion clip below are ours.
  */
 object VectorArt {
-    /** One `<path>`: fill and/or stroke colors as 0xRRGGBB, stroke width in viewBox units. */
+    /**
+     * One painted element as path data: fill and/or stroke colors as 0xRRGGBB (opacity already
+     * composited on white), [transform] = accumulated SVG transform to root user units, stroke
+     * width already in root units.
+     */
     data class Shape(val d: String, val fill: Int?, val stroke: Int?, val strokeWidth: Double = 1.0,
-        val lineCap: String? = null, val lineJoin: String? = null)
+        val lineCap: String? = null, val lineJoin: String? = null,
+        val transform: Affine2D = Affine2D.IDENTITY, val fillRule: FillRule = FillRule.NON_ZERO)
     data class Art(val viewBox: List<Double>, val shapes: List<Shape>)
 
     /** Bounds of the shared [StitchTypeRule]; overridable only for sweeps. */
@@ -53,7 +62,13 @@ object VectorArt {
         val widths: StitchTypeRule.Widths? = null)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double)
 
-    /** Minimal reader for flat SVG: root viewBox and `<path>` elements. Gradients, masks, transforms are rejected. */
+    /**
+     * Flat SVG 1.1 reader: `<g>` nesting with inherited presentation attributes (and `style`),
+     * `transform` (all SVG 1.1 forms via [Affine2D.parse]), path and basic shapes, fill-rule and
+     * opacity. Non-rendered `<defs>`/`<clipPath>`/`<title>` content is skipped. Anything that would
+     * change the picture and is not drawn here (gradients, filters, masks, clip-path, images, `<use>`,
+     * text) is rejected rather than approximated.
+     */
     fun parseSvg(svg: String): Art {
         val doc = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }.newDocumentBuilder()
             .parse(svg.byteInputStream())
@@ -61,22 +76,92 @@ object VectorArt {
         val viewBox = root.getAttribute("viewBox").trim().split(Regex("[\\s,]+")).map(String::toDouble)
         require(viewBox.size == 4) { "SVG viewBox is required" }
         val shapes = ArrayList<Shape>()
-        fun walk(e: Element) {
-            require(e.localName !in setOf("linearGradient", "radialGradient", "mask", "clipPath", "filter", "image")) {
-                "Unsupported SVG element <${e.localName}>"
+        fun walk(e: Element, parent: Style, outer: Affine2D) {
+            when (e.localName) {
+                "defs", "clipPath", "title", "desc", "metadata" -> return
+                "linearGradient", "radialGradient", "mask", "filter", "image", "use", "text", "pattern", "symbol" ->
+                    throw IllegalArgumentException("Unsupported SVG element <${e.localName}>")
             }
-            require(!e.hasAttribute("transform")) { "SVG transforms are not supported yet" }
-            if (e.localName == "path") {
-                fun color(name: String) = e.getAttribute(name).takeIf { it.startsWith("#") }?.let(::parseColor)
-                shapes += Shape(e.getAttribute("d"), color("fill").takeIf { e.getAttribute("fill") != "none" },
-                    color("stroke"), e.getAttribute("stroke-width").toDoubleOrNull() ?: 1.0,
-                    e.getAttribute("stroke-linecap").ifEmpty { null }, e.getAttribute("stroke-linejoin").ifEmpty { null })
+            require(!e.hasAttribute("clip-path") && !e.hasAttribute("mask") && !e.hasAttribute("filter")) {
+                "Unsupported SVG clip-path/mask/filter on <${e.localName}>"
+            }
+            val transform = e.getAttribute("transform").takeIf { it.isNotBlank() }?.let { outer * Affine2D.parse(it) } ?: outer
+            val style = parent.inherit(e)
+            basicShapeData(e)?.let { d ->
+                val scale = sqrt(abs(transform.a * transform.d - transform.b * transform.c))
+                shapes += Shape(d, style.paint(style.fill, style.fillOpacity), style.paint(style.stroke, style.strokeOpacity),
+                    style.strokeWidth * scale, style.lineCap, style.lineJoin, transform, style.fillRule)
             }
             val children = e.childNodes
-            for (i in 0 until children.length) (children.item(i) as? Element)?.let(::walk)
+            for (i in 0 until children.length) (children.item(i) as? Element)?.let { walk(it, style, transform) }
         }
-        walk(root)
+        walk(root, Style(), Affine2D.IDENTITY)
         return Art(viewBox, shapes)
+    }
+
+    /** SVG 1.1 presentation attributes that this reader draws; defaults per the SVG 1.1 property table. */
+    private data class Style(val fill: String = "#000000", val stroke: String = "none", val strokeWidth: Double = 1.0,
+        val fillOpacity: Double = 1.0, val strokeOpacity: Double = 1.0, val opacity: Double = 1.0,
+        val fillRule: FillRule = FillRule.NON_ZERO, val lineCap: String? = null, val lineJoin: String? = null) {
+        fun inherit(e: Element): Style {
+            val declared = e.getAttribute("style").split(';').mapNotNull { part ->
+                part.split(':', limit = 2).takeIf { it.size == 2 }?.let { (k, v) -> k.trim() to v.trim() } }.toMap()
+            fun v(name: String) = declared[name] ?: e.getAttribute(name).takeIf { it.isNotEmpty() }
+            return Style(
+                fill = v("fill") ?: fill, stroke = v("stroke") ?: stroke,
+                strokeWidth = v("stroke-width")?.removeSuffix("px")?.toDouble() ?: strokeWidth,
+                fillOpacity = v("fill-opacity")?.toDouble() ?: fillOpacity,
+                strokeOpacity = v("stroke-opacity")?.toDouble() ?: strokeOpacity,
+                // Group opacity composites the group; multiplying it down is exact for non-overlapping shapes.
+                opacity = opacity * (v("opacity")?.toDouble() ?: 1.0),
+                fillRule = when (v("fill-rule")) { "evenodd" -> FillRule.EVEN_ODD; "nonzero" -> FillRule.NON_ZERO; else -> fillRule },
+                lineCap = v("stroke-linecap") ?: lineCap, lineJoin = v("stroke-linejoin") ?: lineJoin)
+        }
+
+        /** Paint as 0xRRGGBB composited on white paper by its opacity; null for none. */
+        fun paint(value: String, paintOpacity: Double): Int? {
+            if (value == "none" || value == "transparent") return null
+            require(!value.startsWith("url(")) { "Unsupported SVG paint server $value" }
+            val rgb = when (value.lowercase()) {
+                "black" -> 0x000000; "white" -> 0xFFFFFF
+                else -> { require(value.startsWith("#")) { "Unsupported SVG color $value" }; parseColor(value) }
+            }
+            val o = (paintOpacity * opacity).coerceIn(0.0, 1.0)
+            if (o == 0.0) return null
+            fun mix(shift: Int) = (((rgb shr shift) and 0xFF) * o + 255 * (1 - o)).roundToInt() shl shift
+            return mix(16) or mix(8) or mix(0)
+        }
+    }
+
+    /** SVG 1.1 basic shapes as their equivalent path data (SVG 1.1 §9); null for non-shape elements. */
+    private fun basicShapeData(e: Element): String? {
+        fun n(name: String) = e.getAttribute(name).removeSuffix("px").toDoubleOrNull() ?: 0.0
+        return when (e.localName) {
+            "path" -> e.getAttribute("d")
+            "rect" -> {
+                val x = n("x"); val y = n("y"); val w = n("width"); val h = n("height")
+                if (w <= 0 || h <= 0) return null
+                var rx = e.getAttribute("rx").toDoubleOrNull(); var ry = e.getAttribute("ry").toDoubleOrNull()
+                if (rx == null) rx = ry; if (ry == null) ry = rx
+                val ax = (rx ?: 0.0).coerceIn(0.0, w / 2); val ay = (ry ?: 0.0).coerceIn(0.0, h / 2)
+                if (ax == 0.0 || ay == 0.0) "M$x,$y H${x + w} V${y + h} H$x Z"
+                else "M${x + ax},$y H${x + w - ax} A$ax,$ay 0 0 1 ${x + w},${y + ay} V${y + h - ay} " +
+                    "A$ax,$ay 0 0 1 ${x + w - ax},${y + h} H${x + ax} A$ax,$ay 0 0 1 $x,${y + h - ay} V${y + ay} A$ax,$ay 0 0 1 ${x + ax},$y Z"
+            }
+            "circle", "ellipse" -> {
+                val cx = n("cx"); val cy = n("cy")
+                val rx = if (e.localName == "circle") n("r") else n("rx"); val ry = if (e.localName == "circle") n("r") else n("ry")
+                if (rx <= 0 || ry <= 0) return null
+                "M${cx + rx},$cy A$rx,$ry 0 1 1 ${cx - rx},$cy A$rx,$ry 0 1 1 ${cx + rx},$cy Z"
+            }
+            "line" -> "M${n("x1")},${n("y1")} L${n("x2")},${n("y2")}"
+            "polyline", "polygon" -> {
+                val v = e.getAttribute("points").trim().split(Regex("[\\s,]+")).filter(String::isNotEmpty).map(String::toDouble)
+                if (v.size < 4) return null
+                "M" + v.chunked(2).joinToString(" L") { "${it[0]},${it[1]}" } + if (e.localName == "polygon") " Z" else ""
+            }
+            else -> null
+        }
     }
 
     /** Android VectorDrawable XML → flat SVG (pathData, fill/stroke colors, width, cap, join). */
@@ -118,17 +203,17 @@ object VectorArt {
         return hex.takeLast(6).toInt(16)
     }
 
-    private fun subpaths(d: String): List<Polyline> = SvgPath.flatten(d, tolerance = 0.05)
+    private fun subpaths(shape: Shape): List<Polyline> = SvgPath.flatten(shape.d, shape.transform, tolerance = 0.05)
 
     private fun fillGeometry(shape: Shape): Geometry =
-        PolygonRegion.fromPaths(subpaths(shape.d).map { Polyline(it.points, true) }, FillRule.NON_ZERO).geometry
+        PolygonRegion.fromPaths(subpaths(shape).map { Polyline(it.points, true) }, shape.fillRule).geometry
 
     private fun strokeGeometry(shape: Shape): Geometry {
         val p = BufferParameters().apply {
             endCapStyle = when (shape.lineCap) { "round" -> BufferParameters.CAP_ROUND; "square" -> BufferParameters.CAP_SQUARE; else -> BufferParameters.CAP_FLAT }
             joinStyle = when (shape.lineJoin) { "round" -> BufferParameters.JOIN_ROUND; "bevel" -> BufferParameters.JOIN_BEVEL; else -> BufferParameters.JOIN_MITRE }
         }
-        val lines = subpaths(shape.d).map { line -> factory.createLineString(line.points.map { Coordinate(it.x, it.y) }.toTypedArray()) }
+        val lines = subpaths(shape).map { line -> factory.createLineString(line.points.map { Coordinate(it.x, it.y) }.toTypedArray()) }
         return UnaryUnionOp.union(lines.map { org.locationtech.jts.operation.buffer.BufferOp.bufferOp(it, shape.strokeWidth / 2, p) })
     }
 
@@ -173,7 +258,7 @@ object VectorArt {
                 // A satin-width area still needs a centerline/rail solver (next unit), so it is tatami for now.
                 if (rules.classify(area, scale) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
                 else {
-                    groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
+                    groups += Stroke(subpaths(shape).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
                     parts += Part(index, "fill", StitchTypeRule.Type.RUNNING, thread, w, rgb)
                 }
             }
@@ -184,7 +269,7 @@ object VectorArt {
                 when (rules.classify(strokeGeometry(shape), scale)) {
                     StitchTypeRule.Type.TATAMI -> tatami(index, "stroke", strokeGeometry(shape), thread, w, rgb)
                     StitchTypeRule.Type.SATIN -> {
-                        for (line in subpaths(shape.d)) {
+                        for (line in subpaths(shape)) {
                             val section = StrokeToSatin.convertPathToSatin(line.points.map { px(it.x, it.y) },
                                 Units.mmToPixels(w), StrokeToSatin.Style.fromSvg(shape.lineJoin)) ?: continue
                             groups += section.column(SatinParameters(), thread).toStitchGroups(previous())
@@ -192,7 +277,7 @@ object VectorArt {
                         parts += Part(index, "stroke", StitchTypeRule.Type.SATIN, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
                     }
                     StitchTypeRule.Type.RUNNING -> {
-                        groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
+                        groups += Stroke(subpaths(shape).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
                         parts += Part(index, "stroke", StitchTypeRule.Type.RUNNING, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
                     }
                 }
