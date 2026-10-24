@@ -210,6 +210,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Picks up designs saved elsewhere, e.g. by the editor. */
     fun refresh() {
+        favorites = preferences.getStringSet("favorites", emptySet()).orEmpty().toSet()
         reloadJob?.cancel()
         reloadJob = viewModelScope.launch { reload() }
     }
