@@ -115,6 +115,8 @@ data class SewoutOptions(
     val maxCommands: Int = 250_000, val maxGridCells: Int = 200_000,
     val maxTracedCells: Int = 1_000_000, val maxFindings: Int = 1_000,
     val origin: DesignOrigin = DesignOrigin.AUTO,
+    /** Offline reference corpus only: omit selected hoop/machine-area constraints, never file validity. App defaults stay strict. */
+    val applyHoop: Boolean = true,
 ) {
     init {
         require(listOf(longStitchMm, shortStitchMm, gridMm, assumedSpm, profileSpeedFraction,
@@ -136,7 +138,9 @@ data class SewoutReport(val machine: SewoutMachine, val options: SewoutOptions,
     val suppressedFindings: Int, val analysisComplete: Boolean, val analyzedCommands: Int,
     val inputCommands: Int, val hoopWindow: CheckArea, val speed: SpeedEstimate,
     val time: TimeEstimate, val threadUsage: ThreadEstimate,
-    val compatibility: CompatibilityReport, val pesFile: PesFileInfo?) {
+    val compatibility: CompatibilityReport, val pesFile: PesFileInfo?,
+    /** Worst severity for every code, including findings omitted from the bounded UI detail list. */
+    val findingSeverities: Map<FindingCode, Severity> = findings.groupBy { it.code }.mapValues { (_, rows) -> rows.minBy { it.severity.ordinal }.severity }) {
     val verdict: SewoutVerdict get() = when {
         hasBlockingIssues -> SewoutVerdict.BLOCK
         !analysisComplete || (severityCounts[Severity.WARNING] ?: 0) > 0 -> SewoutVerdict.CAUTION

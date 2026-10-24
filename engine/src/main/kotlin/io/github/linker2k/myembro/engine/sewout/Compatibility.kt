@@ -26,13 +26,13 @@ internal fun compatibility(machine: SewoutMachine, o: SewoutOptions, stats: Sewo
     val selectedFits = if (width == null || height == null) null else o.hoop.width/10.0 <= width && o.hoop.height/10.0 <= height
     val designStatus = when (machineFits) { true -> CompatibilityStatus.PASS; false -> CompatibilityStatus.FAIL; null -> CompatibilityStatus.UNKNOWN }
     add(CompatibilityRule.DESIGN_SIZE, designStatus, "단일 봉제 영역: ${width ?: "미확인"}×${height ?: "미확인"}mm.", machine.maxWidthMm.source)
-    if (machineFits == false || selectedFits == false) findings.add(FindingCode.MACHINE_AREA_EXCEEDED, Severity.BLOCKER,
+    if (o.applyHoop && (machineFits == false || selectedFits == false)) findings.add(FindingCode.MACHINE_AREA_EXCEEDED, Severity.BLOCKER,
         "도안 또는 선택한 후프가 기종의 단일 봉제 영역을 초과합니다. 멀티포지션은 분할 파일별로 검사하세요.", Highlight(area = b))
     val knownHoop = o.hoop.width/10.0 to o.hoop.height/10.0 in machine.knownHoopsMm
     val outsideSelected = (findings.codes[FindingCode.HOOP_EXCEEDED] ?: 0) > 0
     add(CompatibilityRule.SELECTED_HOOP, when { selectedFits == false || outsideSelected -> CompatibilityStatus.FAIL; knownHoop -> CompatibilityStatus.PASS; else -> CompatibilityStatus.UNKNOWN },
         when { outsideSelected -> "도안 배치가 선택 후프의 영역을 벗어납니다."; selectedFits == false -> "선택 후프가 기종 단일 봉제 영역보다 큽니다."; knownHoop -> "확인된 후프 치수입니다."; else -> "이 후프의 기종 장착 호환은 미확인입니다." })
-    if (!knownHoop && selectedFits != false) findings.add(FindingCode.HOOP_COMPATIBILITY_UNKNOWN, Severity.WARNING, checks.last().message)
+    if (o.applyHoop && !knownHoop && selectedFits != false) findings.add(FindingCode.HOOP_COMPATIBILITY_UNKNOWN, Severity.WARNING, checks.last().message)
     val limit = if (o.destination == Destination.INTERNAL_MEMORY) machine.internalMemoryStitches.takeIf { it.value != null } ?: machine.maxStitches else machine.maxStitches
     fun countCheck(rule: CompatibilityRule, value: Long?, limitValue: Long?, source: String?, exceeded: FindingCode, unknown: FindingCode, label: String) {
         val status = when { value == null || limitValue == null || !complete -> CompatibilityStatus.UNKNOWN; value > limitValue -> CompatibilityStatus.FAIL; else -> CompatibilityStatus.PASS }
