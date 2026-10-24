@@ -97,7 +97,7 @@ Paths in this table are relative to `app/src/main/kotlin/io/github/linker2k/myem
 | `delete_font` | `FontService.delete` | FontRepository.kt:207 and 317; bundled fonts protected; personal originals needed to reinstall. |
 | `set_font_favorite` | `FontService.setFavorite` | SettingsViewModel.kt:76; desired-state adapter around toggleFavoriteFont. |
 | `get_font_license` | `FontService.license` | FontRepository.kt:373; license read does not silently download. |
-| `prepare_photo` | `PhotoService.prepare` | PhotoViewModel.kt:57,101,139; PhotoCrop.kt:12–54; PhotoScreen.kt:129,136. Actual ink-width interval is dynamic; return allowed width and reject unsupported requests rather than inventing a static minimum. Crop uses existing frame aspect. |
+| `prepare_photo` | `PhotoService.prepare` | Approved app-picked attachmentId only; NOT_IMPLEMENTED in the dispatcher. PhotoViewModel.kt:57,101,139; PhotoCrop.kt:12–54; PhotoScreen.kt:129,136. Actual ink-width interval is dynamic; return allowed width and reject unsupported requests rather than inventing a static minimum. Crop uses existing frame aspect. |
 | `list_emoji` | `EmojiService.list` | EmojiViewModel.kt:82–93; empty groupId means bundled set; nonempty query searches catalog. Catalog group ID must resolve. |
 | `prepare_emoji` | `EmojiService.prepare` | EmojiViewModel.kt:109–141; EmbroiderySizeSlider.kt:40. Dynamic pictureWidthRange and native hoop endpoint bound; no new global width interval. Catalog-only pinned data. |
 | `prepare_pes` | `ExportService.preparePes` | Project.flatten → existing preflight → normal PesWriter → PesReader/SewoutCheck; command-layer export service proposal. No arbitrary filesystem destination or oracle profile; artifacts created only after checks. |
