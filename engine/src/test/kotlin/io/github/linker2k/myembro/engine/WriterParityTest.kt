@@ -106,9 +106,9 @@ class WriterParityTest {
             val data = write(source)
             val reread = PesReader.read(data)
             assertTrue(reread.warnings.isEmpty(), "$name.$extension: ${reread.warnings}")
-            val outputExpected = if (extension == "pes") PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source)).stitches else expected
+            val outputExpected = if (extension == "pes") PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source)).stitches else expected
             assertEquals(outputExpected, reread.stitches, "$name.$extension: commands/coordinates")
-            val outputColors = if (extension == "pes") PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source)).threads.map { it.color and 0xFFFFFF } else colors
+            val outputColors = if (extension == "pes") PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source)).threads.map { it.color and 0xFFFFFF } else colors
             assertEquals(outputColors, reread.threads.map { it.color and 0xFFFFFF }, "$name.$extension: colors")
             assertEquals(expected, PecWriter.normalize(source).stitches)
             File(output, "$name.$extension").writeBytes(data)

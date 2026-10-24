@@ -48,11 +48,10 @@ class SewingProcessingFlowTest {
         val bytes = ProjectJson.encode(project).toByteArray()
         val before = bytes.copyOf()
         val disabled = project.flatten(withoutLocks)
-        val disabledViewer=readViewerDesign(bytes,"old.myembro",sewingOptions=withoutLocks)
+        assertFailsWith<IllegalArgumentException> { readViewerDesign(bytes,"old.myembro",sewingOptions=withoutLocks) }
         val enabled = readViewerDesign(bytes, "old.myembro", sewingOptions = custom)
         assertEquals(0, ProcessingSummary.fromPattern(disabled)!!.lockLocations)
         assertTrue(ProcessingSummary.fromPattern(enabled.pattern)!!.lockLocations > 0)
-        assertFalse(disabledViewer.source.contentEquals(enabled.source))
         assertSame(bytes, enabled.projectSource)
         assertContentEquals(before, bytes)
         assertEquals(custom, enabled.sewingOptions)

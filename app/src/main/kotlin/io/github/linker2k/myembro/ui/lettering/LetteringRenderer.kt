@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
+import io.github.linker2k.myembro.engine.inkstitch.lettering.*
 import android.content.Context
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -29,9 +30,15 @@ internal val bundledLetteringFonts = listOf(
     LetteringFont("noto-sans-kr", "담백한 고딕", R.font.noto_sans_kr),
 )
 internal data class LetteringResult(
-    val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport,
+    val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport?,
     val unsupported: Boolean, val outsideHoop: Boolean,
     val singleLine: Boolean, val fontName: String,
+    /** Ink/Stitch font: stitch types and densities come from the font, so style controls do not apply. */
+    val predigitized: Boolean = false,
+    /** The digitizer's tested height range for [predigitized] fonts. */
+    val testedRangeMm: ClosedFloatingPointRange<Double>? = null,
+    /** Distinct characters of the text the font has no glyph for, in text order. */
+    val missing: String = "",
 )
 
 /** Catalog-card bridge: call after download, on a worker via this suspending API. No download UI here. */
@@ -46,10 +53,25 @@ object LetteringFontQuality {
     fun invalidate(fontId: String) = FontQualityCache.Shared.invalidate(fontId)
 }
 
+/** Font metadata or pinned TTF sweep bounds, always capped by the app height limit. */
+internal suspend fun automaticLetteringState(context:Context,fontId:String,text:String,heightMm:Double=18.0):AutomaticLetteringState = withContext(Dispatchers.Default) {
+    automaticState(context,loadFont(context.applicationContext,fontId),fontId,text,heightMm)
+}
+
+/** The one automatic decision used by both the screen and [renderLettering], so they cannot disagree. */
+private fun automaticState(context:Context,source:LoadedFont,fontId:String,text:String,heightMm:Double):AutomaticLetteringState {
+    val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
+    val limits=LetteringHeightLimits.decode(context.assets.open(LetteringHeightLimits.ASSET).bufferedReader().use { it.readText() })
+    return automaticLetteringState(source.name,fontId,source.revision,normalizedLetteringText(text),heightMm,geometry,limits,
+        source.testedRangeMm.takeIf { source.ink!=null })
+}
+
 private class LoadedFont(
     val face: Typeface?, val svg: SvgFont?, val hershey: HersheyFont?, val revision: String, val name: String,
     /** Outline file's own character map; [Paint.hasGlyph] would also count system fallback fonts. */
     val cmap: FontCmap? = null,
+    val ink: InkStitchFont? = null,
+    val testedRangeMm: ClosedFloatingPointRange<Double>? = null,
 ) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
     fun advance(character: String): Double = when {
@@ -76,6 +98,10 @@ private class LoadedFont(
         }
     }
     fun supports(code: Int): Boolean = when {
+        // Ink/Stitch sews forced-case fonts in that case (font.json letter_case).
+        ink != null -> String(Character.toChars(code)).let { c ->
+            when (ink.info.letterCase) { "upper" -> c.uppercase(); "lower" -> c.lowercase(); else -> c }
+        } in ink.glyphs
         paint != null -> cmap?.let { code in it } ?: paint.hasGlyph(String(Character.toChars(code)))
         svg != null -> String(Character.toChars(code)) in svg.glyphs
         else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
@@ -98,18 +124,35 @@ private fun loadFont(context: Context, id: String): LoadedFont {
         user?.kind == LetterFont.Kind.SINGLE_LINE_SVG -> repo.userSvgFont(user)
         else -> null
     }
+    val ink = if (installed?.kind == CatalogFont.Kind.INKSTITCH_SVG) repo.inkStitchFont(installed) else null
     val hershey = if (id == HersheyFont.DEFAULT_ID) HersheyFont.DEFAULT else null
-    check(face != null || svg != null || hershey != null) { "선택한 폰트를 불러올 수 없습니다." }
+    check(face != null || svg != null || hershey != null || ink != null) { "선택한 폰트를 불러올 수 없습니다." }
     val cmap = when {
         installed?.kind == CatalogFont.Kind.OUTLINE_TTF -> FontCmap.read(repo.fontFile(installed))
         user?.kind == LetterFont.Kind.OUTLINE -> user.file?.let(FontCmap::read)
         else -> null
     }
-    return LoadedFont(face, svg, hershey, (installed?.sha256 ?: user?.let(repo::userRevision) ?: "bundled-v1") + ":glyph-extractor-v3",
-        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap)
+    val digest=java.security.MessageDigest.getInstance("SHA-256")
+    fun hash(stream:java.io.InputStream):String=stream.use { input ->
+        val buffer=ByteArray(8192)
+        while(true) { val count=input.read(buffer);if(count<0)break;digest.update(buffer,0,count) }
+        digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+    }
+    val revision=when {
+        bundled!=null -> hash(context.resources.openRawResource(bundled.resource))
+        installed!=null -> hash(repo.fontFile(installed).inputStream())
+        user?.file!=null -> hash(user.file.inputStream())
+        else -> "bundled-hershey-v1"
+    }
+    return LoadedFont(face, svg, hershey, revision + ":glyph-extractor-v3",
+        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
+        ink, installed?.takeIf { ink != null }?.let { f ->
+            (f.recommendedMinHeightMm ?: 0.0)..(f.recommendedMaxHeightMm ?: Double.POSITIVE_INFINITY)
+        })
 }
 
 private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: Double, threadWeight: ThreadWeight): FontQualityReport {
+    if (source.ink != null) return testedRangeQuality(source.testedRangeMm, heightMm)
     val codes = normalizedLetteringText(text).codePoints().toArray().distinct().filter { !Character.isWhitespace(it) }.sorted()
     val sample = codes.joinToString("") { String(Character.toChars(it)) }
     return FontQualityCache.Shared.getOrAnalyze(FontQualityKey(id, source.revision, sample, heightMm, source.face != null, threadWeight = threadWeight),
@@ -118,6 +161,22 @@ private fun qualityFor(source: LoadedFont, id: String, text: String, heightMm: D
             path.map { (x, y) -> x * heightMm / source.reference to y * heightMm / source.reference }
         } }
     }
+}
+
+/**
+ * Ink/Stitch fonts are judged by the range their digitizer tested (font.json min/max scale on the 'H'
+ * basis): below it satins get too narrow and dense, above it they grow too long. Contour analysis
+ * would measure outlines the font does not sew.
+ */
+internal fun testedRangeQuality(range: ClosedFloatingPointRange<Double>?, heightMm: Double): FontQualityReport {
+    val min = range?.start ?: 0.0
+    val (grade, reasons) = when {
+        range == null -> Grade.GOOD to emptyList()
+        heightMm < range.start -> Grade.UNSUITABLE to listOf("디지타이저가 시험한 높이(%.1f–%.1f mm)보다 작습니다.".format(range.start, range.endInclusive))
+        heightMm > range.endInclusive -> Grade.CAUTION to listOf("디지타이저가 시험한 높이(%.1f–%.1f mm)보다 커서 새틴이 길어질 수 있습니다.".format(range.start, range.endInclusive))
+        else -> Grade.GOOD to emptyList()
+    }
+    return FontQualityReport(Double.POSITIVE_INFINITY, min, 0, 0, 0, grade, reasons)
 }
 
 /** Font/catalog cards can request the same real stitches without running quality analysis again. */
@@ -140,6 +199,12 @@ object LetteringFontPreview {
 /** Keep geometry construction shared by main preview, cards, and the added object. */
 private fun prepareObject(source: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
     val text = normalizedLetteringText(settings.text)
+    if (source.ink != null) return TextObject(
+        id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
+        heightMm = settings.heightMm, spacing = settings.spacingMm, thread = thread, fontKind = FontKind.INKSTITCH,
+        lineSpacing = 1 + settings.lineSpacingMm / settings.heightMm,
+        alignment = TextAlignment.valueOf(settings.alignment.name), singleLine = false, threadWeight = settings.threadWeight,
+    )
     val lines = arrayListOf(mutableListOf<LayoutGlyph>())
     text.codePoints().toArray().forEachIndexed { index, code ->
         if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
@@ -159,7 +224,7 @@ private fun prepareObject(source: LoadedFont, settings: LetteringSettings, threa
         characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
         singleLine = source.face == null,
-        stitchStyle = settings.stitchStyle ?: if (source.face == null) StitchStyle.BEAN else StitchStyle.RUNNING,
+        stitchStyle = settings.stitchStyle ?: StitchStyle.RUNNING,
         fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
     )
 }
@@ -169,11 +234,15 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     sewingOptions: SewingOptions = SettingsPreferences(context).read().sewing): LetteringResult {
     val text = normalizedLetteringText(settings.text)
     val source = loadFont(context, settings.fontId)
+    val method=automaticState(context,source,settings.fontId,text,settings.heightMm).style
+    require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Lettering method is outside the supported automatic range" }
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val transformed = placed.placedPattern().withSewingDefaults(sewingOptions)
     val pattern = EmbPattern(transformed.stitches, transformed.threads, transformed.metadata, placed.localPattern().warnings)
-    val quality = qualityFor(source, settings.fontId, text, settings.heightMm, settings.threadWeight)
-    val unsupported = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.any { !source.supports(it) }
+    val quality: FontQualityReport? = null // Heuristic quality remains a separate catalog API, never an approval.
+    val lacking = text.codePoints().toArray().filter { !Character.isWhitespace(it) && !source.supports(it) }.distinct()
     val outside = letteringOutsideHoop(pattern, hoop)
-    return LetteringResult(placed, pattern, quality, unsupported, outside, source.face == null, source.name)
+    return LetteringResult(placed, pattern, quality, lacking.isNotEmpty(), outside, source.face == null && source.ink == null, source.name,
+        predigitized = source.ink != null, testedRangeMm = source.testedRangeMm,
+        missing = lacking.joinToString("") { String(Character.toChars(it)) })
 }

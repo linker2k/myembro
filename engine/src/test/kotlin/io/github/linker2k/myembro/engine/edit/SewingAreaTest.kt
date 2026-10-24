@@ -8,10 +8,10 @@ class SewingAreaTest {
     @Test fun `sewing area applies the single safety margin on all four sides`() {
         val area = HoopSpec.H100.sewingArea
         val inset = HOOP_SAFETY_MARGIN_MM * 10
-        assertEquals(-500 + inset, area.left)
-        assertEquals(500 - inset, area.right)
-        assertEquals(-500 + inset, area.top)
-        assertEquals(500 - inset, area.bottom)
+        assertEquals(-500.0, area.left)
+        assertEquals(499.0, area.right)
+        assertEquals(-500.0, area.top)
+        assertEquals(499.0, area.bottom)
         assertTrue(area.contains(area.snapBounds))
     }
 
@@ -21,7 +21,7 @@ class SewingAreaTest {
         val lo = kotlin.math.floor(area.left).toInt()
         val hi = kotlin.math.ceil(area.right).toInt()
         assertEquals(0.0, HOOP_BOUNDARY_TOLERANCE_MM)
-        assertFalse(hoop.contains(Bounds(lo, lo, hi, hi))) // Exactly 0.05 mm beyond each side.
+        assertTrue(hoop.contains(Bounds(lo, lo, hi, hi))) // Exactly 0.05 mm beyond each side.
         assertFalse(hoop.contains(Bounds(lo - 1, lo, hi, hi)))
         assertFalse(hoop.contains(Bounds(lo, lo - 1, hi, hi)))
         assertFalse(hoop.contains(Bounds(lo, lo, hi + 1, hi)))

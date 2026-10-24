@@ -94,7 +94,7 @@ class MultiPositionSplitterTest {
             assertTrue(file.instructions.contains("프레임"))
             val back = PesReader.read(file.bytes)
             assertTrue(back.warnings.isEmpty())
-            val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(file.part.pattern)) else PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(file.part.pattern))
+            val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(file.part.pattern), deferStandaloneTrims = true) else PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(file.part.pattern))
             assertEquals(expected.stitches, back.stitches)
             assertEquals(expected.threads.map { it.color }, back.threads.map { it.color })
             if (version == PesVersion.V6) assertTrue(back.metadata.getValue("comments").contains("origin="))

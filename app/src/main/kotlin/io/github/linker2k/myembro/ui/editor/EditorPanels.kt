@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor
 
-import io.github.linker2k.myembro.engine.edit.placedBounds
-
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,9 +26,6 @@ import io.github.linker2k.myembro.engine.edit.densityWarning
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
-import io.github.linker2k.myembro.ui.lettering.LetteringModeSelector
-import io.github.linker2k.myembro.ui.lettering.ThreadWeightSelector
-import io.github.linker2k.myembro.ui.lettering.TextFillWarning
 import java.io.File
 import java.util.Locale
 import io.github.linker2k.myembro.ui.format.Dimensions
@@ -61,10 +56,8 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var rotation by remember(obj.id) { mutableStateOf(format(t.rotationDeg)) }
     var sx by remember(obj.id) { mutableStateOf(format(abs(t.scaleX) * 100)) }
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
-    var style by remember(obj.id) { mutableStateOf((obj as? TextObject)?.stitchStyle ?: StitchStyle.RUNNING) }
-    var weight by remember(obj.id) { mutableStateOf((obj as? TextObject)?.threadWeight ?: ThreadWeight.WT40) }
     val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)?.takeIf { candidate ->
-        obj.withTransform(candidate).placedBounds()?.let { !it.outside(vm.project.hoop) } != false
+        obj.withTransform(candidate).placedPattern().bounds?.let { io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(vm.project.hoop,it) } != false
     }
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,
@@ -72,14 +65,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
         text = {
             Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(obj.name, style = MaterialTheme.typography.bodyMedium)
-                if (obj is TextObject) {
-                    LetteringModeSelector(obj.singleLine, style, { style = it })
-                    ThreadWeightSelector(weight) { weight = it }
-                    TextFillWarning(obj.withThreadWeight(weight), style)
-                    TextButton(onClick = { vm.openLettering(obj.id); onDismiss() }) {
-                        Text(stringResource(R.string.lettering_fill_advanced))
-                    }
-                }
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NumericField(x, { x = it }, R.string.editor_property_x, Modifier.weight(1f))
                     NumericField(y, { y = it }, R.string.editor_property_y, Modifier.weight(1f))
@@ -90,11 +76,6 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
                     NumericField(sy, { sy = it }, R.string.editor_property_scale_y, Modifier.weight(1f))
                 }
                 Text(stringResource(R.string.editor_property_hint), style = MaterialTheme.typography.bodySmall)
-                Text(stringResource(R.string.editor_safe_size_hint,
-                    io.github.linker2k.myembro.ui.format.Dimensions.size(
-                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignWidthUnits0p1mm(vm.project.hoop).coerceAtLeast(0)/10.0,
-                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(vm.project.hoop).coerceAtLeast(0)/10.0)),
-                    style=MaterialTheme.typography.bodySmall)
                 if (warning) Text(stringResource(R.string.editor_density_warning), color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall)
                 if (parsed == null) Text(stringResource(R.string.editor_property_invalid), color = MaterialTheme.colorScheme.error,
@@ -102,7 +83,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(enabled = parsed != null, onClick = {
-            parsed?.let { if (obj is TextObject) vm.applyTextProperties(it, style, weight) else vm.applyProperties(it) }; onDismiss()
+            parsed?.let { vm.applyProperties(it) }; onDismiss()
         }) {
             Text(stringResource(R.string.editor_apply))
         } },

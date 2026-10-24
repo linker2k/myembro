@@ -55,8 +55,6 @@ def assess_bounds(minx,miny,maxx,maxy,width,height,hoop,margin_units):
         errors.append(f'PEC_ORIGIN: min=({minx},{miny}), required=(0,0)')
     if maxx >= hoop[0] or maxy >= hoop[1]:
         errors.append(f'PEC_HOOP: max=({maxx},{maxy}), hoop=({hoop[0]},{hoop[1]}) exclusive size bound')
-    if maxx-minx > hoop[0]-2*margin_units or maxy-miny > hoop[1]-2*margin_units:
-        errors.append(f'PEC_SAFETY_MARGIN: design exceeds hoop minus {2*margin_units} units')
     if (width,height) != (maxx-minx,maxy-miny):
         errors.append(f'PEC_DIMENSIONS: header=({width},{height}), actual=({maxx-minx},{maxy-miny})')
     return dict(min_x=minx,min_y=miny,max_x=maxx,max_y=maxy,header_width=width,

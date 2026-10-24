@@ -31,7 +31,7 @@
     <string name="lettering_gold">Gold</string>
     <string name="lettering_close">Close</string>
     <string name="lettering_unsupported">This font does not support part of the phrase. Choose another font.</string>
-    <string name="lettering_outside">The lettering extends beyond the hoop. Reduce its height or spacing.</string>
+    <string name="lettering_outside">The lettering extends beyond the hoop. Reduce its height or shorten the phrase.</string>
     <string name="lettering_quality_height">Recommended minimum height: %1$s</string>
     <string name="lettering_quality_check">Fine or touching strokes need a closer look.</string>
     <string name="lettering_quality_hint">Fine details may merge when sewn. Try a larger size or a bolder font.</string>
@@ -66,17 +66,34 @@
     <string name="lettering_border">Border stitches</string>
     <string name="lettering_border_none">None</string>
     <string name="lettering_satin_width">Satin width</string>
-    <string name="lettering_satin_hint">Stitches follow each stroke. Wide strokes use staggered split satin.</string>
+    <string name="lettering_satin_hint">Satin requires a validated constant-width column. Other outlines use auto-fill.</string>
     <string name="lettering_satin_fallback">Some complex areas are completed with tatami.</string>
     <string name="lettering_fill_advanced">Density, underlay and border settings</string>
-    <string name="lettering_auto_fill">Follow strokes</string>
-    <string name="lettering_fixed_tatami">Fixed-angle tatami</string>
+    <string name="lettering_auto_fill">Auto-fill (routed)</string>
+    <string name="lettering_fixed_tatami">Auto-fill (boundary travel)</string>
     <string name="lettering_auto_density">Automatic spacing for thread / small text</string>
-    <string name="lettering_auto_underlay">Center / edge underlay</string>
+    <string name="lettering_auto_underlay">Fill underlay (crosswise)</string>
     <string name="lettering_thread_weight">Thread weight</string>
     <string name="lettering_weight_40">40wt (default)</string>
     <string name="lettering_weight_50">50wt</string>
     <string name="lettering_weight_60">60wt (fine)</string>
     <string name="lettering_fine_thread_hint">65/9 needle recommended · Keep your bobbin setup</string>
     <string name="lettering_weight_min_feature">Estimated minimum stroke / gap: %1$.2fmm</string>
+    <string name="lettering_contour_underlay">Contour underlay</string>
+    <string name="lettering_zigzag_underlay">Zigzag underlay</string>
+    <string name="lettering_unsafe_density">Too many needle penetrations in a 0.5mm cell (%1$d; limit %2$d). Increase letter size or spacing.</string>
+    <string name="lettering_missing_glyphs">Not in this font (left out): %1$s</string>
+
+    <string name="lettering_automatic_running">Automatic · Running</string>
+    <string name="lettering_automatic_satin">Automatic · Satin</string>
+    <string name="lettering_automatic_unconfirmed">Automatic · Unconfirmed</string>
+    <string name="lettering_range_unconfirmed">Validated range unconfirmed</string>
+    <string name="lettering_checking_range">Checking validated range…</string>
+    <string name="lettering_validated_range">Validated range: %1$s</string>
+    <string name="lettering_satin_unconfirmed_running">Satin range unconfirmed · Running applied</string>
+    <string name="lettering_height_invalid">Enter a valid height greater than 0 mm.</string>
+    <string name="lettering_automatic_fill">Automatic · Fill</string>
+    <string name="lettering_fill_size_range">Fill height · %1$s</string>
+    <string name="lettering_discard_title">Discard lettering changes?</string>
+    <string name="lettering_discard_body">Your changes have not been added to the design.</string>
 </resources>

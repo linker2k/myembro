@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # Every branch, so agent branches are green before the integrator merges them.
   push:
+    branches: ['**']
   pull_request:
 
 jobs:
@@ -9,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # versionCode counts commits
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -20,6 +24,9 @@ jobs:
         run: ./gradlew :engine:exportGateHoop
       - name: Python policy boundary tests
         run: python3 -m unittest discover -s tools/tests -p "test_quality_gate_*.py"
+
+      - name: Sweep selection and range reducer tests
+        run: python3 -m unittest discover -s tools/tests -p 'test_*sweep.py' -v
       - name: Checks and representative engine tests
         timeout-minutes: 5
         run: ./gradlew check

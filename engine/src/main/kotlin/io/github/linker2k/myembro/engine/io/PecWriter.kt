@@ -54,9 +54,13 @@ object PecWriter {
     fun normalizeInkstitch(pattern: EmbPattern): EmbPattern = normalizePattern(pattern, quantizeThreads = true, inkstitchCommands = true)
 
     /** Shared command normalization, retaining custom thread RGB/identity for the PES v6 chart. */
-    internal fun normalizePreservingThreads(pattern: EmbPattern, inkstitchCommands: Boolean = false): EmbPattern = normalizePattern(pattern, quantizeThreads = false, inkstitchCommands = inkstitchCommands)
+    internal fun normalizePreservingThreads(pattern: EmbPattern, inkstitchCommands: Boolean = false, deferStandaloneTrims: Boolean = false): EmbPattern = normalizePattern(pattern, quantizeThreads = false, inkstitchCommands = inkstitchCommands, deferStandaloneTrims = deferStandaloneTrims)
 
-    private fun normalizePattern(pattern: EmbPattern, quantizeThreads: Boolean, inkstitchCommands: Boolean = false): EmbPattern {
+    /** App PES: carry a pending trim across color/stop controls to the next real jump.
+     * Upstream pec_encode also carries/ignores explicit TRIM rather than emitting a stationary move. */
+    internal fun normalizeForPes(pattern: EmbPattern): EmbPattern = normalizePattern(pattern, quantizeThreads = true, deferStandaloneTrims = true)
+
+    private fun normalizePattern(pattern: EmbPattern, quantizeThreads: Boolean, inkstitchCommands: Boolean = false, deferStandaloneTrims: Boolean = false): EmbPattern {
         val active = pattern.stitches.takeWhile { it.command != Command.END }.toMutableList()
         pattern.stitches.firstOrNull { it.command == Command.END }?.let { active += it }
         if (active.isNotEmpty()) {
@@ -105,7 +109,28 @@ object PecWriter {
             "PEC supports at most 255 color blocks, including STOP duplicates"
         }
         val canonical = ArrayList<Stitch>(blocks.size)
-        blocks.forEachIndexed { i, s ->
+        if (deferStandaloneTrims) {
+            var pendingTrim = false
+            var atX = 0; var atY = 0
+            for (s in blocks) {
+                when (s.command) {
+                    Command.TRIM -> pendingTrim = true
+                    Command.COLOR_CHANGE, Command.STOP -> canonical += s
+                    Command.STITCH, Command.JUMP -> {
+                        if (pendingTrim) {
+                            canonical += Stitch(atX, atY, Command.TRIM)
+                            // A cut without a subsequent needle-up move has no nonzero PEC
+                            // representation. Retain the explicit invalid case for the guard.
+                            if (s.command != Command.JUMP) canonical += Stitch(atX, atY, Command.JUMP)
+                        }
+                        canonical += s
+                        pendingTrim = false
+                    }
+                    Command.END -> canonical += s // terminal explicit TRIM emits no PEC bytes
+                }
+                atX=s.x; atY=s.y
+            }
+        } else blocks.forEachIndexed { i, s ->
             canonical += s
             if (s.command == Command.TRIM && blocks.getOrNull(i + 1)?.command != Command.JUMP) {
                 canonical += s.copy(command = Command.JUMP)
@@ -207,7 +232,7 @@ object PecWriter {
 
     /** PEC block without #PEC0001, suitable for embedding in a PES container. */
     internal fun writePayload(pattern: EmbPattern, inkstitchCommands: Boolean = false, topLeftViewport: Boolean = false): ByteArray {
-        val p = if (inkstitchCommands) normalizeInkstitch(pattern) else normalize(pattern)
+        val p = if (inkstitchCommands) normalizeInkstitch(pattern) else if (topLeftViewport) normalizeForPes(pattern) else normalize(pattern)
         val palette = p.threads.map { thread ->
             (1 until PecThreads.SET.size).first { PecThreads.forIndex(it) == thread }
         }

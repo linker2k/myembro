@@ -16,7 +16,7 @@ class TextFlattenTest {
         val flat = p.flatten()
         assertEquals(listOf(blue), flat.threads)
         assertEquals(0, flat.colorChangeCount)
-        assertEquals(p.objects.sumOf { it.localPattern().stitchCount }, flat.stitchCount)
+        assertEquals(p.objects.sumOf { it.placedPattern().stitchCount }, flat.stitchCount)
         assertEquals(p.objects.sumOf { it.localPattern().trimCount } + 2, flat.trimCount)
         assertEquals(p.objects.flatMap { it.placedPattern().stitches.filter { s -> s.command == Command.STITCH } },
             flat.stitches.filter { it.command == Command.STITCH })
@@ -84,7 +84,7 @@ class TextFlattenTest {
 
     private fun assertPesRoundTrip(flat: EmbPattern) {
         val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(flat))
-        val normalized = PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
+        val normalized = PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)
         assertEquals(normalized.threads, back.threads)

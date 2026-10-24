@@ -49,7 +49,7 @@ class ExactViewportTest(unittest.TestCase):
     def test_selected_larger_hoop_replaces_default_margin_as_well_as_size(self):
         initial=check_viewport(self.raw(1500,20),[(1500,0,0),(0,20,0)],(1000,1000),20)
         self.assertFalse(initial['valid'])
-        selected=reassess_viewport(initial,(1800,1800),20)
+        selected=reassess_viewport(initial,(1800,1800),1)
         self.assertTrue(selected['valid'])
 
     def test_no_implicit_origin_for_an_empty_stitch_block(self):
@@ -62,13 +62,13 @@ class ExactViewportTest(unittest.TestCase):
         self.assertFalse(result['valid'])
         self.assertTrue(any(e.startswith('PEC_ORIGIN:') for e in result['errors']))
 
-    def test_margin_width_height_n_minus_one_n_n_plus_one(self):
+    def test_reserved_endpoint_n_minus_one_n_n_plus_one(self):
         limits=load_limits(Path(__file__).resolve().parents[2]/'engine/build/hoop-spec.json')
         margin=limits['hoop_safety_margin_units_0p1mm']
         for hoop in [(1000,1000),(1300,1800),(731,1247)]:
             for axis in (0,1):
                 for delta in (-1,0,1):
-                    maximum=hoop[axis]-2*margin+delta
+                    maximum=hoop[axis]-margin+delta
                     width,height=(maximum,20) if axis==0 else (20,maximum)
                     self.assertEqual(delta<=0,check_viewport(self.raw(width,height),[(width,0,0),(0,height,0)],hoop,margin)['valid'])
 

@@ -30,8 +30,9 @@ class PesExportTest {
     @Test
     fun dstIsConvertedToReadablePes() {
         val dst = resource("flower.dst")
-        // Raw DST fixture includes standalone stationary trims. P4 rejects this conversion.
-        kotlin.test.assertFailsWith<IllegalArgumentException> { PesExport.prepare(dst,"flower.dst") }
+        val converted=PesExport.prepare(dst,"flower.dst")
+        val back=PatternReader.read(converted.bytes,converted.fileName)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(PatternReader.read(dst,"flower.dst")).stitchCount,back.stitchCount)
 
     }
 

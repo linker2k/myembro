@@ -34,8 +34,7 @@ class DigitizingTest {
         val pattern = TatamiFill.generate(SvgPath.polygons("M0 0H200V20H0Z"), TatamiSettings(underlay = false))
         // Row phases describe the fill body. Lock penetrations follow the row geometry
         // but are intentionally not constrained to the tatami stagger positions.
-        val sewn = io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.stripGeneratedLocks(pattern)
-            .stitches.filter { it.command == Command.STITCH }
+        val sewn = io.github.linker2k.myembro.engine.lettering.bodyStitches(pattern)
         assertEquals(listOf(2, 6, 10, 14, 18), sewn.map { it.y }.distinct())
         for ((row, y) in listOf(2, 6, 10, 14, 18).withIndex()) {
             val interior = sewn.filter { it.y == y && it.x > 0 && it.x < 200 }.map { it.x }
@@ -130,7 +129,7 @@ class DigitizingTest {
                 "fill37" to TatamiFill.generate(region, TatamiSettings(angleDegrees = 37.0), thread),
             )
             for ((kind, source) in patterns) for (version in PesVersion.entries) {
-                val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source)) else PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source))
+                val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source), deferStandaloneTrims = true) else PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source))
                 val bytes = PesWriter.write(source, version)
                 val back = PesReader.read(bytes)
                 assertTrue(back.warnings.isEmpty())

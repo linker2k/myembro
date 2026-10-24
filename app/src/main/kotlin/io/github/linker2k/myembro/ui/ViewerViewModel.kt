@@ -115,7 +115,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         val pattern = render?.pattern ?: return
         if (highlight == null || viewerHighlightArea(pattern, highlight) == null) return
         playing = false
-        progress = pattern.stitches.lastIndex
+        progress = render!!.playback.endIndex
         focusedHighlight = highlight
         focusRequest++
         sewoutSheetOpen = false
@@ -154,9 +154,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     var progress by mutableIntStateOf(0)
     var playing by mutableStateOf(false)
 
-    /** Machine commands (stitches, jumps, trims…) advanced per second while playing. */
-    var speed by mutableIntStateOf(400)
-    private var pending = 0f
+    /** Automatic UI preview rate, independent of machine speed and stitch generation. */
+    val playbackRate: Double get() = viewerPlaybackRate(render?.playback?.needleCount ?: 0)
+    private var pending = 0.0
     var showJumps by mutableStateOf(false)
 
     fun open(uri: Uri) {
@@ -337,7 +337,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 preservePlacement = opened.hoop != null
                 val data = RenderData(opened.pattern)
                 render = data
-                progress = data.pattern.stitches.lastIndex
+                progress = data.playback.endIndex
+                pending = 0.0
                 refreshSewout()
             }.onFailure {
                 if (it is CancellationException) throw it
@@ -354,21 +355,29 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun pausePlayback() { playing = false; pending = 0.0 }
+
+    fun seekPlayback(commandIndex: Int) {
+        pausePlayback()
+        progress = commandIndex.coerceIn(-1, render?.playback?.endIndex ?: -1)
+    }
+
     fun togglePlay() {
-        val data = render ?: return
-        if (!playing && progress >= data.pattern.stitches.lastIndex) progress = 0
-        pending = 0f
+        val timeline = render?.playback ?: return
+        if (timeline.needleCount == 0) return
+        if (!playing && progress >= timeline.endIndex) progress = -1
+        pending = 0.0
         playing = !playing
     }
 
-    /** Advance playback by [seconds] of wall time; stops at the end. */
+    /** Wall-clock animation only; source stitches and export bytes remain unchanged. */
     fun tick(seconds: Float) {
-        val last = render?.pattern?.stitches?.lastIndex ?: return
-        // Carry the fractional part so slow speeds stay accurate at any frame rate.
-        pending += speed * seconds
-        val steps = pending.toInt()
+        if (!playing || !seconds.isFinite() || seconds <= 0) return
+        val timeline = render?.playback ?: return
+        pending += playbackRate * seconds
+        val steps = pending.coerceAtMost(Int.MAX_VALUE.toDouble()).toInt()
         pending -= steps
-        progress = (progress + steps).coerceAtMost(last)
-        if (progress == last) playing = false
+        progress = timeline.advance(progress, steps)
+        if (progress >= timeline.endIndex) pausePlayback()
     }
 }

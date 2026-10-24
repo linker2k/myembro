@@ -6,8 +6,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,21 +31,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SaveAlt
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +46,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -64,6 +53,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -144,7 +136,6 @@ private fun ViewerContent(
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
                 Column {
-                    SewoutSummary(vm)
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
                             shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
@@ -254,7 +245,9 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
 private fun Viewer(vm: ViewerViewModel, data: RenderData) {
     var fitRequest by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(vm.playing) {
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { vm.pausePlayback() }
+    DisposableEffect(vm) { onDispose { vm.pausePlayback() } }
+    LaunchedEffect(vm.playing, data) {
         var last = 0L
         while (vm.playing) {
             withFrameNanos { now ->
@@ -288,12 +281,14 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
 
 @Composable
 private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int, onFit: () -> Unit, modifier: Modifier) {
+    val blockers = remember(data, vm.sewoutReport) { viewerBlockingHighlights(data.pattern, vm.sewoutReport) }
     Box(modifier.clip(MyembroShapes.Card)) {
         StitchCanvas(
             data = data,
             progress = vm.progress,
             hoop = vm.hoop, frame = vm.frame.spec, preservePlacement = vm.preservePlacement,
             highlight = vm.focusedHighlight, focusRequest = vm.focusRequest,
+            blockerHighlights = blockers, onBlockerTap = vm::focusSewout,
             showJumps = vm.showJumps,
             fitRequest = fitRequest,
             modifier = Modifier.fillMaxSize(),
@@ -308,6 +303,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
                 Text(vm.frame.dimensions, style = MaterialTheme.typography.labelMedium)
             }
         }
+        ViewerCheckBadge(vm, modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, end = 12.dp, top = 58.dp))
         if (vm.focusedHighlight != null) TextButton(onClick = vm::clearSewoutFocus,
             modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
                 .background(MaterialTheme.colorScheme.surface, MyembroShapes.Button)) {
@@ -325,6 +321,13 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
 private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modifier, compactStats: Boolean = false) {
     val pattern = data.pattern
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Card(shape = MyembroShapes.Card,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+            Column(Modifier.padding(12.dp)) {
+                ViewerPlaybackControls(vm, data)
+            }
+        }
         StatsRow(pattern, vm.frame, vm.machineProfile, compactStats, vm.preservePlacement, vm.sewoutReport)
         Card(
             shape = MyembroShapes.Card,
@@ -335,23 +338,16 @@ private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modif
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.viewer_color_order), style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f))
-                    Text("${(vm.progress.coerceAtLeast(0) * 100L / pattern.stitches.lastIndex.coerceAtLeast(1)).coerceAtMost(100)}%",
+                    Text("${(vm.progress.coerceAtLeast(0) * 100L / data.playback.endIndex.coerceAtLeast(1)).coerceAtMost(100)}%",
                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 LinearProgressIndicator(progress = {
-                    vm.progress.toFloat().coerceAtLeast(0f) / pattern.stitches.lastIndex.coerceAtLeast(1)
+                    vm.progress.toFloat().coerceAtLeast(0f) / data.playback.endIndex.coerceAtLeast(1)
                 }, modifier = Modifier.fillMaxWidth())
-                ColorBlocks(pattern, vm.progress) { vm.playing = false; vm.progress = it }
+                ColorBlocks(pattern, vm.progress, vm::seekPlayback)
             }
         }
-        Card(shape = MyembroShapes.Card,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-            Column(Modifier.padding(12.dp)) {
-                PlaybackRow(vm, pattern)
-                OptionsRow(vm, pattern)
-            }
-        }
+
     }
 }
 
@@ -447,70 +443,5 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    }
-}
-
-@Composable
-private fun PlaybackRow(vm: ViewerViewModel, pattern: EmbPattern) {
-    val last = pattern.stitches.lastIndex.coerceAtLeast(1)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { vm.playing = false; vm.progress = 0 }) {
-            Icon(Icons.Default.SkipPrevious, stringResource(R.string.viewer_restart))
-        }
-        FilledIconButton(onClick = vm::togglePlay) {
-            if (vm.playing) Icon(Icons.Default.Pause, stringResource(R.string.pause))
-            else Icon(Icons.Default.PlayArrow, stringResource(R.string.play))
-        }
-        Spacer(Modifier.width(8.dp))
-        Slider(
-            value = vm.progress.toFloat(),
-            onValueChange = { vm.playing = false; vm.progress = it.toInt() },
-            valueRange = 0f..last.toFloat(),
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = { vm.playing = false; vm.progress = pattern.stitches.lastIndex.coerceAtLeast(0) }) {
-            Icon(Icons.Default.SkipNext, stringResource(R.string.viewer_finish))
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun OptionsRow(vm: ViewerViewModel, pattern: EmbPattern) {
-    var hoopMenu by remember { mutableStateOf(false) }
-    var speedMenu by remember { mutableStateOf(false) }
-    val speeds = listOf(100, 400, 1500, 5000)
-    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box {
-            TextButton(onClick = { hoopMenu = true }) { Text("${stringResource(R.string.hoop)} ${vm.frame.dimensions}") }
-            DropdownMenu(expanded = hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                val b = pattern.bounds
-                vm.availableFrames.forEach { h ->
-                    val fits = b == null || h.fits(b.width, b.height)
-                    DropdownMenuItem(
-                        text = { Column {
-                            Text((if (h.preset?.name?.startsWith("SA") == true || h.preset == null) h.spec.name + " · " else "") + h.dimensions + if (fits) "" else " ⚠")
-                            if (vm.machineProfile?.supports(h.spec) != true) Text(stringResource(R.string.machine_hoop_unsupported),
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                        } },
-                        onClick = { vm.selectFrame(h.id); hoopMenu = false },
-                    )
-                }
-            }
-        }
-        Box {
-            TextButton(onClick = { speedMenu = true }) { Text("${stringResource(R.string.speed)} ${vm.speed}/s") }
-            DropdownMenu(expanded = speedMenu, onDismissRequest = { speedMenu = false }) {
-                speeds.forEach { s ->
-                    DropdownMenuItem(text = { Text("$s/s") }, onClick = { vm.speed = s; speedMenu = false })
-                }
-            }
-        }
-        FilterChip(
-            shape = MyembroShapes.Chip,
-            selected = vm.showJumps,
-            onClick = { vm.showJumps = !vm.showJumps },
-            label = { Text(stringResource(R.string.show_jumps)) },
-        )
     }
 }

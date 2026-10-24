@@ -78,7 +78,7 @@ class FlattenTest {
     private fun assertRoundTrip(flat: EmbPattern) {
         // PES v1 maps to the PEC palette and represents trims as trim+jump; compare the
         // documented writer normalization as well as every needle-down position and STOP.
-        val normalized = PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
+        val normalized = PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
         val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)

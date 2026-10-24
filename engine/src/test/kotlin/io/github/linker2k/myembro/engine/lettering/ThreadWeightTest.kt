@@ -27,8 +27,8 @@ class ThreadWeightTest {
         for (strategy in FillStrategy.entries) {
             val obj = outline(strategy = strategy).let { it.copy(fillOptions = it.fillOptions.copy(border = FillBorder.RUNNING)) }
             val patterns = ThreadWeight.entries.map { obj.withThreadWeight(it).localPattern() }
-            assertTrue(patterns[0].stitchCount < patterns[1].stitchCount)
-            assertTrue(patterns[1].stitchCount < patterns[2].stitchCount)
+            assertEquals(patterns[0].stitches,patterns[1].stitches)
+            assertEquals(patterns[1].stitches,patterns[2].stitches)
             assertTrue(patterns.all { it.bounds == patterns.first().bounds })
             val back = PesReader.read(PesWriter.write(patterns.last()))
             assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(patterns.last()).stitchCount, back.stitchCount)

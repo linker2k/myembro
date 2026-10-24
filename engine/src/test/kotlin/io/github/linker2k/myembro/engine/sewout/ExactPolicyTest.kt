@@ -75,8 +75,8 @@ class ExactPolicyTest {
             val data=if(axis==0)bytes(max,20) else bytes(20,max)
             assertEquals(delta<=0,PecViewportCheck.check(data,hoop).valid)
         }
-        val area=io.github.linker2k.myembro.engine.edit.SewingArea(-480.0,-480.0,480.0,480.0)
-        for(max in 479..481)assertEquals(max<=480,area.contains(io.github.linker2k.myembro.engine.model.Bounds(-10,-10,max,10)))
+        val area=io.github.linker2k.myembro.engine.edit.SewingArea(-500.0,-500.0,499.0,499.0)
+        for(max in 498..500)assertEquals(max<=499,area.contains(io.github.linker2k.myembro.engine.model.Bounds(-10,-10,max,10)))
         assertEquals(SewoutLimits.MAX_CONSECUTIVE_POSITIONS,SewoutOptions().repeatedPointThreshold)
     }
     @Test fun agentsDocumentAndExecutableLimitsMustAgree() {
@@ -91,12 +91,18 @@ class ExactPolicyTest {
         assertEquals(SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL.toDouble(),number(7,"가져온 PES는 (\\d+)회"))
         assertEquals(SewoutLimits.DENSITY_CELL_UNITS_0P1MM/10.0,number(7,"([0-9.]+)mm 칸"))
         assertEquals(SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM/10.0,number(8,"≤ ([0-9.]+)mm"))
+        val defaults=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitchParameters()
+        val documentedLock=Regex("`([^`]+)`").find(row(6))!!.groupValues[1]
+        assertEquals(documentedLock,defaults.lock_start)
+        assertEquals(documentedLock,defaults.lock_end)
+        assertEquals(documentedLock,io.github.linker2k.myembro.engine.inkstitch.stitch_plan.InkLockStitch().lock_id)
+        assertTrue(row(6).contains("ties=3"))
         assertTrue(row(3).contains("1단위(0.1mm) 차이도 허용하지 않는다"))
         assertEquals(0,SewoutLimits.PEC_DIMENSION_TOLERANCE_UNITS_0P1MM)
         assertTrue(row(4).contains("**0길이 JUMP"))
         assertEquals(0,SewoutLimits.MAX_ZERO_LENGTH_MOTION_COMMANDS)
         val margin=doc.lineSequence().single { it.startsWith("| P2a |") }
-        val units=Regex("\\((\\d+)단위\\)").find(margin)!!.groupValues[1].toInt()
+        val units=Regex("([0-9]+)단위").find(margin)!!.groupValues[1].toInt()
         assertEquals(SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM,units)
     }
 }

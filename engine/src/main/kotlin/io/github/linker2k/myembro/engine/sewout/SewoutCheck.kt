@@ -82,9 +82,13 @@ object SewoutCheck {
         val sewnBounds = bounds(active.filter { it.command == Command.STITCH }.map { point(it) })
         val centerX = if (o.placement == Placement.CENTER_DESIGN) movementBounds?.let { (it.minX+it.maxX)/2 } ?: 0.0 else 0.0
         val centerY = if (o.placement == Placement.CENTER_DESIGN) movementBounds?.let { (it.minY+it.maxY)/2 } ?: 0.0 else 0.0
-        val inset=SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM
-        val window = CheckArea(centerX-o.hoop.width/2.0+inset, centerY-o.hoop.height/2.0+inset,
-            centerX+o.hoop.width/2.0-inset, centerY+o.hoop.height/2.0-inset)
+        val window = if(o.placement==Placement.HOOP_COORDINATES) {
+            val left=-(o.hoop.width/2).toDouble();val top=-(o.hoop.height/2).toDouble()
+            CheckArea(left,top,left+SewoutLimits.hoopMaxXUnits0p1mm(o.hoop),top+SewoutLimits.hoopMaxYUnits0p1mm(o.hoop))
+        } else CheckArea(centerX-SewoutLimits.maxDesignWidthUnits0p1mm(o.hoop)/2.0,
+            centerY-SewoutLimits.maxDesignHeightUnits0p1mm(o.hoop)/2.0,
+            centerX+SewoutLimits.maxDesignWidthUnits0p1mm(o.hoop)/2.0,
+            centerY+SewoutLimits.maxDesignHeightUnits0p1mm(o.hoop)/2.0)
         val stages = mutableListOf(Stage(0, pattern.threadAt(0), 0))
         var stage = stages.last()
         val tasks = mutableListOf<OperatorTask>()

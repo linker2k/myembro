@@ -38,7 +38,7 @@ class PesV6WriterTest {
             metadata = mapOf("name" to "자수 도안", "author" to "만든이", "comments" to "한글 😀".repeat(80)))
         val output = File("build/writer-check").apply { mkdirs() }
         for ((name, source) in cases) {
-            val expected = PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source))
+            val expected = PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source), deferStandaloneTrims = true)
             val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source)
             val back = PesReader.read(bytes)
             assertTrue(back.warnings.isEmpty(), "$name: ${back.warnings}")

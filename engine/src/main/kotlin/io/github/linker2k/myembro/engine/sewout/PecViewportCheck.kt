@@ -23,8 +23,6 @@ object PecViewportCheck {
             if(points.isEmpty())add("PEC_EMPTY: no recorded STITCH/JUMP destinations")
             if(minX!=SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM || minY!=SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM)add("PEC_ORIGIN: min=($minX,$minY), required=(0,0)")
             if(maxX>SewoutLimits.hoopMaxXUnits0p1mm(hoop) || maxY>SewoutLimits.hoopMaxYUnits0p1mm(hoop))add("PEC_HOOP: max=($maxX,$maxY), hoop=(${hoop.width},${hoop.height}) exclusive size bound")
-            if(maxX.toLong()-minX>SewoutLimits.maxDesignWidthUnits0p1mm(hoop) || maxY.toLong()-minY>SewoutLimits.maxDesignHeightUnits0p1mm(hoop))
-                add("PEC_SAFETY_MARGIN: design exceeds hoop minus ${2*SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM} units")
             if(width.toLong()!=maxX.toLong()-minX || height.toLong()!=maxY.toLong()-minY)
                 add("PEC_DIMENSIONS: header=($width,$height), actual=(${maxX.toLong()-minX},${maxY.toLong()-minY})")
         }

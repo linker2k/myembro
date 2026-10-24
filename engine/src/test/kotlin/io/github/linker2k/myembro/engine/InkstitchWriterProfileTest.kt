@@ -25,7 +25,7 @@ class InkstitchWriterProfileTest {
     @Test fun explicitProfilePreservesTerminalStopButDefaultBytesRemainUnchanged() {
         val source = pattern(s(0, Command.JUMP), s(0), s(40), s(40, Command.TRIM), s(40, Command.STOP), s(40, Command.END))
         val normal = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source)
-        assertContentEquals(bytes("28 00 a0 00 a0 00 ff 00"), codes(normal))
+        assertContentEquals(bytes("28 00 ff 00"), codes(normal))
         assertContentEquals(normal, io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesWriteSettings()))
         assertContentEquals(normal, io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV1(source))
         assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesWriteSettings(PesVersion.V6)))

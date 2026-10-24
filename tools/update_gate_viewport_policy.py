@@ -78,9 +78,12 @@ text=policy.read_text()
 if '# Exact PEC rule 5' not in text:
     policy.write_text('# Exact PEC rule 5\n\nActual encoded STITCH/JUMP destinations only (no implicit origin): min x=y=0; maximum < selected HoopSpec width/height; PEC header dimensions == actual max-min exactly. Native 0.1mm integers; no epsilon. Invalid files block for both origins. Corpus mode omits only hoop-size enforcement, never origin/header checks.\n\n'+text)
 text=policy.read_text()
-if '# P2a safety margin' not in text:
+if '# P2a safety margin' in text:
+    import re
+    text=re.sub(r'^# P2a safety margin.*?(?=^# |\Z)','',text,flags=re.S|re.M)
+if True:
     margin=json.loads((root/'hoop-spec.json').read_text())['limits']['hoop_safety_margin_units_0p1mm']
-    policy.write_text(f'# P2a safety margin\n\nRuntime constant HOOP_SAFETY_MARGIN_UNITS_0P1MM={margin}. Design width/height <= hoop size minus {2*margin} native units; physical placement must keep at least {margin} units from every edge. This is a user safety policy, not a measured machine tolerance.\n\n'+text)
+    policy.write_text(f'# P2a safety margin\n\nRuntime constant HOOP_SAFETY_MARGIN_UNITS_0P1MM={margin}. Design width/height <= hoop size minus {margin} native units; no additional per-edge inset. This is a user safety policy, not a measured machine tolerance.\n\n'+text)
 manifest=json.loads((root/'tool-manifest.json').read_text())
 for name in ('gate.py','quality_gate_viewport.py','hoop-spec.json','POLICY.md'):
     manifest['sha256'][name]=hashlib.sha256((root/name).read_bytes()).hexdigest()

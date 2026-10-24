@@ -1,29 +1,64 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.sewout.*
 import io.github.linker2k.myembro.ui.format.Dimensions
 
+/** Only completed checks get a badge. Missing/failed/incomplete reports never show Pass. */
 @Composable
-internal fun SewoutSummary(vm: ViewerViewModel) {
+internal fun ViewerCheckBadge(vm: ViewerViewModel, modifier: Modifier = Modifier) {
     val report = vm.sewoutReport
-    AssistChip(onClick = vm::openSewout, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        label = { Text(if (report != null) stringResource(sewoutVerdictResource(report)) else stringResource(
-            if (vm.checkingSewout) R.string.sewout_loading else R.string.sewout_failed)) })
+    if (report == null && vm.checkingSewout) {
+        val description = stringResource(R.string.sewout_loading)
+        CircularProgressIndicator(modifier.size(20.dp).semantics { contentDescription = description }, strokeWidth = 2.dp)
+        return
+    }
+    val blocked = viewerCheckBlocked(report)
+    val scheme = MaterialTheme.colorScheme
+    val reason = when {
+        report == null -> R.string.sewout_failed
+        report.findings.any { it.severity == Severity.BLOCKER } -> report.findings.first { it.severity == Severity.BLOCKER }.code.labelRes()
+        !report.analysisComplete -> R.string.sewout_incomplete
+        else -> R.string.playback_check_blocked_reason
+    }
+    Surface(onClick = vm::openSewout,
+        modifier = modifier.then(if (blocked) Modifier.fillMaxWidth() else Modifier),
+        shape = MyembroShapes.Chip,
+        color = if (blocked) scheme.errorContainer else scheme.secondaryContainer,
+        contentColor = if (blocked) scheme.onErrorContainer else scheme.onSecondaryContainer,
+        border = BorderStroke(1.dp, if (blocked) scheme.error else scheme.outline)) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp).heightIn(min = 32.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (blocked) Icons.Default.Block else Icons.Default.CheckCircle, null, Modifier.size(18.dp))
+            Text(stringResource(if (blocked) R.string.playback_check_blocked else R.string.playback_check_pass),
+                style = MaterialTheme.typography.labelLarge)
+            if (blocked) Text(stringResource(reason), modifier = Modifier.weight(1f), maxLines = 1,
+                overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Composable

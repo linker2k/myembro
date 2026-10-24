@@ -11,7 +11,7 @@ internal object PesV6Writer {
     private data class Segment(val flag: Int, val color: Int, val points: List<Pair<Int, Int>>)
 
     fun write(pattern: EmbPattern, inkstitchCommands: Boolean = false): ByteArray {
-        val p = PecWriter.normalizePreservingThreads(pattern, inkstitchCommands)
+        val p = PecWriter.normalizePreservingThreads(pattern, inkstitchCommands, deferStandaloneTrims = !inkstitchCommands)
         val chart = arrayListOf(p.threadAt(0))
         var thread = 0
         val editorStitches = p.stitches.map { s ->

@@ -9,7 +9,11 @@ kotlin {
 dependencies {
     // Dual EPL/EDL; distributed under EDL-1.0 (see THIRD_PARTY_NOTICES.md).
     implementation("org.locationtech.jts:jts-core:1.20.0")
+    // NetworkX Euler augmentation replacement: LGPL-2.1-or-later option (see notices).
+    implementation("org.jgrapht:jgrapht-core:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    // Model tatami routing: LGPL-2.1-or-later option, see THIRD_PARTY_NOTICES.
+    implementation("org.jgrapht:jgrapht-core:1.5.2")
     testImplementation(libs.kotlin.test)
 }
 
@@ -46,6 +50,56 @@ tasks.register<JavaExec>("verifyInkstitchWorkerBoundary") {
     workingDir = rootProject.projectDir
 }
 
+// Extended local input sweep; deliberately not a dependency of the <=10-case CI test tier.
+tasks.register<JavaExec>("generateTatamiSweep") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.elements.TatamiSweepFixtures")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("tatamiSweepDir").orElse("/tmp/myembro-tatami-sweep").get(),
+        providers.gradleProperty("tatamiSweepSizes").orElse((5..90).joinToString(",")).get())
+}
+
+// Oracle regression tests reuse the pinned Inkex curve boundary instead of a different SVG flattener.
+sourceSets.test {
+    compileClasspath += oracleSourceSet.output
+    runtimeClasspath += oracleSourceSet.output
+}
+
+// Replays only our engine against the frozen SVG inputs. Never invokes Ink/Stitch Python/binaries.
+tasks.register<Test>("satinOracle") {
+    group = "verification"
+    description = "Generate S2 satin_column oracle-matrix PES files and a provenance manifest"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("*SatinOracleReproductionTest") }
+    systemProperty("myembro.oracleRoot", providers.gradleProperty("oracleRoot").orElse("/tmp/myembro-inkstitch-oracle").get())
+    systemProperty("myembro.matrixFile", providers.gradleProperty("matrixFile").orElse("/tmp/myembro-quality-gate/matrix-inkstitch.json").get())
+    systemProperty("myembro.portOutput", providers.gradleProperty("portOutput").orElse("/tmp/myembro-port-out/letter").get())
+    outputs.upToDateWhen { false }
+}
+
+// Three human-digitized script-font names. Reads external data only, never invokes Ink/Stitch.
+tasks.register<Test>("inkFontNames") {
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("*InkFontNameReproductionTest") }
+    systemProperty("myembro.nameOutput", providers.gradleProperty("nameOutput").orElse("/tmp/myembro-port-out/letter/jungmin").get())
+    outputs.upToDateWhen { false }
+}
+
+// Four representative font-default cases, for numeric decomposition against existing official PES.
+tasks.register<Test>("fontDefaultsAudit") {
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    filter { includeTestsMatching("*FontDefaultsAuditTest") }
+    systemProperty("myembro.defaultsAudit", providers.gradleProperty("defaultsAudit").orElse("/tmp/myembro-port-out/letter/font-defaults").get())
+    outputs.upToDateWhen { false }
+}
+
 // Explicit local sample composition; never part of check/CI.
 tasks.register<JavaExec>("makeSampler") {
     group = "verification"
@@ -67,3 +121,17 @@ tasks.register<JavaExec>("exportGateHoop") {
     mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HoopConfigCli")
     args(providers.gradleProperty("gateHoopOutput").orElse(layout.buildDirectory.file("hoop-spec.json").get().asFile.path).get())
 }
+
+// Writes a classpath for a separately launched, frozen local JVM sweep; never a check dependency.
+tasks.register("koreanTtfSweepClasspath") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"), tasks.named("oracleClasses"))
+    doLast {
+        val out = file(providers.gradleProperty("koreanTtfSweepClasspath").orElse("/tmp/myembro-ttf-fill-sweep-reduced/classpath.txt").get())
+        out.parentFile.mkdirs()
+        out.writeText(sourceSets.test.get().runtimeClasspath.asPath)
+    }
+}
+
+// Release sweeps render many patterns in parallel.
+tasks.test { maxHeapSize = "3g" }

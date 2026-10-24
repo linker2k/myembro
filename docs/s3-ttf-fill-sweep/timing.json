@@ -1,0 +1,18 @@
+{
+  "workers": 8,
+  "wall_seconds": 1405.8436477184296,
+  "resumed_checkpoint": true,
+  "phases_this_invocation": {
+    "coarse_seconds": 0.9233362674713135,
+    "refine-nanum-pen-script": 0.5200867652893066,
+    "refine-gaegu": 29.688560724258423,
+    "refine-gamja-flower": 71.00620627403259,
+    "refine-hi-melody": 41.67769694328308,
+    "refine-stylish": 85.60678339004517,
+    "refine-cute-font": 49.803290605545044,
+    "refine-east-sea-dokdo": 15.007238626480103,
+    "refine-dokdo": 139.69602227210999,
+    "refine-nanum-brush-script": 138.3600926399231,
+    "refine-dongle": 69.82995390892029
+  }
+}

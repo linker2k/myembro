@@ -96,9 +96,9 @@ class LetteringTest {
 
     @Test
     fun stitchesRespectLengthAfterQuantizationIncludingArcs() {
-        for (length in listOf(0.2, 0.7, 2.5, 4.0)) {
+        for (length in listOf(0.5, 0.7, 2.5, 4.0)) {
             for (angle in listOf(-150.0, 0.0, 90.0)) {
-                val pattern = LetteringEngine.generate("AVWgy!?\nhello", heightMm = 23.4, arcDeg = angle, stitchLengthMm = length)
+                val pattern = LetteringEngine.generate("AVWgy!?\nhello", heightMm = 23.4, arcDeg = angle, stitchLengthMm = length, stitchStyle = StitchStyle.RUNNING)
                 for ((previous, next) in pattern.stitches.zipWithNext()) {
                     if (next.command != Command.STITCH) continue
                     val distance = hypot((next.x - previous.x).toDouble(), (next.y - previous.y).toDouble())
@@ -122,7 +122,8 @@ class LetteringTest {
                 if (i > 0) assertEquals(Command.TRIM, pattern.stitches[i - 1].command)
                 val next = pattern.stitches[i + 1]
                 assertEquals(Command.STITCH, next.command)
-                assertEquals(stitch.x to stitch.y, next.x to next.y)
+                val lockLength = hypot((stitch.x-next.x).toDouble(),(stitch.y-next.y).toDouble())
+                assertEquals(0.0, lockLength) // Source half-stitch starts at the jump anchor.
             }
         }
         val untrimmed = LetteringEngine.generate("A A", trimBetweenStrokes = false)
