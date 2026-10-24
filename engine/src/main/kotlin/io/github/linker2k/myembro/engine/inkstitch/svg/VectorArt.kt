@@ -18,7 +18,6 @@ import io.github.linker2k.myembro.engine.inkstitch.utils.Point
 import io.github.linker2k.myembro.engine.io.PecThreads
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
-import org.locationtech.jts.algorithm.construct.MaximumInscribedCircle
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -42,16 +41,13 @@ object VectorArt {
         val lineCap: String? = null, val lineJoin: String? = null)
     data class Art(val viewBox: List<Double>, val shapes: List<Shape>)
 
-    enum class Method { TATAMI, SATIN, RUNNING }
-
-    /**
-     * Width rule in mm. 0.9–6mm was set by the coordinator; Ink/Stitch has no width-based choice,
-     * so the bounds are **unverified** until the satin-width sweep (docs/emoji-to-design.md B5).
-     */
-    data class Rules(val satinMinMm: Double = 0.9, val satinMaxMm: Double = 6.0)
+    /** Bounds of the shared [StitchTypeRule]; overridable only for sweeps. */
+    data class Rules(val satinMinMm: Double = StitchTypeRule.SATIN_MIN_MM, val satinMaxMm: Double = StitchTypeRule.SATIN_MAX_MM) {
+        fun classify(widthMm: Double) = StitchTypeRule.classify(widthMm, satinMinMm, satinMaxMm)
+    }
 
     /** What one source shape became: method, Brother thread and its measured width. */
-    data class Part(val shape: Int, val role: String, val method: Method, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int)
+    data class Part(val shape: Int, val role: String, val method: StitchTypeRule.Type, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double)
 
     /** Minimal reader for flat SVG: root viewBox and `<path>` elements. Gradients, masks, transforms are rejected. */
@@ -133,13 +129,8 @@ object VectorArt {
         return UnaryUnionOp.union(lines.map { org.locationtech.jts.operation.buffer.BufferOp.bufferOp(it, shape.strokeWidth / 2, p) })
     }
 
-    private fun width(g: Geometry): Double = FillGeometryWidth.of(g)
-
-    /** Diameter of the largest inscribed circle over all polygons (0 for empty). */
-    private object FillGeometryWidth {
-        fun of(g: Geometry): Double = (0 until g.numGeometries).map { g.getGeometryN(it) }.filterIsInstance<Polygon>()
-            .filter { !it.isEmpty }.maxOfOrNull { MaximumInscribedCircle.getRadiusLine(it, 0.01).length * 2 } ?: 0.0
-    }
+    /** Median width ([StitchTypeRule.medianWidth]) in source units. */
+    private fun width(g: Geometry): Double = StitchTypeRule.medianWidth(g)
 
     /** Footprints in document order: what each shape covers once sewn (fill area ∪ stroke band). */
     private fun footprint(shape: Shape): Geometry = listOfNotNull(
@@ -165,41 +156,43 @@ object VectorArt {
             val later = footprints.drop(index + 1)
             val visible = if (later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
             val pieces = (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()
-                .filter { width(it) * scale >= rules.satinMinMm }
+                .filter { rules.classify(width(it) * scale) != StitchTypeRule.Type.RUNNING }
             if (pieces.isEmpty()) return
             val paths = pieces.flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
                 .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
             val element = InkFill(paths, FillRule.EVEN_ODD, thread.color, InkStitchParams(emptyMap()))
             groups += FontTatami.stitchGroups(element, { q -> px(q.x, q.y) }, emptyMap(), thread, previous())
-            parts += Part(index, role, Method.TATAMI, thread, widthMm, sourceRgb)
+            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb)
         }
         art.shapes.forEachIndexed { index, shape ->
             shape.fill?.let { rgb ->
                 val thread = nearestThread(rgb)
                 val area = fillGeometry(shape)
                 val w = width(area) * scale
-                if (w >= rules.satinMinMm) tatami(index, "fill", area, thread, w, rgb)
+                // A satin-width area still needs a centerline/rail solver (next unit), so it is tatami for now.
+                if (rules.classify(w) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
                 else {
                     groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
-                    parts += Part(index, "fill", Method.RUNNING, thread, w, rgb)
+                    parts += Part(index, "fill", StitchTypeRule.Type.RUNNING, thread, w, rgb)
                 }
             }
             shape.stroke?.let { rgb ->
                 val thread = nearestThread(rgb)
                 val w = shape.strokeWidth * scale
-                when {
-                    w > rules.satinMaxMm -> tatami(index, "stroke", strokeGeometry(shape), thread, w, rgb)
-                    w >= rules.satinMinMm -> {
+                // A stroke's band has its stroke width as median width: classify that exact value.
+                when (rules.classify(w)) {
+                    StitchTypeRule.Type.TATAMI -> tatami(index, "stroke", strokeGeometry(shape), thread, w, rgb)
+                    StitchTypeRule.Type.SATIN -> {
                         for (line in subpaths(shape.d)) {
                             val section = StrokeToSatin.convertPathToSatin(line.points.map { px(it.x, it.y) },
                                 Units.mmToPixels(w), StrokeToSatin.Style.fromSvg(shape.lineJoin)) ?: continue
                             groups += section.column(SatinParameters(), thread).toStitchGroups(previous())
                         }
-                        parts += Part(index, "stroke", Method.SATIN, thread, w, rgb)
+                        parts += Part(index, "stroke", StitchTypeRule.Type.SATIN, thread, w, rgb)
                     }
-                    else -> {
+                    StitchTypeRule.Type.RUNNING -> {
                         groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
-                        parts += Part(index, "stroke", Method.RUNNING, thread, w, rgb)
+                        parts += Part(index, "stroke", StitchTypeRule.Type.RUNNING, thread, w, rgb)
                     }
                 }
             }
