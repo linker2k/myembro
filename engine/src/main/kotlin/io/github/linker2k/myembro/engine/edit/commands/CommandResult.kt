@@ -5,7 +5,7 @@ import io.github.linker2k.myembro.engine.edit.Project
 
 enum class CommandError {
     INVALID_ID, DUPLICATE_ID, MISSING_OBJECT, INVALID_TRANSFORM,
-    INVALID_THREAD_INDEX, INVALID_REORDER_INDEX,
+    INVALID_THREAD_INDEX, INVALID_REORDER_INDEX, INVALID_OBJECT_TYPE,
 }
 
 sealed interface CommandResult {

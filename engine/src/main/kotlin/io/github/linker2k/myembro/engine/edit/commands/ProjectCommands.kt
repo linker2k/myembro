@@ -48,6 +48,13 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
             if (project.find(obj.id) != null) return error(CommandError.DUPLICATE_ID, setOf(obj.id), "Object id already exists")
             project.add(obj)
         }
+        is ProjectCommand.ReplaceText -> {
+            targets(setOf(command.id))?.let { return it }
+            val original = project.find(command.id) as? TextObject
+                ?: return error(CommandError.INVALID_OBJECT_TYPE, setOf(command.id), "Target is not editable text")
+            // Host prepared geometry stays cached; this reducer never renders or resolves fonts.
+            project.replace(command.text.withId(original.id).withTransform(original.transform).withVisible(original.visible))
+        }
         is ProjectCommand.SetTransforms -> {
             targets(command.byId.keys)?.let { return it }
             val invalid = command.byId.filterValues { !it.isValid() }.keys
