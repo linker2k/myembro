@@ -1,0 +1,278 @@
+{
+  "command": "JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:check :app:assembleDebug :app:testDebugUnitTest --console=plain",
+  "stdout": "BUILD SUCCESSFUL in 19s; 51 actionable tasks: 2 executed, 49 up-to-date",
+  "s2_base": "codex/letter 111ae77",
+  "fill_backend": "DefaultTatami -> shared S1 GeneratedPatternProcessor.fromGroups",
+  "auto_rules_source_sha256": "409078fa684ae5d5912ef51f8770990ec2157a7d69ebe7dc1209db9d3c626aaf",
+  "engine": {
+    "tests": 552,
+    "failures": 0,
+    "errors": 0
+  },
+  "app": {
+    "tests": 176,
+    "failures": 0,
+    "errors": 0
+  },
+  "integration_cases": [
+    "railWidthAbove6RoutesToDefaultFill",
+    "filledContoursUseTheExactDefaultTatamiGroupsWithoutLegacyExtras",
+    "koreanOutlineCodepointsKeepOwnersThreadsAndDefaultFill",
+    "adoptedWidthBoundariesAreInclusiveForSatin",
+    "bundledKoreanTtfRoutesToDefaultFillAndReadablePes",
+    "ttfOutlineAutoUsesFillAndSweepUpperBoundIs90"
+  ],
+  "integration_stdout": "JUA 자수: 1230 stitches; 38.6 x 20.0 mm",
+  "gate_command": "/tmp/myembro-quality-gate/quality-gate check engine/build/s3-fill --json /tmp/myembro-s3-fill-gate.json",
+  "gate": {
+    "tool_version": 5,
+    "threshold_sha256": "a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848",
+    "verdict": "PASS",
+    "cases": 1,
+    "blocked": 0,
+    "all_required_checks_complete": true,
+    "release_ready": false,
+    "final_acceptance": "user sewout",
+    "results": [
+      {
+        "path": "engine/build/s3-fill/jua-korean.pes",
+        "text": false,
+        "style": null,
+        "verdict": "PASS",
+        "reasons": [],
+        "reference_flags": [
+          "short_lt03_ratio: 0.130894 > 0.108930",
+          "body_short_lt03_ratio: 0.130894 > 0.064180",
+          "body_tiny_lt027_ratio: 0.098374 > 0.056993"
+        ],
+        "reference_metrics": {
+          "canonical_start_count": 0,
+          "zero_length_count": 4,
+          "unexplained_zero_count": 4,
+          "short_lt03_ratio": 0.13089430894308943,
+          "body_short_lt03_ratio": 0.13089430894308943,
+          "body_tiny_lt027_ratio": 0.0983739837398374,
+          "satin_same_side_mm": {
+            "n": 0
+          },
+          "length_mm": {
+            "n": 1230,
+            "min": 0.0,
+            "p01": 0.2,
+            "p10": 0.223606797749979,
+            "p50": 1.5,
+            "p90": 3.9000000000000004,
+            "p95": 4.0,
+            "p99": 4.0,
+            "max": 4.001249804748511
+          }
+        },
+        "hoop_check": {
+          "status": "PASS",
+          "machine": "SE400",
+          "size_mm": [
+            100.0,
+            100.0
+          ],
+          "design_extent_mm": [
+            38.6,
+            20.0
+          ],
+          "placement_ignored": true,
+          "rotation_applied": false
+        },
+        "all_required_checks_complete": true,
+        "release_ready": false,
+        "scope": "Automated PES checks only; final acceptance requires user sewout",
+        "metrics": {
+          "sha256": "682a4d766114cd243e6bf0301335ac2ef505fe03f13a1bd167eae70811616c17",
+          "bytes": 8974,
+          "pec_end": "FF00",
+          "trim_jump_combined_flags": 0,
+          "decoded_trim_count": 1,
+          "encoded_trim_count": 1,
+          "stitch_count": 1230,
+          "run_count": 4,
+          "jump_count": 4,
+          "trim_count": 1,
+          "stop_count": 0,
+          "color_change_count": 0,
+          "zero_length_count": 4,
+          "expected_lock_zero_count": 0,
+          "unexplained_zero_count": 4,
+          "short_lt03_count": 161,
+          "short_lt03_ratio": 0.13089430894308943,
+          "body_short_lt03_ratio": 0.13089430894308943,
+          "body_short_lt03_count": 161,
+          "body_count": 1230,
+          "body_tiny_lt027_count": 121,
+          "body_tiny_lt027_ratio": 0.0983739837398374,
+          "max_same_point_consecutive": 1,
+          "cell_peak_05mm": 9,
+          "cell_peaks_by_phase": [
+            8,
+            9,
+            7,
+            8
+          ],
+          "lock_edge_count": 0,
+          "canonical_start_count": 0,
+          "start_lock_missing": 0,
+          "start_lock_missing_ratio": 0.0,
+          "end_lock_missing": 0,
+          "trim_before_opportunities": 1,
+          "trim_before_lock_missing": 0,
+          "trim_after_opportunities": 1,
+          "trim_after_lock_missing": 0,
+          "length_mm": {
+            "n": 1230,
+            "min": 0.0,
+            "p01": 0.2,
+            "p10": 0.223606797749979,
+            "p50": 1.5,
+            "p90": 3.9000000000000004,
+            "p95": 4.0,
+            "p99": 4.0,
+            "max": 4.001249804748511
+          },
+          "nonzero_length_mm": {
+            "n": 1226,
+            "min": 0.1,
+            "p01": 0.2,
+            "p10": 0.28284271247461906,
+            "p50": 1.5,
+            "p90": 3.9000000000000004,
+            "p95": 4.0,
+            "p99": 4.0,
+            "max": 4.001249804748511
+          },
+          "satin_candidate_count": 0,
+          "satin_same_side_mm": {
+            "n": 0
+          },
+          "runs": [
+            {
+              "start_record": 1,
+              "end_record": 427,
+              "before": "jump",
+              "after": "jump",
+              "stitches": 427,
+              "start_lock": true,
+              "end_lock": true,
+              "canonical_start": false,
+              "jump_before_start": true
+            },
+            {
+              "start_record": 429,
+              "end_record": 718,
+              "before": "jump",
+              "after": "trim",
+              "stitches": 290,
+              "start_lock": true,
+              "end_lock": true,
+              "canonical_start": false,
+              "jump_before_start": true
+            },
+            {
+              "start_record": 721,
+              "end_record": 949,
+              "before": "trim",
+              "after": "jump",
+              "stitches": 229,
+              "start_lock": true,
+              "end_lock": true,
+              "canonical_start": false,
+              "jump_before_start": true
+            },
+            {
+              "start_record": 951,
+              "end_record": 1234,
+              "before": "jump",
+              "after": "end",
+              "stitches": 284,
+              "start_lock": true,
+              "end_lock": true,
+              "canonical_start": false,
+              "jump_before_start": true
+            }
+          ],
+          "legacy_lock_diagnostics": {
+            "start_lock_missing": 4,
+            "end_lock_missing": 2,
+            "start_lock_missing_ratio": 1.0,
+            "trim_before_lock_missing": 1,
+            "trim_after_lock_missing": 1
+          },
+          "lock_sections": [
+            {
+              "before": "file_start",
+              "after": "trim",
+              "stitches": 717,
+              "start_record": 1,
+              "end_record": 718,
+              "start_lock": {
+                "present": true,
+                "indices": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
+                "kind": "short_return_legs_within_1mm",
+                "max_leg_mm": 1.0
+              },
+              "end_lock": {
+                "present": true,
+                "indices": [
+                  716,
+                  715,
+                  714,
+                  713
+                ],
+                "kind": "short_return_legs_within_1mm",
+                "max_leg_mm": 1.0
+              }
+            },
+            {
+              "before": "trim",
+              "after": "end",
+              "stitches": 513,
+              "start_record": 721,
+              "end_record": 1234,
+              "start_lock": {
+                "present": true,
+                "indices": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
+                "kind": "short_return_legs_within_1mm",
+                "max_leg_mm": 1.0
+              },
+              "end_lock": {
+                "present": true,
+                "indices": [
+                  512,
+                  511,
+                  510,
+                  509
+                ],
+                "kind": "short_return_legs_within_1mm",
+                "max_leg_mm": 1.0
+              }
+            }
+          ],
+          "needle_bbox_mm": [
+            -19.3,
+            -10.0,
+            19.3,
+            10.0
+          ],
+          "lock_section_count": 2
+        }
+      }
+    ]
+  },
+  "scope": "Local test/build and one genuine bundled TTF case; no remote CI or physical sew-out approval claimed"
+}

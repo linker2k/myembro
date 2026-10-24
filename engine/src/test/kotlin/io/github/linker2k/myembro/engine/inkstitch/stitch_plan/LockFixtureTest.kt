@@ -42,7 +42,7 @@ class LockFixtureTest {
             val groups = listOf(StitchGroup(thread, body, lockStart = locks.start, lockEnd = locks.end, forceLockStitches = parameters.force_lock_stitches))
             assertTrue(body.zipWithNext().all { (a, b) -> a.distance(b) < 3.0 * io.github.linker2k.myembro.engine.inkstitch.svg.Units.PIXELS_PER_MM })
             val pattern = GeneratedPatternProcessor.fromGroups(groups)
-            val expected = PecWriter.normalize(pattern)
+            val expected = PecWriter.normalizeForPes(PesWriter.prepareForOutput(pattern))
             val bytes = PesWriter.write(pattern)
             val restored = PesReader.read(bytes)
             File(output, "$name.pes").writeBytes(bytes)

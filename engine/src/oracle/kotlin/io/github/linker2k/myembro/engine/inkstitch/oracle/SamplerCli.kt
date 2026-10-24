@@ -66,12 +66,14 @@ object SamplerCli {
         val bytes=PesWriter.write(pattern)
         val decoded=PesReader.read(bytes)
         check(decoded.threads.size==1 && decoded.colorChangeCount==0 && decoded.stopCount==0)
-        check(decoded.stitches.all { it.x in -limit/2..limit/2 && it.y in -limit/2..limit/2 })
+        check(decoded.stitches.all { it.x in 0..limit && it.y in 0..limit })
+        val sourceViewport = io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern)
+        val originX = sourceViewport.stitches.minOf { it.x }; val originY = sourceViewport.stitches.minOf { it.y }
         output.parentFile.mkdirs()
         File(output.path+".PES").writeBytes(bytes)
         val seconds=decoded.stitchCount/400.0*60+decoded.trimCount*10
         val report=buildJsonObject {
-            put("schema_version",1);put("sampler",output.name);put("limit_mm",limit/10.0);put("gap_mm",gap/10.0)
+            put("schema_version",1);put("pec_coordinate_frame","top-left 0,0; layout labels retain centered packing coordinates");put("sampler",output.name);put("limit_mm",limit/10.0);put("gap_mm",gap/10.0)
             put("stitches",decoded.stitchCount);put("trims",decoded.trimCount);put("colors",decoded.threads.size)
             put("width_mm",decoded.bounds!!.width/10.0);put("height_mm",decoded.bounds!!.height/10.0)
             put("estimated_seconds",seconds)
@@ -95,8 +97,8 @@ object SamplerCli {
         g.stroke=BasicStroke(1.4f)
         decoded.stitches.forEach { s ->
             if (s.command==Command.STITCH) {
-                previous?.let { g.drawLine(px(it.x),py(it.y),px(s.x),py(s.y)) }
-                g.fillOval(px(s.x)-1,py(s.y)-1,3,3)
+                previous?.let { g.drawLine(px(it.x+originX),py(it.y+originY),px(s.x+originX),py(s.y+originY)) }
+                g.fillOval(px(s.x+originX)-1,py(s.y+originY)-1,3,3)
             }
             previous=s
         }

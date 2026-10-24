@@ -10,7 +10,7 @@ class EditorThirdPassTest {
     @Test fun `text fill mode and settings survive one-step history and reopening`() {
         val original = text().copy(contours = listOf(listOf(-5.0 to -5.0, 5.0 to -5.0, 5.0 to 5.0, -5.0 to 5.0, -5.0 to -5.0)))
         val before = Project(objects = listOf(stitch("background"), original))
-        val options = FillOptions(0.5, 45.0, 0.2, true, FillBorder.BEAN)
+        val options = FillOptions(0.6, 45.0, 0.2, false, FillBorder.RUNNING)
         val session = EditorSession(before)
         session.commit(before.withLettering(original.copy(stitchStyle = StitchStyle.FILL, fillOptions = options), original.id))
         val filled = session.project.find(original.id) as TextObject

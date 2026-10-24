@@ -24,7 +24,7 @@ internal fun List<Bounds>.unionBounds(): Bounds? = if (isEmpty()) null else Boun
 )
 
 /** Shared inset sewing area, with 0.05 mm tolerance on rounded stitch coordinates. */
-fun HoopSpec.contains(bounds: Bounds): Boolean = sewingArea.contains(bounds)
+fun HoopSpec.contains(bounds: Bounds): Boolean = io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(this,bounds)
 
 /** Hidden and empty objects do not contribute to export bounds or hoop overflow. */
 fun Project.objectsOutsideHoop(): List<DesignObject> = objects.filter {

@@ -1,0 +1,4 @@
+Ink/Stitch tiles at v3.3.0, b0edd96311ece82ee48816dc93466274b12c2a9c
+https://github.com/inkstitch/inkstitch/tree/v3.3.0/tiles
+GPL-3.0-or-later; Copyright (c) Ink/Stitch contributors.
+Only SVG tile data is redistributed; runtime code is not bundled or executed.

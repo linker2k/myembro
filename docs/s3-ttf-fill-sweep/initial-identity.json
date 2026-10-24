@@ -1,0 +1,91 @@
+{
+  "commit": "6121c75be3320d52c00b1902df9bc9fdbff686ef",
+  "fonts_sha256": "5b5acc72e809e535d34c104781a59c1aaf887e489e122d67d4ba6e36fc801757",
+  "selection_sha256": "054aa0de9cc764f36e6b1c7015ee00e670bf176af671f42f8d4b5fd0e747e889",
+  "runtime": [
+    {
+      "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-1",
+      "sha256": "d61aa4f16950b27a95c2b74dede0f6baf05483f03a1f9e77252b3c30ec938317"
+    },
+    {
+      "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-2",
+      "sha256": "b8ec887e22cf9b0926e2146cc40564cf898b0c6169876ecb19f90407e00e74b2"
+    },
+    {
+      "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-4",
+      "sha256": "bd8b22f6dcc184e33738cc075b83a7b29d6f1d762997cdeba7ba769220dbfc43"
+    },
+    {
+      "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-5",
+      "sha256": "be6a02173d6ff530267bc6462a8b63a449054461286dd05b3fedc03a6a9e6474"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test-junit/2.0.21/977fd8384b1557420643e28be93a0faf30d99f7a/kotlin-test-junit-2.0.21.jar",
+      "sha256": "49e2b46d14c47417eb2f19eec0ad21c86d90b81fbd84a5cdb118483d380d87f9"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test/2.0.21/c6ea143e356327ddfda57e53e829c553e3b45b64/kotlin-test-2.0.21.jar",
+      "sha256": "a897b28c6a3ea8ec8f00ed766941a0c0df993d7f65908875879868e08ceb8985"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm/1.7.3/1f226780b845ff9206474c05159245d861556249/kotlinx-serialization-core-jvm-1.7.3.jar",
+      "sha256": "f0adde45864144475385cf4aa7e0b7feb27f61fcf9472665ed98cc971b06b1eb"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm/1.7.3/6701e8c68d9e82387ce72ee96e8ddf058208d58f/kotlinx-serialization-json-jvm-1.7.3.jar",
+      "sha256": "b1e9138499ed8d20375edda3f2b1c95f3103a258eff6af9edc5ea07100f2b29c"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.0.21/618b539767b4899b4660a83006e052b63f1db551/kotlin-stdlib-2.0.21.jar",
+      "sha256": "f31cc53f105a7e48c093683bbd5437561d1233920513774b470805641bedbc09"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.locationtech.jts/jts-core/1.20.0/25b72c9548a328cb1aea8a6b89d710a31ade5403/jts-core-1.20.0.jar",
+      "sha256": "6a783d8f9dba3d3cf7265435f134402f63c05838aa6cbcc4297ad3a5b2842baf"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.2/bea9b92d4ff37111f8e3d58cd8cf0714e5c83774/jgrapht-core-1.5.2.jar",
+      "sha256": "dfa596e9f0d0838f1b5e81dd0cd60e3a76c2c290ac25a0a029ffde58cf5e4c14"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar",
+      "sha256": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.14/2f97e59108979ba44e71ab1f8166722e62bc6d96/jheaps-0.14.jar",
+      "sha256": "49a9898da3758659388f1333c53ccadb6fbd142a7d18aa7b1a33577090684279"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.apfloat/apfloat/1.10.1/a32c54f97317c72c9377bb4f2cdecd52fe6329a/apfloat-1.10.1.jar",
+      "sha256": "a1480f560f37355f6c0458c523bda46658da4cd3e23cc64e309fedcd7b0782ba"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/junit/junit/4.13.2/8ac9e16d933b6fb43bc7f576336b8f4d7eb5ba12/junit-4.13.2.jar",
+      "sha256": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3"
+    },
+    {
+      "path": "/home/gosh2/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar",
+      "sha256": "66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9"
+    },
+    {
+      "path": "/tmp/myembro-ttf-fill-sweep-reduced/runtime/cp-19",
+      "sha256": "8ca2f2407b6a72d75658057bc76368773067f2775a9babd0d2b4e87e098bc45c"
+    }
+  ],
+  "workers_default": 8,
+  "font_count": 33,
+  "characters": 30,
+  "min_mm": 5,
+  "max_mm": 90,
+  "coarse_heights_mm": [
+    5.0,
+    26.25,
+    47.5,
+    68.75,
+    90.0
+  ],
+  "expected_coarse_cases": 4950,
+  "boundary": "JVM AWT extracts the same pinned TTF/OTF files at 1000px, flattens at0.2px; cap reference=자 as app; Android extraction is not executed",
+  "pipeline": "LetteringEngine.fromContours FILL -> PES v6 -> SewoutCheck.checkPes(APP_GENERATED), default SE400/100mm/frozen POLICY",
+  "identity_created_at": 1792790220.839429
+}

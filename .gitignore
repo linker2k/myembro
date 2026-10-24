@@ -7,3 +7,6 @@ local.properties
 captures/
 .kotlin/
 STATUS.md
+
+# Local Python verification helpers
+__pycache__/

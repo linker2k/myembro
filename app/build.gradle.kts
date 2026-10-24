@@ -63,11 +63,14 @@ android {
     namespace = "io.github.linker2k.myembro"
     compileSdk = 35
     sourceSets.getByName("main").res.srcDir(brandColorsDirectory)
+    sourceSets.getByName("androidTest").assets.srcDir("../engine/src/test/resources")
 
     defaultConfig {
         applicationId = "io.github.linker2k.myembro"
         minSdk = 26
         targetSdk = 35
+        testInstrumentationRunner = providers.gradleProperty("myembroTestRunner")
+            .getOrElse("android.test.InstrumentationTestRunner")
         versionCode = gitCommitCount
         versionName = myembroVersion
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")

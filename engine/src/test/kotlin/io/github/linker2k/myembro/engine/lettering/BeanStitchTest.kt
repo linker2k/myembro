@@ -2,7 +2,6 @@
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.edit.*
-import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.*
@@ -20,13 +19,11 @@ class BeanStitchTest {
     @Test fun everySewnMoveGoesForwardBackForwardWithoutTriplingItsAnchor() {
         val running = straight(StitchStyle.RUNNING)
         val bean = straight(StitchStyle.BEAN)
-        val runningBody = generatedBody(running)
-        val beanBody = generatedBody(bean)
-        val sewn = beanBody.stitches.filter { it.command == Command.STITCH }
-        assertEquals(listOf(-25, 0, 25), runningBody.stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(listOf(-25, 0, -25, 0, 25, 0, 25), sewn.map { it.x })
+        val sewn = bodyStitches(bean)
+        assertEquals(listOf(0, 25), bodyStitches(running).map { it.x })
+        assertEquals(listOf(0, -25, 0, 25, 0, 25), sewn.map { it.x })
         assertTrue(sewn.all { it.y == 0 })
-        assertEquals(1 + 3 * (runningBody.stitchCount - 1), beanBody.stitchCount)
+        assertEquals(3 * bodyStitches(running).size, bodyStitches(bean).size)
         assertEquals(running.bounds, bean.bounds)
         assertEquals(running.stitches.last(), bean.stitches.last())
     }
@@ -43,9 +40,7 @@ class BeanStitchTest {
         assertEquals(running.stitches.filter { it.command != Command.STITCH }, bean.stitches.filter { it.command != Command.STITCH })
         assertEquals(running.threads, bean.threads)
         assertEquals(running.bounds, bean.bounds)
-        val runningBody = generatedBody(running)
-        val beanBody = generatedBody(bean)
-        assertEquals(2 + 3 * (runningBody.stitchCount - 2), beanBody.stitchCount)
+        assertEquals(3 * bodyStitches(running).size, bodyStitches(bean).size)
         bean.stitches.zipWithNext().forEach { (a, b) ->
             if (b.command == Command.STITCH) assertTrue(hypot((b.x - a.x).toDouble(), (b.y - a.y).toDouble()) <= 25.0)
         }
@@ -54,22 +49,16 @@ class BeanStitchTest {
         assertTrue(bean.trimCount > 0)
     }
 
-    /** Locks are added once after bean expansion and must never themselves be tripled. */
-    private fun generatedBody(pattern: EmbPattern): EmbPattern {
-        assertFalse(pattern.metadata[GeneratedPatternProcessor.LOCK_INDICES_KEY].isNullOrBlank(), "Generated pattern must contain traced locks")
-        return GeneratedPatternProcessor.stripGeneratedLocks(pattern)
-    }
-
-    @Test fun newSingleLineFontsDefaultToBeanWhileOutlinesKeepRunning() {
+    @Test fun newLetteringUsesRunningAndKeepsBeanAsAnExplicitLegacyOption() {
         val hershey = TextObject("hershey", text = "Ab")
         assertTrue(hershey.singleLine)
-        assertEquals(StitchStyle.BEAN, hershey.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, hershey.stitchStyle)
         assertEquals(LetteringEngine.generate("Ab").stitches, hershey.localPattern().stitches)
-        assertTrue(hershey.localPattern().stitchCount > hershey.copy(stitchStyle = StitchStyle.RUNNING).localPattern().stitchCount)
+        assertTrue(hershey.copy(stitchStyle = StitchStyle.BEAN).localPattern().stitchCount > hershey.localPattern().stitchCount)
         val outline = TextObject("outline", fontKind = FontKind.OUTLINE, contours = line)
         assertEquals(StitchStyle.RUNNING, outline.stitchStyle)
         val svg = TextObject("svg", fontKind = FontKind.OUTLINE, contours = line, singleLine = true)
-        assertEquals(StitchStyle.BEAN, svg.stitchStyle)
+        assertEquals(StitchStyle.RUNNING, svg.stitchStyle)
         assertEquals(straight(StitchStyle.RUNNING).stitches,
             LetteringEngine.fromContours(line, 5.0, sourceHeight = 5.0).stitches)
     }
@@ -100,7 +89,7 @@ class BeanStitchTest {
     @Test fun pesExportPreservesEveryForwardAndBackwardNeedlePosition() {
         val pattern = straight(StitchStyle.BEAN)
         val restored = PesReader.read(PesWriter.write(pattern))
-        assertEquals(pattern.stitches.filter { it.command == Command.STITCH }, restored.stitches.filter { it.command == Command.STITCH })
-        assertEquals(pattern.bounds, restored.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).stitches.filter { it.command == Command.STITCH }, restored.stitches.filter { it.command == Command.STITCH })
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, restored.bounds)
     }
 }

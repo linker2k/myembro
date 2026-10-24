@@ -1,0 +1,93 @@
+{
+  "command": "JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing",
+  "stdout": "GATE: 430/430 PASS; 0 BLOCK; /tmp/myembro-tatami-sweep-source-routing/fill-allowed-regions.json",
+  "generation_stdout": "BUILD SUCCESSFUL in 1m 12s",
+  "gate_stdout_final_line": "PASS 430/430 cases passed",
+  "backend_commit": "e154303",
+  "cases": 430,
+  "blocked": 0,
+  "generation_errors": 0,
+  "tool_version": 5,
+  "threshold_sha256": "a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848",
+  "gate_json_sha256": "add6b09a00b7af7f8695779b8176c0c712c18401eef4153610a8c1009aedc7ef",
+  "shape_summary": [
+    {
+      "shape": "square",
+      "passed": 86,
+      "total": 86,
+      "minimum_passing_sample_mm": 5,
+      "minimum_failed_sample_mm": null,
+      "minimum_verified_area_mm2": 25.0,
+      "max_cell_peak_05mm": 8,
+      "max_same_point_consecutive": 1,
+      "max_stitch_length_mm": 4.001249804748511
+    },
+    {
+      "shape": "circle",
+      "passed": 86,
+      "total": 86,
+      "minimum_passing_sample_mm": 5,
+      "minimum_failed_sample_mm": null,
+      "minimum_verified_area_mm2": 19.5617974356229,
+      "max_cell_peak_05mm": 10,
+      "max_same_point_consecutive": 1,
+      "max_stitch_length_mm": 4.1012193308819755
+    },
+    {
+      "shape": "donut",
+      "passed": 86,
+      "total": 86,
+      "minimum_passing_sample_mm": 5,
+      "minimum_failed_sample_mm": null,
+      "minimum_verified_area_mm2": 16.4465043602345,
+      "max_cell_peak_05mm": 10,
+      "max_same_point_consecutive": 1,
+      "max_stitch_length_mm": 4.1012193308819755
+    },
+    {
+      "shape": "star",
+      "passed": 86,
+      "total": 86,
+      "minimum_passing_sample_mm": 5,
+      "minimum_failed_sample_mm": null,
+      "minimum_verified_area_mm2": 8.265730110362902,
+      "max_cell_peak_05mm": 9,
+      "max_same_point_consecutive": 1,
+      "max_stitch_length_mm": 4.1012193308819755
+    },
+    {
+      "shape": "block_h",
+      "passed": 86,
+      "total": 86,
+      "minimum_passing_sample_mm": 5,
+      "minimum_failed_sample_mm": null,
+      "minimum_verified_area_mm2": 12.0,
+      "max_cell_peak_05mm": 7,
+      "max_same_point_consecutive": 1,
+      "max_stitch_length_mm": 4.1012193308819755
+    }
+  ],
+  "provenance": {
+    "commit": "e1543038a7b4fd4184ba18b8948ecba80acecb5d",
+    "source_sha256": {
+      "engine/src/main/kotlin/io/github/linker2k/myembro/engine/inkstitch/elements/DefaultTatami.kt": "63e5456319ecd80d80e4aa6d5254c60be79211b022daa1795ab6cafe685a7fb5",
+      "engine/src/main/kotlin/io/github/linker2k/myembro/engine/inkstitch/stitches/InkAutoFill.kt": "f3e050fea1bfae80b259904fce63a1342386c0e90e44d09981c0950886d67e70",
+      "engine/src/main/kotlin/io/github/linker2k/myembro/engine/inkstitch/stitches/InkRunning.kt": "b49b9f450bab75a88ed981dfc1578e357e8d10be777a0e93ef1e52f92fc1cd83",
+      "engine/src/main/kotlin/io/github/linker2k/myembro/engine/inkstitch/stitch_plan/StitchPlanBuilder.kt": "298637b89f55891184303dea1c3525c83c851d490cb03490af9bc7d3f6963a9a",
+      "engine/src/test/kotlin/io/github/linker2k/myembro/engine/inkstitch/elements/TatamiSweepFixtures.kt": "75f84a8cdea51b0be3a9af1e4ca928142af9e0d5a2733a2de090fefa2b948835",
+      "tools/sweep_tatami.py": "76b45224a682d8494c3531f5d922161ec69cb11650435aa14ac1b488a72ba98c"
+    },
+    "gate_command": [
+      "/tmp/myembro-quality-gate/quality-gate",
+      "check",
+      "--matrix",
+      "/tmp/myembro-tatami-sweep-source-routing/generation.json",
+      "--json",
+      "/tmp/myembro-tatami-sweep-source-routing/gate.json"
+    ],
+    "gate_exit_code": 0,
+    "gate_implementation": "External frozen v5; worker Kotlin POLICY port not yet merged"
+  },
+  "CI_equivalence_status": "No re-run in this calculation-only unit; e154303 engine check was 509 tests, 0 failures",
+  "scope": "finite exact input grid only; no continuous interpolation, no arbitrary polygons, no release/sew-out approval"
+}

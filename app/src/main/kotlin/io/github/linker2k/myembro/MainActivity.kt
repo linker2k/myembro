@@ -64,6 +64,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installMyembroSplashScreen()
         super.onCreate(savedInstanceState)
+        // Saved Ink/Stitch text objects resolve their installed font by id.
+        io.github.linker2k.myembro.fonts.FontRepository.installInkStitchLoader(this)
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
         savedInstanceState?.getStringArrayList(KEY_STACK)?.let { names -> stack += names.map(Screen::valueOf) }
@@ -138,6 +140,7 @@ class MainActivity : ComponentActivity() {
                         val hoop = settings.settings.defaultFrame.spec
                         // The font library is drawn over the lettering screen, which keeps what was typed.
                         var showFonts by rememberSaveable { mutableStateOf(false) }
+                        var fontsText by rememberSaveable { mutableStateOf("") }
                         Box {
                             LetteringScreen(
                                 onBack = back,
@@ -147,13 +150,14 @@ class MainActivity : ComponentActivity() {
                                 },
                                 hoop = hoop,
                                 initialFontId = letteringFontId,
-                                onOpenFonts = { showFonts = true },
+                                onOpenFonts = { text -> fontsText = text; showFonts = true },
                             )
                             if (showFonts) {
                                 BackHandler { showFonts = false }
                                 FontLibraryScreen(
                                     onBack = { showFonts = false },
                                     onPick = { id -> letteringFontId = id; showFonts = false },
+                                    text = fontsText,
                                 )
                             }
                         }

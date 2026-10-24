@@ -15,7 +15,7 @@ import kotlin.test.*
 
 class BatchDesignImporterTest {
     private val pattern = EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(20, 20, Command.STITCH),
-        Stitch(20, 20, Command.END)), listOf(EmbThread(0xFF123456.toInt())))
+        Stitch(0, 20, Command.STITCH), Stitch(20, 0, Command.STITCH), Stitch(20, 20, Command.END)), listOf(EmbThread(0xFF123456.toInt())))
     private val pes get() = PesWriter.write(pattern)
     private fun source(name: String, bytes: ByteArray, id: String = name): DesignImportEntry = object : DesignImportEntry {
         override val id = id
@@ -77,7 +77,7 @@ class BatchDesignImporterTest {
 
     @Test fun `recursive folder and ZIP skip duplicates but keep same-name different-content designs`() = withDirectory { directory ->
         val different = PesWriter.write(EmbPattern(listOf(Stitch(0, 0, Command.STITCH),
-            Stitch(50, 50, Command.STITCH), Stitch(50, 50, Command.END)), pattern.threads))
+            Stitch(50, 50, Command.STITCH), Stitch(0, 50, Command.STITCH), Stitch(50, 0, Command.STITCH), Stitch(50, 50, Command.END)), pattern.threads))
         val bundle = zip("a/one.pes" to pes, "b/invalid.pes" to byteArrayOf(1, 2), "photo.jpg" to byteArrayOf(0))
         val tree = folder("root", source("one.pes", pes, "root/one"), folder("child",
             source("one.pes", pes, "child/one"), source("one.pes", different, "child/two"),
@@ -202,7 +202,7 @@ class BatchDesignImporterTest {
         val original = importer.import(listOf(source("a.pes", pes))).imported.single()
         // A different valid PES version gives different bytes under the same name.
         val different = PesWriter.write(EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(70, 70, Command.STITCH),
-            Stitch(70, 70, Command.END)), pattern.threads))
+            Stitch(0, 70, Command.STITCH), Stitch(70, 0, Command.STITCH), Stitch(70, 70, Command.END)), pattern.threads))
         assertFalse(pes.contentEquals(different))
         val copy = importer.import(listOf(source("a.pes", different)), decide = { error("Different contents must default to copy") }).imported.single()
         assertEquals("a (1).pes", copy.name)

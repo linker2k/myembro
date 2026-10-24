@@ -75,7 +75,7 @@ class ProjectJsonTest {
     }
 
     @Test fun originalBytesAreCopiedOnImport() {
-        val bytes = PesWriter.write(rectangle().source)
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(rectangle().source)
         val original = bytes.copyOf()
         val obj = StitchObject.fromBytes("a", "a", bytes, "a.pes")
         bytes[0] = 0

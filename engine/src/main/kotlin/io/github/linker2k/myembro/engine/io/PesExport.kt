@@ -11,12 +11,12 @@ object PesExport {
 
     fun prepare(data: ByteArray, fileName: String): Result = prepare(data, fileName, PesWriteSettings())
 
-    /** Settings select conversion output; existing PES files still pass through unchanged. */
+    /** Settings select conversion output and hoop. Existing PES passes through unchanged only after exact viewport validation. */
     fun prepare(data: ByteArray, fileName: String, settings: PesWriteSettings): Result {
         val base = fileName.substringBeforeLast('.', fileName).ifBlank { "design" }
         val isPes = data.size >= 4 && String(data, 0, 4, Charsets.ISO_8859_1) == "#PES"
         return if (isPes) {
-            Result(data, "$base.pes", converted = false)
+            Result(io.github.linker2k.myembro.engine.sewout.PecViewportCheck.requireValid(data, settings.hoop), "$base.pes", converted = false)
         } else {
             Result(PesWriter.write(PatternReader.read(data, fileName), settings), "$base.pes", converted = true)
         }

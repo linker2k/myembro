@@ -113,7 +113,7 @@ class RippleClipRoutingTest {
         assertTrue(pattern.metadata[io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.LOCK_INDICES_KEY].orEmpty().isNotBlank())
         val bytes = io.github.linker2k.myembro.engine.io.PesWriter.write(pattern)
         val restored = io.github.linker2k.myembro.engine.io.PesReader.read(bytes)
-        assertEquals(pattern.bounds, restored.bounds)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, restored.bounds)
         assertTrue(restored.stitchCount > 10)
         assertTrue(pattern.stitches.zipWithNext().none { (a, b) ->
             a.command == io.github.linker2k.myembro.engine.model.Command.STITCH &&

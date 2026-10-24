@@ -20,6 +20,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: FAT12 image test tools
         run: sudo apt-get update && sudo apt-get install -y dosfstools
+      - name: Export policy constants from Kotlin HoopSpec
+        run: ./gradlew :engine:exportGateHoop
+      - name: Python policy boundary tests
+        run: python3 -m unittest discover -s tools/tests -p "test_quality_gate_*.py"
+
+      - name: Sweep selection and range reducer tests
+        run: python3 -m unittest discover -s tools/tests -p 'test_*sweep.py' -v
       - name: Checks and representative engine tests
         timeout-minutes: 5
         run: ./gradlew check
