@@ -2,7 +2,7 @@
 
 **English** | [한국어](user-guide.ko.md)
 
-This guide covers myembro v0.2.8. Screenshots show the Korean UI; English labels are given in the text.
+This guide covers myembro v0.2.8.
 
 1. [Getting started](#1-getting-started)
 2. [Starting a new project](#2-starting-a-new-project)
