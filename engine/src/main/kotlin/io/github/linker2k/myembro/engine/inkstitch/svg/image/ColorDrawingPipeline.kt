@@ -35,8 +35,10 @@ object ColorDrawingPipeline {
         internal fun indices()=labels
     }
     data class Region(val thread:io.github.linker2k.myembro.engine.model.EmbThread,
-        val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int)
-    data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>)
+        val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int,val excluded:Boolean=false)
+    data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>) {
+        val excludedCount get()=regions.count { it.excluded }
+    }
 
     /** Transparent pixels consume no thread. Straight RGB preserves the pigment of partial-alpha
      * PNG edges instead of introducing a white-composited extra thread. Border-label mode removes
@@ -87,7 +89,7 @@ object ColorDrawingPipeline {
         return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink)
     }
 
-    fun generate(preview:Preview,checkpoint:(String)->Unit={}):Result {
+    fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result {
         val w=preview.width;val h=preview.height;val labels=preview.indices()
         val mmPerPixel=preview.canvasWidthMm/w
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
@@ -114,7 +116,13 @@ object ColorDrawingPipeline {
                     }
 
                     checkpoint("stitches")
-                    val next=if(style==StitchStyle.FILL) DefaultTatami.stitchGroups(PolygonRegion(shape),thread) else {
+                    val resolved=StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
+                        if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread)
+                        else if(attempt==StitchTypeRule.Type.RUNNING && method!=StitchTypeRule.Type.RUNNING) {
+                            val polygon=shape as org.locationtech.jts.geom.Polygon
+                            val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
+                            Stroke(rings.map { ring -> ring.coordinates.map { StitchPoint(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread).toStitchGroups(null)
+                        } else {
                         val prepared=PreparedGeometryFactory.prepare(shape)
                         val bitmap=ByteArray(labels.size) { p ->
                             val inside=labels[p]==color && prepared.covers(shape.factory.createPoint(Coordinate(
@@ -136,7 +144,7 @@ object ColorDrawingPipeline {
                                 .single().points.map { StitchPoint(it.x-w/2.0*mmPerPixel*PIXELS_PER_MM,it.y-h/2.0*mmPerPixel*PIXELS_PER_MM) }
                         }
                         require(paths.isNotEmpty()) { "No centerline: input not silently discarded" }
-                        if(style==StitchStyle.RUNNING) Stroke(paths,thread).toStitchGroups(null) else {
+                        if(attempt==StitchTypeRule.Type.RUNNING) Stroke(paths,thread).toStitchGroups(null) else {
                             val sections=paths.map { path ->
                                 val started=if(path.first()==path.last()) StrokeToSatin.setFirstNode(path,width*PIXELS_PER_MM) else path
                                 StrokeToSatin.filteredRungs(requireNotNull(StrokeToSatin.convertPathToSatin(started,width*PIXELS_PER_MM)))
@@ -146,15 +154,18 @@ object ColorDrawingPipeline {
                             routed.groups
                         }
                     }
-                    require(next.isNotEmpty())
-                    if(groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
+                    }
+                    val next=resolved.groups
+                    if(next.isNotEmpty() && groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
                     groups+=next
 
-                    regions+=Region(thread,widths,method,next.size)
+                    regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded)
                 }
             }
-        require(groups.isNotEmpty())
-        val pattern=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+        val finished=if(groups.isEmpty()) io.github.linker2k.myembro.engine.model.EmbPattern(emptyList(),emptyList())
+            else GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+        val pattern=io.github.linker2k.myembro.engine.model.EmbPattern(finished.stitches,finished.threads,
+            finished.metadata+mapOf("myembro.excluded_regions" to regions.count { it.excluded }.toString()),finished.warnings)
         return Result(pattern,regions)
     }
 }

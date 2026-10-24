@@ -45,6 +45,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var detail by mutableIntStateOf(1); private set
     var colorCount by mutableIntStateOf(4); private set
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
+    val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
     val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
     fun changeColorCount(value:Int) {
         val count=value.coerceIn(2,6)
@@ -212,7 +213,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR) {
-                        ColorDrawingPipeline.generate(requireNotNull(colorPreview)) {
+                        ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                         }.pattern
                     } else RedworkPipeline.generate(traced,
@@ -220,6 +221,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
+                    if(generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null)
                     val pes = PesWriter.write(generatedPattern,snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes,viewerSewoutMachine(snapshot.machineProfile?.id,snapshot.machineModel),
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))

@@ -62,4 +62,5 @@
     <string name="photo_color_file_stem">color_drawing</string>
     <string name="photo_color_failed">No sewable color regions remain. Try a transparent PNG or a simple drawing with a light background.</string>
     <string name="photo_color_preview_accessibility">Color drawing separation preview</string>
+    <string name="photo_excluded_regions">Excluded %1$d regions that could not be sewn safely.</string>
 </resources>
