@@ -83,7 +83,7 @@ class TextFlattenTest {
     }
 
     private fun assertPesRoundTrip(flat: EmbPattern) {
-        val back = PesReader.read(PesWriter.write(flat))
+        val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(flat))
         val normalized = PecWriter.normalize(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)

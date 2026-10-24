@@ -82,8 +82,9 @@ object SewoutCheck {
         val sewnBounds = bounds(active.filter { it.command == Command.STITCH }.map { point(it) })
         val centerX = if (o.placement == Placement.CENTER_DESIGN) movementBounds?.let { (it.minX+it.maxX)/2 } ?: 0.0 else 0.0
         val centerY = if (o.placement == Placement.CENTER_DESIGN) movementBounds?.let { (it.minY+it.maxY)/2 } ?: 0.0 else 0.0
-        val window = CheckArea(centerX-o.hoop.width/2.0, centerY-o.hoop.height/2.0,
-            centerX+o.hoop.width/2.0, centerY+o.hoop.height/2.0)
+        val inset=SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM
+        val window = CheckArea(centerX-o.hoop.width/2.0+inset, centerY-o.hoop.height/2.0+inset,
+            centerX+o.hoop.width/2.0-inset, centerY+o.hoop.height/2.0-inset)
         val stages = mutableListOf(Stage(0, pattern.threadAt(0), 0))
         var stage = stages.last()
         val tasks = mutableListOf<OperatorTask>()
@@ -189,11 +190,13 @@ object SewoutCheck {
                 consecutivePositions = if (lastPosition == p) consecutivePositions + 1 else 1
                 lastPosition = p
                 maximumConsecutivePositions = max(maximumConsecutivePositions, consecutivePositions)
-                if (consecutivePositions == o.repeatedPointThreshold) findings.add(
+                if (consecutivePositions == o.repeatedPointThreshold + 1) findings.add(
                     FindingCode.REPEATED_PENETRATION, safetySeverity,
-                    "같은 위치에 바늘·점프 명령이 연속 ${o.repeatedPointThreshold}회 이상 기록되어 있습니다.",
+                    "같은 위치에 바늘·점프 명령이 연속 ${o.repeatedPointThreshold}회 초과 기록되어 있습니다.",
                     Highlight(index, from = p), consecutivePositions.toDouble(), o.repeatedPointThreshold.toDouble())
             }
+            if(file!=null && (s.command==Command.STITCH || s.command==Command.JUMP) && p==current)
+                findings.add(FindingCode.ZERO_LENGTH_MOTION,safetySeverity,"0길이 바늘·점프 명령입니다.",Highlight(index,from=p))
             when (s.command) {
                 Command.STITCH -> {
                     flushCuts()

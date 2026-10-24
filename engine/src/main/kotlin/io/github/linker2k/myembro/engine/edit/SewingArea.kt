@@ -2,12 +2,13 @@
 package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.model.Bounds
+import io.github.linker2k.myembro.engine.sewout.SewoutLimits
 import kotlin.math.ceil
 import kotlin.math.floor
 
 /** Shared editor/export inset and rounding tolerance, in millimeters. */
-const val HOOP_SAFETY_MARGIN_MM = 1.0
-const val HOOP_BOUNDARY_TOLERANCE_MM = 0.05
+const val HOOP_SAFETY_MARGIN_MM = SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM / 10.0
+const val HOOP_BOUNDARY_TOLERANCE_MM = SewoutLimits.PEC_DIMENSION_TOLERANCE_UNITS_0P1MM / 10.0
 
 /** Rectangular sewing area in 0.1 mm. The decorative rounded hoop is not sewing geometry. */
 data class SewingArea(val left: Double, val top: Double, val right: Double, val bottom: Double) {

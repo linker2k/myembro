@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from quality_gate_viewport import check_viewport, load_hoop, load_limits, integer_safety_findings
+from quality_gate_viewport import check_viewport, load_hoop, load_limits, integer_safety_findings, reassess_viewport
 
 
 class ExactViewportTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class ExactViewportTest(unittest.TestCase):
                     width,height=(maximum,20) if axis==0 else (20,maximum)
                     events=[(width,0,0),(0,height,0),(width,0,0)]
                     with self.subTest(hoop=hoop,axis=axis,delta=delta):
-                        self.assertEqual(delta<=0,check_viewport(self.raw(width,height),events,hoop)['valid'])
+                        self.assertEqual(delta>0,any(e.startswith('PEC_HOOP:') for e in check_viewport(self.raw(width,height),events,hoop)['errors']))
 
     def test_minimum_and_header_no_tolerance(self):
         for minimum in (-1,0,1):
@@ -46,10 +46,40 @@ class ExactViewportTest(unittest.TestCase):
                 width,height=(20+delta,20) if axis==0 else (20,20+delta)
                 self.assertEqual(delta==0,check_viewport(self.raw(width,height),[(20,0,1),(0,20,0)],(1000,1000))['valid'])
 
+    def test_selected_larger_hoop_replaces_default_margin_as_well_as_size(self):
+        initial=check_viewport(self.raw(1500,20),[(1500,0,0),(0,20,0)],(1000,1000),20)
+        self.assertFalse(initial['valid'])
+        selected=reassess_viewport(initial,(1800,1800),20)
+        self.assertTrue(selected['valid'])
+
+    def test_no_implicit_origin_for_an_empty_stitch_block(self):
+        result=check_viewport(self.raw(0,0),[],(1000,1000),20)
+        self.assertFalse(result['valid'])
+        self.assertTrue(any(e.startswith('PEC_EMPTY:') for e in result['errors']))
+
     def test_implicit_origin_does_not_satisfy_minimum(self):
         result=check_viewport(self.raw(10,10),[(10,10,0)],(1000,1000))
         self.assertFalse(result['valid'])
         self.assertTrue(any(e.startswith('PEC_ORIGIN:') for e in result['errors']))
+
+    def test_margin_width_height_n_minus_one_n_n_plus_one(self):
+        limits=load_limits(Path(__file__).resolve().parents[2]/'engine/build/hoop-spec.json')
+        margin=limits['hoop_safety_margin_units_0p1mm']
+        for hoop in [(1000,1000),(1300,1800),(731,1247)]:
+            for axis in (0,1):
+                for delta in (-1,0,1):
+                    maximum=hoop[axis]-2*margin+delta
+                    width,height=(maximum,20) if axis==0 else (20,maximum)
+                    self.assertEqual(delta<=0,check_viewport(self.raw(width,height),[(width,0,0),(0,height,0)],hoop,margin)['valid'])
+
+    def test_zero_command_count_boundary(self):
+        limits=load_limits(Path(__file__).resolve().parents[2]/'engine/build/hoop-spec.json')
+        n=limits['max_zero_length_motion_commands']
+        self.assertEqual(0,n)
+        with self.assertRaises(ValueError):integer_safety_findings(1,1,0,'APP_GENERATED',limits,n-1)
+        for value in (n,n+1):
+            hard,soft=integer_safety_findings(1,1,0,'APP_GENERATED',limits,value)
+            self.assertEqual(value>n,any(x.startswith('ZERO_LENGTH_MOTION:') for x in hard))
 
     def test_all_count_and_length_thresholds_n_minus_one_n_n_plus_one(self):
         config=Path(__file__).resolve().parents[2]/'engine/build/hoop-spec.json'

@@ -21,7 +21,7 @@ object PolicyFixtureWriter {
             val header=ByteArray(22);"#PES0001".toByteArray().copyInto(header);header[8]=22
             header+PecWriter.writePayload(prepared,s.inkstitchCommands,topLeftViewport=!s.inkstitchCommands)
         }
-        return if(PecViewportCheck.check(candidate,s.hoop).valid)PesWriter.write(p,s) else {
+        return if(if(s.inkstitchCommands)PecViewportCheck.check(candidate,s.hoop).valid else io.github.linker2k.myembro.engine.sewout.PesOutputSafety.errors(candidate,s.hoop,p).isEmpty())PesWriter.write(p,s) else {
             assertFailsWith<IllegalArgumentException> { PesWriter.write(p,s) }
             candidate
         }

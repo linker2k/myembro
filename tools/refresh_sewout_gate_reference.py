@@ -23,7 +23,7 @@ gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
 assert gate.VERSION in (6,7)
 thresholds = json.loads((a.gate_root / 'thresholds.json').read_text())
-soft = {'LONG_STITCH', 'CELL_DENSITY', 'SAME_POINT_REPEAT', 'THREAD_START_LOCK_MISSING',
+soft = {'ZERO_LENGTH_MOTION', 'LONG_STITCH', 'CELL_DENSITY', 'SAME_POINT_REPEAT', 'THREAD_START_LOCK_MISSING',
         'START_LOCK_MISSING', 'END_LOCK_MISSING', 'PRE_TRIM_LOCK_MISSING', 'POST_TRIM_LOCK_MISSING'}
 result = {'tool_version': gate.VERSION, 'sources': {name: hashlib.sha256((a.gate_root / name).read_bytes()).hexdigest()
           for name in ('gate.py', 'lock_geometry.py', 'thresholds.json', 'POLICY.md', 'quality_gate_repeat.py', 'quality_gate_viewport.py', 'hoop-spec.json')}, 'cases': {}}

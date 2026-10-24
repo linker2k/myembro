@@ -124,7 +124,7 @@ class SatinColumnTest {
             val restored = ProjectJson.decode(project.toJson())
             assertEquals(project, restored)
             assertEquals(project.flatten().stitches, restored.flatten().stitches)
-            val pes = PesReader.read(PesWriter.write(p))
+            val pes = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(p))
             assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).bounds, pes.bounds)
             assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(p).stitchCount, pes.stitchCount)
         }

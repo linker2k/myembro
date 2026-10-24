@@ -22,6 +22,7 @@ internal fun readViewerDesign(bytes: ByteArray, name: String?, resolver: Project
     if (name?.substringAfterLast('.')?.equals("myembro", true) == true) {
         val project = ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), sourceResolver = resolver)
         val pattern = project.flatten(sewingOptions)
+        io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,pattern.bounds)
         return ViewerDesign(pattern, PesWriter.write(pattern, writeSettings.copy(hoop = project.hoop)), name.substringBeforeLast('.') + ".pes", project.hoop,
             projectSource = bytes, sewingOptions = sewingOptions, writeSettings = writeSettings)
     }

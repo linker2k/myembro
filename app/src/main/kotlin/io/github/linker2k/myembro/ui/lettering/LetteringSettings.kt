@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
+
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
@@ -63,10 +64,10 @@ internal fun lineOffset(width: Double, maximum: Double, alignment: LetteringAlig
     LetteringAlignment.RIGHT -> (maximum - width) / 2
 }
 
-/** Align the final centered local pattern inside the hoop, keeping a 5 mm margin. */
+/** Align the final centered local pattern inside the hoop, keeping the common safety margin. */
 internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: LetteringAlignment): TextObject {
     val bounds = text.localPattern().bounds ?: return text
-    val room = ((hoop.width - bounds.width) / 2.0 - 50.0).coerceAtLeast(0.0)
+    val room = ((hoop.width - bounds.width) / 2.0 - io.github.linker2k.myembro.engine.sewout.SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM).coerceAtLeast(0.0)
     val x = when (alignment) {
         LetteringAlignment.LEFT -> -room
         LetteringAlignment.CENTER -> 0.0
@@ -78,8 +79,7 @@ internal fun placeLettering(text: TextObject, hoop: HoopSpec, alignment: Letteri
 /** The preview and Add guard use the same real sewing area, including small rectangular hoops. */
 internal fun letteringOutsideHoop(pattern: EmbPattern, hoop: HoopSpec): Boolean {
     val bounds = pattern.bounds ?: return false
-    return bounds.minX < -hoop.width / 2.0 || bounds.maxX > hoop.width / 2.0 ||
-        bounds.minY < -hoop.height / 2.0 || bounds.maxY > hoop.height / 2.0
+    return !io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(hoop,bounds)
 }
 
 internal data class LetteringViewport(val scale: Float, val centerX: Double, val centerY: Double)

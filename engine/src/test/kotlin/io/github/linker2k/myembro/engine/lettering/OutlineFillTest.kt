@@ -130,7 +130,7 @@ class OutlineFillTest {
         assertLengths(pattern)
         assertEquals(listOf(red, blue), pattern.threads)
         assertEquals(1, pattern.colorChangeCount)
-        val pes = PesReader.read(PesWriter.write(pattern))
+        val pes = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(pattern))
         assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).bounds, pes.bounds)
         assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(pattern).stitchCount, pes.stitchCount)
         assertLengths(pes)

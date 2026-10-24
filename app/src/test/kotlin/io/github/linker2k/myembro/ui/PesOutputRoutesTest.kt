@@ -53,8 +53,8 @@ class PesOutputRoutesTest {
         val frames=io.github.linker2k.myembro.ui.machines.FrameCatalog.options(listOf(custom)).map { it.spec } +
             io.github.linker2k.myembro.ui.machines.MachineProfiles.all.flatMap { it.projectHoops }
         for(hoop in frames)for(axis in 0..1)for(delta in -1..1) {
-            val x=if(axis==0)hoop.width-1+delta else 20
-            val y=if(axis==1)hoop.height-1+delta else 20
+            val x=if(axis==0)io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignWidthUnits0p1mm(hoop)+delta else 20
+            val y=if(axis==1)io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(hoop)+delta else 20
             val p=EmbPattern(listOf(Stitch(x,0,Command.STITCH),Stitch(0,y,Command.STITCH),Stitch(x,0,Command.STITCH)),pattern.threads)
             for(version in PesVersion.entries) {
                 val settings=PesWriteSettings(version,hoop=hoop)

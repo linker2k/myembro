@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor
 
+import io.github.linker2k.myembro.engine.edit.placedBounds
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -61,7 +63,9 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
     var style by remember(obj.id) { mutableStateOf((obj as? TextObject)?.stitchStyle ?: StitchStyle.RUNNING) }
     var weight by remember(obj.id) { mutableStateOf((obj as? TextObject)?.threadWeight ?: ThreadWeight.WT40) }
-    val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)
+    val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)?.takeIf { candidate ->
+        obj.withTransform(candidate).placedBounds()?.let { !it.outside(vm.project.hoop) } != false
+    }
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.editor_properties)) },
@@ -86,6 +90,11 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
                     NumericField(sy, { sy = it }, R.string.editor_property_scale_y, Modifier.weight(1f))
                 }
                 Text(stringResource(R.string.editor_property_hint), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.editor_safe_size_hint,
+                    io.github.linker2k.myembro.ui.format.Dimensions.size(
+                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignWidthUnits0p1mm(vm.project.hoop).coerceAtLeast(0)/10.0,
+                        io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(vm.project.hoop).coerceAtLeast(0)/10.0)),
+                    style=MaterialTheme.typography.bodySmall)
                 if (warning) Text(stringResource(R.string.editor_density_warning), color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall)
                 if (parsed == null) Text(stringResource(R.string.editor_property_invalid), color = MaterialTheme.colorScheme.error,

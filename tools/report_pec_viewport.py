@@ -25,12 +25,12 @@ for f in sorted(a.corpus.rglob('*')):
     if f.suffix.lower()!='.pes':continue
     data=f.read_bytes();events,_=gate.decode(str(f));r=check_viewport(data,events,hoop)
     counts['files']+=1
-    for label,code in [('origin','PEC_ORIGIN:'),('hoop','PEC_HOOP:'),('header','PEC_DIMENSIONS:')]:
+    for label,code in [('origin','PEC_ORIGIN:'),('hoop','PEC_HOOP:'),('safety_margin','PEC_SAFETY_MARGIN:'),('header','PEC_DIMENSIONS:')]:
         counts[label+'_pass']+=not any(e.startswith(code) for e in r['errors'])
     counts['all_pass']+=r['valid']
     if not r['valid']:failures.append(dict(alias=f'corpus-{counts["files"]:03}',sha256=hashlib.sha256(data).hexdigest(),**r))
-paths=['s1/S1SAMPL.PES','s1/S1SAMPL2.PES','s23/S23SAMPL.PES','s23/S23SAM3.PES','s23/S23SAM4.PES',
-       's4/S4SAMPL.PES','s4/S4SAMP2.PES','ab/T1PEDS.PES','ab/T2OURS.PES','ab/T3NOZRO.PES']
+paths=['s1/S1SAMPL.PES','s1/S1SAMPL2.PES','s1/S1SAMPL3.PES','s23/S23SAMPL.PES','s23/S23SAM3.PES','s23/S23SAM4.PES',
+       's4/S4SAMPL.PES','s4/S4SAMP2.PES','s4/S4SAMP3.PES','ab/T1PEDS.PES','ab/T2OURS.PES','ab/T3NOZRO.PES']
 samples=[]
 thresholds=json.loads((a.gate_root/'thresholds.json').read_text())
 for rel in paths:
@@ -42,8 +42,8 @@ for rel in paths:
 report=dict(command='report_pec_viewport.py',hoop_units=hoop,corpus=dict(counts),corpus_failures=failures,samples=samples)
 a.output.parent.mkdir(parents=True,exist_ok=True)
 a.output.with_suffix('.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-rows=['| 대상 | 건수 | 원점 | 후프 범위 | 헤더 일치 | ⑤통과 |',
-      '|---|---:|---:|---:|---:|---:|',f'| 로컬 코퍼스 | {counts["files"]} | {counts["origin_pass"]} | {counts["hoop_pass"]} | {counts["header_pass"]} | {counts["all_pass"]} |','',
+rows=['| 대상 | 건수 | 원점 | 후프 범위 | 2mm 여유 | 헤더 일치 | ⑤통과 |',
+      '|---|---:|---:|---:|---:|---:|---:|',f'| 로컬 코퍼스 | {counts["files"]} | {counts["origin_pass"]} | {counts["hoop_pass"]} | {counts["safety_margin_pass"]} | {counts["header_pass"]} | {counts["all_pass"]} |','',
       '| 시험 파일 | ⑤ | 전체 게이트 | 사유 |','|---|---|---|---|']
 for s in samples:
     r=s['rule5'];rows.append(f'| {s["file"]} | {"PASS" if r["valid"] else "BLOCK"} | {s["gate_verdict"]} | {"; ".join(r["errors"]) or "—"} |')

@@ -36,7 +36,9 @@ object DesignFormats {
     fun preparePes(file: File, settings: PesWriteSettings, sewingOptions: SewingOptions? = null): PesExport.Result =
         if (extension(file.name) == "myembro") {
             val project = ProjectJson.decode(file.readText().removePrefix("\uFEFF"), sourceResolver = sourceResolver(file))
-            PesExport.Result(PesWriter.write(project.flatten(sewingOptions), settings.copy(hoop = project.hoop)),
+            val flattened = project.flatten(sewingOptions)
+            io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,flattened.bounds)
+            PesExport.Result(PesWriter.write(flattened, settings.copy(hoop = project.hoop)),
                 "${file.nameWithoutExtension}.pes", true)
         } else PesExport.prepare(file.readBytes(), file.name, settings)
 

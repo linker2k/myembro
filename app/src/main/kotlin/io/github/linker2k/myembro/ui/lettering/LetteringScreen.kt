@@ -110,7 +110,10 @@ private fun LetteringContent(
     val initial = initialObject
     var threadWeightName by rememberSaveable { mutableStateOf((initial?.threadWeight ?: ThreadWeight.WT40).name) }
     val threadWeight = ThreadWeight.valueOf(threadWeightName)
-    var height by rememberSaveable { mutableFloatStateOf(initial?.heightMm?.toFloat() ?: 18f) }
+    val maximumHeightMm=(io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(hoop)/10f).coerceAtLeast(0.1f)
+    val minimumHeightMm=minOf(5f,maximumHeightMm)
+    var height by rememberSaveable { mutableFloatStateOf((initial?.heightMm?.toFloat() ?: 18f).coerceIn(minimumHeightMm,maximumHeightMm)) }
+    LaunchedEffect(hoop) { height=height.coerceIn(minimumHeightMm,maximumHeightMm) }
     var spacing by rememberSaveable { mutableFloatStateOf(initial?.spacing?.toFloat() ?: 1.2f) }
     var alignmentIndex by rememberSaveable { mutableIntStateOf(initial?.alignment?.ordinal ?: 1) }
     var curved by rememberSaveable { mutableStateOf(initial != null && (initial.arcDeg != 0.0 || initial.arcRadiusMm != null)) }
@@ -320,7 +323,7 @@ private fun LetteringContent(
                 }
             } }
             LetteringCard {
-                SettingSlider(stringResource(R.string.lettering_height), height, 5f..50f, 1f, "mm", showInches = true) { height = it }
+                SettingSlider(stringResource(R.string.lettering_height), height.coerceIn(minimumHeightMm,minOf(50f,maximumHeightMm)), minimumHeightMm..minOf(50f,maximumHeightMm), 1f, "mm", showInches = true) { height = it }
                 SettingSlider(stringResource(R.string.lettering_spacing), spacing, 0f..6f, 0.1f, "mm") { spacing = it }
                 SettingSlider(stringResource(R.string.lettering_line_spacing), lineSpacing, 0f..30f, 0.5f, "mm") { lineSpacing = it }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

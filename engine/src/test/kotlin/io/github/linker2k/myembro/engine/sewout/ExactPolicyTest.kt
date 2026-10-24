@@ -20,9 +20,9 @@ class ExactPolicyTest {
         for(hoop in hoops)for(axis in 0..1)for(delta in -1..1) {
             val max=if(axis==0)hoop.width-1+delta else hoop.height-1+delta
             val data=if(axis==0)bytes(max,20) else bytes(20,max)
-            assertEquals(delta<=0,PecViewportCheck.check(data,hoop).valid,"$hoop axis=$axis delta=$delta")
+            assertEquals(delta>0,PecViewportCheck.check(data,hoop).errors.any { it.startsWith("PEC_HOOP:") },"$hoop axis=$axis delta=$delta")
             val report=SewoutCheck.checkPes(data,options=SewoutOptions(hoop=hoop))
-            assertEquals(delta>0,report.findings.any { it.code==FindingCode.INVALID_PES })
+            assertEquals(delta>0,report.findings.any { it.code==FindingCode.INVALID_PES && it.message.startsWith("PEC_HOOP:") })
         }
     }
     @Test fun exactOriginAndHeaderHaveNoOneUnitTolerance() {
@@ -38,7 +38,7 @@ class ExactPolicyTest {
     }
     @Test fun writerRejectsOutOfHoopAndOriginViolationsBeforeReturningBytes() {
         for(hoop in HoopSpec.ALL+HoopSpec("custom",731,1247))for(delta in -1..1) {
-            val max=hoop.width-1+delta
+            val max=SewoutLimits.maxDesignWidthUnits0p1mm(hoop)+delta
             val p=EmbPattern(listOf(Stitch(max,0,Command.STITCH),Stitch(0,20,Command.STITCH),
                 Stitch(max,0,Command.STITCH)),listOf(PecThreads.forIndex(5)))
             for(v in PesVersion.entries) {
@@ -46,6 +46,7 @@ class ExactPolicyTest {
                 else assertTrue(PecViewportCheck.check(PesWriter.write(p,PesWriteSettings(v,hoop=hoop)),hoop).valid)
             }
         }
+        assertFailsWith<IllegalArgumentException> { PesWriter.write(EmbPattern(emptyList(),emptyList())) }
         val open=EmbPattern(listOf(Stitch(0,0,Command.STITCH),Stitch(10,10,Command.STITCH)),listOf(PecThreads.forIndex(5)))
         for(v in PesVersion.entries)assertFailsWith<IllegalArgumentException> { PesWriter.write(open,v) }
     }
@@ -68,6 +69,16 @@ class ExactPolicyTest {
             assertEquals(if(generated)Severity.BLOCKER else Severity.WARNING,r.findings.single { it.code==FindingCode.LONG_STITCH }.severity)
         }
     }
+    @Test fun safetyMarginSizeAndPhysicalPlacementBoundaries() {
+        for(hoop in HoopSpec.ALL+HoopSpec("custom",731,1247))for(axis in 0..1)for(delta in -1..1) {
+            val max=(if(axis==0)SewoutLimits.maxDesignWidthUnits0p1mm(hoop) else SewoutLimits.maxDesignHeightUnits0p1mm(hoop))+delta
+            val data=if(axis==0)bytes(max,20) else bytes(20,max)
+            assertEquals(delta<=0,PecViewportCheck.check(data,hoop).valid)
+        }
+        val area=io.github.linker2k.myembro.engine.edit.SewingArea(-480.0,-480.0,480.0,480.0)
+        for(max in 479..481)assertEquals(max<=480,area.contains(io.github.linker2k.myembro.engine.model.Bounds(-10,-10,max,10)))
+        assertEquals(SewoutLimits.MAX_CONSECUTIVE_POSITIONS,SewoutOptions().repeatedPointThreshold)
+    }
     @Test fun agentsDocumentAndExecutableLimitsMustAgree() {
         val doc=File("../AGENTS.md").readText()
         fun row(n:Int)=doc.lineSequence().single { it.startsWith("| P$n |") }
@@ -82,5 +93,10 @@ class ExactPolicyTest {
         assertEquals(SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM/10.0,number(8,"≤ ([0-9.]+)mm"))
         assertTrue(row(3).contains("1단위(0.1mm) 차이도 허용하지 않는다"))
         assertEquals(0,SewoutLimits.PEC_DIMENSION_TOLERANCE_UNITS_0P1MM)
+        assertTrue(row(4).contains("**0길이 JUMP"))
+        assertEquals(0,SewoutLimits.MAX_ZERO_LENGTH_MOTION_COMMANDS)
+        val margin=doc.lineSequence().single { it.startsWith("| P2a |") }
+        val units=Regex("\\((\\d+)단위\\)").find(margin)!!.groupValues[1].toInt()
+        assertEquals(SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM,units)
     }
 }

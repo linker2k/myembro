@@ -1,13 +1,13 @@
 {
   "tool_version": 7,
   "sources": {
-    "gate.py": "bf547b9a7a5253c77c410d54ab833e82f2731a46778ef636d45a171b66837704",
+    "gate.py": "252b0d1cc8a52988e3a7e9e1288dec84f710bd2e5e93fa6d832405dc77c26759",
     "lock_geometry.py": "5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42",
     "thresholds.json": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d",
-    "POLICY.md": "863a3cc3b5c1eab81bebc0c612fe9f2d750f3611e38e3834b1497a30cf3f66ca",
+    "POLICY.md": "f5ba778a2fe1636a7f431c28f4bd8fb28123d2acc93cd05e94ff28a1277a9530",
     "quality_gate_repeat.py": "360279d345cb47dd49daaf68c60d99741e5b14a8f0e05c3d2ea1ef1f0795b6f4",
-    "quality_gate_viewport.py": "f3684429fdf51c786acac788a6029e23d55c12f4474d147051afb487a72ece45",
-    "hoop-spec.json": "ef7c3df825d14cc341d4bbc12546bf393c3b08122dd64168c37247e7ef038686"
+    "quality_gate_viewport.py": "5035f404ea9dd6442785533fe986a0228e07a2cd547ed23174973c7523fd7d00",
+    "hoop-spec.json": "1d8699bec1a7a034f16540574193a8c786bcdfc8fc065a1282da3c6c36654dd0"
   },
   "cases": {
     "T1PEDS": {
@@ -31,6 +31,7 @@
       "sha256": "250cf0086fc1ee72bf28d6789005cb0dcdd65e6f125dd36ebd83344fdb6c1df0",
       "verdict": "BLOCK",
       "reasons": [
+        "ZERO_LENGTH_MOTION: 2",
         "SAME_POINT_REPEAT: 3",
         "PEC_ORIGIN: min=(10,10), required=(0,0)"
       ],
@@ -149,6 +150,7 @@
       "sha256": "ec13e11168870679d39f8704fe3fc75a746a589e28c7448532b301e8fb9c2da8",
       "verdict": "BLOCK",
       "reasons": [
+        "ZERO_LENGTH_MOTION: 30",
         "SAME_POINT_REPEAT: 3",
         "PEC_ORIGIN: min=(-297,-277), required=(0,0)"
       ],
@@ -167,6 +169,7 @@
       "sha256": "124a4b0db5cade5ef8a8322389c428fb3af4cf5a6ed2a69e34aa26cbf2926519",
       "verdict": "BLOCK",
       "reasons": [
+        "ZERO_LENGTH_MOTION: 46",
         "SAME_POINT_REPEAT: 4",
         "PEC_ORIGIN: min=(-246,-165), required=(0,0)"
       ],

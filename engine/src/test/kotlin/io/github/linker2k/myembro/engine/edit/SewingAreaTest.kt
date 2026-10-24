@@ -15,13 +15,13 @@ class SewingAreaTest {
         assertTrue(area.contains(area.snapBounds))
     }
 
-    @Test fun `odd hoop accepts exactly half a stitch unit but not a full extra unit`() {
+    @Test fun `odd hoop rejects any excursion beyond the exact safety inset`() {
         val hoop = HoopSpec("odd", 1001, 1001)
         val area = hoop.sewingArea
         val lo = kotlin.math.floor(area.left).toInt()
         val hi = kotlin.math.ceil(area.right).toInt()
-        assertEquals(0.05, HOOP_BOUNDARY_TOLERANCE_MM)
-        assertTrue(hoop.contains(Bounds(lo, lo, hi, hi))) // Exactly 0.05 mm beyond each side.
+        assertEquals(0.0, HOOP_BOUNDARY_TOLERANCE_MM)
+        assertFalse(hoop.contains(Bounds(lo, lo, hi, hi))) // Exactly 0.05 mm beyond each side.
         assertFalse(hoop.contains(Bounds(lo - 1, lo, hi, hi)))
         assertFalse(hoop.contains(Bounds(lo, lo - 1, hi, hi)))
         assertFalse(hoop.contains(Bounds(lo, lo, hi + 1, hi)))

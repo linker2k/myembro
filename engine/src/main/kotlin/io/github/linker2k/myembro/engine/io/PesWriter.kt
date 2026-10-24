@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.io
 
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.sewout.PecViewportCheck
+import io.github.linker2k.myembro.engine.sewout.PesOutputSafety
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
@@ -40,7 +41,7 @@ object PesWriter {
 
     fun write(pattern: EmbPattern, settings: PesWriteSettings): ByteArray = when (settings.version) {
         PesVersion.V1 -> if (settings.inkstitchCommands) PecViewportCheck.requireValid(writeV1Inkstitch(pattern),settings.hoop) else writeV1(pattern,settings.hoop)
-        PesVersion.V6 -> PecViewportCheck.requireValid(PesV6Writer.write(if (settings.inkstitchCommands) pattern else prepareForOutput(pattern), settings.inkstitchCommands),settings.hoop)
+        PesVersion.V6 -> if(settings.inkstitchCommands) PecViewportCheck.requireValid(PesV6Writer.write(pattern,true),settings.hoop) else writeV6(pattern,settings.hoop)
     }
 
     fun write(pattern: EmbPattern, version: PesVersion): ByteArray = write(pattern, PesWriteSettings(version))
@@ -49,10 +50,10 @@ object PesWriter {
         val header = ByteArray(22)
         "#PES0001".toByteArray(Charsets.US_ASCII).copyInto(header)
         header[8] = 22
-        return PecViewportCheck.requireValid(header + PecWriter.writePayload(prepareForOutput(pattern), topLeftViewport = true),hoop)
+        return PesOutputSafety.requireValid(header + PecWriter.writePayload(prepareForOutput(pattern), topLeftViewport = true),hoop,pattern)
     }
 
-    fun writeV6(pattern: EmbPattern, hoop: HoopSpec = HoopSpec.H100): ByteArray = PecViewportCheck.requireValid(PesV6Writer.write(prepareForOutput(pattern)),hoop)
+    fun writeV6(pattern: EmbPattern, hoop: HoopSpec = HoopSpec.H100): ByteArray = PesOutputSafety.requireValid(PesV6Writer.write(prepareForOutput(pattern)),hoop,pattern)
 
     private fun writeV1Inkstitch(pattern: EmbPattern): ByteArray {
         val header = ByteArray(22)

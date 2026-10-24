@@ -45,10 +45,10 @@ class ViewerSewoutTest {
         val placed = checkViewerSewout(p, SewoutMachines.SE400, HoopSpec.H100, true)
         assertTrue(placed.hasBlockingIssues)
         assertTrue(placed.findings.any { it.code == FindingCode.HOOP_EXCEEDED })
-        assertEquals(-500.0, placed.hoopWindow.minX)
+        assertEquals(-480.0, placed.hoopWindow.minX)
         val centered = checkViewerSewout(p, SewoutMachines.SE400, HoopSpec.H100, false)
         assertFalse(centered.findings.any { it.code == FindingCode.HOOP_EXCEEDED })
-        assertEquals(125.0, centered.hoopWindow.minX)
+        assertEquals(145.0, centered.hoopWindow.minX)
     }
     @Test fun `ordinary PES checks actual file but a project keeps original command coordinates`() {
         val p = pattern(100)
