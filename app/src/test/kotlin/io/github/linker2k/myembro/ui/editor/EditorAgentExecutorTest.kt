@@ -38,10 +38,11 @@ class EditorAgentExecutorTest {
         println("AGENT_EXECUTOR PASS: preview unchanged; apply = 1 undo step; undo restores original")
     }
 
-    @Test fun addTextIsRejectedAsNotImplementedWithItsScriptIndex() = runBlocking {
+    // add_text is implemented since agent/dispatcher 0258c70; an unknown font is now the rejection.
+    @Test fun addTextWithUnknownFontIsRejectedWithItsScriptIndex() = runBlocking {
         val s = script("""{"tool":"send_usb","args":{}},{"tool":"add_text","args":{"objectId":"new:t","text":"Mina","fontId":"hershey","fontRevision":"x","heightMm":10,"threadColor":"#000000","singleLineBold":false}}""")
         val rejected = assertIs<AgentPreviewResult.Rejected>(executor().preview(s, handles, 0))
-        assertEquals(listOf("NOT_IMPLEMENTED" to 1), rejected.problems.map { it.code to it.index })
+        assertEquals(listOf("FONT_NOT_FOUND" to 1), rejected.problems.map { it.code to it.index })
         assertSame(base, session.project)
     }
 
