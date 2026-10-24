@@ -227,7 +227,8 @@ object VectorArt {
      * order, so later shapes cover earlier ones: a tatami area is clipped by everything drawn after
      * it, and slivers narrower than the satin minimum are dropped instead of sewn.
      */
-    fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art"): Result {
+    /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
+    fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true): Result {
         require(widthMm.isFinite() && widthMm > 0)
         val footprints = art.shapes.map(::footprint)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
@@ -246,7 +247,7 @@ object VectorArt {
          */
         fun tatami(index: Int, role: String, area: Geometry, thread: EmbThread, widthMm: Double, sourceRgb: Int) {
             val later = footprints.drop(index + 1)
-            val visible = if (later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
+            val visible = if (later.isEmpty() || !removeOverlaps) area else area.difference(UnaryUnionOp.union(later))
             val pieces = (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()
                 .groupBy { rules.classify(it, scale) }
             val satin = pieces[StitchTypeRule.Type.SATIN].orEmpty().filter { piece ->

@@ -19,6 +19,38 @@ class EmojiDesignTest {
     private val hoop = HoopSpec.H100
     private val names = listOf("red_heart", "star", "grinning_face")
 
+    /**
+     * Overlap removal (JTS difference of everything drawn later): stitches, peak 0.5mm-cell density
+     * and penetrations of earlier threads inside later shapes, with and without it.
+     */
+    @Test fun overlapRemovalTable() {
+        for (name in names) {
+            val art = VectorArt.parseSvg(File("src/test/resources/emoji/fluent/${name}_flat.svg").readText())
+            val rows = listOf(false, true).map { remove ->
+                val result = VectorArt.render(art, 50.0, name = name, removeOverlaps = remove)
+                val pes = PesWriter.write(result.pattern)
+                val stats = SewoutCheck.checkPes(pes, options = SewoutOptions(hoop = hoop, origin = DesignOrigin.APP_GENERATED)).statistics
+                Triple(remove, stats, buried(result.pattern))
+            }
+            rows.forEach { (remove, s, b) -> println("OVERLAP | $name | ${if (remove) "제거 후" else "제거 전"} | ${s.stitchCount} | ${s.peakCellPenetrations} | ${s.densityHotspotCount} | $b |") }
+            val (before, after) = rows
+            assertTrue(after.second.stitchCount <= before.second.stitchCount && after.third <= before.third)
+        }
+    }
+
+    /** Needle penetrations of each color block that land on a cell later re-sewn by a different color. */
+    private fun buried(pattern: io.github.linker2k.myembro.engine.model.EmbPattern): Int {
+        val cells = HashMap<Pair<Int, Int>, MutableSet<Int>>(); var block = 0
+        val owners = ArrayList<Pair<Pair<Int, Int>, Int>>()
+        for (s in pattern.stitches) when (s.command) {
+            io.github.linker2k.myembro.engine.model.Command.COLOR_CHANGE -> block++
+            io.github.linker2k.myembro.engine.model.Command.STITCH -> { val c = Math.floorDiv(s.x, 5) to Math.floorDiv(s.y, 5)
+                cells.getOrPut(c) { mutableSetOf() } += block; owners += c to block }
+            else -> Unit
+        }
+        return owners.count { (c, b) -> cells.getValue(c).any { it > b } }
+    }
+
     @Test fun representativeEmojiPassInvariantsAndGate() {
         val failures = ArrayList<String>()
         var satinParts = 0
