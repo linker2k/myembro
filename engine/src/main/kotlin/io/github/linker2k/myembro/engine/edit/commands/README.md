@@ -4,7 +4,10 @@
 font preparation, stitch generation, history management, random ID allocation or export.
 ReplaceText, preparation, JSON and the scenario runner remain deferred. Existing
 Project/EditOperations APIs are unchanged. The UI session now delegates history to the engine;
-individual UI edit actions still prepare their snapshots through the existing app helpers.
+UI move/size/rotation/mirror, alignment, deletion, duplication, ordering, visibility, recolor and
+hoop actions now dispatch these same commands. Existing geometry/snap helpers prepare transforms;
+UI-only adapters preserve historical reorder clamping and invalid-color no-ops without weakening
+the strict tool reducer. Text replacement/style preparation and imports still use snapshot commits.
 
 ```kotlin
 val command = ProjectCommand.Batch(listOf(
@@ -109,8 +112,18 @@ History equality/reference behavior without interpreting text settings or regene
 UI gesture frames stay outside this engine session until pointer-up, preserving old enablement,
 late-pointer rejection and exact final-preview identity. Empty/equal-value gestures preserve redo.
 Document opening/recovery still construct a fresh EditorSession through unchanged EditorDocuments;
-save baselines, dirty comparison and recovery draft storage are unchanged. Typed UI command dispatch
-and shared text preparation remain a separate migration step.
+save baselines, dirty comparison and recovery draft storage are unchanged.
+
+Typed UI edits run `apply` before committing through this same history bridge. Gesture completion
+builds one transform/order Batch from the published baseline and final preview, runs the reducer,
+and checks exact Project equality before retaining the preview reference. Thus caches and the
+previous undo/reference behavior survive while tool and UI mutation/validation share the reducer.
+There is no second UI mutation reducer. Shared text preparation remains a separate migration step.
+
+`EditorCommandParityTest` was run before replacing the ViewModel call sites (18 tests, zero failures).
+It compares the previous UI expressions with commands; recolor additionally compares complete
+Project JSON because EmbPattern uses reference equality. `EditorCommandSessionTest` covers shared
+command dispatch, rejected-batch rollback, no-op redo preservation and mixed gesture batching.
 
 Before this migration, EditorSessionMigrationTest's characterization cases were added and passed
 against the old app session. The same tests run after migration, including document redo reset,
