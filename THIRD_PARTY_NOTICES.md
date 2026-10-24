@@ -571,7 +571,7 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 ## Pystitch output boundary and opt-in writer profile
 
 - Source: [inkstitch/pystitch v1.0.1](https://github.com/inkstitch/pystitch/tree/8fc0b113e02ea81d9a507bfad3f7fd624a8895bd), commit `8fc0b113e02ea81d9a507bfad3f7fd624a8895bd`.
-- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
+- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. The public adapter coordinate contract remains unchanged. Default app PES output additionally applies the SE400 zero-command cleanup and top-left viewport policy documented in docs/sewout-zero-start.md and docs/pes-viewport.md; the explicit source-oracle profile retains its upstream serialization.
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
 
@@ -609,3 +609,12 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
   Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
   Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+
+## AutoTrace thinning core (shared centerline preparation)
+
+- Source: [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), fixed commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`, `src/thin-image.c` / `src/thin-image.h`.
+- Copyright (C) 2001, 2002 Martin Weber. Kotlin adaptation (C) 2026 myembro contributors.
+- License: **LGPL-2.1-or-later**, compatible with this GPL-3.0-or-later application; full upstream text is packaged as `licenses/autotrace/COPYING.LIB` in the engine JAR/APK. This is not a claim that all AutoTrace files are LGPL.
+- The original header credits Joseph M. Cychosz, “Efficient Binary Image Thinning using Neighborhood Maps”, Graphics Gems IV (1994).
+- `AutoTraceThinning.kt` preserves the original deletion lookup table, pass/color order, unsigned-byte scan-buffer truncation and distinct grayscale/RGB edge rules. JVM arrays replace GLib allocation; explicit per-call background replaces mutable global state; invalid/oversized inputs are rejected. No native AutoTrace/GLib runtime is bundled.
+- Scope: thinning bitmap only; no complete centerline tracing, SVG paths or stitches yet. Source hashes, original C goldens and differences are recorded in `docs/hangul-centerline.md`.

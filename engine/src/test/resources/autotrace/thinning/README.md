@@ -1,4 +1,4 @@
-# AutoTrace original thinning goldens (no Kotlin implementation yet)
+# AutoTrace original thinning goldens
 
 Source: official **AutoTrace 0.31.10**, fixed commit
 `1a232b27818a46a05cd25edec09e2f77c4e9ac01`:
@@ -78,5 +78,9 @@ ORIGINAL_THINNING_GOLDENS 10/10; REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5
 
 These assertions prove exact reproduction of **this original C thinning stage**,
 not full centerline topology/path fitting, Kotlin equivalence or sewout quality.
-Next unit: translate thinning and assert exact masks against these fixed goldens;
-then original pixel-path extraction. A future PES must pass P1–P8 independently.
+Kotlin `AutoTraceThinning` now compares all ten original masks byte-for-byte in
+`AutoTraceThinningTest`, including independent background state and input preservation.
+The original snapshot manifest predates that port and remains unchanged. One additional
+boundary test reproduces original C on a fully black 3×3 input: grayscale
+`000/111/000`, RGB `000/000/110` (1=foreground); the kernels must retain this distinction.
+Next unit: original pixel-path extraction. A future PES must pass P1–P8 independently.

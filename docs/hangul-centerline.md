@@ -12,3 +12,51 @@
 - `thin_image` 원본을 수정 없이 실행했다. 직선/T/X/고리/공개 Noto Sans KR weight700 ‘한’ 5개 × 1/3채널 = 10개 PGM/PBM과 소스·글꼴·실행 해시를 [테스트 리소스](../engine/src/test/resources/autotrace/thinning/README.md)에 고정했다. 시스템 설치 없이 기존 GLib/GObject 런타임과 동일 버전의 공식 헤더만 `/tmp`에 추출했다.
 - 재현: `python3 tools/autotrace/generate-thinning-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify` → `COMMITTED_GOLDENS_EXACT 10/10`, `REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5`. 출력 `/tmp/myembro-port-out/editor/autotrace/`; 한글 전경은 1,493→174픽셀. Kotlin/전체 중심선/새틴/PES 품질 통과 주장이 아니다.
 - 다음 20분 제안: 원본 thinning Kotlin 이식과 고정 마스크 exact equality 테스트. 이후 분기·경로 추적 원본 이식으로 진행하며, 이번 단위는 골든 확보에서 멈춘다.
+
+
+## 한글 자동 분기 — 사용자 결정, 2026-10-24
+
+한글 전체나 글꼴 전체를 일괄 새틴으로 바꾸지 않는다. **글자 또는 획 영역별로 측정한
+국소 폭의 중간값(median, mm)**으로 분기한다. 모서리 때문에 작아지는 최소 폭은
+분류 기준으로 쓰지 않는다. 0.9–6.0mm(양 끝 포함)는 기존 `TatamiLettering` 상수와
+`/tmp/myembro-quality-gate/auto-rules.md`의 채택 범위를 그대로 사용한다.
+
+| 측정된 영역 | 자동 경로 |
+|---|---|
+| 선 기반 + median 0.9–6.0mm | 공용 AutoTrace 중심선 → 원본 convert-to-satin → Ink/Stitch 새틴 |
+| median >6.0mm 또는 선 기반이 아닌 통통한 형태 | 기존 기본 타타미+바탕 땀 유지 |
+| median <0.9mm | 기존 auto-rules의 러닝 경로 유지; 새틴으로 강제하지 않음 |
+| 폭 측정/선 기반 판정 미확인 | 새틴 후보로 인증하지 않음; 기존 검증 경로 유지 |
+
+폭 측정은 AutoTrace 원본 거리맵/`preserve_width` 값의 단위·배율과 원래 윤곽을
+대조한 뒤 구현한다. 지금은 thinning만 있으므로 median 측정 구현은 아직 없다.
+선 기반 판정의 검증 방법도 미확인이며, 자체 종횡비·면적 임계값을 만들지 않는다.
+이 median은 **분기 기준**이다. 원본 convert-to-satin의 상수 `stroke_width`와 가변 폭
+글자 사이의 입력 계약은 별도 확인하고, median만으로 윤곽을 충실히 복원했다고
+주장하지 않는다. 같은 중심선 엔진은 S4 bean/running에도 재사용한다.
+
+## 단위 2 — Kotlin thinning 이식
+
+`AutoTraceThinning.thin(width,height,pixels,planes,backgroundRgb)`를 순수 JVM으로
+옮겼다. 512개 원본 삭제표, N/S/W/E 패스 순서, 역순 색 발견, 8비트 scan buffer
+절단, 즉시 삭제 순서, 원본 thin1/thin3의 서로 다른 경계 보호를 유지한다.
+원본 src/thin-image.c 고정 SHA-256과 기존 골든은 변경하지 않았다.
+
+| 원본과의 경계 차이 | 이유 |
+|---|---|
+| GLib 메모리·C Pixel 배열 → 호출별 JVM Int/Byte 배열 | 색 비교/바이트 출력은 동일; 외부 런타임 없이 입력 보존 |
+| process-global background → 명시적 호출별 background(기본 white) | 원본 골든처럼 매번 배경을 명시하는 계약; 동시 호출/이전 호출 상태 누수 방지 |
+| unsigned short/JVM 크기 경계 | 1–4096px 각 변, 최대 1,048,576픽셀, planes 1/3, 길이·RGB 배경 범위 검증; C의 미정의 입력·메모리 오류를 거부 |
+| 로그·콜백 | 현재 bitmap thinning API에는 진행률/GLib 오류 콜백이 없고 예외로 잘못된 입력을 거부 |
+
+검증: 기존 C 골든 10개와 **전 픽셀/채널 exact equality**, 입력 보존, 반복·멱등,
+배경 반전과 호출 상태 독립성. 추가로 원본 C의 3×3 전체 검정 입력에서 gray 출력
+`000/111/000`, RGB 출력 `000/000/110`(1=foreground)을 확보해 경계 분기 회귀로
+고정했다. 잘못된 크기/planes/배열 길이/배경도 거부한다. Kotlin 테스트 12개.
+재현: `./gradlew :engine:test --tests '*AutoTraceThinningTest'`; 원본 C 추가 출력
+`/tmp/myembro-autotrace-edge-p{1,3}.pbm`, 테스트 로그 `/tmp/myembro-autotrace-kotlin-test.log`.
+
+LGPL-2.1-or-later 출처·원문을 엔진 리소스와 APK 고지에 포함했다. 앱·PES에는
+미연결이며, 전체 중심선/경로 추적·곡선화·중간값 폭 측정·새틴 변환 완료나
+봉제 품질 통과를 주장하지 않는다. 다음 단위는 원본 `find_centerline_pixels`의
+작은 입력 호출기/골든과 Kotlin 경로 추적을 분리해 진행할 것을 제안한다.

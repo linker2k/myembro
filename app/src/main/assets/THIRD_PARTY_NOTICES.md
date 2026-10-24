@@ -609,3 +609,12 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - Transitive `org.apfloat:apfloat:1.10.1`: **MIT**. Copyright (C) 2002–2021
   Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
   Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
+
+## AutoTrace thinning core (shared centerline preparation)
+
+- Source: [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), fixed commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`, `src/thin-image.c` / `src/thin-image.h`.
+- Copyright (C) 2001, 2002 Martin Weber. Kotlin adaptation (C) 2026 myembro contributors.
+- License: **LGPL-2.1-or-later**, compatible with this GPL-3.0-or-later application; full upstream text is packaged as `licenses/autotrace/COPYING.LIB` in the engine JAR/APK. This is not a claim that all AutoTrace files are LGPL.
+- The original header credits Joseph M. Cychosz, “Efficient Binary Image Thinning using Neighborhood Maps”, Graphics Gems IV (1994).
+- `AutoTraceThinning.kt` preserves the original deletion lookup table, pass/color order, unsigned-byte scan-buffer truncation and distinct grayscale/RGB edge rules. JVM arrays replace GLib allocation; explicit per-call background replaces mutable global state; invalid/oversized inputs are rejected. No native AutoTrace/GLib runtime is bundled.
+- Scope: thinning bitmap only; no complete centerline tracing, SVG paths or stitches yet. Source hashes, original C goldens and differences are recorded in `docs/hangul-centerline.md`.
