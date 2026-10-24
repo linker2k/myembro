@@ -726,6 +726,22 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
 
 
+## SE400 최종 안전 출력 경계 (T3 실기 확인 후)
+
+기본 PES 출력은 `GeneratedPatternProcessor.forSewout`에서 제로 JUMP·제로 바늘과
+같은 위치 TRIM 재시작을 제거한다. 비제로 half_stitch 경로는 변경하지 않는다.
+이는 원본 인식 규칙과 다른 **사용자 지정 최종 출력 정책**이다. 원본 호환 oracle 프로필은 유지한다.
+근거·테스트·재시험 경로·staging 적용은 [sewout-zero-start.md](sewout-zero-start.md)에 기록했다.
+
+
+### SE400 PES 원점 정책 차이 (2026-10-24)
+
+| 경계 | 원본 비교 프로필과의 차이 | 근거 |
+|---|---|---|
+| 기본 PES v1/v6 | 최종 PEC 좌표를 좌상단 0,0으로 이동, 새로 생긴 제로 이동/바늘 제거. PEC 사각형·v6 편집 변환 일치 | 사용자 SE400의 왼쪽 한계 정지 관찰, PE-Design 로컬 바이트 비교, S23SAM4 독립 좌표 검증 |
+
+알고리즘·half_stitch 잠금·편집 좌표에는 적용하지 않는다. 명시적 원본 비교 프로필과 가져온 PES 원본은 유지한다. 경로별 자동 테스트와 예외는 [pes-viewport.md](pes-viewport.md)에 기록했다.
+
 ### 20분 단위: 기본 타타미 공식 좌표 회귀 테스트 (실패를 자동 검출)
 
 main의 S1 planner를 병합한 뒤 DefaultTatami와 기존 3개 smoke 테스트를 일반 source set으로

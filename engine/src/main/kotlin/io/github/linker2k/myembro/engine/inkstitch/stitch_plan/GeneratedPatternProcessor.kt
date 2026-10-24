@@ -5,6 +5,7 @@ package io.github.linker2k.myembro.engine.inkstitch.stitch_plan
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.model.ThreadStartCleanup
 import io.github.linker2k.myembro.engine.model.Stitch as MachineStitch
 import kotlin.math.hypot
 
@@ -19,6 +20,15 @@ object GeneratedPatternProcessor {
     private const val SOURCE_STITCHES_KEY = "myembro.inkstitch.source_stitches"
     private const val COMMAND_ANCHORS_KEY = "myembro.inkstitch.command_anchors"
     private const val VERSION = "v1"
+
+    /** Terminal common sewout pass: no lock replanning. Internal editor/source anchors remain untouched.
+     * Removed index provenance cannot be reused after pruning, so only export copies lose it. */
+    fun forSewout(pattern: EmbPattern): EmbPattern {
+        val cleaned = ThreadStartCleanup.clean(pattern.stitches)
+        if (cleaned.stitches == pattern.stitches) return pattern
+        return pattern.copy(stitches = cleaned.stitches, metadata = pattern.metadata -
+            setOf(LOCK_INDICES_KEY, RUN_ANCHORS_KEY, COMMAND_ANCHORS_KEY, SOURCE_STITCHES_KEY))
+    }
 
     fun fromGroups(
         groups: List<StitchGroup>,

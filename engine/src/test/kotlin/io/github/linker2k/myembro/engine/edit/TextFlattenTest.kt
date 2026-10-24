@@ -83,12 +83,12 @@ class TextFlattenTest {
     }
 
     private fun assertPesRoundTrip(flat: EmbPattern) {
-        val back = PesReader.read(PesWriter.write(flat))
-        val normalized = PecWriter.normalize(flat)
+        val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(flat))
+        val normalized = PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)
         assertEquals(normalized.threads, back.threads)
-        assertEquals(flat.stitchCount, back.stitchCount)
-        assertEquals(flat.colorChangeCount, back.colorChangeCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat).stitchCount, back.stitchCount)
+        assertEquals(normalized.colorChangeCount, back.colorChangeCount)
     }
 }

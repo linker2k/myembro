@@ -84,7 +84,7 @@ class StitchPlanContractTest {
             val result = EmbPatternAdapter.toEmbPattern(EmbPatternAdapter.fromEmbPattern(source))
             assertEquals(source.stitches, result.stitches, name)
             assertEquals(source.threads, result.threads, name)
-            assertContentEquals(PesWriter.write(source), PesWriter.write(result), name)
+            assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(result), name)
         }
     }
     @Test fun `fixed manual SVG contract exports a deterministic PES for independent quality review`() {
@@ -99,8 +99,8 @@ class StitchPlanContractTest {
         val plan = StitchPlan(listOf(ColorBlock(EmbThread(0xFF000000.toInt()),
             listOf(body.first().copy(jump = true)) + body + body.last().copy(trim = true))))
         val pattern = EmbPatternAdapter.toEmbPattern(plan)
-        val bytes = PesWriter.write(pattern)
-        assertContentEquals(bytes, PesWriter.write(EmbPatternAdapter.toEmbPattern(plan)))
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(pattern)
+        assertContentEquals(bytes, io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(EmbPatternAdapter.toEmbPattern(plan)))
         val output = java.io.File("build/inkstitch-contract/contract.pes")
         output.parentFile.mkdirs(); output.writeBytes(bytes)
     }

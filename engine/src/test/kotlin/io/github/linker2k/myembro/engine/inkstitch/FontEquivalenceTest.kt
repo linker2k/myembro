@@ -36,7 +36,7 @@ class FontEquivalenceTest {
         val font=InkStitchFont.parse(bytes("font.svg").inputStream(),bytes(case.field("font_json").content).decodeToString())
         assertTrue(font.unsupported.isEmpty())
         val generated=InkStitchLettering.render(font,case.field("text").content,case.field("height_mm").double,forceBoundaryLocks=false)
-        val pes=PesReader.read(PesWriter.write(generated))
+        val pes=PesReader.read(PesWriter.write(generated,io.github.linker2k.myembro.engine.io.PesWriteSettings(inkstitchCommands=true)))
         val expected=case.getValue("needles_mm").jsonArray.map { it.point() }
         val actual=pes.stitches.filter { it.command==Command.STITCH }.map { it.x/10.0 to it.y/10.0 }
         assertEquals(expected.size,actual.size,"$id needle count")

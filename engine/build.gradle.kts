@@ -115,6 +115,14 @@ tasks.register<JavaExec>("makeSampler") {
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
 
+// Python gate consumes dimensions emitted from the same runtime HoopSpec as the app.
+tasks.register<JavaExec>("exportGateHoop") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HoopConfigCli")
+    args(providers.gradleProperty("gateHoopOutput").orElse(layout.buildDirectory.file("hoop-spec.json").get().asFile.path).get())
+}
+
 // Writes a classpath for a separately launched, frozen local JVM sweep; never a check dependency.
 tasks.register("koreanTtfSweepClasspath") {
     group = "verification"

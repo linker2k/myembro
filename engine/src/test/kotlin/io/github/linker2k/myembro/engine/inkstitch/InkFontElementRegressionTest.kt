@@ -24,7 +24,7 @@ class InkFontElementRegressionTest {
         val plain=InkStitchLettering.render(font(""),"A",10.0,forceBoundaryLocks=false)
         val bean=InkStitchLettering.render(font("inkstitch:bean_stitch_repeats=\"1\""),"A",10.0,forceBoundaryLocks=false)
         assertTrue(bean.stitchCount>plain.stitchCount)
-        assertEquals(bean.stitchCount,PesReader.read(PesWriter.write(bean)).stitchCount)
+        assertEquals(PesWriter.prepareForOutput(bean).stitchCount,PesReader.read(PesWriter.write(bean)).stitchCount)
     }
     @Test fun fillWithHoleUsesModelTatamiPort() {
         val f=font("inkstitch:fill_underlay=\"false\"", "fill:#000000;stroke:none;fill-rule:evenodd",
@@ -33,7 +33,7 @@ class InkFontElementRegressionTest {
         assertTrue(pattern.stitchCount>30)
         assertFalse(pattern.stitches.filter { it.command==io.github.linker2k.myembro.engine.model.Command.STITCH }
             .any { it.x in 35..65 && it.y in 35..65 }, "The even-odd hole must stay empty")
-        assertEquals(pattern.stitchCount,PesReader.read(PesWriter.write(pattern)).stitchCount)
+        assertEquals(PesWriter.prepareForOutput(pattern).stitchCount,PesReader.read(PesWriter.write(pattern)).stitchCount)
     }
     /** Local released font data are read only and are never bundled as fixtures. */
     private fun actual(name:String) {
@@ -44,7 +44,7 @@ class InkFontElementRegressionTest {
         val height=requireNotNull(f.minHeightMm)
         val pattern=InkStitchLettering.render(f,text,height)
         assertTrue(pattern.stitchCount>0,"$name rendered no stitches")
-        assertEquals(pattern.stitchCount,PesReader.read(PesWriter.write(pattern)).stitchCount)
+        assertEquals(PesWriter.prepareForOutput(pattern).stitchCount,PesReader.read(PesWriter.write(pattern)).stitchCount)
         println("FONT_REGRESSION PASS $name text=$text height=$height stitches=${pattern.stitchCount}")
     }
     @Test fun chickenScratch()=actual("chicken_scratch")

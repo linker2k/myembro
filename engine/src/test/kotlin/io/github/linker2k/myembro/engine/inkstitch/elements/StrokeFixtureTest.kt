@@ -43,7 +43,7 @@ class StrokeFixtureTest {
             File(output, "$name.pes").writeBytes(bytes)
             manifest.append("$name\t${groups.size}\t${plan.colorBlocks.sumOf { it.stitches.size }}\t${bytes.size}\n")
             assertTrue(bytes.size > 512)
-            assertEquals(pattern.stitches.last().x, PesReader.read(bytes).stitches.last().x)
+            assertEquals(PesWriter.prepareForOutput(pattern).stitches.last().x, PesReader.read(bytes).stitches.last().x)
             assertTrue(groups.all { it.lockStart != null && it.lockEnd != null })
         }
         File(output, "manifest.tsv").writeText(manifest.toString())

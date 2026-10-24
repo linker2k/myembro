@@ -19,3 +19,6 @@ The test asserts byte identity, both verdicts and six observable metrics per fil
 needle count, four-phase cell peak, consecutive peak, start/end missing locks,
 and maximum stitch length. Invalid-length input must be blocked by both readers.
 This checks automated policy parity; actual sewout remains the final acceptance.
+
+V6 repetition override: `../gate-v6/reference.json` is the current 10-case snapshot, including
+S23 and A/B fixtures in ../gate-v6/. `reference.json` stays the historical v5 result.
