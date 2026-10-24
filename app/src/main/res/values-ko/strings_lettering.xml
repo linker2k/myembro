@@ -94,4 +94,6 @@
     <string name="lettering_height_invalid">0보다 큰 유효한 높이(mm)를 입력해 주세요.</string>
     <string name="lettering_automatic_fill">자동 · 채우기</string>
     <string name="lettering_fill_size_range">채우기 높이 · %1$s</string>
+    <string name="lettering_discard_title">레터링 변경 내용을 버릴까요?</string>
+    <string name="lettering_discard_body">변경한 내용이 아직 도안에 반영되지 않았습니다.</string>
 </resources>

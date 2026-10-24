@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.lettering
 
+import androidx.compose.material.icons.filled.Download
+import io.github.linker2k.myembro.fonts.CatalogFont
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
@@ -113,6 +119,25 @@ private fun LetteringContent(
     var automaticHeight by remember(fontId, text) { mutableDoubleStateOf(Double.NaN) }
     var automaticLoaded by remember(fontId, text) { mutableStateOf(false) }
     var fontPreviews by remember { mutableStateOf<Map<String, EmbPattern>>(emptyMap()) }
+    var catalogFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
+    var installedCatalog by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // Re-read after every font change: a library pick may have just downloaded it.
+    LaunchedEffect(fontId) {
+        withContext(Dispatchers.IO) { FontRepository(context).let { repo -> repo.catalog to repo.installedIds() } }
+            .let { (fonts, installed) -> catalogFonts = fonts; installedCatalog = installed }
+    }
+    val recentFonts = remember { RecentLetteringFonts(context) }
+    var recent by remember { mutableStateOf(recentFonts.list()) }
+    // Every font the sheet shows becomes the most recent; the one before moves to the second slot.
+    LaunchedEffect(fontId) { recentFonts.use(fontId); recent = recentFonts.list() }
+    val quickFonts = remember(catalogFonts, installedCatalog) {
+        bundledLetteringFonts.map { QuickFont(it.id, embroidery = false, hangul = true, theme = BUNDLED_THEMES[it.id], covers = { true }) } +
+            catalogFonts.filter { it.predigitized || it.id in installedCatalog }.map { f ->
+                QuickFont(f.id, f.predigitized, f.korean, f.themeKey,
+                    covers = { t -> if (f.predigitized) f.covers(t) else t.none { it in '\uAC00'..'\uD7A3' } || f.korean })
+            }
+    }
+    val slotIds = quickFontSlots(fontId, recent, quickFonts, text)
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -124,10 +149,7 @@ private fun LetteringContent(
     val ranges = automatic?.heightRanges.orEmpty()
     val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
-    val permittedHeight = height <= LetteringHeightLimits.MAX_MM && automaticHeight == height && heightInputValid && when {
-        ranges.isEmpty() -> automatic?.style == StitchStyle.RUNNING
-        else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
-    }
+    val permittedHeight = automaticHeight == height && heightInputValid && letteringHeightPermitted(automatic, height)
     val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
         spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
         curve = LetteringCurve.STRAIGHT, curvature = 0.0, lineSpacingMm = 0.0,
@@ -142,7 +164,19 @@ private fun LetteringContent(
         if (ready) result?.let { onAdd(it.textObject.copy(id = UUID.randomUUID().toString())) }
         Unit
     }
-    BackHandler(onBack = onBack)
+    val initialDraft = remember { LetteringDraftSnapshot(initialText, initialFontId, heightDraft, thread.color) }
+    val draftChanged = LetteringDraftSnapshot(text, fontId, heightDraft, thread.color) != initialDraft
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val requestBack = { if (draftChanged) confirmDiscard = true else onBack() }
+    BackHandler(onBack = requestBack)
+    if (confirmDiscard) AlertDialog(
+        onDismissRequest = { confirmDiscard = false },
+        title = { Text(stringResource(R.string.lettering_discard_title)) },
+        text = { Text(stringResource(R.string.lettering_discard_body)) },
+        confirmButton = { TextButton(onClick = { confirmDiscard = false; onBack() }) {
+            Text(stringResource(R.string.editor_discard)) } },
+        dismissButton = { TextButton(onClick = { confirmDiscard = false }) {
+            Text(stringResource(R.string.editor_cancel)) } })
     LaunchedEffect(fontId, text, height) {
         try {
             automatic = automaticLetteringState(context, fontId, text, height)
@@ -175,11 +209,11 @@ private fun LetteringContent(
         }
     }
     // Cards display actual running stitches, without claiming a validated sewing range.
-    LaunchedEffect(text, height, thread.color, fontId) {
+    LaunchedEffect(text, height, thread.color, fontId, slotIds) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
-        for (id in (bundledLetteringFonts.map { it.id } + fontId).distinct()) {
+        for (id in (slotIds + fontId).distinct().filter { id -> catalogFonts.none { it.id == id && it.predigitized } }) {
             try { previews[id] = LetteringFontPreview.pattern(context, id, text, height, thread, StitchStyle.RUNNING) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* An unavailable font has an empty preview. */ }
@@ -187,11 +221,14 @@ private fun LetteringContent(
         fontPreviews = previews
     }
     val current = result.takeIf { renderedKey == generationKey && !busy && permittedHeight }
+    val previewPattern = remember(current, initialObject?.transform) {
+        current?.let { letteringPreviewObject(it.textObject, initialObject).placedPattern() }
+    }
     Scaffold(modifier = modifier, containerColor = colors.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.lettering_title), style = MaterialTheme.typography.titleMedium) },
-                navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
+                navigationIcon = { IconButton(requestBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background))
         },
         bottomBar = {
@@ -209,7 +246,7 @@ private fun LetteringContent(
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.fillMaxWidth().height(280.dp)) {
-                HoopPreview(current?.pattern, backgroundPattern, hoop, fitText,
+                HoopPreview(previewPattern, backgroundPattern, hoop, fitText,
                     Modifier.fillMaxSize().semantics { contentDescription = context.getString(R.string.lettering_preview) })
                 Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = MaterialTheme.shapes.small,
                     color = colors.surface.copy(alpha = 0.9f)) {
@@ -241,14 +278,21 @@ private fun LetteringContent(
                         Icon(Icons.Default.ChevronRight, null, Modifier.size(18.dp))
                     }
                 }
+                // Quick slots: current font, the one used before it, and a same-theme neighbour (QuickFontSlots).
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    bundledLetteringFonts.forEach { font ->
-                        FontChoice(font, fontId == font.id, Modifier.weight(1f), fontPreviews[font.id]) { fontId = font.id }
+                    for (id in slotIds) {
+                        val catalogFont = catalogFonts.firstOrNull { it.id == id }
+                        val usable = quickFonts.firstOrNull { it.id == id }?.covers?.invoke(text) ?: true
+                        val pick = { if (catalogFont?.predigitized == true && id !in installedCatalog) onOpenFonts(text) else fontId = id }
+                        if (catalogFont?.predigitized == true) {
+                            EmbroideryFontChoice(catalogFont, fontId == id, id in installedCatalog, usable, Modifier.weight(1f), pick)
+                        } else {
+                            val name = bundledLetteringFonts.firstOrNull { it.id == id }?.name ?: catalogFont?.let { it.nameKo ?: it.name }
+                                ?: automatic?.fontName ?: id
+                            FontChoice(LetteringFont(id, name), fontId == id, Modifier.weight(1f).alpha(if (usable) 1f else 0.38f),
+                                fontPreviews[id]) { if (usable) pick() }
+                        }
                     }
-                }
-                if (bundledLetteringFonts.none { it.id == fontId }) {
-                    Text(automatic?.fontName ?: fontId, style = MaterialTheme.typography.titleSmall, color = colors.primary)
-                    StitchPatternPreview(fontPreviews[fontId], Modifier.fillMaxWidth().height(70.dp))
                 }
                 Text(stringResource(when (automatic?.style) {
                     StitchStyle.RUNNING -> R.string.lettering_automatic_running
@@ -348,6 +392,35 @@ private fun FontChoice(font: LetteringFont, selected: Boolean, modifier: Modifie
     }
 }
 
+/** Theme of each bundled TTF, for the same-theme quick slot. */
+private val BUNDLED_THEMES = mapOf("gowun-batang" to "serif", "jua" to "display", "noto-sans-kr" to "sans")
+
+/** A verified embroidery font: its bundled stitch picture; not yet downloaded opens the library, missing glyphs dim it. */
+@Composable
+private fun EmbroideryFontChoice(font: CatalogFont, selected: Boolean, installed: Boolean, usable: Boolean,
+    modifier: Modifier = Modifier.width(132.dp), onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.small
+    val context = LocalContext.current
+    val image = remember(font.id) {
+        runCatching { context.assets.open("fonts/previews/${font.id}.png").use(android.graphics.BitmapFactory::decodeStream)?.asImageBitmap() }.getOrNull()
+    }
+    Column(modifier.height(106.dp).alpha(if (usable) 1f else 0.38f).clip(shape)
+        .background(if (selected) colors.primaryContainer.copy(alpha = 0.45f) else colors.surface, shape)
+        .border(if (selected) 1.5.dp else 1.dp, if (selected) colors.primary else colors.outlineVariant, shape)
+        .selectable(selected, enabled = usable, role = Role.RadioButton, onClick = onClick).padding(9.dp),
+        verticalArrangement = Arrangement.SpaceBetween) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(font.name, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Icon(if (installed) (if (selected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked) else Icons.Default.Download,
+                null, Modifier.size(16.dp), tint = if (selected) colors.primary else colors.outline)
+        }
+        Box(Modifier.fillMaxWidth().height(58.dp).background(androidx.compose.ui.graphics.Color(0xFFF7F4EE), MaterialTheme.shapes.extraSmall)) {
+            image?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().padding(4.dp), contentScale = androidx.compose.ui.layout.ContentScale.Fit) }
+        }
+    }
+}
+
 /** Shared description badge for catalog cards and the currently selected single-line font. */
 @Composable
 fun SingleLineFontBadge(modifier: Modifier = Modifier) {
@@ -422,25 +495,23 @@ private fun ThreadChip(color: Color, label: String, selected: Boolean, onClick: 
 private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: HoopSpec, fitText: Boolean, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     Canvas(modifier) {
-        val radius = minOf(size.width * 0.42f, size.height * 0.45f)
-        val center = Offset(size.width / 2, size.height / 2 + 5.dp.toPx())
-        val wood = lerp(colors.outline, colors.primary, 0.32f)
-        drawCircle(colors.onSurface.copy(alpha = 0.05f), radius + 5.dp.toPx(), center + Offset(0f, 4.dp.toPx()))
-        drawCircle(colors.surface, radius, center)
-        val clip = Path().apply { addOval(androidx.compose.ui.geometry.Rect(center - Offset(radius, radius), Size(radius * 2, radius * 2))) }
+        val center = Offset(size.width / 2, size.height / 2)
+        val viewport = letteringViewport(minOf(size.width, size.height) * 0.82f, pattern, hoop, fitText)
+        val scale = viewport.scale
+        fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
+        val topLeft = point(-hoop.width / 2.0, -hoop.height / 2.0)
+        val hoopSize = Size(hoop.width * scale, hoop.height * scale)
+        val corner = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+        drawRoundRect(colors.surface, topLeft, hoopSize, cornerRadius = corner)
+        val clip = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(
+            androidx.compose.ui.geometry.Rect(topLeft, hoopSize), corner)) }
         clipPath(clip) {
-            val grid = 5.dp.toPx()
-            var x = center.x - radius
-            while (x < center.x + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(x, center.y - radius), Offset(x, center.y + radius), 0.5.dp.toPx()); x += grid }
-            var y = center.y - radius
-            while (y < center.y + radius) { drawLine(colors.outline.copy(alpha = 0.18f), Offset(center.x - radius, y), Offset(center.x + radius, y), 0.5.dp.toPx()); y += grid }
-            val viewport = letteringViewport(radius * 1.35f, pattern, hoop, fitText)
-            val scale = viewport.scale
-            fun point(x: Double, y: Double) = center + Offset(((x - viewport.centerX) * scale).toFloat(), ((y - viewport.centerY) * scale).toFloat())
-            // Decorative round frame and the actual rectangular sewing area are distinct.
-            drawRect(colors.outline, point(-hoop.width / 2.0, -hoop.height / 2.0),
-                Size(hoop.width * scale, hoop.height * scale),
-                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))))
+            for (x in (-hoop.width / 2)..(hoop.width / 2) step 100) {
+                drawLine(colors.outline.copy(alpha = 0.35f), point(x.toDouble(), -hoop.height / 2.0), point(x.toDouble(), hoop.height / 2.0))
+            }
+            for (y in (-hoop.height / 2)..(hoop.height / 2) step 100) {
+                drawLine(colors.outline.copy(alpha = 0.35f), point(-hoop.width / 2.0, y.toDouble()), point(hoop.width / 2.0, y.toDouble()))
+            }
             fun drawPattern(p: EmbPattern, color: Color?) {
                 var previous = p.stitches.firstOrNull() ?: return
                 var colorIndex = 0
@@ -457,11 +528,8 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
             pattern?.let { drawPattern(it, null) }
 
         }
-        drawCircle(wood, radius, center, style = Stroke(9.dp.toPx()))
-        drawCircle(colors.surface.copy(alpha = 0.45f), radius - 3.dp.toPx(), center, style = Stroke(1.dp.toPx()))
-        drawCircle(colors.onSurface.copy(alpha = 0.12f), radius + 3.dp.toPx(), center, style = Stroke(1.dp.toPx()))
-        drawRoundRect(wood, center + Offset(-18.dp.toPx(), -radius - 14.dp.toPx()), Size(36.dp.toPx(), 12.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()))
-        drawLine(colors.tertiary, center + Offset(-23.dp.toPx(), -radius - 10.dp.toPx()), center + Offset(23.dp.toPx(), -radius - 10.dp.toPx()), 4.dp.toPx(), StrokeCap.Round)
+        drawRoundRect(colors.outline, topLeft, hoopSize, cornerRadius = corner, style = Stroke(5.dp.toPx()))
+
     }
 }
 

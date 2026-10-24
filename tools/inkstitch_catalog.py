@@ -58,6 +58,12 @@ def evidence(lic_text):
     return " / ".join(p[:160] for p in picked).replace("|", "\\|")
 
 
+def theme(keywords):
+    k = set(keywords)
+    return ("script" if k & {"handwriting", "script", "italic"} else "serif" if "serif" in k else
+            "sans" if "sans_serif" in k else "display" if k & {"display", "monogram"} else "")
+
+
 def glyph_names(svg):
     text = svg.read_text(errors="replace")
     names = {unicodedata.normalize("NFC", html.unescape(m)) for m in re.findall(r'inkscape:label="GlyphLayer-([^"]*)"', text)}
@@ -124,6 +130,8 @@ def main():
             "thinThreadRequired": bool(re.search(r"thin thread|\(60\)|60 ?wt", meta.get("description", ""), re.I)),
             # Glyph names (NFC) and forced case, so the app can tell before download whether a text fits.
             "letterCase": meta.get("letter_case") or "",
+            # Theme for the lettering quick slots, from font.json keywords.
+            "theme": theme(meta.get("keywords") or []),
             "glyphs": glyph_names(svg),
         })
     out.write_text(json.dumps({

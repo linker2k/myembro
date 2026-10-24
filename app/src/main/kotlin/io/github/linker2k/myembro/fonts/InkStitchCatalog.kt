@@ -37,6 +37,7 @@ object InkStitchCatalog {
                 thinThreadRequired = (o["thinThreadRequired"] as? JsonPrimitive)?.booleanOrNull ?: false,
                 glyphs = (o["glyphs"] as? kotlinx.serialization.json.JsonArray)?.map { it.jsonPrimitive.content }?.toSet(),
                 letterCase = (o["letterCase"] as? JsonPrimitive)?.content.orEmpty(),
+                theme = (o["theme"] as? JsonPrimitive)?.content,
             )
         }
 }
