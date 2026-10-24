@@ -51,6 +51,25 @@ class EmojiDesignTest {
         return owners.count { (c, b) -> cells.getValue(c).any { it > b } }
     }
 
+    /** Opt-in: EMOJI_CANDIDATES=<dir of .svg>. Gate verdict per candidate at 50mm, for picking the bundle. */
+    @Test fun candidateSurvey() {
+        val dir = System.getenv("EMOJI_CANDIDATES")?.let(::File) ?: return
+        for (f in dir.listFiles { x -> x.extension == "svg" }.orEmpty().sortedBy { it.name }) {
+            val verdict = runCatching {
+                val result = VectorArt.render(VectorArt.parseSvg(f.readText()), 50.0)
+                val pes = PesWriter.write(result.pattern)
+                val report = SewoutCheck.checkPes(pes, options = SewoutOptions(hoop = hoop, origin = DesignOrigin.APP_GENERATED))
+                val bad = PesInvariants.violations(pes, hoop) + report.findings.filter { it.severity == Severity.BLOCKER }.map { "${it.code}" }
+                System.getenv("EMOJI_OUT")?.let(::File)?.let { out ->
+                    out.mkdirs(); File(out, "${f.nameWithoutExtension.uppercase().replace("_", "").take(8)}.PES").writeBytes(pes)
+                    ImageIO.write(DesignPreview.sideBySide(VectorArt.parseSvg(f.readText()), pes), "png", File(out, "${f.nameWithoutExtension}.png"))
+                }
+                "${if (bad.isEmpty() && report.analysisComplete) "PASS" else "FAIL $bad"} stitches ${report.statistics.stitchCount} colors ${result.pattern.threads.size}"
+            }.getOrElse { "ERROR ${it.javaClass.simpleName}: ${it.message?.take(80)}" }
+            println("CANDIDATE ${f.nameWithoutExtension} $verdict")
+        }
+    }
+
     @Test fun representativeEmojiPassInvariantsAndGate() {
         val failures = ArrayList<String>()
         var satinParts = 0

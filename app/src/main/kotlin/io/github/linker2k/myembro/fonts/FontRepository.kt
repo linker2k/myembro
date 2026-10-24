@@ -393,41 +393,7 @@ class FontRepository(context: Context) {
     /** Pinned https download checked against [sha256]; also used by [InkStitchFonts]. */
     internal fun fetch(
         url: String, out: File, sha256: String?, id: String, expectedSize: Long?, onProgress: (Float) -> Unit,
-    ) {
-        require(url.startsWith("https://")) { "Only https downloads are allowed: $url" }
-        val conn = URL(url).openConnection() as HttpURLConnection
-        try {
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 30_000
-            conn.instanceFollowRedirects = true
-            conn.setRequestProperty("User-Agent", "myembro")
-            if (conn.responseCode != HttpURLConnection.HTTP_OK) {
-                throw IOException("HTTP ${conn.responseCode} for $url")
-            }
-            val total = conn.contentLengthLong.takeIf { it > 0 } ?: expectedSize ?: -1L
-            val digest = MessageDigest.getInstance("SHA-256")
-            var done = 0L
-            conn.inputStream.use { input ->
-                out.outputStream().use { output ->
-                    val buf = ByteArray(64 * 1024)
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        done += n
-                        if (done > MAX_BYTES) throw IOException("Download too large: $url")
-                        digest.update(buf, 0, n)
-                        output.write(buf, 0, n)
-                        if (total > 0) onProgress((done.toFloat() / total).coerceAtMost(0.99f))
-                    }
-                }
-            }
-            if (sha256 != null && hex(digest.digest()) != sha256.lowercase()) {
-                throw ChecksumMismatchException(id)
-            }
-        } finally {
-            conn.disconnect()
-        }
-    }
+    ) = fetchPinned(url, out, sha256, id, expectedSize, onProgress)
 
     private fun licenseHeader(font: CatalogFont) = buildString {
         append(font.name).append('\n')
@@ -438,6 +404,45 @@ class FontRepository(context: Context) {
     }
 
     companion object {
+        /** Pinned https download checked against [sha256] (fonts, Ink/Stitch fonts, emoji). */
+        internal fun fetchPinned(
+            url: String, out: File, sha256: String?, id: String, expectedSize: Long?, onProgress: (Float) -> Unit,
+        ) {
+            require(url.startsWith("https://")) { "Only https downloads are allowed: $url" }
+            val conn = URL(url).openConnection() as HttpURLConnection
+            try {
+                conn.connectTimeout = 15_000
+                conn.readTimeout = 30_000
+                conn.instanceFollowRedirects = true
+                conn.setRequestProperty("User-Agent", "myembro")
+                if (conn.responseCode != HttpURLConnection.HTTP_OK) {
+                    throw IOException("HTTP ${conn.responseCode} for $url")
+                }
+                val total = conn.contentLengthLong.takeIf { it > 0 } ?: expectedSize ?: -1L
+                val digest = MessageDigest.getInstance("SHA-256")
+                var done = 0L
+                conn.inputStream.use { input ->
+                    out.outputStream().use { output ->
+                        val buf = ByteArray(64 * 1024)
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            done += n
+                            if (done > MAX_BYTES) throw IOException("Download too large: $url")
+                            digest.update(buf, 0, n)
+                            output.write(buf, 0, n)
+                            if (total > 0) onProgress((done.toFloat() / total).coerceAtMost(0.99f))
+                        }
+                    }
+                }
+                if (sha256 != null && hex(digest.digest()) != sha256.lowercase()) {
+                    throw ChecksumMismatchException(id)
+                }
+            } finally {
+                conn.disconnect()
+            }
+        }
+
         const val CATALOG_ASSET = "fonts/catalog.json"
         const val BUNDLED_ASSETS = "fonts/bundled"
 
