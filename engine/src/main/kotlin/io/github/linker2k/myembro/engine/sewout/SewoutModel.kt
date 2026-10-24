@@ -63,7 +63,9 @@ data class SewoutStatistics(val stitchCount: Int, val jumpCount: Int, val trimCo
     val requiredManualCuts: Int, val possibleManualCuts: Int,
     val densityHotspotCount: Int, val overlapCellCount: Int,
     val peakCellPenetrations: Int = 0, val maximumConsecutiveNeedles: Int = 0,
-    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0)
+    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0,
+    /** Explicit STITCH/JUMP destinations, ignoring controls; includes zero moves. */
+    val maximumConsecutivePositions: Int = 0)
 
 enum class SpeedBasis { USER_SETTING, PROFILE_MAXIMUM_DERIVED, ASSUMED }
 data class SpeedEstimate(val effectiveSpm: Double, val basis: SpeedBasis,
@@ -97,9 +99,9 @@ data class SewoutOptions(
     val destination: Destination = Destination.TRANSFER,
     // Frozen gate v5: 334-file corpus maximum + 0.15mm quantization allowance.
     val longStitchMm: Double = 12.184118164618463, val shortStitchMm: Double = 0.3,
-    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >3 consecutive needles at one point. */
+    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >2 consecutive STITCH/JUMP destinations at one point. */
     val gridMm: Double = 0.5, val hotspotPenetrations: Int = 16,
-    val repeatedPointThreshold: Int = 4, val overlapPassThreshold: Int = 6,
+    val repeatedPointThreshold: Int = 3, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,
     val jumpMmPerSecond: Double = 50.0, val jumpOverheadSeconds: Double = 0.2,

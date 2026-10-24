@@ -97,6 +97,9 @@ object SewoutCheck {
         var current: NeedlePoint? = if (file != null && fileError == null) NeedlePoint(0.0, 0.0) else null
         var maximumStitchMm = 0.0
         var maximumConsecutiveNeedles = 0
+        var lastPosition: NeedlePoint? = null
+        var consecutivePositions = 0
+        var maximumConsecutivePositions = 0
         var connected = false
         var elapsed = 0.0
         var travel: Travel? = null
@@ -180,6 +183,15 @@ object SewoutCheck {
             if (!window.contains(p)) findings.add(FindingCode.HOOP_EXCEEDED, Severity.BLOCKER,
                 "선택 후프의 봉제 영역을 벗어납니다.", Highlight(index, from = p), threshold = min(o.hoop.width, o.hoop.height)/10.0)
             if (s.command != Command.STITCH && s.command != Command.JUMP && current != null && p != current) motion(p, index)
+            if (s.command == Command.STITCH || s.command == Command.JUMP) {
+                consecutivePositions = if (lastPosition == p) consecutivePositions + 1 else 1
+                lastPosition = p
+                maximumConsecutivePositions = max(maximumConsecutivePositions, consecutivePositions)
+                if (consecutivePositions == o.repeatedPointThreshold) findings.add(
+                    FindingCode.REPEATED_PENETRATION, safetySeverity,
+                    "같은 위치에 바늘·점프 명령이 연속 ${o.repeatedPointThreshold}회 이상 기록되어 있습니다.",
+                    Highlight(index, from = p), consecutivePositions.toDouble(), o.repeatedPointThreshold.toDouble())
+            }
             when (s.command) {
                 Command.STITCH -> {
                     flushCuts()
@@ -208,9 +220,6 @@ object SewoutCheck {
                     val repeats = if (lastNeedle == p) consecutiveNeedles + 1 else 1
                     lastNeedle = p; consecutiveNeedles = repeats
                     maximumConsecutiveNeedles = max(maximumConsecutiveNeedles, repeats)
-                    if (repeats == o.repeatedPointThreshold) findings.add(FindingCode.REPEATED_PENETRATION, safetySeverity,
-                        "같은 좌표에 바늘이 연속 ${o.repeatedPointThreshold}회 이상 진입합니다. 실 뭉침·원단 손상 위험을 확인하세요.",
-                        Highlight(index, from = p), repeats.toDouble(), o.repeatedPointThreshold.toDouble())
                     stage.stitches++; stage.sewn += length
                     val seconds = 60/speed.effectiveSpm
                     stage.needle += seconds; elapsed += seconds
@@ -279,7 +288,7 @@ object SewoutCheck {
             tasks.count { it.kind in setOf(TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM) && it.cutRequirement == CutRequirement.POSSIBLE },
             densityChecks.count { it.penetrations >= o.hotspotPenetrations }, cells.count { it.stageIndices.size > 1 && it.segmentPasses >= o.overlapPassThreshold },
             densityChecks.maxOfOrNull { it.penetrations } ?: 0, maximumConsecutiveNeedles, maximumStitchMm,
-            lockCounts.startMissing, lockCounts.endMissing)
+            lockCounts.startMissing, lockCounts.endMissing, maximumConsecutivePositions)
         val compatibility = compatibility(machine, o, stats, file, fileError, complete, findings)
         return SewoutReport(machine, o, stats, resultStages, tasks.toList(), cells, findings.items.sortedBy { it.severity.ordinal },
             findings.codes.toMap(), findings.severities.toMap(), findings.total-findings.items.size, complete,

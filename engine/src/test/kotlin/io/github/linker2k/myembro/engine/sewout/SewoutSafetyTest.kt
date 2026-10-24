@@ -34,8 +34,8 @@ class SewoutSafetyTest {
         for (count in listOf(31,38)) assertEquals(Severity.BLOCKER,
             check(dense(count)).of(FindingCode.DENSITY_HOTSPOT).single().severity)
     }
-    @Test fun onlyConsecutiveNeedlesRepeatNotSeparatedVisitsEvenAcrossControlCommands() {
-        assertTrue(check(p(s(0),s(0),s(0)),true).of(FindingCode.REPEATED_PENETRATION).isEmpty())
+    @Test fun onlyConsecutiveMotionPositionsRepeatNotSeparatedVisitsEvenAcrossControlCommands() {
+        assertTrue(check(p(s(0),s(0)),true).of(FindingCode.REPEATED_PENETRATION).isEmpty())
         val repeated = p(s(0),s(0),s(0,c=Command.TRIM),s(0),s(0,c=Command.COLOR_CHANGE),s(0))
         assertEquals(Severity.BLOCKER,check(repeated,true).of(FindingCode.REPEATED_PENETRATION).single().severity)
         assertEquals(Severity.WARNING,check(repeated).of(FindingCode.REPEATED_PENETRATION).single().severity)
@@ -53,7 +53,7 @@ class SewoutSafetyTest {
         for (source in listOf(p(s(0),s(5),s(0),s(40),s(35),s(40)),
             p(s(0),s(0),s(40),s(40)),p(s(0),s(0),s(0),s(40),s(40),s(40)))) {
             assertTrue(check(source,true).of(FindingCode.MISSING_LOCK_STITCH).isEmpty())
-            assertFalse(check(source,true).hasBlockingIssues)
+            assertEquals(check(source,true).statistics.maximumConsecutivePositions>2,check(source,true).hasBlockingIssues)
         }
         assertTrue(check(p(s(0),s(0),s(0),s(0)),true).hasBlockingIssues) // Lock does not waive repeats.
     }
@@ -65,6 +65,18 @@ class SewoutSafetyTest {
             assertEquals(4,r.of(FindingCode.MISSING_LOCK_STITCH).size)
         }
         assertTrue(check(p(s(0,c=Command.TRIM))).of(FindingCode.MISSING_LOCK_STITCH).isEmpty())
+    }
+    @Test fun zeroJumpAndZeroNeedleTogetherBlockGeneratedAndWarnImported() {
+        val t2=p(s(10,10,Command.JUMP),s(10,10,Command.JUMP),s(10,10),s(15,10),s(20,10),s(15,10),s(10,10))
+        assertEquals(3,check(t2,true).statistics.maximumConsecutivePositions)
+        assertEquals(Severity.BLOCKER,check(t2,true).of(FindingCode.REPEATED_PENETRATION).single().severity)
+        assertEquals(Severity.WARNING,check(t2).of(FindingCode.REPEATED_PENETRATION).single().severity)
+        assertEquals(1,check(t2,true).statistics.maximumConsecutiveNeedles)
+        val moving=p(s(0),s(10,c=Command.JUMP),s(0),s(10,c=Command.JUMP),s(0))
+        assertTrue(check(moving,true).of(FindingCode.REPEATED_PENETRATION).isEmpty())
+        val boundary=p(s(0,c=Command.JUMP),s(0),s(10),s(0))
+        assertEquals(2,check(boundary,true).statistics.maximumConsecutivePositions)
+        assertTrue(check(boundary,true).of(FindingCode.REPEATED_PENETRATION).isEmpty())
     }
     @Test fun sourceMarkersNotFilenameOrPlacementChooseGeneratedPolicy() {
         val raw=p(*Array(16) { s(0) })
