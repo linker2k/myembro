@@ -70,6 +70,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     val items = mutableStateListOf<Item>()
     private val preferences = app.getSharedPreferences("myembro_library", Context.MODE_PRIVATE)
+    /** File name of the 'myembro logo' default design, labeled as not backed up. */
+    var defaultLogoName by mutableStateOf<String?>(null); private set
     private var favorites by mutableStateOf(preferences.getStringSet("favorites", emptySet()).orEmpty().toSet())
     var searchQuery by mutableStateOf("")
     var filter by mutableStateOf(Filter.ALL)
@@ -175,7 +177,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             catch (_: Exception) { message = app.getString(R.string.usb_history_load_failed) }
         } }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { library.seedSampleIfEmpty() }
+            withContext(Dispatchers.IO) { library.seedSampleIfEmpty(); library.seedDefaultLogo() }
             refresh()
         }
         refreshDrives()
@@ -218,7 +220,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun reload() {
         loading = true
         try {
-            val files = withContext(Dispatchers.IO) { library.list() }
+            val (files, logo) = withContext(Dispatchers.IO) { library.list().let { list -> list to list.firstOrNull(library::isDefaultLogo)?.name } }
+            defaultLogoName = logo
             val cached = items.associateBy { it.file }
             items.clear()
             items += files.map { f -> cached[f]?.takeIf { it.thumbnail != null } ?: Item(f) }

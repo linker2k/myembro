@@ -229,6 +229,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                     DesignCard(
                         item = item, selecting = selecting, selected = item.file in vm.selection,
                         favorite = vm.isFavorite(item.file), exceedsMachine = vm.fitsMachine(item) == false,
+                        defaultLogo = item.file.name == vm.defaultLogoName,
                         onFavorite = { vm.toggleFavorite(item.file) },
                         onClick = { if (selecting) vm.toggle(item.file) else onOpen(item.file) },
                         onLongClick = { vm.toggle(item.file) },
@@ -442,6 +443,7 @@ private fun DesignCard(
     selected: Boolean,
     favorite: Boolean,
     exceedsMachine: Boolean,
+    defaultLogo: Boolean = false,
     onFavorite: () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -473,7 +475,8 @@ private fun DesignCard(
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ) {
                 Text(item.file.extension.uppercase(Locale.ROOT) +
-                    if (DesignLibrary.isSample(item.file)) " · " + stringResource(R.string.library_sample_badge) else "",
+                    if (DesignLibrary.isSample(item.file)) " · " + stringResource(R.string.library_sample_badge)
+                    else if (defaultLogo) " · " + stringResource(R.string.library_default_badge) else "",
                     Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
