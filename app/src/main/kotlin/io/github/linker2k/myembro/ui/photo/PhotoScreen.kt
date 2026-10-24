@@ -117,7 +117,15 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     if(vm.style==PhotoMode.COLOR) {
                         var colorDraft by remember(vm.colorCount) { mutableFloatStateOf(vm.colorCount.toFloat()) }
                         val colorLabel=stringResource(R.string.photo_color_count,colorDraft.toInt())
-                        Text(colorLabel,style=MaterialTheme.typography.titleSmall)
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                            Text(colorLabel,style=MaterialTheme.typography.titleSmall)
+                            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                                val grayscaleLabel=stringResource(R.string.photo_grayscale)
+                                Text(grayscaleLabel,style=MaterialTheme.typography.labelLarge)
+                                Switch(checked=vm.grayscale,onCheckedChange=vm::changeGrayscale,enabled=!vm.busy,
+                                    modifier=Modifier.semantics { contentDescription=grayscaleLabel })
+                            }
+                        }
                         Slider(colorDraft,{ colorDraft=it },valueRange=2f..6f,steps=3,
                             onValueChangeFinished={ vm.changeColorCount(colorDraft.toInt()) },enabled=!vm.busy,
                             modifier=Modifier.semantics { contentDescription=colorLabel })

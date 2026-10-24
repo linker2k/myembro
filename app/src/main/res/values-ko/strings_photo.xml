@@ -63,4 +63,5 @@
     <string name="photo_color_failed">봉제할 컬러 영역이 남지 않았습니다. 투명 배경 PNG나 밝은 배경의 간단한 그림을 골라주세요.</string>
     <string name="photo_color_preview_accessibility">컬러 그림 색 분리 미리보기</string>
     <string name="photo_excluded_regions">제외 %1$d개 · 봉제하기 어려운 조각을 제외했습니다.</string>
+    <string name="photo_grayscale">흑백</string>
 </resources>
