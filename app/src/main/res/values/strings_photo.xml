@@ -1,0 +1,32 @@
+<resources>
+    <string name="photo_title">Photo to embroidery</string>
+    <string name="photo_from_photo">From a photo</string>
+    <string name="photo_from_photo_hint">Turn a photo into single-color linework</string>
+    <string name="photo_back">Back</string>
+    <string name="photo_step">%1$d / 3</string>
+    <string name="photo_crop_title">Choose and crop</string>
+    <string name="photo_preview_title">Single-color linework</string>
+    <string name="photo_result_title">Your embroidery</string>
+    <string name="photo_crop_hint">Pinch to zoom and drag to position. Keep the top-left dot over the background.</string>
+    <string name="photo_pick">Choose photo</string>
+    <string name="photo_pick_again">Change photo</string>
+    <string name="photo_detail">Detail</string>
+    <string name="photo_detail_hint">Higher detail keeps smaller outlines.</string>
+    <string name="photo_next">Next</string>
+    <string name="photo_edit">Edit</string>
+    <string name="photo_send">Send to USB</string>
+    <string name="photo_pass">Sewing check · Pass</string>
+    <string name="photo_blocked">Sewing check · Blocked</string>
+    <string name="photo_stats">%1$,d stitches · approx. %2$d min</string>
+    <string name="photo_time_hint">Time is estimated. Unconfirmed machine specifications use assumptions.</string>
+    <string name="photo_check_title">Sewing check</string>
+    <string name="photo_close">Close</string>
+    <string name="photo_blocked_hint">A hoop or stitch safety issue blocks transfer. Adjust the crop or detail, or open the editor.</string>
+    <string name="photo_check_hint">Automatically checked for the selected machine and hoop. Test on matching scrap fabric before sewing.</string>
+    <string name="photo_crop_accessibility">Photo in hoop frame. Pinch and drag to crop</string>
+    <string name="photo_name">Photo linework</string>
+    <string name="photo_load_failed">Unable to open the photo. Choose another image.</string>
+    <string name="photo_generate_failed">Unable to separate lines and background. Try a simpler image or a different crop.</string>
+    <string name="photo_save_failed">Unable to prepare the file for transfer. Try again.</string>
+    <string name="photo_file_stem">photo_linework</string>
+</resources>
