@@ -42,3 +42,13 @@ internal fun Project.recolorCommand(id: String, index: Int, thread: EmbThread): 
     return if (index in 0 until count) ProjectCommand.Recolor(id, index, thread)
         else ProjectCommand.Batch(emptyList())
 }
+
+/** Input has already passed engine prepareText in LetteringRenderer; allocate IDs only in the host. */
+internal fun Project.letteringCommand(incoming: TextObject, editingId: String?,
+    allocateId: () -> String = { java.util.UUID.randomUUID().toString() }): ProjectCommand =
+    if (editingId != null) ProjectCommand.ReplaceText(editingId, incoming)
+    else ProjectCommand.Add(incoming.withId(if (find(incoming.id) == null) incoming.id else allocateId()))
+
+/** ReplaceText retains pose; inspector pose edits are an explicit part of the same undo unit. */
+internal fun textPropertiesCommand(id: String, prepared: TextObject): ProjectCommand = ProjectCommand.Batch(listOf(
+    ProjectCommand.ReplaceText(id, prepared), ProjectCommand.SetTransforms(id, prepared.transform)))
