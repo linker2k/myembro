@@ -1745,3 +1745,11 @@ FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES �
 골든 상태·원본 함수 목록과 모든 차이점은 `docs/hangul-centerline.md`의
 “letter 인계 단위1”에 기록했다. AutoTrace 원본 centerline10/10 exact 재검증,
 선→새틴7개 수식 회귀 통과; 선→새틴 공식 출력 동등성·한글 PES는 아직 미판정이다.
+
+### 한글 새틴 라우팅 단위1
+
+`stitches/utils/SatinRouteGraph.kt`: pinned `autoroute.py:find_path/_get_shortest_path`
+및 `auto_satin.py:path_to_operations`의 그래프 순회와 중복 구간 underpath 표식만 포트.
+원본 그래프 생성·레일 절단·DOM 연결은 미완료, 공식 오라클 미판정.
+분석적7건과 차이점/다음 의존성 및 KRSAT1 이동 기준값은
+[한글 새틴 라우팅](hangul-satin-routing.md)에 기록했다.
