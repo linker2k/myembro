@@ -1,11 +1,12 @@
-# PEC / PES v1·v6 출력
+# PEC / PES v1·v6 output
 
-`PecWriter.kt`는 pyembroidery **1.5.1**의 `PecWriter.py`, `PecGraphics.py`,
-`EmbThread.py`를 Kotlin으로 포팅했습니다. `PesWriter.kt`는 `PesWriter.py`의
-`write_truncated_version_1` 경로, `PesV6Writer.kt`는 전체 `write_version_6` 경로를 제공합니다. 원본은 MIT이며 고지는
-[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)에 포함했습니다.
+`PecWriter.kt` ports `PecWriter.py`, `PecGraphics.py`, and `EmbThread.py` from
+pyembroidery **1.5.1** to Kotlin. `PesWriter.kt` provides the `write_truncated_version_1`
+path from `PesWriter.py`, and `PesV6Writer.kt` provides the full `write_version_6` path.
+The originals are MIT-licensed; the notices are included in
+[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 
-## 사용법
+## Usage
 
 ```kotlin
 val pec: ByteArray = PecWriter.write(pattern)
@@ -16,108 +17,124 @@ val selected: ByteArray = PesWriter.write(pattern, PesWriteSettings(PesVersion.V
 val normalized: EmbPattern = PecWriter.normalize(pattern)
 ```
 
-기존 `EmbPattern` 공개 API와 단일 인자 `PesWriter.write` 동작은 유지합니다. 입력 리스트나 실 목록도
-변경하지 않습니다. 좌표 단위는 기존과 같은 0.1mm, +y는 아래쪽이며 원점 이동·축 반전·
-자동 후프 맞춤은 하지 않습니다. 이름은 PEC의 `LA:` 라벨에 저장합니다.
+The existing public `EmbPattern` API and the behavior of the single-argument `PesWriter.write`
+are preserved. Input lists and thread lists are not modified either. Coordinates use the existing
+0.1mm units, with +y pointing downward; no origin translation, axis reversal, or automatic hoop
+fitting is performed. The name is stored in the PEC `LA:` label.
 
-## 정규화와 한계
+## Normalization and limits
 
-- 긴 STITCH/JUMP를 각 축의 변위가 **-2047..2047**이 되도록 직선 분할합니다.
-  중간 점은 Python `round`와 같은 짝수 반올림을 사용하며 원래 끝점은 유지합니다.
-  부호 있는 12비트의 -2048도 보수적으로 분할합니다. 바이트를 마스킹해 넘침을 숨기지 않습니다.
-- STOP을 현재 색의 중복 팔레트 항목과 `FE B0 02/01` 색상변경 명령으로 기록합니다.
-  읽을 때는 기존 중복 색상 복원이 STOP을 되살립니다. 실을 바꾸는 COLOR_CHANGE만
-  원래 실 목록을 진행시킵니다.
-- 독립 TRIM은 PEC의 결합 명령인 TRIM+JUMP(0,0)으로 기록합니다. 다음 명령이 JUMP라면
-  그 첫 이동과 결합합니다. 일반 JUMP에는 JUMP 플래그만 기록합니다.
-- 좌표가 달라진 TRIM/STOP/COLOR_CHANGE/END는 먼저 JUMP로 해당 위치에 이동합니다.
-  첫 END 이후의 입력은 무시하고, END가 없으면 마지막 위치에 추가합니다.
-- 땀이 없는 색상/STOP 블록은 경계와 사용하지 않는 실을 제거하고 이동은 보존합니다.
-  동일 실로의 COLOR_CHANGE는 STOP이 됩니다. 실의 동일성은 RGB와 설명·카탈로그·브랜드·
-  차트 정보로 판단하므로 RGB가 같아도 서로 다른 카탈로그 실은 별도 실로 유지합니다.
-  임의의 바늘땀은 삽입하지 않습니다.
-- 사용되는 실을 PEC **64색**으로 양자화합니다. 고유 실의 메타데이터도 구분합니다. 정확한 팔레트 일치를 먼저 확보하고,
-  나머지를 입력 순서대로 사용 가능한 색 중 최근접 색에 할당합니다. 원본의 red-mean 거리와
-  동률 시 뒤 인덱스 우선 규칙을 사용합니다. 서로 다른 실이 같은 색으로 합쳐져 STOP으로
-  변하는 일을 막기 위한 고유 매핑입니다. 64개를 넘는 고유 실은 거부합니다.
-- 실 정보가 부족하면 기존 `threadAt` 기본 팔레트를 사용합니다. 사용되지 않는 여분 실은
-  저장하지 않습니다. 빈 도안에도 기본 실 한 색을 기록합니다. 이는 pyembroidery 1.5.1 리더가
-  무색 표기 `0xFF`를 256색으로 잘못 해석하는 문제를 피하기 위한 상호운용 선택입니다.
-- STOP 중복까지 포함해 최대 **255개 색상 블록**, 정규화 전후 폭·높이는 각각 최대
-  **65535 단위(6553.5mm)**, 스티치 블록은 최대 **24비트 길이**만 허용합니다.
-  이는 파일 필드 한계이며 실제 미싱의 후프/봉제 한계는 별도로 확인해야 합니다.
-- PEC 및 PES v1에는 사용자 RGB나 실의 설명·브랜드 등 상세 정보를 저장하지 못합니다.
-  PEC 이름은 원본처럼 앞 8자로 제한하고, 비 ASCII/제어 문자는 `?`로 치환해 헤더를
-  정확히 512바이트로 유지합니다. PEC/v1에는 이름 이외의 입력 메타데이터를 출력하지 않습니다. v6는 아래와 같습니다.
+- Long STITCH/JUMP commands are split along a straight line so that displacement on each axis
+  is **-2047..2047**. Intermediate points use ties-to-even rounding, like Python `round`, and
+  the original endpoint is preserved. The signed 12-bit value -2048 is also conservatively split.
+  Overflow is not hidden by masking bytes.
+- STOP is written as a duplicate palette entry for the current color and a `FE B0 02/01`
+  color-change command. On reading, the existing duplicate-color restoration recovers STOP.
+  Only a thread-changing COLOR_CHANGE advances through the original thread list.
+- A standalone TRIM is written as PEC's combined TRIM+JUMP(0,0) command. If the next command
+  is JUMP, it is combined with that first movement. Ordinary JUMP commands carry only the JUMP flag.
+- TRIM/STOP/COLOR_CHANGE/END commands whose coordinates change first move to that position
+  using JUMP. Input after the first END is ignored; if END is missing, it is added at the final position.
+- For color/STOP blocks without stitches, the boundaries and unused threads are removed while
+  movement is preserved. COLOR_CHANGE to the same thread becomes STOP. Thread identity is
+  determined by RGB, description, catalog, brand, and chart information, so different catalog threads
+  remain separate even when their RGB matches. No arbitrary needle stitches are inserted.
+- Used threads are quantized to the PEC **64-color** palette. Metadata of unique threads is also
+  distinguished. Exact palette matches are secured first; the remaining threads are assigned, in input
+  order, to the nearest available colors. This uses the original red-mean distance and the rule that
+  later indices win ties. The unique mapping prevents different threads from merging into the same
+  color and becoming STOP. More than 64 unique threads are rejected.
+- If thread information is insufficient, the existing `threadAt` default palette is used. Unused extra
+  threads are not saved. Even an empty design records one default thread color. This interoperability
+  choice avoids the pyembroidery 1.5.1 reader's incorrect interpretation of the no-color marker
+  `0xFF` as 256 colors.
+- Including STOP duplicates, the limits are **255 color blocks**, width and height of
+  **65535 units (6553.5mm)** each before and after normalization, and a **24-bit length** for
+  the stitch block. These are file-field limits; actual machine hoop/sewing limits must be checked separately.
+- PEC and PES v1 cannot store custom RGB or details such as thread descriptions and brands.
+  As in the original, PEC names are limited to the first 8 characters, and non-ASCII/control
+  characters are replaced with `?` to keep the header exactly 512 bytes. PEC/v1 output no input
+  metadata other than the name. The v6 behavior is described below.
 
-## pyembroidery와의 차이
+## Differences from pyembroidery
 
-- 원본의 `pec_encode`는 TRIM을 생략하며 첫 명령 이후 JUMP를 trim/jump로 바꾸고,
-  일부 이동 뒤에 0거리 STITCH를 삽입합니다. 이 구현은 명시적 TRIM과 JUMP를 구분하고
-  STITCH를 추가하지 않습니다. 따라서 **원본 라이터와 파일 바이트가 같은 구현은 아닙니다**.
-- 원본 고유 팔레트는 `set(threadlist)` 순서와 실 메타데이터의 동등성에 영향을 받습니다.
-  이 구현은 실 정보의 동일성, 정확한 색 우선, 입력 순서로 결정되는 고유 팔레트를 사용합니다.
-  사용자 정의 실이 여러 개 충돌하면 원본 라이터와 양자화 결과가 다를 수 있습니다.
-- END는 명시적인 `FF 00` 두 바이트입니다. 원본은 `FF` 한 바이트 뒤 썸네일의 첫 `00`을
-  다음 바이트로 읽게 되지만, 이 구현은 종료가 썸네일에 의존하지 않도록 합니다.
-- v1은 `#PES0001`과 **22바이트 최소 헤더**, 그 뒤 PEC 페이로드만 씁니다.
-  v6는 `#PES0060`과 전체 헤더, `CEmbOne`/`CSewSeg`, PEC 및 v6 addendum을 씁니다.
-  임의의 원본 고수준 편집 객체를 복원하지는 않습니다.
-- 썸네일은 원본과 같은 48×38, 행당 6바이트의 1비트 그래픽입니다. 전체 도안 한 장과
-  STOP 중복을 포함한 색상 블록별 한 장을 기록합니다. 원본 후프 테두리, 점 좌표 스케일링,
-  비트 순서와 부동소수점 연산 순서를 사용합니다. 픽셀 경계에서 floor 결과가 달라지지 않도록
-  translate를 먼저 계산합니다. 선분 사이를 채우는 렌더링은 하지 않습니다.
+- The original `pec_encode` omits TRIM, converts JUMP after the first command into trim/jump,
+  and inserts 0-distance STITCH commands after some movements. This implementation
+  distinguishes explicit TRIM from JUMP and adds no STITCH commands. Therefore, **its file
+  bytes are not identical to those of the original writer**.
+- The original unique palette is affected by `set(threadlist)` order and thread-metadata equality.
+  This implementation uses a unique palette determined by thread-information identity, exact-color
+  priority, and input order. When multiple custom threads collide, quantization may differ from the
+  original writer.
+- END is explicitly the two bytes `FF 00`. The original writes one `FF` byte and lets the first
+  thumbnail `00` be read as the next byte; this implementation makes termination independent
+  of the thumbnail.
+- v1 writes only `#PES0001`, a **22-byte minimal header**, and the PEC payload that follows.
+  v6 writes `#PES0060`, the full header, `CEmbOne`/`CSewSeg`, PEC, and the v6 addendum.
+  It does not reconstruct arbitrary original high-level editing objects.
+- Thumbnails use the same 48×38, 1-bit graphics with 6 bytes per row as the original. One image
+  covers the whole design, and one covers each color block, including STOP duplicates. The original
+  hoop border, point-coordinate scaling, bit order, and floating-point operation order are used.
+  Translation is calculated first to avoid different floor results at pixel boundaries.
+  Rendering does not fill between line segments.
 
-## 검증 재현
+## Reproducing verification
 
 ```bash
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test
 /path/to/pyembroidery-1.5.1-venv/bin/python tools/check_writer.py
 ```
 
-테스트가 이미 최신 상태인데 검증 출력이 없다면 `:engine:test --rerun-tasks`로 다시 생성합니다.
-외부 패키지는 **pyembroidery==1.5.1**만 필요합니다. 출력 경로는
-`engine/build/writer-check/`이며 Git에 포함하지 않습니다.
+If tests are already up to date but verification output is missing, regenerate it with
+`:engine:test --rerun-tasks`. The only external package required is **pyembroidery==1.5.1**.
+Output goes to `engine/build/writer-check/` and is not included in Git.
 
-`WriterParityTest`는 기존 12개 픽스처(도안 3종 × PEC/PES v1/PES v6/DST)를 읽고
-두 포맷으로 쓰고 다시 읽습니다. 명령·좌표는 정규화로 필요한 분할과 0거리 JUMP를 제외하고
-유지하며, 기존 PEC 팔레트 색은 그대로, v6 사용자 색은 검증한 최근접 PEC 색으로 비교합니다.
-별도 입력으로 긴 양/음 이동, -2048 경계, 여러 STOP, 독립 TRIM, 빈 도안, 팔레트 충돌,
-64색 전체, 좌표를 가진 제어 명령, END 이후 입력을 확인합니다. 색상 블록/크기 한계와
-거부 조건, 짧은/긴 좌표의 골든 바이트, 입력 불변성도 단위 테스트로 검증합니다.
+`WriterParityTest` reads the existing 12 fixtures (3 designs × PEC/PES v1/PES v6/DST), writes
+them in both formats, and reads them again. Commands and coordinates are preserved except for
+splits and 0-distance JUMPs required by normalization. Existing PEC palette colors are unchanged;
+v6 custom colors are compared against the verified nearest PEC colors. Separate inputs check long
+positive/negative movements, the -2048 boundary, multiple STOPs, standalone TRIM, empty designs,
+palette collisions, all 64 colors, control commands with coordinates, and input after END. Unit tests
+also verify color-block/size limits, rejection conditions, golden bytes for short/long coordinates,
+and input immutability.
 
-`tools/check_writer.py`는 Kotlin 테스트가 남긴 **원래 입력과 예상 결과**를 함께 읽습니다.
-Python에서 독립적으로 정규화와 색 매핑을 계산하고, Kotlin 파일을 pyembroidery로 읽어
-명령·좌표·색상을 비교합니다. PES 오프셋, 색상표, 크기, 24비트 블록 길이, END 위치도
-확인하며, 썸네일은 원본 `PecGraphics`로 다시 만들어 **바이트 단위로** 비교합니다.
+`tools/check_writer.py` reads both the **original input and expected results** left by the Kotlin
+tests. Python independently calculates normalization and color mapping, reads the Kotlin files with
+pyembroidery, and compares commands, coordinates, and colors. It also checks PES offsets, color
+tables, dimensions, 24-bit block lengths, and END positions, and regenerates thumbnails with the
+original `PecGraphics` for **byte-for-byte** comparison.
 
-`PesV6WriterTest`는 같은 12개 픽스처와 빈 도안·긴 이동·TRIM/STOP·동일 RGB의 다른 실·
-빈 색상 블록·UTF-8·255블록을 v6로 다시 씁니다. 교차 검증은 사용자 RGB와 명령을 비교하고,
-전체 v6 헤더/실 표/색상 addendum을 검사하며 `CEmbOne`/`CSewSeg` 및 객체 트리는 원본
-1.5.1 `write_pes_blocks` 출력과 바이트 단위로 비교합니다. 단위 테스트는 65,535점을 넘는
-봉제 구간 분할, UTF-8 경계, 입력 불변성, 설정 선택, Preflight의 확인된 경계도 검사합니다.
+`PesV6WriterTest` rewrites the same 12 fixtures plus empty designs, long movements, TRIM/STOP,
+different threads sharing RGB, empty color blocks, UTF-8, and 255 blocks as v6. Cross-verification
+compares custom RGB and commands, checks the full v6 header/thread table/color addendum, and
+compares `CEmbOne`/`CSewSeg` and the object tree byte for byte with the original 1.5.1
+`write_pes_blocks` output. Unit tests also check splitting sewing sections exceeding 65,535 points,
+UTF-8 boundaries, input immutability, settings selection, and confirmed Preflight boundaries.
 
-이번 검증 결과: JDK 17의 `:engine:test` **133개 통과**, Kotlin 출력 **59개**를
-pyembroidery 1.5.1로 교차 검증했습니다(v6 19개 + PEC/최소 v1 40개).
-기존 앱의 `:app:compileDebugKotlin`도 통과했습니다.
+Results of this verification: **133 tests passed** in `:engine:test` on JDK 17, and **59 Kotlin
+outputs** were cross-verified with pyembroidery 1.5.1 (19 v6 + 40 PEC/minimal v1).
+The existing app's `:app:compileDebugKotlin` also passed.
 
-## v6 정보와 원본 대비 차이
+## v6 information and differences from the original
 
-v6는 사용자 실 RGB·설명·카탈로그·브랜드·차트와 이름/분류/작성자/키워드/설명을 저장합니다.
-STOP은 헤더에 중복 실을 넣고 PEC에서는 STOP으로 복원합니다. 빈 도안은 봉제 객체 없이
-유효한 PEC를 저장합니다. 좌표 단위와 축은 v1과 동일합니다.
+v6 stores custom thread RGB, descriptions, catalogs, brands, charts, and the name/category/author/
+keywords/description. STOP inserts duplicate threads in the header and is restored as STOP from
+PEC. Empty designs store valid PEC without sewing objects. Coordinate units and axes match v1.
 
-원본과 달리 UTF-8 문자열 길이는 문자 수가 아닌 **바이트 수**를 기록하며 255바이트에서
-코드포인트 경계로 자릅니다. 리더의 PES 문자열도 UTF-8로 읽습니다. v6 봉제 좌표의 부호 있는
-16비트 한계를 검사하고, 65,535점을 넘는 연속 구간은 끝점을 공유하는 별도 구간으로 분할합니다.
-실제 PEC 명령은 공통 정규화를 쓰므로 명시적 트림 보존과 추가 바늘땀 방지 동작을 유지합니다.
+Unlike the original, UTF-8 string lengths record the **byte count**, rather than the character
+count, and are truncated at a code-point boundary at 255 bytes. The reader also reads PES strings
+as UTF-8. The signed 16-bit limit on v6 sewing coordinates is checked, and continuous sections
+exceeding 65,535 points are split into separate sections sharing an endpoint. Actual PEC commands
+use the common normalization, preserving explicit trims and avoiding additional needle stitches.
 
-앱의 버전 설정/경고 연결 메모와 SE400에서 확인한 제한은 [machines.md](machines.md)에
-있습니다. 기본 v1 동작을 유지하며 SE400의 v6 지원은 아직 실기 확인이 필요합니다.
+App version-setting/warning integration notes and confirmed SE400 limits are in
+[machines.md](machines.md). Default v1 behavior is retained, and SE400 v6 support still requires
+confirmation on the actual machine.
 
-## 남은 검증
+## Remaining verification
 
-실제 미싱 인식과 봉제, 크기·방향·색상·STOP·점프·트림 동작은 아직 검증하지 않았습니다.
-특히 최소 PES 헤더의 편집기/기종별 호환성은 읽기 성공만으로 보증할 수 없습니다.
-파일 크기 한계는 검사하지만 현재 구현은 패턴과 출력 전체를 메모리에 보관하므로,
-모바일에서 대용량 출력의 메모리·취소 처리는 후속 과제입니다.
+Actual machine recognition and sewing, size, orientation, colors, STOP, jump, and trim behavior
+have not yet been verified. In particular, successful reading alone does not guarantee compatibility
+of the minimal PES header with each editor/machine. File-size limits are checked, but the current
+implementation holds the entire pattern and output in memory, so memory use and cancellation
+for large output on mobile remain follow-up work.
