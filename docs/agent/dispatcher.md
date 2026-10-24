@@ -7,8 +7,8 @@ is introduced in the engine.
 ## Kernel and session controller
 
 `ToolDispatcher.dispatch(project, revision, name, arguments, confirmed=false)` is
-the snapshot-in/snapshot-out preparation kernel. Its 15 supported names cover
-project inspection, transforms, alignment, distribution, duplication, order,
+the snapshot-in/snapshot-out preparation kernel. Its 17 supported names cover
+text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
 visibility, color, removal, frame selection, sewing checks and PES preparation.
 Successful edits return their resolved `ProjectCommand` for session publication.
 
@@ -44,7 +44,7 @@ thread indices, frame identities and reorder bounds are also checked.
 Removal requires trusted host consent bound to the exact arguments and base
 revision. `confirmed` is a host API parameter, never a tool JSON field. Frames
 and approved PES assets are injected; arbitrary paths, URLs and personal designs
-are not accepted by these tools. Text/font creation remains unimplemented.
+are not accepted by these tools. Text creation/replacement uses the local FontResolver described below.
 
 ## Atomic scripts and phone path A
 
@@ -116,3 +116,43 @@ one-undo scripts, dry-run revision/history/redo preservation, confirmation,
 final-check rollback, actual phone-session history and gesture exclusion.
 The existing encoded 999 PASS / 1000 BLOCK boundary tests are retained.
 Fixtures use redistributable built-ins; generated outputs and logs remain local.
+
+## Text tools and local font resolution
+
+`add_text` calls engine `prepareText` followed by `ProjectCommand.Add`;
+`replace_text` prepares the replacement and uses `ProjectCommand.ReplaceText`.
+The reducer retains the target ID, transform, visibility and layer index. No
+stitch generation or font loading occurs in the structural reducer.
+
+Inject `FontResolver` into `ToolDispatcher`. `resolve(fontId)` returns a local
+`ResolvedTextFont` or null, and `revision(fontId)` identifies that exact installed
+source. `resolveText` lets a platform/snapshot adapter extract only the requested
+glyphs; `prepare` defaults to engine `prepareText`. The Android adapter uses the
+same font loading, glyph extraction and Hangul centerline preparation as the
+lettering screen. Bind it with `ToolDispatcher(fontResolver = AndroidTextFontResolver(context))`.
+It never downloads a font. Construct and use adapters on the
+host's serialized background edit executor.
+
+The default JVM `BundledFontResolver` loads the five APK-bundled Ink/Stitch fonts
+and existing engine Hershey Futural. Its optional resolver parameter is the
+extension point for the separate TTF OutlineSnapshot adapter. Font revisions are
+resolved by the host, not guessed by callers: use `resolver.revision(fontId)`.
+Unknown fonts, stale revisions, missing glyphs and unavailable preparation return
+`FONT_NOT_FOUND`, `FONT_REVISION_MISMATCH`, `UNSUPPORTED_CHARACTERS` and
+`TEXT_PREPARATION_UNAVAILABLE`, respectively. No fallback glyph is substituted.
+
+The app's pure `LetteringHeightLimits`, automatic selection and weight functions
+now live in the engine; the app delegates to them. They use the same swept TTF
+range asset, the app’s pinned Ink/Stitch catalog ranges and existing running baseline. There are no new
+height thresholds: out-of-policy heights return `HEIGHT_OUT_OF_RANGE` (schema
+bounds still return `INVALID_ARGUMENTS`). Hershey has no evidenced positive
+minimum in the existing range-free running policy; tests do not invent one.
+JVM and Android use the same pinned catalog ranges and SVG revision convention.
+Ink/Stitch range tests exercise minimum−0.1, minimum, maximum and maximum+0.1mm.
+Empty/whitespace-only text and nonpositive heights are rejected explicitly.
+
+Prepared Ink/Stitch TextObjects retain their resolved font as an in-memory value,
+so rendering, recoloring and placement do not depend on a mutable global registry.
+This field is not embedded in project JSON; reopening uses the existing installed
+font registry. The JVM runner still needs its normal approved-font binding when
+reopening an initial project with pre-existing digitized text.

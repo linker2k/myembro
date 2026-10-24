@@ -254,3 +254,28 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
         predigitized = source.ink != null, testedRangeMm = source.testedRangeMm,
         missing = lacking.joinToString("") { String(Character.toChars(it)) })
 }
+
+/** Agent adapter shares the screen's exact installed-font loading and outline extraction. No download. */
+class AndroidTextFontResolver(context: Context) : io.github.linker2k.myembro.engine.agent.FontResolver {
+    private val context=context.applicationContext
+    private val sources=mutableMapOf<String,LoadedFont>()
+    private fun source(id:String)=sources[id] ?: runCatching { loadFont(context,id) }.getOrNull()?.also { sources[id]=it }
+    override fun revision(fontId:String)=source(fontId)?.revision
+    override fun resolve(fontId:String):ResolvedTextFont? = resolveText(fontId, "")
+    override fun resolveText(fontId:String,text:String):ResolvedTextFont? {
+        val s=source(fontId) ?: return null
+        if(s.face==null) return s.resolved
+        val codes=normalizedLetteringText(text).codePoints().toArray().filter { it!='\n'.code }.distinct()
+        return ResolvedTextFont.OutlineSnapshot(s.reference,codes.associate { code ->
+            val c=String(Character.toChars(code)); c to PreparedGlyph(s.advance(c),s.glyph(c))
+        },codes.filter(s::supports).toSet())
+    }
+    override fun prepare(request:TextPreparationRequest,font:ResolvedTextFont,policy:TextPreparationPolicy):TextObject {
+        val source=source(request.fontId) ?: error("Font is not installed")
+        val settings=LetteringSettings(request.text,request.fontId,request.heightMm,request.spacingMm,
+            request.alignment,false,LetteringCurve.STRAIGHT,0.0,lineSpacingMm=request.lineSpacingMm,
+            stitchStyle=request.stitchStyle,threadWeight=request.threadWeight)
+        return prepareObject(source,settings,request.thread).withId(policy.objectId)
+    }
+    override fun inkRange(fontId:String,font:ResolvedTextFont)=source(fontId)?.testedRangeMm
+}

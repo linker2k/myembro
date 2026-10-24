@@ -48,6 +48,7 @@ data class TextObject(
     val satinOptions: SatinOptions = SatinOptions(),
     val fillOptions: FillOptions = FillOptions(),
     val threadWeight: ThreadWeight = ThreadWeight.WT40,
+    val resolvedInkFont: io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFont? = null,
     val centerlineSatin: io.github.linker2k.myembro.engine.lettering.CenterlineSatinData? = null,
 ) : DesignObject {
     init {
@@ -88,7 +89,7 @@ data class TextObject(
                 fillOptions = resolvedFill, contourCharacters = contourCharacters, outline = !singleLine,
             )
             // The font carries its own stitch types and parameters; style, weight and density settings do not apply.
-            FontKind.INKSTITCH -> InkStitchFontRegistry[fontId]?.let { font ->
+            FontKind.INKSTITCH -> (resolvedInkFont ?: InkStitchFontRegistry[fontId])?.let { font ->
                 InkStitchLettering.render(font, text, heightMm, thread, letterSpacingMm = spacing,
                     lineHeightMm = lineSpacing * heightMm, alignment = alignment)
             } ?: EmbPattern(emptyList(), emptyList(), warnings = listOf("Ink/Stitch font $fontId is not installed"))

@@ -72,7 +72,7 @@ class TextPreparationTest {
     }
 
     private fun assertSameBytes(expected: TextObject, actual: PreparedText) {
-        assertEquals(expected, actual.textObject)
+        assertEquals(expected.copy(resolvedInkFont = actual.textObject.resolvedInkFont), actual.textObject)
         assertContentEquals(Project(objects = listOf(expected)).toJson().encodeToByteArray(),
             Project(objects = listOf(actual.textObject)).toJson().encodeToByteArray())
         val before = expected.localPattern()

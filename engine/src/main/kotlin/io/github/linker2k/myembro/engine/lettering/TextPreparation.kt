@@ -85,6 +85,7 @@ fun prepareText(request: TextPreparationRequest, font: ResolvedTextFont,
     if (font is ResolvedTextFont.InkStitch) return PreparedText(TextObject(
         id = policy.objectId, name = text.take(32), text = text, fontId = request.fontId,
         heightMm = request.heightMm, spacing = request.spacingMm, thread = request.thread, fontKind = FontKind.INKSTITCH,
+        resolvedInkFont = font.font,
         lineSpacing = 1 + request.lineSpacingMm / request.heightMm,
         alignment = TextAlignment.valueOf(request.alignment.name), singleLine = false, threadWeight = request.threadWeight,
     ), font)
