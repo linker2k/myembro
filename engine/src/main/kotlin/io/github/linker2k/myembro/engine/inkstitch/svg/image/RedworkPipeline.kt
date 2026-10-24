@@ -24,6 +24,11 @@ class RedworkResult internal constructor(
     fun copyPesBytes(): ByteArray = pes.copyOf()
 }
 
+class RedworkOutline internal constructor(
+    val outlineSvg: String, val contourCount: Int, val widthMm: Double, val heightMm: Double,
+    val paths: List<String>, val foregroundAreaMm2: Double,
+)
+
 /** Engine-only first redwork integration. Input is top-down RGB24, not ARGB or a decoded photograph. */
 object RedworkPipeline {
     /**
@@ -36,21 +41,36 @@ object RedworkPipeline {
         width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
         thread: EmbThread,
     ): RedworkResult {
+        return generate(trace(width,height,rgb,widthMm,backgroundPixelIndex,thread),thread)
+    }
+
+    /** Photo preview stops here: no JTS fill graph, stitches, locks, PES or sewout analysis. */
+    fun trace(width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
+        thread: EmbThread, minAreaMm2: Double = 0.0, maxContours: Int = Int.MAX_VALUE,
+        onQuantized: (IntArray) -> Unit = {},
+        checkpoint: (String) -> Unit = {},
+    ): RedworkOutline {
         require(width in 1..4096 && height in 1..4096 && width.toLong() * height == rgb.size.toLong())
         require(widthMm.isFinite() && widthMm > 0 && widthMm <= 1000)
+        require(minAreaMm2.isFinite() && minAreaMm2 >= 0 && maxContours > 0)
         require(backgroundPixelIndex in rgb.indices)
+        checkpoint("quantization")
         val quantized = ImageQuantizer.quantize(rgb, 2)
-        require(quantized.palette.size == 2) { "The bitmap must contain distinguishable line and background colors" }
         val labels = quantized.copyIndices()
         val background = labels[backgroundPixelIndex]
+        onQuantized(IntArray(rgb.size) { if (labels[it] == background) 0xFFFFFF else 0 })
+        require(quantized.palette.size == 2) { "The bitmap must contain distinguishable line and background colors" }
         val bottomUp = BooleanArray(rgb.size) { index ->
             labels[(height - 1 - index / width) * width + index % width] != background
         }
-        val contours = BinaryContourTracer.trace(width, height, bottomUp)
-        require(contours.isNotEmpty()) { "No contour remains after original Potrace turdsize=2 filtering" }
+        checkpoint("tracing")
+        val contours = BinaryContourTracer.trace(width, height, bottomUp, maxOf(2, kotlin.math.ceil(minAreaMm2 / (widthMm / width) / (widthMm / width)).toInt()))
+        require(contours.isNotEmpty()) { "No contour remains after Potrace area filtering" }
+        require(contours.size <= maxContours) { "PHOTO_TOO_COMPLEX: reduce detail" }
         val scale = Units.mmToPixels(widthMm) / width
         fun point(p: CurvePoint) = RegionPoint((p.x - width / 2.0) * scale, (height / 2.0 - p.y) * scale)
         val paths = contours.map { contour ->
+            checkpoint("tracing")
             val curve = CurveOptimizer.optimize(CurveFitter.fit(contour))
             buildString {
                 fun coordinate(p: CurvePoint) { val v = point(p); append(v.x).append(' ').append(v.y) }
@@ -66,10 +86,23 @@ object RedworkPipeline {
                 append(" Z")
             }
         }
+        val svgWidth = Units.mmToPixels(widthMm)
+        val svgHeight = svgWidth * height / width
+        val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill-rule="evenodd" fill="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
+        checkpoint("preview_ready")
+        return RedworkOutline(svg,contours.size,widthMm,widthMm * height / width,paths,
+            contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width))
+    }
+
+    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, checkpoint: (String) -> Unit = {}): RedworkResult {
+        checkpoint("stitches")
+        val paths = outline.paths
         // Convert SVG-pixel contours to the native 0.1mm PolygonRegion contract.
         // Even-odd preserves background holes and foreground islands without a new heuristic.
         val region = PolygonRegion.fromPaths(paths.flatMap { path ->
-            SvgPath.flatten(path, tolerance = 0.01).map { line ->
+            // Photo output is quantized to 0.1mm by PES. Avoid sub-quantum tessellation
+            // in the fill routing graph; the generic port path retains its existing tolerance.
+            SvgPath.flatten(path, tolerance = if(photoMode) Units.mmToPixels(0.1) else 0.01).map { line ->
                 Polyline(line.points.map { RegionPoint(it.x * 10 / Units.mmToPixels(1.0),
                     it.y * 10 / Units.mmToPixels(1.0)) }, true)
             }
@@ -77,11 +110,20 @@ object RedworkPipeline {
         val groups = DefaultTatami.stitchGroups(region, thread)
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
-        val pattern = EmbPattern(finished.stitches, finished.threads,
+        // Fit *finished* coordinates, including locks/travel, to the supplied exclusive hoop span.
+        val bounds=finished.stitches
+        val minX=bounds.minOf { it.x }; val maxX=bounds.maxOf { it.x }
+        val minY=bounds.minOf { it.y }; val maxY=bounds.maxOf { it.y }
+        val factor=if(photoMode) minOf(1.0,outline.widthMm*10/(maxX-minX).coerceAtLeast(1),
+            outline.heightMm*10/(maxY-minY).coerceAtLeast(1)) else 1.0
+        val stitches=if(photoMode) bounds.map { it.copy(
+            x=kotlin.math.round((it.x-minX)*factor).toInt()-kotlin.math.floor((maxX-minX)*factor/2).toInt(),
+            y=kotlin.math.round((it.y-minY)*factor).toInt()-kotlin.math.floor((maxY-minY)*factor/2).toInt()) }
+            else bounds
+        val pattern = EmbPattern(stitches, finished.threads,
             finished.metadata + ("myembro.fill.backend" to "inkstitch-default-tatami-underlay"), finished.warnings)
-        val svgWidth = Units.mmToPixels(widthMm)
-        val svgHeight = svgWidth * height / width
-        val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill-rule="evenodd" fill="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
-        return RedworkResult(pattern, svg, contours.size, PesWriter.write(pattern, PesVersion.V6))
+        checkpoint("stitches_ready=${pattern.stitchCount}")
+        checkpoint("pes")
+        return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesVersion.V6))
     }
 }

@@ -10,6 +10,9 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.media.ExifInterface
 import android.net.Uri
+import android.util.Log
+import android.os.SystemClock
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,6 +41,9 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
     var report by mutableStateOf<SewoutReport?>(null); private set
+    var separatedPreview by mutableStateOf<Bitmap?>(null); private set
+    var outline by mutableStateOf<RedworkOutline?>(null); private set
+    var progressStage by mutableIntStateOf(0); private set
     private var bytes: ByteArray? = null
     private var work: Job? = null
     private var revision = 0
@@ -50,13 +56,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; invalidateResult()
     }
-    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; if (step > 0) prepare() } }
+    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; if (step > 0) { step = 1; prepare() } } }
     fun load(uri: Uri) {
         work?.cancel(); val version = ++revision
-        busy = true; error = null
+        busy = true; progressStage = 0; error = null
         work = viewModelScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
+                    val decodeStart = SystemClock.elapsedRealtime()
                     val resolver = getApplication<Application>().contentResolver
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -76,7 +83,9 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         5 -> { setRotate(90f); postScale(-1f, 1f) }; 6 -> setRotate(90f)
                         7 -> { setRotate(-90f); postScale(-1f, 1f) }; 8 -> setRotate(-90f)
                     } }
-                    if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                    val oriented = if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                    Log.i("PhotoTiming", "decode_ms=${SystemClock.elapsedRealtime()-decodeStart} input=${bounds.outWidth}x${bounds.outHeight} decoded=${oriented.width}x${oriented.height}")
+                    oriented
                 }
                 if (version == revision) { source = bitmap; zoom = 1f; panX = 0f; panY = 0f; step = 0; invalidateResult() }
             } catch (cancelled: CancellationException) { throw cancelled
@@ -88,21 +97,23 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         zoom = (zoom * scale).coerceIn(1f, 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
     }
-    fun changeDetail(value: Int) { if (value != detail) { detail = value; prepare() } }
+    fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
+    fun cancel() { work?.cancel(); revision++; busy = false; error = null; if (step == 1) step = 0 }
+    fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
-    fun next() { if (step == 0) { step = 1; prepare() } else if (render != null && !busy) step = 2 }
-    private fun invalidateResult() { render = null; report = null; bytes = null }
+    fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
+    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val edge = photoRasterSize(detail)
-        busy = true; error = null; invalidateResult()
+        val edge = photoRasterSize(detail, frame.width / 10.0, frame.height / 10.0)
+        busy = true; progressStage = 1; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
                 delay(180)
-                val output = withContext(Dispatchers.Default) {
+                val output = runInterruptible(Dispatchers.Default) {
                     val aspect = frame.width.toDouble() / frame.height
                     val w = if (aspect >= 1) edge else (edge * aspect).toInt().coerceAtLeast(1)
                     val h = if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
@@ -115,19 +126,58 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
-                    val generated = RedworkPipeline.generate(w, h, pixels, frame.width / 10.0, 0,
-                        EmbThread(0xFFB5492A.toInt(), getApplication<Application>().getString(R.string.photo_name)))
-                    ensureActive()
-                    val pes = PesWriter.write(generated.pattern, snapshot.writeSettings)
-                    val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
-                        SewoutOptions(hoop = frame, placement = Placement.HOOP_COORDINATES,
-                            origin = DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(generated.pattern), pes, check)
+                    var tick = SystemClock.elapsedRealtime(); var phase = "raster"
+                    fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,(frame.width - 1) / 10.0,0,
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
+                        minAreaMm2 = photoMinimumArea(detail), maxContours = 128,
+                        onQuantized = { separated ->
+                            if (version == revision) separatedPreview = Bitmap.createBitmap(
+                                separated.map { it or 0xFF000000.toInt() }.toIntArray(),w,h,Bitmap.Config.ARGB_8888)
+                        }) { next ->
+                        if (Thread.currentThread().isInterrupted) throw InterruptedException()
+                        if (next != phase) {
+                            Log.i("PhotoTiming", "${phase}_ms=${SystemClock.elapsedRealtime()-tick} raster=${w}x${h}")
+                            tick = SystemClock.elapsedRealtime(); phase = next
+                        }
+                        progressStage = if (next == "quantization") 1 else 2
+                    }
+                    val denoised=io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoRasterFilters.median3(w,h,pixels)
+                    try { trace(denoised) } catch (failure: IllegalArgumentException) {
+                        if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
+                        Log.i("PhotoTiming", "contrast_retry=1")
+                        trace(photoContrastStretch(denoised))
+                    }
                 }
-                if (version == revision) { render = output.first; bytes = output.second; report = output.third }
+                if (version == revision) { outline = output }
+
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { if (version == revision) error = R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
+        }
+    }
+    private fun generateResult() {
+        val traced = outline ?: return
+        work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop
+        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null
+        work = viewModelScope.launch {
+            try {
+                val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
+                    val tick = SystemClock.elapsedRealtime()
+                    val generated = RedworkPipeline.generate(traced,
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),photoMode=true) {
+                        if (Thread.currentThread().isInterrupted) throw InterruptedException()
+                    }
+                    Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
+                    val pes = PesWriter.write(generated.pattern,snapshot.writeSettings)
+                    val check = SewoutCheck.checkPes(pes,viewerSewoutMachine(snapshot.machineProfile?.id,snapshot.machineModel),
+                        SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
+                    Triple(RenderData(generated.pattern),pes,check)
+                } }
+                if (version == revision) { render=output.first; bytes=output.second; report=output.third }
+            } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
+            } finally { if(version==revision) busy=false }
         }
     }
     fun send(onReady: (File) -> Unit) {
