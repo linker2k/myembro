@@ -100,7 +100,7 @@ class BeanStitchTest {
     @Test fun pesExportPreservesEveryForwardAndBackwardNeedlePosition() {
         val pattern = straight(StitchStyle.BEAN)
         val restored = PesReader.read(PesWriter.write(pattern))
-        assertEquals(pattern.stitches.filter { it.command == Command.STITCH }, restored.stitches.filter { it.command == Command.STITCH })
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern).stitches.filter { it.command == Command.STITCH }, restored.stitches.filter { it.command == Command.STITCH })
         assertEquals(pattern.bounds, restored.bounds)
     }
 }

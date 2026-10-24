@@ -78,13 +78,13 @@ class FlattenTest {
     private fun assertRoundTrip(flat: EmbPattern) {
         // PES v1 maps to the PEC palette and represents trims as trim+jump; compare the
         // documented writer normalization as well as every needle-down position and STOP.
-        val normalized = PecWriter.normalize(flat)
+        val normalized = PecWriter.normalize(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(flat))
         val back = PesReader.read(PesWriter.write(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)
         assertEquals(normalized.threads, back.threads)
-        assertEquals(flat.stitches.filter { it.command == Command.STITCH }, back.stitches.filter { it.command == Command.STITCH })
-        assertEquals(flat.colorChangeCount, back.colorChangeCount)
-        assertEquals(flat.stopCount, back.stopCount)
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(flat).stitches.filter { it.command == Command.STITCH }, back.stitches.filter { it.command == Command.STITCH })
+        assertEquals(normalized.colorChangeCount, back.colorChangeCount)
+        assertEquals(normalized.stopCount, back.stopCount)
     }
 }

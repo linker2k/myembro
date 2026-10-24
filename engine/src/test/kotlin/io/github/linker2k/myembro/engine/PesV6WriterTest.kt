@@ -38,7 +38,7 @@ class PesV6WriterTest {
             metadata = mapOf("name" to "자수 도안", "author" to "만든이", "comments" to "한글 😀".repeat(80)))
         val output = File("build/writer-check").apply { mkdirs() }
         for ((name, source) in cases) {
-            val expected = PecWriter.normalizePreservingThreads(source)
+            val expected = PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(source))
             val bytes = PesWriter.writeV6(source)
             val back = PesReader.read(bytes)
             assertTrue(back.warnings.isEmpty(), "$name: ${back.warnings}")
@@ -114,7 +114,7 @@ class PesV6WriterTest {
     }
 
     @Test fun longSewingSectionSplitsWithoutU16PointCountWrapping() {
-        val source = EmbPattern(List(65536) { s(it % 100, it % 50) }, listOf(red))
+        val source = EmbPattern(List(65536) { s(it % 100 + 1, it % 50 + 1) }, listOf(red))
         val bytes = PesWriter.writeV6(source)
         assertEquals(65536, PesReader.read(bytes).stitchCount)
         val marker = text(bytes).indexOf("CSewSeg")
@@ -127,9 +127,9 @@ class PesV6WriterTest {
     }
 
     @Test fun v6ChecksSectionCoordinateAndPecPaletteLimits() {
-        assertFailsWith<IllegalArgumentException> { PesWriter.writeV6(p(s(0, 0), s(40000, 0))) }
+        assertFailsWith<IllegalArgumentException> { PesWriter.writeV6(p(s(1, 0), s(40000, 0))) }
         val manyThreads = List(65) { EmbThread(0xFF000000.toInt() + it) }
-        val stitches = manyThreads.indices.flatMap { i -> listOf(s(i, 0), s(i, 0, Command.COLOR_CHANGE)) }
+        val stitches = manyThreads.indices.flatMap { i -> listOf(s(i+1, 0), s(i+1, 0, Command.COLOR_CHANGE)) }
         assertFailsWith<IllegalArgumentException> { PesWriter.writeV6(EmbPattern(stitches, manyThreads)) }
     }
 }

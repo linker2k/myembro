@@ -132,7 +132,7 @@ class OutlineFillTest {
         assertEquals(1, pattern.colorChangeCount)
         val pes = PesReader.read(PesWriter.write(pattern))
         assertEquals(pattern.bounds, pes.bounds)
-        assertEquals(pattern.stitchCount, pes.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern).stitchCount, pes.stitchCount)
         assertLengths(pes)
         val old = TextObject("old", text = "AB")
         val payload = JsonObject(TextObjectCodec.encode(old).filterKeys { it != "fillOptions" })

@@ -17,9 +17,9 @@ internal fun checkViewerSewout(pattern: EmbPattern, machine: SewoutMachine, hoop
     preservePlacement: Boolean, pesBytes: ByteArray? = null,
     origin: DesignOrigin = SewoutCheck.originOf(pattern)): SewoutReport {
     val options = SewoutOptions(origin = origin, hoop = hoop, placement = if (preservePlacement) Placement.HOOP_COORDINATES else Placement.CENTER_DESIGN)
-    // Project highlights must refer to the displayed flattened input, not writer-normalized commands.
+    // Generated project review uses the same terminal safety pass as PES export; raw PES is checked verbatim.
     return if (!preservePlacement && pesBytes != null) SewoutCheck.checkPes(pesBytes, machine, options)
-        else SewoutCheck.check(pattern, machine, options)
+        else SewoutCheck.check(if (origin == DesignOrigin.APP_GENERATED) io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern) else pattern, machine, options)
 }
 
 internal fun sewoutNeedsConfirmation(report: SewoutReport): Boolean = report.hasBlockingIssues || !report.analysisComplete

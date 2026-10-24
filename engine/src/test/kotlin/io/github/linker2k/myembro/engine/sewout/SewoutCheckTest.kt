@@ -164,7 +164,7 @@ class SewoutCheckTest {
         val blocked = SewoutCheck.checkPes(bytes,limited)
         assertEquals(Acceptance.REJECTED,blocked.compatibility.acceptance)
         assertEquals(1,blocked.count(FindingCode.FILE_SIZE_EXCEEDED))
-        val twoColors = PesWriter.writeV6(p(s(0),s(0,c=Command.COLOR_CHANGE),s(20)))
+        val twoColors = PesWriter.writeV6(p(s(1),s(1,c=Command.COLOR_CHANGE),s(20)))
         assertEquals(1,SewoutCheck.checkPes(twoColors,limited).count(FindingCode.COLOR_LIMIT_EXCEEDED))
         assertContentEquals(original,bytes)
         assertTrue(SewoutCheck.checkPes(byteArrayOf(1,2,3)).hasBlockingIssues)

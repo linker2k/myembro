@@ -31,8 +31,8 @@ class S1PolicyRegressionTest {
     }
     private fun sewtest(stem: String) {
         val project = input("sewout/s1/$stem.myembro").bufferedReader().use { ProjectJson.decode(it.readText()) }
-        // Historical S1 generated prefixes contain redundant zero moves; v6 must reject, never fix them here.
-        assertGate(project.flatten(),expectedRepeatedBlock=true)
+        // The final PES safety pass removes historical redundant start commands before gate checking.
+        assertGate(project.flatten(),expectedRepeatedBlock=false)
     }
     @Test fun runningText5mm() = sewtest("TXT05")
     @Test fun runningText8mm() = sewtest("TXT08")

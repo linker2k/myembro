@@ -19,3 +19,9 @@ Initial frozen-v5 check: PASS 3/3. Counts 44 / 49 / 48 needles; estimates 6.60 /
 intentionally block the diagnostic T2. This is a controlled fixture, not a
 recommendation to keep zero moves. Needle positions are annotated in the PNGs;
 preview labels are never stitched.
+
+
+After the T3 safety policy, the default writer intentionally sanitizes T2's old
+prefix too. The original diagnostic generator/unsanitized writer combination is
+pinned at worker d5509f5. Its historical T2 fixture remains in engine test resources;
+do not use a current safe export as an unsanitized T2 reproduction.

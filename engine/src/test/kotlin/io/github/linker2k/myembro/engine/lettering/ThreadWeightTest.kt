@@ -31,7 +31,7 @@ class ThreadWeightTest {
             assertTrue(patterns[1].stitchCount < patterns[2].stitchCount)
             assertTrue(patterns.all { it.bounds == patterns.first().bounds })
             val back = PesReader.read(PesWriter.write(patterns.last()))
-            assertEquals(patterns.last().stitchCount, back.stitchCount)
+            assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(patterns.last()).stitchCount, back.stitchCount)
             assertEquals(patterns.last().bounds, back.bounds)
         }
         // Imported single-line geometry uses the same satin preset as Hershey.

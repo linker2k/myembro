@@ -25,7 +25,7 @@ class InkstitchWriterProfileTest {
     @Test fun explicitProfilePreservesTerminalStopButDefaultBytesRemainUnchanged() {
         val source = pattern(s(0, Command.JUMP), s(0), s(40), s(40, Command.TRIM), s(40, Command.STOP), s(40, Command.END))
         val normal = PesWriter.write(source)
-        assertContentEquals(bytes("90 00 90 00 00 00 28 00 a0 00 a0 00 ff 00"), codes(normal))
+        assertContentEquals(bytes("28 00 a0 00 a0 00 ff 00"), codes(normal))
         assertContentEquals(normal, PesWriter.write(source, PesWriteSettings()))
         assertContentEquals(normal, PesWriter.writeV1(source))
         assertContentEquals(PesWriter.writeV6(source), PesWriter.write(source, PesWriteSettings(PesVersion.V6)))
@@ -48,7 +48,7 @@ class InkstitchWriterProfileTest {
         assertEquals(0, PesReader.read(PesWriter.write(source)).trimCount)
         val placed = pattern(s(26, Command.JUMP, 26), s(26, y = 26), s(66, y = 26), s(66, Command.END, 26))
         assertEquals(listOf(0, 40), PesReader.read(write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
-        assertEquals(listOf(26, 66), PesReader.read(PesWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
+        assertEquals(listOf(66), PesReader.read(PesWriter.write(placed)).stitches.filter { it.command == Command.STITCH }.map { it.x })
     }
 
     @Test fun colorsPrecedeImplicitTrimAndTerminalExplicitTrimHasNoBytes() {

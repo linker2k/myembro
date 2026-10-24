@@ -122,7 +122,7 @@ class OutlineLetteringTest {
         val pattern = Project(objects = listOf(obj)).flatten()
         val decoded = PesReader.read(PesWriter.write(pattern))
         assertEquals(pattern.bounds, decoded.bounds)
-        assertEquals(pattern.stitchCount, decoded.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern).stitchCount, decoded.stitchCount)
         assertTrue(decoded.trimCount > 0)
         assertEquals(200, assertNotNull(obj.copy(heightMm = 20.0).localPattern().bounds).height)
     }

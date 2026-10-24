@@ -106,8 +106,10 @@ class WriterParityTest {
             val data = write(source)
             val reread = PesReader.read(data)
             assertTrue(reread.warnings.isEmpty(), "$name.$extension: ${reread.warnings}")
-            assertEquals(expected, reread.stitches, "$name.$extension: commands/coordinates")
-            assertEquals(colors, reread.threads.map { it.color and 0xFFFFFF }, "$name.$extension: colors")
+            val outputExpected = if (extension == "pes") PecWriter.normalize(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(source)).stitches else expected
+            assertEquals(outputExpected, reread.stitches, "$name.$extension: commands/coordinates")
+            val outputColors = if (extension == "pes") PecWriter.normalize(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(source)).threads.map { it.color and 0xFFFFFF } else colors
+            assertEquals(outputColors, reread.threads.map { it.color and 0xFFFFFF }, "$name.$extension: colors")
             assertEquals(expected, PecWriter.normalize(source).stitches)
             File(output, "$name.$extension").writeBytes(data)
             // The oracle gets both the original input and expected normalization, never just
@@ -118,7 +120,7 @@ class WriterParityTest {
             val threads = source.threads.joinToString(",", "[", "]") { (it.color and 0xFFFFFF).toString() }
             File(output, "$name.$extension.json").writeText(
                 "{\"source\":{\"stitches\":${stitchesJson(source.stitches)},\"threads\":$threads}," +
-                    "\"expected\":{\"stitches\":${stitchesJson(expected)},\"threads\":${colors.joinToString(",", "[", "]")}}}\n",
+                    "\"expected\":{\"stitches\":${stitchesJson(outputExpected)},\"threads\":${outputColors.joinToString(",", "[", "]")}}}\n",
             )
         }
     }
@@ -147,7 +149,8 @@ class WriterParityTest {
         assertEquals("#PES0001", pes.copyOfRange(0, 8).toString(Charsets.US_ASCII))
         assertEquals(22, u24(pes, 8))
         assertContentEquals(ByteArray(10), pes.copyOfRange(12, 22))
-        assertContentEquals(pec.copyOfRange(8, pec.size), pes.copyOfRange(22, pes.size))
+        val cleanedPec = PecWriter.write(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(p))
+        assertContentEquals(cleanedPec.copyOfRange(8, cleanedPec.size), pes.copyOfRange(22, pes.size))
         assertEquals(1, pec[56].toInt())
         assertContentEquals(byteArrayOf(5, 5), pec.copyOfRange(57, 59))
         assertEquals(6, pec[42].toInt())

@@ -93,7 +93,7 @@ class SewoutSafetyTest {
         assertTrue(check(p(s(0),s(1),s(10))).of(FindingCode.SHORT_STITCH).all { it.severity==Severity.INFO })
     }
     @Test fun severeImportedDensitySurvivesPesRoundtripAndFindingSuppression() {
-        val source=p(*Array(38) { s(0) })
+        val source=p(s(0,c=Command.JUMP),*Array(38) { s(10+it%4,it/4%4) })
         val r=SewoutCheck.checkPes(PesWriter.write(source),options=SewoutOptions(maxFindings=1))
         assertTrue(r.hasBlockingIssues)
         assertEquals(1,r.findings.size)

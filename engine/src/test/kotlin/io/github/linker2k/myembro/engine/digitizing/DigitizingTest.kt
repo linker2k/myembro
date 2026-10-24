@@ -130,7 +130,7 @@ class DigitizingTest {
                 "fill37" to TatamiFill.generate(region, TatamiSettings(angleDegrees = 37.0), thread),
             )
             for ((kind, source) in patterns) for (version in PesVersion.entries) {
-                val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(source) else PecWriter.normalize(source)
+                val expected = if (version == PesVersion.V6) PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(source)) else PecWriter.normalize(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(source))
                 val bytes = PesWriter.write(source, version)
                 val back = PesReader.read(bytes)
                 assertTrue(back.warnings.isEmpty())

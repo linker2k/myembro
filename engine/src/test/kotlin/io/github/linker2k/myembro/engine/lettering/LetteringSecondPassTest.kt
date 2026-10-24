@@ -72,7 +72,7 @@ class LetteringSecondPassTest {
         assertTrue(pattern.trimCount >= 2)
         val decoded = PesReader.read(PesWriter.write(pattern))
         assertEquals(pattern.bounds, decoded.bounds)
-        assertEquals(pattern.stitchCount, decoded.stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(pattern).stitchCount, decoded.stitchCount)
         assertEquals(3, decoded.colorBlocks.size)
     }
 

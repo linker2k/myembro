@@ -29,7 +29,7 @@ class OrderOptimizationTest {
         assertEquals(p.flatten().trimCount, optimized.flatten().trimCount)
         assertEquals(0, optimized.flatten().colorChangeCount)
         val flat = optimized.flatten()
-        assertEquals(PecWriter.normalize(flat).stitches, PesReader.read(PesWriter.write(flat)).stitches)
+        assertEquals(PecWriter.normalize(io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.forSewout(flat)).stitches, PesReader.read(PesWriter.write(flat)).stitches)
     }
 
     @Test fun outgoingTravelCannotMakeTheSuggestionWorse() {
