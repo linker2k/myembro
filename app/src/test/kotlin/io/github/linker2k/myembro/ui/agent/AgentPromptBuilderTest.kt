@@ -28,7 +28,7 @@ class AgentPromptBuilderTest {
 
     @Test fun promptHasInstructionsToolsDesignAndRequestInOrder() {
         val text = AgentPromptBuilder.build(summary, "  Put my name under the logo  ", "p-AB12").text
-        val parts = listOf("Answer with ONLY the JSON command list", "\"promptId\":\"p-AB12\"", "Tools", "Design:", "Fonts:", "Request:")
+        val parts = listOf("Answer with ONLY the JSON command list", "\"promptId\":\"p-AB12\"", "Tools", "Design:", "Fonts (", "Request:")
         assertTrue(parts.map { text.indexOf(it) }.zipWithNext().all { (a, b) -> a in 0 until b }, text)
         assertTrue(text.endsWith("Request:\n\"\"\"\nPut my name under the logo\n\"\"\""))
         AgentTools.SIGNATURES.forEach { assertTrue("- $it" in text, it) }
@@ -47,7 +47,7 @@ class AgentPromptBuilderTest {
         val a = AgentPromptBuilder.build(empty, "Write hi", "p-1").text
         assertEquals(a, AgentPromptBuilder.build(empty, "Write hi", "p-1").text)
         assertTrue("- no objects yet" in a)
-        assertFalse("Fonts:" in a)
+        assertFalse("Fonts (" in a)
     }
 
     @Test fun boundsFailureLeavesSizeOut() {

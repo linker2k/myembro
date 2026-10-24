@@ -46,7 +46,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         EditorAgentExecutor({ session }, { settings }, { availableHoops }, publish = { block ->
             busy = true
             try { block() } finally { busy = false; sync() }
-        }), revision = { session.history.revision })
+        }), revision = { session.history.revision }, catalog = {
+            io.github.linker2k.myembro.ui.agent.AgentCatalog.fonts(app) to io.github.linker2k.myembro.ui.agent.AgentCatalog.designs(app)
+        })
     val availableHoops get() = editorHoops(settings.machineProfile)
     val multiPositionFrames get() = settings.machineProfile?.hoops.orEmpty().filter { it.requiresRepositioning }
     val multiPositionFrame get() = multiPositionFrames.firstOrNull { it.coverage.sameArea(project.hoop) }

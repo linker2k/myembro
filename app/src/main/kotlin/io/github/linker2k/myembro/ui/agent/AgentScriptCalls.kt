@@ -58,10 +58,11 @@ internal data class AgentScriptCalls(
 
     companion object {
         const val NEW_PREFIX = "agent-"
-        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId")
+        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId", "assetId")
         private val FONT_KEYS = setOf("fontId", "fontRevision")
         private val OBJECT_HANDLE = Regex("o\\d+")
         private val FONT_HANDLE = Regex("f\\d+")
+        private val DESIGN_HANDLE = Regex("d\\d+")
 
         /**
          * Deterministic for a given script and [transactionId]: the preview and the apply produce the same
@@ -74,11 +75,13 @@ internal data class AgentScriptCalls(
             val problems = mutableListOf<AgentProblem>()
             script.commands.forEachIndexed { index, command ->
                 if (command.tool in AgentTools.FOLLOW_UPS) { followUps += command.tool; return@forEachIndexed }
-                fun id(value: String, font: Boolean): String = when {
+                fun id(key: String?, value: String, font: Boolean): String = when {
                     !font && value.startsWith("new:") && value.length > 4 -> "$NEW_PREFIX$transactionId-${value.removePrefix("new:")}"
                     !font && OBJECT_HANDLE.matches(value) -> handles.objects[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     font && FONT_HANDLE.matches(value) -> handles.fonts[value]
+                        ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
+                    !font && key == "assetId" && DESIGN_HANDLE.matches(value) -> handles.designs[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     else -> value
                 }
@@ -86,7 +89,7 @@ internal data class AgentScriptCalls(
                     is JsonObject -> JsonObject(element.mapValues { (k, v) -> expand(k, v) })
                     is JsonArray -> JsonArray(element.map { expand(if (key == "objectIds") "objectId" else key, it) })
                     is JsonPrimitive -> if (element.isString && (key in OBJECT_KEYS || key in FONT_KEYS))
-                        JsonPrimitive(id(element.content, key in FONT_KEYS)) else element
+                        JsonPrimitive(id(key, element.content, key in FONT_KEYS)) else element
                     JsonNull -> element
                 }
                 // The app owns the turn: a script cannot name its own transaction. Other tools keep their

@@ -15,6 +15,8 @@ internal class AgentAssistController(
     private val executor: AgentScriptExecutor = NotConnectedAgentScriptExecutor,
     /** The editor session revision; a prompt describes exactly one. */
     private val revision: () -> Long = { 0L },
+    /** Fonts and built-in designs listed in the prompt. */
+    private val catalog: suspend () -> Pair<List<AgentFontInfo>, List<AgentDesignInfo>> = { emptyList<AgentFontInfo>() to emptyList() },
 ) {
     enum class Stage { CLOSED, ASK, REPLY, RESULT }
 
@@ -48,7 +50,8 @@ internal class AgentAssistController(
         stage = Stage.ASK
         summary = null
         draftRevision = revision()
-        summary = withContext(Dispatchers.Default) { AgentProjectSummary.of(project) { it.placedBounds() } }
+        val (fonts, designs) = catalog()
+        summary = withContext(Dispatchers.Default) { AgentProjectSummary.of(project, fonts, designs) { it.placedBounds() } }
     }
 
     /** The prompt was shared or copied; one pending prompt per editor, a new one replaces it. */
