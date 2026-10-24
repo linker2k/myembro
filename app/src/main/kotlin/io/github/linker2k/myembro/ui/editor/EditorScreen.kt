@@ -328,7 +328,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             text = { Text(stringResource(R.string.editor_overwrite_body, name)) },
             confirmButton = { TextButton(onClick = { vm.submitSaveName(name, overwrite = true) }) { Text(stringResource(R.string.editor_overwrite)) } },
             dismissButton = { TextButton(onClick = vm::cancelOverwrite) { Text(stringResource(R.string.editor_cancel)) } }) }
-        AgentAssistHost(vm.agent, vm.project)
+        AgentAssistHost(vm.agent, onFollowUp = { tool -> if (tool == "save_project") vm.requestProjectSave() else vm.save() })
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
             onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
             onDevice = { showOpenProjects = false; openDocument() })

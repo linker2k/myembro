@@ -33,6 +33,19 @@ import io.github.linker2k.myembro.BuildConfig
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.Project
 import kotlinx.coroutines.launch
+import android.graphics.Paint
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import io.github.linker2k.myembro.ui.RenderData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Top-bar entry point of "Ask AI". */
 @Composable
@@ -59,15 +72,15 @@ internal fun AgentPendingCard(controller: AgentAssistController) {
     }
 }
 
-/** Sheets and dialogs of the flow; drawn by the editor over its content. */
+/** Sheets and dialogs of the flow; drawn by the editor over its content. [onFollowUp] opens a follow-up's own screen. */
 @Composable
-internal fun AgentAssistHost(controller: AgentAssistController, project: Project) {
+internal fun AgentAssistHost(controller: AgentAssistController, onFollowUp: (String) -> Unit) {
     // The sample layout covers the result; closing it returns there.
-    controller.samplePreview?.let { PreviewScreen(it, onDismiss = { controller.samplePreview = null }); return }
+    controller.samplePreview?.let { PreviewScreen(it, applying = false, onDismiss = { controller.samplePreview = null }); return }
     when (controller.stage) {
         AgentAssistController.Stage.ASK -> AskSheet(controller)
-        AgentAssistController.Stage.REPLY -> ReplySheet(controller, project)
-        AgentAssistController.Stage.RESULT -> ResultDialog(controller)
+        AgentAssistController.Stage.REPLY -> ReplySheet(controller)
+        AgentAssistController.Stage.RESULT -> ResultDialog(controller, onFollowUp)
         AgentAssistController.Stage.CLOSED -> Unit
     }
 }
@@ -145,23 +158,26 @@ private fun AskSheet(controller: AgentAssistController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReplySheet(controller: AgentAssistController, project: Project) {
+private fun ReplySheet(controller: AgentAssistController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = controller::close) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.agent_reply_title), style = MaterialTheme.typography.titleLarge)
             OutlinedTextField(controller.reply, { controller.reply = it }, Modifier.fillMaxWidth().heightIn(max = 260.dp), minLines = 5,
                 placeholder = { Text(stringResource(R.string.agent_reply_hint)) },
                 textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 // Read only on this tap, never in the background.
                 OutlinedButton(onClick = { paste(context)?.let { controller.reply = it } }) {
                     Icon(Icons.Default.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.agent_paste))
                 }
                 Spacer(Modifier.weight(1f))
-                Button(onClick = { scope.launch { controller.check(project) } }, enabled = controller.reply.isNotBlank()) {
+                if (checking) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                Button(onClick = { checking = true; scope.launch { try { controller.check() } finally { checking = false } } },
+                    enabled = controller.reply.isNotBlank() && !checking) {
                     Text(stringResource(R.string.agent_check))
                 }
             }
@@ -170,41 +186,56 @@ private fun ReplySheet(controller: AgentAssistController, project: Project) {
 }
 
 @Composable
-private fun ResultDialog(controller: AgentAssistController) {
+private fun ResultDialog(controller: AgentAssistController, onFollowUp: (String) -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val outcome = controller.outcome ?: return
+    val read = outcome as? AgentAssistController.Outcome.Read
+    (read?.result as? AgentPreviewResult.Ready)?.let { ready ->
+        PreviewScreen(ready.preview, applying = controller.applying, onDismiss = controller::close,
+            onApply = { confirmed -> scope.launch { controller.apply(confirmed) } },
+            onAskChanges = { controller.close(); controller.openReply() })
+        return
+    }
     val problems = when (outcome) {
         is AgentAssistController.Outcome.Unreadable -> problemTexts(outcome.result)
         is AgentAssistController.Outcome.OtherPrompt -> listOf(stringResource(R.string.agent_other_prompt, outcome.promptId))
-        is AgentAssistController.Outcome.Read -> (outcome.result as? AgentPreviewResult.Rejected)?.problems.orEmpty()
+        is AgentAssistController.Outcome.Read -> (outcome.result as? AgentPreviewResult.Rejected)?.problems.orEmpty().map { problemText(it) }
+        is AgentAssistController.Outcome.ApplyFailed -> outcome.problems.map { problemText(it) }
+        is AgentAssistController.Outcome.Applied -> emptyList()
     }
-    val read = outcome as? AgentAssistController.Outcome.Read
-    (read?.result as? AgentPreviewResult.Ready)?.let { ready ->
-        PreviewScreen(ready.preview, onDismiss = controller::close)
-        return
-    }
+    val applied = outcome as? AgentAssistController.Outcome.Applied
     AlertDialog(onDismissRequest = controller::close,
-        icon = { Icon(if (problems.isEmpty()) Icons.Default.Info else Icons.Default.ErrorOutline, null) },
+        icon = { Icon(when { applied != null -> Icons.Default.CheckCircle; problems.isEmpty() -> Icons.Default.Info
+            else -> Icons.Default.ErrorOutline }, null) },
         title = { Text(stringResource(when {
-            problems.isNotEmpty() && read != null -> R.string.agent_rejected_title
+            applied != null -> R.string.agent_applied_title
+            problems.isNotEmpty() && outcome !is AgentAssistController.Outcome.Unreadable &&
+                outcome !is AgentAssistController.Outcome.OtherPrompt -> R.string.agent_rejected_title
             problems.isNotEmpty() -> R.string.agent_unreadable_title
             else -> R.string.agent_read_title
         })) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 problems.forEach { Text("✕ $it", style = MaterialTheme.typography.bodyMedium) }
-                if (read != null && problems.isEmpty()) {
-                    Text(pluralStringResource(R.plurals.agent_read_count, read.script.commands.size, read.script.commands.size), style = MaterialTheme.typography.bodyMedium)
-                    if (read.script.summary.isNotBlank()) Text("“${read.script.summary}”", style = MaterialTheme.typography.bodySmall)
-                    read.script.commands.forEachIndexed { i, c ->
-                        Text("${i + 1}. ${c.tool}", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall,
-                            color = if (c.tool in AgentTools.NAMES || c.tool in AgentTools.FOLLOW_UPS) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
+                if (applied != null) {
+                    Text(stringResource(R.string.agent_applied_body), style = MaterialTheme.typography.bodyMedium)
+                    if (applied.followUps.isNotEmpty()) {
+                        Text(stringResource(R.string.agent_applied_followups), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        applied.followUps.forEach { tool ->
+                            // Each opens the existing screen with its own confirmation; nothing runs from here.
+                            OutlinedButton(onClick = { controller.close(); onFollowUp(tool) }) { Text(followUpLabel(tool) + "…") }
+                        }
                     }
+                } else if (read != null && problems.isEmpty()) {
+                    Text(pluralStringResource(R.plurals.agent_read_count, read.script.commands.size, read.script.commands.size), style = MaterialTheme.typography.bodyMedium)
+                    read.script.commands.forEachIndexed { i, c -> Text("${i + 1}. ${c.tool}", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
                     if (read.result == AgentPreviewResult.NotConnected) Text(stringResource(R.string.agent_not_connected),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (BuildConfig.DEBUG) TextButton(onClick = { controller.samplePreview = AgentPreviewSample.of(read.script) },
-                        contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.agent_sample)) }
                 } else Text(stringResource(R.string.agent_nothing_changed), style = MaterialTheme.typography.bodySmall)
+                if (BuildConfig.DEBUG && read != null) TextButton(onClick = { controller.samplePreview = AgentPreviewSample.of(read.script) },
+                    contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.agent_sample)) }
             }
         },
         confirmButton = { TextButton(onClick = controller::close) { Text(stringResource(R.string.agent_close)) } },
@@ -238,10 +269,30 @@ private fun problemTexts(result: AgentParseResult): List<String> = when (result)
     }
 }
 
-/** Before/after, changes, sewout check and confirmations; Apply is one undo step (disabled for samples). */
+/** Dispatcher codes in plain words; the dispatcher's own message follows for the repair prompt. */
+@Composable
+private fun problemText(p: AgentProblem): String {
+    val reason = when (p.code) {
+        "NOT_IMPLEMENTED" -> stringResource(R.string.agent_code_not_implemented)
+        "UNKNOWN_TOOL" -> stringResource(R.string.agent_code_unknown_tool)
+        "INVALID_ARGUMENTS" -> stringResource(R.string.agent_code_invalid_arguments)
+        "UNKNOWN_HANDLE" -> stringResource(R.string.agent_code_unknown_handle, p.message)
+        "REVISION_MISMATCH", "STALE_REVISION" -> stringResource(R.string.agent_code_stale)
+        "CONFIRMATION_REQUIRED" -> stringResource(R.string.agent_code_confirmation)
+        "SEWOUT_BLOCKED" -> stringResource(R.string.agent_code_sewout_blocked)
+        "MACHINE_UNKNOWN" -> stringResource(R.string.agent_code_machine_unknown)
+        "GESTURE_IN_PROGRESS", "TURN_IN_PROGRESS" -> stringResource(R.string.agent_code_busy)
+        else -> stringResource(R.string.agent_code_other)
+    }
+    val detail = p.message.takeIf { it.isNotBlank() && p.code != "UNKNOWN_HANDLE" && it != p.tool }?.let { " ($it)" }.orEmpty()
+    return if (p.index != null) stringResource(R.string.agent_problem_at, p.index + 1, p.tool.orEmpty(), reason) + detail else reason + detail
+}
+
+/** Before/after, changes, sewout check and confirmations; Apply is one undo step (disabled for samples and blocked results). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PreviewScreen(preview: AgentPreview, onDismiss: () -> Unit, onApply: () -> Unit = {}, onAskChanges: () -> Unit = {}) {
+private fun PreviewScreen(preview: AgentPreview, applying: Boolean, onDismiss: () -> Unit,
+    onApply: (removalConfirmed: Boolean) -> Unit = {}, onAskChanges: () -> Unit = {}) {
     var removeTicked by remember(preview) { mutableStateOf(false) }
     // A full-screen layer over the editor (like the font library over lettering), not a Dialog window,
     // so the activity's edge-to-edge insets apply unchanged.
@@ -260,7 +311,9 @@ private fun PreviewScreen(preview: AgentPreview, onDismiss: () -> Unit, onApply:
                         TextButton(onClick = onAskChanges) { Text(stringResource(R.string.agent_ask_changes)) }
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = onDismiss) { Text(stringResource(R.string.agent_cancel)) }
-                        Button(onClick = onApply, enabled = !preview.sample && (preview.removals.isEmpty() || removeTicked)) {
+                        if (applying) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Button(onClick = { onApply(removeTicked) }, enabled = !applying && !preview.sample && preview.blockingFindings == null &&
+                            preview.changes.isNotEmpty() && (preview.removals.isEmpty() || removeTicked)) {
                             Text(stringResource(R.string.agent_apply))
                         }
                     }
@@ -272,11 +325,11 @@ private fun PreviewScreen(preview: AgentPreview, onDismiss: () -> Unit, onApply:
                 if (preview.sample) Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = MaterialTheme.shapes.small) {
                     Text(stringResource(R.string.agent_sample_banner), Modifier.fillMaxWidth().padding(10.dp), style = MaterialTheme.typography.bodySmall)
                 }
-                Text("“${preview.summary}”", style = MaterialTheme.typography.titleMedium)
+                if (preview.summary.isNotBlank()) Text("“${preview.summary}”", style = MaterialTheme.typography.titleMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PreviewPane(stringResource(R.string.agent_before), Modifier.weight(1f))
-                    Icon(Icons.Default.ArrowForward, null)
-                    PreviewPane(stringResource(R.string.agent_after), Modifier.weight(1f))
+                    PreviewPane(stringResource(R.string.agent_before), preview.before, Modifier.weight(1f))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                    PreviewPane(stringResource(R.string.agent_after), preview.after, Modifier.weight(1f))
                 }
                 Text(stringResource(R.string.agent_changes), style = MaterialTheme.typography.titleSmall)
                 preview.changes.forEach { change ->
@@ -288,7 +341,11 @@ private fun PreviewScreen(preview: AgentPreview, onDismiss: () -> Unit, onApply:
                         }, null, Modifier.size(18.dp), tint = if (change.kind == AgentChange.Kind.REMOVE) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text(change.text, style = MaterialTheme.typography.bodyMedium)
+                        Text(changeText(change), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium)
+                        change.detail.lastOrNull()?.takeIf { change.tool == "recolor_object" }?.let(::parseColor)?.let { color ->
+                            Spacer(Modifier.width(8.dp))
+                            Box(Modifier.size(16.dp).background(color, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape))
+                        }
                     }
                 }
                 val blocked = preview.blockingFindings
@@ -317,13 +374,67 @@ private fun PreviewScreen(preview: AgentPreview, onDismiss: () -> Unit, onApply:
     }
 }
 
-/** Placeholder pane; the dispatcher supplies before/after projects drawn by the editor renderer. */
 @Composable
-private fun PreviewPane(label: String, modifier: Modifier) {
+private fun changeText(change: AgentChange): String {
+    val names = change.objects.joinToString(", ").ifEmpty { "—" }
+    val d = change.detail
+    fun at(i: Int) = d.getOrElse(i) { "" }
+    return when (change.tool) {
+        "set_object_transforms" -> stringResource(R.string.agent_change_transform, names, at(0), at(1), at(2), at(3), at(4))
+        "transform_objects" -> stringResource(R.string.agent_change_group, names, at(0), at(1), at(2), at(3))
+        "align_objects" -> stringResource(R.string.agent_change_align, names, when (at(0)) {
+            "LEFT" -> stringResource(R.string.agent_align_left); "CENTER_X" -> stringResource(R.string.agent_align_center_x)
+            "RIGHT" -> stringResource(R.string.agent_align_right); "TOP" -> stringResource(R.string.agent_align_top)
+            "CENTER_Y" -> stringResource(R.string.agent_align_center_y); "BOTTOM" -> stringResource(R.string.agent_align_bottom)
+            else -> at(0) })
+        "distribute_objects" -> stringResource(R.string.agent_change_distribute, names,
+            stringResource(if (at(0) == "VERTICAL") R.string.agent_axis_vertical else R.string.agent_axis_horizontal))
+        "mirror_objects" -> stringResource(R.string.agent_change_mirror, names)
+        "center_objects" -> stringResource(R.string.agent_change_center, names)
+        "remove_objects" -> stringResource(R.string.agent_change_remove, names)
+        "duplicate_object" -> stringResource(R.string.agent_change_duplicate, names, at(0))
+        "reorder_object" -> stringResource(R.string.agent_change_reorder, names, at(0))
+        "set_object_visibility" -> stringResource(if (at(0) == "true") R.string.agent_change_show else R.string.agent_change_hide, names)
+        "recolor_object" -> stringResource(R.string.agent_change_recolor, names, at(0), at(1))
+        "set_project_frame" -> stringResource(R.string.agent_change_frame, at(0))
+        else -> stringResource(R.string.agent_change_other, change.tool, names)
+    }
+}
+
+private fun parseColor(hex: String): Color? =
+    hex.removePrefix("#").takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
+
+/** The project as sewn inside its hoop, drawn like the editor's layer thumbnails. */
+@Composable
+private fun PreviewPane(label: String, project: Project?, modifier: Modifier) {
+    val renders by produceState<List<RenderData>?>(null, project) {
+        value = project?.let { p -> withContext(Dispatchers.Default) {
+            p.objects.filter { it.visible }.mapNotNull { runCatching { RenderData(it.placedPattern()) }.getOrNull() }
+        } }
+    }
+    val background = MaterialTheme.colorScheme.surfaceContainerLow
+    val hoopColor = MaterialTheme.colorScheme.outline
+    val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         OutlinedCard(Modifier.fillMaxWidth().aspectRatio(1f), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.CropFree, null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.outline)
+            val data = renders
+            if (project == null || data == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                if (project == null) Icon(Icons.Default.CropFree, null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.outline)
+                else CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+            } else Canvas(Modifier.fillMaxSize()) {
+                drawRect(background)
+                val w = project.hoop.width.toFloat(); val h = project.hoop.height.toFloat()
+                val scale = minOf(size.width / w, size.height / h) * 0.9f
+                drawIntoCanvas { c ->
+                    val canvas = c.nativeCanvas
+                    canvas.save(); canvas.translate(size.width / 2, size.height / 2); canvas.scale(scale, scale)
+                    paint.style = Paint.Style.STROKE; paint.color = hoopColor.toArgb(); paint.strokeWidth = 1.5f / scale
+                    canvas.drawRect(-w / 2, -h / 2, w / 2, h / 2, paint)
+                    paint.strokeWidth = 1.2f / scale
+                    data.forEach { d -> d.runs.forEach { run -> paint.color = run.color
+                        canvas.drawLines(d.stitchLines, run.start * 4, (run.end - run.start) * 4, paint) } }
+                    canvas.restore()
+                }
             }
         }
         Spacer(Modifier.height(4.dp))
