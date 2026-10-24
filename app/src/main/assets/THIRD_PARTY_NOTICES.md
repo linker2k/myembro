@@ -610,7 +610,7 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
   Mikko Tommila. Full license and source link are packaged at `licenses/apfloat/MIT.txt`.
   Source: https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.10.1/apfloat-1.10.1-sources.jar .
 
-## AutoTrace thinning and pixel centerline tracing
+## AutoTrace thinning, centerline tracing and spline fitting
 
 - Source: [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), fixed commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`, `src/thin-image.c` / `src/thin-image.h`.
 - Copyright (C) 2001, 2002 Martin Weber. Kotlin adaptation (C) 2026 myembro contributors.
@@ -618,4 +618,4 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 - The original header credits Joseph M. Cychosz, “Efficient Binary Image Thinning using Neighborhood Maps”, Graphics Gems IV (1994).
 - `AutoTraceThinning.kt` preserves the original deletion lookup table, pass/color order, unsigned-byte scan-buffer truncation and distinct grayscale/RGB edge rules. JVM arrays replace GLib allocation; explicit per-call background replaces mutable global state; invalid/oversized inputs are rejected. No native AutoTrace/GLib runtime is bundled.
 - `AutoTraceCenterline.kt` additionally ports `src/pxl-outline.c` pixel centerline tracing from the same commit under the project **GPL-2.0-or-later** license (Copyright AutoTrace contributors); full text is packaged as `licenses/autotrace/COPYING`. Its file header has no separate license grant; project COPYING/README and the linked GPL `src/autotrace.c` bitmap helpers establish the project license context. Original ordered pixel coordinates, direction marks, path concatenation and open/closed flags are retained.
-- Scope: thinning and ordered pixel paths only; no spline fitting, SVG paths or stitches yet. Source hashes, original C goldens and differences are recorded in `docs/hangul-centerline.md`.
+- `AutoTraceFit.kt` ports `src/fit.c` (Copyright (C) 1992 Free Software Foundation, Inc., **GPL-2.0-or-later**) and curve/vector/spline helpers from the same commit. It preserves default centerline corner splitting, knee removal, filtering, tangents, least-squares fitting, recursive subdivision and line reversion. The existing packaged `licenses/autotrace/COPYING` applies. Source hashes, original C control-point goldens and differences are recorded in `docs/hangul-centerline.md`. Native libraries are not bundled; variable-width distance-map fitting is outside this port.

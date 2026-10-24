@@ -223,3 +223,48 @@ PES SHA256: `c26ff1bb5fdbee8c46397c2fcaba1800aa27da3b98b9b0d49d13a340fd202e79`.
 전체 `./gradlew check` 통과(마지막 run13s). 원본 fit 생성기/재현 명령은
 `tools/hangul_satin/README.md` 참조. KRSAT1 재생성으로 덮어쓰지 말고 다음
 실기 파일은 새 stem을 사용한다.
+
+## letter 인계 단위 4 — AutoTrace fit Kotlin 이식
+
+`AutoTraceFit.kt`가 같은 고정 AutoTrace0.31.10의 `fit.c` 중심선 기본 경로를 포팅한다.
+`split_at_corners/find_corners/find_vectors/remove_adjacent_corners`,
+`remove_knee_points`, `filter`, `fit_curve/fit_with_line/fit_with_least_squares`,
+`set_initial_parameter_values`, `find_tangent/find_half_tangent`, `fit_one_spline`,
+`find_error`, `spline_linear_enough/change_bad_lines`와 `vector.c` float 벡터 연산,
+`spline.c:evaluate_spline`을 대응한다. 원본 커밋과 GPL2+FSF 고지는 파일 머리에,
+원본 라이선스 전문은 기존 engine 리소스에 보존했다.
+
+기본값: corner_surround4, corner_threshold100°, corner_always_threshold60°,
+filter_iterations4, tangent_surround3, error_threshold2px, line_threshold1,
+line_reversion_threshold0.01, remove_adjacent_corners=false,
+centerline=true, preserve_width=false. 원본 `gfloat` 연산 순서·반올림, 코너 끝 처리,
+필터 collapse 취소와 이전 점 상태, 열린 곡선 링크 처리, 비정규화 평균 접선,
+재귀 분할 시 공유 접선을 유지한다. 자체 곡선 스무딩이나 폭 추정은 없다.
+
+**골든:** 기존 합성 직선/T/X/고리·OFL Noto ‘한’5입력×1/3채널10건.
+`tools/autotrace/generate-fit-goldens.py`는 원본 C를 수정 없이 호출해
+[fit 리소스](../engine/src/test/resources/autotrace/fit/README.md)를 생성한다.
+경로 수·개폐/방향·세그먼트 순서/차수·모든 제어점 xyz를 float비트 exact로 비교한다.
+`AutoTraceFitTest`: **원본 골든10/10 + 빈 입력/잘못된 좌표 검사1건 통과**.
+C 골든 재실행도10/10 byte exact. 로컬 ‘정민’15mm는 테스트 픽스처로 넣지 않고
+`/tmp/myembro-sewtest/krs/input.pgm`으로 별도 비교: **9경로·21세그먼트·84제어점
+float비트 exact** (`/tmp/myembro-port-out/letter/autotrace/fit/local-fit.log`).
+
+시범 CLI는 이제 **Kotlin fit의 결과만** convert-to-satin에 전달한다.
+선택적 C fit.json이 있으면 해시/출처 검증과 모든 제어점 비트 일치 검사만 하며
+없어도 같은 Kotlin fit을 쓴다. 픽셀 계단 경로 PES fallback은 없다.
+`KRFIT1-centerline.png/json`을 로컬로 생성했고 전달된 KRSAT1.PES는 변경하지 않았다.
+앱 UI 연결·새틴/채우기 자동 선택·사용자 봉제 승인과는 별개다.
+
+원본 대비 범위/차이:
+- 상수 폭 중심선 fit만 지원한다. preserve_width 거리맵/z 폭 피팅과 outline fitting,
+  임의 fit 설정·진행/취소 콜백·로그는 이번 API에 포함하지 않는다.
+- GLib 할당/링크는 JVM 객체/List로 대체한다. 비정상 빈 경로/음수·ushort 범위 밖
+  픽셀은 입력 오류로, 원본에서 무한 반복/분할 실패할 퇴화 접선은 명시 오류로 중단한다.
+- 원본10건과 별도 로컬 사례의 exact는 해당 입력에 대한 측정이며 전체 입력 동등성
+  또는 선→새틴의 공식 오라클 동등성을 의미하지 않는다.
+
+검증 출력: `/tmp/myembro-port-out/letter/autotrace/fit/verify.log`, `local-fit.log`,
+`check.log`. `./gradlew check`: **BUILD SUCCESSFUL in38s**, 엔진650·앱 Debug205/
+Release205 테스트 실패0, Lint 통과. 이번 단위는 fit 교체/비교까지이며 새 PES 실기
+파일을 추가 생성하지 않았다. 전달된 KRSAT1 SHA256도 이전 기록과 동일하다.

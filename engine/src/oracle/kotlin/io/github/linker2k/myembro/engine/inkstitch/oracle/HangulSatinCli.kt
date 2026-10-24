@@ -37,15 +37,46 @@ object HangulSatinCli {
         val thin=AutoTraceThinning.thin(w,h,pixels)
         val paths=AutoTraceCenterline.trace(w,h,thin)
         check(paths.isNotEmpty())
-        val pixelNormalized=paths.map { path ->
-            var points=path.points.map { Point(it.x/pixelsPerMm*PIXELS_PER_MM,
-                (h-1-it.y)/pixelsPerMm*PIXELS_PER_MM) }
-            if(!path.open) points=points+points.first()
-            points
-        }
         val fitFile=File(input,"fit.json")
-        val fit=fitFile.takeIf { it.exists() }?.let { Json.parseToJsonElement(it.readText()).jsonObject }
-        val fitProvenance=if(fit!=null) {
+        val originalFit=fitFile.takeIf { it.exists() }?.let { Json.parseToJsonElement(it.readText()).jsonObject }
+        val kotlinFit=AutoTraceFit.fit(paths)
+        val fit=buildJsonObject {
+            put("schema",1); put("width",w); put("height",h)
+            put("paths",buildJsonArray { kotlinFit.forEach { path -> add(buildJsonObject {
+                put("open",path.open); put("clockwise",path.clockwise)
+                put("segments",buildJsonArray { path.segments.forEach { segment -> add(buildJsonObject {
+                    put("degree",segment.degree)
+                    put("v",buildJsonArray { segment.v.forEach { p -> add(buildJsonArray { add(p.x);add(p.y);add(p.z) }) } })
+                }) } })
+            }) } })
+        }
+        // Optional native reference only verifies the port; never supplies the production coordinates.
+        if(originalFit!=null) {
+            val expected=originalFit.getValue("paths").jsonArray
+            check(expected.size==kotlinFit.size) { "Original fit path count mismatch" }
+            var controls=0
+            expected.forEachIndexed { i,element ->
+                val path=element.jsonObject; val actual=kotlinFit[i]
+                check(path.getValue("open").jsonPrimitive.boolean==actual.open)
+                check(path.getValue("clockwise").jsonPrimitive.boolean==actual.clockwise)
+                val segments=path.getValue("segments").jsonArray
+                check(segments.size==actual.segments.size) { "Original fit segment count mismatch at path $i" }
+                segments.forEachIndexed { j,value ->
+                    val segment=value.jsonObject; val output=actual.segments[j]
+                    check(segment.getValue("degree").jsonPrimitive.int==output.degree)
+                    segment.getValue("v").jsonArray.forEachIndexed { k,coords ->
+                        val e=coords.jsonArray.map { it.jsonPrimitive.float }
+                        val a=output.v[k]
+                        check(e[0].toBits()==a.x.toBits() && e[1].toBits()==a.y.toBits() && e[2].toBits()==a.z.toBits()) {
+                            "Original fit control mismatch path=$i segment=$j control=$k expected=$e actual=$a"
+                        }
+                        controls++
+                    }
+                }
+            }
+            println("AUTOTRACE_LOCAL_FIT_EXACT paths=${kotlinFit.size} segments=${kotlinFit.sumOf { it.segments.size }} controls=$controls floatBits=exact")
+        }
+        val fitProvenance=if(originalFit!=null) {
             fun sha(file:File)=MessageDigest.getInstance("SHA-256").digest(file.readBytes())
                 .joinToString("") { "%02x".format(it.toInt() and 255) }
             val manifest=Json.parseToJsonElement(File(input,"fit-provenance.json").readText()).jsonObject
@@ -55,8 +86,8 @@ object HangulSatinCli {
             check(manifest.getValue("repeat_exact").jsonPrimitive.boolean)
             manifest
         } else null
-        val fitPaths=fit?.getValue("paths")?.jsonArray
-        val normalized=if(fitPaths!=null) fitPaths.map { element ->
+        val fitPaths=fit.getValue("paths").jsonArray
+        val normalized=fitPaths.map { element ->
             val segments=element.jsonObject.getValue("segments").jsonArray.map { it.jsonObject }
             fun value(segment:JsonObject,index:Int,axis:Int):String {
                 val coord=segment.getValue("v").jsonArray[index].jsonArray[axis].jsonPrimitive.float
@@ -75,9 +106,8 @@ object HangulSatinCli {
             }
             val scale=PIXELS_PER_MM/pixelsPerMm
             SvgPath.flatten(d,Affine2D.scale(scale,scale),tolerance=0.1).single().points.map { Point(it.x,it.y) }
-        } else pixelNormalized
-        val curveContract=if(fit!=null) "Unmodified original AutoTrace C fit; original output-svg %g serialization; existing SvgPath flatten 0.1 SVG px"
-            else "Original ordered pixel paths; trace only, no fit and no PES"
+        }
+        val curveContract="Kotlin AutoTrace 0.31.10 fit defaults; original output-svg %g serialization; existing SvgPath flatten 0.1 SVG px"
         val pathReport=buildJsonObject {
             put("input",metadata);put("path_count",paths.size)
             put("curve_contract",curveContract)
@@ -107,9 +137,8 @@ object HangulSatinCli {
             }
             g.dispose();ImageIO.write(image,"png",file)
         }
-        preview(null,if(fit!=null) "original AutoTrace fitted centerline" else "pixel centerline only",File(stem.path+"-centerline.png"))
-        if(args[2]=="trace") { println("TRACE_ONLY fitted=${fit!=null} paths=${paths.size}; no PES export requested");return }
-        check(fit!=null) { "Original AutoTrace fit.json required before satin/PES; pixel-staircase output is not exported" }
+        preview(null,"Kotlin AutoTrace fitted centerline",File(stem.path+"-centerline.png"))
+        if(args[2]=="trace") { println("TRACE_ONLY fitted=Kotlin paths=${paths.size}; no PES export requested");return }
         val widthMm=args[2].toDouble();require(widthMm.isFinite() && widthMm>0)
         val groups=mutableListOf<StitchGroup>();val black=EmbThread(0xff000000.toInt(),"Black 40wt")
         for(path in normalized) {
@@ -141,7 +170,7 @@ object HangulSatinCli {
         preview(decoded,"satin width ${widthMm}mm (decoded PES)",File(stem.path+".png"),
             candidate.bounds!!.minX/10.0,candidate.bounds!!.minY/10.0)
         val report=buildJsonObject {
-            put("input",metadata);put("fit_provenance",fitProvenance!!);put("stroke_width_mm",widthMm);put("curve_contract",pathReport.getValue("curve_contract"))
+            put("input",metadata);put("fit_provenance",fitProvenance ?: buildJsonObject { put("implementation","Kotlin"); put("commit","1a232b27818a46a05cd25edec09e2f77c4e9ac01") });put("stroke_width_mm",widthMm);put("curve_contract",pathReport.getValue("curve_contract"))
             put("paths",paths.size);put("stitches",decoded.stitchCount);put("trims",decoded.trimCount);put("colors",decoded.threads.size)
             put("min_x",viewport.minX);put("min_y",viewport.minY);put("max_x",viewport.maxX);put("max_y",viewport.maxY)
             put("header_width",viewport.headerWidth);put("header_height",viewport.headerHeight)
