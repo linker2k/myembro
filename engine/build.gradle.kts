@@ -180,3 +180,15 @@ tasks.register<JavaExec>("hangulSatinSweep") {
     maxHeapSize = "2g"
     args(providers.gradleProperty("hangulSweepRoot").orElse("/tmp/myembro-port-out/letter/hangul-sweep-v1").get())
 }
+
+// Original synthetic PNG probe; no app integration or private fixtures.
+tasks.register<JavaExec>("imageToDesignProbe") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.ImageToDesignProbeCli")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("imageProbeInput").orElse("/tmp/myembro-port-out/editor/image-to-design/inputs").get(),
+        providers.gradleProperty("imageProbeOutput").orElse("/tmp/myembro-port-out/editor/image-to-design").get(),
+        providers.gradleProperty("imageProbeColors").orElse("4").get())
+}
