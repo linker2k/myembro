@@ -20,7 +20,7 @@ This guide covers myembro v0.2.8. Screenshots show the Korean UI; English labels
 
 Install the APK from the latest GitHub pre-release. The home screen opens first.
 
-![Home screen](../images/manual/01-home.png)
+![Home screen](../images/manual/en/01-home.png)
 
 - **New project** card: shows the default hoop (100×100mm, 4×4in). Tap **Start new project**.
 - **Recent projects**: saved designs and projects appear here. **See all** opens the full list; **Import design** opens a PES/PEC/DST file from the phone.
@@ -31,7 +31,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 
 **Start new project** opens a sheet with five starting points:
 
-![New project sheet](../images/manual/02-new-project.png)
+![New project sheet](../images/manual/en/02-new-project.png)
 
 | Option | What happens |
 |---|---|
@@ -43,7 +43,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 
 ## 3. Editor
 
-![Editor with the myembro logo](../images/manual/03-editor-logo.png)
+![Editor with the myembro logo](../images/manual/en/03-editor-logo.png)
 
 - Top: back, undo/redo, menu. Below it the hoop chip (for example **Hoop 100×100mm**), the object count and the **Save** button.
 - Left tools: select, pan (hand), fit to view, grid.
@@ -56,50 +56,68 @@ The hoop is 100×100mm by default. Designs must stay inside it: coordinates run 
 
 ## 4. Lettering
 
-![Font library](../images/manual/04-font-library.png)
+![Font library](../images/manual/en/04-font-library.png)
 
-1. Tap **Lettering** in the editor (or **Start with lettering**).
-2. Type your text and open the font list. Filters: **All**, **Korean**, **Latin**, **Script**, **Single-line**, **Outline**. **+ Add my font** adds your own TTF font.
-3. Fonts are downloaded from their open-source repositories and verified before use. Tap the download button on a font card; **License** shows its license; the heart marks a favorite. A card says when the font does not support the Korean letters you typed.
-4. Set the letter height and place the text on the hoop.
+1. Tap **Lettering** in the editor's bottom bar (or **Start with lettering**). The lettering screen shows a preview on the hoop.
+2. Type your text in **Text** (the character count is shown).
+3. Pick a font under **Embroidery font**, or tap **More fonts** to open the font library. Filters: **All**, **Korean**, **Latin**, **Script**, **Single-line**, **Outline**. **+ Add my font** adds your own TTF font.
+4. Fonts are downloaded from their open-source repositories and verified before use. On a font card, tap the download button; **License** shows its license; the heart marks a favorite. If a font cannot write the letters you typed, the card says so (for example, that it does not support the Korean in your text).
+5. Set **Letter size**, then tap **+ Add to design**.
 
-What the app decides for you:
-- **Stitch type.** For TTF fonts (including Korean) the app chooses satin, fill or running stitch from the letter size, and only offers sizes that sew safely.
-- **Ink/Stitch fonts** (72 verified fonts) are stitched as satin.
-- **Single-line fonts** have **Normal** (one pass) and **Bold** (Ink/Stitch bean stitch, three passes). Where the original font draws the same segment twice, Bold can pass there 6 times.
+![Mixed Korean and Latin text: automatic fill](../images/manual/en/05-lettering-hangul.png)
+![Korean only: automatic satin](../images/manual/en/05b-lettering-hangul-satin.png)
 
-<!-- shot: 05 Korean satin -->
-<!-- shot: 06 single-line normal/bold -->
+The app chooses the stitch type and shows it under the font list, for example **Auto · Fill** or **Auto · Satin**. In the screenshots, mixed text ("안녕 myembro") becomes fill and Korean-only text ("안녕") becomes satin. Only sizes that sew safely are offered. The 72 verified Ink/Stitch fonts are stitched as satin.
+
+![Single-line font, Normal](../images/manual/en/06-single-line-normal.png)
+![Single-line font, Bold](../images/manual/en/06b-single-line-bold.png)
+
+Single-line fonts (for example Hershey Script 1-stroke) offer **Normal** (running stitch, one pass) and **Bold** (triple bean stitch from Ink/Stitch). Where the original font draws the same segment twice, Bold can pass there 6 times.
 
 ## 5. Photo to embroidery
 
-Choose **Photo/drawing**, pick an image, crop it, then choose a mode:
+Choose **Photo/drawing** on the new project sheet. The screen has three steps: crop, choose a mode, then the result.
 
-- **Silhouette**: one color, filled.
-- **Outline**: one color, traced outline.
-- **Color drawing**: traces a drawing into several thread colors; a grayscale option is available.
+**Step 2 — mode.** Choose **Silhouette**, **Outline** or **Color drawing**.
 
-Set the embroidery size with the slider, check the preview, then continue to the editor. Very small areas are merged away, and stitch types (fill, satin, running) are chosen per region automatically. If a region cannot be stitched safely it is excluded and the app tells you how many.
+![Silhouette mode](../images/manual/en/07-photo-silhouette.png)
 
-<!-- shot: 07 silhouette + size -->
-<!-- shot: 08 outline -->
-<!-- shot: 09 color drawing + grayscale -->
+- **Silhouette**: one color, filled. The **Detail** slider keeps smaller contours the higher it is.
+- **Embroidery size · width** slider: the aspect ratio is kept. The range is computed for the picture (20mm–77.1mm in this example), and the design is recalculated when you release the slider.
+
+![Outline mode](../images/manual/en/08-photo-outline.png)
+
+- **Outline**: one color, traced outline of the same picture.
+
+![Color drawing mode](../images/manual/en/09-photo-color.png)
+
+- **Color drawing** (2–6 colors): set **Number of colors** with the slider, or turn on **Grayscale**. Transparent background is not stitched; the most common color at the edge is removed as background; colors are matched to the Brother 64-color threads automatically.
+
+**Step 3 — result.**
+
+![Result with sew-out check passed](../images/manual/en/09b-photo-result.png)
+
+The result shows **Sew-out check · Passed**, the stitch count and estimated time, the actual size and the **Brother threads needed** (number and name). The time is an estimate. Tap **Editor** to keep editing or **Send** to send it to the machine.
 
 ## 6. Emoji
 
-Choose **From emoji**, search (Korean search terms work, based on Unicode CLDR), pick an emoji and set its size with the slider (shared with the photo screen). Some emoji lose small color areas at large sizes; the size range offered keeps all colors.
+![Korean emoji search](../images/manual/en/10-emoji-korean-search.png)
 
-<!-- shot: 10 emoji -->
+Choose **From emoji** and search. Korean search terms work (based on Unicode CLDR); the screenshot shows results for "하트" (heart). Some emoji are marked as needing a download first. Set the size with the same embroidery size slider as the photo screen.
 
 ## 7. Viewer: playback and statistics
 
-Open any design to view it: thread colors, zoom and pan, the hoop outline, stitch-by-stitch playback, and statistics (stitch count, size, colors, trims, estimated time). PES (v1–v10), PEC and DST can be opened.
+![Viewer during playback](../images/manual/en/11-viewer-playback.png)
 
-<!-- shot: 11 viewer playback/statistics -->
+Open any design to view it with thread colors, zoom and pan and the hoop outline. Stitch playback shows progress (for example 414/2,808 stitches), and statistics show stitch count, colors, estimated time and size. PES (v1–v10), PEC and DST can be opened.
 
 ## 8. Sew-out check
 
-Before saving or sending, every design the app generates is checked for the conditions that cause real sew-out failures:
+![Pre-sew check for SE400](../images/manual/en/12-sewout-check.png)
+
+The **Pre-sew check** sheet shows the selected machine (here Brother SE400), the number of blocks, warnings and thread trims, and the estimated time. Tabs: **Problems**, **Sewing order**, **Per-color estimate**, **Machine spec**. Info items explain what is unverified (for example the maximum sewing speed used for time estimates); **Show location** jumps to the stitch.
+
+Every design the app generates is checked before saving or sending for the conditions that cause real sew-out failures:
 
 - too many needle penetrations in one 0.5mm cell
 - repeated penetrations at the same point
@@ -107,38 +125,45 @@ Before saving or sending, every design the app generates is checked for the cond
 - stitches longer than 12.0mm
 - file errors, or stitches outside the hoop (0–999 in 0.1mm units)
 
-If any check fails, saving and sending are blocked and the reason is shown. Imported PES files are kept byte-for-byte.
-
-<!-- shot: 12 sew-out check -->
+If any check fails, saving and sending are blocked. Imported PES files are kept byte-for-byte.
 
 ## 9. Sending to the machine
 
-**Brother SE400 (USB cable):** connect the phone to the SE400 with a USB cable and send the design directly (confirmed on a real machine). Past transfers appear in the transfer history.
+![Selecting a design for USB export](../images/manual/en/13-transfer-usb.png)
 
-**Important for the SE400:** it has no automatic thread cutter. Travel threads between colors and positions are not cut, so trim them by hand after sewing. The app shows guidance for this.
+1. Connect the phone to the Brother SE400 with a USB cable (USB-B on the machine side).
+2. In **Designs**, enter selection mode and check the designs to send. Filters: **All**, **Fits 100×100**, **PES**, **Recent**, favorites.
+3. Tap **Export via USB**. If no USB device is connected, a banner says **No USB connected**; tap it to see how to export via USB.
+
+![Transfer failed without USB](../images/manual/en/13b-transfer-usb-fail.png)
+
+If the transfer fails, the result screen explains how to connect (OTG) and offers **Copy diagnostic info**.
+
+![Transfer history](../images/manual/en/14-transfer-history.png)
+
+The clock icon in selection mode opens the recent USB transfer history (the screenshot was taken on an emulator, so only failed attempts are listed).
+
+**Important for the SE400:** it has no automatic thread cutter. Travel threads between colors and positions are not cut, so trim them by hand after sewing. The app shows guidance for this. Files written to the SE400 over USB are erased when the machine is turned off.
 
 **SE600/SE700:** machine profiles (100×100mm, USB memory) based on the manuals; transfer has not been tested on real machines yet.
 
-<!-- shot: 13 SE400 USB transfer -->
-<!-- shot: 14 transfer history -->
-
 ## 10. Backup and restore
 
-In **Settings**, a full backup saves designs, projects, downloaded fonts and settings into one ZIP; restore reads it back.
+![Settings: backup](../images/manual/en/15-settings-backup.png)
+
+At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it, **Machine** shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes.
 
 **Take a backup now.** The current APK is signed with a development key. When releases switch to the official signing key, the new version cannot be installed over the old one: you must uninstall once and reinstall, which deletes app data. Restore your ZIP afterwards.
 
-<!-- shot: 15 backup/restore -->
-
 ## 11. About and known limitations
 
-**Settings → About** shows the app version and information. myembro is GPL-3.0-or-later.
+![Settings: theme and about](../images/manual/en/16-about.png)
 
+At the bottom of **Settings**: **Display theme**, **App info and licenses**, and the version (0.2.8 with the build commit). myembro is GPL-3.0-or-later.
+
+![Home in dark theme](../images/manual/en/17-home-dark.png)
+
+Known limitations:
 - SE400: no automatic thread cutting; trim travel threads by hand.
 - Signing key change: uninstall/reinstall will be needed once; back up first.
 - SE600/SE700: transfer not yet tested on real machines.
-
-The app also has a dark theme.
-
-<!-- shot: 16 about -->
-<!-- shot: 17 dark home -->
