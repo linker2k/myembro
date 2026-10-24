@@ -1753,3 +1753,12 @@ FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES �
 원본 그래프 생성·레일 절단·DOM 연결은 미완료, 공식 오라클 미판정.
 분석적7건과 차이점/다음 의존성 및 KRSAT1 이동 기준값은
 [한글 새틴 라우팅](hangul-satin-routing.md)에 기록했다.
+
+### 한글 새틴 라우팅 단위2
+
+`stitches/AutoSatin.kt`: 원본 auto_satin의 Section1mm 분할·최소 연결·원본 그래프
+순회·중복 underpath·양쪽 rail 절단·렁 재배치/추가·러닝 합치기를 기존 포트에 연결.
+사용자 지정 글자/8방향 잉크 component/bbox 순서로 KRSAT2 실제 생성.
+범용 raw SVG rails가 아닌 convert-to-satin Section 기본값 전용, 공식 오라클
+동등성 미판정. 원본 함수·모든 차이와 실제 바이트 점프/잠금 표는
+[단위2 보고](hangul-satin-krsat2.md)에 기록했다.

@@ -94,3 +94,10 @@ PE-Design처럼 유지하되 점프 자체를 줄인다. **모든 JUMP의 양끝
 출력 `/tmp/myembro-port-out/letter/auto-route-order-check.log`.
 이번 단위는 원본 그래프 핵심/정렬 계약까지이며, 실제 새틴 rail 절단·연결·KRSAT2
 PES 생성과 앱 한글 기본값 전환은 남아 있다.
+
+## 단위2 — 연결 성분 단위 KRSAT2
+
+최신 사용자 정정에 따라 경로 시작점 순서 대신 **연결 성분 bbox**를 사용한다.
+이전 결정용 SatinStrokeOrder API/테스트는 제거했고 KRSAT2는 연결 성분 계약만 사용한다.
+원본 rail 절단·underpath 연결과 실제 출력/전후 측정은
+[KRSAT2 보고](hangul-satin-krsat2.md)에 기록했다.

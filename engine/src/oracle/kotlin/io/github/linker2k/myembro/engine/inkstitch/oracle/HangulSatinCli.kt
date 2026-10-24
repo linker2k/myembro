@@ -142,13 +142,44 @@ object HangulSatinCli {
         if(args[2]=="trace") { println("TRACE_ONLY fitted=Kotlin paths=${paths.size}; no PES export requested");return }
         val widthMm=args[2].toDouble();require(widthMm.isFinite() && widthMm>0)
         val groups=mutableListOf<StitchGroup>();val black=EmbThread(0xff000000.toInt(),"Black 40wt")
-        for(path in normalized) {
+        fun convert(path:List<Point>):StrokeToSatin.Section {
             val closed=path.first()==path.last()
             val started=if(closed) StrokeToSatin.setFirstNode(path,widthMm*PIXELS_PER_MM) else path
             val section=checkNotNull(StrokeToSatin.convertPathToSatin(started,widthMm*PIXELS_PER_MM)) { "No satin section for fitted path" }
-            val filtered=StrokeToSatin.filteredRungs(section)
-            groups+=filtered.column(color=black).toStitchGroups(groups.lastOrNull()?.stitches?.lastOrNull())
+            return StrokeToSatin.filteredRungs(section)
         }
+        val componentReport=mutableListOf<JsonObject>()
+        val bounds=metadata["glyph_bounds_px"]?.jsonArray
+        if(bounds!=null) {
+            val glyphs=bounds.map { value ->
+                val v=value.jsonObject
+                fun n(key:String)=v.getValue(key).jsonPrimitive.int
+                HangulComponentOrder.GlyphBounds(n("character_index"),n("left"),n("top"),n("right"),n("bottom"))
+            }
+            val labeling=HangulComponentOrder.label(w,h,pixels,glyphs)
+            val ownership=paths.map { labeling.component(it).id }
+            for(component in labeling.ordered) {
+                val indices=paths.indices.filter { ownership[it]==component.id }
+                check(indices.isNotEmpty()) { "Ink component has no centerline: ${component.id}" }
+                val routed=io.github.linker2k.myembro.engine.inkstitch.stitches.AutoSatin.route(indices.map { convert(normalized[it]) },black)
+                check(routed.groups.isNotEmpty())
+                check(routed.discardedSatins==0) { "Auto-route discarded a short satin; trial export refused" }
+                if(groups.isNotEmpty())groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
+                // Retain source half_stitch. Explicit component jumps must lock both ends.
+                groups+=routed.groups.map { it.copy(lockStart=InkLockStitch(),lockEnd=InkLockStitch(),forceLockStitches=false) }
+                componentReport+=buildJsonObject {
+                    put("component",component.id);put("character",component.characterIndex)
+                    put("bbox_px",buildJsonArray { add(component.left);add(component.top);add(component.right);add(component.bottom) })
+                    put("source_path_indices",buildJsonArray { indices.forEach { add(it) } });put("centerline_paths",indices.size);put("discarded_satins",routed.discardedSatins);put("graph_jump_edges",routed.jumpEdges)
+                    put("operations",buildJsonArray { routed.operations.forEach { op ->add(buildJsonObject {
+                        put("element",op.element);put("start",op.start);put("end",op.end);put("underpath",op.underpath)
+                    }) } })
+                }
+            }
+        } else for(path in normalized) {
+            groups+=convert(path).column(color=black).toStitchGroups(groups.lastOrNull()?.stitches?.lastOrNull())
+        }
+        if(componentReport.isNotEmpty()) File(stem.path+"-routing.json").writeText(Json { prettyPrint=true }.encodeToString(JsonArray.serializer(),JsonArray(componentReport)))
         val generated=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,
             lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
         val candidate=EmbPattern(generated.stitches,generated.threads,generated.metadata+mapOf("name" to stem.name))
