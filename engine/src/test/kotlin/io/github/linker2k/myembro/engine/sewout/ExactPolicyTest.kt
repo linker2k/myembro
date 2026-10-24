@@ -83,13 +83,13 @@ class ExactPolicyTest {
         val doc=File("../AGENTS.md").readText()
         fun row(n:Int)=doc.lineSequence().single { it.startsWith("| P$n |") }
         fun number(n:Int,regex:String)=Regex(regex).find(row(n))!!.groupValues[1].toDouble()
-        assertEquals(SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM.toDouble(),number(1,"최소 x = (\\d+)"))
-        assertEquals(SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM.toDouble(),number(1,"최소 y = (\\d+)"))
+        assertEquals(SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM.toDouble(),number(1,"minimum x = (\\d+)"))
+        assertEquals(SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM.toDouble(),number(1,"minimum y = (\\d+)"))
         assertEquals(SewoutLimits.hoopMaxXUnits0p1mm(HoopSpec.H100).toDouble(),number(2,"0[–-](\\d+)"))
-        assertEquals(SewoutLimits.MAX_CONSECUTIVE_POSITIONS.toDouble(),number(5,"\\*\\*(\\d+)회 이하"))
-        assertEquals(SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL.toDouble(),number(7,"바늘이 (\\d+)회"))
-        assertEquals(SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL.toDouble(),number(7,"가져온 PES는 (\\d+)회"))
-        assertEquals(SewoutLimits.DENSITY_CELL_UNITS_0P1MM/10.0,number(7,"([0-9.]+)mm 칸"))
+        assertEquals(SewoutLimits.MAX_CONSECUTIVE_POSITIONS.toDouble(),number(5,"\\*\\*at most (\\d+)\\*\\*"))
+        assertEquals(SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL.toDouble(),number(7,"more than (\\d+) needle penetrations"))
+        assertEquals(SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL.toDouble(),number(7,"blocked only above (\\d+)"))
+        assertEquals(SewoutLimits.DENSITY_CELL_UNITS_0P1MM/10.0,number(7,"([0-9.]+)mm cell"))
         assertEquals(SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM/10.0,number(8,"≤ ([0-9.]+)mm"))
         val defaults=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitchParameters()
         val documentedLock=Regex("`([^`]+)`").find(row(6))!!.groupValues[1]
@@ -97,12 +97,12 @@ class ExactPolicyTest {
         assertEquals(documentedLock,defaults.lock_end)
         assertEquals(documentedLock,io.github.linker2k.myembro.engine.inkstitch.stitch_plan.InkLockStitch().lock_id)
         assertTrue(row(6).contains("ties=3"))
-        assertTrue(row(3).contains("1단위(0.1mm) 차이도 허용하지 않는다"))
+        assertTrue(row(3).contains("Not even a 1-unit (0.1mm) difference is allowed"))
         assertEquals(0,SewoutLimits.PEC_DIMENSION_TOLERANCE_UNITS_0P1MM)
-        assertTrue(row(4).contains("**0길이 JUMP"))
+        assertTrue(row(4).contains("**0-length JUMPs"))
         assertEquals(0,SewoutLimits.MAX_ZERO_LENGTH_MOTION_COMMANDS)
         val margin=doc.lineSequence().single { it.startsWith("| P2a |") }
-        val units=Regex("([0-9]+)단위").find(margin)!!.groupValues[1].toInt()
+        val units=Regex("\\(([0-9]+) unit\\)").find(margin)!!.groupValues[1].toInt()
         assertEquals(SewoutLimits.HOOP_SAFETY_MARGIN_UNITS_0P1MM,units)
     }
 }
