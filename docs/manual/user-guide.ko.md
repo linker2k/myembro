@@ -159,7 +159,7 @@
 
 ![설정: 테마와 앱 정보](../images/manual/ko/16-about.png)
 
-**설정** 아래쪽: **화면 테마**, **앱 정보·라이선스**, 버전(0.2.8과 빌드 커밋). myembro는 GPL-3.0-or-later입니다.
+**설정** 아래쪽: **화면 테마**, **앱 정보**(앱 라이선스 GPL-3.0-or-later, 오픈소스 라이선스), 버전(0.2.8과 빌드 커밋). myembro는 GPL-3.0-or-later입니다.
 
 ![다크 테마 홈](../images/manual/ko/17-home-dark.png)
 
