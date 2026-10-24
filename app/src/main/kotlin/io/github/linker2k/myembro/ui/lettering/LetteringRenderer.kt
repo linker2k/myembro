@@ -6,7 +6,6 @@ import android.content.Context
 import android.graphics.Paint
 import android.graphics.Typeface
 import io.github.linker2k.myembro.R
-import io.github.linker2k.myembro.engine.edit.FontKind
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.*
@@ -23,11 +22,16 @@ import io.github.linker2k.myembro.ui.settings.withSewingDefaults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal data class LetteringFont(val id: String, val name: String, val resource: Int = 0)
+internal data class LetteringFont(
+    val id: String, val name: String = "", val resource: Int = 0,
+    @androidx.annotation.StringRes val nameResource: Int = 0,
+) {
+    fun displayName(context: Context): String = if (nameResource != 0) context.getString(nameResource) else name
+}
 internal val bundledLetteringFonts = listOf(
-    LetteringFont("gowun-batang", "고운바탕", R.font.gowun_batang),
-    LetteringFont("jua", "둥근고딕", R.font.jua_regular),
-    LetteringFont("noto-sans-kr", "담백한 고딕", R.font.noto_sans_kr),
+    LetteringFont("gowun-batang", resource = R.font.gowun_batang, nameResource = R.string.lettering_font_gowun_batang),
+    LetteringFont("jua", resource = R.font.jua_regular, nameResource = R.string.lettering_font_jua),
+    LetteringFont("noto-sans-kr", resource = R.font.noto_sans_kr, nameResource = R.string.lettering_font_noto_sans_kr),
 )
 internal data class LetteringResult(
     val textObject: TextObject, val pattern: EmbPattern, val quality: FontQualityReport?,
@@ -75,38 +79,26 @@ private class LoadedFont(
     val centerlineFace: Typeface? = face,
 ) {
     val paint = face?.let { Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = it; textSize = 1000f } }
-    fun advance(character: String): Double = when {
-        paint != null -> paint.measureText(character).toDouble()
-        svg != null -> svg.advance(character)
-        else -> (character.singleOrNull()?.let { hershey?.get(it) } ?: hershey?.get('?'))!!.advance.toDouble()
-    }
-    fun glyph(character: String): List<List<Pair<Double, Double>>> = when {
-        face != null -> AndroidGlyphOutlines.extract(character, face).map { path -> path.map { (x, y) -> x + advance(character) / 2 to y } }
-        svg != null -> svg.layout(character).map { path -> path.map { it.x to -it.y } }
-        else -> {
-            val font = checkNotNull(hershey)
-            val g = character.singleOrNull()?.let { font[it] } ?: checkNotNull(font['?'])
-            g.strokes.map { path -> path.map { (it.x - g.left).toDouble() to (it.y - font.baseline).toDouble() } }
-        }
-    }
-    val reference: Double by lazy {
+    val resolved: ResolvedTextFont by lazy {
         when {
-            face != null -> glyph(if (supports("자".codePointAt(0))) "자" else "H").flatten().let { points ->
-                if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
-            }
-            svg != null -> svg.unitsPerEm.coerceAtLeast(1.0)
-            else -> 21.0
+            ink != null -> ResolvedTextFont.InkStitch(ink)
+            svg != null -> ResolvedTextFont.SingleLineSvg(svg)
+            else -> ResolvedTextFont.Hershey(checkNotNull(hershey))
         }
     }
-    fun supports(code: Int): Boolean = when {
-        // Ink/Stitch sews forced-case fonts in that case (font.json letter_case).
-        ink != null -> String(Character.toChars(code)).let { c ->
-            when (ink.info.letterCase) { "upper" -> c.uppercase(); "lower" -> c.lowercase(); else -> c }
-        } in ink.glyphs
-        paint != null -> cmap?.let { code in it } ?: paint.hasGlyph(String(Character.toChars(code)))
-        svg != null -> String(Character.toChars(code)) in svg.glyphs
-        else -> code <= Char.MAX_VALUE.code && hershey?.supports(code.toChar()) == true
+    fun advance(character: String): Double = paint?.measureText(character)?.toDouble() ?: resolved.advance(character)
+    fun glyph(character: String): List<List<Pair<Double, Double>>> = if (face != null)
+        AndroidGlyphOutlines.extract(character, face).map { path -> path.map { (x, y) -> x + advance(character) / 2 to y } }
+        else resolved.glyph(character)
+    val reference: Double by lazy {
+        if (face != null) glyph(if (supports("자".codePointAt(0))) "자" else "H").flatten().let { points ->
+            if (points.isEmpty()) 1000.0 else (points.maxOf { it.second } - points.minOf { it.second }).coerceAtLeast(1.0)
+        } else resolved.reference
     }
+    fun supports(code: Int): Boolean = if (paint != null)
+        cmap?.let { code in it } ?: paint.hasGlyph(String(Character.toChars(code)))
+        else resolved.supports(code)
+
 }
 
 private fun loadFont(context: Context, id: String): LoadedFont {
@@ -146,7 +138,7 @@ private fun loadFont(context: Context, id: String): LoadedFont {
         else -> "bundled-hershey-v1"
     }
     return LoadedFont(face, svg, hershey, revision + ":glyph-extractor-v3",
-        bundled?.name ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
+        bundled?.displayName(context) ?: installed?.nameKo ?: installed?.name ?: user?.name ?: if (hershey != null) "Hershey Futural" else id, cmap,
         ink, installed?.takeIf { ink != null }?.let { f ->
             (f.recommendedMinHeightMm ?: 0.0)..(f.recommendedMaxHeightMm ?: Double.POSITIVE_INFINITY)
         }, centerlineFace = if (id == "noto-sans-kr") context.resources.getFont(R.font.myembro_sans) else face)
@@ -210,18 +202,27 @@ private fun prepareObject(loaded: LoadedFont, settings: LetteringSettings, threa
     val source = if(settings.stitchStyle==StitchStyle.SATIN && HangulSatin.applies(text) && loaded.centerlineFace!=loaded.face)
         LoadedFont(loaded.centerlineFace,loaded.svg,loaded.hershey,loaded.revision+":satin400",loaded.name,loaded.cmap,loaded.ink,loaded.testedRangeMm)
         else loaded
-    if (source.ink != null) return TextObject(
-        id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
-        heightMm = settings.heightMm, spacing = settings.spacingMm, thread = thread, fontKind = FontKind.INKSTITCH,
-        lineSpacing = 1 + settings.lineSpacingMm / settings.heightMm,
-        alignment = TextAlignment.valueOf(settings.alignment.name), singleLine = false, threadWeight = settings.threadWeight,
+    val request = TextPreparationRequest(
+        text = text, fontId = settings.fontId, heightMm = settings.heightMm, spacingMm = settings.spacingMm,
+        alignment = settings.alignment, lineSpacingMm = settings.lineSpacingMm, thread = thread,
+        arcDeg = settings.arcDeg,
+        arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
+        characterColors = settings.characterColors, stitchStyle = settings.stitchStyle,
+        fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
     )
+    if (source.face == null) return prepareText(request, source.resolved).textObject
+    val codes = text.codePoints().toArray()
+    val glyphs = codes.filter { it != '\n'.code }.distinct().associate { code ->
+        val character = String(Character.toChars(code))
+        character to PreparedGlyph(source.advance(character), source.glyph(character))
+    }
+    val snapshot = ResolvedTextFont.OutlineSnapshot(source.reference, glyphs, codes.filter(source::supports).toSet())
+    // The Android centerline extraction/assembly stays here until the next extraction step.
     val lines = arrayListOf(mutableListOf<LayoutGlyph>())
-    text.codePoints().toArray().forEachIndexed { index, code ->
+    codes.forEachIndexed { index, code ->
         if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
-        else {
-            val character = String(Character.toChars(code))
-            lines.last() += LayoutGlyph(index, source.advance(character), source.glyph(character))
+        else glyphs.getValue(String(Character.toChars(code))).let { glyph ->
+            lines.last() += LayoutGlyph(index, glyph.advance, glyph.paths)
         }
     }
     val centerline=source.face?.takeIf { HangulSatin.applies(text) && settings.stitchStyle==StitchStyle.SATIN }?.let { face ->
@@ -238,20 +239,7 @@ private fun prepareObject(loaded: LoadedFont, settings: LetteringSettings, threa
         val traced=layoutGlyphs(tracedLines,source.reference,settings)
         CenterlineSatinData(traced.contours,traced.characters,componentIds,widths)
     }
-    val layout = layoutGlyphs(lines, source.reference, settings)
-    return TextObject(
-        id = "lettering-preview", name = text.take(32), text = text, fontId = settings.fontId,
-        heightMm = settings.heightMm, spacing = settings.spacingMm, arcDeg = settings.arcDeg,
-        thread = thread, fontKind = FontKind.OUTLINE, contours = layout.contours, contourSourceHeight = source.reference,
-        lineSpacing = 1 + settings.lineSpacingMm / settings.heightMm,
-        alignment = TextAlignment.valueOf(settings.alignment.name),
-        arcRadiusMm = if (settings.curved && settings.curve != LetteringCurve.STRAIGHT) settings.radiusMm else null,
-        characterThreads = settings.characterColors.mapValues { (_, color) -> if (color == thread.color) thread else EmbThread(color) },
-        contourCharacters = layout.characters, contourBaselines = layout.baselines,
-        singleLine = source.face == null, centerlineSatin = centerline,
-        stitchStyle = settings.stitchStyle ?: StitchStyle.RUNNING,
-        fillOptions = settings.fillOptions, satinOptions = settings.satinOptions, threadWeight = settings.threadWeight,
-    )
+    return prepareText(request.copy(centerlineSatin = centerline), snapshot).textObject
 }
 
 /** Glyph extraction/analysis runs on a worker. Each contour retains its code-point owner and line baseline. */
@@ -270,4 +258,29 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     return LetteringResult(placed, pattern, quality, lacking.isNotEmpty(), outside, source.face == null && source.ink == null, source.name,
         predigitized = source.ink != null, testedRangeMm = source.testedRangeMm,
         missing = lacking.joinToString("") { String(Character.toChars(it)) })
+}
+
+/** Agent adapter shares the screen's exact installed-font loading and outline extraction. No download. */
+class AndroidTextFontResolver(context: Context) : io.github.linker2k.myembro.engine.agent.FontResolver {
+    private val context=context.applicationContext
+    private val sources=mutableMapOf<String,LoadedFont>()
+    private fun source(id:String)=sources[id] ?: runCatching { loadFont(context,id) }.getOrNull()?.also { sources[id]=it }
+    override fun revision(fontId:String)=source(fontId)?.revision
+    override fun resolve(fontId:String):ResolvedTextFont? = resolveText(fontId, "")
+    override fun resolveText(fontId:String,text:String):ResolvedTextFont? {
+        val s=source(fontId) ?: return null
+        if(s.face==null) return s.resolved
+        val codes=normalizedLetteringText(text).codePoints().toArray().filter { it!='\n'.code }.distinct()
+        return ResolvedTextFont.OutlineSnapshot(s.reference,codes.associate { code ->
+            val c=String(Character.toChars(code)); c to PreparedGlyph(s.advance(c),s.glyph(c))
+        },codes.filter(s::supports).toSet())
+    }
+    override fun prepare(request:TextPreparationRequest,font:ResolvedTextFont,policy:TextPreparationPolicy):TextObject {
+        val source=source(request.fontId) ?: error("Font is not installed")
+        val settings=LetteringSettings(request.text,request.fontId,request.heightMm,request.spacingMm,
+            request.alignment,false,LetteringCurve.STRAIGHT,0.0,lineSpacingMm=request.lineSpacingMm,
+            stitchStyle=request.stitchStyle,threadWeight=request.threadWeight)
+        return prepareObject(source,settings,request.thread).withId(policy.objectId)
+    }
+    override fun inkRange(fontId:String,font:ResolvedTextFont)=source(fontId)?.testedRangeMm
 }

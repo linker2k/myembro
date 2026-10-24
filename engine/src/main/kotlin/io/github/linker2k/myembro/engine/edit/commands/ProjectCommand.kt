@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.edit.commands
 
 import io.github.linker2k.myembro.engine.edit.DesignObject
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.Transform
 import io.github.linker2k.myembro.engine.model.EmbThread
 
@@ -33,6 +34,8 @@ data class TransformValues(
  */
 sealed interface ProjectCommand {
     data class Add(val obj: DesignObject) : ProjectCommand
+    /** Prepared text content only; target ID, pose, visibility and sewing index are retained. */
+    data class ReplaceText(val id: String, val text: TextObject) : ProjectCommand
     data class SetTransforms(val byId: Map<String, TransformValues>) : ProjectCommand {
         constructor(id: String, transform: Transform) : this(mapOf(id to TransformValues(transform)))
     }
