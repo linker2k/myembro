@@ -66,8 +66,11 @@ object FillRouting {
         outlineEdges(fill)
         startingPoint?.let { insertNode(fill, outlines, it) }
         endingPoint?.let { insertNode(fill, outlines, it) }
+        FillTrace.emit("graph_before_eulerize") { FillTrace.graph(fill) }
         eulerize(fill)
+        FillTrace.emit("graph_after_eulerize") { FillTrace.graph(fill) }
         val travel = buildTravelGraph(fill, polygon, outlines, angle, underpath)
+        FillTrace.emit("travel_graph") { FillTrace.graph(travel) }
         if (travel.nodes.isEmpty()) return emptyList()
         val startReference = startingPoint ?: fill.nodes.keys.first().point()
         val endReference = endingPoint ?: startReference
@@ -110,6 +113,7 @@ object FillRouting {
         path.add(0, PathEdge(realStart, start, Edge(-1, realStart, start, "outline")))
         path += PathEdge(end, realEnd, Edge(-1, end, realEnd, "outline"))
         val collapsed = collapse(fillGaps(path, gapFillRows), fill)
+        FillTrace.emit("collapsed_euler_path") { collapsed.joinToString(";") { "${it.a}|${it.b}|${it.edge.key}" } }
         val result = mutableListOf<FillPoint>()
         if (collapsed.isNotEmpty() && !collapsed.first().segment()) result += collapsed.first().a.point()
         for (edge in collapsed) {
@@ -139,6 +143,7 @@ object FillRouting {
             }
             require(result.size <= 1_000_000) { "Fill exceeds 1000000 stitches" }
         }
+        FillTrace.emit("rendered_route") { FillTrace.points(listOf(result)) }
         return result
     }
 
@@ -252,6 +257,7 @@ object FillRouting {
             }
         }
         // NetworkX eulerize minimizes unweighted duplicated path length, not geometric length.
+        FillTrace.emit("matching_input") { matchingGraph.edgeSet().joinToString(";") { "${matchingGraph.getEdgeSource(it)},${matchingGraph.getEdgeTarget(it)},${matchingGraph.getEdgeWeight(it).toBits()}" } }
         val matching = KolmogorovWeightedPerfectMatching(matchingGraph).matching
         require(matching.edges.size*2 == odd.size) { "Fill graph has no perfect odd-vertex matching" }
         var duplicate = 0
@@ -259,6 +265,7 @@ object FillRouting {
             val a = matchingGraph.getEdgeSource(edge); val b = matchingGraph.getEdgeTarget(edge)
             min(a,b) to max(a,b)
         }.sortedWith(compareBy<Pair<Int,Int>> { it.first }.thenBy { it.second })
+        FillTrace.emit("matching_pairs") { pairs.toString() }
         for ((i,j) in pairs) {
             for ((a, b) in shortest(graph,odd[i],odd[j],true).zipWithNext()) {
                 val original = graph.at(a).filter { it.other(a) == b }

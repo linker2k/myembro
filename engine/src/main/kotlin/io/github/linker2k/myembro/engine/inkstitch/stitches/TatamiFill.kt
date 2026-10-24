@@ -23,7 +23,10 @@ object TatamiFill {
                 pullCompensationPx,pullCompensationPercent) }
             valid = FillGeometry.makeValid(UnaryUnionOp.union(parts))
         }
+        FillTrace.emit("valid_geometry") { org.locationtech.jts.io.WKBWriter.toHex(org.locationtech.jts.io.WKBWriter().write(valid)) }
+        FillTrace.emit("parameters") { listOf(angle,rowSpacing,maxStitchLength,runningStitchLength,runningStitchTolerance,staggers).joinToString { it.toBits().toString() } }
         val segments = Fill.intersectRegionWithGrating(valid, angle, rowSpacing, endRowSpacing).flatten()
+        FillTrace.emit("row_segments") { FillTrace.points(segments) }
         if (segments.isEmpty()) return fallback(valid, runningStitchLength, runningStitchTolerance)
         return FillRouting.route(valid, segments, startingPoint, endingPoint, underpath,
             runningStitchLength, runningStitchTolerance, angle, skipLast, gapFillRows) { points, reversed ->
