@@ -44,6 +44,10 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var style by mutableStateOf(PhotoMode.SILHOUETTE); private set
     var detail by mutableIntStateOf(1); private set
     var colorCount by mutableIntStateOf(4); private set
+    var grayscale by mutableStateOf(false); private set
+    fun changeGrayscale(value:Boolean) {
+        if(value!=grayscale) { grayscale=value;step=1;prepare() }
+    }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
     val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
@@ -77,7 +81,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
     /** [inkMm]: wanted embroidery width. Converted to the frame width with the size-independent ink ratio. */
@@ -143,7 +147,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val selectedMode = style; val selectedColors=colorCount
+        val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -164,7 +168,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     if(selectedMode==PhotoMode.COLOR) {
                         val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
-                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2) { phase ->
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale) { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                             progressStage=if(phase=="quantization") 1 else 2
                         }

@@ -61,9 +61,24 @@ class ColorDrawingSmokeInstrumentation:Instrumentation() {
             check(vm.requiredThreads.none { it.catalogNumber=="47" }) { "Antialias Beige must not become a thread" }
             screenshot("color-result-ko.png")
             out.resolve("color-face.pes").writeBytes(PesWriter.write(vm.render!!.pattern,EmbroiderySettings().writeSettings))
+            val colorStitches=vm.report!!.statistics.stitchCount
+            runOnMainSync { vm.back();vm.changeGrayscale(true) };ready()
+            check(vm.grayscale && vm.colorCount==3 && vm.colorPreview!=null)
+            check(vm.colorPreview!!.layers.all { it.thread in io.github.linker2k.myembro.engine.inkstitch.svg.image.Bt709Grayscale.threads })
+            screenshot("grayscale-preview-ko.png")
+            runOnMainSync { vm.next() };ready()
+            check(vm.passed) { "grayscale ${vm.error} ${vm.report?.findings}" }
+            check(vm.requiredThreads.all { it in io.github.linker2k.myembro.engine.inkstitch.svg.image.Bt709Grayscale.threads })
+            check(vm.excludedCount==0)
+            screenshot("grayscale-result-ko.png")
+            out.resolve("grayscale-face.pes").writeBytes(PesWriter.write(vm.render!!.pattern,EmbroiderySettings().writeSettings))
+            val graySummary="GRAYSCALE_UI_SMOKE_PASS color_stitches=$colorStitches gray_stitches=${vm.report!!.statistics.stitchCount} threads=${vm.requiredThreads.map { it.catalogNumber to it.description }}"
+            out.resolve("grayscale-result.txt").writeText(graySummary)
             val summary="COLOR_UI_SMOKE_PASS colors=${vm.colorCount} ink_width_mm=${vm.inkWidthMm} stitches=${vm.report!!.statistics.stitchCount} threads=${vm.requiredThreads.map { it.catalogNumber to it.description }}"
             out.resolve("result.txt").writeText(summary)
-            finish(0,Bundle().apply { putString("result",summary) })
+            runOnMainSync { vm.back();vm.changeGrayscale(false) };ready()
+            check(!vm.grayscale && vm.colorPreview!!.palette.any { ((it ushr 16) and 255)!=(it and 255) })
+            finish(0,Bundle().apply { putString("result",graySummary+" toggle_off_restores_color=true") })
         } catch(failure:Throwable) { finish(1,Bundle().apply { putString("error",failure.stackTraceToString()) }) }
     }
 }

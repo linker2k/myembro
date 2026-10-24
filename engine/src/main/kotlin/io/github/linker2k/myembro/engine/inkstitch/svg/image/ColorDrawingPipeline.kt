@@ -45,19 +45,20 @@ object ColorDrawingPipeline {
      * opaque background before the requested N-color quantization.
      */
     fun trace(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
-        minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,checkpoint:(String)->Unit={}):Preview {
+        minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,grayscale:Boolean=false,checkpoint:(String)->Unit={}):Preview {
         require(width in 1..512 && height in 1..512 && width*height==argb.size)
         require(widthMm.isFinite() && widthMm>0 && colorCount in 2..6)
         checkpoint("quantization")
-        val opaque=argb.indices.filter { argb[it] ushr 24 != 0 }
+        val pixels=if(grayscale) IntArray(argb.size) { Bt709Grayscale.argb(argb[it]) } else argb
+        val opaque=pixels.indices.filter { pixels[it] ushr 24 != 0 }
         require(opaque.isNotEmpty()) { "No visible pixels" }
-        val preliminary=ImageQuantizer.quantize(opaque.map { argb[it] and 0xffffff }.toIntArray(),colorCount+1)
+        val preliminary=ImageQuantizer.quantize(opaque.map { pixels[it] and 0xffffff }.toIntArray(),colorCount+1)
         val first=IntArray(argb.size) { -1 };val firstIndices=preliminary.copyIndices()
         opaque.forEachIndexed { i,p -> first[p]=firstIndices[i] }
         val background=if(opaque.size<argb.size) -1 else ColorRegionCleanup.borderMode(width,height,first)
         val foreground=opaque.filter { background<0 || first[it]!=background }
         require(foreground.isNotEmpty()) { "No foreground after border background removal" }
-        val quantized=ImageQuantizer.quantize(foreground.map { argb[it] and 0xffffff }.toIntArray(),colorCount)
+        val quantized=ImageQuantizer.quantize(foreground.map { pixels[it] and 0xffffff }.toIntArray(),colorCount)
         val original=IntArray(argb.size) { -1 };val q=quantized.copyIndices()
         foreground.forEachIndexed { i,p -> original[p]=q[i] }
         val cleaned=ColorRegionCleanup.mergeSmall(width,height,original,
@@ -72,7 +73,7 @@ object ColorDrawingPipeline {
         val layers=quantized.palette.mapIndexedNotNull { color,rgb ->
             checkpoint("tracing")
             if(labels.none { it==color }) null else {
-                val thread=io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
+                val thread=if(grayscale) Bt709Grayscale.nearestThread(rgb) else io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
                 try {
                     Layer(color,thread,RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
                         paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint))
