@@ -89,6 +89,7 @@ internal fun ViewerSewoutSheet(vm: ViewerViewModel) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(report.machine.name, style = MaterialTheme.typography.titleSmall)
                     Text(sewoutSummary(report), style = MaterialTheme.typography.bodySmall)
+                    ManualJumpAdviceText(manualJumpAdvice(report))
                     Text(stringResource(if (report.analysisComplete) R.string.sewout_complete else R.string.sewout_incomplete),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (report.analysisComplete) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)

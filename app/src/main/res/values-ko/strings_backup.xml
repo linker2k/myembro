@@ -1,0 +1,17 @@
+<resources>
+    <string name="backup_title">백업</string>
+    <string name="backup_description">도안·프로젝트·다운로드한 글꼴·설정을 ZIP 하나에 보관합니다. 재설치 전에 앱 밖에 저장해 주세요.</string>
+    <string name="backup_save">백업 저장</string>
+    <string name="backup_restore">ZIP 복원</string>
+    <string name="backup_working">처리 중…</string>
+    <string name="backup_progress">%1$d / %2$d개 파일 백업 중</string>
+    <string name="backup_saved">백업을 저장했습니다. ZIP을 앱 밖의 안전한 곳에 보관해 주세요.</string>
+    <string name="backup_failure">백업 또는 복원 실패: %1$s</string>
+    <string name="backup_confirm_title">백업을 복원할까요?</string>
+    <string name="backup_confirm">파일 %1$d개 · 이미 있는 파일 %2$d개\n중복은 건너뛰거나 사본으로 추가합니다. 이미 설치된 글꼴 파일은 유지합니다. 설정·즐겨찾기는 백업값으로 복원됩니다. 재설치 후 USB 폴더 접근은 다시 허용해야 합니다.</string>
+    <string name="backup_copy">사본으로 추가</string>
+    <string name="backup_skip">중복 건너뛰기</string>
+    <string name="backup_cancel">취소</string>
+    <string name="backup_close">닫기</string>
+    <string name="backup_restored">%1$d개 복원 · %2$d개 건너뜀. 설정과 글꼴 파일도 복원했습니다.</string>
+</resources>

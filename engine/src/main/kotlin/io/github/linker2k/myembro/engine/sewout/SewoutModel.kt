@@ -65,7 +65,9 @@ data class SewoutStatistics(val stitchCount: Int, val jumpCount: Int, val trimCo
     val peakCellPenetrations: Int = 0, val maximumConsecutiveNeedles: Int = 0,
     val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0,
     /** Explicit STITCH/JUMP destinations, ignoring controls; includes zero moves. */
-    val maximumConsecutivePositions: Int = 0)
+    val maximumConsecutivePositions: Int = 0,
+    /** null = capability unconfirmed; zero = no manual jump-thread cuts needed. */
+    val manualJumpThreadCount: Int? = null)
 
 enum class SpeedBasis { USER_SETTING, PROFILE_MAXIMUM_DERIVED, ASSUMED }
 data class SpeedEstimate(val effectiveSpm: Double, val basis: SpeedBasis,

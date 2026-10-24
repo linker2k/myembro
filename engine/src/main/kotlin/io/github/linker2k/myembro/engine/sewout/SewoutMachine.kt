@@ -31,9 +31,12 @@ object SewoutMachines {
     const val SE600_MANUAL = "https://download.brother.com/welcome/doch101011/888m20_om02en.pdf"
     const val SE700_MANUAL = "https://download.brother.com/welcome/doch102582/888p10_om01en.pdf"
     const val SE400_LIMIT = "https://support.brother.ca/app/answers/detail/a_id/133968/~/design-does-not-appear-on-lcd-after-being-transferred"
+    const val SE400_JUMP_TRIM_OBSERVATION = "사용자 SE400 실기 확인 (2026-10-24): 이동실 자동 절단 없음, 가위로 수동 정리"
     val SE400 = SewoutMachine("se400", "Brother SE400",
         Specification(100.0, "$SE400_MANUAL p.127"), Specification(100.0, "$SE400_MANUAL p.127"),
         maxStitches = Specification(30_000, SE400_LIMIT),
+        automaticJumpTrim = Specification(false, SE400_JUMP_TRIM_OBSERVATION),
+        manualJumpCleanup = Specification(true, SE400_JUMP_TRIM_OBSERVATION),
         colorEndCutter = Specification(true, "$SE400_MANUAL p.140 (when enabled)"))
     val SE600 = SewoutMachine("se600", "Brother SE600",
         Specification(100.0, "$SE600_MANUAL p.60"), Specification(100.0, "$SE600_MANUAL p.60"),

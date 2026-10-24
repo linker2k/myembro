@@ -91,6 +91,7 @@ private fun TransferResultDialog(record: UsbTransferRecord, persistent: Boolean,
             Text(stringResource(R.string.usb_result_remaining, record.remainingBytes?.let {
                 formatUsbBytes(it)
             } ?: stringResource(R.string.usb_result_unknown)))
+            ManualJumpAdviceText(manualJumpAdvice(record))
             if (record.failures.isNotEmpty()) Text(stringResource(when (record.problem) {
                 UsbTransferProblem.SPACE -> R.string.usb_result_problem_space
                 UsbTransferProblem.VERIFY -> R.string.usb_result_problem_verify

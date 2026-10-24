@@ -49,7 +49,7 @@ class SewoutCheckTest {
     }
 
     @Test fun unknownJumpTrimmingIsConditionalAndNeverInventsAMachinePause() {
-        val report = SewoutCheck.check(workflow())
+        val report = SewoutCheck.check(workflow(), SewoutMachines.SE400.copy(automaticJumpTrim=Specification(), manualJumpCleanup=Specification()))
         assertEquals(1, report.statistics.possibleManualCuts)
         assertEquals(0, report.statistics.requiredManualCuts)
         assertEquals(CutRequirement.POSSIBLE, report.tasks.single { it.kind == TaskKind.JUMP_THREAD_CUT }.cutRequirement)

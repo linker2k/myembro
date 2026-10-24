@@ -1,0 +1,6 @@
+<resources>
+    <plurals name="manual_jump_cleanup">
+        <item quantity="one">%1$d jump thread · %2$s does not cut it automatically. Trim it with scissors after sewing.</item>
+        <item quantity="other">%1$d jump threads · %2$s does not cut them automatically. Trim them with scissors after sewing.</item>
+    </plurals>
+</resources>

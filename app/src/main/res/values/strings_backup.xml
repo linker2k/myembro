@@ -1,0 +1,17 @@
+<resources>
+    <string name="backup_title">Backup</string>
+    <string name="backup_description">Keep designs, projects, downloaded fonts and settings in one ZIP. Keep this file outside the app before reinstalling.</string>
+    <string name="backup_save">Save backup</string>
+    <string name="backup_restore">Restore ZIP</string>
+    <string name="backup_working">Working…</string>
+    <string name="backup_progress">Backing up %1$d / %2$d files</string>
+    <string name="backup_saved">Backup saved. Keep the ZIP in a safe place outside the app.</string>
+    <string name="backup_failure">Backup or restore failed: %1$s</string>
+    <string name="backup_confirm_title">Restore backup?</string>
+    <string name="backup_confirm">%1$d files · %2$d existing files\nSkip duplicates or add copies. Existing font files are kept. Settings and favorites will use the backup values. USB folder access must be granted again after reinstalling.</string>
+    <string name="backup_copy">Add copies</string>
+    <string name="backup_skip">Skip duplicates</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_close">Close</string>
+    <string name="backup_restored">Restored %1$d files · skipped %2$d. Settings and font files restored.</string>
+</resources>

@@ -123,6 +123,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
         vm.onAccessResult(it.data?.data)
     }
 
+    LaunchedEffect(vm) { vm.refresh() }
     LaunchedEffect(vm.accessRequest) {
         vm.accessRequest?.let { folderPicker.launch(vm.accessIntent(it)) }
     }
