@@ -1,27 +1,39 @@
-# 개인 그림 → 도안: 첫 엔진 시험 (2026-10-24)
+# Personal drawings → designs: first engine trial (2026-10-24)
 
-현재 상태: **사진/그림 화면의 컬러 모드에 연결**. 검증·스크린샷·재현은 [컬러 그림 QA](qa/color-drawing/README.md). 아래는 main `98ac4ac`에서 시작한 초기 시험과 후속 변경 기록이다.
-첫 단위 15분: 기존 포트 연결, 직접 만든 PNG 2개, 실행 가능한 측정/게이트.
-개인 그림·이모티콘은 사용자 기기 안에서만 처리한다. 개인 입력·결과를 서버로 전송하거나 앱/테스트에 번들하지 않는다. 아래 두 입력은 스크립트가 직접 그린 원본 합성 그림이며 외부 캐릭터·사진을 사용하지 않았다.
+Current status: **connected to color mode on the photo/drawing screen**. Verification, screenshots,
+and reproduction: [Color drawing QA](qa/color-drawing/README.md). Below is the record of the initial
+trial starting from main `98ac4ac` and subsequent changes.
+First 15-minute unit: connect existing ports, create 2 original PNGs, and provide executable measurements/gates.
+Personal drawings/emoticons are processed only on the user's device. Personal inputs/results are
+neither sent to a server nor bundled with the app/tests. Both inputs below are original synthetic
+drawings drawn by the script itself, without external characters or photographs.
 
-## 재사용과 계약
+## Reuse and contracts
 
-| 단계 | 사용한 기존 코드 / 근거 |
+| Stage | Existing code used / basis |
 |---|---|
-| N색 분리 | `ImageQuantizer.quantize`, Wu 1991 Graphics Gems II `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`. 기존 원본 C 골든 3개 유지. 2–6색 인자 지원. |
-| 색별 윤곽 | `RedworkPipeline.trace`: 기존 Potrace 추적·다각형 근사·곡선화·최적화. 이번에 알고리즘을 새로 만들지 않았다. 색별 이진 마스크를 넘기므로 내부 Wu 2색 재호출은 중복 작업이며 후속 리팩터링 후보. |
-| 영역/구멍 | 기존 `PolygonRegion.fromPaths(..., EVEN_ODD)`와 JTS 연결 성분. 좌표는 모든 색에 공통인 이미지 좌표계를 유지한다. |
-| 폭 측정 / 시험 분기 | 기존 `StrokeWidthMeasurement`의 경계 Voronoi 중간값, `TatamiLettering.methodForWidth`: <0.9mm 러닝, 0.9–6mm 새틴, >6mm 채우기. **총괄의 기존 한글 auto-rules 수치 재사용이며, 이미지 영역에 대한 검증된 분기 규칙이라고 주장하지 않는다.** |
-| 넓은 면 | Ink/Stitch `DefaultTatami`, 기본 바탕 땀 포함. |
-| 좁은 획 / 선 | 기존 AutoTrace thinning→centerline→fit → `StrokeToSatin` + `AutoSatin` / `Stroke` 기본 러닝. AutoTrace 0.31.10 `1a232b27818a46a05cd25edec09e2f77c4e9ac01`의 기존 포트. 새틴은 일정 폭 변환이다. |
-| 실 색 | Brother 64색 `PecThreads.SET`에서 기존 `PecThreads.distance` 최소값, 동률은 표 순서. alpha는 색 거리에서 제외. |
-| 마감 / 파일 | 색별 그룹을 한 번에 기존 S1 `GeneratedPatternProcessor`로 처리, 영역 사이 trim, 실 경계 잠금, 0길이 제거 → `PesWriter` V6 → `PecViewportCheck` + 앱 생성 출처 `SewoutCheck`. |
+| N-color separation | `ImageQuantizer.quantize`, Wu 1991 Graphics Gems II `gemsii/quantizer.c@ca4898517a93b6b45444a9cda5fd50132694b864`. Retains 3 existing original-C goldens. Supports a 2–6-color argument. |
+| Per-color contours | `RedworkPipeline.trace`: existing Potrace tracing, polygon approximation, curve fitting, and optimization. No new algorithm was created here. Because it receives per-color binary masks, the internal Wu 2-color call is redundant work and a candidate for later refactoring. |
+| Regions/holes | Existing `PolygonRegion.fromPaths(..., EVEN_ODD)` and JTS connected components. Coordinates retain the image coordinate system shared by all colors. |
+| Width measurement / experimental branching | Existing boundary-Voronoi median in `StrokeWidthMeasurement`, `TatamiLettering.methodForWidth`: <0.9mm running, 0.9–6mm satin, >6mm fill. **Reuses the integrator's existing Hangul auto-rules values; it is not claimed to be a verified branching rule for image regions.** |
+| Wide areas | Ink/Stitch `DefaultTatami`, including default underlay. |
+| Narrow strokes / lines | Existing AutoTrace thinning→centerline→fit → `StrokeToSatin` + `AutoSatin` / `Stroke` default running. Existing port of AutoTrace 0.31.10 `1a232b27818a46a05cd25edec09e2f77c4e9ac01`. Satin uses constant-width conversion. |
+| Thread colors | Minimum existing `PecThreads.distance` in Brother's 64-color `PecThreads.SET`; ties follow table order. Alpha is excluded from color distance. |
+| Finishing / files | Process all per-color groups together through existing S1 `GeneratedPatternProcessor`, trims between regions, thread-boundary locks, removal of 0-length motion → `PesWriter` V6 → `PecViewportCheck` + `SewoutCheck` with app-generated provenance. |
 
-Ink/Stitch는 기존 고정 원본 v3.3.0 `b0edd96311ece82ee48816dc93466274b12c2a9c`의 별도 출처 고지된 포트만 호출한다. AutoTrace/Potrace/Wu 라이선스와 원본 출처는 기존 `THIRD_PARTY_NOTICES.md`, `docs/inkstitch-port.md`, 각 포트 헤더를 유지하며 새 의존성은 없다. 이 시험은 원본 Ink/Stitch를 실행하지 않는다.
+Ink/Stitch calls only existing, separately attributed ports of the pinned v3.3.0 source
+`b0edd96311ece82ee48816dc93466274b12c2a9c`. AutoTrace/Potrace/Wu licenses and source attribution
+remain in the existing `THIRD_PARTY_NOTICES.md`, `docs/inkstitch-port.md`, and port headers; there
+are no new dependencies. This trial does not execute the original Ink/Stitch.
 
-시험 입력은 128×128 RGBA PNG, 전체 캔버스 30mm, 4색 요청이다. 실제 원본 색이 3개여서 Wu 원본 동작대로 3색에서 끝난다. 투명 픽셀은 양자화에서 제외하여 실 색 예산을 소비하지 않는다. 이번 시험은 완전 불투명/완전 투명만 허용하고 부분 알파는 명시적으로 거절한다. 이미지 외곽 투명 여백을 요구하며 배경색을 추정하지 않는다. 입력 크기는 시험 도구에서 512px 이하로 제한했다. 앱용 디코드/축소/부분 알파 합성 계약은 아직 구현하지 않았다.
+Trial inputs are 128×128 RGBA PNGs on a 30mm overall canvas, requesting 4 colors. The originals
+actually have 3 colors, so the original Wu behavior finishes at 3 colors. Transparent pixels are
+excluded from quantization and consume no thread-color budget. This trial allows only fully opaque/
+fully transparent pixels and explicitly rejects partial alpha. It requires transparent margins around
+the image and does not infer a background color. The trial tool limits input dimensions to 512px
+or less. App decoding/downscaling/partial-alpha compositing contracts are not yet implemented.
 
-## 실행과 코드 판정
+## Execution and code-based decisions
 
 ```sh
 python3 tools/image-to-design/generate-inputs.py
@@ -34,14 +46,16 @@ export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
   --style mixed --json /tmp/myembro-port-out/editor/image-to-design/quality-gate.json
 ```
 
-측정: 이 PC JVM 단일 실행, 얼굴 먼저/로봇 다음; 워밍업·환경 영향이 있으므로 성능 보장 수치가 아니다. `total_ms`는 PNG 디코드부터 PES 게이트까지, 세부 단계 외 S1·인코딩·검사도 포함한다.
+Measurement: a single run on this PC JVM, face first/robot second. Warmup and environment effects
+mean these are not performance guarantees. `total_ms` covers PNG decoding through the PES gate,
+including S1, encoding, and checks in addition to the detailed stages.
 
-| 합성 PNG | 색 / 영역 | 땀 수 | 양자화+디코드 ms | 윤곽 ms | 폭 측정 ms | 땀 그룹 ms | 전체 ms | 엔진 / 외부 게이트 |
+| Synthetic PNG | Colors / regions | Stitches | Quantization+decode ms | Contours ms | Width measurement ms | Stitch groups ms | Total ms | Engine / external gate |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | face.png | 3 / 4 | 1,050 | 63.92 | 89.64 | 140.97 | 591.95 | 988.68 | PASS / PASS |
 | robot.png | 3 / 5 | 600 | 7.06 | 21.58 | 52.10 | 98.90 | 204.67 | PASS / PASS |
 
-실제 출력:
+Actual output:
 
 ```text
 BUILD SUCCESSFUL in 5s
@@ -50,71 +64,122 @@ PASS .../robot.pes within five-condition checks
 PASS 2/2 cases passed
 ```
 
-P1–P3은 인코딩된 PEC 원점/후프/헤더를 `PecViewportCheck`로 검사했다. 나머지는 실제 PES를 `SewoutCheck`의 `APP_GENERATED`로 검사했다. 고정 테스트는 두 그림의 차단 없음·유효 범위·3색·러닝/새틴/타타미 경로 존재를 assert한다. 별도 테스트는 2–6색 예산/인덱스/반복 결정성을 검사한다. 기존 Wu 원본 일치 테스트도 함께 실행했다. 생성물/세부 JSON은 `/tmp/myembro-port-out/editor/image-to-design/`, 로그는 `/tmp/image-to-design-{test,gate}.log`이다. 게이트 통과는 원형 보존이나 실물 봉제 승인이 아니다.
+P1–P3 check the encoded PEC origin/hoop/header with `PecViewportCheck`. The rest check the actual
+PES through `SewoutCheck` with `APP_GENERATED`. Fixed tests assert no blockers, valid ranges,
+3 colors, and the presence of running/satin/tatami paths in both drawings. Separate tests check
+2–6-color budgets, indices, and repeated determinism. Existing Wu original-equivalence tests were
+also run. Artifacts/detailed JSON are in `/tmp/myembro-port-out/editor/image-to-design/`; logs
+are `/tmp/image-to-design-{test,gate}.log`. Passing the gate is not shape-preservation verification
+or actual-sewing approval.
 
-## 발견한 한계 — 제품 적용 전 해결 필요
+## Discovered limitations — resolve before product use
 
-**로봇의 넓은 몸통이 새틴으로 잘못 분류된다.** 눈 구멍이 있는 몸통의 Voronoi 폭 중간값은 4.121mm로, 기존 0.9–6mm 분기에 들어간다. 따라서 일정 폭 중심선 새틴은 원래 넓은 몸통의 면을 재현하지 못한다. 얼굴 면은 6.177mm라 타타미가 선택됐다. 이 실패 사례를 테스트에 명시하여 통과하는 PES가 올바른 그림이라는 오해를 방지했다. 임의 면적/길쭉함 임계값을 만들어 보정하지 않는다.
+**The robot's wide body is incorrectly classified as satin.** The Voronoi median width of the body
+with eye holes is 4.121mm, within the existing 0.9–6mm branch. Constant-width centerline satin
+therefore fails to reproduce the original broad body area. The face area measures 6.177mm, so
+tatami was selected. The failure case is explicitly recorded in tests to prevent assuming that a
+passing PES is a correct drawing. No arbitrary area/elongation thresholds are invented to correct it.
 
-또한 중심선 교차/가지, 가변 폭, 작은 영역 소실(Potrace 기본 turdsize=2), 이웃 영역 경계의 땀 겹침, 실 색 매칭 후 같은 색 중복 순서 문제는 두 합성 그림만으로 검증되지 않았다. 변환 불가능한 중심선/새틴 그룹은 조용히 버리지 않고 시험을 실패시킨다. 색이나 영역 간 새 경로 최적화는 도입하지 않았으며 기존 각 타입 라우팅과 trim만 사용한다.
+Centerline intersections/branches, variable width, disappearance of small regions (Potrace default
+turdsize=2), stitch overlap at neighboring boundaries, and duplicate same-color sequencing after
+thread matching also remain unverified by these two synthetic drawings alone. Unconvertible
+centerlines/satin groups fail the trial rather than being silently discarded. No new color/region
+routing optimization was introduced; only existing per-type routing and trims are used.
 
-## 다음 단위 제안과 결정
+## Proposed next units and decisions
 
-1. **20분:** 넓은 구멍 영역을 포함한 이 두 입력의 면 보존을 수치로 비교하고, 재사용 가능한 원본 Ink/Stitch/AutoTrace의 검증된 영역→새틴 적용 조건을 조사한다. 아직 이미지용 자동 새틴 선택을 기본 경로로 승인하지 않는다.
-2. **20분:** 총괄이 정한 지원 입력/자동 선택 범위로 엔진 API를 분리하고 투명/부분 알파·작은 영역 처리 계약을 고정한다. 근거 없는 임계값을 추가하지 않는다.
-3. **20분:** 대표 사례 ≤10개, 색별 원형/누락 검증과 실제 PES 게이트를 테스트로 고정한 후 앱 연결 여부를 결정한다. UI는 이후 단위다.
+1. **20 minutes:** numerically compare area preservation in these two inputs, including broad regions with holes, and investigate verified region→satin applicability conditions in reusable original Ink/Stitch/AutoTrace code. Automatic satin selection for images is not yet approved for the default path.
+2. **20 minutes:** separate an engine API for the integrator-defined supported inputs/automatic selection range, and freeze transparency/partial-alpha/small-region handling contracts. Add no thresholds without evidence.
+3. **20 minutes:** lock representative cases ≤10, per-color original-shape/omission checks, and actual PES gates into tests before deciding app integration. UI belongs to a later unit.
 
-결정 필요: 첫 제품 경로를 검증된 타타미 중심으로 제한할지, 원형 보존 조건이 확인될 때까지 이미지 자동 새틴 전체를 시험으로 둘지. 이번 커밋은 테스트 전용이므로 기존 실루엣/외곽선 및 앱 출력에는 영향이 없다.
+Decision needed: restrict the first product path to verified tatami-focused output, or keep all image
+automatic satin experimental until shape-preservation conditions are confirmed. This commit is
+test-only and does not affect existing silhouette/outline or app output.
 
-엔진 전체 자동 테스트 결과: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 17s`; tests=714, failures=0, errors=0.
+Full engine automated-test result: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 17s`;
+tests=714, failures=0, errors=0.
 
-## 후속 단위: model/canvas 공용 경로 통일
+## Follow-up unit: unify the shared model/canvas path
 
-공용 API는 아직 origin/main `98ac4ac`에 없어서 model `4126735161bea2cde2168fb2c9273a527aa0b5a6`의 `GlyphStrokeWidths.kt`, 테스트, 문서를 그대로 가져왔다. canvas 로고 경로 역시 아직 main에 없어 `652d3cafd6d61133f5104538034e29030a236bc5`의 엔진 `VectorArt.kt`만 가져왔다. 앱/번들 PES는 가져오거나 변경하지 않았다. 통합 시 이 원본 브랜치들과의 파일 중복을 별도 구현으로 취급하지 말고 아래 공용 함수 변경만 유지한다.
+The shared API was not yet on origin/main `98ac4ac`, so `GlyphStrokeWidths.kt`, tests, and
+documentation were brought over unchanged from model `4126735161bea2cde2168fb2c9273a527aa0b5a6`.
+The canvas logo path was also not yet on main, so only engine `VectorArt.kt` was brought over
+from `652d3cafd6d61133f5104538034e29030a236bc5`. App/bundled PES files were neither imported nor
+changed. During integration, do not treat files overlapping those source branches as separate
+implementations; retain only the following shared-function changes.
 
-- `VectorArt.medianWidthMm(geometryMm)`가 model `GlyphStrokeWidths.measure`를 호출한다. 이미지 영역과 SVG 채움 면 모두 이 함수로 mm 단위 중간값을 측정한다. canvas의 기존 최대 내접원 계산은 제거했다.
-- `VectorArt.classifyWidth(widthMm, rules)`만 PNG/로고의 폭 기준 비교를 수행한다. <0.9mm 러닝, 0.9–6mm 새틴(양 끝 포함), >6mm 타타미. 기본 경계 상수는 기존 `TatamiLettering`에서 가져온다. SVG에 명시된 일정 폭 stroke는 해당 물리 폭을 이 함수에 전달한다.
-- SVG fill은 원본 canvas 경로처럼 면으로 봉제한다(러닝보다 넓으면 타타미). 새틴은 명시적 SVG stroke에서 사용한다. PNG 영역에는 아직 이 SVG의 면/획 의미 정보가 없으므로 중간값만으로 분기한다. 따라서 **함수 통일과 자동 선택의 정확성은 별도 문제**다.
-- 측정값·경계값·로고 stroke 렌더·실제 launcher 로고 PES를 회귀 테스트로 검사한다. 0.9mm 바로 아래/정확히 0.9/정확히 6/6mm 바로 위도 코드로 판정한다.
+- `VectorArt.medianWidthMm(geometryMm)` calls model `GlyphStrokeWidths.measure`. Both image regions and SVG filled areas measure the median in mm through this function. The previous canvas maximum-inscribed-circle calculation was removed.
+- Only `VectorArt.classifyWidth(widthMm, rules)` performs width-threshold comparison for PNG/logos. <0.9mm running, 0.9–6mm satin (both endpoints included), >6mm tatami. Default boundary constants come from existing `TatamiLettering`. Explicit constant-width SVG strokes pass their physical width to this function.
+- SVG fill sews as an area, as in the original canvas path (tatami when wider than running). Satin is used for explicit SVG strokes. PNG regions still lack this SVG area/stroke semantics, so they branch only on the median. Therefore, **function unification and automatic-selection correctness are separate issues**.
+- Regression tests check measurements, boundaries, logo-stroke rendering, and the actual launcher-logo PES. Immediately below 0.9mm/exactly 0.9/exactly 6/immediately above 6mm are also decided by code.
 
-동일 입력을 공용 API로 다시 측정한 결과:
+Remeasuring the same inputs through the shared API:
 
-| 입력 | 영역 | 땀 | 이전 전체 ms | 공용 API 전체 ms | 공용 중간값 및 선택 | 엔진/외부 게이트 |
+| Input | Regions | Stitches | Previous total ms | Shared API total ms | Shared median and selection | Engine/external gate |
 |---|---:|---:|---:|---:|---|---|
-| face.png | 4 | 1,050 | 988.68 | 1,018.17 | 노란 면 6.177mm → 타타미 | PASS/PASS |
-| robot.png | 5 | 600 | 204.67 | 208.32 | 파란 몸통 4.121mm → 새틴 | PASS/PASS |
+| face.png | 4 | 1,050 | 988.68 | 1,018.17 | Yellow area 6.177mm → tatami | PASS/PASS |
+| robot.png | 5 | 600 | 204.67 | 208.32 | Blue body 4.121mm → satin | PASS/PASS |
 
-측정 로그 `/tmp/image-to-design-shared.log`, 결과 JSON은 기존 출력 디렉터리 `results.json`, 외부 게이트 JSON `quality-gate-shared.json`. 단일 실행 차이이므로 속도 개선/악화를 주장하지 않는다.
+Measurement log: `/tmp/image-to-design-shared.log`; result JSON: `results.json` in the existing
+output directory; external-gate JSON: `quality-gate-shared.json`. These are differences between
+single runs, not a claim of improved/degraded speed.
 
-**오분류 수정은 미완료다.** `GlyphStrokeWidths`는 기존 시험이 직접 호출하던 `StrokeWidthMeasurement`를 내부에서 호출하므로, 구멍이 있는 넓은 몸통의 중간값은 양쪽 모두 정확히 4.121185770351488mm다. API를 바꾸는 것만으로는 타타미로 전환되지 않는다는 점을 실측했다. 이 수치를 6mm 이상으로 임의 보정하거나, 최대 내접원·면적 등의 새 휴리스틱을 섞지 않았다. 총괄에 SVG fill처럼 면은 타타미로 유지할지, 지정한 중간값 분기와 미해결 한계를 유지할지 결정을 요청했다.
+**The misclassification remains unfixed.** `GlyphStrokeWidths` internally calls the same
+`StrokeWidthMeasurement` directly used in the previous trial, so both produce exactly
+4.121185770351488mm for the broad body with holes. Measurements confirmed that changing the
+API alone does not switch it to tatami. The number was not arbitrarily raised above 6mm, nor
+were new heuristics such as maximum inscribed circles or area mixed in. The integrator was asked
+to decide between keeping areas as tatami, like SVG fill, or retaining the specified median-based
+branching and its unresolved limitation.
 
-최종 검증: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 18s`; tests=722, failures=0, errors=0. 외부 게이트 명령은 앞 절과 같고 `--json` 출력만 `quality-gate-shared.json`으로 바꿨으며 `PASS 2/2 cases passed`였다. 실제 로고는 같은 분류 경로로 60mm 렌더 후 PEC 원점/후프/헤더 및 앱 생성 출처 봉제 점검을 통과했다. 이 검증은 미해결 로봇 면 보존 문제를 통과 판정하지 않는다.
+Final verification: `./gradlew :engine:test` → `BUILD SUCCESSFUL in 18s`; tests=722, failures=0,
+errors=0. The external-gate command is the same as above, changing only `--json` output to
+`quality-gate-shared.json`, and returned `PASS 2/2 cases passed`. The actual logo was rendered at
+60mm through the same classification path and passed PEC origin/hoop/header and app-generated
+sew-out checks. This verification does not pass the unresolved robot-area-preservation problem.
 
 
-## 최종 적용: 최대 내접원 조건 추가 (이 절이 이전 미결정을 대체함)
+## Final application: add the maximum-inscribed-circle condition (supersedes the previous pending decision)
 
-총괄 결정 2026-10-24: 최대 폭 >6.0mm면 타타미를 우선한다. 최대 폭 ≤6.0mm이면서 중간값 ≥0.9mm일 때만 새틴이며, 나머지는 러닝이다. 최대 폭은 JTS `MaximumInscribedCircle`의 지름이다. 6mm 근거는 총괄이 제시한 코퍼스 새틴 교차 p95 6.0mm이며, 0.9mm 하한은 총괄 지정 정책이다.
+Integrator decision 2026-10-24: prioritize tatami when maximum width >6.0mm. Satin is selected
+only when maximum width ≤6.0mm and median ≥0.9mm; otherwise use running. Maximum width is
+the diameter of JTS `MaximumInscribedCircle`. The 6mm basis is the corpus satin-crossing p95
+6.0mm supplied by the integrator; the 0.9mm lower bound is integrator-specified policy.
 
-**중복 구현 없음:** `claude/stitch-rule` 커밋 `1547f5c14c5c49334fb5551955abeee6e6762072`의 `StitchTypeRule.kt`, `VectorArt.kt`, `StitchTypeRuleTest.kt`를 그대로 사용한다. editor의 PNG 시험은 `StitchTypeRule.widths(region, 10.0)`와 `classify(widths)`를 호출한다. 로고와 PNG 양쪽에서 최대/중간값을 별도로 계산하거나 임계값을 비교하지 않는다. 이전 `VectorArt.classifyWidth`/`medianWidthMm` 래퍼는 제거했다.
+**No duplicate implementation:** use `StitchTypeRule.kt`, `VectorArt.kt`, and `StitchTypeRuleTest.kt`
+unchanged from `claude/stitch-rule` commit `1547f5c14c5c49334fb5551955abeee6e6762072`.
+The editor PNG trial calls `StitchTypeRule.widths(region, 10.0)` and `classify(widths)`. Neither
+logos nor PNGs calculate maximum/median values separately or compare thresholds independently.
+The previous `VectorArt.classifyWidth`/`medianWidthMm` wrappers were removed.
 
-공용 브랜치의 중간값은 이전 model Voronoi 표본 중간값과 달리 **면적 가중 local thickness 표본 중간값**이다. 따라서 이전 표의 4.121mm와 아래 5.611mm를 같은 정의의 값이라고 비교하지 않는다. 이 정의와 JTS 탐색 정밀도도 editor에서 별도로 변경하지 않았다. 원본 공용 파일과 바이트 일치 여부를 확인했다. `GlyphStrokeWidths` 자체는 수정하지 않았다.
+Unlike the previous model Voronoi sample median, the shared branch's median is an **area-weighted
+local-thickness sample median**. Thus the earlier table's 4.121mm and the 5.611mm below must not
+be compared as values with the same definition. The editor did not separately change this definition
+or JTS search precision. Byte equality with the original shared files was checked.
+`GlyphStrokeWidths` itself was not modified.
 
-| 대상 | 크기 기준 | 공용 중간값 mm | 공용 최대 폭 mm | 선택 |
+| Target | Size basis | Shared median mm | Shared maximum width mm | Selection |
 |---|---|---:|---:|---|
-| 실제 합성 로봇의 파란 몸통 | 30mm PNG 캔버스 | 5.610841 | 7.762527 | 타타미 |
-| 실제 앱 로고 M | 전체 로고 폭 60mm | 10.696521 | 11.911968 | 타타미 |
-| 실제 앱 로고 후프 링 | 전체 로고 폭 60mm | 5.257371 | 5.271908 | 새틴 |
+| Blue body of the actual synthetic robot | 30mm PNG canvas | 5.610841 | 7.762527 | Tatami |
+| Actual app-logo M | Overall logo width 60mm | 10.696521 | 11.911968 | Tatami |
+| Actual app-logo hoop ring | Overall logo width 60mm | 5.257371 | 5.271908 | Satin |
 
-몸통 중간값은 여전히 6mm 미만이지만 최대 폭 조건으로 타타미가 선택되는 것을 `ImageToDesignProbeTest`에서 assert한다. 경계 0.9/6mm, 최대 폭 우선(중간값이 0.9mm 미만이어도 최대 폭 >6mm), 실제 로고 경로도 테스트한다. PNG 새틴은 기존 AutoTrace 중심선/fit → Ink/Stitch `convertPathToSatin`/`AutoSatin`을 사용하고 타타미·러닝·S1 기본값을 바꾸지 않았다.
+`ImageToDesignProbeTest` asserts that tatami is selected by the maximum-width condition even
+though the body median remains below 6mm. It also tests the 0.9/6mm boundaries, maximum-width
+priority (maximum width >6mm even when the median is below 0.9mm), and actual logo paths.
+PNG satin uses the existing AutoTrace centerline/fit → Ink/Stitch `convertPathToSatin`/`AutoSatin`;
+tatami, running, and S1 defaults were not changed.
 
-| 합성 입력 | 영역 | 이전 땀 수 → 최종 | 이전 전체 ms → 최종 | 최종 엔진/외부 게이트 |
+| Synthetic input | Regions | Previous stitches → final | Previous total ms → final | Final engine/external gate |
 |---|---:|---:|---:|---|
 | face.png | 4 | 1,050 → 1,050 | 1,018.17 → 1,013.66 | PASS/PASS |
 | robot.png | 5 | 600 → 831 | 208.32 → 384.85 | PASS/PASS |
 
-로봇은 잘못 선택했던 새틴 대신 실제 면을 채우므로 땀과 시간이 늘었다. 단일 실행 시간은 워밍업 영향을 포함한다. 로고도 실제 PES를 다시 생성해 동일 외부 게이트로 검사했다. 실물 봉제 승인은 별도이며 앱/개인 입력에는 연결하지 않았다.
+The robot now fills the actual area instead of using incorrectly selected satin, increasing stitches
+and time. Single-run times include warmup effects. The logo PES was also regenerated and checked
+with the same external gate. Actual-sewing approval is separate; app/personal inputs were not connected.
 
-재현:
+Reproduction:
 
 ```sh
 python3 tools/image-to-design/generate-inputs.py
@@ -127,9 +192,16 @@ IMAGE_PROBE_LOGO_OUT=/tmp/myembro-port-out/editor/image-to-design ./gradlew :eng
  --style mixed --json /tmp/myembro-port-out/editor/image-to-design/quality-gate-max.json
 ```
 
-실행 출력: `BUILD SUCCESSFUL in 19s`; 엔진 tests=724, failures=0, errors=0. 외부 도구: `PASS 3/3 cases passed`. 최종 로그 `/tmp/image-to-design-canvas-rule.log`, `/tmp/image-to-design-max-gate.log`; 측정 원본 `results.json`, `logo-widths.csv`는 출력 디렉터리에 있다. 앞 절의 모델 API 단독 교체 시험과 중간 측정은 이 최종 결과를 대체하지 않는다.
+Execution output: `BUILD SUCCESSFUL in 19s`; engine tests=724, failures=0, errors=0. External tool:
+`PASS 3/3 cases passed`. Final logs: `/tmp/image-to-design-canvas-rule.log`,
+`/tmp/image-to-design-max-gate.log`; original measurements `results.json` and `logo-widths.csv`
+are in the output directory. The earlier model-API-only replacement trial and intermediate
+measurements do not supersede this final result.
 
 
-## 앱 연결 단위
+## App-integration unit
 
-이후 `ColorDrawingPipeline`으로 시험의 생성 경로를 프로덕션 JVM API로 옮기고, 홈 사진/그림의 컬러 모드에 연결했다. 앞 절의 앱 미연결 상태/부분 알파 거절은 당시 시험 상태이며 현재 상태는 [컬러 그림 QA](qa/color-drawing/README.md)를 따른다. 개인 이미지 로컬 처리 원칙은 유지한다.
+The trial generation path was subsequently moved into the production JVM API `ColorDrawingPipeline`
+and connected to color mode under Home photo/drawing. Earlier statements about no app integration/
+rejection of partial alpha describe the trial at that time; current status follows
+[Color drawing QA](qa/color-drawing/README.md). Personal-image local processing remains the policy.
