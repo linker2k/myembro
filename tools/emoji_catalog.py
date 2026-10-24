@@ -1,13 +1,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Fluent Emoji Flat catalog for the app, like tools/inkstitch_catalog.py for fonts.
 
-Usage: python3 -I tools/emoji_catalog.py <mirror> <out.json> <bundle-dir> <bundled-ids>
+Usage: python3 -I tools/emoji_catalog.py <mirror> <out.json> <bundle-dir> <bundled-ids> [<cldr>]
 
 <mirror> holds the pinned repository files: assets/<Name>/metadata.json and
 assets/<Name>/[Default/]Flat/*.svg. Every emoji gets its pinned repository path, sha256 and size, so
 the app downloads the rest exactly like Ink/Stitch fonts. Files the app's SVG reader rejects
 (gradients, clip-path, masks, filters, images) are left out. <bundled-ids> (comma separated)
 are also copied into <bundle-dir> with the MIT license.
+
+<cldr> (optional) is a pinned Unicode CLDR checkout with common/annotations/ko.xml and
+common/annotationsDerived/ko.xml (Unicode License V3): each emoji gains its Korean name ("ko")
+and Korean keywords ("koKeywords") for search, matched by the emoji glyph without U+FE0F.
 """
 import hashlib
 import json
@@ -16,6 +20,7 @@ import re
 import shutil
 import sys
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 REPO = "microsoft/fluentui-emoji"
 COMMIT = "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc"
@@ -26,9 +31,24 @@ def slug(name):
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def main(mirror, out, bundle_dir, bundled):
+def korean(cldr):
+    """glyph (without FE0F) -> (tts name, keywords) from CLDR ko annotations and derived annotations."""
+    names, words = {}, {}
+    for rel in ("common/annotations/ko.xml", "common/annotationsDerived/ko.xml"):
+        for a in ET.parse(os.path.join(cldr, rel)).getroot().iter("annotation"):
+            cp = a.get("cp", "").replace("\ufe0f", "")
+            text = (a.text or "").strip()
+            if a.get("type") == "tts":
+                names.setdefault(cp, text)
+            else:
+                words.setdefault(cp, [w.strip() for w in text.split("|") if w.strip()])
+    return {cp: (names.get(cp, ""), words.get(cp, [])) for cp in set(names) | set(words)}
+
+
+def main(mirror, out, bundle_dir, bundled, cldr=None):
     bundled = [b for b in bundled.split(",") if b]
     entries, skipped = [], []
+    ko = korean(cldr) if cldr else {}
     assets = os.path.join(mirror, "assets")
     for name in sorted(os.listdir(assets)):
         folder = os.path.join(assets, name)
@@ -55,6 +75,10 @@ def main(mirror, out, bundle_dir, bundled):
             "size": len(data),
             "bundled": slug(name) in bundled,
         })
+        if ko:
+            name_ko, words_ko = ko.get(meta.get("glyph", "").replace("\ufe0f", ""), ("", []))
+            entries[-1]["ko"] = name_ko
+            entries[-1]["koKeywords"] = [w for w in words_ko if w != name_ko]
     missing = set(bundled) - {e["id"] for e in entries}
     if missing:
         sys.exit(f"bundled ids not in catalog: {sorted(missing)}")
@@ -66,16 +90,19 @@ def main(mirror, out, bundle_dir, bundled):
     catalog = {"source": f"https://github.com/{REPO}", "commit": COMMIT, "style": "Flat",
                "rawBase": f"https://raw.githubusercontent.com/{REPO}/{COMMIT}/",
                "license": "MIT", "emoji": entries}
+    if cldr:
+        catalog["koAnnotations"] = "Unicode CLDR release-49 @ 96e54b273d2da4ec6fbad350ba19ff23fa24a588, Unicode License V3"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, separators=(",", ":"))
         f.write("\n")
     size = sum(os.path.getsize(os.path.join(bundle_dir, n)) for n in os.listdir(bundle_dir))
     print(f"catalog {len(entries)} emoji, skipped {len(skipped)} "
           f"({', '.join(sorted({r for _, r in skipped}))}), bundled {len(bundled)} = {size} bytes, "
-          f"catalog {os.path.getsize(out)} bytes")
+          f"catalog {os.path.getsize(out)} bytes"
+          + (f", Korean names {sum(1 for e in entries if e.get('ko'))}/{len(entries)}" if cldr else ""))
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) not in (5, 6):
         sys.exit(__doc__)
     main(*sys.argv[1:])

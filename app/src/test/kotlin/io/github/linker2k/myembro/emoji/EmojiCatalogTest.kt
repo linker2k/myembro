@@ -60,6 +60,18 @@ class EmojiCatalogTest {
         } finally { dir.deleteRecursively() }
     }
 
+    /** Every catalog emoji carries its CLDR Korean name; Korean keywords make Korean search possible. */
+    @Test fun koreanNamesAndKeywordsFromCldr() {
+        assertTrue(catalog.emoji.all { it.ko.isNotEmpty() })
+        val dog = catalog.emoji.single { it.id == "dog-face" }
+        assertEquals("강아지 얼굴", dog.ko)
+        assertTrue("개" in dog.koKeywords)
+        assertTrue(catalog.emoji.count { it.matches("하트") } >= 10)
+        assertTrue(dog in catalog.emoji.filter { it.matches("강아지") } && dog in catalog.emoji.filter { it.matches("Dog") })
+        assertTrue(catalog.emoji.single { it.id == "cactus" }.matches("선인장"))
+        assertTrue(File("src/main/assets/emoji/CLDR-LICENSE").readText().contains("UNICODE LICENSE V3"))
+    }
+
     @Test fun downloadUrlIsPinnedAndEncoded() {
         val heart = catalog.emoji.single { it.id == "red-heart" }
         assertEquals("https://raw.githubusercontent.com/microsoft/fluentui-emoji/${catalog.commit}/assets/Red%20heart/Flat/red_heart_flat.svg", catalog.url(heart))

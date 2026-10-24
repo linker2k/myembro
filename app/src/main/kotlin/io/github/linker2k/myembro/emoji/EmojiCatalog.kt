@@ -12,7 +12,16 @@ import kotlinx.serialization.json.long
 data class CatalogEmoji(
     val id: String, val name: String, val glyph: String, val group: String, val keywords: List<String>,
     val path: String, val sha256: String, val size: Long, val bundled: Boolean,
-)
+    /** Korean name and keywords from Unicode CLDR annotations (ko), for search and Korean display. */
+    val ko: String = "", val koKeywords: List<String> = emptyList(),
+) {
+    /** Search match on English name/keywords (case-insensitive), CLDR Korean name/keywords, or the glyph itself. */
+    fun matches(query: String): Boolean {
+        val q = query.trim().lowercase()
+        return q.isEmpty() || q in name.lowercase() || keywords.any { q in it.lowercase() } ||
+            q in ko || koKeywords.any { q in it } || q == glyph
+    }
+}
 
 /** The bundled catalog asset: source commit, raw base URL and every supported emoji. */
 class EmojiCatalog(val commit: String, val rawBase: String, val emoji: List<CatalogEmoji>) {
@@ -34,7 +43,8 @@ class EmojiCatalog(val commit: String, val rawBase: String, val emoji: List<Cata
                 val o = item.jsonObject
                 fun s(name: String) = o.getValue(name).jsonPrimitive.content
                 CatalogEmoji(s("id"), s("name"), s("glyph"), s("group"), o.getValue("keywords").jsonArray.map { it.jsonPrimitive.content },
-                    s("path"), s("sha256"), o.getValue("size").jsonPrimitive.long, o.getValue("bundled").jsonPrimitive.boolean)
+                    s("path"), s("sha256"), o.getValue("size").jsonPrimitive.long, o.getValue("bundled").jsonPrimitive.boolean,
+                    o["ko"]?.jsonPrimitive?.content.orEmpty(), o["koKeywords"]?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty())
             })
         }
     }

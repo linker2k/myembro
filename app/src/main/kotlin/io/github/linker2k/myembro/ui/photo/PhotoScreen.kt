@@ -132,16 +132,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     // Embroidery (ink) width in mm, aspect kept. The drag only moves the label; tracing reruns once on release.
                     val range = vm.inkWidthRange
                     val ink = vm.inkWidthMm
-                    if (range != null && ink != null) {
-                        var sizeDraft by remember(ink) { mutableFloatStateOf(ink.toFloat().coerceIn(range.start.toFloat(), range.endInclusive.toFloat())) }
-                        val sizeLabel = stringResource(R.string.photo_size, Dimensions.length(Math.round(sizeDraft * 10) / 10.0))
-                        Text(sizeLabel, style = MaterialTheme.typography.titleSmall)
-                        Slider(sizeDraft, { sizeDraft = it }, valueRange = range.start.toFloat()..range.endInclusive.toFloat(),
-                            onValueChangeFinished = { vm.changeSize(sizeDraft.toDouble()) }, enabled = range.endInclusive > range.start,
-                            modifier = Modifier.semantics { contentDescription = sizeLabel })
-                        Text(stringResource(R.string.photo_size_hint, Dimensions.length(range.start), Dimensions.length(range.endInclusive)),
-                            style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    }
+                    if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize)
                 } else vm.report?.let { report ->
                     AssistChip(onClick = { showCheck = true }, label = {
                         Text(stringResource(if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
