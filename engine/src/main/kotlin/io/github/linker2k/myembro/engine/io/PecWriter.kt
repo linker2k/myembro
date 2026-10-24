@@ -2,6 +2,7 @@
 // Ported from Ink/Stitch lib/output.py@b0edd96311ece82ee48816dc93466274b12c2a9c (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
 package io.github.linker2k.myembro.engine.io
 
+import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -230,6 +231,12 @@ object PecWriter {
         return result to threads
     }
 
+    /** Header extents of already normalized PEC destinations; shared with displayed PES sizes. */
+    internal fun payloadBounds(pattern: EmbPattern, topLeftViewport: Boolean): Bounds = Bounds(
+        if (topLeftViewport) 0 else pattern.stitches.minOf { it.x },
+        if (topLeftViewport) 0 else pattern.stitches.minOf { it.y },
+        pattern.stitches.maxOf { it.x }, pattern.stitches.maxOf { it.y })
+
     /** PEC block without #PEC0001, suitable for embedding in a PES container. */
     internal fun writePayload(pattern: EmbPattern, inkstitchCommands: Boolean = false, topLeftViewport: Boolean = false): ByteArray {
         val p = if (inkstitchCommands) normalizeInkstitch(pattern) else if (topLeftViewport) normalizeForPes(pattern) else normalize(pattern)
@@ -300,10 +307,7 @@ object PecWriter {
         colorIndices.forEach(output::write)
         while (output.size() < 512) output.write(0x20)
         check(output.size() == 512)
-        val minX = if (topLeftViewport) 0 else p.stitches.minOf { it.x }
-        val minY = if (topLeftViewport) 0 else p.stitches.minOf { it.y }
-        val maxX = p.stitches.maxOf { it.x }
-        val maxY = p.stitches.maxOf { it.y }
+        val (minX, minY, maxX, maxY) = payloadBounds(p, topLeftViewport)
         output.u16(0)
         repeat(3) { output.write(length shr (it * 8)) }
         output.write(byteArrayOf(0x31, 0xFF.toByte(), 0xF0.toByte()))

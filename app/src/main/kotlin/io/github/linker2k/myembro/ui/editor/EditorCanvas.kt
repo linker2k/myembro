@@ -36,6 +36,7 @@ import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.DesignObject
+import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.Transform
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +72,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val description = stringResource(R.string.editor_canvas_description)
     val renders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing,vm.gestureInProgress) { vm.rendering=it }
     val selectedBounds = remember(vm.project,vm.selectedIds) { vm.project.selectionBounds(vm.selectedIds,fastPreview=true) }
+    val selectedOutputBounds = rememberSelectionOutputBounds(vm.project, vm.selectedIds, vm.settings.sewing, vm.gestureInProgress)
     val snapDistance = with(density) { 8.dp.toPx() }
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
 
@@ -263,9 +265,11 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                     c.nativeCanvas.drawRoundRect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, 6.dp.toPx(), 6.dp.toPx(), fill)
                     c.nativeCanvas.drawText(text, cx - label.measureText(text) / 2, cy - (label.ascent() + label.descent()) / 2, label)
                 }
-                pill(Dimensions.length(b.width / 10.0), (a.x + z.x) / 2, dimY + 15.dp.toPx())
-                val heightLabel = Dimensions.length(b.height / 10.0)
-                pill(heightLabel, dimX + label.measureText(heightLabel) / 2 + 10.dp.toPx(), (a.y + z.y) / 2)
+                selectedOutputBounds?.let { dimensions ->
+                    pill(Dimensions.length(dimensions.width / 10.0), (a.x + z.x) / 2, dimY + 15.dp.toPx())
+                    val heightLabel = Dimensions.length(dimensions.height / 10.0)
+                    pill(heightLabel, dimX + label.measureText(heightLabel) / 2 + 10.dp.toPx(), (a.y + z.y) / 2)
+                }
             }
             b.corners().forEach { corner ->
                 drawCircle(colors.surface, handleRadius, screen(corner))
@@ -328,4 +332,19 @@ private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: Se
         } finally { onRendering(false) }
     }
     return renders
+}
+
+/** Measure only settled selections on a worker; never replan stitches in the pointer loop.
+ * Keyed state starts empty so labels cannot show an older project's size while awaiting a result.
+ */
+@Composable
+private fun rememberSelectionOutputBounds(project: Project, ids: Set<String>, sewing: SewingOptions,
+    gesturing: Boolean): Bounds? {
+    var bounds by remember(project, ids, sewing, gesturing) { mutableStateOf<Bounds?>(null) }
+    LaunchedEffect(project, ids, sewing, gesturing) {
+        if (!gesturing && ids.isNotEmpty()) bounds = withContext(Dispatchers.Default) {
+            project.selectionOutputBounds(ids, sewing)
+        }
+    }
+    return bounds
 }
