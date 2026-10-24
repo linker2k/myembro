@@ -3,6 +3,13 @@ package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.BlockDevice
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
+import io.github.linker2k.myembro.library.DesignFormats
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.io.PesVersion
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
+import io.github.linker2k.myembro.engine.sewout.PecViewportCheck
+import java.io.File
+import java.security.MessageDigest
 import java.io.Closeable
 import java.io.IOException
 import kotlin.test.*
@@ -40,6 +47,89 @@ class UsbTransferReportTest {
         }
     }
     private fun payload(name: String, size: Int = 100) = DirectUsbExporter.Payload(name, name, ByteArray(size) { 42 }, false)
+
+    /** Production preparation shared by SAF and BOT, followed by the real BOT writer and FAT remount. */
+    private fun assertImportedPesRoundTrip(bytes: ByteArray): String {
+        val source = File.createTempFile("import-audit-", ".pes")
+        try {
+            source.writeBytes(bytes)
+            val viewport = PecViewportCheck.check(bytes, HoopSpec.H100)
+            assertTrue(viewport.valid, viewport.errors.joinToString())
+            assertEquals(0, viewport.minX)
+            assertEquals(0, viewport.minY)
+            assertEquals(viewport.maxX, viewport.headerWidth)
+            assertEquals(viewport.maxY, viewport.headerHeight)
+            for (version in PesVersion.entries) {
+                // Selecting another export version MUST NOT convert an imported PES.
+                val prepared = DesignFormats.preparePes(source, PesWriteSettings(version))
+                assertFalse(prepared.converted)
+                assertContentEquals(bytes, prepared.bytes)
+                val disk = Disk()
+                session(disk).use { s ->
+                    val result = DirectUsbExporter.write(s, listOf(DirectUsbExporter.Payload(
+                        "AUDIT.PES", prepared.fileName, prepared.bytes, prepared.converted)), emptyList())
+                        as DirectUsbExporter.Result.Complete
+                    assertTrue(result.report.failures.isEmpty())
+                    assertEquals(0, result.report.converted)
+                    assertEquals(listOf("AUDIT.PES"), result.report.exported)
+                    // Includes cluster allocation, filesystem serialization and independent remount.
+                    val restored = Fat12Volume.mount(disk).readFile("AUDIT.PES")
+                    assertContentEquals(bytes, restored)
+                    assertEquals(viewport, PecViewportCheck.check(restored, HoopSpec.H100))
+                }
+            }
+            val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            return "bytes=${bytes.size} sha256=$sha viewport=0..${viewport.maxX}/0..${viewport.maxY} header=${viewport.headerWidth}/${viewport.headerHeight} original=prepared=remounted (V1,V6)"
+        } finally { source.delete() }
+    }
+
+    @Test fun `five public imported PES retain every byte through USB preparation and FAT12 remount`() {
+        // Existing pyembroidery-generated fixtures and MIT EmbroidePy fixtures; no personal designs.
+        val fixtures = File("../engine/src/test/resources/fixtures")
+        for (name in listOf("stops.v1.pes", "stops.v6.pes", "embroidepy/random1-brother-v5.pes",
+            "embroidepy/random1-brother-v6.pes", "embroidepy/random1-wilcom-v6.PES")) {
+            assertImportedPesRoundTrip(File(fixtures, name).readBytes())
+        }
+    }
+
+    @Test fun `invalid imported viewport is rejected rather than silently reencoded`() {
+        val bytes = File("../engine/src/test/resources/fixtures/stops.v6.pes").readBytes()
+        val pec = (0..3).sumOf { (bytes[8 + it].toInt() and 255) shl (8 * it) }
+        bytes[pec + 520] = (bytes[pec + 520] + 1).toByte() // Exact one-unit header mismatch.
+        val source = File.createTempFile("invalid-import-", ".pes")
+        try {
+            source.writeBytes(bytes)
+            val error = assertFailsWith<IllegalArgumentException> { DesignFormats.preparePes(source, PesWriteSettings()) }
+            assertContains(error.message!!, "PEC_DIMENSIONS")
+            assertContentEquals(bytes, source.readBytes())
+        } finally { source.delete() }
+    }
+
+    @Test fun `negative imported origin and selected hoop overflow are refused without rewriting`() {
+        val cases = listOf(
+            Triple("flower.v6.pes", PesWriteSettings(), "PEC_ORIGIN"),
+            Triple("stops.v6.pes", PesWriteSettings(hoop = HoopSpec("small", 200, 80)), "PEC_HOOP"),
+        )
+        for ((name, settings, expected) in cases) {
+            val bytes = File("../engine/src/test/resources/fixtures", name).readBytes()
+            val source = File.createTempFile("invalid-import-", ".pes")
+            try {
+                source.writeBytes(bytes)
+                val error = assertFailsWith<IllegalArgumentException> { DesignFormats.preparePes(source, settings) }
+                assertContains(error.message!!, expected)
+                assertContentEquals(bytes, source.readBytes())
+            } finally { source.delete() }
+        }
+    }
+
+    @Test fun `optional five local corpus files are never copied into repository`() {
+        // Local-only opt-in: manifest contains exactly five absolute paths, never committed.
+        val manifest = System.getenv("MYEMBRO_USB_AUDIT_INPUTS") ?: return
+        val inputs = File(manifest).readLines().filter(String::isNotBlank)
+        assertEquals(5, inputs.size)
+        val results = inputs.mapIndexed { i, path -> "case=${i + 1} " + assertImportedPesRoundTrip(File(path).readBytes()) }
+        File("/tmp/myembro-imported-usb-audit.txt").writeText(results.joinToString("\n", postfix = "\n"))
+    }
 
     @Test fun `success stores actual short names byte sizes free space and folded diagnostics without firmware warnings`() {
         val disk = Disk()
