@@ -723,7 +723,7 @@ Do not use upstream/coordinate/PES output as generation input. Explicitly suppor
 - Store `independent-comparison.json`, `release-matrix.json`, `release-gate.json`,
   `reference-release-matrix.json`, `reference-mechanical-gate.json` in `/tmp/myembro-port-out/worker/`.
   The release matrix's font axis is `feature/shape` fixture IDs, not product fonts/safe size ranges.
-- **S1 merge/distribution approval pending**: remaining Codex gate review and user actual sewout. Do not automatically advance beyond S2.
+- **S1 merge/distribution approval pending**: remaining Codex gate review and user actual sewout. Do not automatically advance to S2 or later.
   Code/unit tests/build are ready; external review/sewout completion time is undecided.
 
 
@@ -1283,7 +1283,7 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test --tests '*Fon
 JUnit output: `engine/build/test-results/test/TEST-io.github.linker2k.myembro.engine.inkstitch.FontEquivalenceTest.xml`.
 All 4 passed with stitch counts42/42·66/66·91/91·132/132, trims2·3·3·7, Hausdorff0.1mm.
 
-Validation results: **367 full engine tests passed**, 4 pinned oracle cases passed.
+Validation results: **367 full engine tests passed**, pinned oracle4 cases passed.
 Full `./gradlew check` failed on **14 app Lint errors**. Affected files are unchanged from
 HEAD before this change (6 API27 windowLightNavigationBar cases in API26 resources,
 7 Compose ProduceStateDoesNotAssignValue cases, missing1 Korean app_name translation).
@@ -1582,7 +1582,7 @@ Do not use upstream/coordinate/PES output as generation input. Explicitly suppor
 - Store `independent-comparison.json`, `release-matrix.json`, `release-gate.json`,
   `reference-release-matrix.json`, `reference-mechanical-gate.json` in `/tmp/myembro-port-out/worker/`.
   The release matrix's font axis is `feature/shape` fixture IDs, not product fonts/safe size ranges.
-- **S1 merge/distribution approval pending**: remaining Codex gate review and user actual sewout. Do not automatically advance beyond S2.
+- **S1 merge/distribution approval pending**: remaining Codex gate review and user actual sewout. Do not automatically advance to S2 or later.
   Code/unit tests/build are ready; external review/sewout completion time is undecided.
 
 ### Full check after integrating main 95a7447
@@ -1592,7 +1592,7 @@ preserve current S1 processing statistics; record default sewing-options metadat
 so app reinvocation with the same defaults does not reprocess original font locks/trims.
 Size-transform regressions compare with coordinates obtained by applying current S1 defaults to transformed body stitches, instead of earlier fixed lock lengths.
 
-`./gradlew check`: **BUILD SUCCESSFUL**. Engine450, app Debug177/Release177, 0 failures;
+`./gradlew check`: **BUILD SUCCESSFUL**. Engine450, app Debug177/Release177, failures0;
 Android Lint passed. The4 official frozen oracle cases retain stitch-count/trim/coordinate checks too.
 CI follows main's all-branch push trigger and full engine-test-results artifacts.
 
