@@ -5,3 +5,10 @@
 - **원본 비교 계획:** 고정 C 소스를 로컬 작은 호출기로 실행해 동일 흑백 입력 5개(직선·T분기·X교차·고리·배포 허가된 앱 한글 TTF의 굵은 ‘한’ 래스터)를 Kotlin과 공유하고, thinning 마스크·경로/분기/개폐·순서·세그먼트 수와 제어점 float/ULP 차이를 코드로 기록·검사한다; `centerline=true` 외 기본값은 `new_fitting_opts` 그대로이며 `preserve_width=true` 비교는 원본 옵션의 별도 축으로 분리한다. 결과·입력/실행 파일 해시·컴파일 옵션은 `/tmp/myembro-port-out/editor/autotrace/`에 남기고, 이후 PES 단계는 P1–P8(후프 정수 상한 포함)을 실제 바이트 게이트로 검사한다; 이번 단위에서는 원본 실행·의존성 설치·제품 코드 착수 없음.
 - **새틴 연결 의존성:** Ink/Stitch v3.3.0 `lib/elements/utils/stroke_to_satin.py::convert_path_to_satin`(GPL-3.0-or-later)을 letter의 원본 포트가 준비되면 재사용한다; 조사한 letter `409769937cff8cff7ff261aa92a05c6e33260205`의 `lettering.SatinColumn.strokeToSatin/rails`는 아직 자체 miter offset이므로 이 경로에 쓰지 않는다. 원본 변환의 입력 `stroke_width`는 상수여서 한글의 가변 획 폭·교차 분기 연결은 미확인 의존성이며, 평균 폭·임의 rail 근사로 메우지 않고 원본 옵션/계약을 먼저 확인한다.
 - **예상·다음 단위:** 위 코드 규모 기준 AutoTrace 핵심+원본 비교 6–10시간, letter 원본 변환 준비·연결 확인 추가 2–4시간(합계 8–14시간의 추정, 품질 통과 약속 아님); 다음 20분은 thinning 원본 호출기와 작은 고정 입력 골든 확보를 제안한다. 이후에도 20분마다 명령/테스트 출력과 함께 멈춰 보고하며, 이 문서 단계에서 구현을 시작하지 않는다.
+
+## 단위 1 — 원본 thinning 골든 확보
+
+- 최신 우선순위: 같은 원본 중심선 엔진을 **(A) S4: 굵은 선 bean/가는 선 running**, **(B) 한글: 원본 convert-to-satin** 양쪽에 재사용한다. A는 `bean_stitch_repeats` 등 upstream 파라미터만 쓰며, 굵기 분류 임계값은 실측 전 미확인이다. 이 단위에는 분류·땀 생성 코드를 넣지 않는다.
+- `thin_image` 원본을 수정 없이 실행했다. 직선/T/X/고리/공개 Noto Sans KR weight700 ‘한’ 5개 × 1/3채널 = 10개 PGM/PBM과 소스·글꼴·실행 해시를 [테스트 리소스](../engine/src/test/resources/autotrace/thinning/README.md)에 고정했다. 시스템 설치 없이 기존 GLib/GObject 런타임과 동일 버전의 공식 헤더만 `/tmp`에 추출했다.
+- 재현: `python3 tools/autotrace/generate-thinning-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify` → `COMMITTED_GOLDENS_EXACT 10/10`, `REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5`. 출력 `/tmp/myembro-port-out/editor/autotrace/`; 한글 전경은 1,493→174픽셀. Kotlin/전체 중심선/새틴/PES 품질 통과 주장이 아니다.
+- 다음 20분 제안: 원본 thinning Kotlin 이식과 고정 마스크 exact equality 테스트. 이후 분기·경로 추적 원본 이식으로 진행하며, 이번 단위는 골든 확보에서 멈춘다.
