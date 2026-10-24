@@ -149,6 +149,38 @@ class EditSessionTest {
         session.applyNext("captured");session.commitTurn("captured",0L)
         assertEquals(12.0,session.project.find("a")!!.transform.x)
     }
+    @Test fun trustedEditorSnapshotsAndAgentTurnsShareOneHistoryAndRevision() {
+        val original=initial();val session=EditSession(original)
+        val prepared=original.update("a") {it.withTransform(Transform(x=12.0))}
+        val commit=assertIs<SessionHistoryResult.Applied>(session.commitSnapshot(prepared,session.revision))
+        assertTrue(commit.changed);assertSame(prepared,session.project);assertEquals(1,session.snapshot().undoCount)
+        val beforeTurn=session.revision
+        committed(session,"agent",listOf(ProjectCommand.Duplicate("a","copy")))
+        assertEquals(beforeTurn+1,session.revision);assertEquals(2,session.snapshot().undoCount)
+        session.undo(session.revision);assertSame(prepared,session.project)
+        session.undo(session.revision);assertSame(original,session.project)
+        session.redo(session.revision);assertSame(prepared,session.project)
+        session.redo(session.revision);assertNotNull(session.project.find("copy"))
+    }
+    @Test fun trustedSnapshotRejectsStaleRevisionOrActiveTurnWithoutTouchingRedo() {
+        val session=withRedo();val before=session.snapshot()
+        val prepared=before.project.copy(hoop=HoopSpec.H130x180)
+        val stale=assertIs<SessionHistoryResult.Rejected>(session.commitSnapshot(prepared,before.revision-1))
+        assertEquals(SessionError.REVISION_MISMATCH,stale.code);assertEquals(before,session.snapshot())
+        session.beginTurn("active",before.revision,listOf(ProjectCommand.Remove(setOf("a"))))
+        session.applyNext("active")
+        val busy=assertIs<SessionHistoryResult.Rejected>(session.commitSnapshot(prepared,before.revision))
+        assertEquals(SessionError.TURN_IN_PROGRESS,busy.code)
+        assertSame(before.project,session.project);assertEquals(before.redoCount,session.snapshot().redoCount)
+        session.cancelTurn("active");assertEquals(before,session.snapshot())
+    }
+    @Test fun equalTrustedSnapshotPreservesOriginalReferenceRedoAndRevision() {
+        val session=withRedo();val before=session.snapshot()
+        val equalCopy=before.project.copy(objects=before.project.objects.toList())
+        val result=assertIs<SessionHistoryResult.Applied>(session.commitSnapshot(equalCopy,before.revision))
+        assertFalse(result.changed);assertSame(before.project,result.snapshot.project)
+        assertEquals(before,session.snapshot())
+    }
     @Test fun historyRetainsExistingBoundWhileRevisionRemainsMonotonic() {
         val session=EditSession(initial(),maxSteps=2)
         for(i in 1..3)committed(session,"move-$i",listOf(ProjectCommand.SetTransforms("a",Transform(x=i.toDouble()))))

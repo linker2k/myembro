@@ -2,8 +2,9 @@
 
 `apply(project, command)` wraps existing edit-model value operations. It performs no I/O,
 font preparation, stitch generation, history management, random ID allocation or export.
-The UI is not connected in this first implementation; ReplaceText, preparation, JSON and the
-scenario runner are deliberately deferred. Existing Project/EditOperations APIs are unchanged.
+ReplaceText, preparation, JSON and the scenario runner remain deferred. Existing
+Project/EditOperations APIs are unchanged. The UI session now delegates history to the engine;
+individual UI edit actions still prepare their snapshots through the existing app helpers.
 
 ```kotlin
 val command = ProjectCommand.Batch(listOf(
@@ -44,8 +45,9 @@ empty/fallback thread slots, no-op identity/redo, nested rollback/failure paths 
 
 ## Shared EditSession (engine only)
 
-The engine `edit.commands.EditSession` wraps the existing History. The Android EditorSession
-still uses its previous implementation; no UI migration is included here.
+The engine `edit.commands.EditSession` wraps the existing History. Android EditorSession now
+delegates published state/history to it while retaining its local pointer-preview draft. Its
+`history` property is a read-only snapshot facade for existing count readers, not another History.
 
 ```kotlin
 val session = EditSession(project)
@@ -97,3 +99,19 @@ Validation: `./gradlew :engine:test --tests '*EditSessionTest' --tests '*Project
 Session tests cover atomic publication, single-step undo, redo-preserving abort/cancel/no-op,
 revision checks, replay after undo, changed-body ID conflicts, value-equivalent imports,
 wrong-owner/incomplete-turn handling, captured command containers and the existing history bound.
+
+### Existing editor snapshot compatibility
+
+`commitSnapshot(next, expectedRevision)` is a trusted host adapter for the existing UI's prepared
+Project values, not a new ProjectCommand or a future JSON/tool escape hatch. It rejects stale
+revision/active turns and uses the same History/revision as command turns. It retains the previous
+History equality/reference behavior without interpreting text settings or regenerating stitches.
+UI gesture frames stay outside this engine session until pointer-up, preserving old enablement,
+late-pointer rejection and exact final-preview identity. Empty/equal-value gestures preserve redo.
+Document opening/recovery still construct a fresh EditorSession through unchanged EditorDocuments;
+save baselines, dirty comparison and recovery draft storage are unchanged. Typed UI command dispatch
+and shared text preparation remain a separate migration step.
+
+Before this migration, EditorSessionMigrationTest's characterization cases were added and passed
+against the old app session. The same tests run after migration, including document redo reset,
+failed-read retention and recovered-draft dirty state.

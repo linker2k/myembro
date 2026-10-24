@@ -95,6 +95,21 @@ class EditSession(initial: Project = Project(), maxSteps: Int = 100) {
         return if (result is TurnResult.InProgress) commitTurn(transactionId, expectedRevision) else result
     }
 
+    /**
+     * Compatibility bridge for the existing editor's already prepared snapshots. Not a tool
+     * command: no arbitrary-project replacement is added to ProjectCommand or its future codec.
+     * Keeps the old History equality/reference semantics while sharing revision and undo state.
+     */
+    @Synchronized fun commitSnapshot(next: Project, expectedRevision: Long): SessionHistoryResult {
+        if (active != null) return SessionHistoryResult.Rejected(snapshot(), SessionError.TURN_IN_PROGRESS)
+        if (expectedRevision != currentRevision) return SessionHistoryResult.Rejected(snapshot(), SessionError.REVISION_MISMATCH)
+        val changed = next != history.current
+        val nextRevision = if (changed) Math.incrementExact(currentRevision) else currentRevision
+        history.commit(next)
+        currentRevision = nextRevision
+        return SessionHistoryResult.Applied(snapshot(), changed)
+    }
+
     @Synchronized fun undo(expectedRevision: Long): SessionHistoryResult = stepHistory(expectedRevision, redo = false)
     @Synchronized fun redo(expectedRevision: Long): SessionHistoryResult = stepHistory(expectedRevision, redo = true)
 
