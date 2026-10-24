@@ -1,6 +1,6 @@
 # 한글 TTF → 중심선 → 원본 새틴 변환: 착수 전 조사
 
-> **보류 — 사용자 결정(2026-10-24):** 한글 새틴·공용 중심선 엔진은 다음 버전 후보로 보존한다. 완료한 thinning 이식·골든·테스트만 해당 브랜치에 유지하고, 앱 연결·후속 구현·추가 검증 작업은 재개 지시 전까지 중단한다. 아래 계획/다음 단위 제안은 보류된 기록이다.
+> **선택 로직만 보류 — 사용자 정정(2026-10-24):** 한글 새틴·공용 중심선 엔진의 원본 포팅은 계획대로 계속한다. Kotlin thinning 이식과 골든 일치 테스트는 `2e2d533`에서 완료했다. 다음 순서는 원본 centerline 경로 추적 → Ink/Stitch convert-to-satin 포트다. 새틴/채우기 자동 선택과 그 폭 측정·분류 로직만 다음 버전으로 미룬다. 앱 연결은 이번 엔진 이식 단위에 포함하지 않는다.
 
 - **원본·라이선스:** 공식 [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), 커밋 `1a232b27818a46a05cd25edec09e2f77c4e9ac01` 고정; `src/thin-image.c`는 Martin Weber, LGPL-2.1-or-later, `src/{autotrace,fit,curve}.c`는 GPL-2.0-or-later(각 파일 헤더)로 GPL-3 결합 가능하며 프로젝트 전체를 LGPL이라고 표시하지 않는다. README/COPYING/COPYING.LIB와 파일별 고지를 보존하고 헤더 없는 보조 파일의 출처 범위는 구현 전 함께 대조한다.
 - **범위·근거:** [Inkscape 연결 코드](https://inkscape.gitlab.io/inkscape/doxygen/inkscape-autotrace_8cpp_source.html)는 `at_splines_new_full` 및 centerline 옵션을 사용한다(동일 라이브러리 계열임을 확인했으며 Inkscape 내장본과 위 태그의 바이트 동일성은 미확인). `src/autotrace.c`의 순서대로 Rosenfeld `thin-image.c` → `pxl-outline.c::find_centerline_pixels` → `fit.c`와 curve/spline/vector 보조 연산을 이식하고, 폭 보존은 원본 `image-proc.c` 거리맵 경로만 조사한다; 관련 8개 C 파일은 `wc -l` 합계 4,225줄, GUI·이미지 코덱·새 알고리즘은 제외한다.
@@ -16,7 +16,9 @@
 - 다음 20분 제안: 원본 thinning Kotlin 이식과 고정 마스크 exact equality 테스트. 이후 분기·경로 추적 원본 이식으로 진행하며, 이번 단위는 골든 확보에서 멈춘다.
 
 
-## 한글 자동 분기 — 사용자 결정, 2026-10-24
+## 한글 자동 분기 — 선택 로직만 보류(설계 기록), 2026-10-24
+
+아래 자동 분기는 다음 버전 후보이며 지금 구현하지 않는다. 한글 새틴·중심선 원본 포팅은 계속한다.
 
 한글 전체나 글꼴 전체를 일괄 새틴으로 바꾸지 않는다. **글자 또는 획 영역별로 측정한
 국소 폭의 중간값(median, mm)**으로 분기한다. 모서리 때문에 작아지는 최소 폭은
