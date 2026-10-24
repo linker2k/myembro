@@ -8,7 +8,7 @@
 | 파일 | 크기 / 형식 | 설명 및 용도 |
 | --- | --- | --- |
 | [launcher-icon-artwork.png](launcher-icon-artwork.png) | 1024×1024, RGB PNG | 린넨 위 목재 후프와 굵은 새틴 스티치. 런처 벡터 제작의 원화이며 adaptive icon에 직접 넣는 비트맵은 아닙니다. |
-| [readme-banner.png](readme-banner.png) | 1024×500, RGB PNG | 왼쪽 앱 이름·소개, 오른쪽 후프. 저장소 README 상단에서 사용합니다. |
+| [readme-banner.png](readme-banner.png) | 1024×500, RGB PNG | 왼쪽 앱 이름·소개, 오른쪽 후프. 저장소 README 상단에서 사용합니다. 이미지 속 문구는 아직 "Open-source embroidery viewer for Android"이며 다음 이미지 갱신 때 바꿉니다. 그 전까지는 README의 alt 텍스트에 현재 기능을 적습니다. |
 | [play-feature-graphic.png](play-feature-graphic.png) | 1024×500, RGB PNG | 왼쪽 후프와 오른쪽 앱 이름·PES 뷰어 소개. Play 스토어 등록용 불투명 피처 그래픽입니다. |
 | [empty-state.png](empty-state.png) | 1024×1024, RGBA PNG | 도안이 없는 빈 린넨 후프와 실타래. 글자가 없고 바깥 배경이 투명한 빈 화면용 원본 일러스트입니다. 앱에서는 아래 WebP 파생본을 사용합니다. |
 | [launcher-icon-preview.png](launcher-icon-preview.png) | 960×360, RGB PNG | XML 벡터에서 렌더링한 원형·둥근 사각형·단색·48px 미리보기입니다. 생성형 이미지가 아닌 리소스 검수용 이미지입니다. |

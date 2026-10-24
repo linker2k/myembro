@@ -16,7 +16,7 @@
     <string name="settings_defaults_hint">평소 사용하는 후프와 실 브랜드를 선택하세요. 내보내기 전에 미싱의 실제 봉제 영역을 확인해 주세요.</string>
     <string name="settings_about_title">앱 정보</string>
     <string name="settings_version">버전 %1$s (%2$s)</string>
-    <string name="settings_app_description">안드로이드용 오픈소스 자수 뷰어</string>
+    <string name="settings_app_description">안드로이드용 오픈소스 자수 앱 — 도안 보기·편집·레터링·사진→자수·자수기 전송</string>
     <string name="settings_app_license">앱 라이선스</string>
     <string name="settings_gpl">GPL-3.0-or-later</string>
     <string name="settings_open_source">오픈소스 라이선스</string>
