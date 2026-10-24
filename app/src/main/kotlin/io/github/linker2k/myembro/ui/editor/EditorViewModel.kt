@@ -43,6 +43,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     var settings by mutableStateOf(preferences.read())
         private set
     private val stopObserving = preferences.observe { settings = preferences.read() }
+    /** "Ask AI" flow; survives rotation with the rest of the editor. */
+    internal val agent = io.github.linker2k.myembro.ui.agent.AgentAssistController()
     val availableHoops get() = editorHoops(settings.machineProfile)
     val multiPositionFrames get() = settings.machineProfile?.hoops.orEmpty().filter { it.requiresRepositioning }
     val multiPositionFrame get() = multiPositionFrames.firstOrNull { it.coverage.sameArea(project.hoop) }

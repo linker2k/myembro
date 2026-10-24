@@ -284,7 +284,11 @@ class MainActivity : ComponentActivity() {
                                 showViewer()
                             }
                         }
-                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> importUris(sharedUris(intent))
+                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> agentReply(intent)?.let { text ->
+                            // A chatbot reply shared back: it goes to the editor's paste box, never to the library.
+                            editor.agent.openReply(text)
+                            if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
+                        } ?: importUris(sharedUris(intent))
                     }
                 },
             )
@@ -293,6 +297,13 @@ class MainActivity : ComponentActivity() {
             Log.w("MyembroLaunch", "Ignoring failed launch intent", error)
         }
     }
+
+    /** Plain text shared to myembro (no stream attached) is a chatbot reply for "Ask AI". */
+    private fun agentReply(intent: Intent): String? =
+        if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true &&
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) == null)
+            intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf { it.isNotBlank() }
+        else null
 
     /** Streams from a share, plus clip data some apps use instead; links in text are never fetched. */
     private fun sharedUris(intent: Intent): List<Uri> {

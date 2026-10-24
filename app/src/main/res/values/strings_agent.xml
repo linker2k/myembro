@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="agent_ask">Ask AI</string>
+    <string name="agent_request_hint">What should change? e.g. Put “Mina” under the logo in red</string>
+    <string name="agent_voice">Speak</string>
+    <string name="agent_voice_prompt">Say what to change</string>
+    <plurals name="agent_what_is_sent">
+        <item quantity="one">What the chatbot will see (%1$d object)</item>
+        <item quantity="other">What the chatbot will see (%1$d objects)</item>
+    </plurals>
+    <string name="agent_privacy">Works with Gemini, ChatGPT, Claude or any chat app. myembro stores no account or key, and sends no stitches, pictures or files.</string>
+    <string name="agent_preparing">Describing the design…</string>
+    <string name="agent_copy">Copy</string>
+    <string name="agent_share">Share to chatbot</string>
+    <string name="agent_share_chooser">Send to a chatbot</string>
+    <string name="agent_copied">Copied. Paste it into your chatbot app.</string>
+    <string name="agent_waiting">Waiting for the chatbot’s reply (%1$s)</string>
+    <string name="agent_paste_reply">Paste reply</string>
+    <string name="agent_cancel">Cancel</string>
+    <string name="agent_reply_title">Chatbot reply</string>
+    <string name="agent_reply_hint">Paste the chatbot’s whole reply here</string>
+    <string name="agent_paste">Paste</string>
+    <string name="agent_check">Check</string>
+    <string name="agent_close">Close</string>
+    <string name="agent_unreadable_title">Couldn’t use this reply</string>
+    <string name="agent_nothing_changed">Nothing was changed.</string>
+    <string name="agent_copy_fix">Copy a fix-up request</string>
+    <string name="agent_err_no_script">No myembro commands were found in this text.</string>
+    <string name="agent_err_multiple">This reply has %1$s command blocks. Ask for just one.</string>
+    <string name="agent_err_broken">The commands are damaged (line %1$d, column %2$d).</string>
+    <string name="agent_err_broken_nopos">The commands are damaged.</string>
+    <string name="agent_err_version">Made for a different version of myembro (%1$s).</string>
+    <string name="agent_err_not_object">The commands are not a JSON object.</string>
+    <string name="agent_err_missing">%1$s is missing.</string>
+    <string name="agent_err_unknown">%1$s is not a known field.</string>
+    <string name="agent_err_type">%1$s has the wrong type.</string>
+    <string name="agent_err_no_commands">There are no commands.</string>
+    <string name="agent_other_prompt">This reply belongs to another request (%1$s). Make a new request.</string>
+    <string name="agent_read_title">Commands read</string>
+    <plurals name="agent_read_count">
+        <item quantity="one">%1$d command read</item>
+        <item quantity="other">%1$d commands read</item>
+    </plurals>
+    <string name="agent_not_connected">Running AI commands isn’t connected yet. Nothing was changed.</string>
+    <string name="agent_rejected_title">Couldn’t use these commands</string>
+    <string name="agent_sample">Preview layout (sample)</string>
+    <string name="agent_preview_title">Check the changes</string>
+    <string name="agent_before">Before</string>
+    <string name="agent_after">After</string>
+    <string name="agent_changes">Changes</string>
+    <string name="agent_sewout">Sewout check</string>
+    <string name="agent_sewout_ready">Ready to send</string>
+    <string name="agent_sewout_blocked">Can’t be sent yet</string>
+    <string name="agent_remove_confirm">Remove %1$s</string>
+    <string name="agent_followups">After applying, you confirm each: %1$s</string>
+    <string name="agent_follow_send_usb">USB transfer</string>
+    <string name="agent_follow_save_pes">Save as PES</string>
+    <string name="agent_follow_save_project">Save project</string>
+    <string name="agent_follow_share_pes">Share PES</string>
+    <string name="agent_ask_changes">Ask for changes</string>
+    <string name="agent_apply">Apply</string>
+    <string name="agent_apply_hint">Apply is one undo step.</string>
+    <string name="agent_sample_banner">Sample data: nothing can be applied.</string>
+</resources>
