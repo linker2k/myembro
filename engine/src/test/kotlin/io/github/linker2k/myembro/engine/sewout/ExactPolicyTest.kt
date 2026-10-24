@@ -22,7 +22,7 @@ class ExactPolicyTest {
             val data=if(axis==0)bytes(max,20) else bytes(20,max)
             assertEquals(delta>0,PecViewportCheck.check(data,hoop).errors.any { it.startsWith("PEC_HOOP:") },"$hoop axis=$axis delta=$delta")
             val report=SewoutCheck.checkPes(data,options=SewoutOptions(hoop=hoop))
-            assertEquals(delta>0,report.findings.any { it.code==FindingCode.INVALID_PES && it.message.startsWith("PEC_HOOP:") })
+            assertEquals(delta>0,report.findings.any { it.code==FindingCode.HOOP_EXCEEDED && it.message.startsWith("PEC_HOOP:") })
         }
     }
     @Test fun exactOriginAndHeaderHaveNoOneUnitTolerance() {

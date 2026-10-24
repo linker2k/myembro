@@ -57,7 +57,11 @@ object SewoutCheck {
         val safetySeverity = if (generated) Severity.BLOCKER else Severity.WARNING
         val findings = Findings(o.maxFindings)
         if (fileError != null) findings.add(FindingCode.INVALID_PES, Severity.BLOCKER, fileError)
-        viewportErrors.forEach { findings.add(FindingCode.INVALID_PES,Severity.BLOCKER,it) }
+        viewportErrors.forEach {
+            if (it.startsWith("PEC_HOOP:")) {
+                if (o.applyHoop) findings.add(FindingCode.HOOP_EXCEEDED, Severity.BLOCKER, it)
+            } else findings.add(FindingCode.INVALID_PES, Severity.BLOCKER, it)
+        }
         val terminal = pattern.stitches.indexOfFirst { it.command == Command.END }
         val inputCount = if (terminal < 0) pattern.stitches.size else terminal+1
         val active = pattern.stitches.take(min(inputCount, o.maxCommands))
@@ -187,7 +191,7 @@ object SewoutCheck {
         for ((index, s) in active.withIndex()) {
             lastIndex = index
             val p = point(s)
-            if (!window.contains(p)) findings.add(FindingCode.HOOP_EXCEEDED, Severity.BLOCKER,
+            if (o.applyHoop && !window.contains(p)) findings.add(FindingCode.HOOP_EXCEEDED, Severity.BLOCKER,
                 "선택 후프의 봉제 영역을 벗어납니다.", Highlight(index, from = p), threshold = min(o.hoop.width, o.hoop.height)/10.0)
             if (s.command != Command.STITCH && s.command != Command.JUMP && current != null && p != current) motion(p, index)
             if (s.command == Command.STITCH || s.command == Command.JUMP) {
@@ -301,7 +305,7 @@ object SewoutCheck {
         val compatibility = compatibility(machine, o, stats, file, fileError, complete, findings)
         return SewoutReport(machine, o, stats, resultStages, tasks.toList(), cells, findings.items.sortedBy { it.severity.ordinal },
             findings.codes.toMap(), findings.severities.toMap(), findings.total-findings.items.size, complete,
-            active.size, inputCount, window, speed, time, threadUsage, compatibility, file)
+            active.size, inputCount, window, speed, time, threadUsage, compatibility, file, findings.worstByCode.toMap())
     }
 
     private fun usage(sewn: Double, jumps: Double, cuts: Int, machine: SewoutMachine, o: SewoutOptions): ThreadEstimate {
@@ -329,11 +333,13 @@ object SewoutCheck {
 internal class Findings(private val maximum: Int) {
     val items = mutableListOf<Finding>()
     val codes = linkedMapOf<FindingCode, Int>()
+    val worstByCode = linkedMapOf<FindingCode, Severity>()
     val severities = linkedMapOf<Severity, Int>()
     var total = 0; private set
     private var worstOrdinal = Severity.INFO.ordinal
     fun add(code: FindingCode, severity: Severity, message: String, highlight: Highlight? = null,
         measured: Double? = null, threshold: Double? = null) {
+        if (severity.ordinal < (worstByCode[code]?.ordinal ?: Int.MAX_VALUE)) worstByCode[code] = severity
         codes[code] = (codes[code] ?: 0)+1; severities[severity] = (severities[severity] ?: 0)+1; total++
         val finding = Finding(code, severity, message, highlight, measured, threshold)
         if (items.size < maximum) {
