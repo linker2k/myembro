@@ -2,12 +2,13 @@
 
 `apply(project, command)` wraps existing edit-model value operations. It performs no I/O,
 font preparation, stitch generation, history management, random ID allocation or export.
-ReplaceText, preparation, JSON and the scenario runner remain deferred. Existing
-Project/EditOperations APIs are unchanged. The UI session now delegates history to the engine;
+Text preparation is provided separately by engine `lettering.prepareText`; JSON commands and the
+scenario runner remain deferred. Existing Project/EditOperations APIs are unchanged. The UI session now delegates history to the engine;
 UI move/size/rotation/mirror, alignment, deletion, duplication, ordering, visibility, recolor and
 hoop actions now dispatch these same commands. Existing geometry/snap helpers prepare transforms;
 UI-only adapters preserve historical reorder clamping and invalid-color no-ops without weakening
-the strict tool reducer. Text replacement/style preparation and imports still use snapshot commits.
+the strict tool reducer. Prepared text additions use Add, text edits use ReplaceText, and inspector
+style/weight plus pose changes use a ReplaceText/SetTransforms Batch. Imports retain snapshot commits.
 
 ```kotlin
 val command = ProjectCommand.Batch(listOf(
@@ -118,7 +119,8 @@ Typed UI edits run `apply` before committing through this same history bridge. G
 builds one transform/order Batch from the published baseline and final preview, runs the reducer,
 and checks exact Project equality before retaining the preview reference. Thus caches and the
 previous undo/reference behavior survive while tool and UI mutation/validation share the reducer.
-There is no second UI mutation reducer. Shared text preparation remains a separate migration step.
+There is no second UI mutation reducer. The lettering renderer uses engine prepareText with the
+host's resolved font/outline snapshot. Android font extraction remains in the host.
 
 `EditorCommandParityTest` was run before replacing the ViewModel call sites (18 tests, zero failures).
 It compares the previous UI expressions with commands; recolor additionally compares complete
@@ -128,3 +130,26 @@ command dispatch, rejected-batch rollback, no-op redo preservation and mixed ges
 Before this migration, EditorSessionMigrationTest's characterization cases were added and passed
 against the old app session. The same tests run after migration, including document redo reset,
 failed-read retention and recovered-draft dirty state.
+
+## Prepared text commands
+
+`ReplaceText(id, text)` accepts a prepared TextObject. It changes text/font/geometry/style/thread
+content while retaining the target's ID, transform, visibility and sewing index. Missing targets
+return MISSING_OBJECT; an imported-stitch target returns INVALID_OBJECT_TYPE. The incoming object's
+ID/pose/visibility are deliberately ignored. No font resolution, rendering or preparation occurs
+inside apply; withId/withTransform/withVisible retain the prepared object's geometry cache.
+
+A JVM caller resolves a font, calls `prepareText(request, resolvedFont, TextPreparationPolicy(id))`,
+then dispatches `Add(prepared.textObject)` for new text or `ReplaceText(targetId, prepared.textObject)`
+for edits. The host owns ID allocation and any preparation failures; failed preparation submits no
+command and therefore cannot change history. To change pose together with text, submit one Batch
+containing ReplaceText followed by SetTransforms. Inspector edits retain their existing preparation
+and stale-project guard; the Batch commits exactly one undo step.
+
+EditorActions.withLettering is a compatibility wrapper around the same reducer: stale/nontext
+edits keep its previous no-op return, while the command API exposes a structured rejection. New-ID
+collision handling remains host-owned. EditorViewModel dispatches the command itself, so failed
+replacement does not close the lettering editor or change selection. Equal replacement retains
+project identity, revision, undo depth and redo history. Existing TextPreparation tests cover the
+ported preparation algorithm; EditorTextCommandParityTest compares old UI expressions before their
+replacement, and ReplaceTextCommandTest covers reducer, cache, rollback and turn replay behavior.
