@@ -25,7 +25,7 @@ types; changing an existing signature needs a note in the PR/commit message.
   select, drag to move, two-finger rotate/scale, handles; layer list (reorder = sewing
   order, visibility); bottom toolbar: add design (from library), add text, duplicate,
   mirror, rotate 90°, align center, delete, undo/redo; save project; export (PES → library/USB).
-- Entry points: library "만들기" tab, viewer "편집" action.
+- Entry points: library "Create" tab, viewer "Edit" action.
 
 ## Ownership (one agent per area, separate worktrees)
 
