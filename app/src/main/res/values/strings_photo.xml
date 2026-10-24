@@ -56,10 +56,10 @@
     <string name="photo_style_color">Color drawing</string>
     <string name="photo_color_title">Color drawing · 2–6 colors</string>
     <string name="photo_color_count">Colors · %1$d</string>
-    <string name="photo_color_hint">Transparent pixels are not sewn. For opaque pictures, the top-left color is the background. Threads are matched automatically to the Brother 64-color chart.</string>
+    <string name="photo_color_hint">Transparent pixels are not sewn. The dominant border color is treated as background. Threads are matched automatically to the Brother 64-color chart.</string>
     <string name="photo_threads_title">Threads needed · Brother</string>
     <string name="photo_thread_row">%1$s · %2$s</string>
     <string name="photo_color_file_stem">color_drawing</string>
-    <string name="photo_color_failed">No sewable color regions remain. Try a transparent PNG or a simple drawing with background at the top-left.</string>
+    <string name="photo_color_failed">No sewable color regions remain. Try a transparent PNG or a simple drawing with a light background.</string>
     <string name="photo_color_preview_accessibility">Color drawing separation preview</string>
 </resources>

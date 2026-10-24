@@ -25,6 +25,9 @@ import java.util.Locale
 
 /** Two-phase on-device color drawing conversion: tracing never generates stitches. */
 object ColorDrawingPipeline {
+    /** Smallest tested threshold preserving original colors and removing AA/specks in the
+     * 2 original 30mm drawings × 5 area candidates (ColorCleanupSweep). Not a universal guarantee. */
+    const val MINIMUM_REGION_AREA_MM2 = 3.0
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
         val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline) {
@@ -35,30 +38,33 @@ object ColorDrawingPipeline {
         val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int)
     data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>)
 
-    /** Fully transparent pixels consume no thread. Partial alpha is composited over white.
-     * For an opaque source the top-left quantized color is the caller-selected background.
+    /** Transparent pixels consume no thread. Straight RGB preserves the pigment of partial-alpha
+     * PNG edges instead of introducing a white-composited extra thread. Border-label mode removes
+     * opaque background before the requested N-color quantization.
      */
     fun trace(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
-        minAreaMm2:Double=0.0,maxContours:Int=128,checkpoint:(String)->Unit={}):Preview {
+        minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,checkpoint:(String)->Unit={}):Preview {
         require(width in 1..512 && height in 1..512 && width*height==argb.size)
         require(widthMm.isFinite() && widthMm>0 && colorCount in 2..6)
         checkpoint("quantization")
         val opaque=argb.indices.filter { argb[it] ushr 24 != 0 }
         require(opaque.isNotEmpty()) { "No visible pixels" }
-        fun rgb(p:Int):Int {
-            val a=p ushr 24
-            fun channel(shift:Int)=(((p ushr shift) and 255)*a+255*(255-a)+127)/255
-            return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
-        }
-        val quantized=ImageQuantizer.quantize(opaque.map { rgb(argb[it]) }.toIntArray(),colorCount)
+        val preliminary=ImageQuantizer.quantize(opaque.map { argb[it] and 0xffffff }.toIntArray(),colorCount+1)
+        val first=IntArray(argb.size) { -1 };val firstIndices=preliminary.copyIndices()
+        opaque.forEachIndexed { i,p -> first[p]=firstIndices[i] }
+        val background=if(opaque.size<argb.size) -1 else ColorRegionCleanup.borderMode(width,height,first)
+        val foreground=opaque.filter { background<0 || first[it]!=background }
+        require(foreground.isNotEmpty()) { "No foreground after border background removal" }
+        val quantized=ImageQuantizer.quantize(foreground.map { argb[it] and 0xffffff }.toIntArray(),colorCount)
         val original=IntArray(argb.size) { -1 };val q=quantized.copyIndices()
-        opaque.forEachIndexed { i,p -> original[p]=q[i] }
-        val background=if(opaque.size==argb.size) original[0] else -1
+        foreground.forEachIndexed { i,p -> original[p]=q[i] }
+        val cleaned=ColorRegionCleanup.mergeSmall(width,height,original,
+            (widthMm/width)*(widthMm/width),minAreaMm2)
         // One explicit transparent border lets Potrace trace ink touching any crop edge.
         val w=width+2;val h=height+2
         val labels=IntArray(w*h) { p ->
             val x=p%w-1;val y=p/w-1
-            if(x in 0 until width && y in 0 until height) original[y*width+x].takeIf { it!=background } ?: -1 else -1
+            if(x in 0 until width && y in 0 until height) cleaned[y*width+x] else -1
         }
         val paddedWidth=widthMm*w/width
         val layers=quantized.palette.mapIndexedNotNull { color,rgb ->

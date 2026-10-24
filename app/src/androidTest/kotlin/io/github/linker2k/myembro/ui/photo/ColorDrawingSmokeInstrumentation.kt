@@ -58,6 +58,7 @@ class ColorDrawingSmokeInstrumentation:Instrumentation() {
             check(vm.render!=null) { "generate ${vm.error}" }
             check(vm.passed) { vm.report?.findings.toString() }
             check(vm.requiredThreads.size in 2..3 && vm.requiredThreads.all { !it.catalogNumber.isNullOrBlank() && !it.description.isNullOrBlank() })
+            check(vm.requiredThreads.none { it.catalogNumber=="47" }) { "Antialias Beige must not become a thread" }
             screenshot("color-result-ko.png")
             out.resolve("color-face.pes").writeBytes(PesWriter.write(vm.render!!.pattern,EmbroiderySettings().writeSettings))
             val summary="COLOR_UI_SMOKE_PASS colors=${vm.colorCount} ink_width_mm=${vm.inkWidthMm} stitches=${vm.report!!.statistics.stitchCount} threads=${vm.requiredThreads.map { it.catalogNumber to it.description }}"

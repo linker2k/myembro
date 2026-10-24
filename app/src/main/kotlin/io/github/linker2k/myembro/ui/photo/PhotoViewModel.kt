@@ -163,7 +163,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     if(selectedMode==PhotoMode.COLOR) {
                         val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
-                            minAreaMm2=photoMinimumArea(detail)) { phase ->
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2) { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                             progressStage=if(phase=="quantization") 1 else 2
                         }

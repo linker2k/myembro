@@ -56,10 +56,10 @@
     <string name="photo_style_color">컬러 그림</string>
     <string name="photo_color_title">컬러 그림 · 2–6색</string>
     <string name="photo_color_count">색 수 · %1$d색</string>
-    <string name="photo_color_hint">투명 배경은 봉제하지 않습니다. 불투명 그림은 왼쪽 위 색을 배경으로 사용하며, Brother 64색 실에 자동으로 맞춥니다.</string>
+    <string name="photo_color_hint">투명 배경은 봉제하지 않습니다. 테두리에서 가장 많은 색은 배경으로 제외하며, Brother 64색 실에 자동으로 맞춥니다.</string>
     <string name="photo_threads_title">필요한 실 · Brother</string>
     <string name="photo_thread_row">%1$s · %2$s</string>
     <string name="photo_color_file_stem">color_drawing</string>
-    <string name="photo_color_failed">봉제할 컬러 영역이 남지 않았습니다. 투명 배경 PNG나 왼쪽 위가 배경인 간단한 그림을 골라주세요.</string>
+    <string name="photo_color_failed">봉제할 컬러 영역이 남지 않았습니다. 투명 배경 PNG나 밝은 배경의 간단한 그림을 골라주세요.</string>
     <string name="photo_color_preview_accessibility">컬러 그림 색 분리 미리보기</string>
 </resources>
