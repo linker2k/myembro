@@ -51,7 +51,7 @@ object VectorArt {
     data class Part(val shape: Int, val role: String, val method: StitchTypeRule.Type, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int,
         /** Measured region widths (mm) the shared rule decided on. */
         val widths: StitchTypeRule.Widths? = null)
-    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double)
+    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount:Int=0)
 
     /** Minimal reader for flat SVG: root viewBox and `<path>` elements. Gradients, masks, transforms are rejected. */
     fun parseSvg(svg: String): Art {
@@ -153,54 +153,61 @@ object VectorArt {
         val groups = ArrayList<StitchGroup>()
         val parts = ArrayList<Part>()
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
-        fun tatami(index: Int, role: String, area: Geometry, thread: EmbThread, widthMm: Double, sourceRgb: Int) {
-            val later = footprints.drop(index + 1)
-            val visible = if (later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
-            val pieces = (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()
-                .filter { rules.classify(it, scale) != StitchTypeRule.Type.RUNNING }
-            if (pieces.isEmpty()) return
-            val paths = pieces.flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
-                .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
-            val element = InkFill(paths, FillRule.EVEN_ODD, thread.color, InkStitchParams(emptyMap()))
-            groups += FontTatami.stitchGroups(element, { q -> px(q.x, q.y) }, emptyMap(), thread, previous())
-            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb, StitchTypeRule.widths(area, 1 / scale))
+        var excludedCount=0
+        fun visible(index:Int,area:Geometry):Geometry {
+            val later=footprints.drop(index+1)
+            return if(later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
         }
-        art.shapes.forEachIndexed { index, shape ->
-            shape.fill?.let { rgb ->
-                val thread = nearestThread(rgb)
-                val area = fillGeometry(shape)
-                val w = StitchTypeRule.maxWidth(area) * scale
-                // A satin-width area still needs a centerline/rail solver (next unit), so it is tatami for now.
-                if (rules.classify(area, scale) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
-                else {
-                    groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
-                    parts += Part(index, "fill", StitchTypeRule.Type.RUNNING, thread, w, rgb)
+        fun boundaryPaths(area:Geometry)= (0 until area.numGeometries).map { area.getGeometryN(it) }.filterIsInstance<Polygon>()
+            .flatMap { poly -> (listOf(poly.exteriorRing)+(0 until poly.numInteriorRing).map(poly::getInteriorRingN))
+                .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x,it.y) },true) } }
+        fun emit(index:Int,role:String,area:Geometry,thread:EmbThread,w:Double,rgb:Int,preferred:StitchTypeRule.Type,
+            satin:()->List<StitchGroup> = { emptyList() },running:()->List<StitchGroup> = {
+                Stroke(boundaryPaths(area).map { line -> line.points.map { px(it.x,it.y) } },thread).toStitchGroups(previous())
+            }) {
+            val exposed=visible(index,area)
+            val pieces=(0 until exposed.numGeometries).map { exposed.getGeometryN(it) }.filterIsInstance<Polygon>()
+                .filter { rules.classify(it,scale)!=StitchTypeRule.Type.RUNNING }
+            // A completely occluded source is not a failed region.
+            if(preferred==StitchTypeRule.Type.TATAMI && pieces.isEmpty()) return
+            val resolved=StitchTypeRule.generateRegion(preferred,groups) { attempt -> when(attempt) {
+                StitchTypeRule.Type.SATIN -> satin()
+                StitchTypeRule.Type.TATAMI -> {
+                    val paths=pieces.flatMap { boundaryPaths(it) }
+                    if(paths.isEmpty()) emptyList() else FontTatami.stitchGroups(
+                        InkFill(paths,FillRule.EVEN_ODD,thread.color,InkStitchParams(emptyMap())),
+                        { q -> px(q.x,q.y) },emptyMap(),thread,previous())
                 }
+                StitchTypeRule.Type.RUNNING -> if(preferred==StitchTypeRule.Type.RUNNING) running() else
+                    Stroke(boundaryPaths(exposed).map { line -> line.points.map { px(it.x,it.y) } },thread).toStitchGroups(previous())
+            } }
+            if(resolved.excluded) { excludedCount++;return }
+            groups+=resolved.groups
+            parts+=Part(index,role,resolved.type!!,thread,w,rgb,StitchTypeRule.widths(area,1/scale))
+        }
+        art.shapes.forEachIndexed { index,shape ->
+            shape.fill?.let { rgb ->
+                val area=fillGeometry(shape);val thread=nearestThread(rgb)
+                val preferred=if(rules.classify(area,scale)==StitchTypeRule.Type.RUNNING) StitchTypeRule.Type.RUNNING else StitchTypeRule.Type.TATAMI
+                emit(index,"fill",area,thread,StitchTypeRule.maxWidth(area)*scale,rgb,preferred)
             }
             shape.stroke?.let { rgb ->
-                val thread = nearestThread(rgb)
-                val w = shape.strokeWidth * scale
-                // The stroke's band is the region: bends widen its maximum, so a 6.5mm arch line is tatami.
-                when (rules.classify(strokeGeometry(shape), scale)) {
-                    StitchTypeRule.Type.TATAMI -> tatami(index, "stroke", strokeGeometry(shape), thread, w, rgb)
-                    StitchTypeRule.Type.SATIN -> {
-                        for (line in subpaths(shape.d)) {
-                            val section = StrokeToSatin.convertPathToSatin(line.points.map { px(it.x, it.y) },
-                                Units.mmToPixels(w), StrokeToSatin.Style.fromSvg(shape.lineJoin)) ?: continue
-                            groups += section.column(SatinParameters(), thread).toStitchGroups(previous())
-                        }
-                        parts += Part(index, "stroke", StitchTypeRule.Type.SATIN, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
+                val thread=nearestThread(rgb);val w=shape.strokeWidth*scale;val area=strokeGeometry(shape)
+                val lines=subpaths(shape.d)
+                emit(index,"stroke",area,thread,w,rgb,rules.classify(area,scale),satin={
+                    val candidate=mutableListOf<StitchGroup>()
+                    for(line in lines) {
+                        val section=requireNotNull(StrokeToSatin.convertPathToSatin(line.points.map { px(it.x,it.y) },
+                            Units.mmToPixels(w),StrokeToSatin.Style.fromSvg(shape.lineJoin)))
+                        candidate+=section.column(SatinParameters(),thread).toStitchGroups(candidate.lastOrNull()?.stitches?.lastOrNull() ?: previous())
                     }
-                    StitchTypeRule.Type.RUNNING -> {
-                        groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
-                        parts += Part(index, "stroke", StitchTypeRule.Type.RUNNING, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
-                    }
-                }
+                    candidate
+                },running={ Stroke(lines.map { line -> line.points.map { px(it.x,it.y) } },thread).toStitchGroups(previous()) })
             }
         }
         // Same finishing as Ink/Stitch lettering: locks at thread boundaries, no zero-length motions.
-        val pattern = GeneratedPatternProcessor.fromGroups(groups, collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true,
+        val pattern = if(groups.isEmpty()) EmbPattern(emptyList(),emptyList()) else GeneratedPatternProcessor.fromGroups(groups, collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true,
             lockAtThreadBoundaries = true, omitZeroLengthMotions = true)
-        return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name), pattern.warnings), parts, scale)
+        return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name,"myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount)
     }
 }
