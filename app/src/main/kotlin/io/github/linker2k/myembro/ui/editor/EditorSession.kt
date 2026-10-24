@@ -5,10 +5,28 @@ import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.edit.commands.SessionHistoryResult
+import io.github.linker2k.myembro.engine.agent.ToolDispatcher
+import io.github.linker2k.myembro.engine.agent.ToolTurnController
+import kotlinx.serialization.json.*
 
 /** UI previews stay outside the shared engine session until pointer-up: one gesture, one commit. */
 internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
     private val engine = EditSession(initial, maxSteps = limit)
+    private val scriptControllers = java.util.IdentityHashMap<ToolDispatcher, ToolTurnController>()
+
+    /** Phone path A: same controller and History as toolbar undo. Host pins/reuses its frame/asset kernel.
+     * No Compose state or separate history is mutated during dry-run. VM must refresh after a commit. */
+    fun runCommandScript(kernel: ToolDispatcher, transactionId: String, expectedRevision: Long,
+        calls: List<ToolTurnController.Call>, exportSettings: JsonObject, dryRun: Boolean = false,
+        confirmed: Boolean = false): ToolDispatcher.Result {
+        if(isGesturing) return ToolDispatcher.Result(project,buildJsonObject {
+            put("ok",false);put("code","GESTURE_IN_PROGRESS");put("message","Finish the pointer gesture before running a script")
+        })
+        val controller=scriptControllers.getOrPut(kernel) { kernel.bind(engine) }
+        val result=controller.executeScript(transactionId,expectedRevision,calls,exportSettings,dryRun,confirmed)
+        if(!dryRun) project=engine.project
+        return result
+    }
     /** Read-only compatibility view for existing VM/test history counts; never a second History. */
     val history get() = engine.snapshot()
     var project: Project = initial

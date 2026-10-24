@@ -215,6 +215,7 @@ tasks.register<JavaExec>("runAgentScenario") {
     mainClass.set("io.github.linker2k.myembro.engine.agent.AgentScenarioCli")
     workingDir = rootProject.projectDir
     args(providers.gradleProperty("agentScenario").orElse("").get(), providers.gradleProperty("agentOutput").orElse("").get())
+    if (providers.gradleProperty("agentDryRun").orElse("false").get().toBooleanStrict()) args("--dry-run")
 }
 
 tasks.processResources {

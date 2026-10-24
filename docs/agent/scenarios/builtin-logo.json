@@ -8,7 +8,7 @@
     {
       "name": "transform_objects",
       "arguments": {
-        "transactionId": "move-rotate-logo",
+        "transactionId": "scenario",
         "objectIds": ["logo"],
         "deltaXMm": 1,
         "deltaYMm": 2,
@@ -19,7 +19,7 @@
     {
       "name": "recolor_object",
       "arguments": {
-        "transactionId": "recolor-logo",
+        "transactionId": "scenario",
         "objectId": "logo",
         "threadIndex": 0,
         "threadColor": "#B5492A"

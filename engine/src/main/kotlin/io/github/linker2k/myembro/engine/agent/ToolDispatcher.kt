@@ -19,7 +19,8 @@ class ToolDispatcher(
 ) {
     private val frames = frames.mapValues { (_, h) -> h.copy(positions = h.positions.toList()) }
     private val assets = assets.mapValues { it.value.copyOf() }
-    data class Result(val project: Project, val output: JsonObject, val pesBytes: ByteArray? = null) {
+    data class Result(val project: Project, val output: JsonObject, val pesBytes: ByteArray? = null,
+        val preparedCommand: ProjectCommand? = null) {
         val ok get() = output.getValue("ok").jsonPrimitive.boolean
         val code get() = output["code"]?.jsonPrimitive?.content
     }
@@ -96,10 +97,15 @@ class ToolDispatcher(
                 is CommandResult.Rejected -> failure(result.code.name, result.message, buildJsonObject { put("objectIds", JsonArray(result.objectIds.map(::JsonPrimitive))) })
                 is CommandResult.Applied -> Result(result.project, buildJsonObject {
                     put("ok", true); put("changed", result.changed); put("transactionId", a.string("transactionId")); put("changedIds", JsonArray(result.changedIds.map(::JsonPrimitive)))
-                })
+                }, preparedCommand = command)
             }
         } catch (e: IllegalArgumentException) { return failure("INVALID_ARGUMENTS", e.message ?: "Invalid request") }
     }
+    /** Bind to the same EditSession used by a host's UI/history. Keep this controller for the document lifetime. */
+    fun bind(session: EditSession) = ToolTurnController(session, this)
+    internal fun validateRequest(name: String, arguments: JsonElement): String? = schema.validate(name, arguments)
+    internal fun knowsTool(name: String) = schema.contains(name)
+    internal fun needsConfirmation(name: String) = schema.confirmation(name)
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
         val SUPPORTED = setOf("get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
