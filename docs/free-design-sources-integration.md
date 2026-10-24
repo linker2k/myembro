@@ -1,36 +1,36 @@
-# 무료 도안 디렉터리 / 공유 가져오기 연결 메모
+# Free-design directory / shared import integration notes
 
-## 현재 구현과 통합 담당 작업
+## Current implementation and integrator tasks
 
-`main`의 `e0d2c32`를 병합한 뒤 구현했다. MainActivity는 수정하지 않았다.
-공개 목적지는 `FreeDesignSourcesScreen(onBack: () -> Unit)`이며, 상위의
-`MyembroTheme` 안에서 호출한다. 홈/도안 목록의 '무료 도안 찾기' 액션에 이 목적지를
-연결하고 화면 스택의 뒤로 가기 콜백을 전달하면 된다.
+Implemented after merging `main`'s `e0d2c32`. MainActivity was not modified.
+The public destination is `FreeDesignSourcesScreen(onBack: () -> Unit)`, called inside the enclosing
+`MyembroTheme`. Connect this destination to the Home/design-list 'Find free designs' action
+and pass the screen stack's back callback.
 
-화면은 검증된 JSON을 오프라인으로 읽고 Custom Tabs로 사이트와 약관을 연다.
-실제 도안·사이트 이미지·로고를 새로 번들하거나 자동 다운로드하지 않는다.
-Custom Tabs 미지원 브라우저에서는 일반 브라우저로 열리며, 브라우저가 없으면
-스낵바를 표시한다. AndroidX Browser 1.8.0을 사용한다.
+The screen reads validated JSON offline and opens sites and terms in Custom Tabs.
+It does not newly bundle or automatically download actual designs/site images/logos.
+Browsers without Custom Tabs open a regular browser view; if no browser is installed,
+a snackbar is shown. Uses AndroidX Browser 1.8.0.
 
-Manifest에 SEND / SEND_MULTIPLE 필터를 추가했지만, **현재 MainActivity는 VIEW만
-처리한다.** 통합 담당이 `handleIntent`에 아래 경로를 연결해야 실제 공유 가져오기가
-동작한다. `onCreate`와 기존 `onNewIntent` 모두 이 처리기를 통과해야 한다.
+SEND / SEND_MULTIPLE filters were added to the Manifest, but **MainActivity currently handles only VIEW.**
+The integrator must wire the following path into `handleIntent` for shared import to work.
+Both `onCreate` and the existing `onNewIntent` must pass through this handler.
 
-1. SEND는 `IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)`,
-   SEND_MULTIPLE은 `IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)`로 URI를 받는다.
-   일부 공유 앱을 위해 `intent.clipData`의 각 `getItemAt(i).uri`도 합치고 중복 URI를 제거한다.
-   HTTP 문자열/EXTRA_TEXT 링크는 다운로드하지 않는다. `content://` URI만 처리한다.
-2. 임시 읽기 권한이 유효한 동안 `Dispatchers.IO`에서 각 URI를
-   `DesignLibrary(context).importShared(uri): List<File>`에 전달한다. 하나의 ZIP에서
-   여러 파일이 나올 수 있으므로 기존 단일 반환 `importForViewing`에 넘기지 않는다.
-   일반 파일 선택기에서 ZIP을 선택한 경우에도 이 새 API를 사용한다.
-3. 한 URI의 성공 결과를 누적하고, 실패 URI는 사용자에게 오류를 표시한다. URI별로
-   독립적인 가져오기이므로 앞선 URI의 성공을 뒤 URI의 실패로 지우지 않는다.
-4. 성공 후 `LibraryViewModel.refresh()`를 호출한다. 결과가 한 파일이면 기존
-   `openDesign(file)`로 뷰어를 열고, 여러 파일이면 도안 목록으로 이동한다.
-   오류나 ZIP을 기존 `viewer.open(uri)` fallback으로 넘기지 않는다.
+1. Obtain SEND URIs with `IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)`;
+   for SEND_MULTIPLE use `IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)`.
+   For some sharing apps, also combine each `getItemAt(i).uri` from `intent.clipData`, deduplicating URIs.
+   Do not download HTTP strings/EXTRA_TEXT links. Handle only `content://` URIs.
+2. While temporary read permission remains valid, pass each URI on `Dispatchers.IO` to
+   `DesignLibrary(context).importShared(uri): List<File>`. A single ZIP can produce
+   multiple files, so do not pass it to the existing single-result `importForViewing`.
+   Use this new API for ZIPs selected in the ordinary file picker as well.
+3. Accumulate successful results per URI and show errors for failed URIs. Imports are independent per URI,
+   so a later URI failure must not erase an earlier URI's success.
+4. Call `LibraryViewModel.refresh()` after success. For one resulting file, open the viewer with existing
+   `openDesign(file)`; for multiple files, navigate to the design list.
+   Do not send errors or ZIPs to the existing `viewer.open(uri)` fallback.
 
-핵심 호출 예:
+Core call example:
 
 ```kotlin
 val stored: List<File> = withContext(Dispatchers.IO) {
@@ -40,31 +40,31 @@ library.refresh()
 // 한 개: openDesign(stored.single()); 여러 개: LIBRARY 목적지
 ```
 
-## 가져오기 계약
+## Import contract
 
-Android 어댑터 `DesignLibrary.importShared`는 display name/MIME을 조회하고 스트림을
-열어 순수 JVM `DesignFileImporter(directory).import(input, fileName, mimeType)`에 전달한다.
-테스트·비 Android 호출에서는 후자를 직접 쓸 수 있다. 호출자는 스트림을 `use`로 닫는다.
+The Android adapter `DesignLibrary.importShared` queries display name/MIME, opens a stream,
+and passes it to pure JVM `DesignFileImporter(directory).import(input, fileName, mimeType)`.
+Tests/non-Android callers can use the latter directly. The caller closes the stream with `use`.
 
-- ZIP magic도 검사하므로 `application/octet-stream` / 확장자 없는 ZIP도 인식한다.
-- 내부 `.pes` / `.pec` / `.dst`만 읽는다(대소문자 무관). 중첩 ZIP은 재귀로 풀지 않는다.
-- `/`·`\` 경로를 모두 버리고 파일명만 사용한다. 제어 문자/예약 문자를 치환하고
-  파일명 길이를 제한한다. `__MACOSX`와 `._` 파일은 무시한다.
-- 기본 상한: 파일당 16 MiB, 전체 해제 데이터 64 MiB, 읽은 원본 데이터 64 MiB,
-  ZIP 엔트리 512개, 도안 100개. 무시한 항목도 바이트·엔트리 상한에 포함한다.
-- ZIP 헤더의 크기를 신뢰하지 않고 실제 읽은 바이트를 세며, 지원하지 않는 파일도
-  제한된 버퍼로 읽는다. 엔트리 CRC 오류/읽기 오류는 가져오기 실패로 처리한다.
-- 모든 후보 도안을 임시 파일에 쓴 뒤 `PatternReader`로 검증하고 게시한다.
-  중간 실패 시 해당 URI에서 게시한 새 파일과 임시 파일을 제거한다.
-- 중복 파일명은 `name (1).pes`처럼 저장하고 기존 파일을 덮어쓰지 않는다.
-- 도안이 없는 ZIP, 잘못된 파일, 상한 초과는 예외를 반환한다. UI에서 실패를 안내한다.
+- Also checks ZIP magic, recognizing `application/octet-stream` / ZIPs without extensions.
+- Reads only internal `.pes` / `.pec` / `.dst` files(case-insensitive). Does not recursively extract nested ZIPs.
+- Discards both `/`·`\` paths and uses only filenames. Replaces control/reserved characters
+  and limits filename length. Ignores `__MACOSX` and `._` files.
+- Default limits: 16 MiB per file, 64 MiB total extracted data, 64 MiB source data read,
+  ZIP entries 512, designs 100. Ignored items also count toward byte/entry limits.
+- Does not trust ZIP header sizes; counts bytes actually read and reads unsupported files
+  with a bounded buffer. Entry CRC/read errors fail the import.
+- Writes all candidate designs to temporary files, validates them with `PatternReader`, then publishes them.
+  On an intermediate failure, removes new files published from that URI and temporary files.
+- Duplicate filenames are saved as `name (1).pes`, without overwriting existing files.
+- ZIPs without designs, invalid files, and exceeded limits return exceptions. The UI reports failure.
 
-## 검증
+## Validation
 
-`DesignFileImporterTest`: 실제 PES/PEC/DST, Unix/Windows 경로 탐색, 중복 이름,
-일반 MIME ZIP, 긴 Unicode 이름, 잘못된 도안의 전체 롤백, 무시한 파일의 압축 폭탄,
-입력/해제 크기 상한, 엔트리/도안 개수 상한, 빈/손상 ZIP.
+`DesignFileImporterTest`: actual PES/PEC/DST, Unix/Windows path traversal, duplicate names,
+generic-MIME ZIPs, long Unicode names, full rollback on invalid designs, compression bombs in ignored files,
+input/extracted-size limits, entry/design-count limits, empty/corrupt ZIPs.
 
-`FreeDesignSourcesTest`: 디렉터리 한영 텍스트/검증일/형식/약관, 중복 ID,
-안전하지 않은 URL 및 미지원 스키마 버전 거부. 네트워크 확인은 오프라인 단위 테스트에
-넣지 않고 [출처 문서](free-design-sources.md)와 JSON의 evidenceUrls에 기록한다.
+`FreeDesignSourcesTest`: Korean/English directory text/check dates/formats/terms, duplicate IDs,
+rejection of unsafe URLs and unsupported schema versions. Network checks are excluded from offline unit tests;
+they are recorded in the [source document](free-design-sources.md) and JSON evidenceUrls.
