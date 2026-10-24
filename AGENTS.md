@@ -1,25 +1,25 @@
-# myembro — 에이전트 공통 규칙
+# myembro — Shared rules for agents
 
-이 파일은 모든 코딩 에이전트(Codex, Claude Code)가 작업 전에 읽는다. 아래 규칙은 같은 내용이 코드에도 있다(`engine/.../sewout/SewoutCheck`, `/tmp/myembro-quality-gate` gate). 위반한 파일은 빌드·저장·전송이 모두 막힌다. 이 문서는 **처음부터 위반하지 않게 만들라**고 있는 것이다. 규칙을 바꿀 때는 문서, 코드, 테스트를 한 커밋에서 함께 바꾼다.
+Every coding agent (Codex, Claude Code) reads this file before starting work. The same rules also exist in code (`engine/.../sewout/SewoutCheck`, the `/tmp/myembro-quality-gate` gate). A file that violates them is blocked from building, saving and sending. This document exists so that you **never produce a violation in the first place**. When a rule changes, change the document, the code and the tests together in one commit.
 
-## PES/PEC 출력 불변식 (실기 SE400 사고에서 확인됨)
+## PES/PEC output invariants (confirmed by real SE400 incidents)
 
-| # | 규칙 | 근거 |
+| # | Rule | Basis |
 |---|---|---|
-| P1 | PEC 땀 좌표의 **최소 x = 0, 최소 y = 0**이어야 한다. 좌표 원점은 디자인 왼쪽 위 모서리이고, **음수 좌표는 금지**한다. | 사용자 PE-Design 도안 334/334개가 모두 왼쪽 위 원점이다. 가운데 원점으로 쓴 파일은 SE400에서 땀이 디자인 크기의 절반만큼 왼쪽 위로 밀렸다. 그 상태로 후프 한계에 걸려 같은 자리를 20번 넘게 찍었다(2026-10-24). |
-| P2 | 최대 x ≤ 후프 폭, 최대 y ≤ 후프 높이. 비교는 0.1mm 단위 **정수 좌표**로 하고, 부동소수 오차나 여유는 두지 않는다. 좌표는 0부터 시작하는 정수이므로 허용 범위는 **0 ~ (후프 단위 수 − 1)**이다. 100mm 후프라면 0–999를 허용하고 1000부터 금지한다. 정확히 100.0mm 경계까지 기계가 갈 수 있는지는 미확인이고, 코퍼스에도 1000에 닿은 도안이 없어서 보수적으로 잡았다. **모든 후프에 똑같이 적용**하며 기본 후프, 기종별 후프, 사용자 정의 후프를 모두 포함한다. 후프 값은 앱 `HoopSpec` 한 곳에서만 가져온다. | 후프 이동 범위는 기계에 고정되어 있어 0.1mm도 넘을 수 없다(사용자 지시 2026-10-24). |
-| P2a | **안전 여유는 0.1mm(1단위)이고 P2의 0–999 규칙이 곧 이 여유다.** 추가 여유는 두지 않는다(2mm 여유는 폐기). 디자인 최대 크기는 99.9mm(999단위)다. | 사용자 결정(2026-10-24): "0.1mm면 된다". 0.1mm를 포기하는 것은 손해가 아니다. |
-| P3 | PEC 헤더의 width/height는 실제 땀 범위와 정확히 같아야 한다. 1단위(0.1mm) 차이도 허용하지 않는다. | 기계는 헤더 크기를 보고 디자인을 배치하고 이동 한계를 정한다. |
-| P4 | **0길이 JUMP와 0길이 바늘(땀)은 금지**한다. 실 시작과 트림 뒤에도 마찬가지다. 트림한 뒤 같은 지점에서 다시 시작하는 경우는 트림과 JUMP를 모두 없애고 이어서 봉제한다. | PE-Design 코퍼스에는 0길이 명령이 없다. 이 명령이 없는 시작(A/B 시험의 T1·T3)은 실기에서 정상으로 봉제되었다. |
-| P5 | 같은 바늘 위치에 연속으로 들어가는 횟수는 **2회 이하**여야 한다. 0길이 바늘도 이 횟수에 포함한다. | 코퍼스 분포는 1회 173개, 2회 158개, 3회 1개, 5회 2개이고, p99는 2다. |
-| P6 | 잠금 땀은 Ink/Stitch 기본값인 `half_stitch`를 쓴다. 자체 고안한 잠금은 금지한다. 글꼴의 첫 요소처럼 `ties=3`인 경우에는 upstream 파라미터로 시작 잠금을 보장한다. | Ink/Stitch v3.3.0 원본과 동등하다. 실기 T3에서 정상이었다. |
-| P7 | 0.5mm 칸 하나에 바늘이 15회를 넘으면 안 된다(앱 출력 기준). 가져온 PES는 30회를 넘을 때만 차단한다. | 코퍼스 p99를 기준으로 정했다. 새집이 생긴 파일은 38회였다. |
-| P8 | 최대 땀 길이 ≤ 12.0mm. | 코퍼스 최대값이 12.0mm다. |
+| P1 | PEC stitch coordinates must have **minimum x = 0 and minimum y = 0**. The coordinate origin is the top-left corner of the design, and **negative coordinates are forbidden**. | All 334/334 of the user's PE-Design designs use a top-left origin. A file written with a center origin had its stitches shifted up and left on the SE400 by half the design size. In that state it hit the hoop limit and stitched the same spot more than 20 times (2026-10-24). |
+| P2 | Maximum x ≤ hoop width, maximum y ≤ hoop height. Compare in **integer coordinates** of 0.1mm units, with no floating-point tolerance or margin. Coordinates are integers starting at 0, so the allowed range is **0 to (number of hoop units − 1)**. For a 100mm hoop, 0–999 is allowed and 1000 and above is forbidden. Whether the machine can reach exactly the 100.0mm boundary is unverified, and no design in the corpus reaches 1000, so the limit is set conservatively. **It applies identically to every hoop**, including the default hoop, machine-specific hoops and user-defined hoops. Hoop values come only from the app's `HoopSpec`, in one place. | The hoop travel range is fixed by the machine and cannot be exceeded by even 0.1mm (user instruction, 2026-10-24). |
+| P2a | **The safety margin is 0.1mm (1 unit), and the 0–999 rule of P2 is that margin.** No extra margin is added (the 2mm margin is dropped). The maximum design size is 99.9mm (999 units). | User decision (2026-10-24): "0.1mm is enough". Giving up 0.1mm is not a loss. |
+| P3 | The width/height in the PEC header must exactly equal the actual stitch extent. Not even a 1-unit (0.1mm) difference is allowed. | The machine places the design and sets its travel limits from the header size. |
+| P4 | **0-length JUMPs and 0-length needle penetrations (stitches) are forbidden**, including at thread start and after a trim. When stitching restarts at the same point after a trim, remove both the trim and the JUMP and continue stitching. | The PE-Design corpus has no 0-length commands. Starts without them (T1 and T3 in the A/B test) sewed normally on the real machine. |
+| P5 | Consecutive needle penetrations at the same position must be **at most 2**. 0-length penetrations count toward this. | Corpus distribution: 1 time 173 files, 2 times 158, 3 times 1, 5 times 2; p99 is 2. |
+| P6 | Lock stitches use the Ink/Stitch default `half_stitch`. Self-invented locks are forbidden. Where `ties=3`, as with the first element of a font, the start lock is guaranteed through the upstream parameter. | Equivalent to the Ink/Stitch v3.3.0 original. It was normal in real-machine test T3. |
+| P7 | A single 0.5mm cell must not receive more than 15 needle penetrations (app output). Imported PES are blocked only above 30. | Set from the corpus p99. The file that produced a bird's nest had 38. |
+| P8 | Maximum stitch length ≤ 12.0mm. | The corpus maximum is 12.0mm. |
 
-## 작업 원칙
+## Working principles
 
-- 새 알고리즘을 만들지 않는다. 검증된 원본(Ink/Stitch v3.3.0, potrace, Wu 양자화)을 기본값 그대로 포팅하고, 원본과 같은 결과가 나오는지 자동 비교로 증명한다.
-- 측정할 수 있는 것은 모델이 판정하지 않는다. 코드와 테스트가 판정하고, 보고에는 명령이나 테스트 출력을 첨부한다.
-- 규칙에 쓰는 숫자는 근거가 있어야 한다. 근거는 upstream 기본값, 코퍼스 실측, 원본 코드 중 하나다. 근거가 없으면 "미확인"으로 표시하고 쓰지 않는다.
-- 개인 도안(사용자 PE-Design 라이브러리, 업로드 파일)은 커밋하지 않고, 테스트 픽스처로도 쓰지 않는다. 로컬 `/tmp`에서만 분석한다.
-- 실기 시험 파일은 매번 새 이름으로 만든다. 한 파일에 한 색(40wt)만 쓰고, 60×60mm 안으로 작게 만든다.
+- Do not invent new algorithms. Port verified originals (Ink/Stitch v3.3.0, potrace, Wu quantization) with their default values as-is, and prove by automated comparison that the result matches the original.
+- Models do not judge what can be measured. Code and tests judge, and reports attach the command or test output.
+- Every number used in a rule needs a basis: an upstream default, a corpus measurement or the original code. Without a basis, mark it "unverified" and do not use it.
+- Personal designs (the user's PE-Design library, uploaded files) are never committed and never used as test fixtures. Analyze them only locally in `/tmp`.
+- Give every real-machine test file a new name. Use only one color (40wt) per file, and keep it small, within 60×60mm.
