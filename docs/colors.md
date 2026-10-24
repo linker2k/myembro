@@ -19,7 +19,7 @@ the header, while the PEC block contains only Brother 64-color palette numbers. 
    reuse). When the thread count was at least the block count, threads were assigned sequentially
    1:1, so colors were swapped in reverse-order files.
 
-In addition, versions 0091·0110 did not have their headers read, and a non-0 count of predefined
+In addition, versions 0091·0110 did not have their headers read, and a count other than 0 for predefined
 fills, motifs, or feathers caused the thread list to be abandoned. Both cases fall back to PEC
 approximate colors.
 
