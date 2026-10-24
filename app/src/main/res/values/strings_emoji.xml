@@ -1,0 +1,22 @@
+<resources>
+    <string name="emoji_from">From an emoji</string>
+    <string name="emoji_from_hint">Turn a public emoji picture into embroidery</string>
+    <string name="emoji_title">Emoji to embroidery</string>
+    <string name="emoji_search">Search emoji (heart, cat, flower…)</string>
+    <string name="emoji_bundled">Offline 30</string>
+    <string name="emoji_none">No emoji found</string>
+    <string name="emoji_download_name">%1$s, download needed</string>
+    <string name="emoji_downloading">Downloading the picture…</string>
+    <string name="emoji_download_failed">Could not download this emoji. Check the connection and try again.</string>
+    <string name="emoji_stitch_failed">This picture could not be turned into stitches.</string>
+    <string name="emoji_edit">Open in editor</string>
+    <string name="emoji_group_smileys">Smileys</string>
+    <string name="emoji_group_people">People</string>
+    <string name="emoji_group_animals">Animals &amp; nature</string>
+    <string name="emoji_group_food">Food</string>
+    <string name="emoji_group_travel">Travel</string>
+    <string name="emoji_group_activities">Activities</string>
+    <string name="emoji_group_objects">Objects</string>
+    <string name="emoji_group_symbols">Symbols</string>
+    <string name="emoji_group_flags">Flags</string>
+</resources>

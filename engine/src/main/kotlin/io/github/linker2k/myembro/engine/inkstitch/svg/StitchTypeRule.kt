@@ -19,27 +19,36 @@ import kotlin.math.sqrt
  *
  * - maximum width > 6.0mm → tatami. Satin needs every crossing within its limit; the maximum width is
  *   the largest inscribed circle diameter (JTS MaximumInscribedCircle). 6.0mm = corpus satin crossing p95.
- * - else median width ≥ 0.9mm → satin
+ * - else median width ≥ 1.0mm and centerline ≥ 2 × maximum width → satin
+ * - else median width ≥ 1.0mm (a short blob: satin would only cover its middle) → tatami
  * - else → running
  *
- * 0.9mm has no measured source yet (**unverified**, satin-width sweep pending: docs/emoji-to-design.md B5).
- * Both bounds live here only.
+ * 1.0mm = Ink/Stitch v3.3.0 `lib/utils/settings.py` `min_satin_stroke_width` default (upstream default; the
+ * gate passes satin down to 0.2mm, so it gives no lower bound: docs/qa/satin-minimum-sweep.md).
+ * Centerline ≥ 2 × maximum width is a **policy value** (coordinator, 2026-10-24: satin is for strokes, i.e.
+ * elongated shapes), to be checked by sweep and real sew-out. All bounds live here only.
  */
 object StitchTypeRule {
     enum class Type { TATAMI, SATIN, RUNNING }
 
-    const val SATIN_MIN_MM = 0.9
+    const val SATIN_MIN_MM = 1.0
     const val SATIN_MAX_MM = 6.0
+    /** Policy value: satin only when the centerline is at least this many maximum widths long. */
+    const val SATIN_MIN_ELONGATION = 2.0
 
-    /** Maximum and median width of one region, in mm. */
-    data class Widths(val maxMm: Double, val medianMm: Double)
+    /**
+     * Maximum and median width of one region and its centerline length, in mm. The centerline length
+     * is area ÷ median width (exact for a band of constant width); infinite when unknown.
+     */
+    data class Widths(val maxMm: Double, val medianMm: Double, val centerlineMm: Double = Double.POSITIVE_INFINITY)
 
     fun classify(widths: Widths, satinMinMm: Double = SATIN_MIN_MM, satinMaxMm: Double = SATIN_MAX_MM): Type {
         require(widths.maxMm.isFinite() && widths.medianMm.isFinite() && widths.medianMm >= 0 && satinMinMm <= satinMaxMm)
         return when {
             widths.maxMm > satinMaxMm -> Type.TATAMI
-            widths.medianMm >= satinMinMm -> Type.SATIN
-            else -> Type.RUNNING
+            widths.medianMm < satinMinMm -> Type.RUNNING
+            widths.centerlineMm >= SATIN_MIN_ELONGATION * widths.maxMm -> Type.SATIN
+            else -> Type.TATAMI
         }
     }
 
@@ -82,7 +91,11 @@ object StitchTypeRule {
     }
 
     /** Widths of a region given in any unit; [unitsPerMm] converts to mm. */
-    fun widths(region: Geometry, unitsPerMm: Double): Widths = Widths(maxWidth(region) / unitsPerMm, medianWidth(region) / unitsPerMm)
+    fun widths(region: Geometry, unitsPerMm: Double): Widths {
+        val median = medianWidth(region)
+        return Widths(maxWidth(region) / unitsPerMm, median / unitsPerMm,
+            if (median > 0) region.area / median / unitsPerMm else 0.0)
+    }
 
     fun classify(region: Geometry, unitsPerMm: Double): Type = classify(widths(region, unitsPerMm))
 

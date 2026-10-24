@@ -1,0 +1,22 @@
+<resources>
+    <string name="emoji_from">이모지로</string>
+    <string name="emoji_from_hint">공개 이모지 그림을 자수로</string>
+    <string name="emoji_title">이모지로 자수</string>
+    <string name="emoji_search">이모지 검색 (heart, cat, flower…)</string>
+    <string name="emoji_bundled">오프라인 30</string>
+    <string name="emoji_none">찾는 이모지가 없습니다</string>
+    <string name="emoji_download_name">%1$s, 내려받기 필요</string>
+    <string name="emoji_downloading">그림을 내려받는 중…</string>
+    <string name="emoji_download_failed">이모지를 내려받지 못했습니다. 연결을 확인하고 다시 시도하세요.</string>
+    <string name="emoji_stitch_failed">이 그림은 땀으로 바꿀 수 없습니다.</string>
+    <string name="emoji_edit">편집기에서 열기</string>
+    <string name="emoji_group_smileys">표정</string>
+    <string name="emoji_group_people">사람</string>
+    <string name="emoji_group_animals">동물·자연</string>
+    <string name="emoji_group_food">음식</string>
+    <string name="emoji_group_travel">여행·장소</string>
+    <string name="emoji_group_activities">활동</string>
+    <string name="emoji_group_objects">사물</string>
+    <string name="emoji_group_symbols">기호</string>
+    <string name="emoji_group_flags">깃발</string>
+</resources>

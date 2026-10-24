@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.TextFields
@@ -57,6 +58,7 @@ fun NewProjectSheet(
     modifier: Modifier = Modifier,
     onBlankFrame: ((HoopSpec) -> Unit)? = null,
     onFromPhoto: (() -> Unit)? = null,
+    onFromEmoji: (() -> Unit)? = null,
 ) {
     val settings: SettingsViewModel = viewModel()
     val options = settings.settings.frames.filter { frame -> frame.preset in hoops || (frame.preset == null && onBlankFrame != null) }
@@ -114,6 +116,8 @@ fun NewProjectSheet(
                         stringResource(R.string.new_project_from_design_hint), !actionTaken) { choose(onFromDesign) }
                     if (onFromPhoto != null) CreationChoice(Icons.Default.AddPhotoAlternate, stringResource(R.string.photo_from_photo),
                         stringResource(R.string.photo_from_photo_hint), !actionTaken) { choose(onFromPhoto) }
+                    if (onFromEmoji != null) CreationChoice(Icons.Default.EmojiEmotions, stringResource(R.string.emoji_from),
+                        stringResource(R.string.emoji_from_hint), !actionTaken) { choose(onFromEmoji) }
                     if (letteringAvailable) CreationChoice(Icons.Default.TextFields, stringResource(R.string.new_project_from_text),
                         stringResource(R.string.new_project_from_text_hint), !actionTaken) { choose(onFromText) }
                 }

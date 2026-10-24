@@ -8,9 +8,9 @@ class VectorArtClassificationTest {
         fun c(median:Double,maximum:Double)=StitchTypeRule.classify(StitchTypeRule.Widths(maximum,median))
         assertEquals(StitchTypeRule.Type.TATAMI,c(4.121,7.778))
         assertEquals(StitchTypeRule.Type.TATAMI,c(0.5,8.0))
-        assertEquals(StitchTypeRule.Type.SATIN,c(0.9,6.0))
-        assertEquals(StitchTypeRule.Type.RUNNING,c(Math.nextDown(0.9),6.0))
-        assertEquals(StitchTypeRule.Type.TATAMI,c(0.9,Math.nextUp(6.0)))
+        assertEquals(StitchTypeRule.Type.SATIN,c(1.0,6.0)) // minimum 1.0mm: Ink/Stitch min_satin_stroke_width
+        assertEquals(StitchTypeRule.Type.RUNNING,c(Math.nextDown(1.0),6.0))
+        assertEquals(StitchTypeRule.Type.TATAMI,c(1.0,Math.nextUp(6.0)))
     }
 
     @Test fun logoStrokeRendererUsesTheSameClassifierAsBitmapProbe() {

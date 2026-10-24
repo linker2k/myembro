@@ -16,13 +16,16 @@ class StitchTypeRuleTest {
     private fun near(expected: Double, actual: Double, tolerance: Double) =
         assertTrue(abs(expected - actual) <= tolerance, "expected $expected ± $tolerance, was $actual")
 
-    @Test fun satinNeedsMaximumAtMost6AndMedianAtLeast09() {
-        fun c(max: Double, median: Double) = StitchTypeRule.classify(StitchTypeRule.Widths(max, median))
-        assertEquals(Type.RUNNING, c(0.89, 0.89))
-        assertEquals(Type.SATIN, c(0.9, 0.9))
+    @Test fun satinNeedsMaximumAtMost6MedianAtLeast1AndAnElongatedShape() {
+        fun c(max: Double, median: Double, length: Double = 100.0) = StitchTypeRule.classify(StitchTypeRule.Widths(max, median, length))
+        assertEquals(Type.RUNNING, c(0.99, 0.99))
+        assertEquals(Type.SATIN, c(1.0, 1.0))   // Ink/Stitch min_satin_stroke_width 1mm
         assertEquals(Type.SATIN, c(6.0, 5.0))
         assertEquals(Type.TATAMI, c(6.01, 3.0)) // one crossing over the satin limit is enough for tatami
         assertEquals(Type.RUNNING, c(4.0, 0.5))
+        // Policy: centerline ≥ 2 × maximum width, else a short blob is tatami.
+        assertEquals(Type.SATIN, c(3.0, 3.0, 6.0))
+        assertEquals(Type.TATAMI, c(3.0, 3.0, 5.9))
     }
 
     /** Median local thickness: band width for strips, rings and bent strokes, short side for rectangles, diameter for disks. */
@@ -35,6 +38,9 @@ class StitchTypeRuleTest {
         // Zigzag stroke 6.5 wide whose legs do not merge: the median stays at the stroke width.
         val zigzag = org.locationtech.jts.operation.buffer.BufferOp.bufferOp(line(0.0, 0.0, 20.0, 16.0, 40.0, 0.0, 60.0, 16.0, 80.0, 0.0), 3.25, flat)
         near(6.5, StitchTypeRule.medianWidth(zigzag), 0.5)
+        // Centerline length = area ÷ median width: 40mm for a 3×40mm bar; a 3×4.5mm pill (an emoji eye) is short.
+        near(40.0, StitchTypeRule.widths(line(0.0, 0.0, 40.0, 0.0).buffer(1.5, 8, BufferParameters.CAP_FLAT), 1.0).centerlineMm, 1.0)
+        assertEquals(Type.TATAMI, StitchTypeRule.classify(line(0.0, 0.0, 0.0, 1.5).buffer(1.5), 1.0))
         // Classification in other units: 10 units per mm (PEC 0.1mm).
         assertEquals(Type.SATIN, StitchTypeRule.classify(line(0.0, 0.0, 400.0, 0.0).buffer(15.0, 8, BufferParameters.CAP_FLAT), 10.0))
     }
@@ -48,7 +54,7 @@ class StitchTypeRuleTest {
         // Robot body stand-in: 20×28mm rounded rectangle (editor's own robot fixture rechecks the same function).
         val body = f.toGeometry(org.locationtech.jts.geom.Envelope(2.0, 18.0, 2.0, 26.0)).buffer(2.0)
         rows += "robot body (20×28 stand-in)" to (StitchTypeRule.widths(body, 1.0) to StitchTypeRule.classify(body, 1.0))
-        rows.forEach { (name, r) -> println("RULE | $name | max ${"%.2f".format(r.first.maxMm)} | median ${"%.2f".format(r.first.medianMm)} | ${r.second} |") }
+        rows.forEach { (name, r) -> println("RULE | $name | max ${"%.2f".format(r.first.maxMm)} | median ${"%.2f".format(r.first.medianMm)} | centerline ${"%.1f".format(r.first.centerlineMm)} | ${r.second} |") }
         assertEquals(listOf("clamp bar" to Type.SATIN, "hoop ring" to Type.SATIN, "logo M" to Type.TATAMI,
             "robot body (20×28 stand-in)" to Type.TATAMI), rows.map { it.first to it.second.second })
     }
