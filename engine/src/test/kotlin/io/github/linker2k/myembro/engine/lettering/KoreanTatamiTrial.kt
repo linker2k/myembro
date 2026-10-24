@@ -165,7 +165,22 @@ object KoreanTatamiTrial {
         val proof="KRSAMP7.PES bounds=($minx,$miny)..($maxx,$maxy) header=${w}x$h zero_motions=$zeros threads=${decoded.threads.size} stitches=${decoded.stitchCount} max_stitch_mm=${sqrt(maxSquared.toDouble())/10}"
         File(out,"checks.txt").writeText(proof+"\n");println(proof)
     }
+    private fun medianTable(boldFile:File,regularFile:File,out:File) {
+        val lines=mutableListOf("| 글꼴 | 높이 mm | 정 median mm | 민 median mm |","|---|---:|---:|---:|")
+        for((weight,file,heights) in listOf(Triple(700,boldFile,listOf(8.0,10.0,12.0,15.0,20.0,25.0)),Triple(400,regularFile,listOf(15.0)))) {
+            val font=Font.createFont(Font.TRUETYPE_FONT,file).deriveFont(1000f)
+            val reference=paths(font,"자").first.flatten().let {p->p.maxOf {it.second}-p.minOf {it.second}}
+            val glyphs=listOf("정","민").mapIndexed {index,ch->GlyphStrokeWidths.Glyph(index,ch.codePointAt(0),paths(font,ch).first)}
+            val outlines=GlyphStrokeWidths.FontOutlines("NotoSansKR-$weight",reference,glyphs)
+            for(height in heights) {
+                val rows=GlyphStrokeWidths.measure(outlines,height).rows
+                lines+=String.format(java.util.Locale.ROOT,"| %s | %.0f | %.6f | %.6f |",outlines.fontId,height,rows[0].medianWidthMm,rows[1].medianWidthMm)
+            }
+        }
+        out.writeText(lines.joinToString("\n")+"\n");println(out.readText())
+    }
     @JvmStatic fun main(args:Array<String>) {
+        if(args[0]=="medians") {medianTable(File(args[1]),File(args[2]),File(args[3]));return}
         if(args[0]=="small") {smallTrial(File(args[1]),File(args[2]),File(args[3]));return}
         if(args[0]=="compose") {compose(File(args[1]));return}
         val out=File(args[1]).apply {mkdirs()};val font=Font.createFont(Font.TRUETYPE_FONT,File(args[0])).deriveFont(1000f)
