@@ -1,32 +1,32 @@
-# Ink/Stitch 병렬 포팅 계약과 검증
+# Ink/Stitch parallel porting contract and validation
 
-## 고정 원본
+## Pinned source
 
-- 공통 기준: **Ink/Stitch v3.3.0**, 커밋 **`b0edd96311ece82ee48816dc93466274b12c2a9c`**.
-- 공식 안정 릴리스: https://github.com/inkstitch/inkstitch/releases/tag/v3.3.0 .
-- 소스: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c .
-- embro-letter의 현재 신규 포트도 이 커밋을 사용한다. 이전 초안의
-  개발 커밋 `16e192849e619399ce8fdefb4c4d249dacdb4db1`과 혼동하지 않는다.
-- `/tmp/myembro-inkstitch-source`에서 `git show <고정커밋>:<path>`로 **읽기만** 한다.
-  Ink/Stitch/Inkscape/Python 모듈 실행, 원본 테스트 실행, 원본 의존성 설치는 하지 않는다.
-- 포팅 파일은 SPDX 및 원본 경로·고정 커밋·기여자 저작권을 기록한다. GPL 전문은
-  `engine/src/main/resources/licenses/inkstitch/LICENSE`에 번들한다.
-- Shapely 대체는 기존 JTS 1.20.0(EDL-1.0 선택). NetworkX/NumPy/Python 런타임 의존성은 추가하지 않는다.
+- Shared baseline: **Ink/Stitch v3.3.0**, commit **`b0edd96311ece82ee48816dc93466274b12c2a9c`**.
+- Official stable release: https://github.com/inkstitch/inkstitch/releases/tag/v3.3.0 .
+- Source: https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c .
+- embro-letter's current new ports also use this commit. Do not confuse it with the
+  development commit `16e192849e619399ce8fdefb4c4d249dacdb4db1` in the earlier draft.
+- In `/tmp/myembro-inkstitch-source`, use `git show <고정커밋>:<path>` for **read-only** access.
+  Do not run Ink/Stitch/Inkscape/Python modules or upstream tests, or install upstream dependencies.
+- Ported files record SPDX, the upstream path, pinned commit, and contributor copyright. The full GPL text is
+  bundled at `engine/src/main/resources/licenses/inkstitch/LICENSE`.
+- Replace Shapely with the existing JTS 1.20.0 (EDL-1.0 selected). Add no NetworkX/NumPy/Python runtime dependencies.
 
-## 공통 계약 — embro-worker 소유
+## Shared contract — owned by embro-worker
 
-루트 패키지는 `io.github.linker2k.myembro.engine.inkstitch`다. 원본 디렉터리 이름인
-`stitch_plan`, `elements`, `stitches`, `lettering`, `utils`, `svg`를 유지한다.
+The root package is `io.github.linker2k.myembro.engine.inkstitch`. Keep the upstream directory names
+`stitch_plan`, `elements`, `stitches`, `lettering`, `utils`, and `svg`.
 
-### 좌표와 단위
+### Coordinates and units
 
-**`Stitch.x/y`, `utils.Point` 및 생성 알고리즘 내부 좌표는 SVG px(96dpi), +y 아래쪽**이다.
-`svg.PIXELS_PER_MM` / `svg.Units.PIXELS_PER_MM = 96 / 25.4`를 사용한다.
-기존 `engine.geometry.Point`와 `EmbPattern.Stitch`는 **0.1mm**이므로 섞지 않는다.
+**`Stitch.x/y`, `utils.Point`, and coordinates inside generation algorithms use SVG px (96dpi), +y downward**.
+Use `svg.PIXELS_PER_MM` / `svg.Units.PIXELS_PER_MM = 96 / 25.4`.
+The existing `engine.geometry.Point` and `EmbPattern.Stitch` use **0.1mm**; do not mix them.
 
-공개 SVG 이름의 `_mm` 값과 그룹의 `*Mm` 필드는 **mm**를 유지한다. 알고리즘 비교 전
-`Units.mmToPixels`로 한 번 변환한다. 원본 내부 상수 0.01px/0.5px 등을 mm로 오해하지 않는다.
-`EmbPatternAdapter`에서만 px→0.1mm로 양자화하며 mm/in UI 단위와 별개다.
+Public SVG `_mm` values and group `*Mm` fields remain in **mm**. Convert once with
+`Units.mmToPixels` before algorithm comparisons. Do not mistake internal upstream constants such as 0.01px/0.5px for mm.
+Quantize px→0.1mm only in `EmbPatternAdapter`, independently of mm/in UI units.
 
 ### Kotlin API
 
@@ -61,171 +61,171 @@ EmbPatternAdapter.fromEmbPattern(pattern: EmbPattern): StitchPlan
 EmbPatternAdapter.toEmbPattern(plan: StitchPlan): EmbPattern
 ```
 
-- `tags`는 불투명 원본 태그를 보존한다. `lock_stitch`가 원본 잠금 태그다.
-  `jump`, `trim`, `stop`, `color_change`, `end` 태그는 해당 Boolean과 OR로 해석한다.
-  `lock`은 호출자 편의를 위한 별칭이며 `isLock`으로 함께 조회한다.
-- `StitchGroup` 생성 자체는 땀/잠금을 만들거나 필터를 실행하지 않는다. 기본 잠금은 null이고,
-  요소 계층이 SVG `ties`, `lock_start/end` 속성으로 생성해 넣는다.
-- `lockStitches(position, disableTies)`는 전체 disable 또는 2땀 미만이면 빈 결과다.
-- `ColorBlock` 결합 시 원본처럼 RGB만 비교한다(`EmbThread.sameColor`).
-  가져온 실 메타데이터 보존에는 `sameThread`/전체 데이터 동등성을 유지한다.
-- `StitchPlan`은 수동 데이터 계약이다. 후처리/잠금/점프/정규화는 별도의 명시적 호출이다.
-- 생성된 플랜(`originalThreadPalette == null`)의 어댑터는 색블록 사이 COLOR_CHANGE와 마지막 END를
-  보완한다. 이미 존재하는 경계 명령은 중복하지 않는다.
-- 가져온 플랜의 `originalThreadPalette`는 빈 배열도 의미가 있다. raw 어댑터 왕복에서는
-  모든 원래 명령(END 뒤 레코드 포함), 원래 실 목록, 메타데이터, warnings를 그대로 보존한다.
-  기존 PES/DST를 자동 재생성하거나 잠금을 덧붙이는 전역 writer hook은 넣지 않는다.
+- `tags` preserve opaque upstream tags. `lock_stitch` is the upstream lock tag.
+  Interpret the `jump`, `trim`, `stop`, `color_change`, and `end` tags as OR with their corresponding Booleans.
+  `lock` is a caller convenience alias; query both through `isLock`.
+- Constructing a `StitchGroup` does not itself generate stitches/locks or run filters. Default locks are null;
+  the element layer creates and supplies them from SVG `ties` and `lock_start/end` attributes.
+- `lockStitches(position, disableTies)` returns an empty result when globally disabled or given fewer than 2 stitches.
+- When combining `ColorBlock`s, compare only RGB, as upstream does (`EmbThread.sameColor`).
+  Preserve `sameThread`/full data equality when retaining imported thread metadata.
+- `StitchPlan` is a passive data contract. Postprocessing/locks/jumps/normalization require separate explicit calls.
+- For generated plans (`originalThreadPalette == null`), the adapter supplies COLOR_CHANGE between color blocks and a final END.
+  It does not duplicate existing boundary commands.
+- An imported plan's `originalThreadPalette` is meaningful even as an empty array. A raw adapter round trip
+  preserves all original commands (including records after END), the original thread list, metadata, and warnings unchanged.
+  Do not add a global writer hook that automatically regenerates existing PES/DST or adds locks.
 
-### SVG 속성 대응
+### SVG attribute mapping
 
-새 요소 파라미터 DTO는 SVG 이름을 그대로 사용한다. 위 공유 데이터 계약만 Kotlin camelCase다.
+New element parameter DTOs use SVG names unchanged. Only the shared data contract above uses Kotlin camelCase.
 
-| SVG 속성 | 공유 그룹 필드 | 단위/기본값 |
+| SVG attribute | Shared group field | Unit/default |
 |---|---|---|
 | `trim_after` | `trimAfter` | false |
 | `stop_after` | `stopAfter` | false |
-| `lock_start`, `lock_start_scale_mm`, `lock_start_scale_percent`, `lock_custom_start` | `lockStart` 팩토리 입력 | half_stitch / 0.7mm / 100% / 빈 경로 |
-| `lock_end`, `lock_end_scale_mm`, `lock_end_scale_percent`, `lock_custom_end` | `lockEnd` 팩토리 입력 | half_stitch / 0.7mm / 100% / 빈 경로 |
-| `min_stitch_length_mm` | `minStitchLengthMm` | null, 전역 0.1mm 적용은 후처리 책임 |
-| `min_jump_stitch_length_mm` | `minJumpLengthMm` | null, 전역 collapse 3mm 적용은 후처리 책임 |
+| `lock_start`, `lock_start_scale_mm`, `lock_start_scale_percent`, `lock_custom_start` | `lockStart` factory input | half_stitch / 0.7mm / 100% / empty path |
+| `lock_end`, `lock_end_scale_mm`, `lock_end_scale_percent`, `lock_custom_end` | `lockEnd` factory input | half_stitch / 0.7mm / 100% / empty path |
+| `min_stitch_length_mm` | `minStitchLengthMm` | null; applying the global 0.1mm is the postprocessor's responsibility |
+| `min_jump_stitch_length_mm` | `minJumpLengthMm` | null; applying the global collapse 3mm is the postprocessor's responsibility |
 | `force_lock_stitches` | `forceLockStitches` | false |
 
-## 변경 단계와 검증 상태
+## Change stages and validation status
 
-첫 커밋 `dc38aac`은 **새 계약과 어댑터만** 추가했다. 기존 생성 결과는 바꾸지 않았다.
-후속 잠금·최소 길이·명령·Stroke 기능과 기존 생성 경로 연결은 개별 커밋으로 검토한다.
-외부 게이트가 BLOCK인 기능은 테스트 통과와 구분하며, 병합 가능으로 보고하지 않는다.
+The first commit, `dc38aac`, added **only the new contract and adapter**. It did not change existing generated output.
+Review subsequent locks/minimum lengths/commands/Stroke features and connections to existing generation paths in individual commits.
+Distinguish external gate BLOCK results from passing tests; do not report such features as ready to merge.
 
-| 기능 | 원본 파일 | 테스트/외부 게이트 |
+| Feature | Upstream files | Tests/external gate |
 |---|---|---|
-| 수동 계약·단위·어댑터 | `lib/stitch_plan/{stitch,stitch_group,color_block,stitch_plan}.py`, `lib/elements/element.py`, `lib/utils/geometry.py`, `lib/svg/units.py` | `StitchPlanContractTest`: 전체 명령·좌표 범위·실 메타데이터·기존 6개 입력→동일 PES 바이트·고정 SVG→PES. 독립 게이트 결과는 아래 검증 기록에 추가 |
-| 잠금·공통 후처리 | `lib/stitch_plan/lock_stitch.py`, `stitch_plan.py`, `color_block.py`, `lib/elements/element.py` | 10종+기본값 SVG, ties/스케일/명령/minimum/앵커/재생성 회귀; 릴리스 BLOCK |
-| Running/manual/zigzag | `lib/elements/stroke.py`, `lib/stitches/running_stitch.py`, `lib/utils/prng.py` | 분석 좌표·반복·최대 길이·결정적 난수・고정 SVG 4개; 릴리스 BLOCK |
-| Ripple | `lib/stitches/ripple_stitch.py`, `lib/stitches/tatami_fill.py` | target/guide/grid/clip/hole/graph 분석 회귀・고정 SVG 2개; Satin provider 통합 대기 |
+| Passive contract/units/adapter | `lib/stitch_plan/{stitch,stitch_group,color_block,stitch_plan}.py`, `lib/elements/element.py`, `lib/utils/geometry.py`, `lib/svg/units.py` | `StitchPlanContractTest`: all commands/coordinate ranges/thread metadata/existing 6 inputs→identical PES bytes/fixed SVG→PES. Independent gate results are added to the validation records below |
+| Locks/common postprocessing | `lib/stitch_plan/lock_stitch.py`, `stitch_plan.py`, `color_block.py`, `lib/elements/element.py` | 10 types+default SVG, ties/scale/commands/minimum/anchor/regeneration regressions; release BLOCK |
+| Running/manual/zigzag | `lib/elements/stroke.py`, `lib/stitches/running_stitch.py`, `lib/utils/prng.py` | Analytical coordinates/repeats/maximum length/deterministic randomness/fixed SVG 4 cases; release BLOCK |
+| Ripple | `lib/stitches/ripple_stitch.py`, `lib/stitches/tatami_fill.py` | target/guide/grid/clip/hole/graph analytical regressions/fixed SVG 2 cases; awaiting Satin provider integration |
 
-원본 `tests/`에는 해당 잠금/러닝/Ripple 알고리즘의 좌표 기대값 단위 테스트가 없다.
-수식에서 직접 읽은 분석 fixture는 원본 실행 결과와 비교한 골든이라고 주장하지 않는다.
-`tests/test_clone.py`의 trim/stop OR 속성 테스트, `tests/test_output.py`의 결정적 반복 출력과
-trim 포함 시 출력이 달라지는 성질은 해당 후속 계층 테스트로 옮긴다(JEF 대신 지원 PES 사용).
+Upstream `tests/` has no coordinate-expectation unit tests for these lock/running/Ripple algorithms.
+Do not claim analytical fixtures read directly from formulas are goldens compared against upstream execution.
+Port the trim/stop OR attribute tests from `tests/test_clone.py` and the deterministic repeated output
+and output-changing-with-trim properties from `tests/test_output.py` to the corresponding subsequent layer tests (use supported PES instead of JEF).
 
-외부 판정은 `/tmp/myembro-quality-gate/check-release --matrix <JSON> --json <report>`를 사용한다.
-원본/게이트/임계값을 수정하지 않는다. 어댑터 SVG smoke는 공개 계약의 수동 경로 입출력만
-검증하며, 신규 생성 알고리즘 전체나 모바일/실제 봉제 품질의 통과를 의미하지 않는다.
-알고리즘별 SVG fixture/PES 매트릭스는 별도로 제출해야 한다.
+Use `/tmp/myembro-quality-gate/check-release --matrix <JSON> --json <report>` for external decisions.
+Do not modify upstream/the gate/thresholds. The adapter SVG smoke validates only manual path input/output
+through the public contract; it does not mean all new generation algorithms or mobile/actual sewout quality passed.
+Submit a separate SVG fixture/PES matrix for each algorithm.
 
-## 차이점
+## Differences
 
-| 위치 | 원본과 차이 | 이유/한계 |
+| Location | Difference from upstream | Reason/limitation |
 |---|---|---|
-| 공유 DTO | Python 가변 객체 대신 Kotlin 데이터/읽기 전용 List, 원본 필드 이름 일부 camelCase | Kotlin 공개 계약; SVG 파라미터 DTO는 원본 이름 유지 |
-| `Stitch.minStitchLengthMm` / 그룹 `*Mm` | 원본 내부 px 대신 공개 값은 mm로 보관 | SVG 속성 단위를 잃지 않고 경계에서 명시 변환 |
-| `Stitch.end`, 플랜의 metadata/warnings/originalThreadPalette | 원본 플랜 외 확장 | 기존 EmbPattern raw 왕복에서 END·팔레트·읽기 진단 보존 |
-| px→0.1mm 어댑터 | 기존 앱 좌표 격자, Java Math.round(음수 절반은 +∞ 방향) | 기존 PES 정수 API와 연결; px 좌표는 어댑터 전까지 유지 |
-| 명령 플래그 결합 | 한 위치의 복수 플래그를 JUMP→TRIM→STOP→COLOR_CHANGE→END 순 명령으로 펼침 | 기존 단일 Command enum의 제약; 일반 STITCH와 제어 명령을 혼동하지 않음 |
-| 기존 UI 생성 경로 | 첫 계약 커밋은 연결 없음; 후속 연결은 명시적 generated bridge | 가져온 PES/DST의 원래 잠금·명령을 자동으로 변경하지 않음 |
+| Shared DTOs | Kotlin data/read-only List instead of mutable Python objects; some upstream field names use camelCase | Kotlin public contract; SVG parameter DTOs retain upstream names |
+| `Stitch.minStitchLengthMm` / group `*Mm` | Public values stored in mm instead of upstream internal px | Retain SVG attribute units and convert explicitly at boundaries |
+| `Stitch.end`, plan metadata/warnings/originalThreadPalette | Extensions beyond the upstream plan | Preserve END/palette/read diagnostics in existing EmbPattern raw round trips |
+| px→0.1mm adapter | Existing app coordinate grid, Java Math.round (negative halves round toward +∞) | Connect to the existing PES integer API; retain px coordinates until the adapter |
+| Command flag combination | Expand multiple flags at one location into commands in JUMP→TRIM→STOP→COLOR_CHANGE→END order | Existing single Command enum limitation; do not confuse ordinary STITCH with control commands |
+| Existing UI generation path | No connection in the first contract commit; subsequent connections use an explicit generated bridge | Do not automatically change original locks/commands in imported PES/DST |
 
-### 계약 첫 커밋 검증 기록
+### Validation record for the first contract commit
 
-- `StitchPlanContractTest` **7개 통과**. 6개 기존 PES/PEC/DST 픽스처는 raw 어댑터 왕복 후
-  명령·좌표·실 정보 및 기존 `PesWriter` 출력 바이트가 같다.
-- 병렬 작성 중인 알고리즘 소스는 `/tmp/myembro-worker-contract-only.gradle`로 제외하고
-  첫 커밋의 계약 소스만 포함해 `:engine:test`를 실행했다. 이 임시 필터는 제품/저장소에 넣지 않는다.
-- 고정 입력 `engine/src/test/resources/inkstitch/contract.svg` → `engine/build/inkstitch-contract/contract.pes`.
-- 독립 도구 `check-release` 판정 **PASS 1/1**, exit 0.
-  `/tmp/myembro-worker-contract-matrix.json`, `/tmp/myembro-worker-contract-gate.json`에 기록한다.
-- 이 판정은 **수동 SVG 어댑터 smoke**만 대상으로 한다. 아직 미연결된 잠금/Stroke/Ripple이나
-  모든 폰트 릴리스가 통과했다고 확대 해석하지 않는다.
+- `StitchPlanContractTest`: **7 tests passed**. After a raw adapter round trip, the 6 existing PES/PEC/DST fixtures have
+  identical commands/coordinates/thread information and existing `PesWriter` output bytes.
+- Excluded algorithm sources being written in parallel through `/tmp/myembro-worker-contract-only.gradle` and
+  ran `:engine:test` with only the first commit's contract sources. This temporary filter is not included in the product/repository.
+- Fixed input `engine/src/test/resources/inkstitch/contract.svg` → `engine/build/inkstitch-contract/contract.pes`.
+- Independent `check-release` decision: **PASS 1/1**, exit 0.
+  Recorded in `/tmp/myembro-worker-contract-matrix.json`, `/tmp/myembro-worker-contract-gate.json`.
+- This decision covers **only the manual SVG adapter smoke**. Do not extend it to claim that unconnected locks/Stroke/Ripple
+  or all font releases have passed.
 
 
-## FillStitch 포트 — embro-model
+## FillStitch port — embro-model
 
-### 범위와 호출 경계
+### Scope and call boundary
 
-v3.3.0에서 이전 `auto_fill.py`는 **`lib/stitches/tatami_fill.py`**로 이름이 바뀌었다.
-`stitches.TatamiFill` / `Fill` / `FillRouting`이 이 타타미 경로를 담당한다.
-기존 `digitizing.TatamiFill` 및 `lettering.OutlineFill` 호출은 바꾸지 않는다.
-새 `elements.FillAdapters`는 승인 후 선택적으로 전환하기 위한 어댑터다.
+In v3.3.0, the former `auto_fill.py` was renamed to **`lib/stitches/tatami_fill.py`**.
+`stitches.TatamiFill` / `Fill` / `FillRouting` handle this tatami path.
+Do not change existing `digitizing.TatamiFill` or `lettering.OutlineFill` calls.
+The new `elements.FillAdapters` is an adapter for optional switching after approval.
 
-- 모든 JTS 입력과 `FillPoint`는 **SVG px**. 각 저수준 함수의 `*Px` 인수도 px다.
-  `FillParameters`와 방법별 DTO의 `_mm` 속성은 mm, `angle`은 도다.
-  `TatamiFill.fill` / `Fill.intersectRegionWithGrating`의 저수준 `angle`은 원본처럼 라디안이다.
-- `FillGeometry.makeValid`는 JTS GeometryFixer로 자기교차를 수정하고 다각형 성분을 보존한다.
-  `buffer(0)`만 사용해 나비넥타이의 한쪽 면을 버리지 않는다. 구멍은 분리된 외곽선으로 유지한다.
-- `FillParameters.fromSvgAttributes`는 공통 `inkstitch:*` 이름/기본값을 읽는다.
-  방법별 가이드·그라디언트·타탄 리소스는 변환/색 해석이 끝난 typed 입력을 받는다.
-  완전한 SVG 문서/Inkex 객체 트리 파서는 이 채움 엔진의 범위에 포함하지 않는다.
-- `elements.FillStitch.toStitchGroups(previousStitch)`는 underlay→top, 색 순서,
-  시작/끝, 그룹 속성 및 잠금 정의를 공통 계약으로 넘긴다. 실제 필터/명령 생성은
-  embro-worker의 명시적 `StitchPlanBuilder.fromGroups` 호출 책임이다.
-  기본 writer나 가져온 기존 도안을 재생성하는 hook은 없다.
+- All JTS inputs and `FillPoint`s use **SVG px**. Each low-level function's `*Px` arguments also use px.
+  `_mm` attributes in `FillParameters` and method-specific DTOs use mm; `angle` uses degrees.
+  Low-level `angle` in `TatamiFill.fill` / `Fill.intersectRegionWithGrating` uses radians, as upstream does.
+- `FillGeometry.makeValid` repairs self-intersections with JTS GeometryFixer and preserves polygon components.
+  It does not use only `buffer(0)` and discard one side of a bowtie. Holes remain separate outlines.
+- `FillParameters.fromSvgAttributes` reads shared `inkstitch:*` names/defaults.
+  Method-specific guide/gradient/tartan resources accept typed inputs after transforms/color interpretation.
+  A full SVG document/Inkex object tree parser is outside this fill engine's scope.
+- `elements.FillStitch.toStitchGroups(previousStitch)` passes underlay→top, color order,
+  start/end, group attributes, and lock definitions through the shared contract. Actual filter/command generation
+  is the responsibility of embro-worker's explicit `StitchPlanBuilder.fromGroups` call.
+  There is no default writer hook or hook that regenerates existing imported designs.
 
-### 원본 기본값
+### Upstream defaults
 
-| 속성 | 기본값/원본 처리 |
+| Attribute | Default/upstream handling |
 |---|---|
-| `fill_method` | `tatami_fill` (`auto_fill`은 호환 별칭) |
-| `row_spacing_mm` / `max_stitch_length_mm` | 0.25 / 4.0, 계산 시 각각 최소 0.1mm |
+| `fill_method` | `tatami_fill` (`auto_fill` is a compatibility alias) |
+| `row_spacing_mm` / `max_stitch_length_mm` | 0.25 / 4.0, each at least 0.1mm when calculated |
 | `angle` / `staggers` / `skip_last` / `expand_mm` | 0° / 4 / false / 0mm |
 | `underpath` / `gap_fill_rows` | true / 0 |
-| `running_stitch_length_mm` / `running_stitch_tolerance_mm` | 2.5 / 0.2; 원본 getter의 0.2를 사용(UI 표시 0.1과 다름) |
+| `running_stitch_length_mm` / `running_stitch_tolerance_mm` | 2.5 / 0.2; use 0.2 from the upstream getter (different from the UI's 0.1) |
 | `fill_underlay` / `underlay_underpath` | true / true |
-| `fill_underlay_angle` | 미지정이면 top angle+90°; gradient는 gradient 방향의 음수 |
-| `fill_underlay_row_spacing_mm` | 미지정/0이면 top 간격×3 |
-| `fill_underlay_max_stitch_length_mm` | 미지정/0이면 top 최대 길이 |
+| `fill_underlay_angle` | If unspecified, top angle+90°; for gradient, negative gradient direction |
+| `fill_underlay_row_spacing_mm` | If unspecified/0, top spacing×3 |
+| `fill_underlay_max_stitch_length_mm` | If unspecified/0, top maximum length |
 | `fill_underlay_inset_mm` / `fill_underlay_skip_last` | 0 / false |
-| `pull_compensation_mm` / `pull_compensation_percent` | 양쪽 0; 한 값은 양쪽에 적용 |
-| `min_stitch_length_mm` / `min_jump_stitch_length_mm` | null; 공통 후처리 기본값 0.1mm / 3mm |
-| `ties` / `lock_start` / `lock_end` | 0(양끝) / `half_stitch` / `half_stitch` |
+| `pull_compensation_mm` / `pull_compensation_percent` | 0 on both sides; a single value applies to both sides |
+| `min_stitch_length_mm` / `min_jump_stitch_length_mm` | null; common postprocessing defaults 0.1mm / 3mm |
+| `ties` / `lock_start` / `lock_end` | 0 (both ends) / `half_stitch` / `half_stitch` |
 
-### 원본 파일과 테스트 대응
+### Upstream files and test mapping
 
-| 기능 | 원본 파일 | Kotlin 검사 |
+| Feature | Upstream files | Kotlin checks |
 |---|---|---|
-| grating·stagger·legacy | `lib/stitches/fill.py` | 원점 기준 행, 음수 modulo/round-even, 끝 간격 변화, 구멍, flip/reverse, raw 시작 중복 태그 |
-| tatami·Euler·underpath·start/end | `lib/stitches/tatami_fill.py` | 모든 행 방문, 결정성, 구멍 우회, 분리 영역 jump, 보정, 경계 절단·중복 간선 방향 회귀 |
-| running·smooth·clamp | `lib/stitches/running_stitch.py`, `lib/utils/{smoothing,clamp_path}.py` | 코너/길이/허용오차, U형 외부 excursion, 구멍 모서리, 끝점 보존 |
-| underlay·요소 파라미터 | `lib/elements/fill_stitch.py` | 여러 각도, inset, spacing/max 상속, collapse fallback, angle tokenizer, top 전 expand 순서 |
-| contour | `lib/stitches/contour_fill.py` | inner/single/double, 방향, 구멍, 분기, bean/repeats, smoothing |
-| guided | `lib/stitches/guided_fill.py`, `lib/stitches/utils/connect_geometries.py` | copy/offset/buffer, 최소 면적 회전 상자, anchor, flexible/stagger, 구멍, smoothing, fallback |
-| circular | `lib/stitches/circular_fill.py` | Fermat, 작은 도형 원본 fallback, 구멍, target/end spacing, start/end, bean/repeats |
-| linear gradient | `lib/stitches/linear_gradient_fill.py` | 제곱근 행 분포, color stop, missing gradient, 구멍, 시작/underlay 연결 길이 |
-| tartan | `lib/stitches/tartan_fill.py`, `lib/tartan/utils.py` | warp/weft, 색 순서, 폭/scale/rotation, running stripes, herringbone, 나비넥타이 연결 길이 |
-| meander | `lib/stitches/meander_fill.py`, `lib/tiles.py`, `lib/utils/prng.py` | 75개 타일 로드, SVG 변환, MST/분기, 연결성, seed, BLAKE2s 알려진 벡터, clip/smooth/zigzag/반복 |
+| grating/stagger/legacy | `lib/stitches/fill.py` | Origin-aligned rows, negative modulo/round-even, changing end spacing, holes, flip/reverse, raw start duplicate tags |
+| tatami/Euler/underpath/start/end | `lib/stitches/tatami_fill.py` | Visit every row, determinism, hole detours, jumps between disconnected regions, compensation, boundary splits/duplicate-edge direction regressions |
+| running/smooth/clamp | `lib/stitches/running_stitch.py`, `lib/utils/{smoothing,clamp_path}.py` | Corners/length/tolerance, U-shaped external excursion, hole corners, endpoint preservation |
+| underlay/element parameters | `lib/elements/fill_stitch.py` | Multiple angles, inset, spacing/max inheritance, collapse fallback, angle tokenizer, expand order before top |
+| contour | `lib/stitches/contour_fill.py` | inner/single/double, direction, holes, branches, bean/repeats, smoothing |
+| guided | `lib/stitches/guided_fill.py`, `lib/stitches/utils/connect_geometries.py` | copy/offset/buffer, minimum-area rotated box, anchor, flexible/stagger, holes, smoothing, fallback |
+| circular | `lib/stitches/circular_fill.py` | Fermat, upstream fallback for small shapes, holes, target/end spacing, start/end, bean/repeats |
+| linear gradient | `lib/stitches/linear_gradient_fill.py` | Square-root row distribution, color stop, missing gradient, holes, start/underlay connection length |
+| tartan | `lib/stitches/tartan_fill.py`, `lib/tartan/utils.py` | warp/weft, color order, width/scale/rotation, running stripes, herringbone, bowtie connection length |
+| meander | `lib/stitches/meander_fill.py`, `lib/tiles.py`, `lib/utils/prng.py` | Load 75 tiles, SVG transforms, MST/branches, connectivity, seed, known BLAKE2s vectors, clip/smooth/zigzag/repeats |
 
-`tests/test_threads_color.py`의 gradient/tartan 입력·색 기대값은 대응 Kotlin 테스트로 옮겼다.
-그 외 원본 `tests/`에는 이들 채움의 좌표 골든 단위 테스트가 없다. 수식·분기에서 읽은
-고정 기대값과 성질 검사는 원본 실행 결과와 대조한 골든이 아니다.
-원본 코드는 읽기만 했으며 실행/의존성 설치를 하지 않았다.
+The gradient/tartan inputs and expected colors from `tests/test_threads_color.py` were ported to the corresponding Kotlin tests.
+Other than that, upstream `tests/` has no coordinate golden unit tests for these fills. Fixed expectations and
+property checks read from formulas/branches are not goldens compared against upstream execution.
+Upstream code was only read, not executed; no dependencies were installed.
 
-### Fill 차이점
+### Fill differences
 
-| 위치 | 원본과 차이 | 이유/한계 |
+| Location | Difference from upstream | Reason/limitation |
 |---|---|---|
-| Shapely/GEOS | JTS GeometryFixer, buffer/overlay/offset 사용 | 곡선 근사·작은 topology 조각·순서가 GEOS와 수치적으로 다를 수 있음. 동일 바이트 출력이라고 주장하지 않음 |
-| NetworkX 그래프 | Kotlin multigraph/BFS/Dijkstra/Hierholzer + JGraphT 최소 가중 perfect matching | LGPL-2.1-or-later 선택. 동률 matching/이웃 순서가 NetworkX 버전과 다를 수 있음 |
-| 입력/자원 제한 | 유한 수 검증, 최대 행·정점·땀·반복·matching 작업량 상한 | 순수 JVM에서 무제한 메모리/CPU 사용 방지. 큰 입력은 명시적 예외로 거절 |
-| 그래프 정밀도 | 정점을 1e-6px로 정규화, clamp buffer도 1e-6px | 경계 leg 삭제 및 긴 연결땀 방지. 원본 snap/GEOS 정밀도와 미세 차이 |
-| 시작/끝 삽입 | 행이 닿지 않는 독립 링에 가상 채움 간선을 만들지 않음 | 구멍을 가로지르는 인위적 연결 방지 |
-| 도달 불가 travel | 직선 fallback 대신 오류 | 구멍/외부를 무표시 봉제하는 결과를 내지 않음 |
-| travel clamping | 외부 excursion 전체를 가장 짧은 해당 경계 arc로 연결, 양 끝 보존 | 원본 0.01px 경계 buffer 절단 대신 정확 투영. hole-only 교차 및 말단 점 교차 손실 수정 |
-| collinear running sleeve | 거의 0인 분모에서 이전 vertex 사용 | 0 허용오차·거의 평행인 선의 무한/과대 좌표 방지 |
-| 분리 도형/명시 jump | 이전 그룹의 강제 잠금으로 공통 planner에 needle-up 경계 요청 | 3mm collapse 기준보다 가까운 분리 영역도 가로질러 봉제하지 않도록 함 |
-| 임의 길이 땀 | `enable_random_stitch_length=true`는 명시적 미지원 | deterministic fill과 meander seeded 경로는 구현. 랜덤 running-length 분포는 후속 포트 필요 |
-| Guided 최소 회전 상자 | JTS MinimumAreaRectangle 사용, 임의 좌표 perturbation 생략 | 재현 가능한 좌표 유지; 원본 GEOS 회피용 0~0.01px jitter와 다름 |
-| Guided self revisit | 선형 project 한 번 대신 traversal segment별 clipping | 같은 점 재방문 경로 누락 방지 |
-| staggers=0 | guided의 0 나누기 대신 1로 처리 | 유효 출력/명시 검증을 위한 처리 |
-| Tartan/gradient 입력 | typed palette/gradient, 해석된 CSS 색/geometry | SVG 리소스/CSS/JSON 텍스트 해석은 상위 importer 책임 |
-| Tartan herringbone | 한 줄짜리 block을 보존 | 원본의 loop 변수 누출로 단일 행이 사라지는 경우 수정 |
-| Circular 작은 도형 | spacing이 반경보다 크면 원본처럼 clipping 없는 원 반환 | 원본 동작 보존. 경계 초과 가능성이 있어 게이트/후프 검사가 필요 |
-| 어댑터 | native 0.1mm 또는 mm→px 명시 변환. 비균등 row offset/AUTO satin/border는 거절 | 채움의 의미를 조용히 바꾸지 않음. 기존 edge-running underlay를 선택적으로 옮기면 새 tatami underlay와 동작이 다름 |
+| Shapely/GEOS | Use JTS GeometryFixer, buffer/overlay/offset | Curve approximation/small topology fragments/order may differ numerically from GEOS. No claim of identical byte output |
+| NetworkX graph | Kotlin multigraph/BFS/Dijkstra/Hierholzer + JGraphT minimum-weight perfect matching | LGPL-2.1-or-later selected. Tied matching/neighbor order may differ from the NetworkX version |
+| Input/resource limits | Finite-number validation, maximum rows/vertices/stitches/repeats/matching workload | Prevent unbounded memory/CPU use on pure JVM. Reject large inputs with explicit exceptions |
+| Graph precision | Normalize vertices to 1e-6px; clamp buffer also 1e-6px | Prevent boundary leg deletion and long connecting stitches. Slight differences from upstream snap/GEOS precision |
+| Start/end insertion | Do not create virtual fill edges on independent rings untouched by rows | Prevent artificial connections across holes |
+| Unreachable travel | Error instead of straight-line fallback | Do not produce unmarked sewing across holes/outside regions |
+| Travel clamping | Connect the whole external excursion along the shortest corresponding boundary arc, preserving both ends | Exact projection instead of upstream 0.01px boundary buffer clipping. Fix loss of hole-only intersections and terminal point intersections |
+| Collinear running sleeve | Use previous vertex for a nearly 0 denominator | Prevent infinite/oversized coordinates at 0 tolerance or nearly parallel lines |
+| Disconnected shapes/explicit jump | Request a needle-up boundary from the common planner through forced locks on the previous group | Prevent sewing across disconnected regions even when closer than the 3mm collapse threshold |
+| Random-length stitches | `enable_random_stitch_length=true` explicitly unsupported | Deterministic fill and meander seeded paths implemented. Random running-length distribution requires a later port |
+| Guided minimum rotated box | Use JTS MinimumAreaRectangle, omit random coordinate perturbation | Keep reproducible coordinates; differs from upstream 0~0.01px jitter used to avoid GEOS issues |
+| Guided self revisit | Clip each traversal segment instead of projecting linearly once | Prevent missing paths that revisit the same point |
+| staggers=0 | Treat guided division by 0 as 1 | Handling for valid output/explicit validation |
+| Tartan/gradient input | Typed palette/gradient, interpreted CSS colors/geometry | Upper importer handles SVG resource/CSS/JSON text interpretation |
+| Tartan herringbone | Preserve single-row blocks | Fix upstream loop-variable leakage that makes single rows disappear |
+| Circular small shapes | Return an unclipped circle as upstream does when spacing exceeds radius | Preserve upstream behavior. May exceed bounds; requires gate/hoop checks |
+| Adapter | Explicit native 0.1mm or mm→px conversion. Reject nonuniform row offset/AUTO satin/border | Do not silently change fill semantics. Optionally porting the existing edge-running underlay differs from the new tatami underlay |
 
-### 채움 품질 제출 방법/현재 판정
+### Fill quality submission method/current decision
 
-고정 SVG는 `engine/src/test/resources/inkstitch/fill/{rectangle,hole,concave,bowtie}.svg`다.
-공개 자체 fixture만 사용하며 사용자 PES·폰트 자료는 커밋하지 않는다.
-`exportFillQualityFixtures`는 14가지 모드×4도형×12/24mm = **112개**를 선언하고,
-실제 element→공통 후처리→PES v6로 생성한다. 실패한 생성도 matrix에서 빼지 않는다.
-legacy gate schema의 `fonts` 축에는 `방법:도형` ID를 넣는다. 폰트 검증으로 주장하지 않는다.
+Fixed SVGs: `engine/src/test/resources/inkstitch/fill/{rectangle,hole,concave,bowtie}.svg`.
+Use only public self-created fixtures; do not commit user PES/font materials.
+`exportFillQualityFixtures` declares 14 modes×4 shapes×12/24mm = **112 cases**,
+and generates through actual element→common postprocessing→PES v6. Do not exclude failed generations from the matrix.
+Put `method:shape` IDs in the legacy gate schema's `fonts` axis. Do not claim font validation.
 
 ```sh
 # Normal committed engine (independent core):
@@ -239,179 +239,179 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew \
   --json /tmp/myembro-fill-quality/release-report.json
 ```
 
-첫 외부 게이트 판정은 **BLOCK 112/112**였다. 원본 기본 half_stitch 잠금은 게이트의
-고정 text 시작/잠금 시퀀스와 맞지 않으며, 일부 도형에서 짧은 땀/밀도 기준도 초과한다.
-초기 후보의 생성 실패(odd vertex matching 상한)와 긴 연결땀은 원인을 수정하여 재검증한다.
-게이트/기준/원본 기본값을 바꿔 통과시키지 않는다. 최종 결과는 후속 검증 기록에 추가한다.
-현재 **기존 fill 교체·main 병합 승인 없음**. JVM 단위 테스트 통과와 독립 품질 승인은 별개다.
+The first external gate decision was **BLOCK 112/112**. The upstream default half_stitch lock does not match
+its fixed text start/lock sequence; some shapes also exceed short-stitch/density criteria.
+Fix the initial candidate's generation failures (odd-vertex matching limit) and long connecting stitches, then revalidate.
+Do not change the gate/criteria/upstream defaults to pass. Add final results to subsequent validation records.
+Currently **no approval to replace existing fill or merge into main**. Passing JVM unit tests is separate from independent quality approval.
 
 
-### 2026-10-24 채움 후보 2차 검증
+### 2026-10-24 second validation of fill candidates
 
-- 공통 후처리 3개 파일(`LockStitches`, `StitchPlanBuilder`, `PathEndPoints`)은 아직
-  main 미병합이다. `/tmp/myembro-fill-preview.gradle`로 embro-worker의 읽기 전용 WIP를
-  compile 입력에 더한 **임시 조합**에서 엔진 테스트 **391개 통과**.
-  정식 `:engine:test` 통과와 구분한다. 이 임시 경로/worker WIP는 커밋하지 않는다.
-- 원본 기본값으로 **112/112 PES 생성·PesReader 재해석 성공**, 생성 오류 0.
-  독립 `check-release`는 **BLOCK 112/112, exit 1**.
-- 게이트 사유: text 시작 시퀀스 112, 시작 잠금 112, 끝 잠금 72,
-  body<0.3mm 비율 38, body<0.27mm 비율 33, 전체 짧은 땀 비율 11,
-  밀도 5, 미설명 zero 1. 여러 사유가 한 파일에 함께 있을 수 있다.
-- **LONG_STITCH 0, 읽기 실패 0**. 최대 봉제 이동 약 4.102mm.
-  버그 수정으로 긴 연결땀/누락 파일은 없어졌지만 전체 품질 통과가 아니다.
-- 결과: `/tmp/myembro-fill-quality/{matrix.json,release-report.json,gate.log}`.
-  전체 생성 연결 API/추가 통합 회귀는 공통 후처리 병합 후 별도 커밋한다.
-  우선 공통 후처리에 독립적인 채움 코어를 기능별 커밋으로 제공한다.
+- The 3 common postprocessing files (`LockStitches`, `StitchPlanBuilder`, `PathEndPoints`) are not yet
+  merged into main. A **temporary combination** adding embro-worker's read-only WIP as compile input
+  through `/tmp/myembro-fill-preview.gradle` passed **391 engine tests**.
+  Distinguish this from a standard `:engine:test` pass. Do not commit this temporary path/worker WIP.
+- With upstream defaults, **112/112 PES generated and reread by PesReader successfully**, 0 generation errors.
+  Independent `check-release`: **BLOCK 112/112, exit 1**.
+- Gate reasons: text start sequence 112, start lock 112, end lock 72,
+  body<0.3mm ratio 38, body<0.27mm ratio 33, overall short-stitch ratio 11,
+  density 5, unexplained zero 1. Multiple reasons may occur in a single file.
+- **LONG_STITCH 0, read failures 0**. Maximum sewing move approximately 4.102mm.
+  Fixes eliminated long connecting stitches/missing files, but this is not an overall quality pass.
+- Results: `/tmp/myembro-fill-quality/{matrix.json,release-report.json,gate.log}`.
+  Commit the full generation integration API/additional integration regressions separately after common postprocessing is merged.
+  First provide the fill core independent of common postprocessing in feature-specific commits.
 
 
-### 커밋된 코어와 통합 후보의 구분
+### Distinguishing the committed core from integration candidates
 
-- `99087da`: tatami/legacy 행·연결 그래프·언더레이·공통 파라미터.
-- `d373677`: contour/guided/meander 및 GPL 타일 데이터.
+- `99087da`: tatami/legacy rows/routing graph/underlay/common parameters.
+- `d373677`: contour/guided/meander and GPL tile data.
 - `629d162`: circular/linear gradient/tartan.
-- 위 3커밋은 깨끗한 별도 체크아웃에서 **일반 `./gradlew :engine:test` 381개 통과**.
-  공통 planner WIP나 임시 제외 필터를 쓰지 않았다.
-- `FillStitch`/`FillAdapters`와 element/PES 통합 테스트는
-  `engine/src/inkstitchPreview{,Test}/kotlin/`에 **통합 후보**로 보관한다.
-  아직 없는 공통 후처리 API를 참조하므로 일반 엔진 빌드/배포 소스에는 포함하지 않는다.
-  저수준 fill API와 `FillParameters`/`FillUnderlay`는 일반 엔진에서 바로 사용할 수 있다.
-- 후보 검증은 저장소의 `tools/inkstitch-fill-preview.gradle`에 **명시적으로** source root를
-  주입해 실행한다. 이 스크립트는 worker 파일을 복사/수정하지 않으며 main에 공통 3파일이
-  있으면 외부 source root가 필요 없다. 고정 개발자 PC 경로를 제품 코드에 넣지 않는다.
-- 공통 planner 병합·독립 품질 승인 후 후보를 정상 source set으로 옮긴다.
-  이 후보 보관/381개 통과를 공개 element 통합이나 봉제 품질 승인 완료로 해석하지 않는다.
+- These 3 commits passed **381 tests with standard `./gradlew :engine:test`** in a clean separate checkout.
+  No common planner WIP or temporary exclusion filters were used.
+- Keep `FillStitch`/`FillAdapters` and element/PES integration tests as **integration candidates** in
+  `engine/src/inkstitchPreview{,Test}/kotlin/`.
+  They reference common postprocessing APIs not yet present, so are excluded from normal engine build/distribution sources.
+  Low-level fill APIs and `FillParameters`/`FillUnderlay` are immediately usable in the normal engine.
+- Run candidate validation by **explicitly** injecting a source root into the repository's `tools/inkstitch-fill-preview.gradle`.
+  This script does not copy/modify worker files; no external source root is needed if main contains the common 3 files.
+  Do not put fixed developer-PC paths in product code.
+- Move candidates into the normal source set after the common planner is merged and independent quality approval is obtained.
+  Do not interpret candidate storage/381 passing tests as completed public element integration or sewout quality approval.
 
 
-### 랜덤 running helper (후속 연결용)
+### Random running helper (for later integration)
 
-`stitches.FillRandomRunning`은 원본 `running_stitch.py`의
-`random_running_stitch` / `stitch_curve_randomly`와 `utils/prng.py`를 별도로 포팅한다.
-스칼라·목록 길이, curve별 seed, BLAKE2s counter, 첫 땀의 무작위 phase,
-허용오차에 의해 짧아진 뒤 phase 보정을 유지한다. 좌표/길이 인수는 px이며
-`stitchLengthSigma`는 10%=0.1의 비율이다. 알려진 해시/직선 수식·코너·목록 순환·seed·끝점
-테스트 12개를 추가했다. 원본을 실행해 얻은 좌표 골든이라고 주장하지 않는다.
+`stitches.FillRandomRunning` separately ports upstream `running_stitch.py`'s
+`random_running_stitch` / `stitch_curve_randomly` and `utils/prng.py`.
+It preserves scalar/list lengths, per-curve seeds, the BLAKE2s counter, a randomized phase for the first stitch,
+then phase correction after tolerance shortens a stitch. Coordinate/length arguments use px;
+`stitchLengthSigma` is a ratio, 10%=0.1. Added 12 tests for known hashes/straight-line formulas/corners/list cycling/seeds/endpoints.
+Do not claim these are coordinate goldens obtained by running upstream.
 
-이 helper는 **개별 fill의 랜덤 옵션에 아직 연결하지 않았다**. 위 표의
-`enable_random_stitch_length=true` 명시적 거절은 유지한다. 랜덤 분포만 구현한 것을
-randomized fill 전체/게이트 통과로 확대하지 않는다. 유한 수·진행성·자원 상한은 추가 검증한다.
+This helper is **not yet connected to individual fills' random options**. Keep the explicit rejection of
+`enable_random_stitch_length=true` in the table above. Implementing a random distribution alone does not mean
+all randomized fill/the gate passes. Additionally validate finite numbers/progress/resource limits.
 
-최종 코어 검증: 일반 `JAVA_HOME=… ./gradlew :engine:test` **393개 통과**.
-통합 후보는 별도 preview 실행에서 **391개 통과·112/112 PES 생성**했고,
-최종 외부 판정은 여전히 **BLOCK 112/112**다. 저장한 report의 PES SHA-256가 현재
-112개 후보 파일과 모두 일치하는 것도 확인했다(`docs/inkstitch-fill-gate.json`).
-
-
-## 단계 적용 전환 — S4 공식 fill 매트릭스
-
-`docs/ui-stories.md`의 S1→S2→S3→S4 순서를 따른다. FillStitch는 preview를 유지하고
-US-6/기존 fill 교체를 시작하지 않는다. 앞의 BLOCK 112/112는 초기 PE-Design 패턴 기반
-게이트의 **역사적 기록**이다. 총괄이 공식 Ink/Stitch 출력에도 과도한 차단이 발생한다고
-전달하여 Codex가 기능 기준으로 재보정 중이다. 그 잠금 시퀀스를 맞추기 위해 원본 동작을 바꾸지 않는다.
-
-고정 공식 `fill_stitch` SVG 225건의 재현 CLI·매핑·코드/외부 S1 소스 provenance와
-수치/차단 원인은 [fill-matrix-reproduction.md](fill-matrix-reproduction.md)에 기록한다.
-`3412ebb`의 두 실행에서 225/225 PES 생성·바이트 일치, 일반 엔진394/preview410 테스트 통과.
-원본 NetworkX graph copy의 node→neighbor→key 삽입 순서를 맞춘 뒤 count/Hausdorff/순서가
-개선됐지만 전체 동등성 판정은 아직 없다. 외부 S1 WIP는 hash로 고정한 별도 입력이며
-model 커밋에 포함된 것처럼 표시하지 않는다. 독립 gate/criteria는 수정하지 않았다.
+Final core validation: standard `JAVA_HOME=… ./gradlew :engine:test`, **393 tests passed**.
+Integration candidates passed **391 tests and generated 112/112 PES** in a separate preview run;
+the final external decision remains **BLOCK 112/112**. Also confirmed that the saved report's PES SHA-256 values match
+all current 112 candidate files (`docs/inkstitch-fill-gate.json`).
 
 
-## 개정 S4 범위 — 실패 없는 디자인 (2026-10-24)
+## Transition to staged application — S4 official fill matrix
 
-총괄의 개정 `docs/ui-stories.md`(main 작업트리)를 읽었다. 이전의 전체 기능/UI 목록보다
-이 지시를 우선한다. S4 기본 제품 경로는 **타타미 + 기본 바탕 땀**만 사용한다.
-원본 기본값 전용 진입점은 geometry/thread를 받고 사용자가 조절하는 파라미터를 받지 않는다.
+Follow the S1→S2→S3→S4 order in `docs/ui-stories.md`. Keep FillStitch in preview;
+do not start US-6/replacement of existing fill. The earlier BLOCK 112/112 is a **historical record** of
+the initial PE-Design-pattern-based gate. The coordinator reported excessive blocking of official Ink/Stitch output too,
+and Codex is recalibrating it against functional criteria. Do not change upstream behavior to match that lock sequence.
 
-- 각도 0°, row_spacing 0.25mm, max_stitch_length 4mm, staggers 4.
-- fill_underlay=true; 기본 각도 top+90°=90°, row_spacing=top×3=0.75mm,
-  max_stitch_length는 top의 4mm 상속, inset 0mm, underlay_underpath=true.
-- 잠금/최소 길이/점프는 S1의 원본 기본 후처리를 사용한다.
-- 새틴 폭 초과 영역만 S2의 검증된 폭 판정 결과를 받아 자동 채운다. 기존 OutlineFill.AUTO,
-  자체 column 추출, height 기반 밀도 변경, 임의 폭 상수를 기본 경로에 재사용하지 않는다.
-  폭 한계는 Codex가 보정하고 S2가 사용하는 값이 확정되기 전 새로 정하지 않는다.
-- 기존 포트의 분리 영역 강제 잠금 같은 자체 안전 분기도 기본 경로의 원본 동작과 대조해
-  분리한다. PE-Design의 잠금 바이트/통계에 맞추려고 원본 땀을 변형하지 않는다.
-- contour/guided/meander/circular/gradient/tartan 및 random/bean helper는 엔진 코드가
-  있더라도 미노출·다음 버전이다. 상세 파라미터 UI, 잠금 선택, 봉제 설정, 객체 땀 고급 탭,
-  채우기 시트·각도 핸들은 만들지 않는다.
-- S1→S2→S3 검토 뒤 S4 차례에 기존 경로를 전환한다. 지금은 preview 준비/검증 단계다.
+The reproduction CLI/mapping/code and external S1 source provenance, metrics, and blocking reasons for the fixed
+225 official `fill_stitch` SVGs are recorded in [fill-matrix-reproduction.md](fill-matrix-reproduction.md).
+Two runs of `3412ebb` generated 225/225 PES with matching bytes; normal engine394/preview410 tests passed.
+Matching the upstream NetworkX graph copy's node→neighbor→key insertion order improved count/Hausdorff/order,
+but there is no overall equivalence decision yet. External S1 WIP is a separate hash-pinned input;
+do not present it as included in the model commit. Independent gate/criteria were not modified.
 
-기존 공식 225건은 여러 프로필의 **회귀 기준선**이다. 제품 기본 조합만의 검증으로 확대하지
-않는다. 실제 기본 조합(angle0,row0.25,underlay=true)을 고정한 별도 oracle이 필요하다.
-기존 매트릭스/기준은 수정하지 않고 Codex와 추가 기본값 묶음을 확인한다.
 
-엔진 준비 예상 **4–6시간**:
+## Revised S4 scope — failure-free designs (2026-10-24)
 
-| 작업 | 예상 |
+Read the coordinator's revised `docs/ui-stories.md` (main worktree). This instruction takes priority
+over the earlier complete feature/UI list. The default S4 product path uses **only tatami + default underlay**.
+The upstream-default-only entry point accepts geometry/thread, with no user-adjustable parameters.
+
+- Angle 0°, row_spacing 0.25mm, max_stitch_length 4mm, staggers 4.
+- fill_underlay=true; default angle top+90°=90°, row_spacing=top×3=0.75mm,
+  max_stitch_length inherits top's 4mm, inset 0mm, underlay_underpath=true.
+- Locks/minimum lengths/jumps use S1's upstream default postprocessing.
+- Automatically fill only regions exceeding satin width, using S2's validated width decision. Do not reuse existing OutlineFill.AUTO,
+  custom column extraction, height-based density changes, or arbitrary width constants in the default path.
+  Do not define a new width limit before the Codex-calibrated value used by S2 is finalized.
+- Compare custom safety branches such as forced locks between disconnected regions in existing ports with upstream behavior
+  and separate them from the default path. Do not alter upstream stitches to match PE-Design lock bytes/statistics.
+- contour/guided/meander/circular/gradient/tartan and random/bean helpers remain unexposed and deferred to the next version,
+  even if engine code exists. Do not build detailed parameter UI, lock selection, sewing settings, advanced object stitch tabs,
+  fill sheets, or angle handles.
+- Switch existing paths at S4 after S1→S2→S3 review. This is currently preview preparation/validation.
+
+The existing official 225 cases are a **regression baseline** across profiles. Do not expand that claim to
+validation of the default product combination alone. A separate oracle fixed to the actual default combination
+(angle0,row0.25,underlay=true) is needed. Keep existing matrices/criteria unchanged and confirm an additional defaults bundle with Codex.
+
+Estimated engine preparation: **4–6 hours**:
+
+| Task | Estimate |
 |---|---:|
-| 기본값 전용 API·기존 휴리스틱/변형 경로 분리 | 약 1시간 |
-| S2의 검증된 폭 초과 영역을 받는 자동 전환·경계 계약 | 1–2시간 |
-| 기본 조합 회귀·PES·공식 출력 비교/차이 확인 | 2–3시간 |
+| Defaults-only API/separation of existing heuristic/variant paths | Approximately 1 hour |
+| Automatic switching/boundary contract accepting S2's validated over-width regions | 1–2 hours |
+| Default-combination regressions/PES/official-output comparisons and difference checks | 2–3 hours |
 
-Codex의 폭 기준/공식 기준 출력 확정, 단계별 병합 승인, 실제 봉제 검토 대기 시간은 별도다.
-이번 지시 반영은 범위/일정 기록이며 UI 노출·기존 채움 교체를 시작한 것이 아니다.
-
-
-## 최신 검증·작업 정책 — 소단위 검토 후 대기 (2026-10-24)
-
-이 정책은 앞의 대규모 매트릭스/엄격한 통계 동등성 절차보다 우선한다.
-
-- 실제 봉제 실패에 해당하는 차단만 유지한다: 0.5mm 셀 바늘 밀집, 같은 점 연속 바늘,
-  실 시작·끝 잠금 존재(모양 불문), 최대 땀 길이 초과, 파일 유효성과 후프 범위.
-- PE-Design 시작 바이트 패턴, S0/짧은 땀 비율, 새틴 간격 통계, 길이 분포는 참고 지표다.
-  Ink/Stitch 기본 최소 길이 후처리를 바꾸거나 통계에 맞추려고 땀을 변형하지 않는다.
-- 원본 비교는 기능별 대표 사례 **10개 이내**, 땀 수·모양 중심으로 한다.
-  기존 112/225건 결과와 스크립트는 역사적 기록이며 대형 매트릭스 재실행을 중단한다.
-  과거 Hausdorff/순서/분포 수치를 새 릴리스의 필수 차단으로 사용하지 않는다.
-- 최종 판정은 사용자 실제 봉제다. 단위 테스트/자동 게이트를 실제 봉제 확인으로 주장하지 않는다.
-- 한 작업은 **30–60분 이내**로 끊는다. 끝나면 커밋·push하고
-  '한 것 / 결과 / 다음 할 일 제안 / 결정 필요 사항' 3–5줄을 보고한 뒤 총괄 지시를 기다린다.
-  이후 단위를 자동으로 시작하지 않는다.
-
-현재 실행 중인 model 검증은 없다. 이번 마무리는 정책 기록만 변경하며 엔진/UI에는 손대지 않는다.
-다음 후보 단위는 기본값 전용 타타미+바탕 땀 API 준비다. 착수는 총괄의 다음 결정에 따른다.
+Waiting for Codex's width criteria/official reference output, staged merge approvals, and actual sewout review is separate.
+This instruction update records scope/schedule; it does not start UI exposure or replacement of existing fill.
 
 
-### 20분 단위: 기본 타타미 API 준비
+## Latest validation/work policy — wait after small-unit review (2026-10-24)
 
-`elements.DefaultTatami.stitchGroups(region, thread)`를 **preview**에 추가했다.
-입력 PolygonRegion은 기존 엔진 단위(0.1mm), 반환 StitchGroup 좌표는 공통 SVG px다.
-사용자 설정 인수·폭 판정·UI·기존 경로 연결은 없다. 호출자가 객체 그룹을 모은 뒤 S1을 한 번 적용한다.
+This policy takes priority over the earlier large matrices/strict statistical-equivalence procedures.
 
-letter의 `stitches.InkAutoFill`을 확인하고 **그 생성기를 그대로 호출**한다. 새 scanline/graph
-알고리즘은 추가하지 않았고 model의 별도 TatamiFill/FillRouting도 이 기본 진입점에서 호출하지 않는다.
-letter 파일의 기존 Settings 기본값(0.4mm/3.5mm)을 그대로 쓰는 대신 원본 fill 기본값인
-0°/0.25mm/4mm/4 stagger/underpath=true를 명시한다. 바탕 땀은90°/0.75mm/4mm다.
-각 성분마다 바탕 땀→본 채움 순서이며 S1 기본 잠금 정의를 붙인다.
+- Keep only blockers corresponding to actual sewout failure: needle density in 0.5mm cells, consecutive penetrations at the same point,
+  presence of thread-start/end locks (regardless of shape), excessive stitch length, file validity, and hoop bounds.
+- PE-Design start byte patterns, S0/short-stitch ratios, satin spacing statistics, and length distributions are reference metrics.
+  Do not change Ink/Stitch's default minimum-length postprocessing or alter stitches to match statistics.
+- Compare upstream using **at most 10 representative cases** per feature, focusing on stitch count/shape.
+  Existing 112/225-case results and scripts are historical records; stop rerunning large matrices.
+  Do not use historical Hausdorff/order/distribution metrics as mandatory blockers for new releases.
+- Final acceptance is the user's actual sewout. Do not claim unit tests/automatic gates confirm actual sewing.
+- Limit each work unit to **30–60 minutes**. On completion, commit/push,
+  report 3–5 lines of 'work done / results / proposed next task / decisions needed', then await the coordinator's instructions.
+  Do not automatically start the next unit.
 
-검증은 **대표 3개**만 실행했다: 사각형(기본 간격·단위·잠금), 구멍(PES 읽기·내부 바늘 없음),
-분리 성분/빈 입력(레이어 순서·빈 결과). `DefaultTatamiTest` 3개 통과. 전체 매트릭스는 실행하지 않았다.
-letter의 커밋 `b7106ec`에서 InkAutoFill/InkRunning을 읽기 전용으로 추출해 컴파일했다
-(InkAutoFill 도입 커밋 `1cbdd569747032a48075ca16e732629b15555d6c`).
-당시 preview에는 `fillTatamiSourceRoot`가 필요했으나, 아래 소유권 이전으로 제거했다.
-
-이 API 준비는 letter backend의 공식 동등성/실제 봉제 통과나 S4 적용을 뜻하지 않는다.
-특히 현재 backend는 시작점 지정 인수가 없어, 바탕 땀 마지막점을 top 경로 생성에 전달하는
-계약 보강은 별도 단위로 검토할 수 있다. 이번 단위는 여기서 멈추고 총괄 결정을 기다린다.
+No model validation is currently running. This wrap-up changes only policy records, not the engine/UI.
+The next candidate unit is preparation of a defaults-only tatami+underlay API. Start only on the coordinator's next decision.
 
 
-### 15분 단위: InkAutoFill model 소유권 이전
+### 20-minute unit: prepare default tatami API
 
-`stitches/InkAutoFill.kt`를 model의 일반 `src/main`으로 가져왔다. letter의
-커밋 `b7106ec361eb5a75eaac54b0cba450cf1041a554`에 저장된 파일을 사용했으며,
-원래 도입 커밋은 `1cbdd569747032a48075ca16e732629b15555d6c`다.
-직접 의존하는 공용 러닝 유틸 `InkRunning.kt`도 같은 경로에 포함했다
-(도입: `c8d2f4f0b66376f3d0a70f313ba3717b4559dcdd`). 각 파일 머리에 이전 출처와
-원본 Ink/Stitch 경로·고정 커밋·GPL 표기를 남겼다. 알고리즘/기본값은 변경하지 않았다.
-앞으로 InkAutoFill 수정은 model 담당이며, letter S2는 해당 생성기를 중복 추가하지 않는다.
-InkRunning은 공유 의존 유틸로 동일 FQCN/파일을 사용한다.
+Added `elements.DefaultTatami.stitchGroups(region, thread)` to **preview**.
+Input PolygonRegion uses existing engine units (0.1mm); returned StitchGroup coordinates use shared SVG px.
+No user settings arguments/width decisions/UI/connections to existing paths. The caller collects object groups, then applies S1 once.
 
-기존 letter의 `AutoFillPortTest`도 출처를 기록하고 옮겼다. 일반 `:engine:test`는
-letter 작업트리나 외부 소스 없이 컴파일·실행한다. `DefaultTatami`는 여전히 preview로,
-S1 미병합 소스 입력만 필요하다. `fillTatamiSourceRoot` 옵션과 외부 letter 입력은 제거했다.
-UI/기존 제품 경로 연결 및 시작점 계약 변경은 이번 단위에 포함하지 않는다.
+Checked letter's `stitches.InkAutoFill` and **call that generator unchanged**. Added no new scanline/graph
+algorithm; this default entry point also does not call model's separate TatamiFill/FillRouting.
+Instead of using the letter file's existing Settings defaults (0.4mm/3.5mm), explicitly set upstream fill defaults
+0°/0.25mm/4mm/4 stagger/underpath=true. Underlay uses90°/0.75mm/4mm.
+Each component has underlay→top fill order and S1 default lock definitions.
 
-재현 명령(JDK 17):
+Validated **only 3 representative cases**: rectangle (default spacing/units/locks), hole (PES reading/no needles inside),
+disconnected components/empty input (layer order/empty result). `DefaultTatamiTest`: 3 passed. No full matrix was run.
+Extracted InkAutoFill/InkRunning read-only from letter commit `b7106ec` for compilation
+(InkAutoFill introduction commit `1cbdd569747032a48075ca16e732629b15555d6c`).
+Preview required `fillTatamiSourceRoot` then, but the ownership transfer below removed it.
+
+This API preparation does not mean the letter backend has passed official equivalence/actual sewout or that S4 is applied.
+In particular, the current backend has no start-point argument, so strengthening the contract to pass the final underlay point
+into top-path generation can be reviewed in a separate unit. Stop this unit here and await the coordinator's decision.
+
+
+### 15-minute unit: transfer InkAutoFill ownership to model
+
+Brought `stitches/InkAutoFill.kt` into model's normal `src/main`. Used the file stored in letter
+commit `b7106ec361eb5a75eaac54b0cba450cf1041a554`;
+its original introduction commit is `1cbdd569747032a48075ca16e732629b15555d6c`.
+Also included the directly required shared running utility `InkRunning.kt` at the same path
+(introduced in `c8d2f4f0b66376f3d0a70f313ba3717b4559dcdd`). File headers record transfer provenance,
+upstream Ink/Stitch paths, pinned commit, and GPL. Algorithm/defaults unchanged.
+Future InkAutoFill changes belong to model; letter S2 will not add a duplicate generator.
+InkRunning remains a shared dependency utility with the same FQCN/file.
+
+Also transferred letter's existing `AutoFillPortTest` with provenance. Normal `:engine:test`
+compiles/runs without the letter worktree or external sources. `DefaultTatami` remains in preview,
+requiring only unmerged S1 source input. Removed the `fillTatamiSourceRoot` option and external letter input.
+UI/existing product-path integration and start-point contract changes are outside this unit.
+
+Reproduction commands (JDK 17):
 
 ```sh
 ./gradlew :engine:test --console=plain
@@ -420,155 +420,155 @@ UI/기존 제품 경로 연결 및 시작점 계약 변경은 이번 단위에 �
   :engine:test --tests '*DefaultTatamiTest*' --console=plain
 ```
 
-검증 결과: 외부 소스를 지정하지 않은 일반 엔진 테스트 **395개 통과**, S1 소스만 지정한
-preview `DefaultTatamiTest` **3개 통과**. 두 생성/유틸 파일은 출처 주석을 제외하고
-letter의 기록된 커밋과 byte-for-byte 동일함도 확인했다. 전체 매트릭스는 실행하지 않았다.
+Validation results: **395 normal engine tests passed** without specifying external sources;
+preview `DefaultTatamiTest`: **3 passed** with only S1 sources specified. Also verified that the two generator/utility files
+are byte-for-byte identical to letter's recorded commit except for provenance comments. No full matrix was run.
 
 
-### 15분 단위: S4 기본 채움 시험 후보 4개
+### 15-minute unit: 4 S4 default-fill sewout candidates
 
-`exportDefaultTatamiSewtest` 태스크가 기존 DefaultTatami + S1 기본 planner를 호출해
-`/tmp/myembro-sewtest/s4/`에 PES v6/SVG/manifest를 생성한다. 사각 20×20mm(739땀),
-원 지름25mm(1,027땀), 도넛 외경30/내경12mm(1,490땀), 직접 만든 굵은 H 높이20mm(616땀).
-생성 중 우리 PesReader 왕복 땀수·100mm 후프 범위·도넛 안쪽 바늘 없음도 확인했다.
-디자인은 모두 오리지널 기하 도형(CC0), 개인 파일/폰트 미사용이다.
+The `exportDefaultTatamiSewtest` task calls existing DefaultTatami + S1 default planner to generate
+PES v6/SVG/manifest in `/tmp/myembro-sewtest/s4/`. Rectangle 20×20mm (739 stitches),
+circle diameter25mm (1,027 stitches), donut outer diameter30/inner diameter12mm (1,490 stitches), self-created bold H height20mm (616 stitches).
+Generation also checked our PesReader round-trip stitch counts, 100mm hoop bounds, and absence of needles inside the donut hole.
+All designs are original geometry (CC0); no private files/fonts used.
 
-외부 `/tmp/myembro-quality-gate/quality-gate check` v5 결과 **4/4 PASS**.
-최대 밀집은6회/0.5mm 셀, 동일점 연속 최대2회, 최대 땀4.11mm 미만,
-실 시작/끝 잠금 및 후프100×100 검사가 통과했다. 짧은 땀 비율 경고는 참고만 한다.
-S4 단계 승인은 요청하지 않았으며, 현재 단계 진행/출시/실봉제 승인을 뜻하지 않는다.
-`tools/render_tatami_sewtest.py`는 pyembroidery로 읽은 실제 PES를 동일 배율의
-`overview.png`/개별 PNG로 렌더링한다. 결과 디렉터리 README에 정확한 재현 명령을 기록했다.
-알고리즘·UI·기존 제품 경로 변경은 없다. 여기서 멈추고 총괄 검토를 기다린다.
-## 잠금·플랜·명령 포트
+External `/tmp/myembro-quality-gate/quality-gate check` v5 result: **4/4 PASS**.
+Peak density6 penetrations/0.5mm cell, maximum consecutive same-point penetrations2, maximum stitch under4.11mm;
+thread-start/end locks and hoop100×100 checks passed. Short-stitch ratio warnings are reference only.
+No S4 stage approval was requested; this does not mean current stage progression/release/actual sewout approval.
+`tools/render_tatami_sewtest.py` renders the actual PES read by pyembroidery at a common scale into
+`overview.png`/individual PNGs. Exact reproduction commands are recorded in the output directory README.
+No algorithm/UI/existing product-path changes. Stop here and await coordinator review.
+## Lock/plan/command ports
 
-`LockStitchParameters`의 `ties`는 0=양쪽(기본), 1=시작, 2=끝, 3=없음이다.
-`force_lock_stitches`와 전체 `disable_ties` 우선순위를 원본대로 적용한다.
-`InkLockStitch`는 **half_stitch, arrow, back_forth, bowtie, cross, star, simple,
-triangle, zigzag, custom**을 지원한다. 절대/상대 스케일, custom 숫자 패턴 및 SVG
-endpoint 경로, END 반전, 마지막 두 anchor/direction 노드 제외 규칙을 보존한다.
-원본 half_stitch는 최대 15점에서 0.5mm보다 먼 점을 찾고 1.5mm로 제한한다.
-찾지 못하면 **0.5px**로 fallback한다(mm가 아니다). back_forth의 음수 연장 분기에
-잠금 태그가 빠지는 원본 동작도 포트에서 임의 수정하지 않는다.
+In `LockStitchParameters`, `ties` means 0=both (default), 1=start, 2=end, 3=none.
+Apply the priority of `force_lock_stitches` and global `disable_ties` as upstream does.
+`InkLockStitch` supports **half_stitch, arrow, back_forth, bowtie, cross, star, simple,
+triangle, zigzag, custom**. Preserve absolute/relative scaling, custom numeric patterns and SVG
+endpoint paths, END reversal, and exclusion of the final two anchor/direction nodes.
+Upstream half_stitch searches at most 15 points for one farther than 0.5mm, capped at 1.5mm.
+If none is found, fallback is **0.5px** (not mm). Do not arbitrarily fix the upstream behavior
+that omits lock tags in back_forth's negative extension branch.
 
-`StitchPlanBuilder.fromGroups`는 원본 `stitch_groups_to_stitch_plan`/`filter_duplicate_stitches`를
-명시적으로 실행한다. 기본 collapse=3mm, 최소 길이=0.1mm, RGB 블록 결합,
-이전 그룹의 최소 점프/force, tie-off→색변경→tie-in, TRIM→STOP 순서를 유지한다.
-최소 길이 이하(<=) 점은 이전 보존 점이 JUMP이거나 현재 점이 잠금/제어명령이면 보존한다.
-단순한 모든 0길이 점 삭제와 다르다. 최종 정수 격자 중복 제거는 별도 generated 경계에서 한다.
+`StitchPlanBuilder.fromGroups` explicitly runs upstream `stitch_groups_to_stitch_plan`/`filter_duplicate_stitches`.
+Preserve default collapse=3mm, minimum length=0.1mm, RGB block merging,
+the previous group's minimum jump/force, tie-off→color change→tie-in, and TRIM→STOP order.
+Points at or below the minimum length (<=) are retained when the previous retained point is JUMP or the current point is a lock/control command.
+This differs from simply removing all 0-length points. Final integer-grid deduplication occurs at a separate generated boundary.
 
-`ElementCommands`는 SVG 커넥터가 해석된 후의 ignore_object/layer, trim_after,
-stop_after, starting_point/ending_point와 이전 fill_start/fill_end 별칭을 받는다.
-ignore는 생성 자체를 생략하고, trim/stop은 요소의 마지막 비어 있지 않은 그룹에 OR한다.
-시작·끝 점은 요소별 라우팅 담당이 사용한다. 이 파사드는 임의 좌표 이동을 만들지 않는다.
+`ElementCommands` accepts ignore_object/layer, trim_after, stop_after,
+starting_point/ending_point, and legacy fill_start/fill_end aliases after SVG connectors are resolved.
+ignore skips generation itself; trim/stop are ORed onto the element's last nonempty group.
+Element-specific routing uses start/end points. This facade does not create arbitrary coordinate moves.
 
-| 위치 | 원본과 차이 | 이유/한계 |
+| Location | Difference from upstream | Reason/limitation |
 |---|---|---|
-| Lock 직접 호출 | 2점 미만은 빈 결과 | 원본 StitchGroup 보호 조건을 재사용 가능한 API에서도 적용 |
-| SVG lock parser | Inkex 대신 endpoint 전용 Kotlin 파서 | M/L/H/V/C/S/Q/T/A/Z endpoint만 필요; 곡선 control point를 바늘 위치로 사용하지 않음 |
-| 유효성 검사 | 비유한 스케일/좌표는 조기에 거부 | 잘못된 파일·무한 확장 방지 |
-| lock 타입 표시 순서 | END UI의 cross/bowtie 순서 차이는 단일 ID 목록으로 표현 | ID와 생성 좌표는 동일 |
-| 빈 그룹 | 전체 빈 입력은 빈 플랜, 앞뒤 빈 그룹 제외 | UI 종료/빈 블록 인덱스 오류 대신 엔진 반환값 제공, 마지막 실제 그룹 tie-off 보존 |
-| 그룹 minimum | per-stitch 값이 있을 때 그룹 값으로 덮어쓰지 않음 | 공유 계약의 세밀한 override 보존; Stroke 파사드는 원본 요소처럼 모든 점에 요소 값을 지정 |
-| END | 원본 모델에 없는 END도 필터에서 보존 | 기존 machine API의 종료 명령 보장 |
-| 명령 탐색 | Inkex XML·clone·커넥터 탐색 대신 resolved flags/points | SVG 가져오기 담당과의 명시적 통합 경계; 레이어 무시 판정 자체는 호출자 책임 |
-| terminal command | 마지막 비어 있지 않은 그룹에 적용 | trailing empty 그룹에서 trim/stop이 사라지는 경우 방지 |
+| Direct lock calls | Empty result for fewer than 2 points | Apply upstream StitchGroup guards in the reusable API too |
+| SVG lock parser | Endpoint-only Kotlin parser instead of Inkex | Only M/L/H/V/C/S/Q/T/A/Z endpoints needed; do not use curve control points as needle positions |
+| Validation | Reject nonfinite scales/coordinates early | Prevent malformed files/unbounded expansion |
+| Lock type display order | Represent END UI cross/bowtie order differences with a single ID list | IDs and generated coordinates unchanged |
+| Empty groups | All-empty input yields an empty plan; exclude leading/trailing empty groups | Provide an engine return value rather than UI exit/empty-block indexing errors; preserve final actual group tie-off |
+| Group minimum | Do not overwrite per-stitch values with group values when present | Preserve fine-grained overrides in the shared contract; Stroke facade sets element values on all points as upstream elements do |
+| END | Preserve END in the filter, although absent from the upstream model | Guarantee the existing machine API's end command |
+| Command lookup | Resolved flags/points instead of Inkex XML/clone/connector traversal | Explicit integration boundary with SVG import owner; caller determines layer ignore status |
+| Terminal command | Apply to the last nonempty group | Prevent trim/stop loss on trailing empty groups |
 
-## Stroke·Ripple 포트
+## Stroke/Ripple ports
 
-`StrokeParameters` / `RippleParameters.fromAttributes`는 `inkstitch:*`, XML 확장 이름,
-로컬 속성 이름을 받고 공개 mm/percent 값을 유지한다. `Stroke`는 변환·클립 완료된 SVG px
-폴리라인을 받는다. manual은 원래 노드 endpoint, running/zigzag는 평탄화한 곡선을 전달해야 한다.
-원본 Inkex DOM 로딩·transform·curve flattening이 자동으로 포함됐다고 주장하지 않는다.
+`StrokeParameters` / `RippleParameters.fromAttributes` accept `inkstitch:*`, XML expanded names,
+and local attribute names, retaining public mm/percent values. `Stroke` accepts transformed/clipped SVG px
+polylines. Pass original node endpoints for manual, flattened curves for running/zigzag.
+Do not claim upstream Inkex DOM loading/transforms/curve flattening are automatically included.
 
-Running은 sleeve/angle interval·원 교차·45도 코너·even/fixed carry, 길이 목록, tolerance,
-반복, bean 및 결정적 random length를 포함한다. Zigzag는 Python 짝수 반올림, 짝수 샘플,
-평균 접선, 비대칭 pull compensation, 각도·폐곡선·반복 규칙을 따른다. Manual은 최대 길이로
-분할하고 force가 없으면 잠금을 만들지 않는다. `Prng`는 공통 lettering 포트와 같은 API/코드로,
-BLAKE2s counter stream의 hex-word 순서와 UTF-8 seed를 재현한다(신규 의존성 없음).
+Running includes sleeve/angle intervals, circle intersections, 45-degree corners, even/fixed carry, length lists, tolerance,
+repeats, bean, and deterministic random length. Zigzag follows Python round-to-even, even samples,
+average tangents, asymmetric pull compensation, angle/closed-path/repeat rules. Manual splits at maximum length
+and generates no locks without force. `Prng` uses the same API/code as the shared lettering port,
+reproducing BLAKE2s counter-stream hex-word order and UTF-8 seeds (no new dependencies).
 
-Ripple은 target/convex hull centroid, closed spiral, line/satin guide, 수동 배치,
-줄 수/최소 간격·parity, skip/stagger/exponent, 축별 scale·회전·rungs, grid/grid-first,
-반복·bean과 클립 다중 그래프 라우팅을 포함한다. 원본 getter 기본값을 사용한다:
-`staggers=1.0`, `satin_guide_pattern_position=line_count`(UI default와 차이 있음).
-클립은 JTS overlay, 경계 그래프, Euler 보정·경계 travel·연결 성분별 그룹으로 처리한다.
-멀티패스/satin guide는 `RippleSatinGeometry`의 실제 SatinColumn rail/rung 샘플러가 필요하다.
-이 공급자 없이 임의로 두 경로를 rail로 추측하지 않는다.
+Ripple includes target/convex-hull centroid, closed spiral, line/satin guides, manual placement,
+line count/minimum spacing/parity, skip/stagger/exponent, per-axis scale/rotation/rungs, grid/grid-first,
+repeats/bean, and clipped multigraph routing. Use upstream getter defaults:
+`staggers=1.0`, `satin_guide_pattern_position=line_count` (different from UI defaults).
+Clipping uses JTS overlay, boundary graphs, Euler correction/boundary travel/groups per connected component.
+Multipass/satin guides require an actual SatinColumn rail/rung sampler through `RippleSatinGeometry`.
+Without that provider, do not arbitrarily assume two paths are rails.
 
-| 위치 | 원본과 차이 | 이유/한계 |
+| Location | Difference from upstream | Reason/limitation |
 |---|---|---|
-| Stroke 입력 | Inkex node 대신 transformed/clipped 폴리라인과 resolved commands | SVG 요소 파서/클리핑과 생성 알고리즘의 통합 경계 |
-| empty running | None 대신 빈 List | Kotlin collection API |
-| 잘못된 숫자 목록 | 빈/파싱 불가 목록 기본값 또는 유효성 오류 | NaN 전파·인덱스 오류 방지; 유효 입력의 기본값은 보존 |
-| 자원 상한 | 입력·출력 100만 점, interruption 검사 | 모바일 메모리/취소 안전성; 근사 경로로 대체하지 않고 실패 |
-| random 0 진행 | 정확히 0 길이면 설명 있는 예외 | 무진행 무한 루프 방지 |
-| Ripple satin | centerLine/rungPairs/plotPointsOnRails 공급자 필요 | SatinColumn 담당 포트와 통합 전 임의 rail 근사 금지 |
-| Ripple clip 그래프 | NetworkX 대신 순서 있는 Kotlin multigraph·정확 DP matching | GPL 호환 신규 의존성 없이 최소 경로 개수 목적 보존 |
-| matching 한계 | 홀수 정점 60개/DP 100만 상태 상한에서 실패 | 원본 blossom보다 자원 상한이 낮음; greedy로 조용히 대체하지 않음 |
-| 그래프 동률 | DP matching·단방향 Dijkstra가 같은 최적값의 다른 순서를 선택할 수 있음 | NetworkX blossom/bidirectional 경로와 동률 결정 방식 차이 |
-| JTS/GEOS | 퇴화·접촉 도형의 overlay 조각/순서가 달라질 수 있음 | 기하 라이브러리 대체의 수치적 차이; 점 단위 완전 일치 미보증 |
+| Stroke input | Transformed/clipped polylines and resolved commands instead of Inkex nodes | Integration boundary between SVG element parsing/clipping and generation algorithms |
+| Empty running | Empty List instead of None | Kotlin collection API |
+| Invalid numeric lists | Defaults or validation errors for empty/unparseable lists | Prevent NaN propagation/indexing errors; preserve valid-input defaults |
+| Resource limits | Input/output capped at 1 million points, interruption checks | Mobile memory/cancellation safety; fail rather than substitute approximate paths |
+| Random 0 progress | Descriptive exception for exactly 0 length | Prevent infinite loops without progress |
+| Ripple satin | Requires centerLine/rungPairs/plotPointsOnRails provider | No arbitrary rail approximation before integration with the SatinColumn owner's port |
+| Ripple clip graph | Ordered Kotlin multigraph/exact DP matching instead of NetworkX | Preserve the minimum-path-count objective without new GPL-compatible dependencies |
+| Matching limits | Fail at 60 odd vertices/1 million DP states | Lower resource limits than upstream blossom; do not silently replace with greedy |
+| Graph ties | DP matching/one-way Dijkstra may choose another order with the same optimum | Different tie-breaking from NetworkX blossom/bidirectional paths |
+| JTS/GEOS | Overlay fragments/order may differ for degenerate/touching shapes | Numerical differences from geometry-library substitution; exact pointwise equality not guaranteed |
 
-원본의 특이 동작도 보존한다: Ripple 클립 교집합이 빈 경우 원래 stitches를 반환하고,
-travel route가 없으면 endpoint fallback 후 경계 <1px 필터를 적용한다. 시작 travel marker는
-거리 필터 전 추가된다. 연결 성분 정렬은 terminal travel 제거 전에 수행하므로 제거 후
-겉보기 순서가 역전될 수 있다. 이는 새로 안전한 클립 동작을 보증한다는 의미가 아니다.
+Preserve unusual upstream behavior too: when the Ripple clip intersection is empty, return original stitches;
+when no travel route exists, use endpoint fallback then the boundary <1px filter. The initial travel marker
+is added before distance filtering. Connected components are sorted before terminal travel removal, so removal
+may apparently reverse their order. This does not guarantee newly safe clipping behavior.
 
-### 독립 게이트와 검증 범위
+### Independent gate and validation scope
 
-고정 SVG는 `engine/src/test/resources/inkstitch/`에 두고 PES는 테스트 실행 중 생성한다.
-알고리즘 테스트는 읽은 수식·제어 흐름의 분석 기대값이며 Ink/Stitch 실행 비교는 하지 않았다.
-clone trim/stop OR 의미와 결정적 출력 성질은 Kotlin 회귀로 검증한다.
+Store fixed SVGs in `engine/src/test/resources/inkstitch/`; generate PES during test execution.
+Algorithm tests use analytical expectations from the formulas/control flow read, with no Ink/Stitch execution comparison.
+Kotlin regressions check clone trim/stop OR semantics and deterministic output properties.
 
-2026-10-24의 Stroke 4개(running/manual/zigzag/bean) `check-release` 결과는 **BLOCK 0/4**다.
-`/tmp/myembro-worker-stroke-{matrix,gate}.json`에 독립 도구의 원문 판정을 남겼다.
-이 게이트의 매트릭스는 모든 입력을 텍스트로 판정하고 `J→S0→S0.28→S0.28` 시작 및
-0.27–0.65mm 잠금 범위를 강제한다. 원본 기본 half_stitch의 통상 0.75mm 반전은 인식하지 못해
-TEXT_START_SEQUENCE_MISSING/START_LOCK_MISSING/END_LOCK_MISSING으로 차단됐다.
-원본 기본값을 0.28mm로 바꾸거나 게이트를 수정해서 통과시키지 않는다.
-일반 도안 검사 결과와 별개로, 담당 Codex의 원본 잠금/비텍스트 정책 판정 전에는 병합 차단이다.
-이 매트릭스의 font 이름은 SVG fixture 식별자이며 실제 전체 폰트 릴리스 매트릭스가 아니다.
+On 2026-10-24, `check-release` for Stroke 4 cases (running/manual/zigzag/bean) returned **BLOCK 0/4**.
+The independent tool's original decision is preserved in `/tmp/myembro-worker-stroke-{matrix,gate}.json`.
+This gate's matrix treats every input as text and enforces a `J→S0→S0.28→S0.28` start and
+0.27–0.65mm lock range. It does not recognize the upstream default half_stitch's usual 0.75mm reversal,
+blocking with TEXT_START_SEQUENCE_MISSING/START_LOCK_MISSING/END_LOCK_MISSING.
+Do not pass by changing the upstream default to 0.28mm or modifying the gate.
+Regardless of general-design checks, merging is blocked until the responsible Codex decides upstream-lock/nontext policy.
+The matrix's font names identify SVG fixtures; this is not an actual complete font-release matrix.
 
 
-## 기존 생성 경로 연결 — 원본 포트와 분리된 앱 정책
+## Connecting existing generation paths — app policy separate from upstream ports
 
-`GeneratedPatternProcessor.fromGroups`는 원본 플랜 생성 후 어댑터와 최종 정수 중복 제거를
-적용한다. `finish(EmbPattern)`는 **기존 앱이 새로 만든** native 패턴에만 호출하는 bridge다.
-레터링 running/bean/satin/fill, 직접 SatinColumn, digitizing running/tatami의 생성 끝에서 실행한다.
-Bean 확장 전에 잠금을 넣어 잠금까지 삼중화하지 않으며, 내부 fill 결과를 다른 생성기에 넣을
-때는 추적 가능한 우리 잠금만 제거한 본문을 사용한다.
+`GeneratedPatternProcessor.fromGroups` applies the adapter and final integer deduplication after upstream plan generation.
+`finish(EmbPattern)` is a bridge called only for native patterns **newly generated by the existing app**.
+It runs at the end of lettering running/bean/satin/fill, direct SatinColumn, and digitizing running/tatami generation.
+Insert locks before Bean expansion so locks are not tripled too; when passing internal fill output into another generator,
+use a body with only our traceable locks removed.
 
-편집기에서 가져온 PES/PEC/DST는 raw sewing이다. 객체 합성은 이미 완성된 각 객체의 바늘
-순서를 보존하며 가져온 도안 전체에 잠금을 다시 붙이지 않는다. 생성 객체의 배율/자유 회전은
-우리 잠금을 제거하고 변환한 본문에 재생성하여 잠금의 실제 mm 길이를 유지한다. 정수 이동·
-90도 회전·미러링처럼 격자를 보존하는 변환은 바늘과 추적 좌표를 함께 변환하므로 반올림으로
-0.1mm가 어긋나지 않는다. 가져온 파일의 reader/writer raw 왕복 경로는 건드리지 않는다.
+Imported PES/PEC/DST in the editor is raw sewing. Object composition preserves each completed object's needle order
+and does not reapply locks to the whole imported design. Scaling/free rotation of generated objects removes our locks
+and rebuilds them on the transformed body, preserving actual lock length in mm. Grid-preserving transforms such as integer translation,
+90-degree rotation, and mirroring transform needles and tracked coordinates together, preventing rounding from causing
+0.1mm offsets. Leave imported-file reader/writer raw round-trip paths untouched.
 
-| 위치 | 원본과 차이 | 이유/한계 |
+| Location | Difference from upstream | Reason/limitation |
 |---|---|---|
-| native generated bridge | 모든 명시적 JUMP/제어 명령을 경계로 보존 | 이미 needle-up으로 확정된 앱 명령을 3mm collapse로 재봉으로 바꾸지 않음; typed groups는 원본 collapse 유지 |
-| native 최소 길이 | S1부터 원본 기본 0.1mm 적용 후 정수 격자의 연속 중복 STITCH 제거 | 이전 min=0 보존 정책은 기본 경로에서 제거 |
-| native 잠금 | S1부터 원본 `InkLockStitch()` half-stitch 사용 | 별도 폴리라인 잠금 휴리스틱 제거; 원본 fallback과 방향 규칙 유지 |
-| 양자화 중복 | native 격자에서 연속 동일 STITCH 제거 | 0.1mm로 양자화된 바늘의 중복 천공 방지; 제어 명령과 JUMP 뒤 첫 STITCH 보존 |
-| native 최종 격자 | 연속 STITCH→동일 STITCH만 삭제, JUMP→첫 STITCH는 보존 | 원본 px에서 다른 점도 0.1mm 양자화 후 0길이가 될 수 있음 |
-| native 명시적 최대 길이 | 호출자의 maxStitchLengthMm를 정수 격자에서 재검증/분할 | 0.2mm 등 기존 레터링 API의 상한에 잠금도 맞춤; 0.1mm 대각선은 필요한 축 이동 2개로 표현 |
-| provenance | finish/lock indices/run anchors/command anchors/max length 메타데이터 추가 | 임의 잠금 모양으로 본문 좌표를 추측하지 않고, 오직 우리 잠금만 strip/rebuild |
-| native 재생성 | 기본 호출은 원본 `SewingOptions()`로 재생성; 명시적 옵션 API는 엔진에만 유지 | 앱에 상세 설정·타입 선택 UI 없음. 원본 본문을 별도로 보존하여 길이 필터를 다시 적용할 수 있음 |
-| 합성 결과 | 객체별 잠금 유지, 합성 전체에는 finished 마커를 붙이지 않음 | 서로 다른 raw/생성 패턴을 다시 전역 잠금하지 않음; 합성 파일 자체는 완성 machine pattern |
+| Native generated bridge | Preserve all explicit JUMP/control commands as boundaries | Do not turn app commands already finalized as needle-up into sewing via 3mm collapse; typed groups retain upstream collapse |
+| Native minimum length | From S1, apply upstream default 0.1mm then remove consecutive duplicate STITCH on the integer grid | Remove previous min=0 preservation policy from the default path |
+| Native locks | From S1, use upstream `InkLockStitch()` half-stitch | Remove separate polyline lock heuristic; retain upstream fallback/direction rules |
+| Quantization duplicates | Remove consecutive identical STITCH on the native grid | Prevent duplicate punctures of needles quantized to 0.1mm; preserve control commands and first STITCH after JUMP |
+| Native final grid | Remove only consecutive STITCH→identical STITCH; preserve JUMP→first STITCH | Points distinct in upstream px can become 0-length after 0.1mm quantization |
+| Native explicit maximum length | Revalidate/split caller's maxStitchLengthMm on the integer grid | Fit locks to existing lettering API limits such as 0.2mm; express a 0.1mm diagonal as the necessary 2 axis moves |
+| Provenance | Add finish/lock indices/run anchors/command anchors/max length metadata | Strip/rebuild only our own locks without guessing body coordinates from arbitrary lock shapes |
+| Native regeneration | Default calls regenerate with upstream `SewingOptions()`; explicit options API remains engine-only | No detailed settings/type-selection UI in the app. Store original body separately so length filters can be reapplied |
+| Composition result | Retain per-object locks; do not mark the entire composition as finished | Do not globally relock mixed raw/generated patterns; the composed file itself is a completed machine pattern |
 
-### 통합 담당 메모
+### Integration notes
 
-- embro-letter의 별도 `StitchPlanFinisher`/`InkLock`와 이 공통 processor를 중복 연결하면 안 된다.
-  이 계약과 원본 기본값을 공유하고, 원본과 다른 최소 길이·잠금 정책은 명시적 옵션으로 분리한다.
-- Ripple의 실제 SatinColumn provider 연결은 아직 별도 담당 API 확장이 필요하다. 현재
-  public plotPointsOnRails는 pull 보상/0.01mm clamp를 적용하므로 raw 0.01px sampler의 대용이 아니다.
-  필요한 API는 **spacingPx·offsetPx·offsetProportional·useRandom을 받는 raw rail sampler**,
-  방향/정밀도/rung 분할 후 flattened sections, subpath→rail/rung 판별 결과다.
-- provider centerLine은 `offsetProportional=(-0.5,-0.5)`인 raw pair의 first 좌표이며 running 재샘플링을
-  하지 않는다. rungPairs는 원시 rung endpoint가 아닌 각 flattened section의 끝 rail pair다.
-  reverse/swap flags는 centerLine/rungPairs와 plotPointsOnRails에서 일치해야 한다.
-- SVG 입력/커넥터 해석과 해당 새틴 provider가 연결되기 전 전체 SVG DOM 기능 완료로 보고하지 않는다.
+- Do not connect embro-letter's separate `StitchPlanFinisher`/`InkLock` and this common processor twice.
+  Share this contract/upstream defaults; separate nonupstream minimum-length/lock policies as explicit options.
+- Connecting Ripple's actual SatinColumn provider still requires a separate owner's API extension. Current
+  public plotPointsOnRails applies pull compensation/0.01mm clamping, so it cannot replace a raw 0.01px sampler.
+  Required APIs: **raw rail sampler accepting spacingPx·offsetPx·offsetProportional·useRandom**,
+  flattened sections after direction/precision/rung splitting, and subpath→rail/rung classification results.
+- Provider centerLine is the first coordinate of raw pairs with `offsetProportional=(-0.5,-0.5)`, without running resampling.
+  rungPairs are end rail pairs of each flattened section, not raw rung endpoints.
+  reverse/swap flags must agree between centerLine/rungPairs and plotPointsOnRails.
+- Do not report complete SVG DOM functionality before SVG input/connector resolution and this satin provider are connected.
 
-### 재현
+### Reproduction
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:assembleDebug
@@ -576,39 +576,39 @@ python3 tools/check_inkstitch_worker.py --general
 # 기능별: --family locks / --family stroke / --family ripple
 ```
 
-게이트 도구가 없는 환경에서는 `--gate-dir`로 **독립 담당자가 제공한** 도구를 지정한다.
-이 helper는 Ink/Stitch를 실행하지 않고 생성된 PES 경로의 매트릭스를 독립 도구에 제출한다.
-일반 모드 PASS가 릴리스 BLOCK을 덮어쓰지 않으며 종료 코드는 릴리스 실패를 그대로 반영한다.
-PES/리포트는 build 또는 /tmp에만 생성하고 바이너리를 커밋하지 않는다.
+Where the gate tool is absent, use `--gate-dir` to specify a tool **provided by the independent owner**.
+This helper does not run Ink/Stitch; it submits matrices of generated PES paths to the independent tool.
+General-mode PASS does not override release BLOCK; the exit code reflects release failure unchanged.
+Generate PES/reports only in build or /tmp; do not commit binaries.
 
 
-### 2026-10-24 최종 검증 기록 (worker)
+### 2026-10-24 final validation record (worker)
 
-- **엔진 379개, 앱 167개 테스트 통과**, `:app:assembleDebug` 성공.
-  신규 `inkstitch` 테스트 101개 포함. 테스트·빌드 로그:
+- **379 engine tests and 167 app tests passed**, `:app:assembleDebug` succeeded.
+  Includes 101 new `inkstitch` tests. Test/build log:
   `/tmp/myembro-worker-final-attributes-tests.log`.
-- `StitchPlanContractTest`의 6개 기존 파일 raw 왕복→PES 바이트 동일 보장은 계속 통과한다.
-- SVG fixture 17개: 잠금 10종+실제 기본값 1개, Stroke 4개, Ripple 2개.
-  Ripple fixture도 실제 요소처럼 기본 시작·끝 `InkLockStitch`를 명시하고 메타데이터를 검사한다.
-- `python3 tools/check_inkstitch_worker.py --general` 실행:
-  **일반 도안 PASS 17/17**, **필수 release BLOCK 17/17, exit 1**.
-  원문 매트릭스·결과·로그: `/tmp/myembro-worker-inkstitch-quality/`.
-  차단 사유는 TEXT_START_SEQUENCE_MISSING 및 일부 START/END_LOCK_MISSING이며,
-  이 실행에서 다른 바이트 구조·좌표·길이·밀도 차단 사유는 보고되지 않았다.
-- 고정 게이트 threshold SHA-256:
+- `StitchPlanContractTest` continues to pass its guarantee of identical PES bytes after raw round trips of 6 existing files.
+- SVG fixtures: 17 total, locks 10 types+1 actual default, Stroke 4, Ripple 2.
+  Ripple fixtures explicitly use default start/end `InkLockStitch` like real elements and check metadata.
+- Ran `python3 tools/check_inkstitch_worker.py --general`:
+  **general designs PASS 17/17**, **required release BLOCK 17/17, exit 1**.
+  Original matrix/results/logs: `/tmp/myembro-worker-inkstitch-quality/`.
+  Blocking reasons were TEXT_START_SEQUENCE_MISSING and some START/END_LOCK_MISSING;
+  this run reported no other byte-structure/coordinate/length/density blocking reasons.
+- Pinned gate threshold SHA-256:
   `313eaf7dd85125d5c0340f9d87b5c14ca6cc9a640faf360214c0d300c2b4bca9`.
-  도구·임계값·pin 해시는 수정하지 않았다. 일반 PASS는 release 차단을 대체하지 않는다.
-- **병합 보류**: 독립 담당 Codex가 비텍스트/원본 잠금에 맞는 판정 정책을 제공해야 한다.
-  Satin provider와 SVG DOM 경계의 통합 대기도 위 메모대로 남아 있다.
+  Tool/thresholds/pin hashes unchanged. General PASS does not replace release blocking.
+- **Merge on hold**: independent owner Codex must provide decision policy appropriate for nontext/upstream locks.
+  Satin provider and SVG DOM boundary integration remain pending as noted above.
 
-| 기능 커밋 | 원본 | 확인 |
+| Feature commit | Upstream | Verification |
 |---|---|---|
-| `dc38aac` 계약·어댑터 | stitch_plan, elements/element, geometry, units | 계약 7개, 수동 SVG 어댑터 smoke 외부 PASS 1/1 |
-| `d4c6776` 잠금·최소 길이·명령·generated bridge | lock_stitch, stitch_plan, color_block, element | 전용 37개, 잠금 SVG 11개; release BLOCK |
-| `63eb068` running/bean/zigzag 샘플러·PRNG | running_stitch, utils/prng | 전용 12개; 실제 요소 SVG 검증은 Stroke와 함께 |
-| `ec620c1` Ripple·클립 그래프 | ripple_stitch, tatami_fill | 전용 29개, SVG 2개; release BLOCK |
-| `26aa2d3` Stroke 파사드 | elements/stroke, elements/element | 전용 13개, SVG 4개; release BLOCK |
-| `a77f591` 기존 생성 경로 연결 | 앱 고유 연결, 위 공통 후처리 | 통합 3개 및 기존 전체 회귀 통과; raw/본문/변환 보존 |
+| `dc38aac` contract/adapter | stitch_plan, elements/element, geometry, units | Contract 7 tests, manual SVG adapter smoke external PASS 1/1 |
+| `d4c6776` locks/minimum lengths/commands/generated bridge | lock_stitch, stitch_plan, color_block, element | Dedicated 37 tests, lock SVG 11 cases; release BLOCK |
+| `63eb068` running/bean/zigzag samplers/PRNG | running_stitch, utils/prng | Dedicated 12 tests; actual element SVG validation with Stroke |
+| `ec620c1` Ripple/clip graph | ripple_stitch, tatami_fill | Dedicated 29 tests, SVG 2 cases; release BLOCK |
+| `26aa2d3` Stroke facade | elements/stroke, elements/element | Dedicated 13 tests, SVG 4 cases; release BLOCK |
+| `a77f591` existing generation-path integration | App-specific integration, common postprocessing above | Integration 3 tests and all existing regressions passed; raw/body/transform preserved |
 
 
 ## S1 개정 — 자동 마무리만 적용 (2026-10-24)
