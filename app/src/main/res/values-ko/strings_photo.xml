@@ -1,7 +1,7 @@
 <resources>
-    <string name="photo_title">사진으로 실루엣</string>
+    <string name="photo_title">사진으로 자수</string>
     <string name="photo_from_photo">사진으로</string>
-    <string name="photo_from_photo_hint">사진을 한 색 실루엣으로</string>
+    <string name="photo_from_photo_hint">사진을 실루엣 또는 외곽선 자수로</string>
     <string name="photo_back">뒤로</string>
     <string name="photo_step">%1$d / 3</string>
     <string name="photo_crop_title">고르고, 틀에 맞추세요</string>
@@ -44,4 +44,10 @@
     <string name="photo_stitches_failed">윤곽은 찾았지만 땀을 만들지 못했습니다. 디테일을 낮추거나 단순한 부분을 잘라 주세요.</string>
     <string name="photo_timed_out">땀 생성 시간이 초과됐습니다. 디테일을 낮추거나 더 작은 부분을 잘라 주세요.</string>
     <string name="photo_estimate_result">생성 예상 약 10초. 이미지에 따라 달라지며 30초 초과 시 디테일을 낮춰 주세요.</string>
+    <string name="photo_style_silhouette">실루엣</string>
+    <string name="photo_style_outline">외곽선</string>
+    <string name="photo_outline_title">한 색 외곽선</string>
+    <string name="photo_outline_file_stem">photo_outline</string>
+    <string name="photo_outline_name">사진외곽선</string>
+    <string name="photo_estimate_outline">외곽선 생성 예상 약 2초. 이미지와 기기에 따라 달라집니다.</string>
 </resources>

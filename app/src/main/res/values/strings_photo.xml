@@ -1,7 +1,7 @@
 <resources>
-    <string name="photo_title">Photo to silhouette</string>
+    <string name="photo_title">Photo to embroidery</string>
     <string name="photo_from_photo">From a photo</string>
-    <string name="photo_from_photo_hint">Turn a photo into a single-color silhouette</string>
+    <string name="photo_from_photo_hint">Turn a photo into a silhouette or outline</string>
     <string name="photo_back">Back</string>
     <string name="photo_step">%1$d / 3</string>
     <string name="photo_crop_title">Choose and crop</string>
@@ -44,4 +44,10 @@
     <string name="photo_stitches_failed">Outlines were found, but stitches could not be generated. Lower detail or try a simpler crop.</string>
     <string name="photo_timed_out">Stitch generation took too long. Lower detail or crop a smaller area.</string>
     <string name="photo_estimate_result">Generation estimate: about 10 seconds. Time varies; after 30 seconds, try lower detail.</string>
+    <string name="photo_style_silhouette">Silhouette</string>
+    <string name="photo_style_outline">Outline</string>
+    <string name="photo_outline_title">Single-color outline</string>
+    <string name="photo_outline_file_stem">photo_outline</string>
+    <string name="photo_outline_name">Photo outline</string>
+    <string name="photo_estimate_outline">Outline estimate: about 2 seconds. Time varies by image and device.</string>
 </resources>

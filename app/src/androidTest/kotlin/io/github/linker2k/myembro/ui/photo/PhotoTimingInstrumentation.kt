@@ -12,7 +12,8 @@ import java.io.File
 class PhotoTimingInstrumentation : Instrumentation() {
     private var privateInput=false
     private var onlyPreview=false
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); privateInput=arguments?.getString("input")?.startsWith("local-private")==true; onlyPreview=arguments?.getString("input")=="local-private-preview"; start() }
+    private var outlineMode=false
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); privateInput=arguments?.getString("input")?.startsWith("local-private")==true; onlyPreview=arguments?.getString("input")=="local-private-preview"; outlineMode=arguments?.getString("mode")=="outline"; start() }
     override fun onStart() {
         try {
             val out=File(targetContext.filesDir,"photo-timing").apply { mkdirs() }
@@ -53,7 +54,7 @@ class PhotoTimingInstrumentation : Instrumentation() {
                 return
             }
             val log=StringBuilder()
-            for(filtered in listOf(false,true)) {
+            for(filtered in if(outlineMode) listOf(true) else listOf(false,true)) {
                 val start=System.nanoTime()
                 val dimensions=BitmapFactory.Options().apply { inJustDecodeBounds=true }
                 BitmapFactory.decodeFile(file.path,dimensions)
@@ -77,7 +78,11 @@ class PhotoTimingInstrumentation : Instrumentation() {
                 val outline=RedworkPipeline.trace(192,192,simplified,99.9,0,thread,if(filtered) .5 else 0.0,128,checkpoint=progress)
                 log.append("contours=${outline.contourCount}\n")
                 try {
-                    val result=RedworkPipeline.generate(outline,thread,photoMode=filtered,checkpoint=progress)
+                    val result=RedworkPipeline.generate(outline,thread,photoMode=filtered,style=if(outlineMode) io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle.OUTLINE else io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle.SILHOUETTE,checkpoint=progress)
+                    log.append("jump_before_mm=${result.pattern.metadata["myembro.photo.jump_before_mm"]} jump_after_mm=${result.pattern.metadata["myembro.photo.jump_after_mm"]}\n")
+                    val report=io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(result.copyPesBytes(),
+                        options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED))
+                    log.append("blockers=${report.findings.count { it.severity==io.github.linker2k.myembro.engine.sewout.Severity.BLOCKER }}\n")
                     log.append("$stage ms=${(System.nanoTime()-tick)/1e6} stitches=${result.pattern.stitchCount}\n")
                 } catch (failure:IllegalArgumentException) {
                     log.append("generation_failed=${failure.message?.substringBefore(":")}\n")

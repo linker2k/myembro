@@ -94,20 +94,26 @@ object RedworkPipeline {
             contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width))
     }
 
-    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, checkpoint: (String) -> Unit = {}): RedworkResult {
+    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, checkpoint: (String) -> Unit = {}): RedworkResult {
         checkpoint("stitches")
         val paths = outline.paths
-        // Convert SVG-pixel contours to the native 0.1mm PolygonRegion contract.
-        // Even-odd preserves background holes and foreground islands without a new heuristic.
-        val region = PolygonRegion.fromPaths(paths.flatMap { path ->
-            // Photo output is quantized to 0.1mm by PES. Avoid sub-quantum tessellation
-            // in the fill routing graph; the generic port path retains its existing tolerance.
-            SvgPath.flatten(path, tolerance = if(photoMode) Units.mmToPixels(0.1) else 0.01).map { line ->
-                Polyline(line.points.map { RegionPoint(it.x * 10 / Units.mmToPixels(1.0),
-                    it.y * 10 / Units.mmToPixels(1.0)) }, true)
-            }
-        }, FillRule.EVEN_ODD)
-        val groups = DefaultTatami.stitchGroups(region, thread)
+        var route: PhotoOutline.Route? = null
+        val groups = if(style==PhotoStyle.OUTLINE) {
+            route=PhotoOutline.route(PhotoOutline.paths(outline))
+            PhotoOutline.groups(route,thread)
+        } else {
+            // Convert SVG-pixel contours to the native 0.1mm PolygonRegion contract.
+            // Even-odd preserves background holes and foreground islands without a new heuristic.
+            val region = PolygonRegion.fromPaths(paths.flatMap { path ->
+                // Photo output is quantized to 0.1mm by PES. Avoid sub-quantum tessellation
+                // in the fill routing graph; the generic port path retains its existing tolerance.
+                SvgPath.flatten(path, tolerance = if(photoMode) Units.mmToPixels(0.1) else 0.01).map { line ->
+                    Polyline(line.points.map { RegionPoint(it.x * 10 / Units.mmToPixels(1.0),
+                        it.y * 10 / Units.mmToPixels(1.0)) }, true)
+                }
+            }, FillRule.EVEN_ODD)
+            DefaultTatami.stitchGroups(region, thread)
+        }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
         // Fit *finished* coordinates, including locks/travel, to the supplied exclusive hoop span.
@@ -121,7 +127,11 @@ object RedworkPipeline {
             y=kotlin.math.round((it.y-minY)*factor).toInt()-kotlin.math.floor((maxY-minY)*factor/2).toInt()) }
             else bounds
         val pattern = EmbPattern(stitches, finished.threads,
-            finished.metadata + ("myembro.fill.backend" to "inkstitch-default-tatami-underlay"), finished.warnings)
+            finished.metadata + mapOf(
+                "myembro.fill.backend" to if(style==PhotoStyle.OUTLINE) "inkstitch-bean-outline" else "inkstitch-default-tatami-underlay",
+                "myembro.photo.style" to style.name,
+            ) + (route?.let { mapOf("myembro.photo.jump_before_mm" to Units.pixelsToMm(it.before).toString(),
+                "myembro.photo.jump_after_mm" to Units.pixelsToMm(it.after).toString()) } ?: emptyMap()), finished.warnings)
         checkpoint("stitches_ready=${pattern.stitchCount}")
         checkpoint("pes")
         return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesVersion.V6))
