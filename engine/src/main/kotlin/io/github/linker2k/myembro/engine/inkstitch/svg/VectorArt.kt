@@ -238,24 +238,38 @@ object VectorArt {
         val groups = ArrayList<StitchGroup>()
         val parts = ArrayList<Part>()
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
+        val toMm = org.locationtech.jts.geom.util.AffineTransformation.translationInstance(-cx, -cy).scale(scale, scale)
+        /**
+         * An area after occlusion: each visible piece is classified by the shared rule. Satin pieces
+         * use [RegionSatin] (letter's centerline satin path); tatami pieces are one Ink/Stitch fill;
+         * running-width slivers are dropped, as they lie under later shapes' edges.
+         */
         fun tatami(index: Int, role: String, area: Geometry, thread: EmbThread, widthMm: Double, sourceRgb: Int) {
             val later = footprints.drop(index + 1)
             val visible = if (later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
             val pieces = (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()
-                .filter { rules.classify(it, scale) != StitchTypeRule.Type.RUNNING }
-            if (pieces.isEmpty()) return
-            val paths = pieces.flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
+                .groupBy { rules.classify(it, scale) }
+            val satin = pieces[StitchTypeRule.Type.SATIN].orEmpty().filter { piece ->
+                val made = RegionSatin.groups(toMm.transform(piece), { x, y -> Point(Units.mmToPixels(x), Units.mmToPixels(y)) }, thread)
+                    ?: return@filter false // no complete satin: keep the piece as tatami
+                groups += made
+                true
+            }
+            if (satin.isNotEmpty()) parts += Part(index, role, StitchTypeRule.Type.SATIN, thread, widthMm, sourceRgb,
+                StitchTypeRule.widths(UnaryUnionOp.union(satin), 1 / scale))
+            val fill = pieces[StitchTypeRule.Type.TATAMI].orEmpty() + (pieces[StitchTypeRule.Type.SATIN].orEmpty() - satin.toSet())
+            if (fill.isEmpty()) return
+            val paths = fill.flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
                 .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
             val element = InkFill(paths, FillRule.EVEN_ODD, thread.color, InkStitchParams(emptyMap()))
             groups += FontTatami.stitchGroups(element, { q -> px(q.x, q.y) }, emptyMap(), thread, previous())
-            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb, StitchTypeRule.widths(area, 1 / scale))
+            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb, StitchTypeRule.widths(UnaryUnionOp.union(fill), 1 / scale))
         }
         art.shapes.forEachIndexed { index, shape ->
             shape.fill?.let { rgb ->
                 val thread = nearestThread(rgb)
                 val area = fillGeometry(shape)
                 val w = StitchTypeRule.maxWidth(area) * scale
-                // A satin-width area still needs a centerline/rail solver (next unit), so it is tatami for now.
                 if (rules.classify(area, scale) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
                 else {
                     groups += Stroke(subpaths(shape).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
