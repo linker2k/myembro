@@ -1,6 +1,6 @@
 # 개인 그림 → 도안: 첫 엔진 시험 (2026-10-24)
 
-상태: **계획 + 테스트 전용 최소 시험, 앱 미연결**. 기준 main `98ac4ac`.
+현재 상태: **사진/그림 화면의 컬러 모드에 연결**. 검증·스크린샷·재현은 [컬러 그림 QA](qa/color-drawing/README.md). 아래는 main `98ac4ac`에서 시작한 초기 시험과 후속 변경 기록이다.
 첫 단위 15분: 기존 포트 연결, 직접 만든 PNG 2개, 실행 가능한 측정/게이트.
 개인 그림·이모티콘은 사용자 기기 안에서만 처리한다. 개인 입력·결과를 서버로 전송하거나 앱/테스트에 번들하지 않는다. 아래 두 입력은 스크립트가 직접 그린 원본 합성 그림이며 외부 캐릭터·사진을 사용하지 않았다.
 
@@ -128,3 +128,8 @@ IMAGE_PROBE_LOGO_OUT=/tmp/myembro-port-out/editor/image-to-design ./gradlew :eng
 ```
 
 실행 출력: `BUILD SUCCESSFUL in 19s`; 엔진 tests=724, failures=0, errors=0. 외부 도구: `PASS 3/3 cases passed`. 최종 로그 `/tmp/image-to-design-canvas-rule.log`, `/tmp/image-to-design-max-gate.log`; 측정 원본 `results.json`, `logo-widths.csv`는 출력 디렉터리에 있다. 앞 절의 모델 API 단독 교체 시험과 중간 측정은 이 최종 결과를 대체하지 않는다.
+
+
+## 앱 연결 단위
+
+이후 `ColorDrawingPipeline`으로 시험의 생성 경로를 프로덕션 JVM API로 옮기고, 홈 사진/그림의 컬러 모드에 연결했다. 앞 절의 앱 미연결 상태/부분 알파 거절은 당시 시험 상태이며 현재 상태는 [컬러 그림 QA](qa/color-drawing/README.md)를 따른다. 개인 이미지 로컬 처리 원칙은 유지한다.

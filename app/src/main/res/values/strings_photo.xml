@@ -1,7 +1,7 @@
 <resources>
-    <string name="photo_title">Photo to embroidery</string>
-    <string name="photo_from_photo">From a photo</string>
-    <string name="photo_from_photo_hint">Turn a photo into a silhouette or outline</string>
+    <string name="photo_title">Photo / drawing to embroidery</string>
+    <string name="photo_from_photo">From a photo / drawing</string>
+    <string name="photo_from_photo_hint">Turn a photo or drawing into silhouette, outline or color embroidery</string>
     <string name="photo_back">Back</string>
     <string name="photo_step">%1$d / 3</string>
     <string name="photo_crop_title">Choose and crop</string>
@@ -53,4 +53,13 @@
     <string name="photo_outline_file_stem">photo_outline</string>
     <string name="photo_outline_name">Photo outline</string>
     <string name="photo_estimate_outline">Outline estimate: about 2 seconds. Time varies by image and device.</string>
+    <string name="photo_style_color">Color drawing</string>
+    <string name="photo_color_title">Color drawing · 2–6 colors</string>
+    <string name="photo_color_count">Colors · %1$d</string>
+    <string name="photo_color_hint">Transparent pixels are not sewn. For opaque pictures, the top-left color is the background. Threads are matched automatically to the Brother 64-color chart.</string>
+    <string name="photo_threads_title">Threads needed · Brother</string>
+    <string name="photo_thread_row">%1$s · %2$s</string>
+    <string name="photo_color_file_stem">color_drawing</string>
+    <string name="photo_color_failed">No sewable color regions remain. Try a transparent PNG or a simple drawing with background at the top-left.</string>
+    <string name="photo_color_preview_accessibility">Color drawing separation preview</string>
 </resources>
