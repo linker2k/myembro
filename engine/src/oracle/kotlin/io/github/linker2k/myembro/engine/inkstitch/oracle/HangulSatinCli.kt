@@ -7,6 +7,10 @@ import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
 import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
 import io.github.linker2k.myembro.engine.inkstitch.utils.Point
 import io.github.linker2k.myembro.engine.io.*
+import io.github.linker2k.myembro.engine.geometry.SvgPath
+import io.github.linker2k.myembro.engine.geometry.Affine2D
+import java.util.Locale
+import java.security.MessageDigest
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.model.*
 import io.github.linker2k.myembro.engine.sewout.PecViewportCheck
@@ -33,16 +37,54 @@ object HangulSatinCli {
         val thin=AutoTraceThinning.thin(w,h,pixels)
         val paths=AutoTraceCenterline.trace(w,h,thin)
         check(paths.isNotEmpty())
-        val normalized=paths.map { path ->
+        val pixelNormalized=paths.map { path ->
             var points=path.points.map { Point(it.x/pixelsPerMm*PIXELS_PER_MM,
                 (h-1-it.y)/pixelsPerMm*PIXELS_PER_MM) }
             if(!path.open) points=points+points.first()
             points
         }
+        val fitFile=File(input,"fit.json")
+        val fit=fitFile.takeIf { it.exists() }?.let { Json.parseToJsonElement(it.readText()).jsonObject }
+        val fitProvenance=if(fit!=null) {
+            fun sha(file:File)=MessageDigest.getInstance("SHA-256").digest(file.readBytes())
+                .joinToString("") { "%02x".format(it.toInt() and 255) }
+            val manifest=Json.parseToJsonElement(File(input,"fit-provenance.json").readText()).jsonObject
+            check(manifest.getValue("commit").jsonPrimitive.content=="1a232b27818a46a05cd25edec09e2f77c4e9ac01")
+            check(manifest.getValue("input_sha256").jsonPrimitive.content==sha(File(input,"input.pgm"))) { "Stale fit input" }
+            check(manifest.getValue("output_sha256").jsonPrimitive.content==sha(fitFile)) { "Changed fit output" }
+            check(manifest.getValue("repeat_exact").jsonPrimitive.boolean)
+            manifest
+        } else null
+        val fitPaths=fit?.getValue("paths")?.jsonArray
+        val normalized=if(fitPaths!=null) fitPaths.map { element ->
+            val segments=element.jsonObject.getValue("segments").jsonArray.map { it.jsonObject }
+            fun value(segment:JsonObject,index:Int,axis:Int):String {
+                val coord=segment.getValue("v").jsonArray[index].jsonArray[axis].jsonPrimitive.float
+                // output-svg.c writes y=height-y and C %g (six significant digits).
+                val number=if(axis==1) (h.toFloat()-coord).toFloat() else coord
+                return String.format(Locale.ROOT,"%.6g",number)
+            }
+            val d=buildString {
+                val first=segments.first()
+                append("M ${value(first,0,0)} ${value(first,0,1)} ")
+                for(segment in segments) when(segment.getValue("degree").jsonPrimitive.int) {
+                    1 -> append("L ${value(segment,3,0)} ${value(segment,3,1)} ")
+                    3 -> append("C ${value(segment,1,0)} ${value(segment,1,1)} ${value(segment,2,0)} ${value(segment,2,1)} ${value(segment,3,0)} ${value(segment,3,1)} ")
+                    else -> error("Unsupported original AutoTrace spline degree")
+                }
+            }
+            val scale=PIXELS_PER_MM/pixelsPerMm
+            SvgPath.flatten(d,Affine2D.scale(scale,scale),tolerance=0.1).single().points.map { Point(it.x,it.y) }
+        } else pixelNormalized
+        val curveContract=if(fit!=null) "Unmodified original AutoTrace C fit; original output-svg %g serialization; existing SvgPath flatten 0.1 SVG px"
+            else "Original ordered pixel paths; trace only, no fit and no PES"
         val pathReport=buildJsonObject {
             put("input",metadata);put("path_count",paths.size)
-            put("curve_contract","AutoTrace original pixel paths as explicit LineStrings; no spline smoothing or inferred width")
-            put("paths",buildJsonArray { paths.forEach { p -> add(buildJsonObject {
+            put("curve_contract",curveContract)
+            put("converter_paths_svg_px",buildJsonArray { normalized.forEach { path -> add(buildJsonArray {
+                path.forEach { q -> add(buildJsonArray { add(q.x);add(q.y) }) }
+            }) } })
+            put("original_pixel_paths",buildJsonArray { paths.forEach { p -> add(buildJsonObject {
                 put("open",p.open);put("points",buildJsonArray { p.points.forEach { q -> add(buildJsonArray { add(q.x);add(q.y) }) } })
             }) } })
         }
@@ -65,13 +107,15 @@ object HangulSatinCli {
             }
             g.dispose();ImageIO.write(image,"png",file)
         }
-        preview(null,"centerline only; width not selected",File(stem.path+"-centerline.png"))
-        if(args[2]=="trace") { println("CENTERLINE paths=${paths.size}; width required before satin/PES");return }
+        preview(null,if(fit!=null) "original AutoTrace fitted centerline" else "pixel centerline only",File(stem.path+"-centerline.png"))
+        if(args[2]=="trace") { println("TRACE_ONLY fitted=${fit!=null} paths=${paths.size}; no PES export requested");return }
+        check(fit!=null) { "Original AutoTrace fit.json required before satin/PES; pixel-staircase output is not exported" }
         val widthMm=args[2].toDouble();require(widthMm.isFinite() && widthMm>0)
         val groups=mutableListOf<StitchGroup>();val black=EmbThread(0xff000000.toInt(),"Black 40wt")
-        for((index,path) in normalized.withIndex()) {
-            val started=if(!paths[index].open) StrokeToSatin.setFirstNode(path,widthMm*PIXELS_PER_MM) else path
-            val section=checkNotNull(StrokeToSatin.convertPathToSatin(started,widthMm*PIXELS_PER_MM)) { "No satin section for path $index" }
+        for(path in normalized) {
+            val closed=path.first()==path.last()
+            val started=if(closed) StrokeToSatin.setFirstNode(path,widthMm*PIXELS_PER_MM) else path
+            val section=checkNotNull(StrokeToSatin.convertPathToSatin(started,widthMm*PIXELS_PER_MM)) { "No satin section for fitted path" }
             val filtered=StrokeToSatin.filteredRungs(section)
             groups+=filtered.column(color=black).toStitchGroups(groups.lastOrNull()?.stitches?.lastOrNull())
         }
@@ -97,7 +141,7 @@ object HangulSatinCli {
         preview(decoded,"satin width ${widthMm}mm (decoded PES)",File(stem.path+".png"),
             candidate.bounds!!.minX/10.0,candidate.bounds!!.minY/10.0)
         val report=buildJsonObject {
-            put("input",metadata);put("stroke_width_mm",widthMm);put("curve_contract",pathReport.getValue("curve_contract"))
+            put("input",metadata);put("fit_provenance",fitProvenance!!);put("stroke_width_mm",widthMm);put("curve_contract",pathReport.getValue("curve_contract"))
             put("paths",paths.size);put("stitches",decoded.stitchCount);put("trims",decoded.trimCount);put("colors",decoded.threads.size)
             put("min_x",viewport.minX);put("min_y",viewport.minY);put("max_x",viewport.maxX);put("max_y",viewport.maxY)
             put("header_width",viewport.headerWidth);put("header_height",viewport.headerHeight)

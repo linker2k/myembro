@@ -178,3 +178,48 @@ stroke_width를 요구한다. 원본에 없는 평균/중간값 폭 매핑은 �
 재현 명령은 `tools/hangul_satin/README.md`에 기록했다. 폭 회신 뒤
 `-PstrokeWidthMm=<지정값>`으로 실행하면 요청한 `/tmp/myembro-sewtest/krs/KRSAT1.PES`
 생성과 실제 바이트 검사·PNG 단계로 이어진다.
+
+## letter 인계 단위 3 — 원본 fit 적용 KRSAT1 생성
+
+총괄이 이번 시험의 상수 획 폭을 **1.13mm**로 확정했다. 근거는 model
+GlyphStrokeWidths의 Noto Sans KR400·15mm 실측 median(정1.126, 민1.125mm)이며
+자동 선택/일반 글꼴 폭 추정 규칙으로 확장하지 않는다.
+
+시험은 **수정하지 않은 원본 AutoTrace C fit**를 거쳤다. `tools/autotrace/fit_oracle.c`는
+thin-image→pxl-outline→`fit.c:fitted_splines`를 호출만 하며 스무딩 알고리즘을 새로
+쓰지 않는다. `new_fitting_opts` 기본값에 centerline=TRUE만 설정했다. preserve_width는
+기본FALSE 유지(새틴 폭은 별도 확정 상수). curve/spline/vector/epsilon-equal 보조 C도
+같은 `1a232b27818a46a05cd25edec09e2f77c4e9ac01`의 원문이다.
+**fit의 Kotlin 이식·앱 연결은 아직 완료하지 않았으며**, C 실행은 이 로컬 시험/
+향후 비교 골든 생성 전용이다. Ink/Stitch Python은 실행하지 않았고 의존성 설치도 없다.
+
+원본 fit 결과: **9경로·21세그먼트·3차 곡선14개**, 재실행 byte exact.
+입력·각 C 파일/호출기/실행파일·결과 SHA와 컴파일 옵션을
+`/tmp/myembro-sewtest/krs/fit-provenance.json`에 남겼다.
+Kotlin은 원본 line/cubic controls를 읽고 `output-svg.c`의 float y=height-y와
+6자리 `%g` 형식 후 기존 SvgPath.flatten의 글꼴 파서 정밀도0.1 SVG px로
+평탄화한다. 곡선 subdivision일 뿐 자체 smoothing은 아니다. 원본 fit의 입력/출력
+해시를 검사하며, fit.json이 없으면 픽셀 계단 경로로 PES를 만드는 fallback은 금지한다.
+
+**생성물** `/tmp/myembro-sewtest/krs/KRSAT1.PES` (새 이름,2,298bytes),
+decoded-PES PNG `KRSAT1.png`, 원본 fit 중심선 `KRSAT1-centerline.png`,
+검사 출력 `KRSAT1-check.txt`, gate JSON/text `KRSAT1-gate.{json,txt}`.
+폰트 입력 ink-height15mm와 실제 바늘 경계 **26.8×14.4mm**는 별도 보고한다.
+627땀·8트림·검정40wt 한 색, 자동 새틴/채우기 분기는 넣지 않았다.
+
+| 실제 바이트 검사 | 결과 |
+|---|---|
+| P1/P2 원점·정수범위 | min(0,0), max(268,144), HoopSpec100×100mm·시험60×60mm 안 |
+| P3 헤더 |268×144, 실제 범위와 정확히 일치 |
+| P4 0길이 바늘/JUMP |0개 |
+| P5 같은 바늘 연속 |최대1회 |
+| P6 시작/끝·트림 전/후 잠금 누락 |모두0개, S1 half_stitch |
+| P7 0.5mm 셀 밀집 |최대6회 |
+| P8 최대 바늘 길이 |2.4186773245mm |
+
+`quality-gate check --text --style satin` tool v7: **PASS1/1**, 코드/threshold는
+변경하지 않았다. 이 자동 코드 판정과 사용자 실기 승인은 별개이며 후자는 대기다.
+PES SHA256: `c26ff1bb5fdbee8c46397c2fcaba1800aa27da3b98b9b0d49d13a340fd202e79`.
+전체 `./gradlew check` 통과(마지막 run13s). 원본 fit 생성기/재현 명령은
+`tools/hangul_satin/README.md` 참조. KRSAT1 재생성으로 덮어쓰지 말고 다음
+실기 파일은 새 stem을 사용한다.

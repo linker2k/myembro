@@ -1,34 +1,40 @@
-# Explicit Korean centerline satin trial
+# Korean centerline satin trial — KRSAT1
 
-This is a local trial runner, not the app's automatic lettering method.
-It never executes Ink/Stitch or AutoTrace native code.
+Explicit local trial, not the app's automatic lettering method. Ink/Stitch source is never
+executed. For this trial only, the unmodified AutoTrace C reference supplies the original
+**fit** output; its Kotlin fit port is not completed or bundled into the app.
 
-1. `python3 tools/hangul_satin/prepare-raster.py`
-   reads the bundled OFL Noto Sans KR variable font, sets weight **400** explicitly,
-   and writes the requested `정민` ink-height **15mm** raster and source hashes.
-2. `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:hangulSatinSample`
-   runs the existing Kotlin thinning and pixel-centerline ports. Default `trace`
-   mode writes only `KRSAT1-centerline.{json,png}` and creates **no PES**.
-3. After the trial's explicit constant stroke width is supplied, run the same task
-   with `-PstrokeWidthMm=WIDTH_IN_MM`. There is intentionally no guessed default.
-   The runner uses the existing Ink/Stitch `StrokeToSatin` and `SatinColumn` ports,
-   the S1 half_stitch/P4 pipeline and the default PES P1–P8 checks.
-   Width is not an automatic classification or a measured/validated font range.
-4. Successful generation writes `/tmp/myembro-sewtest/krs/KRSAT1.PES`, `.png` and
-   `.json`. The PNG is drawn from decoded PES. Checks require one black 40wt
-   thread, <=60x60mm, origin (0,0), no zero needle/jump, exact header bounds and
-   the normal output safety gate. No check is relaxed. Existing PES names are
-   rejected; specify `-PhangulOutput=/tmp/.../NEWNAME` for subsequent trials.
+```sh
+python3 tools/hangul_satin/prepare-raster.py
+python3 tools/hangul_satin/original-fit.py
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:hangulSatinSample -PstrokeWidthMm=1.13
+/tmp/myembro-quality-gate/quality-gate check --text --style satin --json /tmp/myembro-sewtest/krs/KRSAT1-gate.json /tmp/myembro-sewtest/krs/KRSAT1.PES
+```
 
-Curve contract: the original ordered pixel paths are valid explicit LineString
-inputs for convert-to-satin; no invented Bezier fitting/smoothing is applied.
-Their Cartesian y coordinates are converted to the existing SVG y-down units.
-This is not a claim that AutoTrace `fit.c` spline output is reproduced.
+The raster is bundled OFL Noto Sans KR variable font, explicitly weight **400**, text
+`정민`, ink-height **15mm**. Width **1.13mm** is the coordinator's approved constant,
+based on model GlyphStrokeWidths medians: 정1.126mm, 민1.125mm. No mean/median rule,
+automatic satin/fill selection, or substitute smoothing algorithm is implemented.
 
-Width contract: AutoTrace's optional distance map gives local radius values;
-`fit.c` applies neighborhood maxima and stores a weighted z coordinate. Its
-`output-svg.c` does not serialize a per-path constant stroke-width. Ink/Stitch
-`convert_path_to_satin` instead requires an explicit **constant** stroke_width.
-No original conversion between those two widths has been established here, so
-mean/median/minimum width is not substituted. The caller must specify the trial
-width. See `docs/hangul-centerline.md` for source commits and pending validation.
+`original-fit.py` verifies the clean source commit and uses the existing local C compiler,
+GLib headers/runtime. It installs nothing. AutoTrace thin-image → pxl-outline →
+`fit.c:fitted_splines` run unchanged, `new_fitting_opts` defaults plus `centerline=TRUE`,
+`preserve_width=FALSE` (constant width is separately specified). Two executions must be
+byte identical. Source/tool/binary/input/output hashes and build command are recorded in
+`fit-provenance.json`. Noto trial inputs and outputs stay in /tmp, never test resources.
+
+Kotlin reads the original line/cubic controls, follows output-svg.c's float y=height-y
+and six-significant-digit C `%g` serialization, then uses the existing `SvgPath.flatten`
+0.1 SVG-pixel tolerance (same as the font parser). This is curve subdivision, not smoothing.
+It reuses StrokeToSatin → SatinColumn → S1 half_stitch/P4 → default PES writer.
+Stale/modified fit inputs are rejected by hashes. Without fit.json, only trace mode is
+allowed; no pixel-staircase PES fallback exists.
+
+The writer requires P1–P8. The runner also checks a single black 40wt thread, <=60×60mm,
+origin(0,0), no zero needle/jump, and exact header extents. Existing output PES names are
+rejected: use `-PhangulOutput=/tmp/.../NEWNAME` for the next physical trial.
+
+Outputs: `/tmp/myembro-sewtest/krs/KRSAT1.{PES,png,json}`, gate JSON/text, original
+fit/provenance and fitted-centerline PNG. The main PNG is rendered from **decoded PES**.
+The requested font ink-height is15mm; actual needle extents are26.8×14.4mm and are
+reported separately. Automated gate PASS is not user sewout acceptance.
