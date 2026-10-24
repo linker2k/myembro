@@ -1,0 +1,52 @@
+{
+  "initialProject": {
+    "builtinDesign": "myembro_logo.pes",
+    "objectId": "logo",
+    "frameId": "H100"
+  },
+  "calls": [
+    {
+      "name": "transform_objects",
+      "arguments": {
+        "transactionId": "scenario",
+        "objectIds": ["logo"],
+        "deltaXMm": 1,
+        "deltaYMm": 2,
+        "scaleFactor": 1,
+        "rotationDeg": 90
+      }
+    },
+    {
+      "name": "recolor_object",
+      "arguments": {
+        "transactionId": "scenario",
+        "objectId": "logo",
+        "threadIndex": 0,
+        "threadColor": "#B5492A"
+      }
+    },
+    {
+      "name": "prepare_pes",
+      "arguments": {
+        "projectRevision": "$revision",
+        "machineId": "se700",
+        "frameId": "H100",
+        "pesVersion": "V6"
+      }
+    },
+    {
+      "name": "sewout_check",
+      "arguments": {
+        "projectRevision": "$revision",
+        "pesAssetId": "",
+        "machineId": "se700",
+        "frameId": "H100"
+      }
+    }
+  ],
+  "export": {
+    "machineId": "se700",
+    "frameId": "H100",
+    "pesVersion": "V6"
+  }
+}

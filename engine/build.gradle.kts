@@ -204,3 +204,21 @@ tasks.register<JavaExec>("measureSingleLinePasses") {
         providers.gradleProperty("passText").orElse("Yeonwoo").get(),
         providers.gradleProperty("passHeight").orElse("10").get())
 }
+
+// One authoritative wire catalog, bundled unchanged for Android-free validation.
+tasks.processResources {
+    from(rootProject.file("docs/agent/tools.json")) { into("agent") }
+}
+tasks.register<JavaExec>("runAgentScenario") {
+    group = "verification"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.agent.AgentScenarioCli")
+    workingDir = rootProject.projectDir
+    args(providers.gradleProperty("agentScenario").orElse("").get(), providers.gradleProperty("agentOutput").orElse("").get())
+    if (providers.gradleProperty("agentDryRun").orElse("false").get().toBooleanStrict()) args("--dry-run")
+}
+
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/samples/sample_heart_running.pes")) { into("agent/builtins") }
+    from(rootProject.file("app/src/main/assets/designs/myembro_logo.pes")) { into("agent/builtins") }
+}
