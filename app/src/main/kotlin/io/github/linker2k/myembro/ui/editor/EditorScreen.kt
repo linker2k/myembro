@@ -83,23 +83,26 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 if (vm.message == message) vm.message = null
             }
         }
-        val outside = if (vm.project.objects.size < 20) {
-            remember(vm.project, vm.gestureInProgress, vm.sewingPositions) { vm.hoopOverflowVisible }
-        } else {
-            val project = vm.project
-            val gesturing = vm.gestureInProgress
-            val positions = vm.sewingPositions
-            val multiPosition = vm.multiPositionFrame != null
-            val value by produceState(false, project, gesturing, positions, multiPosition) {
-                value = withContext(Dispatchers.Default) {
-                    !gesturing && (project.exceedsHoop() || (multiPosition && positions.isNotEmpty() && project.positionFit(positions).outsideIds.isNotEmpty()))
-                }
+        val snapshot=vm.project
+        val gesturing=vm.gestureInProgress
+        val rendering=vm.rendering
+        val positions=vm.sewingPositions
+        val multiPosition=vm.multiPositionFrame!=null
+        val overflow by produceState(false,snapshot,gesturing,rendering,positions,multiPosition) {
+            value=withContext(Dispatchers.Default) {
+                !gesturing && !rendering && (snapshot.exceedsHoop() ||
+                    (multiPosition && positions.isNotEmpty() && snapshot.positionFit(positions).outsideIds.isNotEmpty()))
             }
-            value
         }
+        val outside=!gesturing && !rendering && overflow
         Scaffold(containerColor = colors.background, snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 Column {
+                    if(vm.rendering && !vm.gestureInProgress) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        Text(stringResource(R.string.editor_rebuilding_stitches),Modifier.padding(horizontal=16.dp),
+                            style=MaterialTheme.typography.labelSmall)
+                    }
                     TopAppBar(title = {
                         Column {
                             Text(stringResource(R.string.editor_title), maxLines = 1, overflow = TextOverflow.Ellipsis,

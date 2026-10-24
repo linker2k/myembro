@@ -50,3 +50,11 @@ types; changing an existing signature needs a note in the PR/commit message.
   coordinates are drawn as numbered translucent windows. No SA434 offset is inferred from frame size;
   absent/invalid positions or an absent export callback disable position export. Single PES export still
   rejects a coverage-only hoop. Editable `.myembro` saves preserve unfinished or oversized compositions.
+
+## Transform rendering/cache contract (2026-10-24)
+
+Text geometry is shared across `withTransform/withId/withVisible`; content/style copies invalidate it.
+`TextObject.placedPattern()` caches the original scale-only placement/S1 result and maps rigid poses
+without regenerating stitches. Gesture Canvas draws cached arrays through relative matrices; scale
+render work is deferred 300ms after pointer-up. No serialized field/signature changed. Details and
+exact-output tests: [editor transform performance](qa/editor-transform-performance.md).

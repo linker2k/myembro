@@ -7,14 +7,14 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-internal fun Project.selectionBounds(ids: Set<String>): Bounds? {
-    val bounds = objects.filter { it.visible && it.id in ids }.mapNotNull { it.placedBounds() }
+internal fun Project.selectionBounds(ids: Set<String>, fastPreview: Boolean = false): Bounds? {
+    val bounds = objects.filter { it.visible && it.id in ids }.mapNotNull { if(fastPreview) it.previewBounds() else it.placedBounds() }
     if (bounds.isEmpty()) return null
     return Bounds(bounds.minOf { it.minX }, bounds.minOf { it.minY }, bounds.maxOf { it.maxX }, bounds.maxOf { it.maxY })
 }
 
 /** Scale and rotate about the selection center, preserving sewing order and editable types. */
-internal fun Project.transformGroup(ids: Set<String>, dx: Double, dy: Double, factor: Double, degrees: Double): Project {
+internal fun Project.transformGroup(ids: Set<String>, dx: Double, dy: Double, factor: Double, degrees: Double, fastPreview: Boolean = false): Project {
     if (ids.isEmpty()) return this
     if (factor == 1.0 && degrees == 0.0) {
         if (dx == 0.0 && dy == 0.0) return this
@@ -24,7 +24,7 @@ internal fun Project.transformGroup(ids: Set<String>, dx: Double, dy: Double, fa
                 y = (obj.transform.y + dy).coerceIn(-100000.0, 100000.0)))
         })
     }
-    val bounds = selectionBounds(ids) ?: return this
+    val bounds = selectionBounds(ids,fastPreview) ?: return this
     val cx = (bounds.minX.toDouble() + bounds.maxX) / 2
     val cy = (bounds.minY.toDouble() + bounds.maxY) / 2
     val selected = objects.filter { it.id in ids && it.visible }
@@ -57,8 +57,8 @@ internal fun Project.snapTargets(ids: Set<String>): SnapTargets {
 }
 
 /** Use the unsnapped draft so a series of small motions can escape a magnet. */
-internal fun Project.snapSelection(ids: Set<String>, targets: SnapTargets, tolerance: Double): SnappedSelection {
-    val b = selectionBounds(ids) ?: return SnappedSelection(this, SnapGuides())
+internal fun Project.snapSelection(ids: Set<String>, targets: SnapTargets, tolerance: Double, fastPreview: Boolean = false): SnappedSelection {
+    val b = selectionBounds(ids,fastPreview) ?: return SnappedSelection(this, SnapGuides())
     val area = hoop.sewingArea
     val edge = area.snapBounds
     fun nearest(anchors: List<Double>, lines: List<Double>, min: Int, max: Int,
@@ -82,7 +82,7 @@ internal fun Project.snapSelection(ids: Set<String>, targets: SnapTargets, toler
     val dx = x?.first ?: 0.0
     val dy = y?.first ?: 0.0
     val placed = translated(dx, dy)
-    val rounded = placed.selectionBounds(ids) ?: return SnappedSelection(placed, SnapGuides())
+    val rounded = placed.selectionBounds(ids,fastPreview) ?: return SnappedSelection(placed, SnapGuides())
     // A half-unit object-center snap may round again on placement. Correct only snapped
     // axes inward; a free drag outside must remain outside and warn after pointer-up.
     fun inward(min: Int, max: Int, low: Int, high: Int): Double = when {
@@ -108,4 +108,14 @@ internal fun parseEditorTransform(x: String, y: String, rotation: String, sx: St
     val scaleY = sy.number()?.takeIf { it in 5.0..2000.0 } ?: return null
     return Transform(px * 10, py * 10, r % 360, scaleX / 100 * if (original.scaleX < 0) -1 else 1,
         scaleY / 100 * if (original.scaleY < 0) -1 else 1)
+}
+
+
+/** Conservative transformed local rectangle for pointer previews; no placement/S1 work. */
+internal fun DesignObject.previewBounds(): Bounds? {
+    val b=localPattern().bounds ?: return null
+    val points=listOf(b.minX to b.minY,b.maxX to b.minY,b.maxX to b.maxY,b.minX to b.maxY)
+        .map { (x,y) -> transform.apply(x.toDouble(),y.toDouble()) }
+    return Bounds(kotlin.math.floor(points.minOf { it.first }).toInt(),kotlin.math.floor(points.minOf { it.second }).toInt(),
+        kotlin.math.ceil(points.maxOf { it.first }).toInt(),kotlin.math.ceil(points.maxOf { it.second }).toInt())
 }

@@ -127,7 +127,7 @@ internal fun MiniLayerPanel(vm: EditorViewModel, enabled: Boolean, onAdd: () -> 
 
 @Composable
 private fun LayerThumbnail(obj: DesignObject, modifier: Modifier) {
-    val data = remember(obj) { RenderData(obj.localPattern()) }
+    val data = remember(obj.withTransform(Transform())) { RenderData(obj.localPattern()) }
     val background = MaterialTheme.colorScheme.surfaceContainerLow
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
     Canvas(modifier) {

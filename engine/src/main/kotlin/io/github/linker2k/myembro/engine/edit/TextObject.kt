@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.edit
 
+import kotlin.math.roundToInt
 import io.github.linker2k.myembro.engine.lettering.HersheyFont
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchLettering
@@ -64,7 +65,7 @@ data class TextObject(
         threadWeight = weight, fillOptions = fillOptions.copy(autoDensity = true),
         satinOptions = satinOptions.copy(autoDensity = true),
     )
-    private val pattern: EmbPattern by lazy {
+    private var pattern: Lazy<EmbPattern> = lazy {
         val spacingMm = satinOptions.densityForHeight(heightMm, threadWeight)
         val resolvedSatin = satinOptions.copy(densityMm = spacingMm, autoDensity = false,
             parameters = satinOptions.parameters?.let { if (satinOptions.autoDensity) it.copy(zigzag_spacing_mm = spacingMm) else it })
@@ -89,8 +90,34 @@ data class TextObject(
         }
     }
 
-    override fun localPattern(): EmbPattern = pattern
-    override fun withId(id: String): TextObject = copy(id = id)
-    override fun withTransform(t: Transform): TextObject = copy(transform = t)
-    override fun withVisible(v: Boolean): TextObject = copy(visible = v)
+    private class ScaleCache {
+        private var entry: Pair<Pair<Double,Double>,EmbPattern>? = null
+        @Synchronized fun get(key: Pair<Double,Double>, create: () -> EmbPattern): EmbPattern {
+            entry?.takeIf { it.first==key }?.let { return it.second }
+            return create().also { entry=key to it }
+        }
+    }
+    private var scaleCache = ScaleCache()
+    private fun retainGeometry(copy: TextObject): TextObject = copy.also {
+        it.pattern=pattern; it.scaleCache=scaleCache
+    }
+    override fun localPattern(): EmbPattern = pattern.value
+    override fun withId(id: String): TextObject = retainGeometry(copy(id = id))
+    override fun withTransform(t: Transform): TextObject = retainGeometry(copy(transform = t))
+    override fun withVisible(v: Boolean): TextObject = retainGeometry(copy(visible = v))
+
+    /** Only scale changes replan generated stitches. Rigid placement maps the finished coordinates. */
+    override fun placedPattern(): EmbPattern {
+        val t=transform
+        val scaled=if(t.scaleX==1.0 && t.scaleY==1.0) localPattern() else
+            scaleCache.get(t.scaleX to t.scaleY) {
+                placeDesignPattern(withTransform(Transform(scaleX=t.scaleX,scaleY=t.scaleY)))
+            }
+        if(t.x==0.0 && t.y==0.0 && t.rotationDeg==0.0) return scaled
+        val rigid=Transform(x=t.x,y=t.y,rotationDeg=t.rotationDeg)
+        return io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.mapCoordinates(scaled) { x,y ->
+            val (px,py)=rigid.apply(x.toDouble(),y.toDouble())
+            px.roundToInt() to py.roundToInt()
+        }
+    }
 }
