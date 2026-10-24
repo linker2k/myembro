@@ -208,3 +208,54 @@ Reproduce logo lookup/add/move/export with:
 `DesignToolTest` covers lookup, complete catalog metadata, missing IDs, collision
 rollback, library IDs, source byte ownership/preservation, read-only history and
 imported 20/30/31 density classification using synthetic fixtures only.
+
+## Local emoji preparation and generated art
+
+`list_emoji({query, groupId})` uses the same EmojiCatalog/CatalogEmoji.matches as
+the picker, now in the engine with app type aliases. Empty query/group lists the
+30 bundled entries plus locally downloaded entries. A query searches the full
+catalog (including CLDR Korean names/keywords); an explicit group lists that
+catalog group. Rows carry id, name, nameKo, glyph, groupId, bundled, available,
+downloadRequired and the pinned SHA-256. Listing does not read/download SVG data.
+
+`prepare_emoji({emojiId, frameId, widthMm})` resolves only local verified bytes via
+EmojiResolver. BundledEmojiResolver loads the same shipped catalog/SVGs/MIT and
+CLDR notices; AndroidEmojiResolver calls EmojiRepository.localSvg, which never
+calls the downloading svg() API. Missing local data returns DOWNLOAD_REQUIRED
+with no resultId; unknown IDs, checksum and local read failures return
+EMOJI_NOT_FOUND, ASSET_INTEGRITY_ERROR or EMOJI_READ_FAILED. No tool downloads.
+The normal app picker remains responsible for its existing download flow.
+
+The generation path is unchanged: VectorArt.parseSvg -> VectorArt.render with
+all defaults -> checked PesWriter/SewoutCheck using APP_GENERATED origin. The
+existing pictureWidthRange formula and PhotoSizeSweep-derived 20mm minimum now
+live in the engine; app photo/emoji sliders delegate to them. Aspect comes from
+the painted envelope already used by VectorArt, not SVG viewBox whitespace.
+Out-of-policy widths return WIDTH_OUT_OF_RANGE with minWidthMm/maxWidthMm;
+accepted widths use the picker's existing 0.1mm rounding. No stitch/lock/density
+setting is exposed or changed. Existing writer/sewout blockers remain active.
+
+Successful preparation returns READY, resultId, dimensions, allowed range and
+verdict without editing a Project or history. Keep the dispatcher for the document
+lifetime: its opaque result cache retains the generated EmbPattern, source locks
+and provenance. `add_generated_art({transactionId, resultId, objectId, name})`
+resolves only this cache and submits Add(StitchObject). It does not read a PES back
+or label generated art imported; sourceBytes is null and generated P7=15 remains.
+Unknown/foreign result IDs return RESULT_NOT_FOUND. Preparation/listing may run
+outside a turn; adding requires an edit turn through the shared controller and is
+undoable once. Cached preparations are not persisted or evicted by undo/cancel;
+they confer no export permission. Final prepare_pes retains its PASS-only rule.
+
+Bind Android with `ToolDispatcher(emojiResolver = AndroidEmojiResolver(context),
+fontResolver = AndroidTextFontResolver(context), designResolver =
+AndroidDesignResolver(context))` on the serialized background executor.
+
+`prepare_photo` remains NOT_IMPLEMENTED. Its source field is now attachmentId,
+meaning only a photo already picked/granted in the app; existing frame/style/crop
+choices stay explicit. Raw path, URL, bytes and the former assetId fields fail
+closed under the strict schema. No attachment is opened by this stub.
+
+Verification: `EmojiToolTest` covers heart 20mm prepare/add/prepare_pes PASS,
+minimum/maximum ±0.1mm, Korean search, 30 bundled plus local downloads, no-fetch
+status, missing IDs, integrity/read errors, preparation/history isolation, one-step
+undo and exact source stitches/threads/metadata against the existing VectorArt path.

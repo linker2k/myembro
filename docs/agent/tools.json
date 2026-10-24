@@ -1266,11 +1266,11 @@
     },
     {
       "name": "prepare_photo",
-      "description": "Create a photo embroidery preview with explicit current UI choices.",
+      "description": "Prepare an app-selected photo using only its approved attachmentId as the image source.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "assetId": {
+          "attachmentId": {
             "type": "string"
           },
           "frameId": {
@@ -1331,7 +1331,7 @@
           }
         },
         "required": [
-          "assetId",
+          "attachmentId",
           "frameId",
           "style",
           "detail",

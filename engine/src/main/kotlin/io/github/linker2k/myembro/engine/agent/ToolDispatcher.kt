@@ -19,12 +19,15 @@ class ToolDispatcher(
     assets: Map<String, ByteArray> = emptyMap(),
     private val fontResolver: FontResolver = BundledFontResolver(),
     private val designResolver: DesignResolver = BundledDesignResolver(),
+    private val emojiResolver: EmojiResolver = BundledEmojiResolver(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val heightLimits: LetteringHeightLimits = LetteringHeightLimits.decode(
         checkNotNull(ToolDispatcher::class.java.getResourceAsStream("/lettering/ttf-fill-height-ranges.json")).bufferedReader().use { it.readText() }),
 ) {
     private val frames = frames.mapValues { (_, h) -> h.copy(positions = h.positions.toList()) }
     private val assets = assets.mapValues { it.value.copyOf() }
+    private val preparedArt = mutableMapOf<String, PreparedEmoji>()
+    private val emojiPreparation = EmojiPreparation(emojiResolver)
     data class Result(val project: Project, val output: JsonObject, val pesBytes: ByteArray? = null,
         val preparedCommand: ProjectCommand? = null) {
         val ok get() = output.getValue("ok").jsonPrimitive.boolean
@@ -40,6 +43,27 @@ class ToolDispatcher(
         if (schema.confirmation(name) && !confirmed) return failure("CONFIRMATION_REQUIRED", name)
         val a = arguments.jsonObject
         try {
+            if (name == "list_emoji") {
+                val query=a.string("query");val group=a.string("groupId")
+                val rows=emojiResolver.catalog.emoji.filter { e ->
+                    if(query.isNotBlank()) e.matches(query) else if(group.isNotBlank()) e.group==group else emojiResolver.isAvailable(e)
+                }
+                return Result(project,buildJsonObject {
+                    put("ok",true);put("emoji",JsonArray(rows.map { e -> buildJsonObject {
+                        put("id",e.id);put("name",e.name);put("nameKo",e.ko);put("glyph",e.glyph);put("groupId",e.group)
+                        put("bundled",e.bundled);put("available",emojiResolver.isAvailable(e));put("downloadRequired",!emojiResolver.isAvailable(e));put("sha256",e.sha256)
+                    } }))
+                })
+            }
+            if(name == "prepare_emoji") {
+                val prepared=emojiPreparation.prepare(a.string("emojiId"),frame(a.string("frameId")),a.number("widthMm"))
+                preparedArt[prepared.id]=prepared
+                return Result(project,buildJsonObject {
+                    put("ok",true);put("resultId",prepared.id);put("status","READY");put("downloadRequired",false)
+                    put("widthMm",prepared.widthMm);put("heightMm",(prepared.pattern.bounds?.height ?: 0)/10.0)
+                    put("minWidthMm",prepared.range.start);put("maxWidthMm",prepared.range.endInclusive);put("verdict",prepared.verdict.name)
+                })
+            }
             if (name == "list_builtin_designs" || name == "list_designs") {
                 val designs = if (name == "list_builtin_designs") designResolver.builtins()
                     else designResolver.designs().queryDesigns(a.string("query"),a.string("filter"),a.string("sort"),nowMillis())
@@ -87,6 +111,10 @@ class ToolDispatcher(
             }
             require(a.string("transactionId").isNotBlank()) { "transactionId must not be blank" }
             val command = when (name) {
+                "add_generated_art" -> {
+                    val art=preparedArt[a.string("resultId")] ?: return failure("RESULT_NOT_FOUND","Unknown prepared result ID")
+                    ProjectCommand.Add(StitchObject(a.string("objectId"),a.string("name").ifBlank { art.name },art.pattern))
+                }
                 "add_design" -> {
                     val asset=designResolver.resolve(a.string("assetId"))
                         ?: return failure("DESIGN_NOT_FOUND","Unknown approved design ID")
@@ -147,7 +175,8 @@ class ToolDispatcher(
                     put("ok", true); put("changed", result.changed); put("transactionId", a.string("transactionId")); put("changedIds", JsonArray(result.changedIds.map(::JsonPrimitive)))
                 }, preparedCommand = command)
             }
-        } catch (e: TextToolRejection) { return failure(e.code, e.message ?: e.code) }
+        } catch (e: EmojiToolRejection) { return failure(e.code,e.message ?: e.code,e.details) }
+        catch (e: TextToolRejection) { return failure(e.code, e.message ?: e.code) }
         catch (e: IllegalArgumentException) { return failure("INVALID_ARGUMENTS", e.message ?: "Invalid request") }
     }
     /** Bind to the same EditSession used by a host's UI/history. Keep this controller for the document lifetime. */
@@ -165,7 +194,7 @@ class ToolDispatcher(
     }
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = setOf("list_emoji", "prepare_emoji", "add_generated_art", "list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {

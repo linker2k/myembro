@@ -237,3 +237,8 @@ tasks.processResources {
         into("agent/designs")
     }
 }
+
+// Identical local Fluent/CLDR catalog, 30 verified SVGs and their notices; no downloader in JVM tools.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/emoji")) { into("emoji") }
+}
