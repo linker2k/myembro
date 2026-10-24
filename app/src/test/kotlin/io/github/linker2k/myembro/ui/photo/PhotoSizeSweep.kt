@@ -40,6 +40,17 @@ internal object PhotoSizeCases {
         "dots" to { x, y -> (1..4).any { i -> hypot(x - i * .2, y - (if (i % 2 == 0) .3 else .7)) < .03 } },
     )
 
+    fun trace(fixture: String, detail: Int, widthMm: Double): io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline {
+        val edge = photoRasterSize(detail, widthMm, widthMm)
+        val draw = fixtures.getValue(fixture)
+        val rgb = IntArray(edge * edge) { i -> if (draw((i % edge + .5) / edge, (i / edge + .5) / edge)) 0 else 0xFFFFFF }
+        return RedworkPipeline.trace(edge, edge, PhotoRasterFilters.median3(edge, edge, rgb), widthMm, 0, thread,
+            minAreaMm2 = photoMinimumArea(detail), maxContours = 128)
+    }
+
+    fun stitchedWidthMm(outline: io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline): Double =
+        RedworkPipeline.generate(outline, thread, photoMode = true).pattern.bounds!!.let { (it.maxX - it.minX) / 10.0 }
+
     /** One case, as PhotoViewModel.prepare + generateResult (square 100mm frame, median3 denoise). */
     fun passes(fixture: String, style: PhotoStyle, detail: Int, widthMm: Double): Boolean = verdict(fixture, style, detail, widthMm) == null
 
@@ -92,6 +103,26 @@ class PhotoSizeSweep {
             assertEquals(emptyList(), failing(photoMaxWidthMm(PhotoSizeCases.hoop)))
             assertTrue(failing(PHOTO_MIN_WIDTH_MM - 5).isNotEmpty())
         } finally { pool.shutdown() }
+    }
+
+    /** The ink ÷ frame ratio is measured once at step 2 and must not depend on the size chosen afterwards. */
+    @Test fun inkRatioDoesNotDependOnSizeAndConvertsToTheWantedEmbroideryWidth() {
+        for (fixture in listOf("disk", "letter-h", "cross")) {
+            val ratio = photoInkRatio(PhotoSizeCases.trace(fixture, 1, photoMaxWidthMm(PhotoSizeCases.hoop)))!!
+            val atHalf = photoInkRatio(PhotoSizeCases.trace(fixture, 1, 50.0))!!
+            assertTrue(abs(ratio - atHalf) < 0.02, "$fixture ratio $ratio vs $atHalf")
+            for (wanted in listOf(PHOTO_MIN_WIDTH_MM, 40.0, photoInkWidthRange(PhotoSizeCases.hoop, ratio).endInclusive)) {
+                val actual = PhotoSizeCases.stitchedWidthMm(PhotoSizeCases.trace(fixture, 1, wanted / ratio))
+                assertTrue(abs(actual - wanted) <= 1.0, "$fixture wanted $wanted mm, stitched $actual mm")
+            }
+        }
+    }
+
+    @Test fun inkRangeIs20To999UnitsAndShrinksWhenTheFrameWouldLeaveTheHoop() {
+        val hoop = PhotoSizeCases.hoop
+        assertEquals(20.0..99.9, photoInkWidthRange(hoop, 1.0))
+        assertEquals(20.0..49.9, photoInkWidthRange(hoop, 0.5))
+        assertEquals(9.9..9.9, photoInkWidthRange(hoop, 0.1)) // Too little ink for 20mm: one fixed size, slider disabled.
     }
 
     @Test fun maximumIsTheHoopInteger999Range() {

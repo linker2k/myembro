@@ -30,6 +30,7 @@ import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import io.github.linker2k.myembro.ui.viewerSewoutMachine
 import kotlinx.coroutines.*
 import java.io.File
+import kotlin.math.abs
 
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var step by mutableIntStateOf(0); private set
@@ -55,18 +56,25 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private var revision = 0
     private var settings = EmbroiderySettings()
     val hoop: HoopSpec get() = settings.defaultFrame.spec
-    val widthRange: ClosedFloatingPointRange<Double> get() = PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)
+    /** Ink ÷ frame width of the latest outline (kept while re-tracing); null until step 2 has traced. */
+    var inkRatio by mutableStateOf<Double?>(null); private set
+    /** Slider range and value in embroidery (ink) mm. */
+    val inkWidthRange: ClosedFloatingPointRange<Double>? get() = inkRatio?.let { photoInkWidthRange(hoop, it) }
+    val inkWidthMm: Double? get() = inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
     val canSend get() = !busy && bytes != null && passed
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
-    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(widthRange); if (step > 0) { step = 1; prepare() } } }
-    fun changeSize(value: Double) {
-        val mm = Math.round(value.coerceIn(widthRange) * 10) / 10.0
-        if (mm != widthMm) { widthMm = mm; step = 1; prepare() }
+    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
+    /** [inkMm]: wanted embroidery width. Converted to the frame width with the size-independent ink ratio. */
+    fun changeSize(inkMm: Double) {
+        val ratio = inkRatio ?: return
+        val range = photoInkWidthRange(hoop, ratio)
+        val frame = (inkMm.coerceIn(range) / ratio).coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop))
+        if (abs(frame - widthMm) >= 0.05) { widthMm = frame; step = 1; prepare() }
     }
     fun load(uri: Uri) {
         work?.cancel(); val version = ++revision
@@ -159,13 +167,13 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         progressStage = if (next == "quantization") 1 else 2
                     }
                     val denoised=io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoRasterFilters.median3(w,h,pixels)
-                    try { trace(denoised) } catch (failure: IllegalArgumentException) {
+                    (try { trace(denoised) } catch (failure: IllegalArgumentException) {
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
-                    }
+                    }).let { it to photoInkRatio(it) }
                 }
-                if (version == revision) { outline = output }
+                if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else R.string.photo_generate_failed

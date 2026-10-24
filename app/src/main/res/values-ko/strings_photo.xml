@@ -11,7 +11,7 @@
     <string name="photo_pick">사진 고르기</string>
     <string name="photo_pick_again">다른 사진</string>
     <string name="photo_detail">디테일</string>
-    <string name="photo_size">크기 · 가로 %1$s</string>
+    <string name="photo_size">자수 크기 · 가로 %1$s</string>
     <string name="photo_size_hint">비율은 그대로입니다. %1$s–%2$s, 손을 떼면 다시 계산합니다.</string>
     <string name="photo_result_size">실제 크기 %1$s</string>
     <string name="photo_detail_hint">디테일이 높을수록 작은 윤곽까지 남습니다.</string>

@@ -11,7 +11,7 @@
     <string name="photo_pick">Choose photo</string>
     <string name="photo_pick_again">Change photo</string>
     <string name="photo_detail">Detail</string>
-    <string name="photo_size">Size · width %1$s</string>
+    <string name="photo_size">Embroidery size · width %1$s</string>
     <string name="photo_size_hint">Aspect ratio is kept. %1$s–%2$s; recalculates when you let go.</string>
     <string name="photo_result_size">Actual size %1$s</string>
     <string name="photo_detail_hint">Higher detail keeps smaller outlines.</string>
