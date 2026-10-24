@@ -63,7 +63,7 @@ private fun automaticState(context:Context,source:LoadedFont,fontId:String,text:
     val geometry=if(source.face!=null) LetteringGeometry.OUTLINE else LetteringGeometry.SINGLE_LINE
     val limits=LetteringHeightLimits.decode(context.assets.open(LetteringHeightLimits.ASSET).bufferedReader().use { it.readText() })
     return automaticLetteringState(source.name,fontId,source.revision,normalizedLetteringText(text),heightMm,geometry,limits,
-        source.testedRangeMm.takeIf { source.ink!=null })
+        source.testedRangeMm.takeIf { source.ink!=null }).copy(singleLineWeightEnabled = singleLineWeightEnabled(source.face == null, source.ink != null, fontId))
 }
 
 private class LoadedFont(
@@ -191,7 +191,11 @@ object LetteringFontPreview {
         val source = loadFont(context.applicationContext, fontId)
         val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
-        val previewStyle=if(source.face!=null && HangulSatin.applies(sample)) StitchStyle.SATIN else stitchStyle
+        val previewStyle = when {
+            source.face != null -> if (HangulSatin.applies(sample)) StitchStyle.SATIN else StitchStyle.RUNNING
+            singleLineWeightEnabled(true, source.ink != null, fontId) -> stitchStyle
+            else -> null
+        }
         val settings = LetteringSettings(sample, fontId, heightMm, 1.0, LetteringAlignment.CENTER,
             false, LetteringCurve.STRAIGHT, 0.0, stitchStyle = previewStyle, fillOptions = fillOptions, threadWeight = threadWeight)
         prepareObject(source, settings, thread).localPattern().withSewingDefaults(SettingsPreferences(context).read().sewing)
@@ -255,7 +259,7 @@ internal fun renderLettering(context: Context, settings: LetteringSettings, thre
     sewingOptions: SewingOptions = SettingsPreferences(context).read().sewing): LetteringResult {
     val text = normalizedLetteringText(settings.text)
     val source = loadFont(context, settings.fontId)
-    val method=automaticState(context,source,settings.fontId,text,settings.heightMm).style
+    val method=letteringStyleForWeight(automaticState(context,source,settings.fontId,text,settings.heightMm), settings.stitchStyle == StitchStyle.BEAN)
     require((settings.stitchStyle ?: StitchStyle.RUNNING)==method) { "Lettering method is outside the supported automatic range" }
     val placed = placeLettering(prepareObject(source, settings, thread), hoop, settings.alignment)
     val transformed = placed.placedPattern().withSewingDefaults(sewingOptions)

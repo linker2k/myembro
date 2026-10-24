@@ -45,6 +45,7 @@ internal data class AutomaticLetteringState(
     val style: StitchStyle?,
     private val sourceRanges: List<ValidatedHeightRange>,
     val centerlineSatin: Boolean = false,
+    val singleLineWeightEnabled: Boolean = false,
 ) {
     val heightRanges: List<ValidatedHeightRange> = LetteringHeightLimits.capRanges(sourceRanges)
 }
@@ -79,3 +80,11 @@ internal fun letteringHeightPermitted(automatic: AutomaticLetteringState?, heigh
         else -> automatic?.style in listOf(StitchStyle.RUNNING, StitchStyle.SATIN, StitchStyle.FILL) && ranges.any { it.contains(height) }
     }
 }
+
+/** A digitized embroidery font owns its repeats; it must never receive another bean layer. */
+internal fun singleLineWeightEnabled(singleLine: Boolean, predigitized: Boolean, fontId: String): Boolean =
+    singleLine && !predigitized && !fontId.contains("bean", ignoreCase = true)
+
+internal fun letteringStyleForWeight(automatic: AutomaticLetteringState?, bold: Boolean): StitchStyle =
+    if (automatic?.singleLineWeightEnabled == true && automatic.style == StitchStyle.RUNNING && bold) StitchStyle.BEAN
+    else automatic?.style ?: StitchStyle.RUNNING

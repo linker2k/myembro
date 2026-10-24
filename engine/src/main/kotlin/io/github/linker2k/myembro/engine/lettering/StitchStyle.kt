@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Bean expansion port: Ink/Stitch 16e192849e619399ce8fdefb4c4d249dacdb4db1,
-// lib/stitches/running_stitch.py: bean_stitch (repeats=[1]); Copyright (c) 2010 Authors.
+// Ported from Ink/Stitch lib/stitches/running_stitch.py@b0edd96311ece82ee48816dc93466274b12c2a9c (GPL-3.0-or-later), Copyright (c) Ink/Stitch contributors
+// Delegates bean_stitch (repeats=[1], three passes) to the shared worker port.
 package io.github.linker2k.myembro.engine.lettering
 
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
@@ -17,18 +17,22 @@ internal fun EmbPattern.withStitchStyle(style: StitchStyle, maxStitchLengthMm: D
     // Other styles are expanded before a single shared finishing pass.
     if (style != StitchStyle.BEAN) return GeneratedPatternProcessor.finish(this, maxStitchLengthMm = maxStitchLengthMm)
     val result = ArrayList<Stitch>()
-    var previous: Stitch? = null
+    val run = ArrayList<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch>()
+    fun flush() {
+        // bean_stitch only repeats coordinates: native integer coordinates stay exact here.
+        result += io.github.linker2k.myembro.engine.inkstitch.stitches.RunningStitch.beanStitch(run, listOf(1))
+            .map { Stitch(it.x.toInt(), it.y.toInt(), Command.STITCH) }
+        run.clear()
+    }
     for (stitch in stitches) {
-        result += stitch
-        val last = previous
-        if (stitch.command == Command.STITCH && last?.command == Command.STITCH &&
-            (last.x != stitch.x || last.y != stitch.y)
-        ) {
-            result += last
+        if (stitch.command == Command.STITCH) {
+            run += io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch(stitch.x.toDouble(), stitch.y.toDouble())
+        } else {
+            flush()
             result += stitch
         }
-        previous = stitch
     }
+    flush()
     return GeneratedPatternProcessor.finish(EmbPattern(result, threads, metadata, warnings), maxStitchLengthMm = maxStitchLengthMm)
 }
 
