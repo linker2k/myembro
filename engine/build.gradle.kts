@@ -135,3 +135,14 @@ tasks.register("koreanTtfSweepClasspath") {
 
 // Release sweeps render many patterns in parallel.
 tasks.test { maxHeapSize = "3g" }
+
+// Explicit Hangul trial only. "trace" requires a caller-selected width before creating any PES.
+tasks.register<JavaExec>("hangulSatinSample") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HangulSatinCli")
+    systemProperty("java.awt.headless", "true")
+    args(providers.gradleProperty("hangulInput").orElse("/tmp/myembro-sewtest/krs").get(),
+        providers.gradleProperty("hangulOutput").orElse("/tmp/myembro-sewtest/krs/KRSAT1").get(),
+        providers.gradleProperty("strokeWidthMm").orElse("trace").get())
+}

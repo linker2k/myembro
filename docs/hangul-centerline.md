@@ -145,3 +145,36 @@ Noto Sans KR400 ‘정민’15mm PES는 아직 만들지 않았다. 원본 `fit.
 `output-svg.c`는 centerline path에 stroke-width를 따로 기록하지 않으므로, 임의 평균 폭이나
 1px 기본폭으로 새틴을 만들지 않는다. 다음 단위는 공식 변환 출력 비교와 원본 곡선·폭 계약을
 작게 확인한 뒤 이 명시적 폭 API에 연결하는 것으로 제안한다. 앱/자동 선택은 계속 보류한다.
+
+## letter 인계 단위 2 — Noto400 ‘정민’15mm 연결 준비
+
+곡선 계약을 확인했다. `convert_path_to_satin` 입력은 LineString이므로 기존 원본
+픽셀 중심선 경로를 그 순서대로 입력할 수 있다. 새 spline smoothing/자체 곡선 근사는
+넣지 않는다. AutoTrace Cartesian y를 SVG y-down으로 바꾸고, 래스터 ink-height를
+요청15mm에 대응시키는 좌표 변환만 한다. `fit.c` spline 출력과 동일하다고 주장하지 않는다.
+
+획 폭 계약에는 아직 입력이 하나 필요하다. AutoTrace
+`image-proc.c:new_distance_map`/`fit.c:fit_curve_list`
+@1a232b27818a46a05cd25edec09e2f77c4e9ac01는 지역 거리와 이웃 최대값을
+`z = width * width_weight_factor`로 보존한다. `output-svg.c:out_splines`는
+상수 stroke-width를 기록하지 않는다. 반면 Ink/Stitch
+`convert_path_to_satin`@b0edd96311ece82ee48816dc93466274b12c2a9c는 상수
+stroke_width를 요구한다. 원본에 없는 평균/중간값 폭 매핑은 추가하지 않았고
+총괄에게 이번 시험의 상수 폭(mm)을 요청했다. 자동 선택은 계속 보류한다.
+
+`tools/hangul_satin/prepare-raster.py`와 `:engine:hangulSatinSample`을 준비했다.
+폰트 기본 weight는100이어서 반드시 variation400을 명시했다. 현재 결과:
+- Noto Sans KR400, ‘정민’, ink-height15mm, 원본 font SHA
+  `194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252`
+- 원본 Kotlin thinning→centerline **9경로**. 입력·정수 경로·PNG는
+  `/tmp/myembro-sewtest/krs/input.{json,pgm,png}`, `KRSAT1-centerline.{json,png}`.
+- 명시적 폭을 받으면 기존 convert-to-satin→SatinColumn→S1→기본 writer를
+  호출하도록 연결했다. 한 색40wt·60×60mm·원점/0길이/헤더 검사 및 P1–P8을
+  writer에서 통과한 경우에만 PES를 쓴다. 기존 파일명은 덮어쓰지 않는다.
+- **현재 PES 미생성**: 폭 입력 대기이며 `.PES`/decoded-PES `.png`/품질 PASS를
+  주장하지 않는다. 기본 trace 모드는 명확히 중심선 PNG만 만든다.
+
+`./gradlew check :engine:hangulSatinSample`: BUILD SUCCESSFUL in44s.
+재현 명령은 `tools/hangul_satin/README.md`에 기록했다. 폭 회신 뒤
+`-PstrokeWidthMm=<지정값>`으로 실행하면 요청한 `/tmp/myembro-sewtest/krs/KRSAT1.PES`
+생성과 실제 바이트 검사·PNG 단계로 이어진다.
