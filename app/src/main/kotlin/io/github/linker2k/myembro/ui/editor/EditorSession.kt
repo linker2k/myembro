@@ -3,6 +3,9 @@ package io.github.linker2k.myembro.ui.editor
 
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
+import io.github.linker2k.myembro.engine.edit.commands.CommandResult
+import io.github.linker2k.myembro.engine.edit.commands.ProjectCommand
+import io.github.linker2k.myembro.engine.edit.commands.apply
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.edit.commands.SessionHistoryResult
 
@@ -28,10 +31,25 @@ internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
     fun endGesture() {
         if (!isGesturing) return
         isGesturing = false
-        // Preserve the exact final preview reference, including equal-value previews, as before.
-        commitSnapshot(project)
+        val preview = project
+        val result = apply(engine.project, engine.project.poseCommand(preview))
+        if (result is CommandResult.Applied) {
+            // Only pose/order may change in previews. Never bypass the shared reducer.
+            check(result.project == preview) { "Gesture changed more than pose/order" }
+            // Retain the exact preview and cached geometry references, as before.
+            commitSnapshot(preview)
+        } else {
+            project = engine.project
+        }
     }
     fun commit(next: Project) { endGesture(); project = commitSnapshot(next).snapshot.project }
+    /** UI and headless tools use the same pure reducer before committing one history step. */
+    fun commit(command: ProjectCommand): CommandResult {
+        endGesture()
+        val result = apply(engine.project, command)
+        if (result is CommandResult.Applied) project = commitSnapshot(result.project).snapshot.project
+        return result
+    }
     private fun commitSnapshot(next: Project): SessionHistoryResult.Applied {
         val result = engine.commitSnapshot(next, engine.revision)
         check(result is SessionHistoryResult.Applied) { "Editor snapshot commit rejected: $result" }
