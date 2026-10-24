@@ -89,7 +89,9 @@ private val machinePresets = MachineProfiles.all.map { it.displayName }
 /** Standalone settings destination; the host supplies navigation and owns its ViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier,
+    /** Opened from the home version label: start at the version information at the bottom. */
+    showVersion: Boolean = false) {
     var machineDialog by rememberSaveable { mutableStateOf(false) }
     var brandDialog by rememberSaveable { mutableStateOf(false) }
     var pesDialog by rememberSaveable { mutableStateOf(false) }
@@ -99,6 +101,8 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
     val context = LocalContext.current
     @Suppress("DEPRECATION")
     val version = remember(context) { context.packageManager.getPackageInfo(context.packageName, 0) }
+    val scroll = rememberScrollState()
+    if (showVersion) LaunchedEffect(scroll.maxValue) { scroll.animateScrollTo(scroll.maxValue) }
 
     EmbroideryTheme {
         Scaffold(
@@ -115,7 +119,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
             },
         ) { padding ->
             Column(
-                Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                Modifier.padding(padding).fillMaxSize().verticalScroll(scroll).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Card(

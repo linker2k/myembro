@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -66,6 +68,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.linker2k.myembro.BuildConfig
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.engine.edit.HoopSpec
@@ -102,6 +108,7 @@ fun HomeScreen(
     onFreeDesigns: (() -> Unit)? = null,
     onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
     onPhoto: (() -> Unit)? = null,
+    onVersion: () -> Unit = onSettings,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -109,7 +116,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion)
     }
 }
 
@@ -125,6 +132,7 @@ private fun HomeContent(
     onFreeDesigns: (() -> Unit)? = null,
     defaultFrame: FrameOption? = null, onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
     onPhoto: (() -> Unit)? = null,
+    version: String? = null, onVersion: () -> Unit = onSettings,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -134,7 +142,16 @@ private fun HomeContent(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.drawable.myembro_splash_icon), null, Modifier.size(40.dp))
-                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(R.string.app_name), Modifier.alignByBaseline(), style = MaterialTheme.typography.titleLarge)
+                        // Small version next to the name; the full version + commit stays at the bottom of settings.
+                        if (version != null) {
+                            val description = stringResource(R.string.home_version, version)
+                            Text(version, Modifier.alignByBaseline().clip(MyembroShapes.Chip)
+                                .clickable(role = Role.Button, onClick = onVersion)
+                                .semantics { contentDescription = description }
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 },
                 actions = { IconButton(onClick = onSettings) {

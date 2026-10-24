@@ -20,6 +20,7 @@
     <string name="home_tab_library">도안</string>
     <string name="home_tab_create">만들기</string>
     <string name="home_settings">설정</string>
+    <string name="home_version">버전 %1$s, 버전 정보 열기</string>
     <string name="home_load_failed">최근 프로젝트를 불러오지 못했습니다.</string>
     <string name="home_retry">다시 시도</string>
     <string name="new_project_intro">어디서부터 수놓을지 골라보세요.</string>

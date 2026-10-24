@@ -115,6 +115,8 @@ class MainActivity : ComponentActivity() {
             }
             // Font picked in the font library; the lettering screen starts from it.
             var letteringFontId by rememberSaveable { mutableStateOf("gowun-batang") }
+            // Settings opened from the home version label scroll to the version information.
+            var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
             MyembroTheme {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 when (stack.lastOrNull()) {
@@ -124,7 +126,8 @@ class MainActivity : ComponentActivity() {
                         onImport = openDocument,
                         onLettering = { stack += Screen.LETTERING },
                         onOpenLibrary = { stack += Screen.LIBRARY },
-                        onSettings = { stack += Screen.SETTINGS },
+                        onSettings = { settingsAtVersion = false; stack += Screen.SETTINGS },
+                        onVersion = { settingsAtVersion = true; stack += Screen.SETTINGS },
                         onCreateFromDesign = { stack += Screen.PICK_DESIGN },
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
@@ -155,7 +158,7 @@ class MainActivity : ComponentActivity() {
                             library.refresh(); library.clearSelection(); library.toggle(file)
                             stack += Screen.LIBRARY; library.exportToUsb()
                         })
-                    Screen.SETTINGS -> SettingsScreen(settings, onBack = back)
+                    Screen.SETTINGS -> SettingsScreen(settings, onBack = back, showVersion = settingsAtVersion)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {
                         // Exact selected frame, including custom sizes (not just the integer-mm presets).
