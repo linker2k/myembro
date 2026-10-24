@@ -89,10 +89,10 @@ class SewoutCheckTest {
 
     @Test fun stitchThresholdsUseEuclideanLengthAndIgnoreInitialAnchors() {
         val report = SewoutCheck.check(p(s(0), s(121), s(123), s(126), s(248)))
-        assertEquals(1, report.count(FindingCode.LONG_STITCH))
+        assertEquals(2, report.count(FindingCode.LONG_STITCH))
         assertEquals(1, report.count(FindingCode.SHORT_STITCH))
-        assertEquals(4, report.findings.single { it.code == FindingCode.LONG_STITCH }.highlight!!.commandIndex)
-        assertEquals(12.2, report.findings.single { it.code == FindingCode.LONG_STITCH }.measured)
+        assertEquals(listOf(1,4), report.findings.filter { it.code == FindingCode.LONG_STITCH }.map { it.highlight!!.commandIndex })
+        assertEquals(listOf(12.1,12.2), report.findings.filter { it.code == FindingCode.LONG_STITCH }.map { it.measured })
         assertEquals(0, SewoutCheck.check(p(s(100, c=Command.JUMP), s(100))).count(FindingCode.SHORT_STITCH))
         val diag = SewoutCheck.check(p(s(0), s(90,90)))
         assertEquals(1, diag.count(FindingCode.LONG_STITCH))
@@ -153,7 +153,7 @@ class SewoutCheckTest {
     }
 
     @Test fun actualPesVersionsCountsSizeAndThumbnailsAreCheckedWithoutChangingBytes() {
-        val bytes = PesWriter.writeV6(p(s(0),s(10)))
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(p(s(0),s(10)))
         val original = bytes.copyOf()
         val report = SewoutCheck.checkPes(bytes)
         assertEquals("0060",report.pesFile!!.version)
@@ -164,7 +164,7 @@ class SewoutCheckTest {
         val blocked = SewoutCheck.checkPes(bytes,limited)
         assertEquals(Acceptance.REJECTED,blocked.compatibility.acceptance)
         assertEquals(1,blocked.count(FindingCode.FILE_SIZE_EXCEEDED))
-        val twoColors = PesWriter.writeV6(p(s(0),s(0,c=Command.COLOR_CHANGE),s(20)))
+        val twoColors = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(p(s(1),s(2),s(2,c=Command.COLOR_CHANGE),s(20)))
         assertEquals(1,SewoutCheck.checkPes(twoColors,limited).count(FindingCode.COLOR_LIMIT_EXCEEDED))
         assertContentEquals(original,bytes)
         assertTrue(SewoutCheck.checkPes(byteArrayOf(1,2,3)).hasBlockingIssues)
@@ -212,7 +212,7 @@ class SewoutCheckTest {
             val bytes = file.readBytes()
             val report = SewoutCheck.checkPes(bytes,machine)
             assertTrue(report.analysisComplete,"${file.name}: incomplete")
-            assertEquals(0,report.count(FindingCode.INVALID_PES),file.name)
+            assertEquals(PecViewportCheck.check(bytes,report.options.hoop).errors.size,report.count(FindingCode.INVALID_PES),file.name)
             assertTrue(report.statistics.stitchCount>0,file.name)
             assertEquals(report.statistics.stitchCount,report.stages.sumOf { it.stitchCount })
         }

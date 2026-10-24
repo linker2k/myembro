@@ -16,7 +16,7 @@ enum class DesignOrigin { AUTO, APP_GENERATED, IMPORTED }
 enum class FindingCode {
     HOOP_EXCEEDED, MACHINE_AREA_EXCEEDED, HOOP_COMPATIBILITY_UNKNOWN,
     LONG_STITCH, SHORT_STITCH, MACHINE_STITCH_LENGTH_EXCEEDED, PEC_DELTA_EXCEEDED,
-    DENSITY_HOTSPOT, REPEATED_PENETRATION, OVERLAP_ACCUMULATION, MISSING_LOCK_STITCH,
+    DENSITY_HOTSPOT, ZERO_LENGTH_MOTION, REPEATED_PENETRATION, OVERLAP_ACCUMULATION, MISSING_LOCK_STITCH,
     EMPTY_DESIGN, EMPTY_COLOR_STAGE, READER_WARNING, INVALID_PES, MISSING_THUMBNAIL, ANALYSIS_LIMIT,
     STITCH_LIMIT_EXCEEDED, COLOR_LIMIT_EXCEEDED, FILE_SIZE_EXCEEDED,
     PES_VERSION_UNCONFIRMED, COLOR_LIMIT_UNCONFIRMED, STITCH_LIMIT_UNCONFIRMED,
@@ -63,7 +63,9 @@ data class SewoutStatistics(val stitchCount: Int, val jumpCount: Int, val trimCo
     val requiredManualCuts: Int, val possibleManualCuts: Int,
     val densityHotspotCount: Int, val overlapCellCount: Int,
     val peakCellPenetrations: Int = 0, val maximumConsecutiveNeedles: Int = 0,
-    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0)
+    val maximumStitchMm: Double = 0.0, val missingStartLocks: Int = 0, val missingEndLocks: Int = 0,
+    /** Explicit STITCH/JUMP destinations, ignoring controls; includes zero moves. */
+    val maximumConsecutivePositions: Int = 0)
 
 enum class SpeedBasis { USER_SETTING, PROFILE_MAXIMUM_DERIVED, ASSUMED }
 data class SpeedEstimate(val effectiveSpm: Double, val basis: SpeedBasis,
@@ -95,11 +97,11 @@ data class SewoutOptions(
     val hoop: HoopSpec = HoopSpec.H100,
     val placement: Placement = Placement.CENTER_DESIGN,
     val destination: Destination = Destination.TRANSFER,
-    // Frozen gate v5: 334-file corpus maximum + 0.15mm quantization allowance.
-    val longStitchMm: Double = 12.184118164618463, val shortStitchMm: Double = 0.3,
-    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >3 consecutive needles at one point. */
-    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 16,
-    val repeatedPointThreshold: Int = 4, val overlapPassThreshold: Int = 6,
+    // P8: exact native integer displacement squared <= 120^2.
+    val longStitchMm: Double = SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM / 10.0, val shortStitchMm: Double = 0.3,
+    /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >2 consecutive STITCH/JUMP destinations at one point. */
+    val gridMm: Double = SewoutLimits.DENSITY_CELL_UNITS_0P1MM / 10.0, val hotspotPenetrations: Int = SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL + 1,
+    val repeatedPointThreshold: Int = SewoutLimits.MAX_CONSECUTIVE_POSITIONS, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,
     val jumpMmPerSecond: Double = 50.0, val jumpOverheadSeconds: Double = 0.2,

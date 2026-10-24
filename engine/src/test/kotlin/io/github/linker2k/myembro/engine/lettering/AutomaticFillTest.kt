@@ -34,8 +34,8 @@ class AutomaticFillTest {
             assertEquals(fill.stitches,fallback.stitches)
             assertSewingLengths(fallback)
             val restored=PesReader.read(PesWriter.write(fallback))
-            assertEquals(fallback.stitchCount,restored.stitchCount)
-            assertEquals(fallback.bounds,restored.bounds)
+            assertEquals(PesWriter.prepareForOutput(fallback).stitchCount,restored.stitchCount)
+            assertEquals(PesWriter.prepareForOutput(fallback).bounds,restored.bounds)
         }
     }
     @Test fun shortTJunctionSpursDoNotCreateFullLetterWidthCrossings() {

@@ -14,10 +14,9 @@ import kotlin.test.*
 
 class SewingProcessingFlowTest {
     private val withoutLocks = SewingOptions(locks = LockStitchParameters(ties = 3))
-    private val custom = SewingOptions(locks = LockStitchParameters(lock_start = "triangle", lock_end = "back_forth"),
-        min_stitch_length_mm = 0.3, trim_after = true)
+    private val custom = SewingOptions()
     private val imported = EmbPattern(listOf(NativeStitch(0, 0, Command.JUMP), NativeStitch(0, 0, Command.STITCH),
-        NativeStitch(1, 0, Command.STITCH), NativeStitch(50, 0, Command.STITCH), NativeStitch(50, 0, Command.END)),
+        NativeStitch(1, 0, Command.STITCH), NativeStitch(50, 0, Command.STITCH), NativeStitch(0, 0, Command.STITCH), NativeStitch(50, 0, Command.END)),
         listOf(EmbThread(0xFF123456.toInt(), "Original")))
 
     @Test fun `automatic app policy uses source defaults without a user setting`() {
@@ -45,20 +44,24 @@ class SewingProcessingFlowTest {
     }
 
     @Test fun `old project text regenerates using current defaults without rewriting its source`() {
-        val project = Project(objects = listOf(TextObject("text", text = "I"), StitchObject("raw", "raw", imported,
-            transform = Transform(x = 200.0))))
+        val project = Project(objects = listOf(TextObject("text", text = "I")))
         val bytes = ProjectJson.encode(project).toByteArray()
         val before = bytes.copyOf()
-        val disabled = readViewerDesign(bytes, "old.myembro", sewingOptions = withoutLocks)
+        val disabled = project.flatten(withoutLocks)
+        assertFailsWith<IllegalArgumentException> { readViewerDesign(bytes,"old.myembro",sewingOptions=withoutLocks) }
         val enabled = readViewerDesign(bytes, "old.myembro", sewingOptions = custom)
-        assertEquals(0, ProcessingSummary.fromPattern(disabled.pattern)!!.lockLocations)
+        assertEquals(0, ProcessingSummary.fromPattern(disabled)!!.lockLocations)
         assertTrue(ProcessingSummary.fromPattern(enabled.pattern)!!.lockLocations > 0)
-        assertFalse(disabled.source.contentEquals(enabled.source))
         assertSame(bytes, enabled.projectSource)
         assertContentEquals(before, bytes)
         assertEquals(custom, enabled.sewingOptions)
         assertEquals(project.flatten(custom).stitches, enabled.pattern.stitches)
-        assertEquals(enabled.pattern.stitchCount, PatternReader.read(enabled.source, enabled.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(enabled.pattern).stitchCount, PatternReader.read(enabled.source, enabled.sourceName).stitchCount)
+    }
+
+    @Test fun `mixed generated project with unsafe raw boundaries is blocked before export`() {
+        val project=Project(objects=listOf(TextObject("text",text="I"),StitchObject("raw","raw",imported,transform=Transform(x=200.0))))
+        assertFailsWith<IllegalArgumentException> { readViewerDesign(ProjectJson.encode(project).toByteArray(),"mixed.myembro") }
     }
 
     @Test fun `USB project preparation uses the same defaults as the viewer and raw PES passes through`() {

@@ -112,4 +112,5 @@
     <string name="sewout_badge_pass">Pass</string>
     <string name="sewout_badge_caution">Caution</string>
     <string name="sewout_badge_block">Blocked</string>
+    <string name="sewout_finding_zero_length_motion">Zero-length stitch or jump</string>
 </resources>

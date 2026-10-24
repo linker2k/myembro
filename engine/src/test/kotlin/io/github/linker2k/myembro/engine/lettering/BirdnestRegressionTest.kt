@@ -23,8 +23,8 @@ class BirdnestRegressionTest {
             assertTrue(tail.count { it in lockIndices }>=2,"Missing end lock before $i")
         }
         for(version in listOf(PesVersion.V1,PesVersion.V6)) {
-            val decoded=PesReader.read(PesWriter.write(p,version))
-            assertEquals(p.stitchCount,decoded.stitchCount);assertEquals(p.bounds,decoded.bounds)
+            val decoded=PesReader.read(PesWriter.write(p,PesWriteSettings(version,hoop=io.github.linker2k.myembro.engine.edit.HoopSpec.H160x260)))
+            assertEquals(PesWriter.prepareForOutput(p).stitchCount,decoded.stitchCount);assertEquals(PesWriter.prepareForOutput(p).bounds,decoded.bounds)
             assertSewingLengths(decoded)
         }
     }

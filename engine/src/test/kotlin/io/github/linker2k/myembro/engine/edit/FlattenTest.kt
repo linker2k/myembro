@@ -46,7 +46,7 @@ class FlattenTest {
         for (project in noObjects) {
             assertEquals(listOf(Stitch(0, 0, Command.END)), project.flatten().stitches)
             assertTrue(project.flatten().threads.isEmpty())
-            val back = PesReader.read(PesWriter.write(project.flatten()))
+            val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(project.flatten()))
             assertEquals(0, back.stitchCount)
             assertTrue(back.warnings.isEmpty())
         }
@@ -78,13 +78,13 @@ class FlattenTest {
     private fun assertRoundTrip(flat: EmbPattern) {
         // PES v1 maps to the PEC palette and represents trims as trim+jump; compare the
         // documented writer normalization as well as every needle-down position and STOP.
-        val normalized = PecWriter.normalize(flat)
-        val back = PesReader.read(PesWriter.write(flat))
+        val normalized = PecWriter.normalizeForPes(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat))
+        val back = PesReader.read(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(flat))
         assertTrue(back.warnings.isEmpty())
         assertEquals(normalized.stitches, back.stitches)
         assertEquals(normalized.threads, back.threads)
-        assertEquals(flat.stitches.filter { it.command == Command.STITCH }, back.stitches.filter { it.command == Command.STITCH })
-        assertEquals(flat.colorChangeCount, back.colorChangeCount)
-        assertEquals(flat.stopCount, back.stopCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(flat).stitches.filter { it.command == Command.STITCH }, back.stitches.filter { it.command == Command.STITCH })
+        assertEquals(normalized.colorChangeCount, back.colorChangeCount)
+        assertEquals(normalized.stopCount, back.stopCount)
     }
 }

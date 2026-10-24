@@ -36,7 +36,7 @@ class TatamiLetteringIntegrationTest {
         val expected=GeneratedPatternProcessor.fromGroups(DefaultTatami.stitchGroups(region,thread)).centeredGenerated()
         assertEquals(expected.stitches,actual.stitches)
         assertEquals("inkstitch-default-tatami-underlay",actual.metadata["myembro.fill.backend"])
-        assertEquals(actual.stitchCount,PesReader.read(PesWriter.writeV6(actual)).stitchCount)
+        assertEquals(PesWriter.prepareForOutput(actual).stitchCount,PesReader.read(PesWriter.writeV6(actual)).stitchCount)
     }
     @Test fun koreanOutlineCodepointsKeepOwnersThreadsAndDefaultFill() {
         // Original square/ring glyph contours model separated Hangul components; no personal font assets.
@@ -71,7 +71,7 @@ class TatamiLetteringIntegrationTest {
             stitchStyle=StitchStyle.FILL,outline=true,contourCharacters=owners)
         assertEquals("inkstitch-default-tatami-underlay",p.metadata["myembro.fill.backend"])
         val bytes=PesWriter.writeV6(p)
-        assertEquals(p.stitchCount,PesReader.read(bytes).stitchCount)
+        assertEquals(PesWriter.prepareForOutput(p).stitchCount,PesReader.read(bytes).stitchCount)
         java.io.File("build/s3-fill").apply { mkdirs() }.resolve("jua-korean.pes").writeBytes(bytes)
         println("JUA 자수: ${p.stitchCount} stitches; ${p.bounds!!.width/10.0} x ${p.bounds!!.height/10.0} mm")
     }

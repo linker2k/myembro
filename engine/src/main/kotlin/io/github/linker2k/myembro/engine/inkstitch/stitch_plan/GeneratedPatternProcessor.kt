@@ -5,6 +5,7 @@ package io.github.linker2k.myembro.engine.inkstitch.stitch_plan
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.model.ThreadStartCleanup
 import io.github.linker2k.myembro.engine.model.Stitch as MachineStitch
 import kotlin.math.hypot
 
@@ -15,9 +16,19 @@ object GeneratedPatternProcessor {
     const val RUN_ANCHORS_KEY = "myembro.inkstitch.run_anchors"
     const val MAX_STITCH_LENGTH_MM_KEY = "myembro.inkstitch.max_stitch_length_mm"
     const val SEWING_OPTIONS_KEY = "myembro.inkstitch.sewing_options"
+    private const val NONZERO_MOTIONS_KEY = "myembro.inkstitch.nonzero_motions"
     private const val SOURCE_STITCHES_KEY = "myembro.inkstitch.source_stitches"
     private const val COMMAND_ANCHORS_KEY = "myembro.inkstitch.command_anchors"
     private const val VERSION = "v1"
+
+    /** Terminal common sewout pass: no lock replanning. Internal editor/source anchors remain untouched.
+     * Removed index provenance cannot be reused after pruning, so only export copies lose it. */
+    fun forSewout(pattern: EmbPattern): EmbPattern {
+        val cleaned = ThreadStartCleanup.clean(pattern.stitches)
+        if (cleaned.stitches == pattern.stitches) return pattern
+        return pattern.copy(stitches = cleaned.stitches, metadata = pattern.metadata -
+            setOf(LOCK_INDICES_KEY, RUN_ANCHORS_KEY, COMMAND_ANCHORS_KEY, SOURCE_STITCHES_KEY))
+    }
 
     fun fromGroups(
         groups: List<StitchGroup>,
@@ -26,10 +37,17 @@ object GeneratedPatternProcessor {
         disable_ties: Boolean = false,
         pecJumpTrims: Boolean = false,
         lockAtThreadBoundaries: Boolean = false,
+        omitZeroLengthMotions: Boolean = false,
     ): EmbPattern {
         val native = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties, lockAtThreadBoundaries))
-        val processed = if (pecJumpTrims) explicitPecJumpTrims(native) else native
-        return processed.pattern.copy(metadata = markedMetadata(processed) +
+        var processed = if (pecJumpTrims) explicitPecJumpTrims(native) else native
+        // P4 is an application output invariant, stricter than upstream's retained JUMP landing.
+        // Cache the unmodified body so dropping a landing/lock origin cannot lose transform anchors.
+        val source = if (omitZeroLengthMotions) encodeSource(stripGeneratedLocks(
+            processed.pattern.copy(metadata = markedMetadata(processed)))) else null
+        if (omitZeroLengthMotions) processed = nonzeroMotions(processed)
+        val policy = if (source != null) mapOf(NONZERO_MOTIONS_KEY to "true", SOURCE_STITCHES_KEY to source) else emptyMap()
+        return processed.pattern.copy(metadata = markedMetadata(processed) + policy +
             (SEWING_OPTIONS_KEY to SewingOptions().toJson()))
     }
 
@@ -102,6 +120,7 @@ object GeneratedPatternProcessor {
         if (output.isNotEmpty() && output.last().command != Command.END) output += output.last().copy(command = Command.END)
         var deduplicated = deduplicate(original.copy(stitches = output), locks, anchors, emptyMap(), summary)
         if (maximum != null) deduplicated = splitToMaximum(deduplicated, maximum * 10.0)
+        if (pattern.metadata[NONZERO_MOTIONS_KEY] == "true") deduplicated = nonzeroMotions(deduplicated)
         var metadata = markedMetadata(deduplicated).let { if (maximum != null) it + (MAX_STITCH_LENGTH_MM_KEY to maximum.toString()) else it }
         metadata = metadata + (SOURCE_STITCHES_KEY to encodeSource(original))
         metadata = metadata + (SEWING_OPTIONS_KEY to sewing.toJson())
@@ -240,6 +259,36 @@ object GeneratedPatternProcessor {
         return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary)
     }
 
+
+    /** P4: compare needle-up and needle-down moves to the same physical cursor, including (0,0).
+     * No new lock shape: only redundant stationary commands are omitted; surviving tags are reindexed. */
+    private fun nonzeroMotions(processed: Processed): Processed {
+        val output=mutableListOf<MachineStitch>()
+        val locks=mutableSetOf<Int>()
+        val anchors=mutableMapOf<Int,NativeAnchor>()
+        val commands=mutableMapOf<Int,Pair<Int,Int>>()
+        var x=0; var y=0; var removed=0
+        for ((index, stitch) in processed.pattern.stitches.withIndex()) {
+            if (stitch.command == Command.TRIM) {
+                val next=processed.pattern.stitches.subList(index+1,processed.pattern.stitches.size).asSequence()
+                    .firstOrNull { it.command in setOf(Command.STITCH,Command.JUMP,Command.COLOR_CHANGE,Command.STOP,Command.END) }
+                if (next?.command==Command.JUMP && next.x==x && next.y==y) continue
+            }
+            if (stitch.command==Command.STITCH || stitch.command==Command.JUMP) {
+                if (stitch.x==x && stitch.y==y) {
+                    if(stitch.command==Command.STITCH) removed++
+                    continue
+                }
+                x=stitch.x; y=stitch.y
+            }
+            if(index in processed.lockIndices) locks+=output.size
+            processed.runAnchors[index]?.let { anchors[output.size]=it }
+            processed.commandAnchors[index]?.let { commands[output.size]=it }
+            output+=stitch
+        }
+        return Processed(processed.pattern.copy(stitches=output),locks,anchors,commands,
+            processed.summary + ProcessingSummary(shortStitchesRemoved=removed))
+    }
 
     private fun adaptAndDeduplicate(traced: StitchPlanBuilder.TracedPlan): Processed {
         val plan = traced.plan

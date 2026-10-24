@@ -154,7 +154,14 @@ private fun LetteringContent(
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
     val thread = if (keepInitialThread && initialObject != null) initialObject.thread
         else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
-    val ranges = automatic?.heightRanges.orEmpty()
+    val hoopHeightLimit=io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(hoop)/10.0
+    val ranges = automatic?.heightRanges.orEmpty().mapNotNull { range ->
+        minOf(range.maxMm,hoopHeightLimit).takeIf { it>=range.minMm }?.let { range.copy(maxMm=it) }
+    }
+    LaunchedEffect(hoop) {
+        val capped=height.coerceAtMost(minOf(LetteringHeightLimits.MAX_MM,hoopHeightLimit))
+        if(capped!=height) { height=capped; heightDraft=capped.toString() }
+    }
     val parsedHeight = heightDraft.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }
     val heightInputValid = ranges.isNotEmpty() || parsedHeight == height
     val permittedHeight = automaticHeight == height && heightInputValid && letteringHeightPermitted(automatic, height)
@@ -332,8 +339,8 @@ private fun LetteringContent(
                     OutlinedTextField(heightDraft, onValueChange = { value ->
                         heightDraft = value
                         value.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }?.let {
-                            height = it.coerceAtMost(LetteringHeightLimits.MAX_MM)
-                            if (it > LetteringHeightLimits.MAX_MM) heightDraft = height.toString()
+                            height = it.coerceAtMost(minOf(LetteringHeightLimits.MAX_MM,hoopHeightLimit))
+                            if (it > minOf(LetteringHeightLimits.MAX_MM,hoopHeightLimit)) heightDraft = height.toString()
                         }
                     }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                         label = { Text(stringResource(R.string.lettering_height)) }, suffix = { Text("mm") },

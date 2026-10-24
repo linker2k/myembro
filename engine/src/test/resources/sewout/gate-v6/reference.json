@@ -1,0 +1,188 @@
+{
+  "tool_version": 7,
+  "sources": {
+    "gate.py": "cdedea88d89133d90f2b5547b6cbca207f79865b45771a6767e7d12cd08394db",
+    "lock_geometry.py": "5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42",
+    "thresholds.json": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d",
+    "POLICY.md": "1b16e3fac4e9adea0abcd2ea79e16aeb605ba77f081657f9eaeb4dfe672830a0",
+    "quality_gate_repeat.py": "360279d345cb47dd49daaf68c60d99741e5b14a8f0e05c3d2ea1ef1f0795b6f4",
+    "quality_gate_viewport.py": "8664b1970d807fbeaef54cfb80d8225bd914f08f54185e6b4a4dda7de67624f8",
+    "hoop-spec.json": "da5e6f8fcb0a02a08212e7c692bc6ea482444d49e6430dceed7a933ebf856cf6"
+  },
+  "cases": {
+    "T1PEDS": {
+      "sha256": "e66ebfc76c0df672c3642c9098efd3f10631cbe16cb56eae7ea201cf8310a74c",
+      "verdict": "BLOCK",
+      "reasons": [
+        "PEC_ORIGIN: min=(10,10), required=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 44,
+        "cell_peak_05mm": 5,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 1.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "T2OURS": {
+      "sha256": "250cf0086fc1ee72bf28d6789005cb0dcdd65e6f125dd36ebd83344fdb6c1df0",
+      "verdict": "BLOCK",
+      "reasons": [
+        "ZERO_LENGTH_MOTION: 2",
+        "SAME_POINT_REPEAT: 3",
+        "PEC_ORIGIN: min=(10,10), required=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 49,
+        "cell_peak_05mm": 4,
+        "max_same_point_consecutive": 3,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 1.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "T3NOZRO": {
+      "sha256": "4c239b468009996bd6391c1476cfed24e5b46c98faae0bd99e9706a5002a071c",
+      "verdict": "BLOCK",
+      "reasons": [
+        "PEC_ORIGIN: min=(10,10), required=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 48,
+        "cell_peak_05mm": 3,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 1.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "density30": {
+      "sha256": "be2fab6cd9e17fa8369c78254162046fd56019a5956ef8ae205f1dc3cbdf47b0",
+      "verdict": "BLOCK",
+      "reasons": [
+        "CELL_DENSITY: 29"
+      ],
+      "metrics": {
+        "stitch_count": 29,
+        "cell_peak_05mm": 29,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 0.5656854249492381
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "density31": {
+      "sha256": "e6e1884a3254dbf8df3902b2b8d06d52ce46be34268e447d1f01d2848e049665",
+      "verdict": "BLOCK",
+      "reasons": [
+        "CELL_DENSITY: 30"
+      ],
+      "metrics": {
+        "stitch_count": 30,
+        "cell_peak_05mm": 30,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 0.5656854249492381
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "invalid_length": {
+      "sha256": "d78ef82c3258bbd7283bc99e7457173761d5fe579339c070446e18c7130d19c3",
+      "verdict": "BLOCK",
+      "imported_policy_verdict": "BLOCK",
+      "reasons": [
+        "UNREADABLE_OR_INVALID_PES: PEC stitch-block length exceeds file"
+      ]
+    },
+    "long_first": {
+      "sha256": "7ecd62c7d5f381da024d50f20fe5305f89c56554904f6207c0f59042631ce57b",
+      "verdict": "BLOCK",
+      "reasons": [
+        "LONG_STITCH: dx²+dy²=40000",
+        "THREAD_START_LOCK_MISSING: no short return or 2–3 repeated boundary needles",
+        "START_LOCK_MISSING: 1/1 file/trim/color/stop starts",
+        "END_LOCK_MISSING: 1/1 trim/color/stop/final boundaries"
+      ],
+      "metrics": {
+        "stitch_count": 2,
+        "cell_peak_05mm": 1,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 1,
+        "end_lock_missing": 1,
+        "maximum_stitch_mm": 20.0
+      },
+      "imported_policy_verdict": "CAUTION"
+    },
+    "repeat3": {
+      "sha256": "c4814887a63ee031ccb5f4db854026194f0ee0252025ca7c3cf639e6da920f4b",
+      "verdict": "BLOCK",
+      "reasons": [
+        "THREAD_START_LOCK_MISSING: no short return or 2–3 repeated boundary needles",
+        "START_LOCK_MISSING: 1/1 file/trim/color/stop starts",
+        "END_LOCK_MISSING: 1/1 trim/color/stop/final boundaries",
+        "PEC_ORIGIN: min=(40,0), required=(0,0)",
+        "PEC_DIMENSIONS: header=(40,0), actual=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 1,
+        "cell_peak_05mm": 1,
+        "max_same_point_consecutive": 1,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 1,
+        "end_lock_missing": 1,
+        "maximum_stitch_mm": 4.0
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "s23sampler": {
+      "sha256": "ec13e11168870679d39f8704fe3fc75a746a589e28c7448532b301e8fb9c2da8",
+      "verdict": "BLOCK",
+      "reasons": [
+        "ZERO_LENGTH_MOTION: 30",
+        "SAME_POINT_REPEAT: 3",
+        "PEC_ORIGIN: min=(-297,-277), required=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 4439,
+        "cell_peak_05mm": 12,
+        "max_same_point_consecutive": 3,
+        "max_same_point_needle_only": 2,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 4.001249804748511
+      },
+      "imported_policy_verdict": "BLOCK"
+    },
+    "sampler": {
+      "sha256": "124a4b0db5cade5ef8a8322389c428fb3af4cf5a6ed2a69e34aa26cbf2926519",
+      "verdict": "BLOCK",
+      "reasons": [
+        "ZERO_LENGTH_MOTION: 46",
+        "SAME_POINT_REPEAT: 4",
+        "PEC_ORIGIN: min=(-246,-165), required=(0,0)"
+      ],
+      "metrics": {
+        "stitch_count": 723,
+        "cell_peak_05mm": 11,
+        "max_same_point_consecutive": 4,
+        "max_same_point_needle_only": 1,
+        "start_lock_missing": 0,
+        "end_lock_missing": 0,
+        "maximum_stitch_mm": 2.5
+      },
+      "imported_policy_verdict": "BLOCK"
+    }
+  }
+}

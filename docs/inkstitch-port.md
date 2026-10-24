@@ -726,6 +726,22 @@ PE-Design 고정 잠금 바이트에 맞추려고 출력이나 임계값을 바�
   코드·단위 테스트·빌드는 준비됐으며 외부 검토/봉제 완료 시점은 미정이다.
 
 
+## SE400 최종 안전 출력 경계 (T3 실기 확인 후)
+
+기본 PES 출력은 `GeneratedPatternProcessor.forSewout`에서 제로 JUMP·제로 바늘과
+같은 위치 TRIM 재시작을 제거한다. 비제로 half_stitch 경로는 변경하지 않는다.
+이는 원본 인식 규칙과 다른 **사용자 지정 최종 출력 정책**이다. 원본 호환 oracle 프로필은 유지한다.
+근거·테스트·재시험 경로·staging 적용은 [sewout-zero-start.md](sewout-zero-start.md)에 기록했다.
+
+
+### SE400 PES 원점 정책 차이 (2026-10-24)
+
+| 경계 | 원본 비교 프로필과의 차이 | 근거 |
+|---|---|---|
+| 기본 PES v1/v6 | 최종 PEC 좌표를 좌상단 0,0으로 이동, 새로 생긴 제로 이동/바늘 제거. PEC 사각형·v6 편집 변환 일치 | 사용자 SE400의 왼쪽 한계 정지 관찰, PE-Design 로컬 바이트 비교, S23SAM4 독립 좌표 검증 |
+
+알고리즘·half_stitch 잠금·편집 좌표에는 적용하지 않는다. 명시적 원본 비교 프로필과 가져온 PES 원본은 유지한다. 경로별 자동 테스트와 예외는 [pes-viewport.md](pes-viewport.md)에 기록했다.
+
 ### 20분 단위: 기본 타타미 공식 좌표 회귀 테스트 (실패를 자동 검출)
 
 main의 S1 planner를 병합한 뒤 DefaultTatami와 기존 3개 smoke 테스트를 일반 source set으로
@@ -1689,3 +1705,33 @@ manga1743, precious5289, KOR_small826.
 재현 파일·입력 해시·빈 속성 예시·전후 XML·출력:
 `/tmp/myembro-port-out/letter/font-crashes/`. 이는 crash/연결 회귀 판정이며
 독립 게이트·실제 봉제·전체 카탈로그 인증으로 확대하지 않는다.
+
+### P4: 글꼴 요소 JUMP 도착점의 중복 바늘 제거
+
+원본 대조 결과 **upstream도 해당 중복을 남긴다**.
+`lib/stitch_plan/stitch_plan.py:stitch_groups_to_stitch_plan`
+@b0edd96311ece82ee48816dc93466274b12c2a9c는 `lock_stitches[0]` 위치로 JUMP한 후
+잠금 목록 전체(첫 점 포함)를 추가한다. 잠금이 없어도 첫 본 땀 위치로 JUMP한 후
+본 땀 전체를 추가한다. 같은 커밋 `color_block.py:filter_duplicate_stitches`는
+이전 명령이 JUMP이거나 현재 점이 lock_stitch이면 중복 필터에서 제외한다.
+따라서 이 부분은 원본과 동일하다는 이유로 보존할 수 없고, 앱의 새 P4가 우선한다.
+
+글꼴 기본 생성 경로에서 S1 `fromGroups`의 `omitZeroLengthMotions`를 사용한다.
+실제 이동 cursor를 기준으로 JUMP/바늘의 길이0을 제외하고, 같은 점에서 TRIM→JUMP
+재시작하는 경우 둘을 없애 이어서 봉제한다. half_stitch의 나머지 좌표는 바꾸지 않는다.
+잠금/명령 인덱스·통계를 다시 매기며, 제거 전 본 땀을 source metadata로 보존해
+이동·확대·회전 후 재생성에서도 시작/끝을 잃지 않는다. P4 표식은 재생성에 전파한다.
+저장 writer에서 감추는 수정이 아니라 글꼴 생성 결과 자체를 고친다.
+
+원본을 측정하는 기존 `forceBoundaryLocks=false` 경로는 제품 정책을 끈
+**원본 비교 전용**으로 유지하며, 고정 오라클4건의 원본 땀 수를 바꾸지 않는다.
+앱 기본 호출은 경계 잠금과 P4 처리가 모두 켜져 있다. 이 차이를 원본 동등성으로
+거짓 보고하거나 비교기/게이트를 완화하지 않는다. 가져온 PES에는 이 처리를 적용하지 않는다.
+
+FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES 왕복,
+같은 점 트림 재시작, 크기 변경 재생성·잠금 인덱스·멱등성.
+물리 cursor는 최초(0,0)부터 모든 JUMP/STITCH를 연속 추적하며 바늘끼리만 비교하지 않는다.
+모든 대표 출력의 **0길이 바늘0개·JUMP0개**를 assert한다.
+수정 전 회귀2건 모두 실패, 수정 후 전체 `./gradlew check` 통과:
+엔진589·앱 Debug/Release 각190개 실패0, Lint 및 기존 고정 오라클4건 통과.
+출력: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` 및 `tests.xml`.
