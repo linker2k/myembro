@@ -192,3 +192,15 @@ tasks.register<JavaExec>("imageToDesignProbe") {
         providers.gradleProperty("imageProbeOutput").orElse("/tmp/myembro-port-out/editor/image-to-design").get(),
         providers.gradleProperty("imageProbeColors").orElse("4").get())
 }
+
+// Opt-in diagnostic, no UI/default changes: exact machine edge multiplicity and source geometry.
+tasks.register<JavaExec>("measureSingleLinePasses") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.SingleLinePassCli")
+    workingDir = rootProject.projectDir
+    args(providers.gradleProperty("passOutput").orElse("/tmp/myembro-port-out/letter/single-line-passes").get(),
+        providers.gradleProperty("passFonts").orElse("/tmp/myembro-fontq-independent/fonts").get(),
+        providers.gradleProperty("passText").orElse("Yeonwoo").get(),
+        providers.gradleProperty("passHeight").orElse("10").get())
+}
