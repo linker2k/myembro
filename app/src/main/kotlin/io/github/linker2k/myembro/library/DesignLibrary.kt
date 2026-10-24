@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.library
 
 import android.content.Context
+import io.github.linker2k.myembro.R
 import java.io.File
 
 /**
@@ -28,6 +29,15 @@ class DesignLibrary(private val context: Context) {
             context.assets.open("samples/$name")
         }
     }
+
+    /** Adds the 'myembro logo' default design once, under its localized name. */
+    fun seedDefaultLogo() {
+        DefaultLogoInstaller(dir).install(context.getString(R.string.library_logo_name) + ".pes") {
+            context.assets.open(DefaultLogoInstaller.ASSET)
+        }
+    }
+
+    fun isDefaultLogo(file: File): Boolean = file.parentFile == dir && file.name == DefaultLogoInstaller.installedName(dir)
 
     companion object {
         fun isSample(file: File): Boolean = file.name.startsWith("sample_")

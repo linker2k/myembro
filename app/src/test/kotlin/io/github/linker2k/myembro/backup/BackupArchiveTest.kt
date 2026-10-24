@@ -31,6 +31,14 @@ class BackupArchiveTest {
         }
         assertEquals(before,snapshot(data));assertEquals(prefs,restoredPrefs)
     }
+    @Test fun defaultLogoDesignIsNotBackedUpButUserDesignsAre()=sandbox { root ->
+        val data=File(root,"data");seed(data)
+        io.github.linker2k.myembro.library.DefaultLogoInstaller(File(data,"designs")).install("myembro logo.pes") { File("src/main/assets/designs/myembro_logo.pes").inputStream() }
+        assertTrue(File(data,"designs/myembro logo.pes").isFile)
+        BackupArchive.read(backup(data).inputStream(),File(root,"cache")).use { plan ->
+            assertEquals(snapshot(data).size-1,plan.fileCount)
+        }
+    }
     @Test fun duplicatesSkipOrCopyNeverOverwriteOriginalDesignAndProjects()=sandbox { root ->
         val data=File(root,"data");seed(data);val zip=backup(data);val before=snapshot(data)
         BackupArchive.read(zip.inputStream(),File(root,"cache")).use {p ->

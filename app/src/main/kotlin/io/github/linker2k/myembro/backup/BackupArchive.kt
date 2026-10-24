@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.backup
 
+import io.github.linker2k.myembro.library.DefaultLogoInstaller
 import java.io.*
 import java.nio.file.Files
 import java.security.MessageDigest
@@ -19,11 +20,13 @@ object BackupArchive {
     private fun allowed(path: String): Boolean = path.isNotEmpty() && '\\' !in path && '\u0000' !in path &&
         path.split('/').none { it.isEmpty() || it == "." || it == ".." } &&
         (path.substringBefore('/') in roots || path in looseFiles)
-    private fun files(root: File) = root.walkTopDown().onEnter { it == root || !Files.isSymbolicLink(it.toPath()) }.filter {
+    // The default logo design is regenerated app data, not user work: it is never backed up.
+    private fun files(root: File) = DefaultLogoInstaller.installedName(File(root, "designs")).let { logo -> root.walkTopDown().onEnter { it == root || !Files.isSymbolicLink(it.toPath()) }.filter {
+        logo == null || it.relativeTo(root).invariantSeparatorsPath != "designs/$logo" }.filter {
         it.isFile && !Files.isSymbolicLink(it.toPath()) && allowed(it.relativeTo(root).invariantSeparatorsPath) &&
             it.canonicalPath.startsWith(root.canonicalPath + File.separator) &&
             it.extension !in setOf("tmp", "part")
-    }.sortedBy { it.relativeTo(root).invariantSeparatorsPath }.toList()
+    }.sortedBy { it.relativeTo(root).invariantSeparatorsPath }.toList() }
     private fun sha(file: File): String {
         val digest=MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input -> val buf=ByteArray(65536); while(true) { val n=input.read(buf);if(n<0)break;digest.update(buf,0,n) } }

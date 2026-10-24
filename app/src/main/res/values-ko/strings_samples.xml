@@ -1,3 +1,5 @@
 <resources>
     <string name="library_sample_badge">샘플</string>
+    <string name="library_logo_name">myembro 로고</string>
+    <string name="library_default_badge">기본 · 백업 안 함</string>
 </resources>

@@ -1,3 +1,5 @@
 <resources>
     <string name="library_sample_badge">Sample</string>
+    <string name="library_logo_name">myembro logo</string>
+    <string name="library_default_badge">Default · not backed up</string>
 </resources>
