@@ -114,6 +114,7 @@ private fun LetteringContent(
     var height by rememberSaveable { mutableDoubleStateOf((initialObject?.heightMm ?: 18.0).coerceAtMost(LetteringHeightLimits.MAX_MM)) }
     var heightDraft by rememberSaveable { mutableStateOf((initialObject?.heightMm ?: 18.0).coerceAtMost(LetteringHeightLimits.MAX_MM).toString()) }
     var threadIndex by rememberSaveable { mutableIntStateOf(0) }
+    var singleLineBold by rememberSaveable { mutableStateOf(initialObject?.stitchStyle == StitchStyle.BEAN) }
     var keepInitialThread by rememberSaveable { mutableStateOf(initialObject != null) }
     var fitText by rememberSaveable { mutableStateOf(false) }
     var automatic by remember(fontId, text) { mutableStateOf<AutomaticLetteringState?>(null) }
@@ -189,7 +190,7 @@ private fun LetteringContent(
     val settings = LetteringSettings(text = text, fontId = fontId, heightMm = height,
         spacingMm = 0.0, alignment = LetteringAlignment.CENTER, curved = false,
         curve = LetteringCurve.STRAIGHT, curvature = 0.0, lineSpacingMm = 0.0,
-        characterColors = emptyMap(), stitchStyle = automatic?.style ?: StitchStyle.RUNNING,
+        characterColors = emptyMap(), stitchStyle = letteringStyleForWeight(automatic, singleLineBold),
         satinOptions = SatinOptions(parameters = SatinParameters(), autoDensity = false),
         threadWeight = ThreadWeight.WT40)
     val generationKey = settings to thread.color
@@ -200,8 +201,8 @@ private fun LetteringContent(
         if (ready) result?.let { onAdd(it.textObject.copy(id = UUID.randomUUID().toString())) }
         Unit
     }
-    val initialDraft = remember { LetteringDraftSnapshot(initialText, initialFontId, heightDraft, thread.color) }
-    val draftChanged = LetteringDraftSnapshot(text, fontId, heightDraft, thread.color) != initialDraft
+    val initialDraft = remember { LetteringDraftSnapshot(initialText, initialFontId, heightDraft, thread.color, singleLineBold) }
+    val draftChanged = LetteringDraftSnapshot(text, fontId, heightDraft, thread.color, singleLineBold) != initialDraft
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     val requestBack = { if (draftChanged) confirmDiscard = true else onBack() }
     BackHandler(onBack = requestBack)
@@ -245,12 +246,12 @@ private fun LetteringContent(
         }
     }
     // Cards display actual automatic stitches, without claiming a validated sewing range.
-    LaunchedEffect(text, height, thread.color, fontId, slotIds) {
+    LaunchedEffect(text, height, thread.color, fontId, slotIds, singleLineBold) {
         fontPreviews = emptyMap()
         delay(150)
         val previews = mutableMapOf<String, EmbPattern>()
         for (id in (slotIds + fontId).distinct().filter { id -> catalogFonts.none { it.id == id && it.predigitized } }) {
-            try { previews[id] = LetteringFontPreview.pattern(context, id, text, height, thread, StitchStyle.RUNNING) }
+            try { previews[id] = LetteringFontPreview.pattern(context, id, text, height, thread, if (singleLineBold) StitchStyle.BEAN else StitchStyle.RUNNING) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { /* An unavailable font has an empty preview. */ }
         }
@@ -330,7 +331,16 @@ private fun LetteringContent(
                         }
                     }
                 }
-                Text(stringResource(when (automatic?.style) {
+                if (automatic?.singleLineWeightEnabled == true && automatic?.style == StitchStyle.RUNNING) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.FilterChip(selected = !singleLineBold, onClick = { singleLineBold = false },
+                            label = { Text(stringResource(R.string.lettering_weight_normal)) }, modifier = Modifier.weight(1f))
+                        androidx.compose.material3.FilterChip(selected = singleLineBold, onClick = { singleLineBold = true },
+                            label = { Text(stringResource(R.string.lettering_weight_bold)) }, modifier = Modifier.weight(1f))
+                    }
+                }
+                Text(stringResource(when (if (automatic?.singleLineWeightEnabled == true) settings.stitchStyle else automatic?.style) {
+                    StitchStyle.BEAN -> R.string.lettering_bean
                     StitchStyle.RUNNING -> R.string.lettering_automatic_running
                     StitchStyle.SATIN -> R.string.lettering_automatic_satin
                     StitchStyle.FILL -> R.string.lettering_automatic_fill

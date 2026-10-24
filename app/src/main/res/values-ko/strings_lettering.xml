@@ -96,4 +96,6 @@
     <string name="lettering_fill_size_range">채우기 높이 · %1$s</string>
     <string name="lettering_discard_title">레터링 변경 내용을 버릴까요?</string>
     <string name="lettering_discard_body">변경한 내용이 아직 도안에 반영되지 않았습니다.</string>
+    <string name="lettering_weight_normal">보통</string>
+    <string name="lettering_weight_bold">굵게</string>
 </resources>
