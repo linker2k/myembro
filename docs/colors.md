@@ -1,171 +1,191 @@
-# 실 색 읽기 (PES)
+# Reading thread colors (PES)
 
-2026-10-22. 사용자 제보: "가져온 디자인 파일 색깔이 다르게 보인다". 근사색이 아니라 전혀 다른 색이었다.
+2026-10-22. User report: "Imported design files show different colors." These were completely
+different colors, rather than approximations.
 
-## 원인
+## Causes
 
-PES v5 이상은 헤더에 실제 실 목록(RGB·카탈로그 번호·설명·브랜드)을 두고, PEC 블록에는
-Brother 64색 팔레트 번호만 둔다. 두 가지 결함이 겹쳤다.
+PES v5 and later store the actual thread list (RGB, catalog number, description, and brand) in
+the header, while the PEC block contains only Brother 64-color palette numbers. Two defects overlapped.
 
-1. **UTF-16 문자열.** 헤더 문자열은 MFC CArchive 형식이다. 길이 바이트가 `FF`이면 u16
-   길이가 이어지고, `FFFE`이면 UTF-16 문자열(`FF FE FF` + 글자 수 + UTF-16LE)이다.
-   최근 PE-Design은 실 목록 문자열을 이 형식으로 쓴다. 우리 리더와 pyembroidery 1.5.1은
-   `FF`를 255바이트 문자열로 읽었다. 그래서 첫 문자열부터 위치가 어긋나 UTF-16 글자 바이트를
-   RGB로 썼다. 버전별 건너뛰기 오프셋(v8의 38/26 등)은 맞았다. 실 개수가 우연히 맞으면
-   경고도 없이 쓰레기 색이 그대로 쓰였다.
-2. **실 목록 순서.** 실 목록이 블록 순서와 다를 수 있다(역순, 같은 실 재사용). 실 수가 블록
-   수 이상이면 순서대로 1:1로 대응시켰기 때문에, 역순 파일은 색이 뒤바뀌었다.
+1. **UTF-16 strings.** Header strings use the MFC CArchive format. A length byte of `FF` is
+   followed by a u16 length; `FFFE` indicates a UTF-16 string (`FF FE FF` + character count +
+   UTF-16LE). Recent PE-Design versions write thread-list strings in this format. Our reader
+   and pyembroidery 1.5.1 read `FF` as a 255-byte string. This shifted the position from the
+   first string onward and caused UTF-16 character bytes to be used as RGB. The version-specific
+   skip offsets (such as 38/26 for v8) were correct. If the thread count happened to match,
+   garbage colors were used without even a warning.
+2. **Thread-list order.** The thread list can differ from block order (reverse order or thread
+   reuse). When the thread count was at least the block count, threads were assigned sequentially
+   1:1, so colors were swapped in reverse-order files.
 
-이 밖에 버전 0091·0110은 헤더를 읽지 않았고, 미리 정의된 채움·모티프·깃털 개수가 0이
-아니면 실 목록을 포기했다. 두 경우 모두 PEC 근사색으로 떨어진다.
+In addition, versions 0091·0110 did not have their headers read, and a non-0 count of predefined
+fills, motifs, or feathers caused the thread list to be abandoned. Both cases fall back to PEC
+approximate colors.
 
-렌더링 경로(`RenderData` → `Run.color = pattern.threadAt(block).color` → StitchCanvas·
-Thumbnails·EditorCanvas)에는 알파·테마 틴트·sRGB 변환이 없다. 리더는 항상 알파 FF를 채운다.
+The rendering path (`RenderData` → `Run.color = pattern.threadAt(block).color` → StitchCanvas·
+Thumbnails·EditorCanvas) performs no alpha, theme-tint, or sRGB conversion. The reader always fills alpha with FF.
 
-## 재현: Brother 무료 도안 "Summer lemon" (`#PES0080`, 9블록)
+## Reproduction: Brother free design "Summer lemon" (`#PES0080`, 9 blocks)
 
-개인용 도안이라 저장소에 넣지 않았다. 아래 표는 블록별 색이다.
+This is a personal-use design and was not added to the repository. The table below shows colors per block.
 
-| 블록 | 수정 전 앱 | pyembroidery 1.5.1 | 수정 후 (헤더 실) | PEC 번호 |
+| Block | App before fix | pyembroidery 1.5.1 | After fix (header thread) | PEC number |
 |---|---|---|---|---|
-| 1 | `#650073` 보라 | `#650073` | `#FFD911` 206 | 58 Harvest Gold |
-| 2 | `#0F03B4` 파랑 | `#0F03B4` | `#A8A8A8` 005 | 16 Silver |
-| 3 | `#B3021E` 빨강 | `#B3021E` | `#F0F0F0` 001 | 29 White |
-| 4 | `#02D804` 초록 | `#02D804` | `#662815` 157 Brother Fleshtone | 41 Dark Olive |
+| 1 | `#650073` purple | `#650073` | `#FFD911` 206 | 58 Harvest Gold |
+| 2 | `#0F03B4` blue | `#0F03B4` | `#A8A8A8` 005 | 16 Silver |
+| 3 | `#B3021E` red | `#B3021E` | `#F0F0F0` 001 | 29 White |
+| 4 | `#02D804` green | `#02D804` | `#662815` 157 Brother Fleshtone | 41 Dark Olive |
 | 5 | `#021B04` | `#021B04` | `#F64A8A` 086 | 25 Deep Rose |
 | 6 | `#7C0267` | `#7C0267` | `#A8DDC4` 542 | 31 Seacrest |
-| 7 | `#02D804` | `#02D804` | `#662815` 157 (재사용) | 41 Dark Olive |
+| 7 | `#02D804` | `#02D804` | `#662815` 157 (reused) | 41 Dark Olive |
 | 8 | `#02B903` | `#02B903` | `#F993BC` 085 | 43 Pink |
 | 9 | `#2E030D` | `#2E030D` | `#FFF08D` 812 | 34 Cream Yellow |
 
-에뮬레이터에서 수정 전에는 보라 레몬·빨강 테두리·초록 안경이었다. 수정 후에는 노란 레몬,
-흰·회색 테두리, 청록 안경, 분홍 렌즈로 보인다.
+Before the fix, the emulator showed a purple lemon, red outlines, and green glasses. After the
+fix, it shows a yellow lemon, white/gray outlines, teal glasses, and pink lenses.
 
-## 표본 비교 (186개)
+## Sample comparison (186 files)
 
-비교 대상은 다음 두 묶음이다.
-- [EmbroidePy/samples](https://github.com/EmbroidePy/samples) `6e65f1ae`, MIT, PES 73개.
-- Brother sewingcraft 무료 도안 113개(/tmp에서 분석만 함).
+The comparison covers the following two collections.
+- [EmbroidePy/samples](https://github.com/EmbroidePy/samples) `6e65f1ae`, MIT, 73 PES files.
+- 113 Brother sewingcraft free designs (analysis only in /tmp).
 
-블록 색의 절반 넘게 PEC 팔레트 색에서 멀리 떨어진 파일 수(빨강·초록·파랑이 모두 0x40씩
-차이 나는 것보다 먼 경우):
+Number of files where more than half the block colors were far from the PEC palette colors
+(farther than a difference of 0x40 in each of red, green, and blue):
 
-| | 수정 전 | pyembroidery | 수정 후 |
+| | Before fix | pyembroidery | After fix |
 |---|---|---|---|
-| 파일 수 | 25 | 24 | 2 |
+| File count | 25 | 24 | 2 |
 
-남은 2개(EmbroidePy `random1-premier-v6/v9`)는 헤더 실이 정상 Brother 문자열이다.
-수정 전 결과·pyembroidery와도 같아서, 파일 자체가 PEC 번호와 다른 실을 기록한 경우다.
-UTF-16 쓰레기 문자열이 나온 파일은 24개에서 0개가 되었다. EmbroidePy 파일의 실 색은 수정
-전후 모두 pyembroidery와 같다.
+The remaining 2 files (EmbroidePy `random1-premier-v6/v9`) have normal Brother strings in the
+header threads. They also match the pre-fix results and pyembroidery, so the files themselves
+record threads different from the PEC numbers. Files with garbage UTF-16 strings decreased
+from 24 to 0. EmbroidePy file thread colors match pyembroidery both before and after the fix.
 
-## 수정
+## Changes
 
 `engine/io/PesReader.kt`
 
-- 문자열을 MFC CArchive 규칙으로 읽는다: `FF`, u16, `FFFE`(UTF-16), `FFFF`(u32).
-  메타데이터·후프·이미지 이름에도 같은 규칙을 쓴다.
-- 실 목록은 다음을 모두 만족할 때만 채택한다.
-  - 1~255개다.
-  - 모든 문자열이 제어 문자와 U+FFFD 없이 254자 이하다.
-  - 바로 뒤에 객체 표가 온다: u16 0, 또는 객체 수 + `FFFF 0000` + 길이 + `CEmb…`처럼
-    `C`로 시작하는 클래스 이름.
-- 버전별 고정 위치에서 이런 목록을 찾으면 "검증됨"이다. 찾지 못한 경우에는 헤더를 탐색한다.
-  - 해당 경우: 채움·모티프·깃털 정의가 있을 때, 0091·0110처럼 알려지지 않은 v5+ 레이아웃일 때,
-    위치가 어긋났을 때.
-  - 탐색 범위: 12바이트부터 첫 객체 표식 또는 64KB까지.
-  - 가장 긴 유효 목록을 고르고 "탐색됨"으로 표시한다.
-- 아플리케 단계(카탈로그 100~102, RGB 0, 브랜드 없음)는 Brother 표시와 같은 PEC 62~64 색과
-  "Appliqué material/position/Appliqué"로 바꾼다.
-- 블록과 실을 짝짓는 후보는 셋이다. 블록 색이 PEC 팔레트 색에서 먼 개수가 가장 적은 후보를
-  고르고, 같으면 앞의 후보를 쓴다.
-  1. CSewSeg 색 기록: 객체(CEmbOne)마다 구간(CSewSeg)이 있고, 끝에 (구간, 실 번호) 기록이
-     있다. 객체 순서대로 이어 붙이고 연속 중복을 합친다. 구조가 이 형식과 다르면 쓰지 않는다.
-  2. 실 목록 순서. 실이 블록보다 적으면 서로 다른 PEC 번호마다 다음 실을 배정한다(기존 방식).
-  3. PEC 번호별로 가장 가까운 실을 거리 순으로 짝짓는다(역순 목록 대응).
+- Read strings using MFC CArchive rules: `FF`, u16, `FFFE` (UTF-16), `FFFF` (u32).
+  The same rules apply to metadata, hoops, and image names.
+- Accept a thread list only when all of the following hold.
+  - It contains 1~255 entries.
+  - Every string is at most 254 characters, without control characters or U+FFFD.
+  - An object table immediately follows: u16 0, or an object count + `FFFF 0000` + length +
+    a class name starting with `C`, such as `CEmb…`.
+- A list found at a version-specific fixed position is marked "validated". If none is found,
+  search the header.
+  - Applicable cases: fill/motif/feather definitions, unknown v5+ layouts such as 0091·0110,
+    or a shifted position.
+  - Search range: from byte 12 to the first object marker or 64KB.
+  - Select the longest valid list and mark it "scanned".
+- Convert appliqué steps (catalog 100~102, RGB 0, no brand) to PEC 62~64 colors and
+  "Appliqué material/position/Appliqué", matching the Brother display.
+- There are three candidates for pairing blocks and threads. Select the candidate with the fewest
+  block colors far from the PEC palette; on a tie, use the earlier candidate.
+  1. CSewSeg color log: each object (CEmbOne) has sections (CSewSeg), with (section, thread
+     number) records at the end. Concatenate in object order and merge consecutive duplicates.
+     Do not use this candidate if the structure differs from this format.
+  2. Thread-list order. If there are fewer threads than blocks, assign the next thread to each
+     distinct PEC number (the existing method).
+  3. Pair each PEC number with the nearest thread in distance order (handles reversed lists).
 
-  이 순서인 이유:
-  - 색 기록은 재사용이나 비슷한 색(Madeira Salsa와 Cinnamon Candy가 둘 다 PEC Red)을 정확히
-    구분한다. 그러나 객체 순서가 바느질 순서와 다른 파일(CGroupObject)이 있어서, PEC와 더 멀면
-    밀린다.
-  - 색 기록과 대조할 수 있는 69개 파일에서 2·3번 규칙만으로도 67개가 일치했다.
-- 안전장치: "탐색됨" 목록인데 블록 절반 넘게 PEC 색과 멀면 그 목록을 버리고 PEC 색을 쓴다.
-  경고는 `PES thread list does not match the PEC colors; using PEC colors`다. "검증됨" 목록은
-  색이 멀어도 유지한다. 사용자 지정 RGB 실(`R51 G37 B255` 등)은 원래 PEC와 멀기 때문이다.
-- 실 목록을 찾지 못한 v5+ 파일은 `PES thread list not found; using PEC colors` 경고를 남긴다.
+  Reasons for this order:
+  - The color log accurately distinguishes reuse and similar colors (Madeira Salsa and Cinnamon
+    Candy are both PEC Red). However, some files (CGroupObject) have object order different
+    from sewing order, so the log loses priority if it is farther from PEC.
+  - Among 69 files that could be checked against the color log, rules 2·3 alone matched 67.
+- Safeguard: if a "scanned" list has more than half its blocks far from the PEC colors, discard
+  it and use PEC colors. The warning is `PES thread list does not match the PEC colors; using PEC colors`.
+  A "validated" list is retained even when its colors are far away, because custom RGB threads
+  (such as `R51 G37 B255`) can legitimately be far from PEC.
+- A v5+ file with no thread list produces the warning `PES thread list not found; using PEC colors`.
 
-`engine/io/PesV6Writer.kt`: 한 바이트 길이를 254로 제한했다. 255(`FF`)는 MFC에서 확장
-표식이라, 다른 프로그램과 우리 리더가 다르게 읽는다.
+`engine/io/PesV6Writer.kt`: limited single-byte lengths to 254. 255 (`FF`) is an MFC extension
+marker, causing other programs and our reader to interpret it differently.
 
-`engine/edit/ProjectJson.kt`: 저장된 프로젝트에 원본 바이트(`sourceBytes`)가 있으면 불러올 때
-다시 읽는다. 바늘 좌표가 같으면 새 결과를 쓴다. 2026-10-23부터 원본 바이트가 없는 프로젝트는
-앱에서 주입한 파일명 리졸버도 사용한다(아래 복구 절 참조). 실 색 변경은 `sourceThreadsEdited`로
-명시적으로 보존한다. 썸네일·라이브러리·뷰어는 디스크 캐시 없이 원본 파일을 매번 다시 읽는다.
+`engine/edit/ProjectJson.kt`: when a saved project contains original bytes (`sourceBytes`),
+reread them on load. Use the new result if needle coordinates match. Since 2026-10-23, projects
+without original bytes also use a filename resolver injected by the app (see the recovery section
+below). Manual thread-color changes are explicitly preserved with `sourceThreadsEdited`.
+Thumbnails, the library, and the viewer reread the original file each time, without a disk cache.
 
-## 테스트
+## Tests
 
-- `PesColorTest`: PE-Design v8 구조를 바이트 단위로 재현한 합성 헤더를 쓴다.
-  - UTF-16 문자열
-  - 역순 실 목록(색 기록 있음·없음)
-  - PEC 번호를 공유하는 두 실
-  - 아플리케
-  - 채움 정의 뒤의 실 목록
-  - 알 수 없는 0110 레이아웃
-  - PEC와 다른 탐색 결과 버리기
+- `PesColorTest`: uses synthetic headers that reproduce the PE-Design v8 structure byte by byte.
+  - UTF-16 strings
+  - Reversed thread lists (with/without a color log)
+  - Two threads sharing a PEC number
+  - Appliqué
+  - Thread lists after fill definitions
+  - Unknown 0110 layouts
+  - Discarding scanned results that differ from PEC
 
-  9개 중 8개는 수정 전 리더에서 실패한다.
-- EmbroidePy MIT 실제 파일 4개(`fixtures/embroidepy/`, brother v5·v6, premier v9, wilcom v6)의
-  실 색이 pyembroidery와 같다.
-- `ProjectJsonTest`: 예전 리더로 저장된 프로젝트의 색 복구, 실 색을 바꾼 객체의 색 유지.
+  8 of the 9 cases fail with the pre-fix reader.
+- Thread colors in 4 real MIT EmbroidePy files (`fixtures/embroidepy/`, brother v5·v6,
+  premier v9, wilcom v6) match pyembroidery.
+- `ProjectJsonTest`: recovery of colors in projects saved with the old reader, and preservation
+  of colors in objects whose thread colors were edited.
 
-## 남은 일 (제안)
+## Remaining work (proposals)
 
-- **색 정보 없는 형식.** DST·PEC(단독)·PES v1~v4는 실 색이 없거나 PEC 팔레트뿐이다.
-  - 뷰어 색상 카드에 "색 정보 없음 — 기본 팔레트"를 표시한다.
-  - 판별 기준: 엔진에서 `metadata["colors"] = "palette"` 같은 표식을 둔다.
-  - 편집기의 실 색 변경(EditorAppearance)을 뷰어에서도 바로 열 수 있게 한다.
-- **실 이름 표시.** Brother "EMBROIDERY" 실은 설명 칸에 차트 번호(예: `58`)가 들어 있다.
-  지금은 색상 카드에 숫자가 이름처럼 보인다. 카탈로그 번호와 브랜드를 묶어 "Brother 206"처럼
-  보이거나, PEC 이름("Harvest Gold")을 함께 보이면 좋다.
-- **CGroupObject.** 그룹 객체에 담긴 바느질 순서를 해석하면, 색 기록을 여러 객체 파일에서도
-  1순위로 쓸 수 있다.
+- **Formats without color information.** DST, standalone PEC, and PES v1~v4 lack thread colors
+  or contain only the PEC palette.
+  - Display "No color information — default palette" on the viewer color card.
+  - Detection: add an engine marker such as `metadata["colors"] = "palette"`.
+  - Allow the editor's thread-color controls (EditorAppearance) to open directly from the viewer too.
+- **Thread-name display.** Brother "EMBROIDERY" threads have chart numbers (for example, `58`)
+  in the description field. Currently, numbers appear as names on color cards. Combining catalog
+  number and brand as "Brother 206", or also showing the PEC name ("Harvest Gold"), would help.
+- **CGroupObject.** Decoding sewing order inside grouped objects would allow the color log to
+  be the 1st-priority choice for multi-object files as well.
 
 
-## 2026-10-23: alpha10 이전 프로젝트·자동복구의 오래된 실 정보 복구
+## 2026-10-23: recovering stale thread information in pre-alpha10 projects and autorecovery
 
-사용자 폰에서는 새로 연 PES만 정상이고, 예전에 저장한 `.myembro` 및 `drafts/editor.myembro`의
-`sourcePattern.threads`에는 잘못 읽힌 보라/파랑/초록과 U+FFFD 실 이름이 남아 있었다.
-기존 재해석은 `sourceBytes`가 있을 때만 가능했다. 파일명만 보관한 스냅샷에는 적용되지 않았다.
+On the user's phone, only newly opened PES files were correct. Previously saved `.myembro`
+files and `drafts/editor.myembro` still contained misread purple/blue/green colors and U+FFFD
+thread names in `sourcePattern.threads`. Existing reinterpretation worked only with `sourceBytes`
+and did not apply to snapshots that stored only a filename.
 
-- `ProjectJson.decode(text, codecs, sourceResolver)`에 선택적 `ProjectSourceResolver`를 추가했다.
-  엔진은 파일 경로를 직접 열지 않는다. 우선 내장 원본을 다시 읽고, 없거나 재해석에 실패하면
-  리졸버에 `sourceFileName`을 전달한다. 새 결과와 저장된 명령의 **개수 및 모든 x/y 좌표가
-  정확히 같을 때만** 새 결과를 사용한다. 명령 종류는 리더가 STOP/색상 교체 해석을 개선할 수
-  있도록 비교하지 않는다. 불일치·누락·읽기 실패는 기존 저장 데이터로 열린다.
-- 성공적으로 찾은 파일의 바이트는 복원된 객체에 복사해 넣는다. 이후 프로젝트/복구 저장 시
-  원본도 함께 남으므로 도안 폴더에서 파일을 나중에 지워도 재해석이 가능하다. 기존 파일은
-  읽는 즉시 덮어쓰지 않는다. 배치·변환·가시성·id·객체명은 유지한다.
-- 앱의 `DesignSourceResolver`는 `files/designs`의 같은 파일명만 찾는다. 오래된 절대 경로는
-  파일명만 사용하며, 대소문자가 다른 경우 유일하게 일치하는 파일만 허용한다. 폴더 밖 심볼릭
-  링크와 32MiB 초과 파일은 제외한다. Android 26에서도 가능한 스트림 읽기를 사용한다.
-- 파일 열기와 SAF URI 열기는 `EditorViewModel.loadProject` → `readEditorProject`를 공유한다.
-  앱 시작 자동복구의 `EditorDraftStore.read`도 같은 함수와 리졸버를 사용한다.
-- 새 수동 실 변경은 `sourceThreadsEdited = true`로 저장하고, 이 표식이 있으면 원본이 있어도
-  저장된 실을 유지한다. JSON 버전은 1을 유지하며 새 필드는 선택적이다. **표식 없는 과거의
-  수동 재색칠은 오래된 파서 캐시와 구분할 수 없으므로, 같은 좌표의 원본이 있으면 원본 실로
-  복구될 수 있다.** 원본이 없는 데이터의 RGB를 추정하지 않는다.
-- `EmbThread.displayName/displayDetails`는 U+FFFD 또는 ISO 제어 문자가 있는 필드를 통째로
-  제외하고 읽을 수 있는 카탈로그 번호/브랜드, 없으면 RGB로 표시한다. 편집기 인스펙터·스와치
-  접근성 이름·뷰어 색상 카드는 이 속성을 사용한다. 원본 실 메타데이터와 동일성 비교는 유지한다.
+- Added an optional `ProjectSourceResolver` to `ProjectJson.decode(text, codecs, sourceResolver)`.
+  The engine does not open file paths directly. It first rereads the embedded original; if absent
+  or reinterpretation fails, it passes `sourceFileName` to the resolver. The new result is used
+  **only when the count and every x/y coordinate exactly match** the saved commands. Command
+  types are not compared, allowing the reader to improve STOP/color-change interpretation.
+  Mismatches, missing sources, and read failures open with the existing saved data.
+- Bytes from a successfully located file are copied into the recovered object. Subsequent project/
+  recovery saves also retain the original, so reinterpretation remains possible even if the file is
+  later deleted from the designs folder. Existing files are not overwritten immediately on reading.
+  Placement, transforms, visibility, id, and object names are preserved.
+- The app's `DesignSourceResolver` looks only for matching filenames in `files/designs`. For old
+  absolute paths, only the filename is used; case-insensitive matching is allowed only when there
+  is a unique match. Symlinks outside the folder and files larger than 32MiB are excluded.
+  Reading uses streams supported on Android 26 as well.
+- File opening and SAF URI opening share `EditorViewModel.loadProject` → `readEditorProject`.
+  App-start autorecovery through `EditorDraftStore.read` uses the same function and resolver.
+- New manual thread changes are saved with `sourceThreadsEdited = true`; this marker preserves
+  saved threads even when an original is available. JSON stays at version 1, and the new fields
+  are optional. **Older manual recoloring without a marker cannot be distinguished from an old
+  parser cache, so it may be recovered to the original threads if an original with matching
+  coordinates is found.** RGB values are not inferred for data without an original.
+- `EmbThread.displayName/displayDetails` excludes entire fields containing U+FFFD or ISO control
+  characters, displaying readable catalog numbers/brands or, if absent, RGB. The editor inspector,
+  swatch accessibility names, and viewer color cards use these properties. Original thread metadata
+  and identity comparisons are preserved.
 
-재현 파일은 `/tmp/myembro-colors-repro` 안에서만 사용했다. 실제 레몬 파일에서 잘못된 색과
-이름을 넣은 옛 JSON을 만들어 원본 내장/파일명 리졸버 두 경로 모두 **19,736땀·9실**의 정상
-색으로 복원되고 모든 좌표가 유지됨을 확인했다. 개인용 파일과 이를 포함하는 JSON은 Git에 넣지 않는다.
+Reproduction files were used only under `/tmp/myembro-colors-repro`. An old JSON with incorrect
+colors and names was created from the actual lemon file. Both the embedded-original and filename-
+resolver paths restored the correct colors for **19,736 stitches·9 threads** with every coordinate
+preserved. Personal-use files and JSON containing them are not added to Git.
 
-회귀 테스트는 재배포가 가능한 **합성 v8 UTF-16 헤더와 자체 좌표**를 사용한다.
-`ProjectSourceMigrationTest`는 원본 우선순위, 파일명 복구, 좌표/명령 수 불일치, 누락·읽기 실패,
-바이트 보관, 재색칠 표식, null/잘못된 Base64를 검사한다. `EditorSourceRecoveryTest`는 앱 프로젝트
-파일·자동복구·도안 폴더 리졸버·재색칠·누락·경로 제한을 검사한다. `ThreadDisplayTest`는 깨진
-이름/브랜드/카탈로그, 제어 문자, 한글 등 정상 Unicode의 표시를 검사한다.
+Regression tests use redistributable **synthetic v8 UTF-16 headers and original coordinates**.
+`ProjectSourceMigrationTest` checks original-source priority, filename recovery, coordinate/command-
+count mismatches, missing/read failures, byte retention, recoloring markers, and null/invalid Base64.
+`EditorSourceRecoveryTest` checks app project files, autorecovery, the designs-folder resolver,
+recoloring, missing sources, and path restrictions. `ThreadDisplayTest` checks broken names/brands/
+catalogs, control characters, and display of valid Unicode such as Hangul.
 
-검증: `:engine:test` 205개, `:app:testDebugUnitTest` 115개 통과 및 `:app:assembleDebug` 성공.
+Verification: 205 `:engine:test` tests and 115 `:app:testDebugUnitTest` tests passed, and
+`:app:assembleDebug` succeeded.
