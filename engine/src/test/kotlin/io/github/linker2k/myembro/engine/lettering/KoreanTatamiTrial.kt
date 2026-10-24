@@ -124,7 +124,49 @@ object KoreanTatamiTrial {
         File(dir,"layout.json").writeText(Json {prettyPrint=true}.encodeToString(JsonArray.serializer(),JsonArray(layout)))
         println("COMPOSED KRSAMP1.PES ${points.maxOf {it.x}/10.0}x${points.maxOf {it.y}/10.0}mm; zero=$zeros; threads=${decoded.threads.size}; stitches=${decoded.stitchCount}")
     }
+    private fun smallTrial(boldFile:File,regularFile:File,out:File) {
+        out.mkdirs()
+        val target=File(out,"KRSAMP7.PES");check(!target.exists()) { "Never overwrite an existing physical trial" }
+        val rows=mutableListOf<JsonObject>();val combined=mutableListOf<io.github.linker2k.myembro.engine.model.Stitch>()
+        for((weight,fontFile,heights) in listOf(Triple(700,boldFile,listOf(8.0,10.0,12.0)),Triple(400,regularFile,listOf(15.0)))) {
+            val font=Font.createFont(Font.TRUETYPE_FONT,fontFile).deriveFont(1000f)
+            val (raw,ids)=paths(font,"정민")
+            val reference=paths(font,"자").first.flatten().let {p->p.maxOf {it.second}-p.minOf {it.second}}
+            for((index,height) in heights.withIndex()) {
+                val widths=(listOf("정민" to raw)+listOf("정","민").mapIndexed {id,ch->ch to raw.filterIndexed {i,_->ids[i]==id}}).associate { (text,contours)->
+                    text to StrokeWidthMeasurement.measure(region(contours.map {p->p.map {(x,y)->x*height/reference to y*height/reference}}).geometry)
+                }
+                rows+=buildJsonObject {
+                    put("weight",weight);put("height_mm",height)
+                    for((text,m) in widths) put(text,buildJsonObject {put("minimum_sampled_mm",m.minimumSampledMm);put("p10_mm",m.p10Mm)})
+                }
+                if(weight==400)continue // Reference measurement only; not stitched into this sampler.
+                val part=output(LetteringEngine.fromContours(raw,height,sourceHeight=reference,contourCharacters=ids,outline=true,stitchStyle=StitchStyle.FILL))
+                val y=listOf(0,110,240)[index]
+                val moves=part.stitches.takeWhile {it.command!=Command.END}.map {it.copy(y=it.y+y)}
+                if(combined.isNotEmpty())combined+=combined.last().copy(command=Command.TRIM)
+                val first=moves.first {it.command==Command.STITCH||it.command==Command.JUMP}
+                if(first.command!=Command.JUMP)combined+=first.copy(command=Command.JUMP)
+                combined+=moves
+            }
+        }
+        val bytes=PesWriter.writeV6(output(EmbPattern(combined,listOf(thread))))
+        val decoded=PesReader.read(bytes);val motions=decoded.stitches.filter {it.command==Command.STITCH||it.command==Command.JUMP}
+        var x=0;var y=0;var zeros=0;var maxSquared=0
+        for(s in motions) {if(s.x==x&&s.y==y)zeros++;if(s.command==Command.STITCH)maxSquared=max(maxSquared,(s.x-x)*(s.x-x)+(s.y-y)*(s.y-y));x=s.x;y=s.y}
+        val minx=motions.minOf {it.x};val miny=motions.minOf {it.y};val maxx=motions.maxOf {it.x};val maxy=motions.maxOf {it.y}
+        val pointer=(0..3).sumOf {(bytes[8+it].toInt() and 255) shl (8*it)}
+        fun u16(at:Int)=(bytes[at].toInt() and 255) or ((bytes[at+1].toInt() and 255) shl 8)
+        val w=u16(pointer+520);val h=u16(pointer+522)
+        check(minx==0&&miny==0&&maxx<600&&maxy<600&&zeros==0&&maxSquared<=14400)
+        check(w==maxx&&h==maxy&&decoded.threads.size==1&&decoded.colorChangeCount==0)
+        target.writeBytes(bytes)
+        File(out,"widths.json").writeText(Json {prettyPrint=true}.encodeToString(JsonArray.serializer(),JsonArray(rows)))
+        val proof="KRSAMP7.PES bounds=($minx,$miny)..($maxx,$maxy) header=${w}x$h zero_motions=$zeros threads=${decoded.threads.size} stitches=${decoded.stitchCount} max_stitch_mm=${sqrt(maxSquared.toDouble())/10}"
+        File(out,"checks.txt").writeText(proof+"\n");println(proof)
+    }
     @JvmStatic fun main(args:Array<String>) {
+        if(args[0]=="small") {smallTrial(File(args[1]),File(args[2]),File(args[3]));return}
         if(args[0]=="compose") {compose(File(args[1]));return}
         val out=File(args[1]).apply {mkdirs()};val font=Font.createFont(Font.TRUETYPE_FONT,File(args[0])).deriveFont(1000f)
         val (raw,ids)=paths(font,"정민");val reference=paths(font,"자").first.flatten().let {p->p.maxOf {it.second}-p.minOf {it.second}}

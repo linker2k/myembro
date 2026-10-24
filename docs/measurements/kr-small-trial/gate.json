@@ -1,0 +1,516 @@
+{
+  "tool_version": 7,
+  "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d",
+  "verdict": "PASS",
+  "cases": 1,
+  "blocked": 0,
+  "all_required_checks_complete": true,
+  "release_ready": false,
+  "final_acceptance": "user sewout",
+  "results": [
+    {
+      "path": "/tmp/myembro-sewtest/kr7/KRSAMP7.PES",
+      "text": false,
+      "style": "fill",
+      "verdict": "PASS",
+      "reasons": [],
+      "warnings": [],
+      "reference_flags": [
+        "short_lt03_ratio: 0.150810 > 0.108930",
+        "body_short_lt03_ratio: 0.151116 > 0.064180",
+        "body_tiny_lt027_ratio: 0.139959 > 0.056993"
+      ],
+      "reference_metrics": {
+        "canonical_start_count": 0,
+        "zero_length_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_ratio": 0.1508097165991903,
+        "body_short_lt03_ratio": 0.1511156186612576,
+        "body_tiny_lt027_ratio": 0.13995943204868155,
+        "satin_same_side_mm": {
+          "n": 0
+        },
+        "length_mm": {
+          "n": 1976,
+          "min": 0.1,
+          "p01": 0.1,
+          "p10": 0.2,
+          "p50": 0.8062257748298549,
+          "p90": 2.142423444000792,
+          "p95": 2.7,
+          "p99": 4.0,
+          "max": 4.1012193308819755
+        }
+      },
+      "hoop_check": {
+        "status": "PASS",
+        "viewport_native": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 222,
+          "max_y": 360,
+          "header_width": 222,
+          "header_height": 360,
+          "errors": [],
+          "valid": true,
+          "motion_count": 1992
+        },
+        "errors": [],
+        "size_units": [
+          600,
+          600
+        ],
+        "integer_units": "0.1mm",
+        "boundary": "exclusive size bound",
+        "source": "HoopSpec"
+      },
+      "all_required_checks_complete": true,
+      "release_ready": false,
+      "scope": "Automated PES checks only; final acceptance requires user sewout",
+      "metrics": {
+        "sha256": "02f86f2d44aef6716f4890a9cff275c80f04638c53addc87df9b36decbac9e56",
+        "bytes": 13791,
+        "pec_end": "FF00",
+        "trim_jump_combined_flags": 0,
+        "decoded_trim_count": 5,
+        "encoded_trim_count": 5,
+        "stitch_count": 1976,
+        "run_count": 16,
+        "jump_count": 16,
+        "trim_count": 5,
+        "stop_count": 0,
+        "color_change_count": 0,
+        "zero_length_count": 0,
+        "expected_lock_zero_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_count": 298,
+        "short_lt03_ratio": 0.1508097165991903,
+        "body_short_lt03_ratio": 0.1511156186612576,
+        "body_short_lt03_count": 298,
+        "body_count": 1972,
+        "body_tiny_lt027_count": 276,
+        "body_tiny_lt027_ratio": 0.13995943204868155,
+        "max_same_point_consecutive": 1,
+        "cell_peak_05mm": 9,
+        "cell_peaks_by_phase": [
+          8,
+          8,
+          8,
+          9
+        ],
+        "lock_edge_count": 4,
+        "canonical_start_count": 0,
+        "start_lock_missing": 0,
+        "start_lock_missing_ratio": 0.0,
+        "end_lock_missing": 0,
+        "trim_before_opportunities": 5,
+        "trim_before_lock_missing": 0,
+        "trim_after_opportunities": 5,
+        "trim_after_lock_missing": 0,
+        "length_mm": {
+          "n": 1976,
+          "min": 0.1,
+          "p01": 0.1,
+          "p10": 0.2,
+          "p50": 0.8062257748298549,
+          "p90": 2.142423444000792,
+          "p95": 2.7,
+          "p99": 4.0,
+          "max": 4.1012193308819755
+        },
+        "nonzero_length_mm": {
+          "n": 1976,
+          "min": 0.1,
+          "p01": 0.1,
+          "p10": 0.2,
+          "p50": 0.8062257748298549,
+          "p90": 2.142423444000792,
+          "p95": 2.7,
+          "p99": 4.0,
+          "max": 4.1012193308819755
+        },
+        "satin_candidate_count": 0,
+        "satin_same_side_mm": {
+          "n": 0
+        },
+        "runs": [
+          {
+            "start_record": 1,
+            "end_record": 47,
+            "before": "jump",
+            "after": "jump",
+            "stitches": 47,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 49,
+            "end_record": 91,
+            "before": "jump",
+            "after": "jump",
+            "stitches": 43,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 93,
+            "end_record": 293,
+            "before": "jump",
+            "after": "trim",
+            "stitches": 201,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 296,
+            "end_record": 443,
+            "before": "trim",
+            "after": "jump",
+            "stitches": 148,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 445,
+            "end_record": 515,
+            "before": "jump",
+            "after": "trim",
+            "stitches": 71,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 518,
+            "end_record": 576,
+            "before": "trim",
+            "after": "jump",
+            "stitches": 59,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 578,
+            "end_record": 635,
+            "before": "jump",
+            "after": "jump",
+            "stitches": 58,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 637,
+            "end_record": 895,
+            "before": "jump",
+            "after": "trim",
+            "stitches": 259,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 898,
+            "end_record": 1093,
+            "before": "trim",
+            "after": "jump",
+            "stitches": 196,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1095,
+            "end_record": 1186,
+            "before": "jump",
+            "after": "trim",
+            "stitches": 92,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1189,
+            "end_record": 1259,
+            "before": "trim",
+            "after": "jump",
+            "stitches": 71,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1261,
+            "end_record": 1330,
+            "before": "jump",
+            "after": "jump",
+            "stitches": 70,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1332,
+            "end_record": 1632,
+            "before": "jump",
+            "after": "trim",
+            "stitches": 301,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1635,
+            "end_record": 1830,
+            "before": "trim",
+            "after": "jump",
+            "stitches": 196,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1832,
+            "end_record": 1891,
+            "before": "jump",
+            "after": "jump",
+            "stitches": 60,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1893,
+            "end_record": 1996,
+            "before": "jump",
+            "after": "end",
+            "stitches": 104,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          }
+        ],
+        "max_stitch_delta_squared_units": 1682,
+        "stitch_count_exceeding_12mm": 0,
+        "zero_motion_count": 0,
+        "pec_viewport": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 222,
+          "max_y": 360,
+          "header_width": 222,
+          "header_height": 360,
+          "errors": [],
+          "valid": true,
+          "motion_count": 1992
+        },
+        "max_same_point_needle_only": 1,
+        "legacy_lock_diagnostics": {
+          "start_lock_missing": 15,
+          "end_lock_missing": 6,
+          "start_lock_missing_ratio": 0.9375,
+          "trim_before_lock_missing": 5,
+          "trim_after_lock_missing": 5
+        },
+        "lock_sections": [
+          {
+            "before": "file_start",
+            "after": "trim",
+            "stitches": 291,
+            "start_record": 1,
+            "end_record": 293,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                290,
+                289,
+                288,
+                287
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "trim",
+            "after": "trim",
+            "stitches": 219,
+            "start_record": 296,
+            "end_record": 515,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                218,
+                217,
+                216,
+                215
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "trim",
+            "after": "trim",
+            "stitches": 376,
+            "start_record": 518,
+            "end_record": 895,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                375,
+                374,
+                373,
+                372
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "trim",
+            "after": "trim",
+            "stitches": 288,
+            "start_record": 898,
+            "end_record": 1186,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                287,
+                286,
+                285,
+                284
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "trim",
+            "after": "trim",
+            "stitches": 442,
+            "start_record": 1189,
+            "end_record": 1632,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                441,
+                440,
+                439,
+                438
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "trim",
+            "after": "end",
+            "stitches": 360,
+            "start_record": 1635,
+            "end_record": 1996,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                359,
+                358,
+                357,
+                356
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          }
+        ],
+        "needle_bbox_mm": [
+          0.0,
+          0.0,
+          22.200000000000003,
+          36.0
+        ],
+        "lock_section_count": 6
+      }
+    }
+  ]
+}

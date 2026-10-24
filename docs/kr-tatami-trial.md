@@ -60,3 +60,13 @@ P10은 보조 지표이고, 허용 최소 획 폭 W는 아직 미확정이다.
 `StrokeWidthMeasurement.measure(..., 0.1)`을 호출했다. 글자별 분리 측정이므로
 앞의 ‘정민’ 전체 P10과 다르다. 고정 간격 표본 최소값은 크기에 따라 단조 증가하지
 않을 수 있다(예: ‘민’ 15→20mm). 도안·PES·앱 설정 변경 없음.
+
+### KRSAMP7 — 작은 Bold 채우기 시험
+
+사용자 피드백에 따라 러닝 윤곽을 제외하고 Bold700 ‘정민’ 8/10/12mm
+세 줄만 생성했다. 결과22.2×36.0mm, 한 색1,976땀, 원점(0,0),
+0길이0건, PEC 헤더222×360(0.1mm), 독립 게이트1/1 PASS.
+글자별 표본 최소 획 폭과 Regular400 15mm 비교값은
+[시험 README](measurements/kr-small-trial/README.md)에 있다.
+Regular400은 비교 재현값이며 당시 S23 유효 굵기와의 동일성은 미확인이다.
+재현: `python3 tools/make_kr_small_trial.py`.

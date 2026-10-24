@@ -1,0 +1,1 @@
+KRSAMP7.PES bounds=(0,0)..(222,360) header=222x360 zero_motions=0 threads=1 stitches=1976 max_stitch_mm=4.1012193308819755
