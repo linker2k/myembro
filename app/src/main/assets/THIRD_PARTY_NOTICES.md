@@ -520,6 +520,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
   implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
   This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Also used by photo-outline sequencing through the unmodified `NearestNeighborHeuristicTSP` implementation; no new route solver is bundled.
 - Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
   replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
   traversal are Kotlin ports. Public dependency binaries are used; upstream source

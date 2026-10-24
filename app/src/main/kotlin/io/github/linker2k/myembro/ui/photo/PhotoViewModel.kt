@@ -13,6 +13,7 @@ import android.net.Uri
 import android.util.Log
 import android.os.SystemClock
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -36,6 +37,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var zoom by mutableFloatStateOf(1f); private set
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
+    var style by mutableStateOf(PhotoStyle.SILHOUETTE); private set
     var detail by mutableIntStateOf(1); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
@@ -54,7 +56,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; invalidateResult()
     }
     fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; if (step > 0) { step = 1; prepare() } } }
     fun load(uri: Uri) {
@@ -96,6 +98,11 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun transform(scale: Float, dx: Float, dy: Float) {
         zoom = (zoom * scale).coerceIn(1f, 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
+    }
+    fun changeStyle(value: PhotoStyle) {
+        if(value==style) return
+        work?.cancel(); revision++; busy=false; style=value; error=null
+        render=null; report=null; bytes=null
     }
     fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
     fun cancel() { work?.cancel(); revision++; busy = false; error = null; if (step == 1) step = 0 }
@@ -157,14 +164,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     }
     private fun generateResult() {
         val traced = outline ?: return
-        work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop
+        work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
         busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     val generated = RedworkPipeline.generate(traced,
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),photoMode=true) {
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoStyle.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=selectedStyle) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
@@ -188,7 +195,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val file = withContext(Dispatchers.IO) {
                     val directory = File(getApplication<Application>().filesDir, "designs")
-                    val name = suggestDesignName(getApplication<Application>().getString(R.string.photo_file_stem)) { stem ->
+                    val name = suggestDesignName(getApplication<Application>().getString(if(style==PhotoStyle.OUTLINE) R.string.photo_outline_file_stem else R.string.photo_file_stem)) { stem ->
                         directory.listFiles()?.any { it.nameWithoutExtension.equals(stem, true) } == true
                     }
                     writeNamedDesign(directory, name, "pes", false, pes)

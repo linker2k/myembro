@@ -520,6 +520,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   Copyright (C) 2003–2023 Barak Naveh and contributors. The Java Blossom V
   implementation credits Copyright (C) 2018–2023 Timofey Chudakov and contributors.
   This is the JGraphT Java implementation, not the separate noncommercial Blossom V binary.
+- Also used by photo-outline sequencing through the unmodified `NearestNeighborHeuristicTSP` implementation; no new route solver is bundled.
 - Used by fill routing for minimum-weight perfect matching of odd-degree vertices,
   replacing NetworkX's Euler augmentation matching. Graph storage, BFS, Dijkstra and
   traversal are Kotlin ports. Public dependency binaries are used; upstream source
@@ -570,7 +571,7 @@ The same runner boundary also ports Inkex `inkex/bezier.py` (`cspsubdiv`, `bezie
 ## Pystitch output boundary and opt-in writer profile
 
 - Source: [inkstitch/pystitch v1.0.1](https://github.com/inkstitch/pystitch/tree/8fc0b113e02ea81d9a507bfad3f7fd624a8895bd), commit `8fc0b113e02ea81d9a507bfad3f7fd624a8895bd`.
-- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. Existing app/default writer bytes and the public adapter coordinate contract are unchanged.
+- `SourceOutputBoundary.kt` (oracle runner) follows `EmbMatrix.py` translate/scale evaluation and `EmbEncoder.py` nearest-even native rounding, in addition to Ink/Stitch `lib/output.py`'s origin policy. The optional `inkstitchCommands` writer profile follows `PecWriter.py` viewport-prefix, jump, trim and duplicate-color STOP serialization. The public adapter coordinate contract remains unchanged. Default app PES output additionally applies the SE400 zero-command cleanup and top-left viewport policy documented in docs/sewout-zero-start.md and docs/pes-viewport.md; the explicit source-oracle profile retains its upstream serialization.
 - License: **MIT**, Copyright (c) 2018 (the original notice supplies no name). The full MIT grant and disclaimer are the same text reproduced in the pyembroidery section above. No pystitch runtime dependency is added and no original code was executed.
 - Version note: pyembroidery 1.5.1 has the same native round rule but different matrix multiplication order; the two implementations are not claimed identical.
 

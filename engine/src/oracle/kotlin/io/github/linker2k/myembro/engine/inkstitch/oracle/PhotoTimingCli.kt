@@ -46,8 +46,9 @@ object PhotoTimingCli {
             if(filtered) .5 else 0.0, if(filtered) 128 else Int.MAX_VALUE,checkpoint=progress)
         println("contours=${outline.contourCount} foreground_area_mm2=${outline.foregroundAreaMm2}")
         if(args.getOrNull(2)!="preview") {
-            val result=RedworkPipeline.generate(outline,EmbThread(0xFF000000.toInt()),photoMode=filtered,checkpoint=progress)
+            val result=RedworkPipeline.generate(outline,EmbThread(0xFF000000.toInt()),photoMode=filtered,style=if(args.getOrNull(4)=="outline") io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle.OUTLINE else io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle.SILHOUETTE,checkpoint=progress)
             println("${stage}_ms="+(System.nanoTime()-tick)/1e6+" stitches=${result.pattern.stitchCount} backend=${result.pattern.metadata["myembro.fill.backend"]}")
+            println("jump_before_mm=${result.pattern.metadata["myembro.photo.jump_before_mm"]} jump_after_mm=${result.pattern.metadata["myembro.photo.jump_after_mm"]}")
             val report=io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(result.copyPesBytes(),
                 options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED))
             println("blockers="+report.findings.count { it.severity==io.github.linker2k.myembro.engine.sewout.Severity.BLOCKER })

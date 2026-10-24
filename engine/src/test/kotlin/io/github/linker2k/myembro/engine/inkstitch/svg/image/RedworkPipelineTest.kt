@@ -12,6 +12,46 @@ import kotlin.test.*
 
 /** Two original synthetic masks, no private designs or photographs. */
 class RedworkPipelineTest {
+    @Test fun outlineBeanRepeatsEachSourceRunningSegmentThreeTimesAndKeepsLocks() {
+        val thread=EmbThread(0xFF000000.toInt())
+        val points=listOf(io.github.linker2k.myembro.engine.inkstitch.utils.Point(0.0,0.0),
+            io.github.linker2k.myembro.engine.inkstitch.utils.Point(100.0,0.0))
+        val plain=io.github.linker2k.myembro.engine.inkstitch.elements.Stroke(listOf(points),thread)
+            .toStitchGroups(null).single()
+        val bean=PhotoOutline.groups(PhotoOutline.Route(listOf(points),0.0,0.0),thread).single()
+        assertEquals(1+3*(plain.stitches.size-1),bean.stitches.size)
+        assertEquals(io.github.linker2k.myembro.engine.inkstitch.stitches.RunningStitch.beanStitch(plain.stitches,listOf(1)),bean.stitches)
+        assertNotNull(bean.lockStart); assertNotNull(bean.lockEnd); assertTrue(bean.trimAfter)
+    }
+    @Test fun libraryRouteNeverIncreasesOpenJumpDistanceAndKeepsEveryClosedRing() {
+        fun ring(x:Double)=listOf(io.github.linker2k.myembro.engine.inkstitch.utils.Point(x,0.0),
+            io.github.linker2k.myembro.engine.inkstitch.utils.Point(x+1,0.0),io.github.linker2k.myembro.engine.inkstitch.utils.Point(x,0.0))
+        val paths=listOf(ring(0.0),ring(100.0),ring(5.0),ring(90.0))
+        val route=PhotoOutline.route(paths)
+        assertEquals(paths.toSet(),route.paths.toSet())
+        assertTrue(route.after<route.before)
+        assertEquals(route,PhotoOutline.route(paths))
+        println("PHOTO_ROUTE before_px=${route.before} after_px=${route.after}")
+    }
+    @Test fun beanOutlinePreservesHoleAndPassesActualPesInvariants() {
+        val rgb=IntArray(64*64) { i ->
+            val x=i%64;val y=i/64
+            if(x in 6..57 && y in 6..57 && !(x in 22..41 && y in 22..41)) 0 else 0xFFFFFF
+        }
+        val thread=EmbThread(0xFF000000.toInt())
+        val outline=RedworkPipeline.trace(64,64,rgb,40.0,0,thread)
+        val result=RedworkPipeline.generate(outline,thread,photoMode=true,style=PhotoStyle.OUTLINE)
+        assertEquals(2,result.contourCount)
+        assertEquals("inkstitch-bean-outline",result.pattern.metadata["myembro.fill.backend"])
+        assertEquals(PhotoStyle.OUTLINE.name,result.pattern.metadata["myembro.photo.style"])
+        assertEncodedViewport(result.copyPesBytes())
+        val report=SewoutCheck.checkPes(result.copyPesBytes(),options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
+        assertTrue(report.analysisComplete)
+        assertFalse(report.hasBlockingIssues,report.findings.joinToString())
+        val target=java.io.File("/tmp/myembro-port-out/editor/photo-outline").apply { mkdirs() }
+        java.io.File(target,"ring.pes").writeBytes(result.copyPesBytes())
+        println("PHOTO_OUTLINE_PES stitches=${result.pattern.stitchCount} blockers=0")
+    }
     @Test fun photoSilhouetteRetainsTatamiAndFinishedBoundsFitExclusiveHoop() {
         val rgb=IntArray(64*64) { if(it%64 in 2..61 && it/64 in 2..61) 0 else 0xFFFFFF }
         val thread=EmbThread(0xFF000000.toInt())

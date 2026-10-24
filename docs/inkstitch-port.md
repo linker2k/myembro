@@ -1807,3 +1807,13 @@ FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES �
 수정 전 회귀2건 모두 실패, 수정 후 전체 `./gradlew check` 통과:
 엔진589·앱 Debug/Release 각190개 실패0, Lint 및 기존 고정 오라클4건 통과.
 출력: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` 및 `tests.xml`.
+
+## 사진 외곽선 통합 (editor)
+
+기존 `Stroke`/`RunningStitch`/S1 원본 포트를 같은 Potrace 경계에 적용한다.
+`bean_stitch_repeats=[1]` (총 3회), `trim_after=true`, 나머지 원본 기본값.
+새 땀 알고리즘 포트나 Ink/Stitch 실행은 없다. 상세: [사진 외곽선](qa/photo-outline.md).
+
+| 원본과 다른 통합 범위 | 근거 |
+|---|---|
+| 순서 선택은 JGraphT 1.5.2 NearestNeighborHeuristicTSP 재사용 | 모바일의 닫힌 윤곽 전체를 보존하며 점프 앵커 거리 감소 시에만 적용; AutoRun 포트/전역 최단 동일성 주장은 하지 않음 |

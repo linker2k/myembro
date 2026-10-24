@@ -40,6 +40,7 @@ import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import java.io.File
 import androidx.core.graphics.PathParser
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import kotlinx.coroutines.delay
 
@@ -66,7 +67,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.photo_step, vm.step + 1), style = MaterialTheme.typography.labelLarge, color = colors.primary)
-            Text(stringResource(when(vm.step) { 0 -> R.string.photo_crop_title; 1 -> R.string.photo_preview_title; else -> R.string.photo_result_title }),
+            Text(stringResource(when(vm.step) { 0 -> R.string.photo_crop_title; 1 -> if(vm.style==PhotoStyle.OUTLINE) R.string.photo_outline_title else R.string.photo_preview_title; else -> R.string.photo_result_title }),
                 style = MaterialTheme.typography.headlineSmall)
             Text(Dimensions.size(vm.hoop.width / 10.0, vm.hoop.height / 10.0), style = MaterialTheme.typography.bodySmall)
             if (vm.busy) {
@@ -78,7 +79,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     else -> R.string.photo_progress_stitches
                 }))
                 Text(stringResource(R.string.photo_elapsed,elapsed),style=MaterialTheme.typography.bodySmall)
-                Text(stringResource(if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
+                Text(stringResource(if(vm.step==2 && vm.style==PhotoStyle.OUTLINE) R.string.photo_estimate_outline else if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
             }
             if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
@@ -94,8 +95,16 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
                 }
             } else {
+                if(vm.step==1) SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    PhotoStyle.entries.forEachIndexed { index, value ->
+                        SegmentedButton(selected=vm.style==value,onClick={ vm.changeStyle(value) },
+                            shape=SegmentedButtonDefaults.itemShape(index,PhotoStyle.entries.size),enabled=!vm.busy) {
+                            Text(stringResource(if(value==PhotoStyle.SILHOUETTE) R.string.photo_style_silhouette else R.string.photo_style_outline))
+                        }
+                    }
+                }
                 val data = vm.render
-                if (vm.step == 1 && vm.outline != null) OutlinePreview(vm.outline!!)
+                if (vm.step == 1 && vm.outline != null) OutlinePreview(vm.outline!!,vm.style)
                 else if (vm.step == 1 && vm.separatedPreview != null) Image(vm.separatedPreview!!.asImageBitmap(),
                     contentDescription=stringResource(R.string.photo_separated_preview),
                     modifier=Modifier.fillMaxWidth().height(300.dp),contentScale=ContentScale.Fit)
@@ -158,7 +167,7 @@ private fun CropPreview(vm: PhotoViewModel) {
 
 
 @Composable
-private fun OutlinePreview(outline: RedworkOutline) {
+private fun OutlinePreview(outline: RedworkOutline,style: PhotoStyle) {
     val shape = remember(outline) {
         android.graphics.Path().apply {
             fillType = android.graphics.Path.FillType.EVEN_ODD
@@ -174,7 +183,9 @@ private fun OutlinePreview(outline: RedworkOutline) {
             translate(size.width / 2, size.height / 2)
             scale(factor, factor, pivot = androidx.compose.ui.geometry.Offset.Zero)
         }) {
-            drawPath(shape, ink)
+            if(style==PhotoStyle.OUTLINE) drawPath(shape,ink,
+                style=androidx.compose.ui.graphics.drawscope.Stroke(Units.mmToPixels(0.3).toFloat()))
+            else drawPath(shape, ink)
         }
     }
 }
