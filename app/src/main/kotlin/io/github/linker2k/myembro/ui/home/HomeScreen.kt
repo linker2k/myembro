@@ -109,6 +109,7 @@ fun HomeScreen(
     onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
     onPhoto: (() -> Unit)? = null,
     onVersion: () -> Unit = onSettings,
+    onEmoji: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -116,7 +117,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji)
     }
 }
 
@@ -133,6 +134,7 @@ private fun HomeContent(
     defaultFrame: FrameOption? = null, onNewProjectFrame: ((HoopSpec) -> Unit)? = null,
     onPhoto: (() -> Unit)? = null,
     version: String? = null, onVersion: () -> Unit = onSettings,
+    onEmoji: (() -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -225,7 +227,7 @@ private fun HomeContent(
     if (showNewProject) NewProjectSheet(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
-        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji,
     )
 }
 

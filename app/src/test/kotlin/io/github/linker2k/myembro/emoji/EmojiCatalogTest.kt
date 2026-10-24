@@ -42,6 +42,24 @@ class EmojiCatalogTest {
         assertEquals(emptyList(), failing)
     }
 
+    /** Opt-in (EMOJI_NETWORK=1): real pinned downloads of non-bundled pictures, sha256-checked, then stitched. */
+    @Test fun nonBundledEmojiDownloadVerifiedAndStitch() {
+        if (System.getenv("EMOJI_NETWORK") != "1") return
+        val dir = kotlin.io.path.createTempDirectory("emoji-dl").toFile()
+        try {
+            for (id in listOf("cactus", "cat", "hamburger")) {
+                val e = catalog.emoji.single { it.id == id }
+                assertTrue(!e.bundled)
+                val out = File(dir, "$id.svg")
+                io.github.linker2k.myembro.fonts.FontRepository.fetchPinned(catalog.url(e), out, e.sha256, e.id, e.size) {}
+                assertEquals(e.sha256, sha(out))
+                val pes = PesWriter.write(VectorArt.render(VectorArt.parseSvg(out.readText()), 50.0).pattern)
+                val report = SewoutCheck.checkPes(pes, options = SewoutOptions(hoop = HoopSpec.H100, origin = DesignOrigin.APP_GENERATED))
+                println("EMOJI download $id ${out.length()}B sha ok, stitches ${report.statistics.stitchCount}, blockers ${report.findings.count { it.severity == Severity.BLOCKER }}")
+            }
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun downloadUrlIsPinnedAndEncoded() {
         val heart = catalog.emoji.single { it.id == "red-heart" }
         assertEquals("https://raw.githubusercontent.com/microsoft/fluentui-emoji/${catalog.commit}/assets/Red%20heart/Flat/red_heart_flat.svg", catalog.url(heart))

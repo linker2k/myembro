@@ -57,10 +57,11 @@ class MainActivity : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
     private val editor: EditorViewModel by viewModels()
     private val photo: PhotoViewModel by viewModels()
+    private val emoji: io.github.linker2k.myembro.ui.emoji.EmojiViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
     /** [PICK_DESIGN] is "start from my design" in the new-project sheet: a pick starts a project. */
-    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS, PHOTO }
+    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS, PHOTO, EMOJI }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -134,6 +135,7 @@ class MainActivity : ComponentActivity() {
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
                         onPhoto = { photo.begin(); stack += Screen.PHOTO },
+                        onEmoji = { emoji.close(); stack += Screen.EMOJI },
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
                     Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
@@ -159,6 +161,16 @@ class MainActivity : ComponentActivity() {
                             library.refresh(); library.clearSelection(); library.toggle(file)
                             stack += Screen.LIBRARY; library.exportToUsb()
                         })
+                    Screen.EMOJI -> io.github.linker2k.myembro.ui.emoji.EmojiScreen(emoji, settings.settings, onBack = back, onEdit = {
+                        emoji.render?.pattern?.let { pattern ->
+                            val b = pattern.bounds
+                            val transform = if (b == null) Transform() else Transform(
+                                x = ((b.minX.toLong() + b.maxX) / 2).toDouble(), y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
+                            editor.startWith(StitchObject(UUID.randomUUID().toString(), emoji.selected?.name ?: "emoji", pattern,
+                                transform = transform), emoji.hoop)
+                            stack += Screen.EDITOR
+                        }
+                    })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back, showVersion = settingsAtVersion)
                     Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {
