@@ -1,270 +1,269 @@
-# 한글 TTF → 중심선 → 원본 새틴 변환: 착수 전 조사
+# Hangul TTF → Centerline → Upstream Satin Conversion: Pre-implementation Research
 
-> **선택 로직만 보류 — 사용자 정정(2026-10-24):** 한글 새틴·공용 중심선 엔진의 원본 포팅은 계획대로 계속한다. Kotlin thinning 이식과 골든 일치 테스트는 `2e2d533`에서 완료했다. 다음 순서는 원본 centerline 경로 추적 → Ink/Stitch convert-to-satin 포트다. 새틴/채우기 자동 선택과 그 폭 측정·분류 로직만 다음 버전으로 미룬다. 앱 연결은 이번 엔진 이식 단위에 포함하지 않는다.
+> **Only selection logic is deferred — user correction (2026-10-24):** Upstream porting of the Hangul satin/shared centerline engine continues as planned. Kotlin thinning and golden-match tests were completed in `2e2d533`. Next comes upstream centerline path tracing → Ink/Stitch convert-to-satin port. Only automatic satin/fill selection and its width-measurement/classification logic are deferred to the next version. App integration is outside this engine-porting unit.
 
-- **원본·라이선스:** 공식 [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), 커밋 `1a232b27818a46a05cd25edec09e2f77c4e9ac01` 고정; `src/thin-image.c`는 Martin Weber, LGPL-2.1-or-later, `src/{autotrace,fit,curve}.c`는 GPL-2.0-or-later(각 파일 헤더)로 GPL-3 결합 가능하며 프로젝트 전체를 LGPL이라고 표시하지 않는다. README/COPYING/COPYING.LIB와 파일별 고지를 보존하고 헤더 없는 보조 파일의 출처 범위는 구현 전 함께 대조한다.
-- **범위·근거:** [Inkscape 연결 코드](https://inkscape.gitlab.io/inkscape/doxygen/inkscape-autotrace_8cpp_source.html)는 `at_splines_new_full` 및 centerline 옵션을 사용한다(동일 라이브러리 계열임을 확인했으며 Inkscape 내장본과 위 태그의 바이트 동일성은 미확인). `src/autotrace.c`의 순서대로 Rosenfeld `thin-image.c` → `pxl-outline.c::find_centerline_pixels` → `fit.c`와 curve/spline/vector 보조 연산을 이식하고, 폭 보존은 원본 `image-proc.c` 거리맵 경로만 조사한다; 관련 8개 C 파일은 `wc -l` 합계 4,225줄, GUI·이미지 코덱·새 알고리즘은 제외한다.
-- **원본 비교 계획:** 고정 C 소스를 로컬 작은 호출기로 실행해 동일 흑백 입력 5개(직선·T분기·X교차·고리·배포 허가된 앱 한글 TTF의 굵은 ‘한’ 래스터)를 Kotlin과 공유하고, thinning 마스크·경로/분기/개폐·순서·세그먼트 수와 제어점 float/ULP 차이를 코드로 기록·검사한다; `centerline=true` 외 기본값은 `new_fitting_opts` 그대로이며 `preserve_width=true` 비교는 원본 옵션의 별도 축으로 분리한다. 결과·입력/실행 파일 해시·컴파일 옵션은 `/tmp/myembro-port-out/editor/autotrace/`에 남기고, 이후 PES 단계는 P1–P8(후프 정수 상한 포함)을 실제 바이트 게이트로 검사한다; 이번 단위에서는 원본 실행·의존성 설치·제품 코드 착수 없음.
-- **새틴 연결 의존성:** Ink/Stitch v3.3.0 `lib/elements/utils/stroke_to_satin.py::convert_path_to_satin`(GPL-3.0-or-later)을 letter의 원본 포트가 준비되면 재사용한다; 조사한 letter `409769937cff8cff7ff261aa92a05c6e33260205`의 `lettering.SatinColumn.strokeToSatin/rails`는 아직 자체 miter offset이므로 이 경로에 쓰지 않는다. 원본 변환의 입력 `stroke_width`는 상수여서 한글의 가변 획 폭·교차 분기 연결은 미확인 의존성이며, 평균 폭·임의 rail 근사로 메우지 않고 원본 옵션/계약을 먼저 확인한다.
-- **예상·다음 단위:** 위 코드 규모 기준 AutoTrace 핵심+원본 비교 6–10시간, letter 원본 변환 준비·연결 확인 추가 2–4시간(합계 8–14시간의 추정, 품질 통과 약속 아님); 다음 20분은 thinning 원본 호출기와 작은 고정 입력 골든 확보를 제안한다. 이후에도 20분마다 명령/테스트 출력과 함께 멈춰 보고하며, 이 문서 단계에서 구현을 시작하지 않는다.
+- **Upstream/license:** Official [AutoTrace 0.31.10](https://github.com/autotrace/autotrace/tree/1a232b27818a46a05cd25edec09e2f77c4e9ac01), pinned commit `1a232b27818a46a05cd25edec09e2f77c4e9ac01`; `src/thin-image.c` is by Martin Weber under LGPL-2.1-or-later, and `src/{autotrace,fit,curve}.c` are GPL-2.0-or-later (per-file headers), allowing combination with GPL-3. Do not label the whole project LGPL. Preserve README/COPYING/COPYING.LIB and per-file notices, and cross-check attribution scope for headerless helper files before implementation.
+- **Scope/basis:** [Inkscape integration code](https://inkscape.gitlab.io/inkscape/doxygen/inkscape-autotrace_8cpp_source.html) uses `at_splines_new_full` and the centerline option (confirmed to be the same library family; byte identity between Inkscape's bundled version and the tag above is unconfirmed). Following `src/autotrace.c`, port Rosenfeld `thin-image.c` → `pxl-outline.c::find_centerline_pixels` → `fit.c` and curve/spline/vector helpers; investigate width preservation only through upstream `image-proc.c`'s distance-map path. The 8 relevant C files total 4,225 lines by `wc -l`, excluding GUI/image codecs/new algorithms.
+- **Upstream comparison plan:** Run pinned C sources with a small local caller and share 5 identical black-and-white inputs (straight line, T branch, X crossing, ring, a thick raster of the Hangul syllable han from an app Hangul TTF licensed for redistribution) with Kotlin. Record/check thinning masks, paths/branches/open-closed status/order/segment counts, and control-point float/ULP differences in code. Except `centerline=true`, retain `new_fitting_opts` defaults; separate `preserve_width=true` comparison as another upstream-option axis. Store results/input/executable hashes/compiler options in `/tmp/myembro-port-out/editor/autotrace/`; subsequent PES stages check P1–P8 (including integer hoop upper bounds) through the actual-byte gate. No upstream execution/dependency installation/product coding in this unit.
+- **Satin integration dependency:** Reuse letter's upstream port of Ink/Stitch v3.3.0 `lib/elements/utils/stroke_to_satin.py::convert_path_to_satin` (GPL-3.0-or-later) when ready. The investigated letter `409769937cff8cff7ff261aa92a05c6e33260205`'s `lettering.SatinColumn.strokeToSatin/rails` still uses custom miter offsets, so do not use it for this path. Upstream conversion takes constant `stroke_width`; varying Hangul stroke widths and intersection-branch connections remain unconfirmed dependencies. Confirm upstream options/contracts first rather than filling gaps with average widths/arbitrary rail approximations.
+- **Estimate/next unit:** Based on the code volume above, AutoTrace core + upstream comparisons: 6–10 hours; letter upstream conversion preparation/integration checks: another 2–4 hours (estimated total 8–14 hours, not a promise of quality passage). Propose the next 20 minutes for an upstream thinning caller and small fixed-input goldens. Continue stopping/reporting every 20 minutes with command/test output; do not begin implementation at this document stage.
 
-## 단위 1 — 원본 thinning 골든 확보
+## Unit 1 — obtaining upstream thinning goldens
 
-- 최신 우선순위: 같은 원본 중심선 엔진을 **(A) S4: 굵은 선 bean/가는 선 running**, **(B) 한글: 원본 convert-to-satin** 양쪽에 재사용한다. A는 `bean_stitch_repeats` 등 upstream 파라미터만 쓰며, 굵기 분류 임계값은 실측 전 미확인이다. 이 단위에는 분류·땀 생성 코드를 넣지 않는다.
-- `thin_image` 원본을 수정 없이 실행했다. 직선/T/X/고리/공개 Noto Sans KR weight700 ‘한’ 5개 × 1/3채널 = 10개 PGM/PBM과 소스·글꼴·실행 해시를 [테스트 리소스](../engine/src/test/resources/autotrace/thinning/README.md)에 고정했다. 시스템 설치 없이 기존 GLib/GObject 런타임과 동일 버전의 공식 헤더만 `/tmp`에 추출했다.
-- 재현: `python3 tools/autotrace/generate-thinning-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify` → `COMMITTED_GOLDENS_EXACT 10/10`, `REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5`. 출력 `/tmp/myembro-port-out/editor/autotrace/`; 한글 전경은 1,493→174픽셀. Kotlin/전체 중심선/새틴/PES 품질 통과 주장이 아니다.
-- 다음 20분 제안: 원본 thinning Kotlin 이식과 고정 마스크 exact equality 테스트. 이후 분기·경로 추적 원본 이식으로 진행하며, 이번 단위는 골든 확보에서 멈춘다.
+- Latest priority: reuse the same upstream centerline engine for both **(A) S4: bean for thick lines/running for thin lines** and **(B) Hangul: upstream convert-to-satin**. A uses only upstream parameters such as `bean_stitch_repeats`; thickness-classification thresholds are unconfirmed before measurement. This unit adds no classification/stitch-generation code.
+- Executed upstream `thin_image` unchanged. Pinned 5 inputs (straight/T/X/ring/the Hangul syllable han rendered in public Noto Sans KR at weight 700) × 1/3 channels = 10 PGM/PBMs, plus source/font/executable hashes, in [test resources](../engine/src/test/resources/autotrace/thinning/README.md). Extracted only official headers matching the existing GLib/GObject runtime into `/tmp`, without system installation.
+- Reproduce: `python3 tools/autotrace/generate-thinning-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify` → `COMMITTED_GOLDENS_EXACT 10/10`, `REPEAT 10/10; IDEMPOTENT 10/10; GRAY_RGB 5/5`. Output `/tmp/myembro-port-out/editor/autotrace/`; Hangul foreground 1,493→174 pixels. Not a claim of Kotlin/full-centerline/satin/PES quality passage.
+- Proposed next 20 minutes: port upstream thinning to Kotlin and test exact equality against fixed masks. Then proceed to upstream branch/path tracing; this unit stops at obtaining goldens.
 
 
-## 한글 자동 분기 — 선택 로직만 보류(설계 기록), 2026-10-24
+## Automatic Hangul branching — only selection logic deferred (design record), 2026-10-24
 
-아래 자동 분기는 다음 버전 후보이며 지금 구현하지 않는다. 한글 새틴·중심선 원본 포팅은 계속한다.
+The automatic branching below is a next-version candidate and is not implemented now. Upstream Hangul satin/centerline porting continues.
 
-한글 전체나 글꼴 전체를 일괄 새틴으로 바꾸지 않는다. **글자 또는 획 영역별로 측정한
-국소 폭의 중간값(median, mm)**으로 분기한다. 모서리 때문에 작아지는 최소 폭은
-분류 기준으로 쓰지 않는다. 0.9–6.0mm(양 끝 포함)는 기존 `TatamiLettering` 상수와
-`/tmp/myembro-quality-gate/auto-rules.md`의 채택 범위를 그대로 사용한다.
+Do not convert all Hangul or an entire font to satin indiscriminately. Branch using the **median of local widths
+measured per character or stroke region (mm)**. Do not classify by minimum width, which shrinks at corners.
+The 0.9–6.0mm inclusive range directly follows existing `TatamiLettering` constants and the adopted range in
+`/tmp/myembro-quality-gate/auto-rules.md`.
 
-| 측정된 영역 | 자동 경로 |
+| Measured region | Automatic path |
 |---|---|
-| 선 기반 + median 0.9–6.0mm | 공용 AutoTrace 중심선 → 원본 convert-to-satin → Ink/Stitch 새틴 |
-| median >6.0mm 또는 선 기반이 아닌 통통한 형태 | 기존 기본 타타미+바탕 땀 유지 |
-| median <0.9mm | 기존 auto-rules의 러닝 경로 유지; 새틴으로 강제하지 않음 |
-| 폭 측정/선 기반 판정 미확인 | 새틴 후보로 인증하지 않음; 기존 검증 경로 유지 |
+| Line-based + median 0.9–6.0mm | Shared AutoTrace centerline → upstream convert-to-satin → Ink/Stitch satin |
+| median >6.0mm or plump, non-line-based shape | Retain existing default tatami + underlay |
+| median <0.9mm | Retain existing auto-rules running path; do not force satin |
+| Width measurement/line-based determination unconfirmed | Do not certify as satin candidate; retain existing validated path |
 
-폭 측정은 AutoTrace 원본 거리맵/`preserve_width` 값의 단위·배율과 원래 윤곽을
-대조한 뒤 구현한다. 지금은 thinning만 있으므로 median 측정 구현은 아직 없다.
-선 기반 판정의 검증 방법도 미확인이며, 자체 종횡비·면적 임계값을 만들지 않는다.
-이 median은 **분기 기준**이다. 원본 convert-to-satin의 상수 `stroke_width`와 가변 폭
-글자 사이의 입력 계약은 별도 확인하고, median만으로 윤곽을 충실히 복원했다고
-주장하지 않는다. 같은 중심선 엔진은 S4 bean/running에도 재사용한다.
+Implement width measurement after checking upstream AutoTrace distance-map/`preserve_width` units/scales against
+original contours. Only thinning exists now, so median measurement is not implemented yet.
+Validation of line-based classification is also unconfirmed; do not invent aspect-ratio/area thresholds.
+This median is a **branching criterion**. Separately confirm the input contract between upstream convert-to-satin's constant
+`stroke_width` and variable-width characters; do not claim faithful contour reconstruction from the median alone.
+The same centerline engine is also reused for S4 bean/running.
 
-## 단위 2 — Kotlin thinning 이식
+## Unit 2 — Kotlin thinning port
 
-`AutoTraceThinning.thin(width,height,pixels,planes,backgroundRgb)`를 순수 JVM으로
-옮겼다. 512개 원본 삭제표, N/S/W/E 패스 순서, 역순 색 발견, 8비트 scan buffer
-절단, 즉시 삭제 순서, 원본 thin1/thin3의 서로 다른 경계 보호를 유지한다.
-원본 src/thin-image.c 고정 SHA-256과 기존 골든은 변경하지 않았다.
+Ported `AutoTraceThinning.thin(width,height,pixels,planes,backgroundRgb)` to pure JVM.
+Preserves the upstream 512-entry deletion table, N/S/W/E pass order, reverse-order color discovery, 8-bit scan-buffer
+truncation, immediate deletion order, and differing boundary protection in upstream thin1/thin3.
+The pinned upstream src/thin-image.c SHA-256 and existing goldens were unchanged.
 
-| 원본과의 경계 차이 | 이유 |
+| Boundary difference from upstream | Reason |
 |---|---|
-| GLib 메모리·C Pixel 배열 → 호출별 JVM Int/Byte 배열 | 색 비교/바이트 출력은 동일; 외부 런타임 없이 입력 보존 |
-| process-global background → 명시적 호출별 background(기본 white) | 원본 골든처럼 매번 배경을 명시하는 계약; 동시 호출/이전 호출 상태 누수 방지 |
-| unsigned short/JVM 크기 경계 | 1–4096px 각 변, 최대 1,048,576픽셀, planes 1/3, 길이·RGB 배경 범위 검증; C의 미정의 입력·메모리 오류를 거부 |
-| 로그·콜백 | 현재 bitmap thinning API에는 진행률/GLib 오류 콜백이 없고 예외로 잘못된 입력을 거부 |
+| GLib memory/C Pixel arrays → per-call JVM Int/Byte arrays | Identical color comparisons/byte output; preserves input without an external runtime |
+| process-global background → explicit per-call background (default white) | Contract specifies background for every call, as in upstream goldens; prevents concurrent/prior-call state leakage |
+| unsigned short/JVM size boundaries | Validate each dimension 1–4096px, at most 1,048,576 pixels, planes 1/3, length/RGB-background ranges; reject C undefined inputs/memory errors |
+| Logs/callbacks | Current bitmap-thinning API has no progress/GLib error callbacks; rejects invalid input through exceptions |
 
-검증: 기존 C 골든 10개와 **전 픽셀/채널 exact equality**, 입력 보존, 반복·멱등,
-배경 반전과 호출 상태 독립성. 추가로 원본 C의 3×3 전체 검정 입력에서 gray 출력
-`000/111/000`, RGB 출력 `000/000/110`(1=foreground)을 확보해 경계 분기 회귀로
-고정했다. 잘못된 크기/planes/배열 길이/배경도 거부한다. Kotlin 테스트 12개.
-재현: `./gradlew :engine:test --tests '*AutoTraceThinningTest'`; 원본 C 추가 출력
-`/tmp/myembro-autotrace-edge-p{1,3}.pbm`, 테스트 로그 `/tmp/myembro-autotrace-kotlin-test.log`.
+Validation: **exact equality for every pixel/channel** against 10 existing C goldens, input preservation, repetition/idempotence,
+background inversion, and call-state independence. Also obtained gray output `000/111/000` and RGB output
+`000/000/110` (1=foreground) for upstream C's all-black 3×3 input, fixing these as boundary-branch regressions.
+Invalid dimensions/planes/array lengths/backgrounds are rejected too. 12 Kotlin tests.
+Reproduce: `./gradlew :engine:test --tests '*AutoTraceThinningTest'`; additional upstream C output
+`/tmp/myembro-autotrace-edge-p{1,3}.pbm`, test log `/tmp/myembro-autotrace-kotlin-test.log`.
 
-LGPL-2.1-or-later 출처·원문을 엔진 리소스와 APK 고지에 포함했다. 앱·PES에는
-미연결이며, 전체 중심선/경로 추적·곡선화·중간값 폭 측정·새틴 변환 완료나
-봉제 품질 통과를 주장하지 않는다. 다음 단위는 원본 `find_centerline_pixels`의
-작은 입력 호출기/골든과 Kotlin 경로 추적을 분리해 진행할 것을 제안한다.
+LGPL-2.1-or-later attribution/full text are included in engine resources and APK notices. Not connected to the app/PES;
+no claim that full centerline/path tracing, smoothing, median-width measurement, or satin conversion is complete,
+or that sewing quality has passed. Propose separating the next unit into a small-input caller/goldens for upstream
+`find_centerline_pixels` and Kotlin path tracing.
 
 
-## 단위 3 — 원본 중심선 픽셀 경로 추적
+## Unit 3 — upstream centerline pixel-path tracing
 
-`src/pxl-outline.c@1a232b27818a46a05cd25edec09e2f77c4e9ac01`의
-`find_centerline_pixels`, `find_one_centerline`, 방향 마킹·탐색·인접 수·역방향
-경로 결합을 `AutoTraceCenterline.trace`로 이식했다. 시작 방향 E/SE/S/SW,
-다음 방향 상대 순서 0/2/6/1/7/3/5, 교차점 보호, 위·왼쪽 목적 픽셀의 strict
-`>0` 조건을 원본대로 유지한다. 닫힌 경로는 시작점을 마지막에 중복하지 않는다.
-출력은 원본 Cartesian 픽셀 좌표(y 위쪽)이며 PES 좌표가 아니다.
+Ported `find_centerline_pixels`, `find_one_centerline`, direction marking/search/neighbor counts/reverse-path merging
+from `src/pxl-outline.c@1a232b27818a46a05cd25edec09e2f77c4e9ac01` to `AutoTraceCenterline.trace`.
+Preserves upstream initial directions E/SE/S/SW, relative next-direction order 0/2/6/1/7/3/5, intersection protection,
+and strict `>0` condition for destination pixels above/to the left. Closed paths do not repeat the start point at the end.
+Output uses upstream Cartesian pixel coordinates (upward y), not PES coordinates.
 
-골든은 수정하지 않은 원본 thin-image.c → pxl-outline.c를 C 호출기로 실행했다.
-직선/T/X/고리/공개 OFL ‘한’ × gray/RGB = 10개에서 경로 순서·모든 정수 좌표·
-색·open/clockwise를 Kotlin 테스트가 exact 비교한다. 입력은 기존 thinning
-PGM을 재사용하며 개인 도안이 없다. 원본 고리는 closed 1경로, ‘한’은 6경로다.
-GLib는 기존 런타임과 `/tmp` 추출 헤더만 사용하며 시스템 설치는 하지 않는다.
+Goldens were generated by running unmodified upstream thin-image.c → pxl-outline.c through a C caller.
+Across straight/T/X/ring/the Hangul syllable han from a public OFL font × gray/RGB = 10 cases, Kotlin tests compare path order, every integer coordinate,
+color, and open/clockwise exactly. Inputs reuse existing thinning PGM files, with no personal designs.
+The upstream ring has 1 closed path; the Hangul syllable han has 6 paths. GLib uses only the existing runtime and headers extracted
+under `/tmp`, without system installation.
 
-재현: `python3 tools/autotrace/generate-centerline-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify`.
-결과 `/tmp/myembro-port-out/editor/autotrace/centerline/`; 커밋된
-`engine/src/test/resources/autotrace/centerline/manifest.json`에 원본 커밋·소스/호출기/
-생성기/입출력 해시·컴파일 명령을 기록했다. `autotrace.c`는 원본 비트맵 함수를
-그대로 링크하고, 미사용 I/O/곡선화 함수는 linker gc-sections로 제외했다.
+Reproduce: `python3 tools/autotrace/generate-centerline-goldens.py /tmp/myembro-autotrace-reference --glib-prefix /tmp/myembro-autotrace-build/glib --verify`.
+Results `/tmp/myembro-port-out/editor/autotrace/centerline/`; committed
+`engine/src/test/resources/autotrace/centerline/manifest.json` records upstream commit/source/caller/
+generator/input-output hashes/compiler commands. `autotrace.c` links upstream bitmap functions unchanged;
+unused I/O/smoothing functions are excluded by linker gc-sections.
 
-차이: GLib 재할당과 비트맵 대신 호출별 JVM 배열/List를 사용하고 입력을 보존한다.
-지원 크기는 기존 thinning과 같은 각 변 1–4096px/총 1,048,576픽셀 이하다.
-진행률·취소·로그 콜백은 이 순수 JVM API 범위에서 제공하지 않는다.
-헤더에 별도 고지가 없는 pxl-outline.c는 프로젝트 GPL-2.0-or-later 문맥과
-Copyright AutoTrace contributors로 고지하고 COPYING 원문을 함께 배포한다.
+Differences: per-call JVM arrays/Lists replace GLib reallocations and bitmaps; input is preserved.
+Supported sizes match existing thinning: each dimension 1–4096px, total at most 1,048,576 pixels.
+Progress/cancellation/log callbacks are not provided within this pure JVM API's scope.
+The headerless pxl-outline.c is attributed in the project's GPL-2.0-or-later context with
+Copyright AutoTrace contributors, and the original COPYING text is distributed alongside it.
 
-테스트: `./gradlew :engine:test --tests '*AutoTrace*Test'` (23개, 실패 0).
-전체 `./gradlew check` → `BUILD SUCCESSFUL in 41s` (67 actionable tasks),
-로그 `/tmp/myembro-autotrace-centerline-check.log`.
-앱/PES 미연결; 곡선 근사·폭 측정·새틴 변환·봉제 게이트는 이번 단위가 아니다.
-다음 제안: 원본 `fit.c` 중심선 곡선화의 비교 골든부터 작은 단위로 확보하고,
-원본 Ink/Stitch convert-to-satin 포트와의 입력 계약을 확인한다.
+Tests: `./gradlew :engine:test --tests '*AutoTrace*Test'` (23 tests, 0 failures).
+Full `./gradlew check` → `BUILD SUCCESSFUL in 41s` (67 actionable tasks),
+log `/tmp/myembro-autotrace-centerline-check.log`.
+Not connected to app/PES; curve fitting/width measurement/satin conversion/sewing gates are outside this unit.
+Next proposal: obtain comparison goldens for upstream `fit.c` centerline smoothing in small units first,
+and confirm the input contract with the upstream Ink/Stitch convert-to-satin port.
 
-## letter 인계 단위 1 — 경로 골든 재검증·원본 선→새틴 코어
+## Letter handoff unit 1 — path-golden revalidation/upstream line→satin core
 
-`codex/hangul-centerline` 최신 **e1d0ce0**에는 thinning뿐 아니라
-`find_centerline_pixels` Kotlin 포트도 이미 있었다. 이를 codex/letter에 통합하고
-thinning 골든10/10·centerline 골든10/10 exact를 다시 확인했다.
-두 테스트 클래스 합계23개(입력 오류/경계 검사 포함) 실패0. 원본 코드를 재실행하지 않았다.
+Latest `codex/hangul-centerline` **e1d0ce0** already contained not just thinning but also
+a Kotlin `find_centerline_pixels` port. Integrated this into codex/letter and reverified exact matches for
+thinning goldens 10/10 and centerline goldens 10/10.
+The two test classes total 23 tests (including invalid-input/boundary checks), with 0 failures. Upstream code was not rerun.
 
-다음으로 Ink/Stitch **v3.3.0 b0edd96311ece82ee48816dc93466274b12c2a9c**의
-`lib/elements/utils/stroke_to_satin.py`를 `elements/utils/StrokeToSatin.kt`로 포팅했다:
+Next ported Ink/Stitch **v3.3.0 b0edd96311ece82ee48816dc93466274b12c2a9c**'s
+`lib/elements/utils/stroke_to_satin.py` to `elements/utils/StrokeToSatin.kt`:
 `convert_path_to_satin/convert_path_to_satins`, `fix_loop`, `path_to_satin`,
 `get_scores`, `local_minima`, `generate_rungs`, `_merge`, `set_first_node`.
-`lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py:get_join_style_args`,
-`lib/utils/geometry.py:remove_duplicate_points/roll_linear_ring`도 대응한다.
-원본 score101칸·각도제곱/int32·평활 kernel·minima, 4자리 반올림, depth20 이분,
-1px endpoint 판정, tangent0.001·렁1.2배·1/2mm 간격은 변경하지 않았다.
-자체 miter 오프셋 대신 JTS OffsetCurve를 사용하고 결과 레일·렁을 기존
-Ink/Stitch SatinColumn 생성자에 직접 전달한다. 원본 CLI/Inkex UI는 이 API 범위가 아니다.
+Also covers `lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py:get_join_style_args`,
+and `lib/utils/geometry.py:remove_duplicate_points/roll_linear_ring`.
+Upstream score 101 bins, angle-squared/int32, smoothing kernel/minima, rounding to 4 places, depth 20 bisection,
+1px endpoint criterion, tangent 0.001, rungs at 1.2 times, and 1/2mm spacing are unchanged.
+JTS OffsetCurve replaces custom miter offsets; resulting rails/rungs are passed directly to the existing
+Ink/Stitch SatinColumn constructor. Upstream CLI/Inkex UI are outside this API's scope.
 
-Shapely LineString.offset_curve 기본 quad_segs16·mitre_limit5를
-[공식 API 문서](https://shapely.readthedocs.io/en/2.0.6/reference/shapely.LineString.html#shapely.LineString.offset_curve)와 대조했다.
-원본 SVG style에서 miter를 명시한 경우에만 SVG 기본 miter-limit4를 사용하고,
-명시하지 않은 경우는 Shapely 기본5를 유지한다. 스타일 코드는 기본 mitre다.
+Checked Shapely LineString.offset_curve defaults quad_segs 16/mitre_limit 5 against the
+[official API documentation](https://shapely.readthedocs.io/en/2.0.6/reference/shapely.LineString.html#shapely.LineString.offset_curve).
+Only when upstream SVG style explicitly specifies miter is SVG's default miter-limit 4 used;
+otherwise Shapely's default 5 is retained. Style code defaults to mitre.
 
-**이번 검증 범위:** StrokeToSatinTest7건(직선 레일/중앙 렁 수치, 90° corner score8100,
-miter 좌표, 닫힌 경로 midpoint/분할 병합, node 렁, closed extension 시작점, 렁 교차 필터,
-style 기본값; 일부 항목은 같은 테스트 안에 포함). 이는 원본 수식의 분석적 회귀이며
-**공식 convert-to-satin 출력 골든과의 동등성은 미판정**이다. 자료 경로를 총괄에 요청했다.
-기존 원본 centerline 골든10/10 판정과 이 미판정을 혼동하지 않는다.
+**Validation scope for this unit:** StrokeToSatinTest 7 cases (numeric straight rails/central rungs, 90° corner score 8100,
+miter coordinates, closed-path midpoint/split merging, node rungs, closed-extension start point, crossing-rung filtering,
+style defaults; some items share a test). These are analytical regressions of upstream formulas;
+**equivalence against official convert-to-satin output goldens is not yet determined**. Requested resource paths from the coordinator.
+Do not confuse the existing 10/10 upstream centerline-golden verdict with this undetermined status.
 
-차이점/범위:
-- Shapely/GEOS는 기존 승인 JTS1.20 OffsetCurve·LengthIndexedLine·intersection으로 대체.
-  곡선 join 및 자기교차의 전체 수치 동등성은 공식 출력 비교 전까지 미확인.
-- 입력은 SVG px의 명시적 경로와 양수 **상수 strokeWidth**다. 폭 추정·새틴/채우기 선택 없음.
-  빈/중복만 있는 경로는 null, 잘못된 폭은 Kotlin 입력 오류, closed-start API는 닫힌 ring을 요구한다.
-- 길이1px 미만 경로는 재귀분할해도 모든 자손이 원본 endpoint<1 조건에서 실패하므로
-  결과가 항상 비는 재귀를 조기 생략한다. 1px 이상 및 루프의 depth20 규칙은 유지한다.
-- JVM List를 반환하며 SVG DOM/CLI 종료·로그·진행률 콜백은 포함하지 않는다.
+Differences/scope:
+- Shapely/GEOS replaced by existing approved JTS 1.20 OffsetCurve/LengthIndexedLine/intersection.
+  Full numeric equivalence of curved joins/self-intersections is unconfirmed until official-output comparison.
+- Input is an explicit path in SVG px and a positive **constant strokeWidth**. No width estimation/satin-fill selection.
+  Empty/duplicate-only paths return null; invalid widths are Kotlin input errors; closed-start API requires a closed ring.
+- For paths shorter than 1px, every recursively split descendant fails upstream's endpoint<1 condition,
+  so recursion that always yields an empty result is skipped early. The depth 20 rule remains for paths of 1px or more and loops.
+- Returns JVM Lists; excludes SVG DOM/CLI termination/logging/progress callbacks.
 
-전체 `./gradlew check`: BUILD SUCCESSFUL in50s. 원본20개 골든·수식7회귀 모두 통과.
-JUnit/출력: `/tmp/myembro-port-out/letter/hangul-unit1/output.txt`.
-Noto Sans KR400 ‘정민’15mm PES는 아직 만들지 않았다. 원본 `fit.c` 곡선화/
-`image-proc.c` 거리맵·preserve_width 계약은 아직 Kotlin에 없다. 단순 SVG 출력
-`output-svg.c`는 centerline path에 stroke-width를 따로 기록하지 않으므로, 임의 평균 폭이나
-1px 기본폭으로 새틴을 만들지 않는다. 다음 단위는 공식 변환 출력 비교와 원본 곡선·폭 계약을
-작게 확인한 뒤 이 명시적 폭 API에 연결하는 것으로 제안한다. 앱/자동 선택은 계속 보류한다.
+Full `./gradlew check`: BUILD SUCCESSFUL in 50s. All 20 upstream goldens and 7 formula regressions passed.
+JUnit/output: `/tmp/myembro-port-out/letter/hangul-unit1/output.txt`.
+A PES of the Hangul text Jeongmin in Noto Sans KR400 at 15mm has not yet been generated. Upstream `fit.c` smoothing/
+`image-proc.c` distance-map/preserve_width contracts are not yet in Kotlin. Plain SVG output
+`output-svg.c` does not separately record stroke-width for centerline paths, so satin is not generated using an arbitrary
+average width or 1px default. Propose small checks of official conversion outputs and upstream curve/width contracts,
+then connection to this explicit-width API. App integration/automatic selection remain deferred.
 
-## letter 인계 단위 2 — Noto400 ‘정민’15mm 연결 준비
+## Letter handoff unit 2 — preparing integration of the Hangul text Jeongmin in Noto400 at 15mm
 
-곡선 계약을 확인했다. `convert_path_to_satin` 입력은 LineString이므로 기존 원본
-픽셀 중심선 경로를 그 순서대로 입력할 수 있다. 새 spline smoothing/자체 곡선 근사는
-넣지 않는다. AutoTrace Cartesian y를 SVG y-down으로 바꾸고, 래스터 ink-height를
-요청15mm에 대응시키는 좌표 변환만 한다. `fit.c` spline 출력과 동일하다고 주장하지 않는다.
+Confirmed the curve contract. `convert_path_to_satin` takes a LineString, so existing upstream pixel centerline paths
+can be supplied in their original order. No new spline smoothing/custom curve fitting is added.
+Only coordinate transforms from AutoTrace Cartesian y to SVG y-down and raster ink-height to requested
+15mm are applied. No claim of identity with `fit.c` spline output.
 
-획 폭 계약에는 아직 입력이 하나 필요하다. AutoTrace
+One input remains needed for the stroke-width contract. Upstream AutoTrace
 `image-proc.c:new_distance_map`/`fit.c:fit_curve_list`
-@1a232b27818a46a05cd25edec09e2f77c4e9ac01는 지역 거리와 이웃 최대값을
-`z = width * width_weight_factor`로 보존한다. `output-svg.c:out_splines`는
-상수 stroke-width를 기록하지 않는다. 반면 Ink/Stitch
-`convert_path_to_satin`@b0edd96311ece82ee48816dc93466274b12c2a9c는 상수
-stroke_width를 요구한다. 원본에 없는 평균/중간값 폭 매핑은 추가하지 않았고
-총괄에게 이번 시험의 상수 폭(mm)을 요청했다. 자동 선택은 계속 보류한다.
+@1a232b27818a46a05cd25edec09e2f77c4e9ac01 preserves local distances and neighboring maxima as
+`z = width * width_weight_factor`. `output-svg.c:out_splines` does not record
+constant stroke-width. By contrast, Ink/Stitch
+`convert_path_to_satin`@b0edd96311ece82ee48816dc93466274b12c2a9c requires constant
+stroke_width. No mean/median-width mapping absent from upstream was added;
+the coordinator was asked for this trial's constant width (mm). Automatic selection remains deferred.
 
-`tools/hangul_satin/prepare-raster.py`와 `:engine:hangulSatinSample`을 준비했다.
-폰트 기본 weight는100이어서 반드시 variation400을 명시했다. 현재 결과:
-- Noto Sans KR400, ‘정민’, ink-height15mm, 원본 font SHA
+Prepared `tools/hangul_satin/prepare-raster.py` and `:engine:hangulSatinSample`.
+The font's default weight is 100, so variation 400 was explicitly specified. Current results:
+- Noto Sans KR400, the Hangul text Jeongmin, ink-height 15mm, original font SHA
   `194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252`
-- 원본 Kotlin thinning→centerline **9경로**. 입력·정수 경로·PNG는
+- Upstream Kotlin thinning→centerline **9 paths**. Inputs/integer paths/PNGs:
   `/tmp/myembro-sewtest/krs/input.{json,pgm,png}`, `KRSAT1-centerline.{json,png}`.
-- 명시적 폭을 받으면 기존 convert-to-satin→SatinColumn→S1→기본 writer를
-  호출하도록 연결했다. 한 색40wt·60×60mm·원점/0길이/헤더 검사 및 P1–P8을
-  writer에서 통과한 경우에만 PES를 쓴다. 기존 파일명은 덮어쓰지 않는다.
-- **현재 PES 미생성**: 폭 입력 대기이며 `.PES`/decoded-PES `.png`/품질 PASS를
-  주장하지 않는다. 기본 trace 모드는 명확히 중심선 PNG만 만든다.
+- Wired to call existing convert-to-satin→SatinColumn→S1→default writer once explicit width is supplied.
+  Writes PES only if the writer passes checks for one color of 40wt thread, 60×60mm bounds, origin, 0-length moves, and headers, as well as P1–P8.
+  Does not overwrite existing filenames.
+- **No PES generated yet**: awaiting width input; no claim of `.PES`/decoded-PES `.png`/quality PASS.
+  Default trace mode explicitly generates only a centerline PNG.
 
-`./gradlew check :engine:hangulSatinSample`: BUILD SUCCESSFUL in44s.
-재현 명령은 `tools/hangul_satin/README.md`에 기록했다. 폭 회신 뒤
-`-PstrokeWidthMm=<지정값>`으로 실행하면 요청한 `/tmp/myembro-sewtest/krs/KRSAT1.PES`
-생성과 실제 바이트 검사·PNG 단계로 이어진다.
+`./gradlew check :engine:hangulSatinSample`: BUILD SUCCESSFUL in 44s.
+Reproduction commands are recorded in `tools/hangul_satin/README.md`. After a width reply,
+running with `-PstrokeWidthMm=<지정값>` proceeds to generation of the requested `/tmp/myembro-sewtest/krs/KRSAT1.PES`
+and actual-byte inspection/PNG stages.
 
-## letter 인계 단위 3 — 원본 fit 적용 KRSAT1 생성
+## Letter handoff unit 3 — KRSAT1 generation using upstream fit
 
-총괄이 이번 시험의 상수 획 폭을 **1.13mm**로 확정했다. 근거는 model
-GlyphStrokeWidths의 Noto Sans KR400·15mm 실측 median(정1.126, 민1.125mm)이며
-자동 선택/일반 글꼴 폭 추정 규칙으로 확장하지 않는다.
+The coordinator confirmed **1.13mm** as this trial's constant stroke width. Basis: model
+GlyphStrokeWidths' measured median for Noto Sans KR400 at 15mm (Jeong 1.126, Min 1.125mm);
+not extended into automatic selection/general font-width estimation rules.
 
-시험은 **수정하지 않은 원본 AutoTrace C fit**를 거쳤다. `tools/autotrace/fit_oracle.c`는
-thin-image→pxl-outline→`fit.c:fitted_splines`를 호출만 하며 스무딩 알고리즘을 새로
-쓰지 않는다. `new_fitting_opts` 기본값에 centerline=TRUE만 설정했다. preserve_width는
-기본FALSE 유지(새틴 폭은 별도 확정 상수). curve/spline/vector/epsilon-equal 보조 C도
-같은 `1a232b27818a46a05cd25edec09e2f77c4e9ac01`의 원문이다.
-**fit의 Kotlin 이식·앱 연결은 아직 완료하지 않았으며**, C 실행은 이 로컬 시험/
-향후 비교 골든 생성 전용이다. Ink/Stitch Python은 실행하지 않았고 의존성 설치도 없다.
+The trial used **unmodified upstream AutoTrace C fit**. `tools/autotrace/fit_oracle.c` only calls
+thin-image→pxl-outline→`fit.c:fitted_splines`; no new smoothing algorithm was written.
+Only centerline=TRUE was set on `new_fitting_opts` defaults. preserve_width remains default FALSE
+(satin width is a separately confirmed constant). Helper C files for curve/spline/vector/epsilon-equal are
+also original text from `1a232b27818a46a05cd25edec09e2f77c4e9ac01`.
+**Kotlin fit port/app integration are not yet complete**; C execution is exclusively for this local trial/
+future comparison-golden generation. Ink/Stitch Python was not run, and no dependencies were installed.
 
-원본 fit 결과: **9경로·21세그먼트·3차 곡선14개**, 재실행 byte exact.
-입력·각 C 파일/호출기/실행파일·결과 SHA와 컴파일 옵션을
-`/tmp/myembro-sewtest/krs/fit-provenance.json`에 남겼다.
-Kotlin은 원본 line/cubic controls를 읽고 `output-svg.c`의 float y=height-y와
-6자리 `%g` 형식 후 기존 SvgPath.flatten의 글꼴 파서 정밀도0.1 SVG px로
-평탄화한다. 곡선 subdivision일 뿐 자체 smoothing은 아니다. 원본 fit의 입력/출력
-해시를 검사하며, fit.json이 없으면 픽셀 계단 경로로 PES를 만드는 fallback은 금지한다.
+Upstream fit result: **9 paths/21 segments/14 curves of degree 3**, byte-exact on rerun.
+Input, each C file/caller/executable, output SHA, and compiler options are recorded in
+`/tmp/myembro-sewtest/krs/fit-provenance.json`.
+Kotlin reads original line/cubic controls and applies `output-svg.c`'s float y=height-y and
+6-digit `%g` formatting, then flattens with existing SvgPath.flatten font-parser precision 0.1 SVG px.
+This is curve subdivision, not custom smoothing. Original fit input/output hashes are checked;
+if fit.json is missing, fallback generation of PES from pixel-staircase paths is prohibited.
 
-**생성물** `/tmp/myembro-sewtest/krs/KRSAT1.PES` (새 이름,2,298bytes),
-decoded-PES PNG `KRSAT1.png`, 원본 fit 중심선 `KRSAT1-centerline.png`,
-검사 출력 `KRSAT1-check.txt`, gate JSON/text `KRSAT1-gate.{json,txt}`.
-폰트 입력 ink-height15mm와 실제 바늘 경계 **26.8×14.4mm**는 별도 보고한다.
-627땀·8트림·검정40wt 한 색, 자동 새틴/채우기 분기는 넣지 않았다.
+**Artifacts** `/tmp/myembro-sewtest/krs/KRSAT1.PES` (new name,2,298bytes),
+decoded-PES PNG `KRSAT1.png`, upstream fit centerline `KRSAT1-centerline.png`,
+inspection output `KRSAT1-check.txt`, gate JSON/text `KRSAT1-gate.{json,txt}`.
+Font input ink-height 15mm and actual needle bounds **26.8×14.4mm** are reported separately.
+627 stitches/8 trims/one color of black 40wt; no automatic satin/fill branching added.
 
-| 실제 바이트 검사 | 결과 |
+| Actual-byte check | Result |
 |---|---|
-| P1/P2 원점·정수범위 | min(0,0), max(268,144), HoopSpec100×100mm·시험60×60mm 안 |
-| P3 헤더 |268×144, 실제 범위와 정확히 일치 |
-| P4 0길이 바늘/JUMP |0개 |
-| P5 같은 바늘 연속 |최대1회 |
-| P6 시작/끝·트림 전/후 잠금 누락 |모두0개, S1 half_stitch |
-| P7 0.5mm 셀 밀집 |최대6회 |
-| P8 최대 바늘 길이 |2.4186773245mm |
+| P1/P2 origin/integer bounds | min(0,0), max(268,144), within HoopSpec 100×100mm/trial 60×60mm |
+| P3 header |268×144, exactly matches actual bounds |
+| P4 0-length needle/JUMP |0 |
+| P5 consecutive same-point needles |Maximum 1 |
+| P6 missing locks at start/end/before and after trims |All 0, S1 half_stitch |
+| P7 0.5mm cell density |Maximum 6 |
+| P8 maximum needle length |2.4186773245mm |
 
-`quality-gate check --text --style satin` tool v7: **PASS1/1**, 코드/threshold는
-변경하지 않았다. 이 자동 코드 판정과 사용자 실기 승인은 별개이며 후자는 대기다.
+`quality-gate check --text --style satin` tool v7: **PASS1/1**; code/thresholds were
+not changed. This automated code verdict is separate from user physical-device approval, which remains pending.
 PES SHA256: `c26ff1bb5fdbee8c46397c2fcaba1800aa27da3b98b9b0d49d13a340fd202e79`.
-전체 `./gradlew check` 통과(마지막 run13s). 원본 fit 생성기/재현 명령은
-`tools/hangul_satin/README.md` 참조. KRSAT1 재생성으로 덮어쓰지 말고 다음
-실기 파일은 새 stem을 사용한다.
+Full `./gradlew check` passed (last run 13s). For the upstream fit generator/reproduction commands,
+see `tools/hangul_satin/README.md`. Do not overwrite KRSAT1 by regenerating it;
+use a new stem for the next physical-test file.
 
-## letter 인계 단위 4 — AutoTrace fit Kotlin 이식
+## Letter handoff unit 4 — AutoTrace fit Kotlin port
 
-`AutoTraceFit.kt`가 같은 고정 AutoTrace0.31.10의 `fit.c` 중심선 기본 경로를 포팅한다.
-`split_at_corners/find_corners/find_vectors/remove_adjacent_corners`,
+`AutoTraceFit.kt` ports the centerline default path of `fit.c` from the same pinned AutoTrace 0.31.10.
+Covers `split_at_corners/find_corners/find_vectors/remove_adjacent_corners`,
 `remove_knee_points`, `filter`, `fit_curve/fit_with_line/fit_with_least_squares`,
 `set_initial_parameter_values`, `find_tangent/find_half_tangent`, `fit_one_spline`,
-`find_error`, `spline_linear_enough/change_bad_lines`와 `vector.c` float 벡터 연산,
-`spline.c:evaluate_spline`을 대응한다. 원본 커밋과 GPL2+FSF 고지는 파일 머리에,
-원본 라이선스 전문은 기존 engine 리소스에 보존했다.
+`find_error`, `spline_linear_enough/change_bad_lines`, float vector operations in `vector.c`,
+and `spline.c:evaluate_spline`. Upstream commit and GPL2+FSF notices are in the file header;
+full upstream license text remains in existing engine resources.
 
-기본값: corner_surround4, corner_threshold100°, corner_always_threshold60°,
-filter_iterations4, tangent_surround3, error_threshold2px, line_threshold1,
-line_reversion_threshold0.01, remove_adjacent_corners=false,
-centerline=true, preserve_width=false. 원본 `gfloat` 연산 순서·반올림, 코너 끝 처리,
-필터 collapse 취소와 이전 점 상태, 열린 곡선 링크 처리, 비정규화 평균 접선,
-재귀 분할 시 공유 접선을 유지한다. 자체 곡선 스무딩이나 폭 추정은 없다.
+Defaults: corner_surround 4, corner_threshold 100°, corner_always_threshold 60°,
+filter_iterations 4, tangent_surround 3, error_threshold 2px, line_threshold 1,
+line_reversion_threshold 0.01, remove_adjacent_corners=false,
+centerline=true, preserve_width=false. Preserves upstream `gfloat` operation order/rounding, corner-end handling,
+filter-collapse cancellation and previous-point state, open-curve link handling, unnormalized average tangents,
+and shared tangents during recursive splitting. No custom curve smoothing or width estimation.
 
-**골든:** 기존 합성 직선/T/X/고리·OFL Noto ‘한’5입력×1/3채널10건.
-`tools/autotrace/generate-fit-goldens.py`는 원본 C를 수정 없이 호출해
-[fit 리소스](../engine/src/test/resources/autotrace/fit/README.md)를 생성한다.
-경로 수·개폐/방향·세그먼트 순서/차수·모든 제어점 xyz를 float비트 exact로 비교한다.
-`AutoTraceFitTest`: **원본 골든10/10 + 빈 입력/잘못된 좌표 검사1건 통과**.
-C 골든 재실행도10/10 byte exact. 로컬 ‘정민’15mm는 테스트 픽스처로 넣지 않고
-`/tmp/myembro-sewtest/krs/input.pgm`으로 별도 비교: **9경로·21세그먼트·84제어점
-float비트 exact** (`/tmp/myembro-port-out/letter/autotrace/fit/local-fit.log`).
+**Goldens:** 5 existing synthetic inputs: straight/T/X/ring/the Hangul syllable han in OFL Noto × 1/3 channels, 10 cases.
+`tools/autotrace/generate-fit-goldens.py` calls upstream C unchanged to generate
+[fit resources](../engine/src/test/resources/autotrace/fit/README.md).
+Compares path counts/open-closed status/direction/segment order/degree/all control-point xyz as exact float bits.
+`AutoTraceFitTest`: **upstream goldens 10/10 + 1 empty-input/invalid-coordinate check passed**.
+C-golden reruns also 10/10 byte-exact. The local Hangul text Jeongmin at 15mm was not added as a test fixture;
+separate comparison uses `/tmp/myembro-sewtest/krs/input.pgm`: **9 paths/21 segments/84 control points,
+exact float bits** (`/tmp/myembro-port-out/letter/autotrace/fit/local-fit.log`).
 
-시범 CLI는 이제 **Kotlin fit의 결과만** convert-to-satin에 전달한다.
-선택적 C fit.json이 있으면 해시/출처 검증과 모든 제어점 비트 일치 검사만 하며
-없어도 같은 Kotlin fit을 쓴다. 픽셀 계단 경로 PES fallback은 없다.
-`KRFIT1-centerline.png/json`을 로컬로 생성했고 전달된 KRSAT1.PES는 변경하지 않았다.
-앱 UI 연결·새틴/채우기 자동 선택·사용자 봉제 승인과는 별개다.
+The trial CLI now passes **only Kotlin fit results** to convert-to-satin.
+If optional C fit.json exists, it is used only for hash/provenance validation and bitwise checks of all control points;
+without it, the same Kotlin fit is used. No pixel-staircase-path PES fallback.
+Generated `KRFIT1-centerline.png/json` locally and did not change the delivered KRSAT1.PES.
+Separate from app UI integration/automatic satin-fill selection/user sew-out approval.
 
-원본 대비 범위/차이:
-- 상수 폭 중심선 fit만 지원한다. preserve_width 거리맵/z 폭 피팅과 outline fitting,
-  임의 fit 설정·진행/취소 콜백·로그는 이번 API에 포함하지 않는다.
-- GLib 할당/링크는 JVM 객체/List로 대체한다. 비정상 빈 경로/음수·ushort 범위 밖
-  픽셀은 입력 오류로, 원본에서 무한 반복/분할 실패할 퇴화 접선은 명시 오류로 중단한다.
-- 원본10건과 별도 로컬 사례의 exact는 해당 입력에 대한 측정이며 전체 입력 동등성
-  또는 선→새틴의 공식 오라클 동등성을 의미하지 않는다.
+Scope/differences from upstream:
+- Supports only constant-width centerline fit. preserve_width distance-map/z-width fitting, outline fitting,
+  arbitrary fit settings/progress-cancellation callbacks/logging are outside this API.
+- GLib allocations/links replaced with JVM objects/Lists. Abnormal empty paths/negative or out-of-ushort-range pixels
+  are input errors; degenerate tangents that would loop forever/fail splitting upstream terminate with explicit errors.
+- Exact matches for 10 upstream cases and a separate local case measure only those inputs; they do not establish
+  all-input equivalence or official-oracle equivalence for line→satin.
 
-검증 출력: `/tmp/myembro-port-out/letter/autotrace/fit/verify.log`, `local-fit.log`,
-`check.log`. `./gradlew check`: **BUILD SUCCESSFUL in38s**, 엔진650·앱 Debug205/
-Release205 테스트 실패0, Lint 통과. 이번 단위는 fit 교체/비교까지이며 새 PES 실기
-파일을 추가 생성하지 않았다. 전달된 KRSAT1 SHA256도 이전 기록과 동일하다.
+Validation output: `/tmp/myembro-port-out/letter/autotrace/fit/verify.log`, `local-fit.log`,
+`check.log`. `./gradlew check`: **BUILD SUCCESSFUL in 38s**, engine 650/app Debug 205/
+Release 205 tests, 0 failures, Lint passed. This unit ends with fit replacement/comparison; no additional PES
+physical-test file was generated. The delivered KRSAT1 SHA256 also matches the previous record.

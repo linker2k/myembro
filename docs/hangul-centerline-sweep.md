@@ -1,6 +1,6 @@
-# 한글 새틴 공개 글꼴 스윕
+# Hangul satin public-font sweep
 
-| 글꼴 Regular400 | 건수 | 게이트 PASS | 생성 거부(10/15/20mm) | 엔진 시간(초) |
+| Font Regular 400 | Cases | Gate PASS | Generation rejected (10/15/20mm) | Engine time(seconds) |
 |---|---:|---:|---|---:|
 | gowun-dodum | 90 | 90 | 0 / 0 / 0 | 2.364 |
 | nanum-gothic | 90 | 90 | 0 / 0 / 0 | 1.340 |
@@ -8,29 +8,29 @@
 | gothic-a1 | 90 | 90 | 0 / 0 / 0 | 0.969 |
 | orbit | 90 | 90 | 0 / 0 / 0 | 0.901 |
 
-합계450건: 생성432 / 생성 거부18 / 외부 게이트 BLOCK 0.
+Total 450 cases: generated 432 / generation rejected 18 / external gate BLOCK 0.
 
-실패 사유:
-- java.lang.IllegalStateException: No satin section for fitted path: 18건
+Failure reason:
+- java.lang.IllegalStateException: No satin section for fitted path: 18 cases
 
-거부18건 모두 최소 경로 <1 SVG px (0.317607–0.952822px). convert-to-satin 원본의 endpoint>=1px 조건에서 섹션 없음; 기둥 생성 불가 시 전체 글자를 거부하며 경로를 버려 성공으로 바꾸지 않음.
+All rejected 18 cases have a minimum path <1 SVG px (0.317607–0.952822px). No section under upstream convert-to-satin's endpoint>=1px condition; if a column cannot be generated, rejects the whole glyph rather than discarding a path to turn it into success.
 
-검사 범위: 출력된432건은 외부 게이트 PASS, 0길이 바늘/JUMP=0, 원점 min(0,0)·헤더/후프 검사 PASS. 거부18건은 PES가 없어 게이트·PES 0길이/원점 검사는 미실행.
+Check coverage: generated 432 cases pass the external gate, 0-length needle/JUMP=0, origin min(0,0)/header/hoop checks PASS. Rejected 18 cases have no PES, so gate/PES 0-length/origin checks were not run.
 
-최대 0.5mm 셀 바늘 수 10; 엔진 루프 9.957381596초; 폭 실측 9.743949678959325초; 래스터 준비 0.48675092007033527초. 표 시간은 글자별 엔진 호출 합(첫 JVM/JIT·JSON/파일 쓰기 포함, Gradle 빌드·폭 실측·래스터·외부 게이트 실행 제외). 게이트 wall time은 별도 미계측.
+Maximum needle count per 0.5mm cell 10; engine loop 9.957381596 seconds; width measurement 9.743949678959325 seconds; raster preparation 0.48675092007033527 seconds. Table times sum per-glyph engine calls (including first JVM/JIT·JSON/file writing, excluding Gradle build/width measurement/raster/external gate execution). Gate wall time was not measured separately.
 
-폰트·OFL·SHA·폭 측정 출처: fonts.json / width-provenance.json. 공개 문자30자: 뻘뿔뻤뼈뼛뺏빽뽐뽕뾰쀼쐐쐤쒔쫄쫓쭘쭝쯤쯧짧찮많닭값삶앉읽핥읊
+Font/OFL/SHA/width-measurement provenance: fonts.json / width-provenance.json. Public characters 30: BBEOL, BBUL, BBEOSS, BBYEO, BBYEOS, BBAES, BBAEG, BBOM, BBONG, BBYO, BBYU, SSWAE, SSWAESS, SSWEOSS, JJOL, JJOC, JJUM, JJUNG, JJEUM, JJEUS, JJALB, CANH, MANH, DALG, GABS, SALM, ANJ, ILG, HALT, EULP
 
-폭은 기존 model GlyphStrokeWidths의 글자별15mm 중앙값×height/15, 비례 샘플링(15mm 기준0.1mm). 동일 글자 실제 ink 높이 정규화. 이 계산은 앱 자동 폭 규칙·폰트 권장 높이/실기 안전 범위가 아님. 기존 원본 기본값을 변경하지 않음.
+Width is the existing model GlyphStrokeWidths per-glyph 15mm median×height/15, with proportional sampling(15mm reference 0.1mm). Normalizes each glyph's actual ink height. This calculation is not an app automatic-width rule, recommended font height, or machine-safe range. Existing upstream defaults are unchanged.
 
-원본 fit→convert-to-satin→SatinColumn→S1→기본 PES writer 경로. 앱 연결 없음. 사용자 봉제 승인은 별도.
+Upstream fit→convert-to-satin→SatinColumn→S1→default PES writer path. No app integration. User sewout approval is separate.
 
-## 재현과 범위
+## Reproduction and scope
 
-엔진 `95ce672` 기반. 계산 도구만 추가했으며 새틴/후처리 알고리즘·게이트를
-변경하지 않았다. 모든 입력·폰트·출력은 `/tmp/myembro-port-out/letter/hangul-sweep-v1/`에
-있다. 앱에 연결하지 않았고 기존 KRSAT1도 바꾸지 않았다. 개인 파일을 읽지 않았다.
-외부 게이트 v7, threshold SHA256
+Based on engine `95ce672`. Only computation tools were added; satin/postprocessing algorithms and gates
+were unchanged. All inputs/fonts/outputs are in `/tmp/myembro-port-out/letter/hangul-sweep-v1/`.
+No app integration; existing KRSAT1 is unchanged. No private files were read.
+External gate v7, threshold SHA256
 `18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d`.
 
 ```sh
@@ -44,15 +44,15 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:hangulSatinSweep -
 python3 tools/hangul_satin/summarize-sweep.py /tmp/myembro-port-out/letter/hangul-sweep-NEW
 ```
 
-OFL 텍스트를 공개 Google Fonts 고정 커밋에서 받아 확인했으며 원격 코드는
-실행하지 않았다. regular400 다섯 글꼴을 가는 획 후보로 택했으며 모든 한글 글꼴의
-최소 획 두께나 사용 가능 등급을 판정한 스윕은 아니다. 래스터 폰트 크기128px,
-글자별 ink height를 물리 높이에 정규화했다. 해상도별 수렴 검증은 범위 밖이다.
-나눔명조 실패는 뿔·뻤·뼛·뽐·뽕·뾰·쀼·값에서 발생했다.
-단일 경로 하나라도 변환이 안 되면 전체 글자를 실패 처리하므로 일부 생성된
-새틴을 완성된 글자로 내보내지 않는다. 짧은 serif 경로를 버리거나 임의로 러닝으로
-대체하는 변경은 하지 않았다. 실패 상세는 `summary.json`과 글자별 `.log`에 있다.
+Retrieved and checked OFL text from pinned public Google Fonts commits; no remote code was executed.
+Selected five regular 400 fonts as thin-stroke candidates; this sweep does not determine minimum stroke thickness
+or usability grades for all Hangul fonts. Raster font size 128px;
+normalized per-glyph ink height to physical height. Resolution convergence verification is outside scope.
+Nanum Myeongjo failures occurred for BBUL, BBEOSS, BBYEOS, BBOM, BBONG, BBYO, BBYU, GABS.
+If even one path fails conversion, the whole glyph fails; partially generated satin is not exported as a completed glyph.
+No changes were made to discard short serif paths or arbitrarily replace them with running stitches.
+Failure details are in `summary.json` and per-glyph `.log` files.
 
-검증: `./gradlew check` BUILD SUCCESSFUL in1m1s(엔진650·앱 Debug/Release 각205,
-실패0·Lint 통과). `/tmp/myembro-port-out/letter/hangul-sweep-v1/check.log`.
+Validation: `./gradlew check` BUILD SUCCESSFUL in 1m 1s(engine 650·app Debug/Release each 205,
+failures 0·Lint passed). `/tmp/myembro-port-out/letter/hangul-sweep-v1/check.log`.
 `SWEEP_ASSERT 450 inputs / 432 gate PASS / 18 generation rejected / 432 zero-motion=0 / 432 origin=(0,0)`.

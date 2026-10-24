@@ -59,7 +59,7 @@ derived from the following projects, whose notices are reproduced as their licen
 - Five fonts are bundled in the APK for offline use, unmodified and verified against the same
   pinned sha256: `assets/fonts/bundled/<id>/` holds each font's `ltr.svg`, `font.json` and `LICENSE`
   (all SIL Open Font License 1.1): sacramarif, chicken_scratch, chicken_little, medium_font,
-  bathaus_FI. Selection basis: `docs/inkstitch-fonts.md` (번들 글꼴).
+  bathaus_FI. Selection basis: `docs/inkstitch-fonts.md` (bundled fonts).
 
 ## pyembroidery
 

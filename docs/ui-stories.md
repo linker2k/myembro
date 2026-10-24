@@ -1,89 +1,89 @@
-# 기능별 UI 스토리 — 실패 없는 디자인
+# Feature UI stories — designs that sew reliably
 
-> 총괄 작성 2026-10-24, 같은 날 사용자 지시로 개정. 엔진 포팅 상세는 `docs/inkstitch-port.md`.
+> Written by the integrator on 2026-10-24, revised the same day at the user's direction. Engine-port details: `docs/inkstitch-port.md`.
 
-## 사용자 지시 (개정 이유)
+## User direction (reason for revision)
 
-- "그대로 사용"은 Ink/Stitch의 기능과 화면을 모두 옮기라는 뜻이 아니다. **검증된 알고리즘을 새로 만들지 말고, 먼저 그대로 가져다 적용하라**는 뜻이다.
-- 휴대폰 앱에서 Ink/Stitch처럼 설정을 늘어놓으면 장황하고 복잡하다.
-- 주제는 **실패 없는 디자인**이다. 자유도를 일부 포기하더라도, 검증된 방법만 자동으로 적용한다.
-- 상세 설정은 다음 버전에서 다룬다.
+- "Use it as is" does not mean bringing over every Ink/Stitch feature and screen. It means **do not reinvent proven algorithms; first bring them over and apply them unchanged**.
+- Listing settings as Ink/Stitch does is verbose and complicated on a phone app.
+- The theme is **designs that sew reliably**. Apply only proven methods automatically, even at the cost of some freedom.
+- Detailed settings belong in the next version.
 
-## 원칙
+## Principles
 
-1. **새 알고리즘을 만들지 않는다.** 땀 생성은 Ink/Stitch v3.3.0 코드를 그대로 포팅하고 기본값을 쓴다. 이미지 처리도 이미 검증된 공개 알고리즘(예: potrace 계열 윤곽 추적, 표준 색 양자화)을 쓴다. 자체 고안한 휴리스틱은 기본 경로에서 뺀다.
-2. **자동 결정, 최소 입력.** 사용자는 무엇을(글자·글꼴·그림), 어디에(위치·크기), 무슨 색으로만 정한다. 땀 종류, 밀도, 바탕 땀, 잠금 땀은 앱이 검증된 규칙으로 정한다.
-3. **실패할 조합은 처음부터 고를 수 없게 한다.** 경고를 띄우는 대신 범위를 제한한다. 예를 들어 크기 슬라이더는 그 글꼴과 땀 종류가 검증된 범위 안에서만 움직인다.
-4. **결정 규칙에는 근거를 붙인다.** 규칙의 숫자는 Ink/Stitch 기본값이나 사용자 PE-Design 도안 334개 실측값에서만 가져온다. 근거가 없는 값은 "미확인"으로 두고 쓰지 않는다. 규칙은 embro-codex가 실측 코퍼스로 보정하고 검증한다.
-5. **상세 설정 화면은 만들지 않는다.** 잠금 땀 종류, 밀도, 바탕 땀, 채우기 변형 같은 화면은 "다음 버전" 목록에 둔다.
+1. **Do not create new algorithms.** Port stitch generation directly from Ink/Stitch v3.3.0 and use its defaults. Image processing also uses proven public algorithms (for example, potrace-family contour tracing and standard color quantization). Remove custom heuristics from the default path.
+2. **Automatic decisions, minimal input.** Users choose only what (text/font/image), where (position/size), and which colors. The app chooses stitch type, density, underlay, and lock stitches using proven rules.
+3. **Make failing combinations unavailable from the outset.** Restrict ranges instead of displaying warnings. For example, a size slider moves only within the range verified for that font and stitch type.
+4. **Attach evidence to decision rules.** Numeric values come only from Ink/Stitch defaults or measurements of the user's 334 PE-Design designs. Values without evidence remain "unconfirmed" and are not used. embro-codex calibrates and verifies rules against the measured corpus.
+5. **Do not build detailed-settings screens.** Lock-stitch type, density, underlay, and fill-variant screens remain on the "next version" list.
 
-## 단계
+## Stages
 
-한 단계는 게이트 통과 → 병합 → 스모크 → 알파 배포 → 사용자 실제 봉제 검토 순서로 진행한다. 다음 단계는 앞 단계 검토가 끝난 뒤에 병합한다.
+Each stage proceeds through gate pass → merge → smoke → alpha release → review of actual user sewing. Merge the next stage only after review of the preceding stage is complete.
 
-| 단계 | 엔진 (그대로 포팅) | 화면에 보이는 변화 | 담당 |
+| Stage | Engine (ported unchanged) | Visible UI change | Owner |
 |---|---|---|---|
-| S1 | 잠금 땀(Ink/Stitch 기본), 최소 땀·점프 길이, 트림 | 없음. 결과만 안전해진다 | worker |
-| S2 | 새틴 글자 = Ink/Stitch 자수 글꼴(새틴 기둥 기본값). TTF 글꼴은 러닝 유지, 채우기는 S3 | 글꼴 목록 맨 앞에 "검증된 자수 글꼴", 크기 범위 제한 | letter + canvas |
-| S3 | 타타미 채우기 + 바탕 땀(기본값), TTF 글자 채우기 포함 | 굵은 글자·도형이 자동으로 채우기 | model |
-| S4 | 사진 → 자수 (검증된 추적·양자화 + S2·S3 엔진) | 사진 고르기 → 색 수 → 결과, 3단계 | editor |
-| 상시 | 봉제 점검, 땀 재생 | 뷰어 배지, 재생 슬라이더 | editor |
+| S1 | Lock stitches (Ink/Stitch defaults), minimum stitch/jump lengths, trims | None. Only the output becomes safer | worker |
+| S2 | Satin text = Ink/Stitch embroidery fonts (satin-column defaults). TTF fonts remain running; fill is S3 | "Verified embroidery fonts" first in the font list, restricted size ranges | letter + canvas |
+| S3 | Tatami fill + underlay (defaults), including TTF text fill | Thick letters/shapes automatically use fill | model |
+| S4 | Photo → embroidery (proven tracing/quantization + S2·S3 engines) | Choose photo → color count → result, 3 steps | editor |
+| Ongoing | Sew-out check, stitch playback | Viewer badge, playback slider | editor |
 
-**다음 버전으로 미룸:** 상세 설정(잠금 종류, 밀도, 바탕 땀, 당김 보정 등), 채우기 변형(윤곽·가이드·물결·원형·그라데이션·타탄), 리플·빈 스티치, SVG 가져오기, 복제, 십자수.
+**Deferred to the next version:** detailed settings (lock type, density, underlay, pull compensation, etc.), fill variants (contour·guided·wave·circular·gradient·tartan), ripple·bean stitch, SVG import, cloning, cross stitch.
 
 ---
 
-## US-0 보내기 전 확인 (상시)
+## US-0 Check before sending (ongoing)
 
-- 뷰어 위쪽 배지는 `통과` / `차단` 두 가지만 쓴다. 앱이 만든 도안은 차단이 나오지 않아야 정상이다.
-- 가져온 PES 파일이 차단이면 이유를 한 줄로 보여 주고, 보내기 전에 한 번 확인받는다.
-- 땀 재생: 슬라이더와 재생 버튼 하나. 속도 선택은 없고 길이에 맞춰 자동으로 정한다.
+- The badge at the top of the viewer uses only `통과` / `차단` (Pass / Block). App-generated designs should normally never be blocked.
+- If an imported PES file is blocked, show the reason in one line and request confirmation once before sending.
+- Stitch playback: a slider and a single play button. No speed selector; speed is determined automatically from length.
 
-## US-1 자동 마무리 (S1)
+## US-1 Automatic finishing (S1)
 
-- 새 화면은 없다. 앱이 만드는 땀에는 Ink/Stitch 기본 잠금 땀, 최소 길이 정리, 트림을 항상 적용한다.
-- 가져온 PES 파일은 건드리지 않는다.
-- 완료 조건: 품질 게이트를 통과하고, 시험 세트를 SE400에서 엉킴 없이 수놓는다.
+- No new screen. Always apply Ink/Stitch default lock stitches, minimum-length cleanup, and trims to app-generated stitches.
+- Leave imported PES files untouched.
+- Completion criteria: pass the quality gate and sew the test set on SE400 without tangling.
 
-## US-2 글자: 쓰고, 고르고, 크기만 (S2)
+## US-2 Text: type, choose, size (S2)
 
-- 입력은 글자, 글꼴, 높이, 색 네 가지뿐이다.
-- 땀 종류는 앱이 획 굵기와 높이로 정해 "자동 · 새틴"처럼 표시만 한다. 결정 규칙은 다음과 같다(값은 codex가 코퍼스로 보정).
-  - 획이 새틴 기둥 폭의 검증 범위 안에 있으면: 새틴
-  - 검증 범위보다 좁거나 글자가 작으면: 러닝(PE-Design의 Small Text 방식)
-  - 검증 범위보다 넓으면: 채우기(S4 이후). 그 전까지는 그 크기를 고를 수 없다.
-- 높이 슬라이더는 고른 글꼴이 검증된 범위 안에서만 움직인다. 범위 밖은 고를 수 없으므로 경고가 필요 없다.
-- TTF 글꼴을 자동 새틴으로 바꾸던 자체 방식은 기본 경로에서 뺀다.
-- 완료 조건: "Jung Min" 같은 필기체 이름이 게이트를 통과하고 실제 봉제에서 문제가 없다.
+- Only four inputs: text, font, height, color.
+- The app chooses stitch type from stroke thickness and height, displaying only a label such as "Auto · Satin". Decision rules follow (codex calibrates values against the corpus).
+  - Stroke width within the verified satin-column range: satin
+  - Narrower than the verified range or small text: running (PE-Design's Small Text approach)
+  - Wider than the verified range: fill (after S4). Until then, that size is unavailable.
+- The height slider moves only within the verified range for the selected font. Out-of-range choices are unavailable, so no warning is necessary.
+- Remove the custom automatic TTF-to-satin method from the default path.
+- Completion criteria: a script name such as "Jung Min" passes the gate and sews without problems.
 
-## US-3 검증된 자수 글꼴 (S3)
+## US-3 Verified embroidery fonts (S3)
 
-- 글꼴 목록 맨 앞에 "검증된 자수 글꼴"을 둔다. 카드는 이름과 실제 땀 미리보기만 보여 준다.
-- 높이 범위는 글꼴에 기록된 값을 그대로 슬라이더 제한에 쓴다.
-- 입력한 글자가 그 글꼴에 없으면, 그 글꼴은 목록에서 흐리게 표시해 고를 수 없게 한다.
+- Put "Verified embroidery fonts" first in the font list. Cards show only the name and an actual-stitch preview.
+- Use the height range recorded in the font directly as the slider limit.
+- If the font lacks the entered characters, dim it in the list and make it unavailable for selection.
 
-## US-4 채우기 자동 적용 (S4)
+## US-4 Automatic fill (S4)
 
-- 굵은 글자와 도형에서 새틴 폭을 넘는 영역은 타타미 채우기와 기본 바탕 땀으로 자동 처리한다.
-- 각도와 밀도는 Ink/Stitch 기본값을 쓴다. 조절 화면은 없다.
+- Automatically handle areas exceeding satin width in thick letters and shapes with tatami fill and default underlay.
+- Use Ink/Stitch default angles and density. No adjustment screen.
 
-## US-5 사진 → 자수 (S5, 차별화)
+## US-5 Photo → embroidery (S5, differentiation)
 
-- 흐름은 3단계다: **사진 고르기·자르기 → 색 수(2–6) → 결과 확인**.
-- 윤곽 단순화, 작은 조각 제거, 영역별 땀 종류는 자동으로 정한다. 너무 작아 수놓을 수 없는 조각은 버린다.
-- 지금 codex/editor에 있는 자체 벡터화는 검증된 공개 알고리즘으로 바꾼 뒤에 적용한다.
-- 결과는 일반 편집기 모양이므로 위치·크기·색은 바꿀 수 있다. 땀 설정은 바꿀 수 없다.
+- The flow has 3 steps: **choose/crop photo → color count (2–6) → review result**.
+- Determine contour simplification, removal of small fragments, and per-region stitch types automatically. Discard fragments too small to sew.
+- Apply the current custom vectorization in codex/editor only after replacing it with a proven public algorithm.
+- The result is a normal editor shape, so position/size/colors can change. Stitch settings cannot.
 
-## 크기 변경 안전 규칙 (상시)
+## Resizing safety rules (ongoing)
 
-- 앱이 만든 모양은 크기를 바꾸면 땀을 다시 계산하므로 제한하지 않는다. 단, US-2의 높이 범위는 지킨다.
-- 가져온 PES 파일은 땀을 다시 만들 수 없으므로, 크기 변경을 검증된 범위로 제한한다. 범위 값은 미확인이며 codex가 근거를 찾아 정한다.
+- App-generated shapes recalculate stitches on resize, so resizing is unrestricted. However, the US-2 height range still applies.
+- Imported PES files cannot regenerate stitches, so restrict resizing to a verified range. Range values are unconfirmed; codex will determine them from evidence.
 
 
-## 다음 버전: 프로세스 종료 뒤 뷰어 도안 복원
+## Next version: restore the viewer design after process termination
 
-preview3(1977bd8) 조사에서 홈 → 프로세스 종료 → 최근 앱 복귀 시 MainActivity는
-열리지만, 뷰어의 저장된 화면/파일 경로를 새 ViewerViewModel에 다시 열지 않아
-`No design open`으로 표시됨을 확인했다. 다음 버전에서 파일 재읽기 성공 후 뷰어를
-복원하는 작업으로 남긴다. One UI 최근 앱 진입 실패 토스트의 원인으로 판정하지 않으며,
-이번 USB history 방어 수정에는 뷰어 복원 구현을 포함하지 않는다.
+The preview3 (1977bd8) investigation confirmed that returning through Home → process termination →
+Recent apps opens MainActivity, but displays `No design open` because the viewer's saved screen/file
+path is not reopened in the new ViewerViewModel. Restoring the viewer after successfully rereading
+the file remains next-version work. This is not identified as the cause of the One UI Recent apps
+entry-failure toast, and viewer restoration is not included in this USB history defensive fix.

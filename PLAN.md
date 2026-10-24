@@ -1,39 +1,39 @@
-# myembro — 안드로이드 자수 앱 개발 계획
+# myembro — Android embroidery app development plan
 
-> 오픈소스(GPL-3.0) 안드로이드 자수 앱. 브라더 PES 우선, 뷰어부터 시작.
-> 2026-10-22 개정: Codex(GPT-6.1-Sol) 교차 검증 결과 반영 — 아래 "개정 이력" 참고.
+> An open-source (GPL-3.0) Android embroidery app. Brother PES first, starting with a viewer.
+> Revised 2026-10-22: incorporates Codex (GPT-6.1-Sol) cross-verification results — see "Revision history" below.
 
-## 상태 표기
+## Status notation
 
-| 표기 | 의미 |
+| Marker | Meaning |
 |---|---|
-| `[ ]` | 미착수 |
-| `[~]` | 구현됨, 검증 대기 |
-| `[x]` | 구현 + 자동 테스트로 검증 |
-| 🧵 | 실제 미싱/원단으로 검증 완료 |
+| `[ ]` | Not started |
+| `[~]` | Implemented, awaiting verification |
+| `[x]` | Implemented + verified by automated tests |
+| 🧵 | Verified on an actual machine/fabric |
 
-## 확정된 결정 (2026-10-22)
+## Confirmed decisions (2026-10-22)
 
-| 항목 | 결정 |
+| Item | Decision |
 |---|---|
-| 대상 미싱 | 브라더 → **PES** 우선 (PEC/DST 읽기도 지원) |
-| 라이선스 | **GPL-3.0-or-later**, GitHub 공개 오픈소스 |
-| MVP | **뷰어/시뮬레이터** 먼저 |
-| 기본 후프 | **100×100 mm** |
-| 기술 스택 | Kotlin + Jetpack Compose, `:engine`(순수 Kotlin/JVM) + `:app`(Android) |
+| Target machines | Brother → **PES** first (PEC/DST reading also supported) |
+| License | **GPL-3.0-or-later**, publicly available open source on GitHub |
+| MVP | **Viewer/simulator** first |
+| Default hoop | **100×100 mm** |
+| Stack | Kotlin + Jetpack Compose, `:engine` (pure Kotlin/JVM) + `:app` (Android) |
 
-GPL이므로 Ink/Stitch(GPL-3) 알고리즘 직접 포팅 가능. pyembroidery(MIT)는 파일 I/O 포팅 + 테스트 기준(oracle, **1.5.1 고정**). 고지: `THIRD_PARTY_NOTICES.md`.
+GPL permits directly porting Ink/Stitch (GPL-3) algorithms. pyembroidery (MIT) supplies file-I/O porting and the test reference (oracle, **pinned to 1.5.1**). Notices: `THIRD_PARTY_NOTICES.md`.
 
-## 원본 프로그램별 계승 포인트
+## Features to inherit from each original program
 
-| 원본 | 계승할 장점 | 앱 반영 |
+| Original | Strengths to inherit | App application |
 |---|---|---|
-| Ink/Stitch | 벡터→땀 변환 파라미터(러닝/새틴/타타미, 밀도, 당김보정, 언더레이) | 디지타이징 엔진 |
-| Embrilliance | 가벼운 네이티브, 레터링, 모듈식 | 앱 구조 / 기능 모듈 |
-| PE-Design | 이미지→자수 자동 디지타이징 | "사진 → 자수" 마법사 |
-| pyembroidery | 다양한 포맷 I/O | 파일 I/O 계층 + 정답 비교 테스트 |
+| Ink/Stitch | Vector-to-stitch parameters (running/satin/tatami, density, pull compensation, underlay) | Digitizing engine |
+| Embrilliance | Lightweight native app, lettering, modular design | App architecture / feature modules |
+| PE-Design | Automatic image-to-embroidery digitizing | "Photo → embroidery" wizard |
+| pyembroidery | I/O for many formats | File-I/O layer + reference-comparison tests |
 
-## 프로젝트 구조
+## Project structure
 
 ```
 myembro/
@@ -43,101 +43,101 @@ myembro/
 └── .github/       # CI (엔진 테스트 + APK 빌드)
 ```
 
-## 단계별 작업
+## Work by phase
 
-### Phase 0 — 범위 확정
-- [x] 대상 포맷 PES, GPL-3.0 공개, 뷰어 우선, 기본 후프 100×100
-- [ ] **대상 기종 모델명과 실제 봉제 영역 확정** (후프 이름 ≠ 실제 봉제 가능 영역)
-- [ ] 기준 PES 실파일 수집 (PE-Design·Embrilliance·Ink/Stitch 등 여러 제작 프로그램, v1~v10)
+### Phase 0 — Define scope
+- [x] Target PES, public GPL-3.0 release, viewer first, default hoop 100×100
+- [ ] **Confirm target machine model and actual sewing area** (hoop name ≠ actual sewable area)
+- [ ] Collect reference PES files (multiple authoring programs, including PE-Design·Embrilliance·Ink/Stitch, v1~v10)
 
-### Phase 1 — 엔진 코어: 읽기
-- [x] 데이터 모델: Stitch / Jump / Trim / Stop / ColorChange / End, 실 색상, 읽기 경고
-- [x] PES·PEC 리더 — v1·v6 + PEC를 pyembroidery 결과와 **명령·좌표·색상 단위로 비교** (도안 3종)
-- [~] PES v4/v5/v7~v10 헤더 — 코드만 있음, 실파일 검증 필요
-- [x] DST 리더 (+ 연속 점프→트림 보간, O(n) 스트리밍 구현)
-- [ ] DST 시퀸 명령을 별도로 보존 (현재는 경고 후 점프로 축약 → 트림 추론에 섞일 수 있음)
-- [x] STOP(중복 색상) 복원, 잘린 파일 경고, PEC 블록 경계, 0색 도안 — 손작성 경계 입력 테스트
+### Phase 1 — Engine core: reading
+- [x] Data model: Stitch / Jump / Trim / Stop / ColorChange / End, thread colors, read warnings
+- [x] PES·PEC readers — compare v1·v6 + PEC with pyembroidery **at command/coordinate/color level** (3 designs)
+- [~] PES v4/v5/v7~v10 headers — code exists; actual-file verification required
+- [x] DST reader (+ consecutive-jump→trim inference, O(n) streaming implementation)
+- [ ] Preserve DST sequin commands separately (currently reduced to jumps after a warning → may affect trim inference)
+- [x] Restore STOP (duplicate colors), truncated-file warnings, PEC block boundaries, 0-color designs — hand-authored boundary-input tests
 
-### Phase 2 — 뷰어 / 시뮬레이터 ← 첫 공개 릴리스
-- [~] SAF 파일 열기 + "다른 앱으로 열기"
-- [~] 땀 렌더링 (실 색상, 연속 STITCH 사이만 그림, 핀치 줌/팬)
-- [~] 재생 시뮬레이션 (슬라이더, 속도 = 명령/초)
-- [~] 통계: 땀 수, 크기(mm), 색상 수, 트림 수, 예상 시간
-- [~] 색상 블록 목록 (STOP은 같은 실 유지)
-- [~] 후프 오버레이 (기본 100×100, 메뉴로 130×180·160×260·200×200·200×300, 초과 시 경고)
-- [~] UI 이미지: 런처 아이콘, README 배너, Play 피처 그래픽, 빈 화면 일러스트 (Codex 워커)
-- [ ] 실기기(안드로이드 폰)에서 대용량 도안 성능 확인
+### Phase 2 — Viewer / simulator ← first public release
+- [~] SAF file opening + "Open with another app"
+- [~] Stitch rendering (thread colors, draw only between consecutive STITCH commands, pinch zoom/pan)
+- [~] Playback simulation (slider, speed = commands/second)
+- [~] Statistics: stitch count, dimensions (mm), color count, trim count, estimated time
+- [~] Color-block list (STOP keeps the same thread)
+- [~] Hoop overlay (default 100×100, menu options 130×180·160×260·200×200·200×300, warning on overflow)
+- [~] UI images: launcher icon, README banner, Play feature graphic, empty-state illustration (Codex worker)
+- [ ] Check large-design performance on an actual device (Android phone)
 
-### Phase 2.5 — 출력 경로 (신설: Phase 3 이전에 필수)
-디지타이징 결과를 미싱으로 확인하려면 쓰기 경로가 먼저 있어야 함.
-- [x] 명령 정규화 (긴 땀/점프 분할, STOP → 중복 색상 인코딩, END)
-- [x] PEC 라이터 (블록 길이, 썸네일)
-- [~] 최소 PES v1 라이터 (최소 헤더 구현·자동 검증 완료) → 🧵 **미싱 인식 확인 대기** (크기/방향 → 색상/STOP → 점프/트림)
-- [x] 읽기 ↔ 쓰기 왕복 + pyembroidery 1.5.1 교차 비교 (명령·좌표·색상·블록·썸네일, [사용법과 제한](docs/writers.md))
-- [ ] PES v6 (사용자 정의 실 정보, 편집기 호환)
-- [~] 저장/공유: SAF 저장, USB OTG, 공유 시트
+### Phase 2.5 — Output path (new: required before Phase 3)
+A writing path is needed first to check digitizing results on a machine.
+- [x] Command normalization (split long stitches/jumps, STOP → duplicate-color encoding, END)
+- [x] PEC writer (block lengths, thumbnails)
+- [~] Minimal PES v1 writer (minimal header implemented and automatically verified) → 🧵 **Awaiting machine recognition check** (size/orientation → colors/STOP → jumps/trims)
+- [x] Read ↔ write round trips + pyembroidery 1.5.1 cross-comparison (commands/coordinates/colors/blocks/thumbnails, [usage and limits](docs/writers.md))
+- [ ] PES v6 (custom thread information, editor compatibility)
+- [~] Save/share: SAF saving, USB OTG, share sheet
 
-### Phase 2.6 — 편집기·레터링·폰트 (신설: 2026-10-22)
-기존 도안을 조합·배치하고 글자를 넣는 경량 편집기를 디지타이징 엔진보다 먼저 제공.
-- [x] 편집기 모델: 불변 `Project`, 실행 취소/다시 실행, 복제·미러·회전·정렬, 후프 맞춤, `.myembro` JSON 저장 형식(버전), 바느질 순서 최적화(선택), 통계
-- [~] 편집기 1차 UI: 후프 캔버스(핀치/팬), 탭 선택·드래그 이동·두 손가락 회전/크기, 레이어(순서·숨기기), PES로 라이브러리 저장. 진입점: 도안 목록 '만들기', 뷰어 '편집' (v0.1.0-alpha2)
-- [~] 편집기 2차: 다중 선택, 정렬·분배, 스냅, 속성 패널, 프로젝트 저장·다시 열기 (v0.1.0-alpha3)
-- [x] 영문 단선 레터링 (Hershey, 러닝 스티치)
-- [x] 한글 외곽선 레터링 (OFL 주아체 등, 외곽선 러닝 스티치)
-- [ ] 편집기 '글자 추가' UI 연결 (`TextObject`)
-- [~] 폰트 다운로드 카탈로그 (OFL·Hershey만, 체크섬 검증, 라이선스 파일 함께 저장) — 화면 진입점 미연결
-- [ ] 사용자 폰트 추가 + 품질 점검: 최소 획 두께 → 권장 최소 글자 높이, 등급(좋음/주의/부적합), 외곽선 단순화, 라이선스 안내
-- [~] 설정 화면 (도안 목록 ⚙) / [ ] 내보내기 시트 연결 (라이브러리·USB·공유 통합)
+### Phase 2.6 — Editor, lettering, fonts (new: 2026-10-22)
+Provide a lightweight editor for combining/placing existing designs and adding text before the digitizing engine.
+- [x] Editor model: immutable `Project`, undo/redo, duplicate/mirror/rotate/align, hoop fitting, `.myembro` JSON storage format (versioned), optional sewing-order optimization, statistics
+- [~] Editor 1st UI: hoop canvas (pinch/pan), tap selection, drag movement, two-finger rotation/scaling, layers (order/hide), save to library as PES. Entry points: "Create" in the design list, "Edit" in the viewer (v0.1.0-alpha2)
+- [~] Editor 2nd pass: multiselection, alignment/distribution, snapping, property panel, project save/reopen (v0.1.0-alpha3)
+- [x] English single-line lettering (Hershey, running stitch)
+- [x] Hangul outline lettering (OFL Jua and others, outline running stitch)
+- [ ] Connect the editor's "Add text" UI (`TextObject`)
+- [~] Font-download catalog (OFL·Hershey only, checksum verification, save license files alongside fonts) — screen entry point not connected
+- [ ] Add user fonts + quality checks: minimum stroke thickness → recommended minimum letter height, rating (good/caution/unsuitable), outline simplification, license guidance
+- [~] Settings screen (design list ⚙) / [ ] Connect export sheet (integrated library·USB·sharing)
 
-### Phase 3a — 기하 기반 + 최소 객체 모델 (Phase 3 이전/병행)
-- [ ] 좌표 단위, 곡선 평탄화, 채움 규칙(nonzero/evenodd), 구멍 처리
-- [ ] 도형 연산·오프셋 (Shapely 대체: JTS 등 검토), 경로 그래프 (NetworkX 대체)
-- [ ] 최소 객체/프로젝트 모델: 도형 + 스티치 타입 + 파라미터, 저장 형식
-- [ ] 작은 SVG 입력 경로 (Ink/Stitch처럼 객체별 스티치 타입)
-- [ ] 장시간 연산 취소·자원 제한 (모바일)
+### Phase 3a — Geometry foundation + minimal object model (before/in parallel with Phase 3)
+- [ ] Coordinate units, curve flattening, fill rules (nonzero/evenodd), hole handling
+- [ ] Shape operations/offsets (Shapely replacement: consider JTS, etc.), path graphs (NetworkX replacement)
+- [ ] Minimal object/project model: shape + stitch type + parameters, storage format
+- [ ] Small SVG input path (per-object stitch types, like Ink/Stitch)
+- [ ] Long-running operation cancellation/resource limits (mobile)
 
-### Phase 3b — 디지타이징 엔진 (Ink/Stitch 포팅, 단계마다 🧵)
-각 단계는 비교 도안 + 실기 통과 조건을 갖는다.
-- [ ] 러닝 스티치 → 🧵
-- [ ] 제한된 새틴 (레일 2개, 폭 기반 밀도) → 🧵
-- [ ] 단순 채움 (볼록/단순 다각형) → 🧵
-- [ ] 복잡한 타타미 (구멍, 섹션 분할, 이동 경로) → 🧵
-- [ ] 언더레이 / 당김 보정 / 자동 트림 / 순서 최적화 → 🧵 원단별
-- [ ] 원단별 파라미터 프리셋
+### Phase 3b — Digitizing engine (Ink/Stitch port, 🧵 at every stage)
+Each stage has comparison designs and actual-sewing acceptance criteria.
+- [ ] Running stitch → 🧵
+- [ ] Limited satin (2 rails, width-based density) → 🧵
+- [ ] Simple fill (convex/simple polygons) → 🧵
+- [ ] Complex tatami (holes, section splitting, travel paths) → 🧵
+- [ ] Underlay / pull compensation / automatic trimming / order optimization → 🧵 per fabric
+- [ ] Fabric-specific parameter presets
 
-### Phase 4 — 편집기
-- [ ] 객체 선택·삭제·변형, 영역 수정, 스티치 타입/순서 변경
-- [ ] **편집 가능한 프로젝트 저장·다시 열기** (객체·파라미터·벡터 원본 보존, 형식 버전 관리) — 사진 마법사 전에 완료
-- [ ] Undo/Redo, 색상 순서 편집, 실 브랜드 팔레트
-- [ ] 직접 그리기 (손가락/스타일러스)
-- [ ] 레터링: 미리 디지타이징된 폰트 우선. **TTF → 새틴 자동 변환은 별도 연구 항목**
+### Phase 4 — Editor
+- [ ] Object selection/deletion/transformation, region editing, stitch type/order changes
+- [ ] **Save/reopen editable projects** (preserve objects/parameters/vector originals, version the format) — complete before the photo wizard
+- [ ] Undo/Redo, color-order editing, thread-brand palettes
+- [ ] Freehand drawing (finger/stylus)
+- [ ] Lettering: prioritize predigitized fonts. **Automatic TTF → satin conversion is a separate research topic**
 
-### Phase 5 — 사진 → 자수 마법사 (편집기 이후)
-자동 결과를 사용자가 고칠 수 있어야 하므로 편집기 다음에 배치.
-- [ ] 색상 양자화(k-means) → 노이즈 제거 → 벡터화 → 영역별 스티치 지정
-- [ ] 단계별 마법사 UI → 결과를 편집기로 넘김
+### Phase 5 — Photo → embroidery wizard (after the editor)
+Placed after the editor because users must be able to correct automatic results.
+- [ ] Color quantization (k-means) → noise removal → vectorization → per-region stitch assignment
+- [ ] Step-by-step wizard UI → send results to the editor
 
-### Phase 6 — 미싱 연동 확장
-- [ ] (조사) 무선 미싱 연동
+### Phase 6 — Expanded machine integration
+- [ ] (Research) Wireless machine integration
 
-### Phase 7 — 최종 회귀 & 릴리스
-실기 테스트는 Phase 2.5부터 단계마다 반복. 여기서는 최종 회귀만.
-- [ ] 전체 도안 세트 회귀 박음질, 파라미터 최종 튜닝
-- [ ] GitHub Releases APK → F-Droid / Play 스토어
+### Phase 7 — Final regression & release
+Actual sewing tests repeat at each stage from Phase 2.5 onward. This phase is only the final regression.
+- [ ] Regression sewout of the full design set, final parameter tuning
+- [ ] GitHub Releases APK → F-Droid / Play Store
 
-## 리스크
-1. **채움 알고리즘 범위 과소평가** — Ink/Stitch는 Shapely·NetworkX에 크게 의존. Phase 3a에서 대체 라이브러리 선정이 선행돼야 함
-2. **실기 검증 지연** — 대상 기종 미확정 상태. Phase 0에서 확정 필요
-3. PES 버전 호환성 — 여러 제작 프로그램의 실파일 확보 필요
-4. 모바일 성능 — 수만 땀 렌더링/최적화는 백그라운드 + 취소 가능하게
+## Risks
+1. **Underestimating fill-algorithm scope** — Ink/Stitch depends heavily on Shapely·NetworkX. Replacement libraries must be selected first in Phase 3a
+2. **Delayed actual-machine verification** — target model is unconfirmed. Must be confirmed in Phase 0
+3. PES-version compatibility — actual files from multiple authoring programs are needed
+4. Mobile performance — rendering/optimizing tens of thousands of stitches must run in the background and support cancellation
 
-## 개정 이력
-- **2026-10-22** Codex 교차 검증 반영
-  - 체크박스를 구현/자동검증/실기검증으로 구분 (기존 "바이트 단위 비교"는 과장 → 명령·좌표·색상 비교로 정정)
-  - PES 라이터를 Phase 3 이전 **Phase 2.5**로 이동, 최소 PES v1 → 미싱 확인 우선
-  - 실기 테스트를 마지막 단계에서 **각 단계마다 반복**으로 변경
-  - 기하 기반·최소 객체 모델·작은 SVG 입력을 Phase 3 앞(**3a**)으로 이동
-  - 사진 마법사를 편집기 뒤로, TTF→새틴은 연구 항목으로 분리
-  - 엔진 버그 9건 수정 (STOP 복원, PEC 블록 경계, 잘린 파일 경고, 0색, O(n²) 트림 보간, 렌더링 시작점, 재생 속도 등)
-- **2026-10-22** Codex 재검증 반영: 실 동등성을 RGB+메타데이터로 (같은 RGB 다른 실을 STOP으로 합치던 회귀 수정), 잘못된 PEC 블록 길이는 거부, 프로젝트 저장·다시 열기 항목 복원, oracle 버전 강제
-- **2026-10-22** Phase 2.6 '편집기·레터링·폰트' 신설: 경량 편집기·레터링·폰트 카탈로그를 디지타이징(3b)보다 먼저. Phase 4의 레터링·Undo/Redo 일부가 2.6으로 앞당겨짐
+## Revision history
+- **2026-10-22** Incorporated Codex cross-verification
+  - Distinguished implementation/automated verification/actual-sewing verification checkboxes (the previous "byte-level comparison" claim was overstated → corrected to command/coordinate/color comparison)
+  - Moved the PES writer before Phase 3 to **Phase 2.5**, prioritizing minimal PES v1 → machine confirmation
+  - Changed actual-sewing tests from a final-stage task to **repetition at every stage**
+  - Moved geometry foundation, minimal object model, and small SVG input ahead of Phase 3 (**3a**)
+  - Placed the photo wizard after the editor and separated TTF→satin as a research topic
+  - Fixed 9 engine bugs (STOP restoration, PEC block boundaries, truncated-file warnings, 0 colors, O(n²) trim inference, rendering start points, playback speed, etc.)
+- **2026-10-22** Incorporated Codex re-verification: thread equality uses RGB+metadata (fixes regression merging distinct threads with the same RGB into STOP), reject invalid PEC block lengths, restore project save/reopen task, enforce oracle version
+- **2026-10-22** Added Phase 2.6 "Editor, lettering, fonts": lightweight editor, lettering, and font catalog before digitizing (3b). Some Phase 4 lettering·Undo/Redo work moved forward to 2.6

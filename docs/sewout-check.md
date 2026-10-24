@@ -1,33 +1,33 @@
-> **v6 반복 기준 개정**: 앱 출력의 STITCH/JUMP 도착 위치 연속 2회 초과는 차단(0길이 이동·바늘 포함).
-> 가져온 파일은 반복 초과 주의 정책을 유지합니다. 아래 v5 반복 기준만 대체합니다.
-> 바늘 전용 코퍼스 p99=2, JUMP 포함 p99=3이며 임계값 2는 사용자 지정 강화 정책입니다.
-> 계산 표·정의·재현: [sewout-repeat-policy.md](sewout-repeat-policy.md).
+> **v6 repeat criterion revision**: App output is blocked when consecutive STITCH/JUMP destination positions repeat more than 2 times (including 0-length moves and needle penetrations).
+> Imported files retain the caution policy for excessive repeats. This replaces only the v5 repeat criterion below.
+> The needle-only corpus has p99=2, and p99=3 with JUMP included; the threshold of 2 is a user-specified stricter policy.
+> Calculation tables, definitions, and reproduction: [sewout-repeat-policy.md](sewout-repeat-policy.md).
 
-> **POLICY v5 (2026-10-24)** — 아래 초기 정책을 대체합니다. 생성 출력: 0.5mm 셀 15회 초과,
-> 같은 점 연속 바늘 3회 초과, 실 시작·끝 잠금 미확인은 차단. 가져온 PES: 주의, 단 셀 밀집 30회 초과는 차단.
-> 최대 땀은 동결 게이트의 12.184118164618463mm(334파일 실측 최대+0.15mm); 파일 유효성·후프/기종 제한은 유지.
-> 밀집은 x/y 각각 0·0.25mm 네 격자 위상을 확인하며, 중간에 다른 바늘 위치를 지난 재방문은 연속 반복이 아닙니다.
-> 잠금은 동결 `lock_geometry.py`의 1mm 이내 왕복/2–3회 경계 바늘 또는 기존 기능적 3mm 잠금으로 판정합니다.
-> 짧은 땀·겹침은 INFO 참고 지표. 배지는 통과/주의/차단이며, 차단 상태에서는 전송을 우회할 수 없습니다.
-> 출처는 엔진 생성 마커와 앱이 내보낸 PES의 SHA-256 기록으로 확인합니다. 확장자·파일명으로 추측하지 않습니다.
-> 기록 이전의 출처 불명 PES는 가져온 파일로 취급합니다. 점검은 바늘/파일을 수정하지 않습니다.
+> **POLICY v5 (2026-10-24)** — Supersedes the initial policy below. Generated output: more than 15 penetrations in a 0.5mm cell,
+> more than 3 consecutive needle penetrations at the same point, or unconfirmed start/end thread locks are blockers. Imported PES: caution, except cell density above 30 is a blocker.
+> The maximum stitch is the frozen gate's 12.184118164618463mm (measured maximum across 334 files +0.15mm); file validity and hoop/machine limits remain in force.
+> Density is checked at four grid phases with x/y offsets of 0 and 0.25mm each; revisiting after a different needle position is not a consecutive repeat.
+> Locks are assessed using the frozen `lock_geometry.py`: backtracking within 1mm / 2–3 boundary penetrations, or the existing functional 3mm lock.
+> Short stitches and overlaps are INFO metrics. Badges are Pass/Caution/Block, and transfer cannot bypass a blocked state.
+> Provenance is established by the engine generation marker and SHA-256 records of PES exported by the app. It is not inferred from extensions or filenames.
+> PES with unknown provenance predating these records is treated as imported. Inspection does not modify needles/files.
 
 
-Python gate v6와의 회귀 비교는 `GatePolicyParityTest`에서 공개 S1 샘플러 및 합성 경계값
-총 10종을 사용합니다. 동일 PES 바이트의 SHA-256, 판정(생성/가져오기), 땀 수·4위상 밀집·연속 반복·
-잠금 누락·최대 길이를 비교합니다. 가져오기 판정은 v5 자체 옵션이 아닌 POLICY 어댑터의 계산값입니다.
-CI는 저장된 기대값을 읽고, 갱신은 `tools/refresh_sewout_gate_reference.py`로 명시적으로 실행합니다.
-PEC 선언 블록 범위를 벗어난 END/명령은 차단하며 TRIM+JUMP 결합 플래그도 보존합니다.
-제어 명령용 0길이 구간은 잠금 기회에서 제외하되 밀집/연속 바늘 집계에는 포함합니다.
-최초 바늘의 원점 이동도 실제 PES의 최대 땀 길이에 포함합니다. 공개 `PesReader` API는 유지합니다.
+Regression comparisons with Python gate v6 use `GatePolicyParityTest` and a total of 10 public S1 sampler and synthetic boundary cases.
+They compare the SHA-256 of identical PES bytes, verdicts (generated/imported), stitch counts, 4-phase density, consecutive repeats,
+missing locks, and maximum length. Import verdicts are calculated by the POLICY adapter, not v5's own options.
+CI reads stored expectations; updates are explicitly run with `tools/refresh_sewout_gate_reference.py`.
+END/commands outside the declared PEC block are blockers, and combined TRIM+JUMP flags are preserved.
+0-length segments for control commands are excluded from lock opportunities but included in density/consecutive needle counts.
+The first needle's move from the origin is also included in the actual PES maximum stitch length. The public `PesReader` API remains unchanged.
 
-# 봉제 전 검증 — Sew-out Check
+# Pre-sewing Validation — Sew-out Check
 
-2026-10-23. 순수 JVM `:engine`의 `engine.sewout` API입니다. 입력 명령을 순서대로 따라가며
-문제 좌표·작업 순서·시간·실 사용량을 계산합니다. 입력과 PES를 변경하지 않습니다.
-기계 펌웨어/모터/원단의 물리 시뮬레이터 또는 실제 기종 수용 인증은 아닙니다.
+2026-10-23. The `engine.sewout` API in the pure JVM `:engine` module follows input commands in order
+and calculates problem coordinates, operation order, time, and thread consumption. It does not modify the input or PES.
+It is not a physical simulator of machine firmware/motors/fabric, nor certification of acceptance by an actual machine model.
 
-## 공개 API와 UI 통합
+## Public API and UI integration
 
 ```kotlin
 import io.github.linker2k.myembro.engine.sewout.*
@@ -43,198 +43,200 @@ val final = SewoutCheck.checkPes(exportedPesBytes, SewoutMachines.SE700, options
 // final.hasBlockingIssues / final.analysisComplete / final.compatibility.acceptance
 ```
 
-`check(pattern)`과 `checkPes`는 가져온 파일을 이동 범위 중심에 놓는 `CENTER_DESIGN`이 기본입니다.
-`check(project)`는 `project.flatten()`을 사용하며 **프로젝트 후프와 배치 좌표를 그대로 검사**합니다.
-후프 중심을 자동으로 이동해 초과 배치를 감추지 않습니다. 일반 pattern에서도
-`placement = HOOP_COORDINATES`를 선택할 수 있습니다. 멀티포지션은 분할 결과 각 파일을 따로 검사하세요.
+`check(pattern)` and `checkPes` default to `CENTER_DESIGN`, placing imported files at the center of their movement bounds.
+`check(project)` uses `project.flatten()` and **checks the project hoop and placement coordinates as they are**.
+It does not automatically shift the hoop center to hide out-of-bounds placement. A plain pattern can also use
+`placement = HOOP_COORDINATES`. For multiposition designs, check each split output file separately.
 
-리포트의 좌표는 **입력 좌표계 그대로, 0.1mm, +y 아래**입니다. 화면 변환은 UI가 담당합니다.
-`Highlight`는 원본 명령의 0부터 시작하는 포함 인덱스 범위, 선분 양 끝, 격자 사각형을 제공합니다.
-밀도는 전체 `DensityCell` 목록, 작업 순서는 `OperatorTask`, 색 단계는 `ColorStage`로 받습니다.
-단계 인덱스도 0부터 시작합니다. `FindingCode`와 `Severity(BLOCKER/WARNING/INFO)`는 안정된 판정용
-식별자이며 한국어 `message`를 별도로 제공합니다. 원본 리더 경고는 원문도 함께 남습니다.
+Report coordinates **retain the input coordinate system, in 0.1mm units, with +y downward**. The UI handles screen transforms.
+`Highlight` provides inclusive, 0-based index ranges of original commands, segment endpoints, and grid rectangles.
+Density is available as the full `DensityCell` list, operation order as `OperatorTask`, and color stages as `ColorStage`.
+Stage indices also start at 0. `FindingCode` and `Severity(BLOCKER/WARNING/INFO)` are stable identifiers
+for decisions, with a separate Korean `message`. Original reader warnings are also retained verbatim.
 
-UI는 `hasBlockingIssues`, `analysisComplete`, `suppressedFindings`를 함께 표시해야 합니다.
-기종의 버전/색 수 제한이 미확인이면 차단 항목이 없어도 `compatibility.acceptance`는
-`UNVERIFIED`입니다. `WITHIN_CONFIRMED_LIMITS`도 실제 기계에서 파일을 읽고 봉제했다는 뜻은 아닙니다.
-이번 작업은 UI·기존 Preflight를 변경하지 않았습니다. embro-editor의 뷰어 개편 후 연결합니다.
+The UI must display `hasBlockingIssues`, `analysisComplete`, and `suppressedFindings` together.
+If machine version/color-count limits are unconfirmed, `compatibility.acceptance` is
+`UNVERIFIED` even without blockers. `WITHIN_CONFIRMED_LIMITS` does not mean an actual machine has read and sewn the file.
+This work did not change the UI or existing Preflight. Integration follows embro-editor's viewer revision.
 
-## 일반 검사 규칙
+## General inspection rules
 
-| 검사 | 기본 규칙 | 결과 |
+| Check | Default rule | Result |
 | --- | --- | --- |
-| 후프 | 모든 명령 좌표가 선택 후프 안인지; 이동/END의 위치도 포함 | 차단, 문제 좌표 |
-| 기종 영역 | 선택 후프와 이동 범위가 확인된 단일 봉제 크기 이하인지 | 초과 차단 |
-| 긴 땀 | 실제 STITCH 이동의 유클리드 길이 >12.1mm | 경고; 조절 가능한 품질 정책 |
-| 짧은 땀 | STITCH 이동 <0.3mm | 경고; 첫 점·점프 뒤 0거리 시작 고정은 제외 |
-| 물리 최대 길이 | `maximumStitchMm`가 확인된 프로필에서만 적용 | 초과 차단; 세 기본 기종은 미확인 |
-| PEC 변위 | STITCH 한 축의 변위가 2047단위 초과 | 경고; 실제 내보낸 파일을 재검사 |
-| 바늘 밀도 | 0.5mm 격자의 STITCH 도착점 >8회(9회 이상) | 차단, 격자 위치 |
-| 같은 점 재봉 | 동일 정수 좌표 >3회 진입(4회 이상); 색/객체/트림을 넘어 누적 | 차단, 네 번째 진입 좌표 |
-| 시작 잠금 땀 | 도안/객체 시작과 TRIM·색 교체 뒤 첫 봉제에서 짧은 고정을 확인하지 못함 | 경고, 시작 명령 범위 |
-| 동일 선분 재봉 | 양 끝이 같은 선분을 방향 무관 3회 봉제 | 겹침 누적 경고 |
-| 여러 단계 누적 | 2개 이상 색 단계가 같은 격자를 6회 이상 통과 | 누적 경고 |
-| 통계 | STITCH·JUMP·TRIM·COLOR_CHANGE·STOP, 단계·고유 실, 크기·길이 | 구조화 수치 |
+| Hoop | Whether all command coordinates are inside the selected hoop; includes move/END positions | Blocker, problem coordinates |
+| Machine area | Whether the selected hoop and movement bounds fit within the confirmed single sew-out size | Block if exceeded |
+| Long stitch | Euclidean length of an actual STITCH move >12.1mm | Warning; adjustable quality policy |
+| Short stitch | STITCH move <0.3mm | Warning; excludes first point and 0-distance starting anchors after jumps |
+| Physical maximum length | Applied only to profiles with confirmed `maximumStitchMm` | Block if exceeded; unconfirmed for the three default machines |
+| PEC displacement | STITCH displacement on one axis exceeds 2047 units | Warning; recheck the actual exported file |
+| Needle density | STITCH endpoints in a 0.5mm grid >8 times (9 or more) | Blocker, grid location |
+| Same-point sewing | Entry at identical integer coordinates >3 times (4 or more); accumulates across colors/objects/trims | Blocker, coordinates of fourth entry |
+| Start lock stitch | Short anchoring not confirmed at design/object start or first sewing after TRIM/color change | Warning, starting command range |
+| Same-segment sewing | Sew a segment with the same endpoints 3 times regardless of direction | Cumulative overlap warning |
+| Accumulation across stages | 2 or more color stages pass through the same grid cell 6 or more times | Accumulation warning |
+| Statistics | STITCH·JUMP·TRIM·COLOR_CHANGE·STOP, stages/unique threads, size/length | Structured metrics |
 
-**12.1mm는 PES 형식의 바이트 한계로 확인되지 않았습니다.**
-[pyembroidery 1.5.1 PES writer](https://github.com/EmbroidePy/pyembroidery/blob/1.5.1/pyembroidery/PesWriter.py)와
-[PEC writer](https://github.com/EmbroidePy/pyembroidery/blob/1.5.1/pyembroidery/PecWriter.py)는
-축별 최대 변위를 2047단위(204.7mm)로 둡니다. 실제 기종의 물리적 최대 땀 길이와는 다릅니다.
-요청된 12.1mm를 보수적 경고 정책으로 유지하고, 프로필 한계로 거짓 차단하지 않습니다.
-0.3mm·격자 >8회·같은 점 >3회·누적 6회 역시 제조사의 정량 보증이 아닌 검사 정책입니다.
-**격자 >8회와 같은 점 >3회 차단은 2026-10-23 사용자 불량 도안 회귀 요청에 따른 안전 정책**이며,
-공식 기종 한계로 표시하지 않습니다. `hotspotPenetrations=9`, `repeatedPointThreshold=4`는
-차단이 시작되는 **포함 임계값**입니다. 기본값의 심각도가 기존 경고에서 차단으로 바뀌었습니다.
-옵션으로 임계값을 조절할 수 있지만, 격자 크기를 바꾸면 밀도 정책의 의미도 바뀝니다.
+**12.1mm has not been confirmed as a byte limit of the PES format.**
+The [pyembroidery 1.5.1 PES writer](https://github.com/EmbroidePy/pyembroidery/blob/1.5.1/pyembroidery/PesWriter.py) and
+[PEC writer](https://github.com/EmbroidePy/pyembroidery/blob/1.5.1/pyembroidery/PecWriter.py)
+set maximum displacement per axis to 2047 units (204.7mm). This differs from the physical maximum stitch length of an actual machine.
+The requested 12.1mm is retained as a conservative warning policy, without falsely blocking it as a profile limit.
+0.3mm, grid >8 penetrations, same point >3 entries, and cumulative 6 passes are likewise inspection policies, not quantitative manufacturer guarantees.
+**Blocking grid >8 penetrations and same-point >3 entries is a safety policy from the 2026-10-23 user regression request for a defective design**,
+not an official machine limit. `hotspotPenetrations=9` and `repeatedPointThreshold=4` are
+**inclusive thresholds** at which blocking begins. Default severity changed from warning to blocker.
+Thresholds can be adjusted through options, but changing grid size also changes the meaning of the density policy.
 
-바늘 구멍과 실 경로 통과는 구분합니다. `penetrations`는 STITCH 끝점만 세고,
-`segmentPasses`/`sewnLengthMm`는 격자를 통과한 봉제 선분을 셉니다. 긴 실이 격자를 통과했다고
-그 중간에 바늘 구멍이 생긴 것으로 세지 않습니다. 음수 좌표는 floor로 격자를 정합니다.
-선분은 실제 격자 경계에서 나눠 집계하고, 대각선 모서리의 옆 칸을 임의로 세지 않습니다.
-`stageIndices`가 어느 색 단계의 실이 누적됐는지 알려 줍니다.
+Needle holes and thread-path passes are distinguished. `penetrations` counts only STITCH endpoints,
+while `segmentPasses`/`sewnLengthMm` counts sewn segments passing through the grid. A long thread crossing a cell
+does not count as needle holes in between. Negative coordinates use floor to determine the grid.
+Segments are split and counted at actual grid boundaries; cells beside a diagonal corner are not arbitrarily counted.
+`stageIndices` identifies which color stages contributed accumulated thread.
 
-PES는 잠금 땀의 의미를 보존하는 신뢰할 수 있는 플래그가 없으므로 시작부 좌표로 추정합니다.
-첫 STITCH부터 연속 6개 명령 안에서, 연속된 0거리 앵커를 제외한 첫 네 점이
-0.3–1.5mm 길이의 세 이동으로 짧은 왕복(A-B-A-B) 또는 삼각(A-B-C-A) 고정을 이루는지 봅니다.
-네 점은 시작점 반경 1.5mm 안에 있어야 하고, 복귀 좌표 오차는 0.3mm 이하여야 합니다.
-점프/트림/색 교체/STOP을 가로질러 고정을 합성하지 않으며, 0거리 반복 자체는 잠금으로 인정하지
-않습니다. 다른 유효한 잠금 방식은 경고가 날 수 있고, 작은 일반 봉제가 고정과 비슷하게 보일 수도
-있으므로 `MISSING_LOCK_STITCH`는 **미확인 경고**이며 잠금 유무나 강도를 확정하지 않습니다.
-잠금 모양이 인식돼도 밀도/같은 점 차단 기준을 면제하지 않습니다.
+PES has no reliable flag preserving lock-stitch semantics, so locks are inferred from starting coordinates.
+Within the first 6 consecutive commands from the first STITCH, the first four points excluding consecutive
+0-distance anchors must form short backtracking (A-B-A-B) or triangular (A-B-C-A) anchoring with three moves of 0.3–1.5mm.
+The four points must be within a 1.5mm radius of the start, with return-coordinate error no greater than 0.3mm.
+Anchoring is not synthesized across jumps/trims/color changes/STOP, and 0-distance repetition alone is not accepted as a lock.
+Other valid locking methods may trigger warnings, and small ordinary stitches may resemble anchoring,
+so `MISSING_LOCK_STITCH` is an **unconfirmed warning**, not a definitive assessment of lock presence or strength.
+Recognizing a lock shape does not exempt it from density/same-point blocking criteria.
 
-프로젝트의 객체 경계는 `flatten()`의 TRIM으로 검사하므로 같은 실인 객체도 각각 확인합니다.
-일반 PES/패턴에는 객체 ID가 없으므로 최초 봉제와 TRIM/색 교체를 경계로 사용합니다.
-경계 뒤 JUMP/STOP은 대기 중인 검사를 소비하지 않고 실제 첫 바늘 위치까지 기다립니다.
-STITCH가 없는 빈 객체나 마지막 TRIM에는 시작 경고를 만들지 않습니다. 잠금 검사는 끝 잠금을
-포함하지 않으며 명령을 자동 보정하거나 기계 정지를 삽입하지 않습니다.
+Project object boundaries are inspected through TRIM from `flatten()`, so objects using the same thread are checked individually.
+Plain PES/patterns lack object IDs, so initial sewing and TRIM/color changes serve as boundaries.
+JUMP/STOP after a boundary does not consume a pending check; it waits until the first actual needle position.
+Empty objects without STITCH or a final TRIM do not produce start warnings. Lock checks do not include end locks,
+and do not automatically correct commands or insert machine stops.
 
-첫 END까지만 처리하고, END가 없으면 입력 끝을 종료로 봅니다. 첫 좌표는 시작 위치로 삼으며
-그 앞의 알 수 없는 원점 이동을 긴 땀/실 사용량으로 세지 않습니다. 이후에는 JUMP/STOP/색 교체를
-거쳐도 실제 현재 좌표에서 다음 명령까지의 이동을 따릅니다. 제어 명령의 좌표가 달라지면 현재
-라이터와 같이 바늘을 올린 이동으로 계산하므로 JUMP 통계에 암시적 이동이 포함될 수 있습니다.
-색 변경은 고유 RGB 수가 아닌 실제 색 단계 수와 별도로 기록하며, STOP은 색 단계를 늘리지 않습니다.
+Processing stops at the first END; without END, the end of input is treated as termination. The first coordinate becomes the start,
+and the unknown preceding move from the origin is not counted as a long stitch/thread consumption. Subsequent moves follow
+actual current coordinates to the next command even across JUMP/STOP/color changes. If a control command changes coordinates,
+it is calculated as a needle-up move, as in the current writer, so JUMP statistics may include implicit moves.
+Color changes are recorded separately from actual color-stage counts and unique RGB counts; STOP does not add a color stage.
 
-문제 위치와 심각도를 돌려주는 일반적인 검사의 참고는
-[Ink/Stitch Troubleshoot](https://inkstitch.org/docs/troubleshoot/)입니다. 코드와 수치 기본값은
-자체 구현이며 Ink/Stitch·PE-Design·Embrilliance의 동작/임계값을 그대로 재현한 포트가 아닙니다.
-[SE700 공식 매뉴얼 p.96](https://download.brother.com/welcome/doch102582/888p10_om01en.pdf)는
-지나치게 조밀하거나 3회 이상 겹치는 자수에서 실/바늘 문제가 생길 수 있음을 경고합니다.
-이 정성적 경고를 원단/바늘별 확정적인 파손 확률로 바꾸지는 않습니다.
+A reference for general inspections returning problem locations and severity is
+[Ink/Stitch Troubleshoot](https://inkstitch.org/docs/troubleshoot/). The code and numeric defaults
+are independently implemented, not a port reproducing Ink/Stitch, PE-Design, or Embrilliance behavior/thresholds.
+The [official SE700 manual p.96](https://download.brother.com/welcome/doch102582/888p10_om01en.pdf)
+warns of thread/needle problems with excessively dense embroidery or 3 or more overlapping layers.
+This qualitative warning is not converted into a definitive breakage probability for each fabric/needle.
 
-## 기종 사실과 미확인 항목
+## Machine facts and unconfirmed items
 
-| 항목 | SE400 | SE600 | SE700 |
+| Item | SE400 | SE600 | SE700 |
 | --- | --- | --- | --- |
-| 단일 봉제 영역 | 100×100mm 확인 | 100×100mm 확인 | 100×100mm 확인 |
-| 색 단계 종료 자동 자르기 | 설정 시 동작 확인 | 설정 시 동작 확인 | 설정 시 동작 확인 |
-| 점프 자동 절단 기능/실제 설정 | 미확인 | 미확인 | 미확인 |
-| 색 내부 연결실 수동 정리 안내 | 구체적 점프 조건 미확인 | 공식 안내 있음 | 공식 안내 있음 |
-| 최대 자수 SPM | 이번 조사 미확인 | 이번 조사 미확인 | 400 확인 |
-| 전송 도안당 땀수 | 30,000 확인 | 미확인 | 미확인 |
-| 내부 메모리 도안당 땀수 | 30,000 규칙 적용 | 미확인 | 100,000 확인 |
-| PES 버전 목록·색 수·파일당 크기 | 미확인 | 미확인 | 미확인 |
-| PEC 썸네일 필수 여부·밑실 한 개의 길이 | 미확인 | 미확인 | 미확인 |
+| Single sew-out area | 100×100mm confirmed | 100×100mm confirmed | 100×100mm confirmed |
+| Automatic cutting at color-stage end | Confirmed when enabled | Confirmed when enabled | Confirmed when enabled |
+| Automatic jump trimming capability/actual setting | unconfirmed | unconfirmed | unconfirmed |
+| Guidance on manual cleanup of connecting threads within a color | Specific jump conditions unconfirmed | Official guidance available | Official guidance available |
+| Maximum embroidery SPM | unconfirmed in this investigation | unconfirmed in this investigation | 400 confirmed |
+| Stitches per transferred design | 30,000 confirmed | unconfirmed | unconfirmed |
+| Stitches per design in internal memory | 30,000 rule applied | unconfirmed | 100,000 confirmed |
+| PES version list/color count/per-file size | unconfirmed | unconfirmed | unconfirmed |
+| Whether PEC thumbnails are required/length of one bobbin | unconfirmed | unconfirmed | unconfirmed |
 
-근거와 정확한 페이지는 [machines.md](machines.md)의 Sew-out 절과 `SewoutMachines`의
-`Specification.source`에 있습니다. null은 미확인이며 지원하지 않음/무제한이라는 뜻이 아닙니다.
-SE700의 100,000땀은 `Destination.INTERNAL_MEMORY`에만 적용합니다. 512KB/1024KB 전체 내부
-저장 용량을 파일당 허용량으로 바꾸지 않습니다. SE600/SE700에 SE400의 30,000땀을 상속하지 않습니다.
+Sources and exact pages are in the Sew-out section of [machines.md](machines.md) and
+`Specification.source` in `SewoutMachines`. null means unconfirmed, not unsupported/unlimited.
+SE700's 100,000 stitches apply only to `Destination.INTERNAL_MEMORY`. Its 512KB/1024KB total internal
+storage capacity is not converted into a per-file allowance. SE600/SE700 do not inherit SE400's 30,000 stitches.
 
-## 작업 순서표
+## Operation schedule
 
-색 교체, 명시적 STOP, 종료는 `machineStops = true`입니다. 점프/독립 TRIM은 정지 명령이
-아니므로, 손으로 잘라야 한다고 기계가 자동 정지한다고 표시하지 않습니다. 해당 시점에 자르려면
-`operatorMustPause`에 따라 사용자가 직접 정지해야 합니다. 기계 명령을 삽입하거나 수정하지 않습니다.
+Color changes, explicit STOP, and termination have `machineStops = true`. Jumps/standalone TRIM are not stop commands,
+so the need for manual cutting is not displayed as an automatic machine stop. To cut at that point,
+the operator must pause manually according to `operatorMustPause`. Machine commands are not inserted or modified.
 
-- `REQUIRED`: 자동 점프 절단 미지원이 확인됐거나 사용자가 설정을 껐거나, 공식 수동 연결실
-  정리 안내가 있는 경우입니다. SE600/SE700의 안내는 봉제 후 수동 정리도 포함하므로 꼭 그 점프
-  직전에 정지해야 한다는 제조사 명령으로 해석하지 않습니다.
-- `POSSIBLE`: 지원/설정이 미확인이라 연결실 확인 후 수동 처리가 필요할 수 있습니다.
-- `AUTOMATIC`: 지원 사실과 사용자가 입력한 활성 설정을 둘 다 만족할 때만 사용합니다.
-  현재 기본 세 프로필의 점프 자동 절단은 미확인이므로, 설정을 켰다고 확인값으로 바꾸지 않습니다.
+- `REQUIRED`: Automatic jump trimming is confirmed unsupported, the user disabled it, or official manual connecting-thread
+  cleanup guidance exists. SE600/SE700 guidance also includes cleanup after sewing, so it is not interpreted
+  as a manufacturer's instruction to stop immediately before that particular jump.
+- `POSSIBLE`: Support/settings are unconfirmed, so manual work may be needed after checking connecting threads.
+- `AUTOMATIC`: Used only when both confirmed support and the user-entered enabled setting are satisfied.
+  Automatic jump trimming is currently unconfirmed for the three default profiles, so enabling a setting does not make it confirmed.
 
-연속 JUMP와 동반 TRIM을 한 연결실 구간으로 묶고, 봉제 시작 전 이동에는 수동 절단을 만들지
-않습니다. 이미 처리한 독립 TRIM 뒤에 STOP/JUMP가 나와도 다시 같은 실을 자르도록 세지 않습니다.
-`requiredManualCuts/possibleManualCuts`는 점프/독립 TRIM 작업 수이며 색 교체/끝실 정리와 구분합니다.
-작업에는 명령 범위·양 끝 좌표·색 단계·계획 시작 시간·작업 소요 시간이 있습니다.
+Consecutive JUMPs and accompanying TRIM are grouped into one connecting-thread segment; moves before sewing starts
+do not create manual cuts. STOP/JUMP after an already handled standalone TRIM does not count the same thread for cutting again.
+`requiredManualCuts/possibleManualCuts` counts jump/standalone TRIM operations, separately from color changes/end-thread cleanup.
+Tasks include command range, endpoint coordinates, color stage, planned start time, and task duration.
 
-## 시간과 실 사용량 — 가정값을 노출
+## Time and thread consumption — exposing assumptions
 
-SPM은 입력한 `plannedSpm`, 확인된 최대 SPM×0.8, 미확인 시 가정 400 SPM 순서로 고릅니다.
-확인된 최대를 초과한 입력은 경고하고 최대값으로 계산합니다. 재봉 최대 710 SPM을 자수 속도로
-사용하지 않습니다. 기종 최대와 현재 추정 속도의 근거는 `SpeedEstimate`로 각각 받습니다.
+SPM is selected in order from entered `plannedSpm`, confirmed maximum SPM×0.8, or an assumed 400 SPM if unconfirmed.
+Input exceeding a confirmed maximum produces a warning and calculations use the maximum. The maximum sewing speed of 710 SPM
+is not used as embroidery speed. `SpeedEstimate` provides separate sources for machine maximum and current estimated speed.
 
-- 바늘 시간 = 땀수×60/SPM.
-- 이동 시간 = 비영점 점프 길이/50mm/s + 이동 명령당 0.2초.
-- 자동 절단 1초, 수동 절단 8초, 색 교체 30초, 프로그램 정지 작업 10초가 기본 가정입니다.
-  색 교체 30초에는 실 교환/수동 정리를 포함하고, 자동 절단을 확인한 경우 1초를 별도로 더합니다.
-- 미확인 절단 작업도 수행하는 계획으로 합계에 포함합니다. `conditionalOperatorSeconds`와
-  `withoutConditionalCutsSeconds`로 이를 제외한 값도 제공합니다. 확률적 오차 구간은 아닙니다.
-- 윗실(m) = (봉제 길이(mm)×1.25 + 미절단 점프 길이 + 절단/교체 끝실 50mm×횟수)/1000.
-- 밑실(m) = (봉제 길이(mm)×0.5 + 미절단 점프 길이 + 끝실 20mm×횟수)/1000.
-  점프를 자동 절단하는 것이 확인됐을 때만 해당 연결실 길이를 제외합니다.
+- Needle time = stitch count×60/SPM.
+- Travel time = nonzero jump length/50mm/s + 0.2 seconds per move command.
+- Default assumptions: automatic cut 1 second, manual cut 8 seconds, color change 30 seconds, programmed-stop work 10 seconds.
+  The color-change 30 seconds includes thread replacement/manual cleanup; a separate 1 second is added when automatic cutting is confirmed.
+- Unconfirmed cutting tasks are included in the total as planned work. `conditionalOperatorSeconds` and
+  `withoutConditionalCutsSeconds` also provide values excluding them. These are not probabilistic error intervals.
+- Upper thread (m) = (sewn length (mm)×1.25 + uncut jump length + 50mm cut/change tails×count)/1000.
+- Bobbin thread (m) = (sewn length (mm)×0.5 + uncut jump length + 20mm tails×count)/1000.
+  Connecting-thread length is excluded only when automatic jump trimming is confirmed.
 
-모든 계수·속도·오버헤드·끝실 길이를 옵션으로 보정할 수 있습니다. 색 단계마다 시간/윗실/밑실을
-반환하고 전체는 같은 단계 값의 합입니다. 장력·실 굵기·원단 두께·가감속을 측정한 모델이 아니므로
-실제 사용량과 다를 수 있습니다. 밑실 잔량을 입력하거나 측정된 프로필 용량을 제공한 경우에만
-`ENOUGH/INSUFFICIENT`를 판정합니다. 기본 프로필은 용량 미확인이므로 `UNKNOWN`입니다.
+All coefficients, speeds, overheads, and tail lengths can be calibrated through options. Time/upper thread/bobbin thread
+are returned per color stage; totals sum the same stage values. This is not a model measuring tension, thread thickness,
+fabric thickness, or acceleration/deceleration, so actual consumption may differ. `ENOUGH/INSUFFICIENT` is determined only
+when remaining bobbin thread is entered or measured profile capacity is provided. Default profiles have unconfirmed capacity,
+so the result is `UNKNOWN`.
 
-## 파일 수용과 자원 제한
+## File acceptance and resource limits
 
-`checkPes`는 실제 서명/PEC 오프셋, 소프트웨어 읽기, 바이트 수와 그래픽 영역 구조를 확인합니다.
-PES 헤더의 모든 제조사 후프 코드·설정은 현재 해석하지 않습니다. 지정 후프와 실제 이동 경계를
-검사하므로 저장 후프 코드만으로 발생하는 펌웨어 거부 여부도 미확인으로 남습니다.
-PES v1/v6 출력 성공·자체/pyembroidery 읽기 성공은 SE400/600/700 펌웨어 수용 인증으로 사용하지
-않습니다. 기종의 확인된 버전/색/파일 크기 조건만 비교하고 나머지는 UNKNOWN으로 남깁니다.
-리더의 잘린 봉제 데이터 경고는 차단으로 올립니다. 임의의 원본 파일이나 사용자 자료를 스캔하지 않습니다.
+`checkPes` checks actual signatures/PEC offsets, software readability, byte count, and graphics-area structure.
+Not all manufacturer hoop codes/settings in the PES header are currently interpreted. Since it checks the specified hoop and
+actual movement bounds, firmware rejection caused solely by a stored hoop code remains unconfirmed.
+Successful PES v1/v6 output or successful reading by the app/pyembroidery is not used as certification of SE400/600/700
+firmware acceptance. Only confirmed machine version/color/file-size conditions are compared; others remain UNKNOWN.
+Reader warnings about truncated sewing data are elevated to blockers. Arbitrary source files or user material are not scanned.
 
-기본 최대 명령 250,000개, 격자 200,000개, 경로 격자 방문 1,000,000회, 보존 Finding 1,000개로
-제한합니다. 격자는 0.01mm 이상으로 설정할 수 있습니다. 한도 초과 시 `analysisComplete=false`와
-차단 항목을 반환합니다. 완료되지 않은 결과의 통계/추정은 분석한 부분에 대한 값입니다. Finding
-보존 개수를 넘겨도 전체 심각도/코드별 개수와 차단 여부를 유지하며 차단·경고를 정보보다 우선
-보존합니다. `suppressedFindings`를 숨기지 마세요. 전체 명령/격자/작업 목록을 무제한 반환하지 않습니다.
+Defaults limit commands to 250,000, grid cells to 200,000, path-grid visits to 1,000,000, and retained Findings to 1,000.
+Grid size can be set to 0.01mm or greater. Exceeding a limit returns `analysisComplete=false` and a blocker.
+Statistics/estimates in incomplete results describe only the analyzed portion. Even when the retained Finding limit is exceeded,
+overall counts by severity/code and blocking status are preserved, with blockers/warnings retained ahead of information.
+Do not hide `suppressedFindings`. Full command/grid/task lists are not returned without bounds.
 
-## 테스트
+## Tests
 
 ```bash
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test
 ```
 
-저장소의 CC0/MIT 등 재배포 가능한 26개 샘플을 세 기종으로 검사하며, 기존 재배포 가능 flower
-픽스처와 자체 합성 명령으로 경계값·정지 순서·TRIM/JUMP 중복 제거·실/시간 식·좌표 배치·음수 격자·
-바늘 진입/실 경로 구분·잘못된 PES·한도 초과·결정성을 검증합니다. 사용자 PE-Design 자료와
-`/tmp/myembro-fonts-ref`, scratchpad의 비공개 PES는 단위 테스트/커밋에 사용하지 않았습니다.
-실제 기종 파일 인식과 실 봉제·시간/실 계수 보정은 후속 검증입니다.
+The repository's 26 redistributable samples under CC0/MIT and similar licenses are checked against three machines.
+Existing redistributable flower fixtures and synthetic commands test boundary values, stop order, TRIM/JUMP deduplication,
+thread/time formulas, coordinate placement, negative grids, needle-entry/thread-path distinction, malformed PES, limits, and determinism.
+User PE-Design material and private PES in `/tmp/myembro-fonts-ref` or scratchpad were not used in unit tests/commits.
+Actual machine file recognition, physical sew-outs, and calibration of time/thread coefficients remain follow-up validation.
 
-검증 결과: `:engine:test` **227개 통과**(SewoutCheck 회귀 13개 + 안전 정책 회귀 9개 포함).
-26개 번들 샘플×3기종의 실제 PES 검사와 기존 픽스처의 결정성 검증을 통과했습니다.
-자체 합성 좌표로 8/9회와 3/4회 경계, 색/트림 간 누적, 시작/트림/객체별 경고, 왕복/삼각 고정,
-0거리 앵커·긴 왕복의 오인 방지, 부채꼴 반복의 PES 왕복, 리포트 생략 시 차단 보존을 검증합니다.
+Validation results: `:engine:test` **227 passed** (including 13 SewoutCheck regressions + 9 safety-policy regressions).
+Actual PES inspection of 26 bundled samples×3 machines and determinism checks of existing fixtures passed.
+Synthetic coordinates test 8/9 and 3/4 boundaries, accumulation across colors/trims, warnings at start/trim/object boundaries,
+backtracking/triangular anchoring, prevention of false recognition of 0-distance anchors/long backtracking, PES round trips of fan repeats,
+and preservation of blockers when report details are suppressed.
 
-별도 로컬 회귀로 사용자 지정 비공개 불량 PES를 `/tmp`에서만 읽었습니다. 파일·이미지·원본
-좌표·파생 파일은 저장소/픽스처에 넣지 않았습니다. 기존 정책에서는 SE400/SE600/SE700 모두
-차단되지 않았으나 새 기본 정책에서는 모두 차단됩니다. 최대 0.5mm 셀 38회, 동일 좌표 10회,
-밀도 차단 78곳, 동일 좌표 차단 113곳, 시작 잠금 미확인 경고 22곳이며 분석은 완료됐습니다.
-짧은 땀 경고 256개는 길이가 있는 0.3mm 미만 땀 255개와 0거리 반복 1개입니다.
-부채꼴 새틴 모양 자체를 분류하는 검사는 추가하지 않았으며 바늘 진입 누적으로 차단합니다.
+A separate local regression read a user-specified private defective PES only in `/tmp`. Files, images, original
+coordinates, and derived files were not added to the repository/fixtures. The old policy blocked none of SE400/SE600/SE700,
+whereas the new default policy blocks all of them. Maximum 0.5mm cell count is 38, identical-coordinate count is 10,
+with 78 density blockers, 113 same-coordinate blockers, and 22 unconfirmed start-lock warnings; analysis completed.
+The 256 short-stitch warnings comprise 255 nonzero stitches below 0.3mm and 1 0-distance repeat.
+No check classifying the fan-shaped satin itself was added; blocking is based on accumulated needle entries.
 
-## 자동 정책 회귀 (2026-10-24)
+## Automated policy regressions (2026-10-24)
 
-- `SewoutSafetyTest`: 15/16, 30/31/38, 3/4 경계값, 네 위상 밀집, 시작·끝 잠금, 출처, 파일·후프·최대 땀, 생략된 차단 결과.
-- `S1PolicyRegressionTest`: 실제 Android 앱의 “ABC 가나다” 5/8/12mm와 원·사각, 총 5개 `.myembro`
-  입력을 재생성 → 기본 PES v1 → `SewoutCheck` 생성 기준 통과 assert.
-- 공식 v3.3.0 ties 사각형·stitch_plan 모서리 2개는 땀수 ±5%·대칭 Hausdorff ≤0.2mm assert.
-  bbox 중심 평행이동만 정규화하며 회전·스케일을 맞추지 않음. 총 7개 대표 사례, 큰 매트릭스 실행 없음.
-- 출처·입력 해시는 `engine/src/test/resources/{sewout/s1,inkstitch-oracle}/PROVENANCE.json`.
-  개인 도안이나 CI의 `/tmp` 의존성은 없음. 원본 프로그램은 실행하지 않음.
-- `./gradlew check`에서 자동 실행. CI는 모든 push·PR에서 같은 명령과 APK 빌드를 실행.
+- `SewoutSafetyTest`: 15/16, 30/31/38, 3/4 boundaries, four-phase density, start/end locks, provenance, file/hoop/maximum stitch, suppressed blocking results.
+- `S1PolicyRegressionTest`: Regenerate a total of 5 `.myembro` inputs from the actual Android app: “ABC” followed by the Hangul syllables ga, na, and da at 5/8/12mm, a circle, and a square
+  → default PES v1 → assert passing the `SewoutCheck` generated-output criteria.
+- 2 official v3.3.0 ties rectangle/stitch_plan corner cases assert stitch count ±5% and symmetric Hausdorff ≤0.2mm.
+  Only bbox-center translation is normalized; rotation/scale are not matched. A total of 7 representative cases, with no large matrix execution.
+- Provenance/input hashes: `engine/src/test/resources/{sewout/s1,inkstitch-oracle}/PROVENANCE.json`.
+  No personal designs or CI dependency on `/tmp`. Original programs are not executed.
+- Runs automatically under `./gradlew check`. CI runs the same command and APK build on every push/PR.
 
-근거: `/tmp/myembro-quality-gate/POLICY.md`와 동결 게이트 v5.
+Basis: `/tmp/myembro-quality-gate/POLICY.md` and frozen gate v5.
 
-고정 기준 SHA-256: thresholds.json `a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848`, lock_geometry.py `5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42`.
+Fixed-reference SHA-256: thresholds.json `a3fbf692887a40a4539247bfd649cec27075d5adc696afd57777c996bef3f848`, lock_geometry.py `5488e5070e857f50ae8120bd53e4e73e3a7c76aa4a935992451cee51218c7f42`.
 
-검증 명령: `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check :app:assembleDebug --console=plain`.
-실행 출력: **BUILD SUCCESSFUL in 46s**, 엔진 401개·앱 debug/release 각각 172개 실패 0.
-JUnit에서 자동 추출한 대표 7건 결과: `/tmp/myembro-sewout-policy-results.json`.
-전체 check에서 발견된 기존 API-27 테마 항목은 v27 리소스로 분리하고, 비동기 UI 로딩은 명시적 remember/LaunchedEffect
-상태 갱신으로 정리했다. lint 검사를 끄거나 기준을 낮추지 않았다.
+Validation command: `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check :app:assembleDebug --console=plain`.
+Execution output: **BUILD SUCCESSFUL in 46s**, engine 401 tests, app debug/release 172 each, 0 failures.
+Results for 7 representative cases automatically extracted from JUnit: `/tmp/myembro-sewout-policy-results.json`.
+Existing API-27 theme items discovered during full check were moved into v27 resources, and asynchronous UI loading was
+organized with explicit remember/LaunchedEffect state updates. Lint checks were not disabled and criteria were not lowered.

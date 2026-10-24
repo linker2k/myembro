@@ -1,124 +1,124 @@
-# v0.2.1 한 색 실루엣 — 지연/오류 수정
+# v0.2.1 one-color silhouette — latency/error fixes
 
-## 범위와 재현 결과
+## Scope and reproduction results
 
-실루엣 채우기를 유지한다. 넓은 면의 러닝 전환 실험은 최종 구현에서 제외했다.
-진짜 선화·중심선 및 사용자가 고르는 전처리 필터는 다음 버전으로 미룬다.
+Retain silhouette fill. The experiment switching broad areas to running was excluded from the final implementation.
+Defer true line art/centerlines and user-selectable preprocessing filters to the next version.
 
-기존 2단계는 Wu → Potrace → 곡선화 → JTS → 타타미/바탕땀 경로 연결 → S1 →
-PES → 봉제 검사까지 수행했다. 긴 실행 뒤 발생한 후프/PES 예외도 모두
-‘선과 배경 구분 실패’로 표시했다. 제공된 로컬 입력에서 이를 재현했다.
-전경 비율로 거절하는 기존 규칙은 없었다. 최종 변경에도 비율 거절/러닝 전환을 넣지 않는다.
+Previously, step 2 performed Wu → Potrace → curve fitting → JTS → tatami/underlay routing → S1 →
+PES → sewout checks. Hoop/PES exceptions after long execution were also all displayed as
+'Failed to distinguish lines from background'. Reproduced this with the supplied local input.
+There was no existing rejection rule based on foreground ratio. The final change adds neither ratio rejection nor running conversion.
 
-| 로컬 JVM, 같은 입력/192px | 수정 전 | 수정 후(채우기 유지) |
+| Local JVM, same input/192px | Before fix | After fix (fill retained) |
 |---|---:|---:|
-| 디코드 | 123.5ms | 176.1ms |
-| 전처리/시작 | 2.5ms | 50.0ms |
-| Wu 2색 | 17.5ms | 31.2ms |
-| 추적/곡선화 | 56.1ms | 77.1ms |
-| 남은 윤곽 | 47 | 12 |
-| 타타미/S1/영역 준비 | 9,665.6ms | 4,538.0ms |
-| 생성 땀 | 10,280 | 9,527 |
-| PES | 후프 초과 예외 | 385.2ms, 정상 저장 |
-| SewoutCheck | 저장 실패로 검사 불가 | 차단 0 |
-| 2단계가 기다리는 CPU 경로 | 땀 생성까지 약 9.7초 후 오류 | 전처리+양자화+추적 약 158ms |
+| Decode | 123.5ms | 176.1ms |
+| Preprocess/start | 2.5ms | 50.0ms |
+| Wu 2 colors | 17.5ms | 31.2ms |
+| Trace/curve fitting | 56.1ms | 77.1ms |
+| Remaining contours | 47 | 12 |
+| Tatami/S1/region preparation | 9,665.6ms | 4,538.0ms |
+| Generated stitches | 10,280 | 9,527 |
+| PES | Hoop overflow exception | 385.2ms, saved normally |
+| SewoutCheck | Cannot check because saving failed | 0 blockers |
+| CPU path awaited by step 2 | Error after approximately 9.7 seconds to stitch generation | Preprocessing+quantization+tracing approximately 158ms |
 
-단일 입력·단일 측정이며 하드웨어 전체의 보장 시간이 아니다. JPEG 디코더/축소
-차이로 JVM과 Android 윤곽 수는 다를 수 있다. 원본이나 결과 이미지를 이 문서/저장소에
-포함하지 않았다. 개인 입력 로그와 모든 파생 이미지는 허용된 로컬 private 영역에만 둔다.
+Single input/single measurement, not a time guarantee for all hardware. JPEG decoder/downsampling
+differences can change JVM/Android contour counts. Neither source nor result images are included in this document/repository.
+Private-input logs and all derived images stay only in the permitted local private area.
 
-## Android 실측과 UI assertion
+## Android measurements and UI assertions
 
-동일 입력, 같은 1536px 디코드 제한, 192px 작업 해상도, API 35 x86_64 에뮬레이터:
+Same input, same 1536px decode limit, 192px working resolution, API 35 x86_64 emulator:
 
-| 단계 | 수정 전 | 수정 후(타타미 유지) |
+| Stage | Before fix | After fix (tatami retained) |
 |---|---:|---:|
-| 디코드 | 15.6ms | 10.6ms |
-| 전처리 | 1.2ms | 48.6ms |
+| Decode | 15.6ms | 10.6ms |
+| Preprocess | 1.2ms | 48.6ms |
 | Wu | 67.1ms | 21.9ms |
-| 추적/곡선화 | 153.5ms | 35.6ms |
-| 윤곽 수 | 27 | 7 |
-| 땀 생성 | 38,308ms | 7,883ms |
-| 생성 땀 | 10,083 | 9,422 |
-| PES | 후프 초과로 실패 | 236.7ms, 성공 |
+| Trace/curve fitting | 153.5ms | 35.6ms |
+| Contour count | 27 | 7 |
+| Stitch generation | 38,308ms | 7,883ms |
+| Generated stitches | 10,083 | 9,422 |
+| PES | Failed due to hoop overflow | 236.7ms, success |
 
-원본 생성 코드를 먼저 실행하고 수정 경로를 실행한 한 회 측정이다. 워밍업 영향도
-포함되어 있으므로 반복 분포/실기 전체에 대한 속도 보장은 아니다. UI 예상 약 2초/10초는
-위 측정과 다음 실제 VM 481ms 결과를 반올림한 안내이며 기기/이미지에 따라 달라진다고 표시한다.
+Measured once, running original generation code first and the fixed path afterward. Includes warmup effects;
+not a guarantee of repeated distributions/speed on all real machines. UI estimates of approximately 2 seconds/10 seconds
+round these measurements and the actual VM 481ms result below, with a note that device/image affect timing.
 
-실제 `PhotoViewModel.load → next → prepare`를 instrumentation main looper에서 호출하고
-2초 안에 busy=false, outline 존재, render/report 부재를 코드로 assert했다:
+Called actual `PhotoViewModel.load → next → prepare` on the instrumentation main looper and
+asserted in code that within 2 seconds busy=false, outline exists, and render/report are absent:
 
 ```
 INSTRUMENTATION_RESULT: result=VM_PREVIEW_UNDER_2S ms=481.34921 generated_stitches=false
 INSTRUMENTATION_CODE: -1
 ```
 
-개인 입력은 화면에 표시하지 않았고 에뮬레이터 임시 입력은 계측 뒤 삭제했다.
-앱 내부에 보관된 숫자 계측 로그를 제외하고 개인 입력/출력을 저장소나 공개 산출물에 넣지 않았다.
+Did not display private input onscreen; deleted temporary emulator input after instrumentation.
+Except numeric instrumentation logs held inside the app, no private input/output was placed in the repository or public artifacts.
 
-합성 4000×3000 JPEG의 실제 시스템 선택기 → 2단계 → 3단계는 UI XML/logcat으로 assert했다.
-2단계에는 `stitches_ms` 로그가 없고, 3단계에는 통과 배지·4,478땀·편집기/USB 버튼이 있다.
-균일 합성 이미지에서는 거절 안내와 ‘Two-color separation preview’가 동시에 존재하며,
-`contrast_retry=1` 로그 정확히 한 번, 땀 생성 로그 없음도 assert했다.
+Asserted the actual system picker → step 2 → step 3 flow for a synthetic 4000×3000 JPEG via UI XML/logcat.
+Step 2 has no `stitches_ms` log; step 3 has a pass badge/4,478 stitches/editor and USB buttons.
+For a uniform synthetic image, asserted both rejection guidance and 'Two-color separation preview',
+exactly one `contrast_retry=1` log, and no stitch-generation log.
 
-공개 가능한 합성 이미지 스크린샷만:
+Only publishable synthetic-image screenshots:
 - `/tmp/myembro-photo-12mp-preview.png`
 - `/tmp/myembro-photo-12mp-progress.png`
 - `/tmp/myembro-photo-12mp-result.png`
 - `/tmp/myembro-photo-uniform-rejected.png`
 
-## 구현과 숫자 근거
+## Implementation and numeric evidence
 
-- 기존 디코드 긴 변 ≤1536px 및 디테일 128/192/256을 유지한다. 작은 후프에서는
-  사용자 제안의 **0.2mm/px 작업 상한**을 추가로 적용한다. 원본 사진 해상도로
-  양자화/추적하지 않는다. 12MP 합성 JPEG는 opt-in CLI가 직접 생성한다.
-- 2단계는 Wu 2색 및 Potrace 윤곽/곡선화만 수행한다. 땀·파일·봉제 검사는 3단계에서
-  수행하며 캐시한 같은 윤곽을 사용한다. 미리보기 실패에도 Wu 흑백 분리 이미지를 남긴다.
-- 색 분리는 기존 검증된 Wu 포트다. 실패하면 채널별 min/max 선형 대비 확장 후 Wu를
-  **최대 1회** 더 적용한다. 식 `(v-min)*255/(max-min)`, 상수 채널은 보존한다.
-  [표준 min/max 정규화 정의](https://docs.opencv.org/4.12.0/d2/de8/group__core__array.html)를
-  따른 수학적 연산이며 OpenCV 코드를 복사하거나 의존성을 추가하지 않았다.
-- 자동 노이즈 억제는 표준 **3×3 채널별 중앙값, BORDER_REPLICATE**다.
-  [medianBlur 정의](https://docs.opencv.org/4.12.0/d4/d86/group__imgproc__filter.html)를
-  따르며 자체 선 검출/스텐실 알고리즘은 없다. 필터 선택 UI는 추가하지 않는다.
-- 작은 조각은 기존 Potrace `turdsize`로 제거한다. 사진 전처리 최소 면적은
-  디테일별 1/0.5/0.25mm²로 픽셀 면적에 환산한다. 이는 사진 단순화 프리셋이며
-  Ink/Stitch 기본값/봉제 안전 기준이라고 주장하지 않는다. 엔진 일반 API 기본값은 원본 2px다.
-- 사진의 윤곽 상한 **128개**는 모바일 작업 예산이다(작은 후프/사진 대표 입력 측정 대상).
-  품질 게이트 임계값이 아니며 넘으면 땀 생성 **전에** 디테일 조절 안내로 종료한다.
-  윤곽 일부만 잘라서 임의로 채우지 않는다. 전경 비율이나 인물 여부로 거절하지 않는다.
-- 사진의 SVG 평탄화 허용오차는 PES 좌표 해상도와 같은 **0.1mm**다. 기존 0.01 SVGpx
-  (약 0.0026mm)보다 과도한 서브픽셀 세분화를 줄인다. 일반 엔진 API의 기존 오차와
-  Ink/Stitch 타타미·바탕땀·잠금 기본값은 그대로다.
-- 완성된 땀(잠금 포함)의 정수 범위를 실제 후프 0..width-1/height-1에 맞춘다.
-  가운데 원점을 먼저 반올림하면 999단위가 1000단위로 벌어질 수 있으므로, 최소점을
-  뺀 후 반올림한다. 추가 안전 여백은 넣지 않는다. 실제 PES의 P1–P8 검사를 유지한다.
-- 진행 단계/경과/예상 안내·취소·10초 후 디테일 낮추기를 제공한다. 땀 생성은 30초 후
-  취소 요청/전용 오류를 제공한다(협력적 중단). 경로 그래프 루프에 interrupt 확인을 넣고
-  취소한 작업의 결과가 새 세션을 덮어쓰지 않게 revision을 유지한다.
+- Retain existing decode long-edge ≤1536px and detail 128/192/256. For small hoops,
+  additionally apply the user-proposed **0.2mm/px working cap**. Do not quantize/trace
+  at original photo resolution. The opt-in CLI directly generates the 12MP synthetic JPEG.
+- Step 2 performs only Wu 2-color separation and Potrace contours/curve fitting. Stitches/files/sewout checks run
+  at step 3 using the same cached contours. Preserve the Wu black/white separation image even when preview fails.
+- Color separation uses the existing validated Wu port. On failure, apply channel-wise min/max linear contrast stretch, then Wu
+  **at most 1 more time**. Formula `(v-min)*255/(max-min)`; preserve constant channels.
+  This mathematical operation follows the [standard min/max normalization definition](https://docs.opencv.org/4.12.0/d2/de8/group__core__array.html);
+  no OpenCV code copied or dependency added.
+- Automatic noise suppression is standard **3×3 channel-wise median, BORDER_REPLICATE**.
+  Follows the [medianBlur definition](https://docs.opencv.org/4.12.0/d4/d86/group__imgproc__filter.html);
+  no custom line-detection/stencil algorithm. Add no filter-selection UI.
+- Remove small fragments via existing Potrace `turdsize`. Convert photo preprocessing minimum areas
+  of 1/0.5/0.25mm² by detail level into pixel areas. These are photo-simplification presets,
+  not claimed as Ink/Stitch defaults/sewing safety criteria. General engine API default remains upstream 2px.
+- Photo contour cap **128** is a mobile workload budget (measured on small hoops/representative photo inputs).
+  Not a quality-gate threshold; if exceeded, stop with detail-adjustment guidance **before** stitch generation.
+  Do not arbitrarily fill a truncated subset of contours. Do not reject by foreground ratio or presence of people.
+- Photo SVG flattening tolerance is **0.1mm**, matching PES coordinate resolution. This reduces excessive subpixel subdivision
+  compared with existing 0.01 SVGpx (approximately 0.0026mm). Existing general engine API tolerance
+  and Ink/Stitch tatami/underlay/lock defaults remain unchanged.
+- Fit completed stitches' integer bounds (including locks) to actual hoop 0..width-1/height-1.
+  Rounding the centered origin first can expand 999 units to 1000 units, so subtract the minimum point
+  before rounding. Add no extra safety margin. Retain actual PES P1–P8 checks.
+- Provide progress stage/elapsed/estimated guidance/cancel/lower detail after 10 seconds. Stitch generation provides
+  cancellation request/dedicated error after 30 seconds (cooperative interruption). Check interrupts in routing-graph loops;
+  retain revisions so cancelled results cannot overwrite a new session.
 
-## 재현 명령
+## Reproduction commands
 
 ```
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:photoTiming -PphotoTimingArgs=192,baseline,full
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:photoTiming -PphotoTimingArgs=192,filtered,full
 ```
 
-합성 입력: `/tmp/myembro-photo-performance/synthetic-12mp.jpg` (4000×3000, 직접 생성).
-기본 CLI는 개인 사진을 읽지 않는다. 선택적 네 번째 로컬 경로는 입력을 복사/렌더/저장하지 않는다.
+Synthetic input: `/tmp/myembro-photo-performance/synthetic-12mp.jpg` (4000×3000, generated directly).
+Default CLI does not read private photos. Optional fourth local path does not copy/render/save the input.
 
-Android opt-in 러너:
+Android opt-in runner:
 ```
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PmyembroTestRunner=io.github.linker2k.myembro.ui.photo.PhotoTimingInstrumentation
 adb shell am instrument -w io.github.linker2k.myembro.test/io.github.linker2k.myembro.ui.photo.PhotoTimingInstrumentation
 ```
 
-회귀 테스트: 미리보기에서 땀/PES 단계 미호출, 기존 생성 API와 분리 생성 동일,
-상수 이미지도 2색 미리보기 콜백 후 즉시 거절, 작은 조각 제거/상한 선판정,
-중앙값과 대비 확장의 고정 계산, 완성 채우기의 후프/봉제 검사.
+Regression tests: preview does not invoke stitch/PES stages; existing generation API equals separate-stage generation;
+constant images immediately reject after a 2-color preview callback; small-fragment removal/early cap check;
+fixed median/contrast-stretch calculations; completed fill hoop/sewout checks.
 
-## 최종 검증
+## Final validation
 
 ```
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check :app:assembleDebug
@@ -126,6 +126,6 @@ BUILD SUCCESSFUL in 56s
 86 actionable tasks: 33 executed, 53 up-to-date
 ```
 
-엔진 640, 앱 debug/release 각각 217 tests, 실패/오류/skip 0.
-ko/en 사진 문자열 45개 키 일치. 전체 로그 `/tmp/myembro-photo-final-check.log`.
-CI 및 실물 봉제 승인과 별개의 로컬 자동 검사 결과다.
+Engine 640, app debug/release 217 tests each, failures/errors/skips 0.
+ko/en photo strings: matching 45 keys. Full log `/tmp/myembro-photo-final-check.log`.
+Local automated checks, separate from CI and actual sewout approval.

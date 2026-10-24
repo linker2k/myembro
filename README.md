@@ -5,39 +5,40 @@
 **Open-source embroidery app for Android** — view, edit, letter and digitize Brother **PES**
 designs on your phone and send them to the machine.
 
-**안드로이드용 오픈소스 자수 앱** — 휴대폰에서 브라더 **PES** 도안을 보고, 편집하고, 글자와 사진으로
-새 도안을 만들고, 자수기로 보냅니다.
+**Open-source embroidery app for Android** — view and edit Brother **PES** designs on your phone,
+create new designs from text and photos, and send them to your embroidery machine.
 
-## 실패 없는 디자인 / Failure-free designs
+## Failure-free designs
 
-앱이 만드는 모든 PES는 저장·전송 전에 실제 봉제 실패를 일으키는 조건(0.5mm 칸 바늘 밀집, 같은 점 연속
-바늘, 시작·끝 잠금 땀 누락, 최대 땀 길이 초과, 파일 오류·후프 범위 초과)을 코드로 검사하고, 하나라도
-걸리면 저장·전송을 막습니다. 땀 생성은 새로 고안하지 않고 검증된 원본(Ink/Stitch, Potrace, AutoTrace,
-Wu 양자화)을 기본값 그대로 포팅하며, 원본과 같은 결과인지 자동 비교로 확인합니다. 땀 종류·크기 범위처럼
-실패할 수 있는 선택은 앱이 자동으로 정하고, 세부 설정은 노출하지 않습니다.
+Before saving or transferring any app-generated PES, code checks for conditions that cause actual sewout failures
+(needle crowding within a 0.5mm cell, consecutive needle entries at the same point, missing start/end locks,
+excessive stitch length, file errors, and hoop overflow). Any violation blocks saving and transfer.
+Stitch generation ports verified originals(Ink/Stitch, Potrace, AutoTrace, and Wu quantization) with their default parameters
+rather than inventing new methods, and automated comparisons verify agreement with the originals.
+The app automatically decides potentially unsafe choices, such as stitch types and size ranges, without exposing detailed settings.
 Every generated PES is checked in code for the conditions that cause real sew-out failures and is
 blocked from saving or sending if any is found. Stitch generation ports verified originals with
 their default parameters instead of inventing new algorithms.
 
-## Features / 기능 (v0.2.x)
+## Features (v0.2.x)
 
-- **도안 보기·땀 재생 / Viewer:** PES (v1–v10), PEC, DST 열기, 실 색 렌더링, 확대·이동, 바느질 재생, 통계(땀 수·크기·색·트림·예상 시간), 후프 표시
-- **편집기 / Editor:** 도안·글자 배치, 크기, 회전, 프로젝트 저장
-- **레터링 / Lettering:**
-  - Ink/Stitch 자수 글꼴 72종 새틴(검증된 글꼴 카탈로그) — 72 Ink/Stitch embroidery fonts as satin
-  - TTF 글꼴(한글 포함): 글자 크기에 따라 앱이 땀 종류(새틴·채우기·러닝)와 허용 크기 범위를 자동으로 정합니다
-- **채우기 / Fill:** Ink/Stitch 기본 타타미와 바탕 땀
-- **사진→자수 / Photo to embroidery:** 단색 실루엣(채우기)·외곽선 모드, 크기 조절
-- **봉제 점검 / Sew-out check:** 위의 실패 조건을 자동 차단. 가져온 PES는 바이트 그대로 유지
-- **자수기 전송 / Machines:** Brother SE400 — 휴대폰과 USB 케이블로 직접 전송(실기 확인), 전송 기록, 자동 절단이 없는 기종을 위한 이동 실 정리 안내. SE600/SE700 — 기종 프로필(100×100mm, USB 메모리)
-- **전체 백업/복원 / Backup:** 도안·프로젝트·다운로드 글꼴·설정을 ZIP 하나로 저장·복원
-- **버전 / Versions:** v0.2.0부터 배포마다 v0.2.N. GitHub pre-release로 배포
+- **Viewer and stitch playback:** open PES (v1–v10), PEC, and DST; render thread colors; zoom/pan; simulate sewing; show statistics(stitch count, size, colors, trims, estimated time) and hoops
+- **Editor:** arrange designs and text, resize, rotate, and save projects
+- **Lettering:**
+  - Satin with 72 Ink/Stitch embroidery fonts(verified font catalog) — 72 Ink/Stitch embroidery fonts as satin
+  - TTF fonts(including Hangul): the app automatically determines stitch type(satin, fill, running) and allowed size ranges based on text size
+- **Fill:** Ink/Stitch default tatami and underlay
+- **Photo to embroidery:** monochrome silhouette(fill)/outline modes and resizing
+- **Sew-out check:** automatically blocks the failure conditions above. Imported PES bytes remain unchanged
+- **Machines:** Brother SE400 — direct transfer from the phone over a USB cable(verified on hardware), transfer history, and travel-thread cleanup guidance for machines without automatic cutting. SE600/SE700 — machine profiles(100×100mm, USB flash drive)
+- **Full backup/restore:** save and restore designs, projects, downloaded fonts, and settings in one ZIP
+- **Versions:** from v0.2.0 onward, each release is v0.2.N. Distributed as GitHub pre-releases
 
-## 알려진 한계 / Known limitations
+## Known limitations
 
-- SE400은 자동 실 절단이 없어 색·위치 이동 실은 봉제 후 손으로 정리해야 합니다(앱이 안내).
-- 현재 APK는 개발용 서명 키로 서명되어 있습니다. 정식 서명 키로 바뀌는 시점에는 기존 앱 위 업데이트가 되지 않아 한 번 삭제 후 재설치가 필요합니다. 그 전에 설정의 전체 백업을 받아 두세요.
-- SE600/SE700은 매뉴얼 기준 프로필이며 실기 전송은 아직 확인하지 않았습니다.
+- SE400 has no automatic thread cutting; color/position travel threads must be trimmed by hand after sewing(the app provides guidance).
+- The current APK is signed with a development key. Switching to an official signing key will prevent updating over the existing app, requiring a one-time uninstall and reinstall. Back up everything through Settings beforehand.
+- SE600/SE700 profiles are based on manuals; hardware transfer is still unconfirmed.
 
 ## Project layout
 

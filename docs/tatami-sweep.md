@@ -1,12 +1,12 @@
-# 타타미 확장 스윕 — 로컬 전용
+# Extended tatami sweep — local only
 
-> backend `e154303`으로 재스윕한 현재 결과다. 알고리즘 변경 없이 동일한430조합을 계산했다.
+> Current results reswept with backend `e154303`. Computed the same 430 combinations without algorithm changes.
 
-CI의 대표 사례(공식 기본값 사각·원·구멍 3건 + smoke 3건)는 유지한다.
-확장 스윕 태스크는 `check`의 의존성이 아니며 단계 릴리스 전 로컬에서 별도로 실행한다.
-규칙 계산기 단위 테스트 3건만 CI에 추가했다.
+Retains CI representative cases(official-default square/circle/hole 3 cases + smoke 3 cases).
+The extended-sweep task is not a dependency of `check`; run it separately locally before a stage release.
+Only rule-calculator unit tests 3 cases were added to CI.
 
-## 재현 명령
+## Reproduction commands
 
 ```sh
 export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
@@ -14,43 +14,43 @@ python3 -m unittest discover -s tools/tests -p test_tatami_sweep.py
 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing
 ```
 
-스크립트가 `./gradlew :engine:generateTatamiSweep`를 호출한 후 독립된 외부
+After invoking `./gradlew :engine:generateTatamiSweep`, the script collects independent external
 `/tmp/myembro-quality-gate/quality-gate check --matrix …/generation.json --json …/gate.json`
-판정을 수집한다. worker의 POLICY.md Kotlin 게이트는 아직 이 브랜치에 병합되지 않아
-구형 SewoutCheck 결과를 동일 정책으로 간주하지 않는다. 외부 게이트 코드·임계값·POLICY.md의
-SHA256을 기록하고 검사 중 변경되면 규칙 발행을 중단한다. 원본 Ink/Stitch는 실행하지 않는다.
+verdicts. The worker's POLICY.md Kotlin gate has not yet been merged into this branch, so old
+SewoutCheck results are not treated as the same policy. Records SHA256 of external gate code, thresholds, and POLICY.md;
+if these change during checks, rule publication stops. Does not execute upstream Ink/Stitch.
 
-## 계산한 입력 공간
+## Computed input space
 
-- 크기: **5–90mm, 1mm 간격** 86개. 각도는 기본값0° 하나뿐이다.
-- 도형: 정사각, 원, 도넛(내/외경 비율0.4), 별(5꼭지·내/외반경0.45), 굵은 H.
-- H는 직접 만든 윤곽이다. 높이=size, 너비=0.8×size, 획 두께=0.2×size.
-- 별의 size는 외접원 지름이다. 실제 bbox는 size보다 작다.
-- 총430조합. 개인 도안·폰트를 사용하지 않으며 도형은 오리지널(CC0-1.0)이다.
-- 기본 DefaultTatami(top0°/.25mm/4mm, 바탕90°/.75mm/4mm), S1 기본 planner,
-  PES v6 writer를 사용한다. 입력 평탄화 오차는0.01mm다. 알고리즘은 변경하지 않는다.
+- Size: **5–90mm, 1mm increments**, 86 values. Only the default angle 0°.
+- Shapes: square, circle, donut(inner/outer diameter ratio 0.4), star(5 points·inner/outer radius 0.45), thick H.
+- H is an original outline. Height=size, width=0.8×size, stroke thickness=0.2×size.
+- Star size is its circumcircle diameter. Its actual bbox is smaller than size.
+- Total 430 combinations. No private designs/fonts; shapes are original(CC0-1.0).
+- Uses default DefaultTatami(top 0°/.25mm/4mm, underlay 90°/.75mm/4mm), S1 default planner,
+  and PES v6 writer. Input flattening error is 0.01mm. Algorithms are unchanged.
 
-## 생성 결과와 허용 규칙
+## Generation results and allow rules
 
-출력 디렉터리에는 `generation.log/json`, 후보 PES430개, 독립 판정 `gate.log/json`,
-`results.json`, `failures.json`, `summary.md`, `fill-allowed-regions.json`, `provenance.json`이 생긴다.
-생성 실패·파일 불일치·게이트 BLOCK은 자동으로 허용 목록에서 제외한다.
-도형별 통과 크기, 실패 크기, 첫 실패 크기, 최소 통과 표본 면적을 코드로 계산한다.
-비단조 실패를 최소 크기 하나로 숨기지 않고 정확한 통과 목록을 유지한다.
+The output directory contains `generation.log/json`, 430 candidate PES files, independent verdicts `gate.log/json`,
+`results.json`, `failures.json`, `summary.md`, `fill-allowed-regions.json`, and `provenance.json`.
+Generation failures, file mismatches, and gate BLOCKs are automatically excluded from the allowlist.
+Code computes passing sizes, failing sizes, first failing size, and minimum passing sample area per shape.
+Preserves exact passing lists rather than hiding non-monotonic failures behind a single minimum size.
 
-**허용 목록은 이 유한 입력 집합만 의미한다.** 예를 들어 5mm와6mm가 통과해도5.5mm를
-자동 허용하지 않는다. 임의 폴리곤/글자/구멍 비율/곡률까지 검증한 결과가 아니며, 면적 하나로
-일반화하지 않는다. `minimum_verified_area_mm2`는 도형별 표본 관찰값이고 일반 면적 기준이 아니다.
-5mm 미만은 검사하지 않아 실제 최소 안전 크기를 찾았다고 주장하지 않는다.
-미검사 입력은 DENY, `interpolation_allowed=false`, `arbitrary_polygons_covered=false`다.
-중간 실패나 전체 실패로부터 허위 안전 범위를 만들지 않는지 단위 테스트로 확인한다.
-중단된 실행은 INCOMPLETE/DENY 규칙만 남기며 이전 실행의 허용 목록을 재사용하지 않는다.
+**The allowlist refers only to this finite input set.** For example, passing 5mm and 6mm does not automatically
+allow 5.5mm. It does not validate arbitrary polygons/glyphs/hole ratios/curvature and is not generalized by area alone.
+`minimum_verified_area_mm2` is an observed per-shape sample value, not a general area criterion.
+Sizes below 5mm are untested, so this does not claim to find the actual minimum safe size.
+Untested inputs are DENY, with `interpolation_allowed=false`, `arbitrary_polygons_covered=false`.
+Unit tests check that intermediate or complete failures do not produce false safe ranges.
+Interrupted runs leave only INCOMPLETE/DENY rules and never reuse a previous run's allowlist.
 
-허용 JSON은 후보 규칙이며 앱에 연결하지 않아 `deployment_enabled=false`를 유지한다.
-공식 동등성3건은 backend 수정 단위에서 통과했다. 게이트 통과는 원격 CI 녹색/
-실제 봉제 승인과 별도 판정이다. 스윕 결과만으로 이를 통과했다고 보고하지 않는다.
+The allow JSON is a candidate rule set, not connected to the app, and retains `deployment_enabled=false`.
+Official equivalence 3 cases passed in the backend-fix unit. Gate passage is separate from remote CI green/
+actual sewout approval. Sweep results alone are not reported as satisfying those requirements.
 
-## 새 backend 재스윕 출력
+## New backend resweep output
 
 ```text
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/sweep_tatami.py --out /tmp/myembro-tatami-sweep-source-routing
@@ -61,22 +61,22 @@ GATE: 430/430 PASS; 0 BLOCK
 PASS 430/430 cases passed
 ```
 
-| 도형 | 통과/전체 | 최소 통과 표본 mm | 첫 실패 크기 | 최대 셀 밀집 | 최대 연속 동일점 | 최대 땀 mm |
+| Shape | Passed/total | Minimum passing sample mm | First failing size | Maximum cell density | Maximum consecutive identical points | Maximum stitch mm |
 |---|---:|---:|---|---:|---:|---:|
-| square | 86/86 | 5 | 없음 | 8 | 1 | 4.001250 |
-| circle | 86/86 | 5 | 없음 | 10 | 1 | 4.101219 |
-| donut | 86/86 | 5 | 없음 | 10 | 1 | 4.101219 |
-| star | 86/86 | 5 | 없음 | 9 | 1 | 4.101219 |
-| block_h | 86/86 | 5 | 없음 | 7 | 1 | 4.101219 |
+| square | 86/86 | 5 | None | 8 | 1 | 4.001250 |
+| circle | 86/86 | 5 | None | 10 | 1 | 4.101219 |
+| donut | 86/86 | 5 | None | 10 | 1 | 4.101219 |
+| star | 86/86 | 5 | None | 9 | 1 | 4.101219 |
+| block_h | 86/86 | 5 | None | 7 | 1 | 4.101219 |
 
-생성 오류0건, 실패 목록은 `[]`다. 원/도넛/별/H에 보이는 짧은 땀 통계는 참고 지표이며 차단 사유가 아니다.
-5mm 미만은 미검사이므로 실제 최소 안전 크기를 찾았다고 해석하지 않는다.
+Generation errors 0; failure list is `[]`. Short-stitch statistics visible for circle/donut/star/H are reference metrics, not blocking reasons.
+Sizes below 5mm are untested; do not interpret this as finding the actual minimum safe size.
 
-- [기계 판정 요약·출처·게이트 SHA256](tatami-sweep-results/summary.json)
-- [새 backend의 유한 표본 허용 JSON](tatami-sweep-results/fill-allowed-regions.json)
-- [실패 목록](tatami-sweep-results/failures.json)
+- [Machine verdict summary/provenance/gate SHA256](tatami-sweep-results/summary.json)
+- [Finite-sample allow JSON for the new backend](tatami-sweep-results/fill-allowed-regions.json)
+- [Failure list](tatami-sweep-results/failures.json)
 
-전체 원본 판정 `gate.json/log`, 생성 `generation.json/log`, 후보430개 PES는
-`/tmp/myembro-tatami-sweep-source-routing/`에 있다. 이전 backend 결과는
-`/tmp/myembro-tatami-sweep-1mm/`와 커밋4f21a67에 이력으로 남는다.
-이번 단위는 계산과 결과 기록만 수행했다. 엔진/임계값/테스트/CI 설정은 변경하지 않았다.
+Full original verdicts `gate.json/log`, generation `generation.json/log`, and 430 candidate PES files are in
+`/tmp/myembro-tatami-sweep-source-routing/`. Previous backend results remain as history in
+`/tmp/myembro-tatami-sweep-1mm/` and commit 4f21a67.
+This unit performed computation and result recording only. No engine/threshold/test/CI configuration changes.

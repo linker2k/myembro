@@ -1,19 +1,22 @@
-# 배경·안티앨리어싱 색 정리 (v0.2.5 후보)
+# Background and antialiasing color cleanup (v0.2.5 candidate)
 
-컬러 전용 변경. 개인 입력 없이 기존 원본 합성 얼굴·로봇 PNG와 테스트가 그린 얼굴만 사용했다.
+Color-only change. Used existing original synthetic face/robot PNGs and test-drawn faces only,
+with no personal inputs.
 
-## 원인과 처리
+## Causes and handling
 
-- PNG의 부분 알파 픽셀을 흰색과 합성한 뒤 Wu에 넣어 가장자리 색이 새 실 색을 만들었다. 이제 완전 투명 픽셀은 제외하고, 부분 알파는 ARGB의 straight RGB 원색으로 양자화한다. 새 알파 임계값은 넣지 않았다.
-- 불투명 입력은 Wu 사전 분리(N+1색)의 **테두리 픽셀 최빈 색**을 배경으로 제외한다. 왼쪽 위 한 픽셀로 결정하지 않는다. 배경 제외 후 다시 원본 Wu N색을 실행하여 배경이 사용자가 고른 2–6색 예산을 차지하지 않게 한다. 명시적 투명 배경이 있으면 그 알파 배경을 우선한다. 밝기 임계값을 새로 고안하지 않았다.
-- 표준 4연결 성분 면적을 세어 작은 색 조각을 인접한 유지 영역 중 가장 큰 영역의 색으로 합친다. 배경도 합칠 대상이 될 수 있다. 비인접 색을 추정하지 않고, 투명 영역 자체를 새로 채우지 않는다. 기존 Potrace 면적 필터도 같은 면적 기준을 사용한다.
-- 면적 기준은 아래 **30mm, 2개 원본 × 후보 5개 = 10건**의 스윕이 선택한 `3.0mm²`다. 더 작은 후보는 얼굴에 Khaki가 남았다. 색 개수만 맞추지 않고 원래 그림의 Brother 실 번호 집합까지 일치하는지 assert했다. 실루엣/외곽선의 기존 면적·디테일은 변경하지 않았다.
+- Partially transparent PNG pixels were composited over white before entering Wu, causing edge colors to create new thread colors. Fully transparent pixels are now excluded, and partial-alpha pixels are quantized using ARGB's straight RGB source colors. No new alpha threshold was added.
+- For opaque inputs, exclude the **most frequent border-pixel color** from Wu preseparation (N+1 colors) as background. Do not decide from a single top-left pixel. After background exclusion, rerun original Wu N-color quantization so background does not consume the user's 2–6-color budget. Explicit transparent backgrounds take priority when present. No new brightness threshold was invented.
+- Count standard 4-connected-component areas and merge small color fragments into the color of the largest adjacent retained region. Background can also be a merge target. Do not infer nonadjacent colors or newly fill transparent regions themselves. The existing Potrace area filter uses the same area criterion.
+- The area threshold is `3.0mm²`, selected by the **30mm, 2 originals × 5 candidates = 10-case** sweep below. Smaller candidates left Khaki on the face. Assertions check the original drawing's Brother-thread-number set, not just color counts. Existing silhouette/outline area and detail were unchanged.
 
-## 측정 표
+## Measurement table
 
-입력은 bilinear 192px 재샘플링 후, 넓은 본체 내부에 4×4px 밝은 잡티(30mm에서 0.390625mm²)를 추가했다. 색 수 예산은 4이며 실제 원본 그림은 3색이다. 면적 후보는 기존 0.25/0.5/1.0에서 부족해 2.0/3.0까지 측정했다.
+After bilinear resampling to 192px, a 4×4px bright blemish (0.390625mm² at 30mm) was added
+inside the broad body. The color budget is 4, while the original drawing has 3 colors. Existing
+area candidates 0.25/0.5/1.0 were insufficient, so measurements extended to 2.0/3.0.
 
-| 합성 입력 | 최소 면적 mm² | 실제 그림 색 | 필요한 실 | 땀 | 엔진 게이트 |
+| Synthetic input | Minimum area mm² | Actual drawing colors | Required threads | Stitches | Engine gate |
 |---|---:|---:|---:|---:|---|
 | face | 0.25 | 3 | 4 | 1144 | PASS |
 | face | 0.5 | 3 | 4 | 1144 | PASS |
@@ -26,18 +29,22 @@
 | robot | 2.0 | 3 | 3 | 836 | PASS |
 | robot | 3.0 | 3 | 3 | 836 | PASS |
 
-선택한 3.0mm²에서 얼굴은 `23 Dark Gray / 49 Amber Red / 12 Orange`, 로봇은 `23 Dark Gray / 32 Sky Blue / 49 Amber Red`를 사용한다. **이 두 그림/크기에서 검증한 기준이며, 임의의 그림의 의도된 색 수를 알아낸다고 주장하지 않는다.** 3mm² 미만의 실제 디테일도 단순화 대상이므로 더 작거나 세밀한 그림의 보존을 보장하지 않는다.
+At the selected 3.0mm², the face uses `23 Dark Gray / 49 Amber Red / 12 Orange`; the robot uses
+`23 Dark Gray / 32 Sky Blue / 49 Amber Red`. **This criterion was verified for these two drawings/
+sizes; it is not claimed to determine the intended color count of arbitrary drawings.** Real details
+below 3mm² are also subject to simplification, so smaller or finer drawings are not guaranteed preservation.
 
-실제 Android 크롭·보간 경로(색 수 3, 표시 가로 약 30mm)도 확인했다:
+The actual Android cropping/interpolation path was also checked (color count 3, displayed width about 30mm):
 
-| 결과 | 필요한 실 | 땀 |
+| Result | Required threads | Stitches |
 |---|---|---:|
-| 수정 전 | 23 Dark Gray / 12 Orange / **47 Beige** | 1,543 |
-| 수정 후 | 23 Dark Gray / 12 Orange / **49 Amber Red** | 1,502 |
+| Before fix | 23 Dark Gray / 12 Orange / **47 Beige** | 1,543 |
+| After fix | 23 Dark Gray / 12 Orange / **49 Amber Red** | 1,502 |
 
-[갱신된 결과 스크린샷](result-ko.png), [갱신된 미리보기](preview-ko.png). 기본 Android instrumentation이 직접 그린 PNG만 사용했고 MediaStore/개인 파일은 읽지 않았다.
+[Updated result screenshot](result-ko.png), [updated preview](preview-ko.png). Used only PNGs
+drawn directly by the standard Android instrumentation; neither MediaStore nor personal files were read.
 
-## 재현과 판정
+## Reproduction and decisions
 
 ```sh
 export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
@@ -59,6 +66,13 @@ INSTRUMENTATION_CODE: 0
 PASS 3/3 cases passed
 ```
 
-코드 판정: `ColorCleanupSweep`은 10건의 게이트, 3색 및 원래 실 번호 보존의 최소 후보를 검사한다. 별도 회귀는 모서리 한 픽셀이 다른 배경, 배경이 색 예산을 소비하지 않음, 작은 영역의 인접 병합, 투명 구멍 보존, 부분 알파 원색 보존을 검사한다. Android 스모크는 catalog `47`이 없다는 것도 assert한다.
+Code-based decisions: `ColorCleanupSweep` checks the 10 gates and the minimum candidate
+preserving 3 colors and original thread numbers. Separate regressions check a background with
+a differently colored corner pixel, background not consuming the color budget, adjacent merging
+of small regions, preservation of transparent holes, and preservation of partial-alpha source
+colors. The Android smoke also asserts that catalog `47` is absent.
 
-원시 표 `/tmp/myembro-port-out/editor/color-cleanup/sweep.tsv`, 로그 `/tmp/color-cleanup-final-check.log`, `/tmp/color-cleanup-android-smoke.log`, `/tmp/color-cleanup-gate.log`. 개인 도안/이모티콘 번들 없음. 통합 담당 검토용이며 실물 봉제 검증은 별도다.
+Raw table: `/tmp/myembro-port-out/editor/color-cleanup/sweep.tsv`; logs:
+`/tmp/color-cleanup-final-check.log`, `/tmp/color-cleanup-android-smoke.log`,
+`/tmp/color-cleanup-gate.log`. No personal designs/emoticons are bundled. This is for integrator
+review; actual-sewing verification is separate.
