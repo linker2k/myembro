@@ -1,8 +1,8 @@
-# 레터링 엔진
+# Lettering engine
 
-2026-10-22. 엔진은 순수 Kotlin이며 Android 폰트 접근은 앱 어댑터에만 있다.
+2026-10-22. The engine is pure Kotlin; Android font access exists only in the app adapter.
 
-## Hershey 단선 레터링
+## Hershey single-line lettering
 
 ```kotlin
 val text = TextObject(
@@ -14,28 +14,27 @@ val pattern = text.localPattern()
 val pes = PesWriter.write(Project(objects = listOf(text)).flatten())
 ```
 
-- 폰트 ID: `hershey-futural` (`HersheyFont.DEFAULT_ID`). ASCII 공백~물결표
-  U+0020–U+007E를 지원한다. 원본의 96번째 U+007F 진단 글리프도 보존한다.
-- 영문 대소문자, 숫자, ASCII 기호를 지원한다. 한글·한자·악센트 문자·이모지는
-  지원하지 않으며 코드 포인트마다 `?`로 대체하고 `EmbPattern.warnings`에 남긴다.
-  보조 평면 이모지를 UTF-16 두 글자로 잘못 대체하지 않는다.
-- James Hurt `.jhf` 파서: 5열 ID + 3열 좌표쌍 개수 + 좌우 베어링 + 좌표쌍.
-  개수에는 베어링 한 쌍이 포함되며, ` R`은 pen lift다. 좌표는 `R`을 원점으로
-  해석한다. 글자 매핑은 레코드 순서이며 공백을 trim하지 않는다.
-- `heightMm`: 대문자 높이 21 font units를 mm로 환산한다. 소문자 x-height는
-  더 작고, descender와 구두점은 대문자 높이 밖으로 나올 수 있다.
-- `spacing`: 글자 advance에 추가하는 mm 간격(기본 1mm). 탭은 공백 네 개,
-  CR/LF/CRLF는 줄바꿈이다. 각 줄은 가운데 정렬하며 기준선 간격은 높이의 1.5배다.
+- Font ID: `hershey-futural` (`HersheyFont.DEFAULT_ID`). Supports ASCII space through tilde,
+  U+0020–U+007E. The original's 96th diagnostic glyph, U+007F, is also preserved.
+- Supports uppercase/lowercase Latin letters, digits, and ASCII symbols. Hangul, Han characters,
+  accented characters, and emoji are unsupported: each code point is replaced with `?` and recorded
+  in `EmbPattern.warnings`. Supplementary-plane emoji are not incorrectly replaced as two UTF-16 characters.
+- James Hurt `.jhf` parser: 5-column ID + 3-column coordinate-pair count + left/right bearings + coordinate pairs.
+  The count includes a bearing pair; ` R` is a pen lift. Coordinates are interpreted relative to `R` as the origin.
+  Character mapping follows record order, and spaces are not trimmed.
+- `heightMm`: converts the capital height of 21 font units to mm. Lowercase x-height is smaller;
+  descenders and punctuation may extend outside the capital height.
+- `spacing`: additional spacing in mm added to each character's advance (default 1mm). Tabs become four spaces;
+  CR/LF/CRLF are line breaks. Each line is centered, and baseline spacing is 1.5 times the height.
 
-원본 데이터·고정 커밋·SHA-256·고지 조건은
-[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)에 기록했다. Hershey 원형은
-공개 도메인 계열이지만, 이 JHF 배포본의 저자 고지와 NTIS 형식 변환 제한도 보존한다.
+Original data, pinned commit, SHA-256, and notice requirements are recorded in
+[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). Although the original Hershey fonts are in the public-domain
+family, this JHF distribution's author notices and NTIS format-conversion restrictions are also preserved.
 
-## 한글 외곽선 레터링
+## Hangul outline lettering
 
-앱에 OFL-1.1 **Jua**를 포함했다. 둥글고 굵은 한글 글자의 바깥 윤곽과 안쪽 구멍을
-가져온다. 외곽선 글꼴의 새 기본은 auto-fill + 윤곽 러닝이다. 외곽선 러닝을 선택하면
-글자 한 획의 양쪽 가장자리가 모두 수놓아진다.
+OFL-1.1 **Jua** is bundled in the app. It supplies the outer contours and inner holes of rounded, bold Hangul characters.
+The new default for outline fonts is auto-fill + contour running. Selecting outline running sews both edges of each stroke.
 
 ```kotlin
 import io.github.linker2k.myembro.lettering.AndroidGlyphOutlines
@@ -52,22 +51,21 @@ val pattern = text.localPattern()
 val pesBytes = PesWriter.write(project.flatten())
 ```
 
-`자수`는 먼저 NFC 정규화한다. `Typeface`와 `Paint.getTextPath`로 두 글자의
-외곽선을 얻고, API 26+ `Path.approximate(0.5f)`의 `(fraction, x, y)` 좌표를
-폴리라인으로 바꾼다. fraction이 같은 지점의 moveTo에서 윤곽을 분리해 글자 사이와
-안쪽 구멍에 연결 스티치가 생기지 않도록 한다. 추출의 기본 textSize는 1000px,
-첫 기준선은 y=0, +y는 아래다. 줄바꿈과 자간을 반영하고 줄마다 가운데 정렬한다.
-지원 범위는 선택한 Typeface에 따르며 Jua는 한글을 제공한다. 일반적인 한글/라틴
-문자열을 대상으로 하며 복잡한 RTL 조판 엔진이나 이모지 렌더러는 포함하지 않는다.
+`자수` is first normalized to NFC. `Typeface` and `Paint.getTextPath` obtain the two characters' outlines;
+the `(fraction, x, y)` coordinates from API 26+ `Path.approximate(0.5f)` become polylines.
+Contours are separated at moveTo points with the same fraction so no connecting stitch is created between characters
+or across inner holes. Extraction defaults to textSize 1000px, the first baseline at y=0, and +y downward.
+Line breaks and character spacing are respected, and each line is centered. Coverage depends on the selected Typeface;
+Jua provides Hangul. This targets ordinary Hangul/Latin strings, without a complex RTL shaping engine or emoji renderer.
 
-`textObject`는 `자`의 실제 잉크 높이를 기준 높이로 저장하므로 문장·여러 줄에서도
-글자 높이가 유지된다. 자간 mm는 이 기준 높이에 맞춰 소스 픽셀로 변환한다.
-`TextObject.fontKind = OUTLINE`, `fontId = "jua"`, 원문 `text` 및 미리 계산한
-`contours`, `contourBaseline`, `contourSourceHeight`를 유지한다. 텍스트/폰트/자간을
-수정할 때는 앱의 `textObject`를 다시 호출해 윤곽도 재생성한다. 높이와 원호·배치는
-기존 윤곽으로 다시 계산할 수 있다. 앱 편집 UI 연결은 UI 담당 영역이다.
+`textObject` stores the actual ink height of `자` as its reference height, keeping character height consistent across
+sentences and multiple lines. Spacing in mm is converted to source pixels using that reference height.
+It retains `TextObject.fontKind = OUTLINE`, `fontId = "jua"`, the original `text`, and precomputed
+`contours`, `contourBaseline`, and `contourSourceHeight`. When text/font/spacing changes, call the app's
+`textObject` again to regenerate contours. Height, arc, and placement can be recalculated from existing contours.
+Connecting the app editing UI belongs to the UI owner.
 
-직접 폴리라인을 전달하는 순수 엔진 API:
+Pure engine API accepting polylines directly:
 
 ```kotlin
 val contours = AndroidGlyphOutlines.extract("자수", AndroidGlyphOutlines.jua(context))
@@ -77,56 +75,55 @@ val pattern = LetteringEngine.fromContours(
 )
 ```
 
-`fromContours`의 기본 높이는 전체 윤곽의 잉크 경계 높이를 기준으로 정규화한다.
-여러 문장·여러 줄에서 글자별 크기를 고정하려면 `sourceHeight`를 제공한다.
-`baseline`도 입력 좌표 단위이며 기본 0이다. 수평선은 폭을 기준 크기로 쓰고,
-빈 윤곽/한 점은 무시한다. 닫힌 윤곽은 첫 점을 끝에 반복해야 하며 열린 선은
-강제로 닫지 않는다. 끝점·급격한 모서리는 보존하고 0.05mm 허용 오차 내의
-짧은 공선 구간을 병합한다(`mergeToleranceMm = 0.0`이면 병합 해제).
+By default, `fromContours` normalizes height against the ink-bounds height of all contours.
+Supply `sourceHeight` to keep per-character size fixed across sentences/multiple lines.
+`baseline` also uses input-coordinate units and defaults to 0. A horizontal line uses its width as the reference extent;
+empty contours/single points are ignored. Closed contours must repeat the first point at the end; open lines are not
+forcibly closed. Endpoints and sharp corners are preserved, and short collinear sections within a 0.05mm tolerance
+are merged (`mergeToleranceMm = 0.0` disables merging).
 
-## 공통 스티치·원호 계약
+## Shared stitch and arc contract
 
-- 반환 좌표는 기존 모델과 같은 **0.1mm**, +y 아래. 실제 needle-down 경계의
-  중심을 (0,0)으로 맞춘다(정수 반올림 오차 최대 0.05mm).
-- 러닝 스티치 길이 상한은 기본 **2.5mm**. 정수 좌표로 바꾼 뒤에도 상한을
-  넘지 않도록 분할한다. 최소 설정은 0.2mm이며 꼭짓점·끝점에는 더 짧은 땀이 생긴다.
-- 획/윤곽마다 `JUMP → STITCH`로 시작하고 다음 획 앞에 `TRIM → JUMP`를 넣는다.
-  `trimBetweenStrokes = false`는 trim만 생략한다. 전체 끝은 `END`다.
-  사용 실은 하나이며 빈 텍스트는 실 없이 `END`만 반환한다.
-- `arcDeg`: -360~360도. 0은 직선, 양수는 왼쪽에서 오른쪽으로 기준선 접선이
-  시계 방향으로 돈다. 기준선 폭 W와 각도 a(rad)에 대해 R=W/a,
-  θ=x/R, x′=(R−y)sinθ, y′=R(1−cosθ)+y cosθ를 두 API에서 공유한다.
-  곡선으로 휜 선은 2도 이하 간격으로 샘플링한 뒤 병합·스티치 분할한다.
-  여러 줄 Hershey는 각 줄에 같은 각도를 적용하며 외곽선 API는 전달된 전체
-  레이아웃 폭을 기준으로 휜다.
-- `TextObject`는 `DesignObject`와 같은 edit 패키지에 있고 기존
-  `Transform`/`placedPattern()`/`Project.flatten()`을 그대로 사용한다.
-  배치 변환으로 확대하면 땀 길이도 확대된다. 2.5mm 상한은 localPattern 기준이다.
+- Returned coordinates use **0.1mm**, +y downward, matching the existing model. The actual needle-down bounds
+  are centered at (0,0), with at most 0.05mm integer-rounding error.
+- The default running-stitch maximum length is **2.5mm**. Segments are split to respect it even after conversion
+  to integer coordinates. The minimum setting is 0.2mm; vertices/endpoints may produce shorter stitches.
+- Each stroke/contour begins with `JUMP → STITCH`; `TRIM → JUMP` precedes the next stroke.
+  `trimBetweenStrokes = false` omits only the trim. The complete output ends with `END`.
+  A single thread is used; empty text returns only `END`, with no thread.
+- `arcDeg`: -360~360 degrees. 0 is straight; positive values turn the baseline tangent clockwise from left to right.
+  For baseline width W and angle a(rad), both APIs share R=W/a,
+  θ=x/R, x′=(R−y)sinθ, y′=R(1−cosθ)+y cosθ.
+  Bent curves are sampled at intervals of at most 2 degrees before merging/stitch splitting.
+  Multiline Hershey applies the same angle to each line; the outline API bends using the entire supplied layout width.
+- `TextObject` resides in the same edit package as `DesignObject` and uses the existing
+  `Transform`/`placedPattern()`/`Project.flatten()` unchanged. Scaling up through a placement transform also
+  scales stitch lengths. The 2.5mm limit applies to localPattern.
 
-## 한글 단선 후보 조사 (미포함)
+## Hangul single-line candidate survey (not bundled)
 
-한글은 Hershey Futural에 없다. 아래는 향후 **중심선** 레터링용 후보이며,
-재배포 권한 확인 전에는 이 저장소에 포함하지 않는다. 조사일: 2026-10-22.
+Hershey Futural has no Hangul. The following are candidates for future **centerline** lettering;
+they will not be included in this repository until redistribution rights are confirmed. Survey date: 2026-10-22.
 
-| 후보 | 단선 데이터/범위 | 라이선스·판단 |
+| Candidate | Single-line data/coverage | License and assessment |
 | --- | --- | --- |
-| KORDANSUN / KORFAST / KORSIMPLE_1 | SHX에서 복원한 SVG/Jamo 데이터; 완성형 2,350자와 조합형 11,172자 파생본 | 아카이브가 원본별 라이선스 차이와 재배포 권한 미검증을 명시한다. 공개 다운로드만으로 OSS 재배포를 허용한다고 판단할 수 없다. KORFAST/SIMPLE에는 Choi Samrak 저작권 표기가 있다. 저작권자의 허락 필요. |
-| KOSDICHS | KOSDIC 한글·한자 단선 SHX 및 SVG 파생본 | 아카이브는 한국건설기술연구원 저작권과 자유 이용 안내를 2차 출처로 인용한다. 수정·재배포 조건의 공식 원문을 확인해야 한다. |
-| 자체 제작 자모 조합 중심선 | 초성/중성/종성 경로를 직접 설계하고 조합 | 외부 폰트 경로를 복제하지 않는 자체 데이터에 GPL-3.0-or-later 등 명시적 라이선스를 부여하는 방식. 기존 검증된 폰트가 아니라 후속 구현 대안이다. |
+| KORDANSUN / KORFAST / KORSIMPLE_1 | SVG/Jamo data recovered from SHX; derivatives with 2,350 precomposed and 11,172 compositional syllables | The archive explicitly notes differing source licenses and unverified redistribution rights. Public download availability alone does not establish permission for OSS redistribution. KORFAST/SIMPLE carries a Choi Samrak copyright notice. Permission from the rights holder is required. |
+| KOSDICHS | KOSDIC Hangul/Han single-line SHX and SVG derivatives | The archive cites Korea Institute of Civil Engineering and Building Technology copyright and free-use guidance as 2nd-hand evidence. Official original modification/redistribution terms must be checked. |
+| Original Jamo-combination centerlines | Design and combine initial/medial/final consonant/vowel paths directly | Assign an explicit license such as GPL-3.0-or-later to original data that does not copy external font paths. This is an alternative for future implementation, not an existing verified font. |
 
-출처: [Hangeul Monoline Fonts 원본 README와 Licensing](https://github.com/golanlevin/p5-single-line-font-resources/tree/main/hangeul_monoline_fonts).
-폰트 사용 허가와 변환 도구의 라이선스는 별개이므로 도구의 공개 여부로 데이터의
-재배포 권한을 추정하지 않았다. 현재 한글 지원은 출처가 명확한
-[Google Fonts Jua와 OFL 원문](https://github.com/google/fonts/tree/69d2493f8b919292a9c4b530081934877093c038/ofl/jua)을 사용한다.
+Source: [Hangeul Monoline Fonts original README and Licensing](https://github.com/golanlevin/p5-single-line-font-resources/tree/main/hangeul_monoline_fonts).
+Font-use permission and conversion-tool licenses are separate; data redistribution rights were not inferred from whether
+the tools are public. Current Hangul support uses the clearly sourced
+[Google Fonts Jua and original OFL](https://github.com/google/fonts/tree/69d2493f8b919292a9c4b530081934877093c038/ofl/jua).
 
-## 임의 폰트 품질 분석 API
+## Arbitrary-font quality analysis API
 
-`FontQuality.analyze(glyphContours, heightMm, outline, detailFloorMm)`는 글리프별 외곽선/획을
-분석한다. 바깥 리스트는 독립 글리프, 다음 리스트는 윤곽/획, 안쪽은 점이다.
-입력 좌표는 **이미 현재 글자 높이로 정규화한 mm**이며 재스케일하지 않는다.
-Android 어댑터의 원시 픽셀을 바로 넘기지 말고 기준 높이에 맞춰 mm로 변환한다.
-글리프 사이의 거리는 측정하지 않으므로 샘플 글자를 모두 원점에 놓아도 된다.
-`detailFloorMm`은 스크립트별 세부 표현 하한이다(`FontQuality.detailFloorMm(text)`: 한글 7mm, 그 밖 5mm).
+`FontQuality.analyze(glyphContours, heightMm, outline, detailFloorMm)` analyzes per-glyph outlines/strokes.
+The outer list contains independent glyphs, the next contains contours/strokes, and the inner contains points.
+Input coordinates are **mm already normalized to the current character height**; they are not rescaled.
+Do not pass raw Android-adapter pixels directly; convert them to mm using the reference height.
+Distances between glyphs are not measured, so all sample glyphs may be placed at the origin.
+`detailFloorMm` is the script-specific detail floor (`FontQuality.detailFloorMm(text)`: Hangul 7mm, others 5mm).
 
 ```kotlin
 val report = FontQuality.analyze(
@@ -138,88 +135,88 @@ val report = FontQuality.analyze(
 // report.reasons: 화면에 표시할 한국어 설명
 ```
 
-### 측정 방법 (분석 버전 6, 2026-10-23)
+### Measurement method (analysis version 6, 2026-10-23)
 
-예전 분석은 글자 전체에서 **단 한 곳의 최소값**을 썼다. 그래서 붓 끝처럼 가늘어지는 획 끝, 세리프 끝,
-잉크 트랩, 가변 폰트를 정적으로 만든 폰트의 겹친 윤곽 하나가 결과를 정했다(IBM Plex Sans KR Bold
-181.9mm, Anton 132mm). 획 두께와 획 사이 간격을 같은 1.2mm로 봤고, 단선 폰트의 교차점·끝점 결합은
-간격 0이 되어 권장 높이가 0이나 무한대(빈 값)가 됐다. 지금은 국소 측정값의 하위 10%를 쓴다.
+The previous analysis used **a single global minimum** across the entire character. A tapered brush tip, serif tip,
+ink trap, or overlapping contour in a statically instantiated variable font could therefore determine the result
+(IBM Plex Sans KR Bold 181.9mm, Anton 132mm). Stroke thickness and inter-stroke spacing shared the same 1.2mm criterion;
+single-line font intersections/end joins became gaps of 0, producing recommended heights of 0 or infinity (empty values).
+The current method uses the bottom 10% of local measurements.
 
-- **외곽선 폰트**
-  - 먼저 nonzero 규칙으로 겹친 윤곽을 합친다(`PolygonRegion.fromPaths`). 합친 경계의 고리마다
-    잉크가 왼쪽에 오도록 방향을 맞춘다.
-  - 경계를 글자 높이의 1/200 간격으로 샘플링한다. 샘플마다 안쪽 법선으로 레이를 쏴 처음 만나는
-    경계까지를 **국소 획 두께(잉크)**로, 바깥 법선으로 쏴 같은 글자의 잉크까지를 **국소 간격**으로 본다.
-    간격이 높이의 절반을 넘으면 열린 공간이다.
-  - 획 끝 제외: 레이가 같은 고리에 닿고, 경계를 따라 그 점까지 가는 짧은 쪽 거리로 본 획 끝까지의
-    거리가 주변 획 두께(앞뒤 `2×두께 + 높이의 5%` 안의 최대 두께)의 1.5배보다 작으면 뺀다.
-    붓 끝 테이퍼, 세리프 끝, 획 끝의 모서리가 여기 걸린다.
-  - 모서리 제외: 같은 방식으로, 간격을 닫는 모서리까지의 깊이가 `1.5 × max(획 두께, 간격)`보다 얕으면
-    뺀다. 잉크 트랩과 획이 만나는 쐐기·첨점(Anton a·g의 보울과 기둥 사이)이 여기 걸린다.
-  - 획 두께와 간격 각각 **경계 길이 가중 하위 10% 백분위수**를 쓴다. 분모는 제외되지 않은 모든 경계
-    길이이고, 아무것도 마주 보지 않는 경계는 "제한 없음"으로 센다. 그래서 한 글자의 좁은 곳 몇 군데가
-    폰트 전체를 정하지 않는다.
-  - 기준: 잉크 p10 ≥ **1.0mm**(새틴 최소, PE-Design 실측 1.0–1.6mm), 간격 p10 ≥ **0.6mm**.
-- **단선 폰트**
-  - 획 두께는 실 굵기이므로 제한하지 않는다. 획을 높이의 1/200 간격으로 나누고, 다른 획(또는 같은
-    획의 먼 부분)과 높이의 2.5% 안으로 닿는 점을 접점으로 본다. 접점 묶음에 획 가지가 3개 이상 모이면
-    교차·T·갈래·되짚기 결합부다. 두 획 끝이 이어지는 곳은 결합부가 아니다.
-  - 접점은 측정하지 않는다. 결합부에서 잉크를 따라 `1.5 × 간격` 안에 있는 점도 뺀다.
-  - 점마다 양쪽 법선으로 레이를 쏴 다른 획까지의 거리를 잰다. 높이의 5%보다 가까운 평행 획은 한 선을
-    여러 펜 획으로 굵게 그린 것(Hershey Medium·Bold·Gothic, 높이의 3–4.5%)으로 보고 뺀다.
-  - 마주 보는 점까지 잉크를 따라 `2.6 × 거리` 안에 닿으면 **고리**(원은 π/2), 아니면 **평행 간격**이다.
-  - 기준: 간격 p10 ≥ **1.0mm**, 작은 고리 지름 p10 ≥ **1.5mm**. 분모와 "제한 없음"은 외곽선과 같다.
-- **권장 높이** = 각 백분위수를 기준까지 올리는 높이와 스크립트별 세부 표현 하한(한글 7mm, 영문 5mm) 중
-  가장 큰 값을 0.5mm 단위로 올린 값이다. 측정값이 없어도 하한을 쓰므로 0이나 무한대가 나오지 않는다.
-  모든 거리가 높이에 비례하므로 측정 높이와 무관하다(10mm·20mm 결과가 같다).
-- `limitedBy`(INK/GAP/LOOP/DETAIL)가 결정 요인이고, `inkP10Mm`·`gapP10Mm`·`loopP10Mm`는 분석 높이에서의
-  백분위수(없으면 null)다. `minStrokeMm`은 그중 가장 작은 값이다.
-- 등급: 분석 높이 ≥ 권장 높이면 GOOD, 권장 높이의 절반 이상이면 CAUTION, 그보다 작으면 UNSUITABLE.
-  폰트 배지는 `FontQuality.fontGrade`: 10mm GOOD이면 GOOD, 20mm에서 UNSUITABLE이 아니면 CAUTION,
-  한글이나 영문이 없으면 최대 CAUTION이다. 빈 입력은 UNSUITABLE, 권장 높이는 하한이다.
-- `tightSpots`는 기준보다 좁은 경계 길이를 0.25mm 단위로 센 값이다.
-- 측정 샘플은 스크립트별로 고정한다: 한글 `가나다한글뷁쀍`, 영문 `aegsRBQ&@`
-  (`FontQuality.sample(hangul)`). 한글이 있는 폰트는 한글 샘플, 없으면 영문 샘플이다.
-  폰트에 없는 샘플 글자는 건너뛴다.
-- 버전: `FontQuality.VERSION`(6). 저장된 `<파일>.quality.json`과 `FontQualityKey`에 들어가므로
-  버전이 바뀌면 이미 내려받은 폰트도 다시 분석한다.
-- `stitchCount`, `jumpCount`는 각 글리프에
-  `LetteringEngine.fromContours(..., sourceHeight = heightMm)`를 적용해 합산한다.
-- 이는 기하 휴리스틱이며 원단·실·바늘에 대한 실제 봉제 품질 보증은 아니다.
+- **Outline fonts**
+  - First union overlapping contours using the nonzero rule (`PolygonRegion.fromPaths`). Orient each merged boundary
+    ring so the ink lies to its left.
+  - Sample boundaries at intervals of 1/200 of character height. From each sample, cast an inward-normal ray to the first
+    boundary as **local stroke thickness (ink)**, and an outward-normal ray to ink in the same character as **local gap**.
+    A gap greater than half the height is open space.
+  - Exclude stroke ends: if a ray hits the same ring and the short boundary distance to that point indicates an end
+    distance less than 1.5 times the surrounding stroke thickness (the maximum thickness within
+    `2×두께 + 높이의 5%` in either direction), exclude it. This catches brush-tip taper, serif ends, and stroke-end corners.
+  - Exclude corners similarly: exclude a gap-closing corner if its depth is less than `1.5 × max(획 두께, 간격)`.
+    This catches ink traps, wedges, and cusps where strokes meet (between the bowl and stem of Anton a·g).
+  - Use the **boundary-length-weighted bottom 10% percentile** separately for thickness and gap. The denominator is
+    all non-excluded boundary length; boundaries facing nothing count as “unlimited.” A few narrow places in one
+    character therefore do not determine the entire font.
+  - Criteria: ink p10 ≥ **1.0mm** (minimum satin, PE-Design measurements 1.0–1.6mm), gap p10 ≥ **0.6mm**.
+- **Single-line fonts**
+  - Stroke thickness is thread thickness, so it is not limited. Divide strokes at intervals of 1/200 of the height; points within
+    2.5% of the height of another stroke (or a distant part of the same stroke) are contacts. A contact cluster with at least
+    3 stroke branches is an intersection, T, fork, or retrace junction. Two joined stroke endpoints are not a junction.
+  - Contacts are not measured. Points within `1.5 × 간격` along the ink from a junction are also excluded.
+  - From each point, cast rays along both normals to measure distance to another stroke. Parallel strokes closer than
+    5% of the height are treated as one line drawn bold with multiple pen strokes (Hershey Medium·Bold·Gothic,
+    3–4.5% of the height) and excluded.
+  - If the facing point is reachable along the ink within `2.6 × 거리`, it is a **loop** (a circle is π/2);
+    otherwise it is a **parallel gap**.
+  - Criteria: gap p10 ≥ **1.0mm**, small-loop diameter p10 ≥ **1.5mm**. The denominator and “unlimited” treatment match outlines.
+- **Recommended height** = the larger of the heights needed to raise each percentile to its criterion and the script-specific
+  detail floor (Hangul 7mm, English 5mm), rounded up to 0.5mm increments. The floor applies even with no measurements,
+  preventing 0 or infinity. All distances scale with height, so results are independent of measurement height
+  (10mm·20mm give the same result).
+- `limitedBy` (INK/GAP/LOOP/DETAIL) identifies the limiting factor; `inkP10Mm`·`gapP10Mm`·`loopP10Mm` are percentiles
+  at the analyzed height (null if absent). `minStrokeMm` is the smallest of them.
+- Grades: GOOD when analyzed height ≥ recommended height; CAUTION when at least half the recommended height;
+  UNSUITABLE below that. Font badges use `FontQuality.fontGrade`: GOOD if GOOD at 10mm, CAUTION if not UNSUITABLE
+  at 20mm; absence of Hangul or Latin caps the grade at CAUTION. Empty input is UNSUITABLE, with the floor as recommended height.
+- `tightSpots` counts boundary length narrower than the criterion in 0.25mm units.
+- Measurement samples are fixed by script: Hangul `가나다한글뷁쀍`, Latin `aegsRBQ&@`
+  (`FontQuality.sample(hangul)`). Fonts with Hangul use the Hangul sample; others use Latin. Sample characters absent
+  from the font are skipped.
+- Version: `FontQuality.VERSION` (6). Included in stored `<파일>.quality.json` and `FontQualityKey`, so a version
+  change reanalyzes already-downloaded fonts too.
+- `stitchCount`, `jumpCount` sum `LetteringEngine.fromContours(..., sourceHeight = heightMm)` over each glyph.
+- This is a geometric heuristic, not a guarantee of actual sewing quality for fabric/thread/needle combinations.
 
-`ContourSimplifier.simplify(contoursMm, toleranceMm, minSegmentMm)`는 mm 좌표에
-Douglas-Peucker를 적용한 뒤 짧은 구간을 병합한다. 열린 끝점과 닫힌 윤곽/구멍을
-보존한다. 최소 구간 길이는 목표값이며, 허용 오차 밖으로 급한 모서리를 깎아야
-하는 경우에는 짧은 구간을 남긴다. 큰 허용 오차로도 폐곡선을 선으로 축소하지 않는다.
-각 패스의 값을 0으로 주면 해당 패스를 끌 수 있다.
+`ContourSimplifier.simplify(contoursMm, toleranceMm, minSegmentMm)` applies Douglas–Peucker to mm coordinates,
+then merges short segments. It preserves open endpoints and closed contours/holes. Minimum segment length is a target:
+short sections remain if removing them would cut a sharp corner beyond tolerance. Even large tolerances do not collapse
+closed curves into lines. A value of 0 disables the corresponding pass.
 
-`LetteringEngine.fromContours`에는 기존 인자 뒤에 `simplify: Boolean = true`,
-`minSegmentMm: Double = 0.0`이 추가되었다. `mergeToleranceMm`가 DP 허용 오차이며,
-기본값은 기존과 같은 0.05mm다. `simplify = false`면 두 단순화 패스를 모두 건너뛴다.
-좌표 정수화·땀 길이 상한에 따른 재분할은 그대로 적용한다.
+`LetteringEngine.fromContours` adds `simplify: Boolean = true` and `minSegmentMm: Double = 0.0` after the existing
+arguments. `mergeToleranceMm` is the DP tolerance, retaining the existing 0.05mm default.
+`simplify = false` skips both simplification passes. Integer quantization and resplitting to the maximum stitch length still apply.
 
-## 품질 분석 검증
+## Quality-analysis validation
 
 ```sh
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:assembleDebug
 ```
 
-엔진 단위 테스트는 파서, mm 크기/경계/중심, 자간/줄바꿈, Unicode 대체,
-양·음 원호, 정수화 후 땀 길이, 윤곽·구멍의 분리와 폐쇄, 짧은 구간 병합,
-기준선/기준 높이, TextObject 배치와 PES 저장·재읽기를 검증한다.
-Android 그래픽 API의 실제 글리프 생성은 JVM 엔진 테스트의 대상이 아니다.
-품질 분석 테스트(`FontQualityTest`)는 합성 글리프로 획 두께·틈·구멍 기준, 겹친 윤곽 합치기,
-테이퍼 제외, 한 곳의 얇은 곳, 측정 높이 무관, 단선 교차·T·꼭짓점, 평행 간격·작은 고리, 묶음 획,
-한글 하한, 빈 입력을 검증한다. 범위 회귀로 저장소의 재배포 가능한 폰트를 java.awt로 읽어
-(`AwtGlyphs`, 앱과 같은 기준 글자·샘플) 주아 9–16mm, 고운바탕 15–30mm(잉크 결정),
-Hershey Simplex 4–12mm를 확인한다. 단순화 테스트는 최소 구간 병합, 모서리·폐곡선 보존과
-`fromContours(simplify = false)`를 검증한다.
+Engine unit tests verify the parser; mm size/bounds/center; spacing/line breaks; Unicode substitution; positive/negative arcs;
+stitch length after quantization; contour/hole separation and closure; short-segment merging; baseline/reference height;
+TextObject placement; and PES writing/rereading. Actual glyph generation by Android graphics APIs is outside JVM engine tests.
+Quality-analysis tests (`FontQualityTest`) use synthetic glyphs to check thickness/gap/hole criteria, overlapping-contour unions,
+taper exclusion, a single thin location, independence of measurement height, single-line intersections/Ts/vertices, parallel gaps,
+small loops, bundled strokes, the Hangul floor, and empty input. Range regressions read redistributable repository fonts through
+java.awt (`AwtGlyphs`, using the same reference characters/samples as the app), checking Jua 9–16mm,
+Gowun Batang 15–30mm (ink-limited), and Hershey Simplex 4–12mm. Simplification tests check minimum-segment merging,
+corner/closed-curve preservation, and `fromContours(simplify = false)`.
 
-## 따뜻한 크래프트 레터링 화면
+## Warm Craft lettering screen
 
-`ui/lettering/LetteringScreen.kt`는 `MyembroTheme`의 색·서체·모서리 토큰을 사용한다.
-실 색은 다크 모드에서도 실제 자수 색이 달라지지 않도록 `ui/theme/Thread.kt`의
-고정 실 색 토큰(테라코타 #C4552D·아이보리·세이지·골드)을 사용한다.
+`ui/lettering/LetteringScreen.kt` uses `MyembroTheme` color, typography, and corner tokens.
+Thread colors use fixed tokens from `ui/theme/Thread.kt` (terracotta #C4552D, ivory, sage, gold)
+so actual embroidery colors remain unchanged in dark mode.
 
 ```kotlin
 LetteringScreen(
@@ -235,57 +232,56 @@ LetteringScreen(
 )
 ```
 
-- 후프에는 현재 프로젝트(선택 인자)와 **실제 생성 스티치**를 표시한다. 배경용 꽃이나
-  채움 자수를 임의로 추가하지 않는다. 후프/글자 맞춤을 전환할 수 있다.
-- 문구 입력, 고운바탕·Jua 둥근고딕·Noto Sans KR 카드 3개, 높이·자간 슬라이더와
-  미세 조절 버튼, 왼쪽/가운데/오른쪽 정렬, 곡선 배치 토글·직선/아치/원형·곡률,
-  실 색 칩, 완료/도안에 추가 버튼을 제공한다. 입력과 조절 상태는 구성 변경 시 보존한다. 아래 2차 확장에서는 원호 위/아래·반경으로 제어를 변경했다.
-- 품질 경고와 권장 최소 높이는 추가 버튼 위에 고정한다. 품질 경고는 사용자의 추가를
-  막지 않으며, 지원하지 않는 글자·후프 초과·빈 문구·계산 중인 이전 결과의 추가는 막는다.
-- 글리프 추출·폰트 로딩·품질 분석은 백그라운드에서 수행한다. 입력 변경은 100ms로
-  모으며, 최신 계산이 완료된 결과만 콜백에 전달한다.
-- `onAdd` 결과는 새 UUID, 원문, 폰트 ID, mm 높이·자간·각도, 실, 계산된 폴리라인을
-  가진 편집 가능한 `TextObject`다. 여러 줄 정렬은 윤곽 위치에 반영하고 후프 내 좌우
-  배치는 Transform에 반영한다. 설치 SVG 단선도 열린 폴리라인으로 저장한다.
-- 이 화면은 호스트 콜백을 제공하며 MainActivity/편집기 내비게이션은 수정하지 않는다.
+- The hoop shows the current project (optional argument) and **actual generated stitches**. No decorative background
+  flowers or filled embroidery are invented. Hoop/text fit can be toggled.
+- Provides phrase input; 3 cards for Gowun Batang, rounded Jua, and Noto Sans KR; height/spacing sliders with fine-adjustment
+  buttons; left/center/right alignment; curved-placement toggle, straight/arch/circle and curvature; thread-color chips;
+  and Done/Add to design. Input and adjustment state survive configuration changes. Extension 2 below changes
+  curve controls to upper/lower arc and radius.
+- Quality warnings and recommended minimum height are fixed above the Add button. Warnings do not prevent adding;
+  unsupported characters, hoop overflow, empty text, and stale results still being calculated do.
+- Glyph extraction, font loading, and quality analysis run in the background. Input changes are debounced by 100ms;
+  only the latest completed result is delivered to the callback.
+- `onAdd` returns an editable `TextObject` with a new UUID, original text, font ID, mm height/spacing/angle, thread,
+  and computed polylines. Multiline alignment is encoded in contour positions; left/right placement within the hoop
+  is encoded in Transform. Installed single-line SVGs are also stored as open polylines.
+- This screen provides host callbacks without modifying MainActivity/editor navigation.
 
-검증: `:app:assembleDebug :app:testDebugUnitTest` 통과. API 35 독립 에뮬레이터에서
-라이트·다크 화면, 폰트 전환, 19mm/1.3mm 조절, 오른쪽 정렬, 곡선 토글과 35% 아치,
-세이지 실 선택을 확인했다. 추가 콜백의 `봄날` Jua 결과는 329땀, PES 1,698바이트로
-저장·재읽기 경계 일치를 확인했다. 검증용 Activity/Manifest는 최종 소스에서 제거했다.
+Validation: `:app:assembleDebug :app:testDebugUnitTest` passed. An independent API 35 emulator checked light/dark screens,
+font changes, 19mm/1.3mm adjustments, right alignment, curve toggle with a 35% arch, and sage thread selection.
+The Add callback's Jua `봄날` result was saved as 329 stitches, PES 1,698 bytes; reread bounds matched.
+The validation Activity/Manifest were removed from the final source.
 
-## 레터링 2차: 여러 줄·반경·글자별 실·품질 캐시
+## Lettering extension 2: multiline, radius, per-character thread, quality cache
 
-- 입력은 여러 줄을 지원하며 빈 줄도 줄 간격에 포함한다. UI의 `줄 간격`은
-  **글자 높이 사이의 추가 mm 간격**이다. 기준선 간격은 `heightMm + lineSpacingMm`이며
-  TextObject에는 배수 `lineSpacing = 1 + lineSpacingMm / heightMm`로 저장한다.
-  좌/중/우 정렬은 가장 긴 줄을 기준으로 짧은 줄을 정렬하고, 전체 도안은 기존처럼
-  후프에서 5mm 여백을 두고 좌/중/우로 배치한다.
-- 곡선 토글 아래 `위 원호` / `아래 원호`와 실제 mm `반경`을 제공한다.
-  반경을 지정하면 `arcDeg`의 크기 대신 그 부호만 사용한다(양수 위, 음수 아래).
-  여러 줄은 각자의 기준선에서 같은 반경으로 구부린 뒤 원래 줄 위치로 이동한다.
-  UI는 안쪽 반전이 생기지 않도록 반경을 글자 높이 이상으로 제한한다.
-- 실 색 영역에서 `전체 글자` 또는 개별 글자를 고른 뒤 칩을 누른다. 전체 적용은
-  기존 개별 색을 지운다. 문구 편집 시 바뀌지 않은 앞/뒤 글자의 색은 이동한 위치로
-  보존하고 교체한 중간 글자의 색만 기본값으로 되돌린다.
-- `characterThreads` 키는 NFC, CR/LF, 탭(공백 네 개) 정규화 후 **코드 포인트 인덱스**다.
-  공백·줄바꿈도 인덱스에 포함하므로 UTF-16 인덱스와 혼동하지 않는다.
-  `contourCharacters`는 각 윤곽의 글자 인덱스, `contourBaselines`는 소스 단위 기준선이다.
-  글자의 모든 윤곽에 같은 실을 적용하고 색이 바뀔 때 trim + COLOR_CHANGE + jump를 쓴다.
-  색이 같은 연속 글자는 색 변경 없이 잇고, A색→B색→A색 순서도 유지한다.
-- TextObject와 `.myembro` 코덱에 `lineSpacing`, `alignment`, `arcRadiusMm`,
-  `characterThreads`, `contourCharacters`, `contourBaselines`를 기본값과 함께 추가했다.
-  과거 파일은 기본값으로 읽고, 새 파일은 개별 실·좌표·기준선으로 폰트 없이 재생성한다.
-  외곽선의 텍스트/줄 간격/정렬 변경 시에는 앱에서 윤곽을 다시 생성해야 한다.
-  Hershey 객체는 엔진에서 줄 간격·정렬·반경·글자별 실을 직접 반영한다.
+- Input supports multiple lines; blank lines count toward line spacing. The UI's line-spacing field `줄 간격` means
+  **additional mm spacing between character heights**. Baseline spacing is `heightMm + lineSpacingMm`, stored in
+  TextObject as multiplier `lineSpacing = 1 + lineSpacingMm / heightMm`. Left/center/right alignment aligns shorter
+  lines against the longest line; the entire design remains placed left/center/right within the hoop with a 5mm margin.
+- Below the curve toggle are upper arc `위 원호` / lower arc `아래 원호` and an actual mm radius `반경`.
+  When radius is specified, only the sign of `arcDeg` is used, not its magnitude (positive above, negative below).
+  Each line is bent with the same radius at its own baseline, then moved back to its original line position.
+  The UI limits radius to at least character height to prevent inward inversion.
+- In thread colors, select all characters `전체 글자` or an individual character before tapping a chip. Applying to all
+  clears existing per-character colors. When editing text, unchanged prefix/suffix characters retain colors at their
+  moved positions; only replaced middle characters revert to the default.
+- `characterThreads` keys are **code-point indices** after NFC, CR/LF, and tab (four spaces) normalization.
+  Spaces/line breaks count too; do not confuse them with UTF-16 indices. `contourCharacters` holds each contour's
+  character index, and `contourBaselines` its source-unit baseline. All contours of a character use the same thread;
+  changes use trim + COLOR_CHANGE + jump. Consecutive same-color characters connect without a color change,
+  preserving A→B→A color order too.
+- TextObject and the `.myembro` codec add `lineSpacing`, `alignment`, `arcRadiusMm`, `characterThreads`,
+  `contourCharacters`, and `contourBaselines` with defaults. Older files use defaults; new files regenerate without
+  the font from per-character threads, coordinates, and baselines. Changing outline text/line spacing/alignment requires
+  contour regeneration in the app. Hershey objects directly apply line spacing/alignment/radius/per-character threads in the engine.
 
-### 폰트 다운로드 화면 연결 계약
+### Font download screen connection contract
 
-이 화면은 폰트 다운로드/가져오기 UI를 구현하지 않는다. `onOpenFonts: (() -> Unit)?`가
-`글꼴 더 보기`의 유일한 연결부이며 null이면 버튼은 비활성화한다. 선택한 설치 폰트 ID는
-`initialFontId`로 돌려준다. 콜백의 기존 시그니처는 유지했다.
+This screen does not implement font download/import UI. `onOpenFonts: (() -> Unit)?` is the only connection for
+`글꼴 더 보기`; null disables the button. The selected installed font ID is returned through `initialFontId`.
+The existing callback signature is retained.
 
-카탈로그 카드가 활용할 수 있는 API:
+API available to catalog cards:
 
 ```kotlin
 // 다운로드가 끝나 FontRepository에서 로드할 수 있는 폰트에 사용한다.
@@ -298,12 +294,12 @@ FontQualityBadge(report)  // 등급 + 유한한 권장 최소 높이
 LetteringFontQuality.invalidate(catalogFont.id)
 ```
 
-`LetteringFontQuality.analyze`는 suspend 함수이며 추출과 분석을 Dispatchers.Default에서
-수행한다. 세 번들 카드도 같은 API로 분석 결과를 표시한다. 폰트 SHA-256(번들은 버전),
-추출기 버전, 정규화한 고유 문자 집합, 글자 높이와 외곽선/단선 모드가 캐시 키에 들어간다.
-색·정렬·줄 간격만 바꿔도 품질을 다시 분석하지 않는다.
+`LetteringFontQuality.analyze` is suspending; extraction and analysis run on Dispatchers.Default. The three bundled
+cards also show analysis through this API. Font SHA-256 (version for bundled fonts), extractor version, normalized
+unique-character set, character height, and outline/single-line mode form the cache key. Color/alignment/line-spacing
+changes alone do not trigger quality reanalysis.
 
-Android/카탈로그에 의존하지 않는 엔진 API도 제공한다:
+An engine API independent of Android/the catalog is also provided:
 
 ```kotlin
 val key = FontQualityKey(fontId, revision = "sha256:...:extractor-v2", sampleText = "자수", heightMm = 18.0, outline = true)
@@ -313,16 +309,15 @@ val cached = cache.get(key)
 cache.invalidate(fontId)
 ```
 
-공급자 경로는 캐시 미스에서만 실행된다. 키별 보고서를 최대 64개 유지하는 동기화 LRU이며
-동시 조회는 같은 결과를 사용한다. `getOrAnalyze`는 호출 스레드에서 계산하므로
-백그라운드에서 호출한다. 예외는 캐시하지 않는다. 폰트 바이트가 바뀌면 revision을 바꾸거나
-invalidate를 호출해야 한다. `get`, `put`, `clear`, `size`도 제공한다.
+The provider runs only on a cache miss. This synchronized LRU retains up to 64 keyed reports; concurrent reads
+reuse the same result. `getOrAnalyze` computes on the calling thread, so call it in the background. Exceptions are not
+cached. If font bytes change, change the revision or call invalidate. `get`, `put`, `clear`, and `size` are also available.
 
-## 단선 폰트: 1겹 러닝과 3겹 콩땀
+## Single-line fonts: 1-ply running and 3-ply bean stitches
 
-단선 폰트는 이름 새기기·레드워크에 적합하므로 유지한다. 새 Hershey 텍스트와
-설치 SVG 단선 폰트는 **3겹 콩땀**을 기본으로 사용하며, 레터링 화면의 `선 굵기`에서
-`1겹 러닝`으로 바꿀 수 있다. 외곽선 폰트는 기존 1겹 러닝을 기본으로 유지한다.
+Single-line fonts are retained because they suit names and redwork. New Hershey text and installed single-line SVG
+fonts default to **3-ply bean**, switchable to single running `1겹 러닝` through the lettering screen's
+line-weight control `선 굵기`. Outline fonts retain their existing 1-ply running default.
 
 ```kotlin
 val pattern = LetteringEngine.generate("Name", stitchStyle = StitchStyle.BEAN)
@@ -331,35 +326,35 @@ val singleLine = LetteringEngine.fromContours(
 )
 ```
 
-- `StitchStyle.RUNNING`은 이동 A→B를 한 번 수놓고 `BEAN`은 A→B→A→B로 수놓는다.
-  분할·정수화가 끝난 좌표에서 확장하므로 되돌아가는 땀도 2.5mm 상한을 지킨다.
-  각 획의 첫 고정점은 한 번만 남긴다. 러닝의 needle-down 수 N, 획 수 S라면
-  콩땀은 `S + 3 × (N − S)`개다. 점프·트림·색 변경·END는 복제하지 않는다.
-- 콩땀은 같은 선을 세 번 지나가므로 경계·글자 크기는 그대로다. 선 너비가 세 배로
-  벌어지는 새틴 스티치가 아니며, 실의 겹침으로 더 또렷한 결과를 만든다.
-- `TextObject.singleLine`은 Hershey뿐 아니라 OUTLINE으로 저장된 SVG 단선도 구분한다.
-  `stitchStyle`과 함께 `.myembro`에 직렬화하므로 폰트 없이 같은 땀을 재생성한다.
-  스타일 필드가 없는 과거 파일은 RUNNING으로 읽어 원래 땀 수를 유지한다.
-- 후프 미리보기·실제 스티치 폰트 카드·편집기 캔버스는 **0.4mm** 실 지름을 사용한다.
-  `ThreadRendering.widthPx(unitsToPixels)`는 엔진 0.1mm 좌표의 배율을 받는다.
-  확대 시 너비도 비례하며, 축소 시 보이도록 화면에서는 최소 1dp를 적용한다.
-  네이티브 캔버스가 이미 확대된 경우 반환 너비를 배율로 나눠 paint에 지정한다.
-- 단선 카탈로그/선택 카드에는 `단선 · 이름 새기기·레드워크에 적합` 배지를 표시한다.
-  `SingleLineFontBadge()`를 다른 카드에서도 사용할 수 있다. 실제 스티치 카드가 필요하면
-  suspend `LetteringFontPreview.pattern(context, fontId, text, heightMm, thread)`와
-  `StitchPatternPreview(pattern, modifier)`를 사용한다. 추출은 백그라운드에서 수행한다.
-- 품질 캐시의 `stitchCount`는 폰트 간 비교를 위한 기본 **1겹 러닝** 수를 유지한다.
-  레터링 화면의 실제 땀 수와 콜백 패턴에는 선택한 콩땀/러닝 스타일이 반영된다.
+- `StitchStyle.RUNNING` sews movement A→B once; `BEAN` sews A→B→A→B. Expansion uses coordinates after
+  splitting/quantization, so reverse stitches also obey the 2.5mm maximum. Each stroke's initial anchor remains only once.
+  For running needle-down count N and stroke count S, bean has `S + 3 × (N − S)` stitches.
+  Jumps, trims, color changes, and END are not duplicated.
+- Bean traverses the same line three times, retaining bounds/character size. Unlike satin, it does not spread the line
+  width threefold; overlapping thread produces a more distinct result.
+- `TextObject.singleLine` distinguishes SVG single-line data stored as OUTLINE as well as Hershey. Together with
+  `stitchStyle`, it is serialized in `.myembro` so identical stitches can regenerate without the font.
+  Older files without a style field read as RUNNING, retaining their original stitch counts.
+- Hoop previews, actual-stitch font cards, and the editor canvas use a **0.4mm** thread diameter.
+  `ThreadRendering.widthPx(unitsToPixels)` receives the scale for engine 0.1mm coordinates. Width scales with zoom;
+  the screen uses a minimum 1dp for visibility when zoomed out. If a native canvas is already scaled, divide the returned
+  width by that scale before assigning it to paint.
+- Single-line catalog/selection cards show the “Single-line · suitable for names and redwork” badge
+  `단선 · 이름 새기기·레드워크에 적합`. `SingleLineFontBadge()` is reusable on other cards. For actual-stitch cards,
+  use suspending `LetteringFontPreview.pattern(context, fontId, text, heightMm, thread)` and
+  `StitchPatternPreview(pattern, modifier)`. Extraction runs in the background.
+- The quality cache's `stitchCount` retains the basic **1-ply running** count for font comparisons.
+  The lettering screen's actual stitch count and callback pattern reflect the selected bean/running style.
 
-검증은 콩땀의 앞·뒤·앞 좌표와 땀 수, 원호·다색 윤곽의 분리 및 땀 길이,
-양 스타일의 프로젝트 왕복, 이전 파일 기본값, PES 저장·재읽기 좌표를 포함한다.
+Validation covers bean forward/back/forward coordinates and stitch counts, arc/multicolor-contour separation and stitch
+length, project round trips for both styles, older-file defaults, and PES write/reread coordinates.
 
-## Phase 3b: 기본 새틴 컬럼
+## Phase 3b: basic satin columns
 
-`SatinColumn.generate(leftRail, rightRail, options, thread)`는 순수 Kotlin API다.
-두 폴리라인은 **mm**, +y 아래 좌표이며 출력은 중심 정렬한 0.1mm `EmbPattern`이다.
-같은 방향의 레일을 정규화된 호 길이로 짝짓고, 열린 레일의 방향이 반대면 끝점 거리로
-자동 반전한다. 레일의 점 수나 샘플링 간격이 같을 필요는 없다.
+`SatinColumn.generate(leftRail, rightRail, options, thread)` is a pure Kotlin API.
+Both polylines use **mm**, +y downward; output is a centered 0.1mm `EmbPattern`.
+Rails running in the same direction are paired by normalized arc length; opposing open rails are automatically reversed
+based on endpoint distances. Rails need not have equal point counts or sampling intervals.
 
 ```kotlin
 val options = SatinOptions(
@@ -380,90 +375,88 @@ val lettering = LetteringEngine.generate("Name", stitchStyle = StitchStyle.SATIN
 val editable = TextObject("label", text = "Name", stitchStyle = StitchStyle.SATIN, satinOptions = options)
 ```
 
-- 밀도는 **같은 쪽 레일의 땀 사이 간격**이다. 기본 0.4mm이며 반 주기씩 번갈아
-  찍고 마지막 레일 쌍을 포함한다. 두 레일 중 긴 쪽의 길이로 주기 수를 정하므로
-  짧은 쪽은 더 촘촘해질 수 있다. 10mm 직선·4mm 폭은 본 새틴 52땀이다.
-- 폭은 두 레일 사이 거리이며 `widthMm`은 `strokeToSatin`/레터링의 중심선 오프셋에
-  사용한다. 직접 두 레일을 전달할 때는 그 레일이 폭을 결정한다.
-  당김 보정은 본 새틴의 **양쪽에 각각** 더한다(3mm 폭 + 0.2mm 보정 → 3.4mm).
-- 최대 땀 길이는 기본 7mm, 설정 범위 0.2~7mm다. 폭뿐 아니라 대각 이동까지
-  검사해 긴 땀을 균등 분할하고, 정수화 오차가 상한을 넘으면 다시 나눈다.
-  SATIN에서는 `stitchLengthMm` 대신 `satinOptions.maxStitchLengthMm`를 사용한다.
-- 센터 언더레이는 중심선을 왕복한다. 지그재그 언더레이는 원래 폭의 60%, 기본
-  1.5mm 간격으로 수놓고 중심선으로 복귀한다. 언더레이의 목표 땀 길이는 2.5mm다.
-  두 언더레이와 본 새틴은 한 컬럼 안에서 점프·트림 없이 연결한다.
-  서로 다른 글자 획 사이의 trim/jump 및 글자별 실 변경은 기존 계약을 유지한다.
-- 곡선은 미리 평탄화된 중심선의 법선을 따라 레일을 만든다. 꼭짓점은 miter로
-  연결하고 급각에서 반폭의 2배로 제한한다. 열린 끝은 butt 형태, 닫힌 선은
-  레일의 시작/끝을 닫는다. 복잡한 교차·아주 작은 곡률의 오프셋 겹침 제거,
-  수동 rung 방향 제어·단축 땀·자동 새틴 라우팅은 이 기본 구현에 포함하지 않는다.
-- 단선 SVG는 `TextObject(singleLine = true, fontKind = OUTLINE, contours = ...)`에
-  SATIN과 옵션을 지정한다. `fromContours(..., stitchStyle = SATIN)`도 각 경로를
-  **중심선**으로 해석한다. 외곽선 글꼴의 내부를 채우는 기능은 아니다.
-- 새 텍스트의 기본값은 여전히 BEAN이며 새틴은 명시적으로 선택한다.
-  `TextObject.satinOptions`의 모든 값은 `.myembro`에 보존되고, 이전 파일에는
-  기본 옵션을 적용한다. 이 단계는 엔진 API이며 새틴 조절 UI는 추가하지 않았다.
+- Density is **the distance between stitches on the same rail**. The default is 0.4mm; stitches alternate at half-cycle
+  intervals, including the final rail pair. Cycle count uses the longer rail, so the shorter side may be denser.
+  A 10mm straight column of 4mm width has 52 top satin stitches.
+- Width is the distance between rails; `widthMm` is used for centerline offsets in `strokeToSatin`/lettering.
+  When rails are supplied directly, they determine width. Pull compensation is added **to each side** of the top satin
+  (3mm width + 0.2mm compensation → 3.4mm).
+- Maximum stitch length defaults to 7mm, configurable within 0.2~7mm. Both width and diagonal movement are checked;
+  long stitches are split evenly and split again if quantization error exceeds the limit.
+  SATIN uses `satinOptions.maxStitchLengthMm` instead of `stitchLengthMm`.
+- Center underlay traverses the centerline out and back. Zigzag underlay uses 60% of the original width with default
+  spacing 1.5mm, returning to the centerline. Underlay target stitch length is 2.5mm. Both underlays and top satin connect
+  within a column without jumps/trims. Existing trim/jump and per-character thread-change contracts between separate
+  character strokes remain unchanged.
+- Curved rails follow normals to a preflattened centerline. Vertices use miter joins, limited to 2 times the half-width at
+  acute angles. Open ends use butt caps; closed paths close each rail's start/end. This basic implementation does not
+  include offset-overlap removal at complex intersections/very tight curvature, manual rung direction, short stitches,
+  or automatic satin routing.
+- Single-line SVGs specify SATIN/options on `TextObject(singleLine = true, fontKind = OUTLINE, contours = ...)`.
+  `fromContours(..., stitchStyle = SATIN)` also interprets each path as a **centerline**. This does not fill outline-font interiors.
+- The default for new text remains BEAN; satin is explicitly selected. All `TextObject.satinOptions` values are retained
+  in `.myembro`; older files receive defaults. This stage is an engine API and adds no satin-adjustment UI.
 
-개념 참고: [Ink/Stitch 공식 새틴 컬럼 문서](https://inkstitch.org/docs/stitches/satin-column/).
-출처·라이선스 및 독립 구현 범위는 `THIRD_PARTY_NOTICES.md`에 기록했다.
+Conceptual reference: [official Ink/Stitch satin column documentation](https://inkstitch.org/docs/stitches/satin-column/).
+Sources, licensing, and the scope of the independent implementation are recorded in `THIRD_PARTY_NOTICES.md`.
 
-### SA431 소형 후프 검증
+### SA431 small-hoop validation
 
-후프는 크기를 하드코딩하지 않고 `HoopSpec`의 실제 좌표를 사용한다. SA431의
-약 60×20mm 가로 배치(`HoopSpec("SA431", 600, 200)`)와 20×60mm 세로 배치를
-테스트했다. 미리보기의 점선 사각형은 실제 봉제 영역이며 비율을 유지한다.
-글자 맞춤 확대는 좌/우 배치된 글자의 경계 중심도 따라가므로 화면 밖으로 밀리지 않는다.
-후프 초과 판단은 표시 배율과 무관하게 실제 스티치 좌표로 수행한다.
+Hoops use actual `HoopSpec` coordinates without hardcoded sizes. SA431's approximately 60×20mm landscape placement
+(`HoopSpec("SA431", 600, 200)`) and 20×60mm portrait placement were tested. The dashed preview rectangle is the actual
+sewing area and preserves aspect ratio. Text-fit zoom also follows the bounds center of left/right-placed text, preventing
+it from moving offscreen. Hoop overflow is checked from actual stitch coordinates, independent of display scale.
 
-높이 10mm, 두께 0.4mm 합성 글리프는 소형 후프 안에 들어가도 품질 UNSUITABLE과
-권장 높이 25mm를 그대로 보고한다. 권장 높이를 후프 크기에 맞춰 낮추지 않는다.
-25mm로 키우면 가로 배치의 20mm 높이를 초과하며, 세로 배치에서는 들어가는 것도
-검증했다. 권장 높이 경고는 품질 기준이며 실제 후프 초과 안내와 별도로 표시한다.
+A synthetic glyph of height 10mm and thickness 0.4mm still reports UNSUITABLE and recommended height 25mm even
+when it fits the small hoop. Recommended height is not reduced to fit hoop dimensions. At 25mm, it exceeds the
+landscape hoop's 20mm height but fits the portrait hoop; both were verified. Recommended-height warnings are quality
+criteria, displayed separately from actual hoop-overflow guidance.
 
-## 폰트 라이브러리 연결
+## Font library integration
 
-`글꼴 더 보기`는 `MainActivity`에서 `FontLibraryScreen(onBack, onPick)`을 레터링 화면 **위에 겹쳐**
-연다(레터링 입력 상태 유지). `onPick`의 ID는 `initialFontId`로 돌아간다. 카탈로그 ID 또는
-사용자 폰트 `user:<uuid>`이며, `LetteringRenderer.loadFont`는 `FontRepository.find` 다음에
-`FontRepository.userFont`를 찾는다. 사용자 폰트의 캐시 revision은 파일 크기·수정 시각이다.
-다운로드·삭제·사용자 폰트 삭제 시 `FontQualityCache.Shared.invalidate(id)`를 호출한다.
+`글꼴 더 보기` opens `FontLibraryScreen(onBack, onPick)` in `MainActivity` **over the lettering screen**,
+preserving lettering input state. `onPick` returns the ID through `initialFontId`: a catalog ID or user font
+`user:<uuid>`. `LetteringRenderer.loadFont` checks `FontRepository.find` then `FontRepository.userFont`.
+User-font cache revision uses file size/modification time. Download/deletion/user-font deletion calls
+`FontQualityCache.Shared.invalidate(id)`.
 
-- 카탈로그: `assets/fonts/catalog.json` 102종(한글 외곽선 30, 영문 외곽선 32, 단선 40), 고정 커밋 URL,
-  다운로드 바이트의 SHA-256·크기를 검증한 뒤에만 저장하고 라이선스 원문을 `<id>.LICENSE.txt`로
-  함께 저장한다(https만, 32MB 상한). 라이선스는 OFL-1.1·Apache-2.0·Hershey만 쓴다.
-  가변 폰트는 업스트림의 정적 Regular/Bold를 쓴다. Noto Serif KR은 noto-cjk의 KR 서브셋 OTF다.
-  번들된 주아·Noto Sans KR·고운바탕은 넣지 않는다.
-  - `scripts`: 폰트 cmap을 직접 읽어 정한다. 한글은 완성형 2,350자 이상, 영문은 A–Z·a–z가 모두 있을 때다.
-  - `style: "script"`: 필기체 필터에 쓴다. `thinStroke: true`(Sacramento)는 "가는 선 · 러닝 스티치용" 배지를 단다.
-  - `recommendedMinHeightMm`·`qualityGrade`: 모든 폰트에 있다. 다운로드 전 카드에 보이고, 설치 후에는
-    앱이 같은 방식으로 분석한 전체 보고서로 바뀐다. 생성: 엔진 테스트 `CatalogQualityTool`이
-    고정 URL에서 내려받아(sha256 검증, `MYEMBRO_FONT_CACHE`에 캐시) java.awt 윤곽으로 분석하고
-    두 필드만 다시 쓴다.
+- Catalog: `assets/fonts/catalog.json` contains 102 fonts (30 Hangul outlines, 32 Latin outlines, 40 single-line),
+  pinned commit URLs, and storage only after downloaded bytes pass SHA-256/size checks. Original licenses are saved
+  alongside as `<id>.LICENSE.txt` (https only, 32MB cap). Only OFL-1.1, Apache-2.0, and Hershey licenses are used.
+  Variable fonts use upstream static Regular/Bold versions. Noto Serif KR is noto-cjk's KR-subset OTF.
+  Bundled Jua, Noto Sans KR, and Gowun Batang are excluded.
+  - `scripts`: determined by reading the font cmap directly. Hangul requires at least 2,350 precomposed syllables;
+    Latin requires all A–Z·a–z.
+  - `style: "script"`: used by the script filter. `thinStroke: true` (Sacramento) adds a “Thin strokes · for running stitch” badge.
+  - `recommendedMinHeightMm`·`qualityGrade`: present for every font. Shown on cards before download; after installation,
+    replaced by a full report analyzed the same way in the app. Generation: the engine test `CatalogQualityTool` downloads
+    from pinned URLs (sha256 checked, cached in `MYEMBRO_FONT_CACHE`), analyzes java.awt outlines, and rewrites only those fields.
     `MYEMBRO_FONT_CACHE=/tmp/fonts ./gradlew :engine:test --tests '*CatalogQualityTool*' --rerun`
-  - 외곽선 폰트의 권장 높이가 25mm를 넘으면 "큰 글자 전용" 배지를 단다.
-- 글리프 유무: `Paint.hasGlyph`는 시스템 대체 글꼴까지 세므로, 영문 전용 폰트도 한글이 있다고
-  답한다. 그래서 분석이 대체 글꼴의 한글로 측정되었고, 영문 폰트가 모두 0mm·부적합으로 나왔다.
-  지금은 내려받은 폰트와 내 폰트의 TTF/OTF `cmap`을 `FontCmap`으로 직접 읽는다. 이 결과를
-  품질 분석, 기준 글자(자/H), 레터링의 "지원하지 않는 글자" 판정에 쓴다.
-- 내 폰트: SAF로 TTF/OTF/SVG를 `filesDir/fonts/user/`에 복사하고 파싱·글리프 검사 후
-  스크립트 샘플의 10/20mm 품질 결과를 `<파일>.quality.json`에 저장한다.
-- 품질: 앱의 `FontQualityGateway`는 샘플 선택과 스크립트 하한만 정하고 엔진 `FontQuality.analyze`를
-  그대로 쓴다(위 "측정 방법").
-- 카탈로그 102종 결과(10mm 기준 p10, 2026-10-23): 굵은 고딕·디스플레이 Anton 7.5, Bebas Neue 8.5,
-  Alfa Slab One 6, Permanent Marker 7.5mm. 한글 Regular 고딕은 가로획이 10mm에서 0.55–0.65mm라
-  16–19.5mm(나눔고딕 16.5, IBM Plex Sans KR 17, 고운돋움 19.5)다. 검은고딕·도현·Gothic A1 Bold·IBM Plex Sans KR Bold는
-  자모 사이가 0.4–0.5mm로 붙어 간격이 정한다(12–15.5mm). 굵은 필기체 Pacifico 9, Lobster 16,
-  헤어라인 필기체 Allura 35, Great Vibes 49.5, Pinyon Script 56.5mm. 명조 Regular 15.5–28.5mm(함렛 15.5, Noto Serif KR 23, 나눔명조 28.5).
-  단선은 Hershey 5–7.5, EMS 5–13mm다.
-- PE-Design 비교: PE-Design 레터링 실측(약 10mm 글자) 새틴 폭은 블록·세리프·고딕 p10 0.9–1.3mm,
-  중앙값 1.5–1.75mm다. 필기체·작은 글자는 p10 0.6–0.75mm까지 내려간다. 잉크 기준 1.0mm는 블록체에
-  맞고, 필기체에는 다소 보수적이다.
+  - Outline fonts with recommended height above 25mm receive a “Large lettering only” badge.
+- Glyph availability: `Paint.hasGlyph` counts system fallback fonts, so even Latin-only fonts claim Hangul support.
+  Analysis therefore measured fallback Hangul, giving all Latin fonts 0mm/unsuitable results. Downloaded and user fonts'
+  TTF/OTF `cmap` is now read directly with `FontCmap`. The result is used for quality analysis, the reference character
+  (ja/H), and lettering's “unsupported characters” decision.
+- User fonts: copy TTF/OTF/SVG through SAF to `filesDir/fonts/user/`; after parsing/glyph checks, store script-sample
+  quality results at 10/20mm in `<파일>.quality.json`.
+- Quality: the app's `FontQualityGateway` sets only sample selection and script floors, using the engine's
+  `FontQuality.analyze` unchanged (see “Measurement method” above).
+- Catalog results for 102 fonts (p10 at 10mm, 2026-10-23): bold sans/display Anton 7.5, Bebas Neue 8.5,
+  Alfa Slab One 6, Permanent Marker 7.5mm. Regular Hangul sans horizontal strokes are 0.55–0.65mm at 10mm,
+  yielding 16–19.5mm (Nanum Gothic 16.5, IBM Plex Sans KR 17, Gowun Dodum 19.5).
+  Black Han Sans, Do Hyeon, Gothic A1 Bold, and IBM Plex Sans KR Bold have gaps of 0.4–0.5mm between Jamo,
+  making gaps the limit (12–15.5mm). Bold scripts: Pacifico 9, Lobster 16; hairline scripts: Allura 35,
+  Great Vibes 49.5, Pinyon Script 56.5mm. Regular serif: 15.5–28.5mm (Hahmlet 15.5, Noto Serif KR 23, Nanum Myeongjo 28.5).
+  Single-line: Hershey 5–7.5, EMS 5–13mm.
+- PE-Design comparison: measured PE-Design lettering (characters approximately 10mm high) has satin-width p10
+  0.9–1.3mm and median 1.5–1.75mm for block/serif/sans fonts. Script/small text reaches p10 0.6–0.75mm.
+  The 1.0mm ink criterion suits block lettering and is somewhat conservative for scripts.
 
-## 윤곽 글자 내부 채우기 (2026-10-23)
+## Filling outline-character interiors (2026-10-23)
 
-레터링 화면과 편집기 글자 속성에 **외곽선 / 채우기(태타미) / 새틴**을 제공한다.
-단선 글꼴은 기존 1겹 러닝 / 3겹 콩땀 / 폭을 지정하는 새틴을 사용하며 기본값은 콩땀이다.
-윤곽 글꼴도 기본값은 기존 외곽선이며 채우기는 명시적으로 선택한다.
+The lettering screen and editor text properties provide **Outline / Fill (tatami) / Satin**.
+Single-line fonts use existing 1-ply running / 3-ply bean / satin with specified width, defaulting to bean.
+Outline fonts also retain their existing outline default; fill is explicitly selected.
 
 ```kotlin
 val text = TextObject(
@@ -480,45 +473,45 @@ val text = TextObject(
 val filled = OutlineFill.generate(glyphContoursMm, FillOptions())
 ```
 
-- 글자별 경로에 짝수–홀수 규칙을 적용한다. 홀의 감김 방향과 무관하며 중첩된 섬도 보존한다.
-  JTS의 기존 `PolygonRegion`과 `engine/digitizing/TatamiFill`을 재사용한다.
-  당김 보정은 바깥 경계를 확장하며 원래 홀 영역은 제외해 작은 홀이 닫히지 않도록 한다.
-- 기본 땀 간격은 0.4mm, 태타미 목표 땀 길이는 3.5mm다. 각도는 +y 아래 좌표에서
-  시계 방향이다. 윤곽 언더레이는 기본 켜짐이며 원래 경계에서 0.3mm 안쪽을 수놓는다.
-  좁아져 사라지는 언더레이는 원래 경계를 사용한다. 테두리는 없음·러닝·콩땀을 선택한다.
-- 글자 사이는 trim + jump, 실이 바뀌면 COLOR_CHANGE도 넣는다. 글자 내부에서는
-  먼저 영역 안의 직선 연결을 시도하고, 홀을 가로지르면 보이는 경계의 짧은 우회 경로로
-  러닝한다. 연결할 수 없는 분리 영역에서는 jump한다. 전역 최적 라우팅은 아니다.
-- 로컬 패턴의 **실제로 이동하는 needle-down 땀은 정수화 후 0.3~7mm**다.
-  짧은 구간은 합치고 긴 구간은 나눈다. 안전하게 합칠 수 없는 작은 모서리는 jump로
-  이동한다. 0.1mm 좌표 정수화에 따른 경계 오차는 최대 약 0.075mm로 검사한다.
-  다른 스티치와 마찬가지로 편집기 Transform으로 확대하면 땀 길이도 확대된다.
-- 윤곽 새틴은 `FontQuality`의 최소 획 두께 0.6~4mm와 선택 각도에서의 실제 가로지를
-  거리를 함께 검사한다. 가능한 글리프는 교대 지그재그로 채우고, 넓거나 복잡한 글리프는
-  태타미로 전환해 안내한다. 한 글리프의 획을 자동 분할하는 완전한 새틴 디지타이저는 아니다.
-  `fromContours(..., outline = true, stitchStyle = SATIN)`이 이 모드이며,
-  `outline = false`의 기존 단선 오프셋 새틴 API는 유지한다.
-- `FillOptions`와 모드는 `.myembro`에 저장된다. 이전 파일은 기본 옵션으로 읽으며
-  기존 외곽선·콩땀 선택을 유지한다. 글자 소유 인덱스가 없는 직접 API 입력은 한 글리프로
-  취급하므로 글자 사이 trim을 원하면 `contourCharacters`를 전달한다.
-- 작은 채우기 글자는 FontQuality의 권장 높이와 실용 최소 높이 6mm 중 큰 값으로 경고한다.
-  경고는 추가를 막지 않는다. 편집기 속성에서도 저장된 윤곽으로 분석하므로 원본 폰트가
-  필요 없다. 권장 높이는 항상 유한하다.
-  높이·권장 높이·폰트 카드·후프 치수는 공용 `Dimensions`로 mm와 인치를 병기한다.
-- 편집기 속성의 모드·변환 변경은 백그라운드에서 패턴을 계산한 뒤 한 번의 실행 취소
-  단계로 적용한다. 세부 채우기 설정은 동일한 레터링 화면으로 연결한다.
+- Applies the even–odd rule to each character's paths, independent of hole winding, preserving nested islands too.
+  Reuses JTS's existing `PolygonRegion` and `engine/digitizing/TatamiFill`. Pull compensation expands the outer
+  boundary but excludes original hole areas so small holes do not close.
+- Default stitch spacing is 0.4mm; tatami target stitch length is 3.5mm. Angles run clockwise with +y downward.
+  Contour underlay is enabled by default, sewing 0.3mm inside the original boundary. Underlay that disappears in narrow
+  sections uses the original boundary. Border choices are none/running/bean.
+- Between characters: trim + jump, also COLOR_CHANGE when thread changes. Within a character, first try a straight
+  connection inside the region; if it crosses a hole, run along a short detour on the visible boundary. Jump between
+  disconnected regions that cannot be joined. This is not globally optimal routing.
+- Local-pattern **actual moving needle-down stitches are 0.3~7mm after quantization**. Short sections merge and long
+  ones split. Small corners that cannot safely merge are traversed by jump. Boundary error from integer 0.1mm coordinates
+  is checked with a maximum of approximately 0.075mm. As with other stitches, enlarging through the editor Transform
+  also enlarges stitch lengths.
+- Outline satin checks both `FontQuality` minimum stroke thickness 0.6~4mm and actual crossing distance at the selected
+  angle. Suitable glyphs receive alternating zigzags; wide or complex glyphs fall back to tatami with guidance.
+  This is not a complete satin digitizer that automatically decomposes a glyph's strokes.
+  `fromContours(..., outline = true, stitchStyle = SATIN)` selects this mode; the existing single-line offset-satin API
+  with `outline = false` remains.
+- `FillOptions` and mode are stored in `.myembro`. Older files use default options and retain existing outline/bean
+  choices. Direct API input without character-owner indices is treated as one glyph; supply `contourCharacters`
+  if inter-character trims are required.
+- Small filled text is warned against using the greater of FontQuality's recommended height and a practical minimum
+  of 6mm. The warning does not block adding. Editor properties also analyze stored contours, requiring no original font.
+  Recommended height is always finite. Heights, recommended heights, font cards, and hoop dimensions show mm and inches
+  together using shared `Dimensions`.
+- Editor-property mode/transform changes calculate patterns in the background, then apply them as a single undo step.
+  Detailed fill settings lead to the same lettering screen.
 
-검증: 합성 `ㅁ`·원형 `ㅇ`·두 홀 `B`, 반전 방향과 중첩 섬, 0/37/90도,
-밀도·언더레이·테두리, 양자화 후 땀 길이, 내부 연결, 다색·프로젝트·PES 왕복을 테스트했다.
-독립 API 35 에뮬레이터에서 실제 Jua `ㅇㅁB`는 60×20mm SA431 안에 들어갔으며
-1,025땀·7점프, 경계 33.7×11.2mm였다. `ㅇ` 중앙의 빈 공간과 PES 재읽기 경계/땀 수
-일치를 확인했다. 검증용 Activity/Manifest는 최종 소스에서 제거했다.
+Validation tested synthetic `ㅁ`, circular `ㅇ`, two-hole `B`, reversed winding, nested islands, 0/37/90 degrees,
+density/underlay/borders, stitch length after quantization, internal connections, multicolor/project/PES round trips.
+On an independent API 35 emulator, actual Jua `ㅇㅁB` fit within 60×20mm SA431: 1,025 stitches, 7 jumps,
+bounds 33.7×11.2mm. The empty center of `ㅇ` and reread PES bounds/stitch-count agreement were confirmed.
+The validation Activity/Manifest were removed from final source.
 
-## 획 방향 자동 채우기 — 2단계
+## Automatic stroke-following fill — stage 2
 
-새 `FillOptions()`는 `strategy = FillStrategy.AUTO`, `autoDensity = true`다.
-앞 절의 고정 각도 태타미/좁은 글리프 새틴 판정 대신 실제 획의 중심선과 양쪽 레일을
-추출해 채운다. `FillStrategy.TATAMI`를 고르면 기존 고정 각도 채우기를 사용할 수 있다.
+New `FillOptions()` uses `strategy = FillStrategy.AUTO`, `autoDensity = true`. Instead of the preceding fixed-angle
+tatami/narrow-glyph satin decision, it extracts actual stroke centerlines and paired rails for filling.
+Choosing `FillStrategy.TATAMI` retains the existing fixed-angle fill.
 
 ```kotlin
 val options = FillOptions(strategy = FillStrategy.AUTO, autoDensity = true)
@@ -527,143 +520,143 @@ val columns = OutlineColumns.extract(glyphContoursMm) // 중심선·짝지은 �
 // TextObject / fromContours도 같은 FillOptions를 사용한다.
 ```
 
-- `OutlineColumns`는 짝수–홀수 영역을 긴 변 최대 약 384셀, 최소 0.06mm 셀로 샘플링한다.
-  Guo–Hall의 연결 보존 세선화 수식을 독립 구현해 근사 중심선을 얻고, 짧은 가지를
-  정리한 뒤 교차점에서 방향이 이어지는 획을 연결한다. X의 대각 획은 서로 겹칠 수 있다.
-- 중심선 접선에 수직인 선과 실제 윤곽의 교차점을 짝지어 레일을 얻는다. 홀을 건너뛴
-  다른 영역의 경계는 선택하지 않는다. H/X 접합점의 가로지를 길이가 갑자기 커지는
-  경우 해당 기둥의 대표 폭으로 제한하고 다른 기둥이 접합부를 덮도록 한다.
-  두 레일은 같은 중심선 구간으로 보간해 둥근 끝에서 짝이 어긋나지 않게 한다.
-- 폭 약 **7mm 이하**는 일반 새틴, 넓은 기둥은 **최대 4mm**의 엇갈린 분할 새틴이다.
-  분할 위치를 네 단계로 이동해 일직선 분할 자국을 피한다. 땀 방향은 획에 수직이며,
-  긴 땀·짧은 모서리 처리와 홀 안전 검사는 양자화 후에도 적용한다.
-- 같은 쪽 바늘 간격은 기본 **0.40mm**다. 요청한 글자 높이가 **7mm 미만**이면
-  자동 간격을 **0.60mm 이상**으로 완화한다. 높이는 TextObject의 기준 높이를 사용한다.
-  직접 `OutlineFill.generate`에서 높이를 생략하면 윤곽의 잉크 높이를 사용한다.
-  UI에서 간격을 직접 바꾸면 자동 완화를 끄며, 스위치로 다시 켤 수 있다.
-- 언더레이는 좁은 새틴의 **센터런**, 넓은 기둥의 **가장자리 런 + 센터런**이다.
-  언더레이와 테두리 켜기/끄기·콩땀 테두리 선택은 유지한다.
-- 추출된 기둥이 덮지 못한 부분만 태타미로 보완하며, 복잡한 윤곽에서 보완 영역이
-  크면 안내한다. 근사 래스터 중심선이므로 가는 장식·급한 분기·복잡한 서체의 모든
-  기둥을 전문 디지타이저처럼 최적화하는 기능은 아니다.
-- 기존 프로젝트에서 `strategy`/`autoDensity`가 없으면 **TATAMI / false**로 읽어
-  기존 봉제 모양을 유지한다. 새 파일은 두 설정을 저장한다. 단선 폰트의 기본 콩땀은
-  그대로이며, 일반 `SatinColumn` 두 레일 API의 기존 동작도 유지한다.
+- `OutlineColumns` samples even–odd regions with at most approximately 384 cells on the long side and a minimum
+  0.06mm cell. An independent implementation of Guo–Hall topology-preserving thinning obtains approximate centerlines;
+  short branches are cleaned up, then directionally continuous strokes are joined at intersections. X diagonals can overlap.
+- Rails pair intersections of lines perpendicular to centerline tangents with actual contours. Boundaries in separate
+  regions across a hole are not selected. When crossing lengths suddenly increase at H/X junctions, they are limited to
+  the column's representative width, letting another column cover the junction. Both rails are interpolated over the same
+  centerline section to keep pairing aligned at rounded ends.
+- Widths approximately **7mm or less** use ordinary satin; wider columns use staggered split satin with **maximum 4mm**
+  stitches. Split positions shift through four phases to avoid a straight split seam. Stitch direction is perpendicular
+  to the stroke; long-stitch/short-corner handling and hole safety checks also apply after quantization.
+- Same-side needle spacing defaults to **0.40mm**. For requested character heights **below 7mm**, automatic spacing
+  relaxes to **at least 0.60mm**. Height uses TextObject's reference height; direct `OutlineFill.generate` calls without
+  height use contour ink height. Manually changing spacing in the UI disables automatic relaxation; the switch reenables it.
+- Underlay is **center run** for narrow satin and **edge run + center run** for wide columns.
+  Underlay/border toggles and bean-border selection remain available.
+- Only areas not covered by extracted columns receive tatami supplementation; guidance is shown when complex contours
+  leave a large supplemented area. These are approximate raster centerlines, not professional-digitizer optimization
+  of every column in delicate decorations, sharp branches, or complex typefaces.
+- Existing projects without `strategy`/`autoDensity` read as **TATAMI / false** to preserve previous sewing appearance.
+  New files store both settings. Single-line fonts retain default bean, and the existing general `SatinColumn` two-rail
+  API behavior remains unchanged.
 
-검증은 합성 직선·회전 획·원형 홀·X 교차, 곡선에 수직인 바늘 방향, 레일 짝 보존,
-7mm 폭 경계, 0.4/0.6mm 높이 경계, 4mm 분할과 엇갈림, 언더레이, 과거 프로젝트 및
-PES 왕복을 포함한다. 모든 저장소 테스트 입력은 합성 도형이다.
-사용자가 제공한 참고 자료는 로컬에서만 읽고, 공개 라이선스 번들 폰트의 같은 글자를
-동일한 실제 높이로 생성해 일반·소형·대형의 방향과 분할을 시각 비교했다. 서로 다른
-서체의 모양·획 두께 차이는 구분해 판단했다. 참고 파일·추출 좌표·비교 이미지·분석
-스크립트는 저장소, 앱 리소스, 테스트 픽스처에 포함하지 않았다.
+Validation includes synthetic straight/rotated strokes, circular holes, X intersections, needle direction perpendicular
+to curves, preserved rail pairing, the 7mm width boundary, 0.4/0.6mm height boundary, 4mm splitting/staggering,
+underlay, older projects, and PES round trips. All repository test inputs are synthetic shapes.
+User-provided reference material was read locally only. The same characters from publicly licensed bundled fonts were
+generated at the same actual heights, visually comparing direction and splitting for ordinary/small/large sizes.
+Differences in shape/stroke thickness between typefaces were considered separately. Reference files, extracted coordinates,
+comparison images, and analysis scripts were not included in the repository, app resources, or test fixtures.
 
-## 실 굵기: 40wt / 50wt / 60wt
+## Thread weight: 40wt / 50wt / 60wt
 
-레터링과 편집기의 글자 속성에서 선택한다. 기본은 40wt이며, 새틴·분할 새틴·태타미의
-자동 간격에 적용한다. 러닝·콩땀의 경로와 밑실 설정은 바꾸지 않는다. 아래 값은 실의
-실측 지름이 아닌 **디지타이징 프리셋**이다. 실 재질·원단·바늘·장력에 따라 달라진다.
+Selected in lettering and editor text properties. The default is 40wt, applied to automatic spacing for satin/split satin/tatami.
+Running/bean paths and bobbin settings are unchanged. Values below are **digitizing presets**, not measured thread diameters;
+they vary with thread material, fabric, needle, and tension.
 
-| 윗실 | 높이 7mm 이상 같은 쪽 간격 | 높이 7mm 미만 | 품질 기준 배율 | 획 두께 / 외곽선 간격 / 단선 간격 / 고리(추정) | 채우기 높이 하한(추정) |
+| Top thread | Same-side spacing at height 7mm or above | Below 7mm | Quality-criterion multiplier | Stroke thickness / outline gap / single-line gap / loop (estimated) | Fill-height floor (estimated) |
 |---|---:|---:|---:|---:|---:|
 | 40wt | 0.40mm | 0.60mm | 1.000 | 1.00 / 0.60 / 1.00 / 1.50mm | 6.00mm |
 | 50wt | 0.35mm | 0.50mm | 0.875 | 0.875 / 0.525 / 0.875 / 1.31mm | 5.25mm |
 | 60wt | 0.30mm | 0.30mm | 0.750 | 0.75 / 0.45 / 0.75 / 1.125mm | 4.50mm |
 
-근거 확인일: 2026-10-23.
+Evidence checked: 2026-10-23.
 
-- **확인**: [Madeira 공식 Digitizing Density Guide](https://www.madeirausa.com/_resources/common/userfiles/file/Digitizing%20Density%20Guide.pdf)는
-  Classic/Polyneon 40에 0.40mm, 60에 0.35mm를 제시한다. 수치는 소재와 효과에 따라
-  달라지는 대략적 지침이다. FS 50의 0.35mm도 있지만 특정 금속사 제품의 값이다.
-- **미확인**: 이 앱의 60wt **0.30mm**는 사용자 요청 기본값이며, 위 제조사 표의
-  0.35mm와 다르다. 모든 60wt 실·원단에 적합하다는 보편적 근거와 실물 봉제 검증은
-  미확인이다. 일반적인 50wt의 0.35mm는 중간 프리셋이며 FS 50 지침의 보편화는
-  미확인이다. 작은 글자의 40wt 0.60mm/50wt 0.50mm와 7mm 분기점도 앱 정책으로,
-  제조사 보편 권장 수치는 미확인이다.
-- **확인**: [Madeira의 60wt 안내](https://www.madeirausa.com/resources/embroidering-with-60-weight-thread/)는
-  65 바늘과 더 조밀한 디지타이징을 권장하며, 블록체 기준 40wt는 6–7mm,
-  60wt는 3mm 글자 예를 설명한다. [Classic 제품 안내](https://www.madeira.co.uk/embroidery-threads/classic/)의
-  60wt 바늘 범위는 60/8–65/9다. 3mm 가능성은 모든 폰트(특히 복잡한 한글)에 대한
-  보장이 아니므로 앱 높이 하한을 그대로 3mm로 낮추지는 않는다.
-- **미확인**: 품질 기준과 높이 하한은 40wt 기준값(위 "국소 백분위" 절의 획 두께 1.0mm,
-  외곽선 간격 0.6mm, 단선 간격 1.0mm, 고리 1.5mm, 채우기 하한 6mm)에
-  `ThreadWeight.featureScale = 일반 간격 / 0.40`을 곱한 보수적 휴리스틱이다.
-  50/60wt 값을 직접 검증한 제조사 규정이나 실물 봉제 결과는 미확인이다.
-  측정값(하위 10% 백분위)은 실 굵기와 무관하고, 권장 높이·등급·tightSpots만 바뀐다.
-  글자 세부 표현 하한(한글 7mm·영문 5mm)은 실 굵기로 낮추지 않는다.
-  (2026-10-23 통합: 이 절은 처음 옛 최소값 분석(1.2mm 기준) 위에 작성되었고,
-  병합 때 백분위 분석 v6의 기준값에 배율을 곱하는 방식으로 옮겼다.)
-- UI는 가는 실에 “바늘 65/9 권장 · 밑실은 기존 설정 유지”를 안내한다.
-  65/9의 60wt 근거는 위와 같으며, 모든 50wt에 대한 일반화와 밑실을 바꿀 필요가
-  없다는 보편적 봉제 근거는 **미확인**이다. 앱이 밑실 설정을 자동 변경하지 않는다는
-  의미이며, 실제 기계·실 제조사의 밑실 지침을 대체하지 않는다.
+- **Confirmed**: [Madeira's official Digitizing Density Guide](https://www.madeirausa.com/_resources/common/userfiles/file/Digitizing%20Density%20Guide.pdf)
+  gives 0.40mm for Classic/Polyneon 40 and 0.35mm for 60. These are approximate guidelines varying with material/effect.
+  FS 50 also has 0.35mm guidance, but that value concerns a specific metallic-thread product.
+- **unconfirmed**: this app's **0.30mm** for 60wt is the user-requested default, differing from the manufacturer's 0.35mm.
+  Universal suitability for all 60wt threads/fabrics and physical sew-out validation are unconfirmed. The 0.35mm setting
+  for generic 50wt is an intermediate preset; generalizing FS 50 guidance is unconfirmed. Small-text 40wt 0.60mm/50wt 0.50mm
+  and the 7mm cutoff are also app policy; universal manufacturer recommendations are unconfirmed.
+- **Confirmed**: [Madeira's 60wt guidance](https://www.madeirausa.com/resources/embroidering-with-60-weight-thread/)
+  recommends size 65 needles and denser digitizing, giving block-letter examples of 6–7mm for 40wt and 3mm for 60wt.
+  The [Classic product guidance](https://www.madeira.co.uk/embroidery-threads/classic/) gives a 60wt needle range of
+  60/8–65/9. The possibility of 3mm text does not guarantee every font (especially complex Hangul), so the app's height
+  floor is not lowered directly to 3mm.
+- **unconfirmed**: quality criteria and height floors are conservative heuristics multiplying the 40wt reference values
+  (stroke thickness 1.0mm, outline gap 0.6mm, single-line gap 1.0mm, loop 1.5mm, fill floor 6mm in the “Local percentiles”
+  section above) by `ThreadWeight.featureScale = 일반 간격 / 0.40`. Manufacturer rules or physical sew-out results directly
+  validating 50/60wt values are unconfirmed. Measurements (bottom 10% percentile) do not depend on thread weight;
+  only recommended height, grade, and tightSpots change. Character-detail floors (Hangul 7mm, Latin 5mm) are not lowered
+  for thread weight. (2026-10-23 integration: this section was originally written over the old minimum-value analysis
+  with a 1.2mm criterion; during merging, it was changed to scale percentile-analysis v6 reference values.)
+- For thin thread, the UI advises “65/9 needle recommended · retain existing bobbin settings.” The 60wt basis for 65/9
+  is above; generalizing to all 50wt and a universal sewing basis for leaving the bobbin unchanged are **unconfirmed**.
+  This means the app does not automatically change bobbin settings; it does not replace the actual machine/thread
+  manufacturer's bobbin guidance.
 
-실 굵기를 바꾸면 자동 간격이 켜진다. 이후 밀도 슬라이더를 조절하면 수동 간격이
-우선하며, 자동 스위치로 프리셋을 다시 사용할 수 있다. 기본 언더레이·테두리는 유지한다.
-`TextObject.threadWeight`, `SatinOptions.autoDensity`를 저장하고, 구버전의 실 굵기는
-40wt, 새틴 자동 간격은 false로 복원해 기존 도안의 수동 간격을 유지한다.
-폰트 품질 캐시 키에 실 굵기를 포함하므로 서로 다른 굵기의 분석 결과가 섞이지 않는다.
-공유 API `FontQuality.analyze`에는 기본 40wt인 선택 인자를 끝에 추가했다.
+Changing thread weight enables automatic spacing. Subsequent density-slider adjustments prioritize manual spacing;
+the automatic switch restores presets. Default underlay/borders remain. `TextObject.threadWeight` and
+`SatinOptions.autoDensity` are saved; older files restore thread weight as 40wt and satin automatic spacing as false,
+preserving existing designs' manual spacing. Font-quality cache keys include thread weight, preventing mixed results
+across weights. The shared `FontQuality.analyze` API adds an optional argument at the end, defaulting to 40wt.
 
-검증: 엔진 240개·앱 145개 단위 테스트와 `:app:assembleDebug` 통과.
-실 굵기별 새틴/태타미 땀 수, 품질 등급·높이, 캐시 분리, 구버전 복원,
-수동 간격 유지, 프로젝트/PES 왕복을 합성 도형으로 확인했다.
-독립 API 35 에뮬레이터에서 `봄날`의 60wt 0.30mm/최소 폭 0.90mm,
-50wt 0.35mm/최소 폭 1.05mm 표시와 가는 실 안내를 확인했다.
-레터링 추가·재편집 시 50wt가 유지되었고, 편집기 글자 속성에서 60wt로 적용한 뒤
-다시 열었을 때 최소 폭 0.90mm와 바뀐 권장 높이가 유지되었다. 실물 봉제 검증은 미확인이다.
+Validation: 240 engine and 145 app unit tests plus `:app:assembleDebug` passed. Synthetic shapes checked satin/tatami
+stitch counts by thread weight, quality grades/heights, cache separation, older-file restoration, manual-spacing retention,
+and project/PES round trips. An independent API 35 emulator confirmed `봄날` displays of 60wt 0.30mm/minimum width 0.90mm,
+50wt 0.35mm/minimum width 1.05mm, and thin-thread guidance. 50wt persisted when adding/reediting lettering; after applying
+60wt in editor text properties and reopening, minimum width 0.90mm and the changed recommended height persisted.
+Physical sew-out validation is unconfirmed.
 
-## 실기 불량 대응과 안정 태그 새틴 포팅 (2026-10-24)
+## Physical sew-out defect response and stable-tag satin port (2026-10-24)
 
-TTF의 래스터 중심선 추정 새틴은 기본 생성 경로에서 제외했다. SATIN 요청도
-기둥 검증을 통과하지 못하면 경고와 함께 auto-fill + 윤곽 러닝으로 대체한다.
-명시적 Ink/Stitch 폰트의 레일·렁은 별도 새틴 코어를 사용한다.
-공개 OFL Dancing Script Bold의 `Jung Min`, 34mm 회귀와 PNG 비교를 추가했다.
+TTF satin inferred from raster centerlines was removed from the default generation path. SATIN requests that fail
+column validation also fall back to auto-fill + contour running with a warning. Explicit Ink/Stitch font rails/rungs
+use a separate satin core. A public OFL Dancing Script Bold `Jung Min`, 34mm regression and PNG comparison were added.
 
-포팅 출처·정확한 기본값·차이·공통 StitchPlan 연결·독립 게이트의 현재 차단 결과는
-[Ink/Stitch 포팅 계약](inkstitch-port.md)을 따른다. 자체 단위 테스트 성공은
-게이트 통과나 SE400 실물 봉제 성공을 뜻하지 않는다. 이전 문서의
-“TTF 자동 새틴/분할 새틴” 설명은 실험 이력이며 현재 기본 생성 동작이 아니다.
+Port sources, exact defaults, differences, shared StitchPlan integration, and current independent-gate blockers follow
+the [Ink/Stitch port contract](inkstitch-port.md). Passing our own unit tests does not imply gate passage or successful
+physical SE400 sewing. Earlier documentation of “TTF automatic satin/split satin” describes experimental history,
+not current default generation behavior.
 
 
-### S2 개정: 글자·글꼴·높이·색만 (2026-10-24)
+### S2 revision: text, font, height, and color only (2026-10-24)
 
-신규 레터링의 기본 방식은 러닝이다. 자동 새틴 변환·채우기·빈·밀도·바탕 땀·실 굵기·곡선·자간·정렬
-선택을 기본 화면에서 제외했다. 땀 종류는 선택 대신 “자동 · 러닝”으로 표시한다.
-검증된 원본 새틴 기둥은 엔진 API로 유지하되 TTF를 자체 방식으로 새틴으로 추정하지 않는다.
+New lettering defaults to running. Automatic satin conversion, fill, bean, density, underlay, thread weight, curves,
+spacing, and alignment choices were removed from the default screen. Stitch type displays “Automatic · Running”
+rather than a selector. Verified original satin columns remain an engine API, without inferring TTF satin by our own method.
 
-embro-codex `auto-rules.md`에서 글자 높이·새틴 폭의 안전 경계가 미확인임을 확인했다.
-총괄 결정에 따라 현재는 새틴만 막고 러닝을 허용한다. 미확인 범위에 임의 슬라이더 제한을 만들지 않으며
-현재 높이를 숫자로 입력한다. 실제 확인된 글꼴 범위가 도착하면 슬라이더를 그 범위로 제한한다.
-0 이하·비유한 높이와 후프 밖 결과는 추가할 수 없다. 기존 자체 FontQuality 최소 높이는 이 결정에 쓰지 않는다.
-규칙 입력·재현 커맨드·남은 차단은 [inkstitch-port.md](inkstitch-port.md)의 최신 S2 절을 따른다.
+embro-codex's `auto-rules.md` confirmed that safe character-height/satin-width boundaries are unconfirmed.
+Under the coordinator's decision, satin is currently blocked while running is allowed. No arbitrary slider limits are invented
+for unconfirmed ranges; height is currently entered numerically. When actual verified font ranges arrive, the slider will
+be restricted to them. Heights of 0 or less, non-finite heights, and results outside the hoop cannot be added.
+The previous in-house FontQuality minimum height is not used for this decision. Rule inputs, reproduction commands,
+and remaining blockers follow the latest S2 section of [inkstitch-port.md](inkstitch-port.md).
 
-b798af7 임시 잠금은 제거했고 S1 공통 후처리를 쓴다. 정상 source 잠금의 S0·짧은 분할을 보존하므로
-이전 문서의 “모든 실제 땀 0.3mm 이상”은 현재 후처리의 보장이 아니다. 기존 저장 프로젝트의 명시적
-채우기·빈 설정은 읽을 수 있지만 신규 UI 선택에는 노출하지 않는다.
+The b798af7 temporary locks were removed in favor of shared S1 postprocessing. Valid source locks' S0/short splits are
+preserved, so the earlier claim “all actual stitches at least 0.3mm” is not a guarantee of current postprocessing.
+Existing saved projects' explicit fill/bean settings remain readable, but are not exposed as new UI choices.
 
-### 편집기 레터링 수정 시트 UI 회귀 (staging/s2s3 be02ff3 기준)
+### Editor lettering edit-sheet UI regression (based on staging/s2s3 be02ff3)
 
-시트는 Hidden 전환을 거부하며 바깥 탭/드래그로 초안을 취소하지 않는다.
-시스템·상단 뒤로는 변경이 있을 때 버리기 확인을 거치고, 취소는 초안을 유지한다.
-완료만 기존 객체에 반영한다. 글꼴 목록은 기존 뒤로 동작으로 레터링 초안에 돌아온다.
-미리보기는 편집기와 같은 테마 사각 프레임/10mm 격자이며, 기존 객체의 위치·회전·
-확대를 보존해 그린다. 새 글자만 원점에 놓는다. 렌더러·생성 엔진·저장 배치 계약은 변경하지 않았다.
+The sheet rejects transitions to Hidden; outside taps/drags do not cancel drafts. System/top Back asks for discard
+confirmation when changes exist; Cancel retains the draft. Only Done applies to the existing object.
+The font list uses its existing Back behavior to return to the lettering draft. The preview uses the same themed rectangular
+frame/10mm grid as the editor and preserves the existing object's position/rotation/scale. Only new text is placed at
+the origin. Renderer, generation engine, and stored-placement contracts were unchanged.
 
-에뮬레이터 전/후는 별도 `io.github.linker2k.myembro.lettersheetqa` 패키지에서 실제
-EditorScreen/LetteringScreen으로 확인했다. AB, Hershey,12mm, Transform(230,-180,15°),
-100×100mm 후프. 기존 드래그 취소 재현, 수정 후 동일 드래그+바깥 탭 유지, 변경 후
-뒤로 확인→취소 초안 유지, 완료→재수정, 명시적 버리기 후 객체 전체 불변을 확인했다.
-스크린샷/XML/자동 저장 비교와 테스트 출력:
+Before/after emulator behavior was checked through actual EditorScreen/LetteringScreen in the separate
+`io.github.linker2k.myembro.lettersheetqa` package: AB, Hershey,12mm, Transform(230,-180,15°), 100×100mm hoop.
+Checks reproduced old drag cancellation, confirmed retention after the same drag+outside tap after the fix,
+Back confirmation→Cancel retaining the edited draft, Done→reedit, and the entire object unchanged after explicit discard.
+Screenshots/XML/autosave comparisons and test output:
 `/tmp/myembro-port-out/letter/sheet-ui/` (`before.png`, `after.png`, `confirm.png`, `output.txt`).
 
-검증: `./gradlew check :app:assembleDebug` 전체 통과, 엔진586·앱 Debug/Release 각190개 실패0,
-Lint 통과. LetteringPreviewPlacementTest3건은 위치·회전·크기, 새 글자 중앙, 초안 변경 필드를 검증한다.
+Validation: all of `./gradlew check :app:assembleDebug` passed; engine586 and appDebug/Release190 each, failures0;
+Lint passed. LetteringPreviewPlacementTest3 cases check position/rotation/size, new-text centering, and draft-change fields.
 
-### 글꼴 라이브러리의 한글 새틴 품질 표시 (2026-10-24)
+### Hangul satin quality display in the font library (2026-10-24)
 
-한글 TTF 카드의 이전 채우기 `fontq` 등급·권장 최소 높이는 표시하지 않는다. 실제 중심선 새틴 미리보기와 캐시, 세 글꼴 높이 스윕 및 한계는 [검증 기록](qa/font-library-satin-preview.md)에 정리했다. 두 글자 표본의 게이트 통과만으로 글꼴 전체의 권장 높이를 인증하지 않는다.
+Hangul TTF cards no longer show older fill-based `fontq` grades/recommended minimum heights. Actual centerline satin
+previews/caching, height sweeps for three fonts, and limitations are in the [validation record](qa/font-library-satin-preview.md).
+A two-character sample passing the gate does not certify a recommended height for the entire font.
 
-### 단선 글꼴 보통/굵게 (v0.2.8)
+### Single-line font Normal/Bold (v0.2.8)
 
-새 단선 글자는 **보통(RUNNING)**이 기본이다. **굵게**는 Ink/Stitch bean의 `repeats=[1]`, 총 3회 통과다. 원본이 중복되는 구간은 6회가 될 수 있으며, upstream에 방문 선분 자동 감축 옵션이 없어 그대로 유지한다. 자체 bean 글꼴·디지타이즈 자수 글꼴에는 선택 칸을 숨긴다. [동작·원본 근거·5556 스모크와 게이트](qa/single-line-weight.md).
+New single-line text defaults to **Normal (RUNNING)**. **Bold** uses Ink/Stitch bean `repeats=[1]`, totaling 3 passes.
+Originally overlapping sections may receive 6 passes; they are preserved because upstream has no automatic option to
+reduce visits to already-traversed segments. The selector is hidden for fonts with their own bean stitches and predigitized
+embroidery fonts. [Behavior, upstream evidence, and 5556 smoke/gate checks](qa/single-line-weight.md).
