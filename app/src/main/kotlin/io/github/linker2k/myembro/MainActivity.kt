@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -69,7 +70,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
         savedInstanceState?.getStringArrayList(KEY_STACK)?.let { names -> stack += names.map(Screen::valueOf) }
-        if (savedInstanceState == null) handleIntent(intent)
+        handleIntent(intent, dispatchCurrent = savedInstanceState == null)
         setContent {
             val context = LocalContext.current
             val openDocument = rememberDesignImporter(onFiles = ::importUris,
@@ -228,18 +229,31 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    private fun handleIntent(intent: Intent?) {
-        when (intent?.action) {
-            Intent.ACTION_VIEW -> intent.data?.let { uri ->
-                if (uri.scheme == "content") {
-                    importUris(listOf(uri))
-                } else {
-                    openPath = null
-                    viewer.open(uri)
-                    showViewer()
-                }
-            }
-            Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> importUris(sharedUris(intent))
+    private fun handleIntent(intent: Intent?, dispatchCurrent: Boolean = true) {
+        try {
+            routeLaunchIntent(intent?.action, intent?.flags ?: 0, dispatchCurrent,
+                onUsbHistoryLaunch = {
+                    // Fresh launcher intent: do not copy/unparcel extras from a possibly detached device.
+                    setIntent(Intent.makeMainActivity(componentName))
+                },
+                onCurrentLaunch = {
+                    when (intent?.action) {
+                        Intent.ACTION_VIEW -> intent.data?.let { uri ->
+                            if (uri.scheme == "content") {
+                                importUris(listOf(uri))
+                            } else {
+                                openPath = null
+                                viewer.open(uri)
+                                showViewer()
+                            }
+                        }
+                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> importUris(sharedUris(intent))
+                    }
+                },
+            )
+        } catch (error: Exception) {
+            // A stale external launch must not close the existing task or prevent normal startup.
+            Log.w("MyembroLaunch", "Ignoring failed launch intent", error)
         }
     }
 
