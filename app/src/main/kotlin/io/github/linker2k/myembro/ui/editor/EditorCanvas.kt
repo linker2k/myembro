@@ -36,6 +36,8 @@ import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.edit.sewingArea
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.edit.DesignObject
+import io.github.linker2k.myembro.engine.edit.Transform
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
@@ -67,12 +69,8 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val accent = colors.primary
     val textSize = with(density) { MaterialTheme.typography.labelSmall.fontSize.toPx() }
     val description = stringResource(R.string.editor_canvas_description)
-    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing)
-    val selectedBounds = remember(renders, vm.selectedIds) {
-        val boxes = renders.filter { it.first in vm.selectedIds }.mapNotNull { it.second.pattern.bounds }
-        if (boxes.isEmpty()) null else Bounds(boxes.minOf { it.minX }, boxes.minOf { it.minY },
-            boxes.maxOf { it.maxX }, boxes.maxOf { it.maxY })
-    }
+    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing,vm.gestureInProgress) { vm.rendering=it }
+    val selectedBounds = remember(vm.project,vm.selectedIds) { vm.project.selectionBounds(vm.selectedIds,fastPreview=true) }
     val snapDistance = with(density) { 8.dp.toPx() }
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
 
@@ -87,7 +85,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                 fun toWorld(point: Offset) = (point - center - pan) / (fit * zoom)
                 val selecting = vm.selectionMode
                 val selected = vm.selected?.takeIf { it.visible }
-                val bounds = if (selecting || navigationOnly) null else vm.project.selectionBounds(vm.selectedIds)
+                val bounds = if (selecting || navigationOnly) null else vm.project.selectionBounds(vm.selectedIds,fastPreview=true)
                 val corner = bounds?.corners()?.firstOrNull {
                     (it * scaleAtStart + center + pan - down.position).getDistance() <= handleTouch
                 }
@@ -122,7 +120,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                         if (started) {
                             if (editing) {
                                 if (corner != null && pressed == 1) {
-                                    val group = vm.project.selectionBounds(vm.selectedIds) ?: break
+                                    val group = vm.project.selectionBounds(vm.selectedIds,fastPreview=true) ?: break
                                     val pivot = Offset((group.minX + group.maxX) / 2f, (group.minY + group.maxY) / 2f)
                                     val origin = pivot * (fit * zoom) + center + pan
                                     val oldDistance = (handlePosition - origin).getDistance().coerceAtLeast(1f)
@@ -200,7 +198,16 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             paint.strokeWidth = ThreadRendering.widthPx(scale, 1.dp.toPx()) / scale
             val progress = (renders.sumOf { it.second.pattern.stitches.size } * preview.coerceIn(0f, 1f)).toInt()
             var offset = 0
-            for ((_, data) in renders) {
+            for ((base, data) in renders) {
+                val current=vm.project.find(base.id) ?: continue
+                canvas.save()
+                // Current affine matrix times inverse of the cached render's affine matrix.
+                val t=current.transform; val old=base.transform
+                canvas.translate(t.x.toFloat(),t.y.toFloat())
+                canvas.rotate(t.rotationDeg.toFloat())
+                canvas.scale((t.scaleX/old.scaleX).toFloat(),(t.scaleY/old.scaleY).toFloat())
+                canvas.rotate(-old.rotationDeg.toFloat())
+                canvas.translate(-old.x.toFloat(),-old.y.toFloat())
                 val cutoff = progress - offset
                 offset += data.pattern.stitches.size
                 val sewn = data.segmentsUpTo(data.stitchLineEnds, cutoff)
@@ -215,6 +222,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
                     val jumps = data.segmentsUpTo(data.jumpLineEnds, cutoff)
                     if (jumps > 0) canvas.drawLines(data.jumpLines, 0, jumps * 4, paint)
                 }
+                canvas.restore()
             }
             canvas.restore()
         }
@@ -227,8 +235,8 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
             val py = screen(Offset(0f, y.toFloat())).y
             drawLine(accent, Offset(0f, py), Offset(size.width, py), 1.5.dp.toPx(), pathEffect = dash)
         }
-        if (vm.selectedIds.size > 1) renders.filter { it.first in vm.selectedIds }.forEach { (_, data) ->
-            data.pattern.bounds?.let { b ->
+        if (vm.selectedIds.size > 1) renders.filter { it.first.id in vm.selectedIds }.forEach { (base, _) ->
+            vm.project.find(base.id)?.previewBounds()?.let { b ->
                 val a = screen(Offset(b.minX.toFloat(), b.minY.toFloat()))
                 drawRect(accent.copy(alpha = 0.5f), a, Size(maxOf(1f, b.width * scale), maxOf(1f, b.height * scale)), style = Stroke(1.dp.toPx()))
             }
@@ -289,23 +297,35 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     }
 }
 
-/** A batch can contain hundreds of objects; retain unchanged renders and build new ones off main. */
+/** Rigid moves never invalidate render arrays. A scaled render is rebuilt once, 300ms after pointer-up. */
 @Composable
-private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: SewingOptions): List<Pair<String, RenderData>> {
-    val cache = remember { mutableMapOf<String, Pair<Pair<DesignObject, SewingOptions>, RenderData>>() }
-    var renders by remember { mutableStateOf<List<Pair<String, RenderData>>>(emptyList()) }
-    LaunchedEffect(objects, sewingOptions) {
-        val previous = cache.toMap()
-        val next = withContext(Dispatchers.Default) {
-            objects.associate { obj ->
-                currentCoroutineContext().ensureActive()
-                val cacheKey = obj to sewingOptions
-                obj.id to (cacheKey to (previous[obj.id]?.takeIf { it.first == cacheKey }?.second
-                    ?: RenderData(obj.placedPattern().withSewingDefaults(sewingOptions)).also { it.pattern.bounds }))
+private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: SewingOptions,
+    gesturing: Boolean, onRendering: (Boolean) -> Unit): List<Pair<DesignObject,RenderData>> {
+    val cache = remember { mutableMapOf<String,Pair<Pair<DesignObject,SewingOptions>,Pair<DesignObject,RenderData>>>() }
+    var renders by remember { mutableStateOf<List<Pair<DesignObject,RenderData>>>(emptyList()) }
+    val keys=objects.map { obj -> obj.withTransform(Transform(scaleX=obj.transform.scaleX,scaleY=obj.transform.scaleY)) }
+    LaunchedEffect(keys,sewingOptions,gesturing) {
+        if(gesturing) return@LaunchedEffect
+        val previous=cache.toMap()
+        val needsBuild=keys.any { previous[it.id]?.first != (it to sewingOptions) }
+        onRendering(needsBuild)
+        try {
+            if(needsBuild && previous.isNotEmpty()) delay(300)
+            val next=withContext(Dispatchers.Default) {
+                objects.zip(keys).associate { (obj,key) ->
+                    currentCoroutineContext().ensureActive()
+                    val cacheKey=key to sewingOptions
+                    obj.id to (cacheKey to (previous[obj.id]?.takeIf { it.first==cacheKey }?.second
+                        ?: (obj to RenderData(obj.placedPattern().withSewingDefaults(sewingOptions)).also {
+                            it.pattern.bounds
+                            if(io.github.linker2k.myembro.BuildConfig.DEBUG) android.util.Log.d("EditorTransform",
+                                "render_build id=${obj.id} scale=${obj.transform.scaleX},${obj.transform.scaleY}")
+                        })))
+                }
             }
-        }
-        cache.clear(); cache.putAll(next)
-        renders = objects.map { it.id to next.getValue(it.id).second }
+            cache.clear();cache.putAll(next)
+            renders=objects.map { next.getValue(it.id).second }
+        } finally { onRendering(false) }
     }
     return renders
 }

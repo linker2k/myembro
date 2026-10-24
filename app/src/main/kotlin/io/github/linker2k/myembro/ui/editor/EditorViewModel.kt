@@ -98,6 +98,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     var exportProblems by mutableStateOf<List<String>?>(null)
         private set
     private var gestureDraft: Project? = null
+    private var gestureStart: Project? = null
     private var targets = SnapTargets(emptyList(), emptyList())
     private val library = DesignLibrary(app)
     private val projectDir get() = File(getApplication<Application>().filesDir, "designs")
@@ -160,7 +161,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     val redoEnabled get() = canRedo && !interactionBlocked && !gestureInProgress && !letteringOpen
     var selectedIds by mutableStateOf<Set<String>>(emptySet())
         private set
-    val hoopOverflowVisible: Boolean get() = !gestureInProgress &&
+    val hoopOverflowVisible: Boolean get() = !gestureInProgress && !rendering &&
         (session.showsHoopOverflow || (multiPositionFrame != null && positionFit.outsideIds.isNotEmpty()))
     val selectedId: String? get() = selectedIds.lastOrNull()
     val selected: DesignObject? get() = selectedId?.let(project::find)
@@ -170,6 +171,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         private set
     internal var snapGuides by mutableStateOf(SnapGuides())
         private set
+    var rendering by mutableStateOf(false)
+        internal set
     var gestureInProgress by mutableStateOf(false)
         private set
     var canUndo by mutableStateOf(false)
@@ -372,10 +375,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         if (interactionBlocked || gestureDraft != null) return
         session.beginGesture()
         gestureDraft = project
+        gestureStart = project
         targets = project.snapTargets(selectedIds)
         sync()
     }
     fun endGesture() {
+        rendering=project.objects.any { obj -> gestureStart?.find(obj.id)?.let {
+            it.transform.scaleX!=obj.transform.scaleX || it.transform.scaleY!=obj.transform.scaleY
+        }==true }
+        gestureStart=null
         session.endGesture()
         gestureDraft = null
         snapGuides = SnapGuides()
@@ -383,10 +391,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     }
     internal fun transformBy(dx: Double, dy: Double, factor: Double, rotation: Double, tolerance: Double) {
         val draft = gestureDraft ?: return
-        val next = draft.transformGroup(selectedIds, dx, dy, factor, rotation)
+        val next = draft.transformGroup(selectedIds, dx, dy, factor, rotation,fastPreview=true)
         gestureDraft = next
         val snapped = if (snapEnabled && tolerance > 0 && factor == 1.0 && rotation == 0.0)
-            next.snapSelection(selectedIds, targets, tolerance) else SnappedSelection(next, SnapGuides())
+            next.snapSelection(selectedIds, targets, tolerance,fastPreview=true) else SnappedSelection(next, SnapGuides())
         snapGuides = snapped.guides
         session.updateGesture(snapped.project)
         sync()
@@ -408,6 +416,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         threadWeight: io.github.linker2k.myembro.engine.lettering.ThreadWeight? = null) {
         if (busy || gestureInProgress || selectedIds.size != 1) return
         val original = selected as? TextObject ?: return
+        if(style==original.stitchStyle && (threadWeight==null || threadWeight==original.threadWeight)) {
+            edit(project.replace(original.withTransform(transform)))
+            return
+        }
         val before = project
         viewModelScope.launch {
             busy = true

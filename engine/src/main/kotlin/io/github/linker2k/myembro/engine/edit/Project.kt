@@ -173,23 +173,8 @@ sealed interface DesignObject {
     fun withVisible(v: Boolean): DesignObject
 
     /** [localPattern] with [transform] applied, in hoop coordinates. */
-    fun placedPattern(): EmbPattern {
-        val source = localPattern()
-        val generated = source.metadata.containsKey(GeneratedPatternProcessor.FINISHED_KEY)
-        val gridPreserving = kotlin.math.abs(transform.scaleX) == 1.0 && kotlin.math.abs(transform.scaleY) == 1.0 &&
-            transform.rotationDeg % 90.0 == 0.0 && transform.x % 1.0 == 0.0 && transform.y % 1.0 == 0.0
-        if (generated && gridPreserving) return GeneratedPatternProcessor.mapCoordinates(source) { x, y ->
-            val (px, py) = transform.apply(x.toDouble(), y.toDouble())
-            px.roundToInt() to py.roundToInt()
-        }
-        val local = if (generated) GeneratedPatternProcessor.stripGeneratedLocks(source) else source
-        val placed = local.stitches.map { s ->
-            val (px, py) = transform.apply(s.x.toDouble(), s.y.toDouble())
-            Stitch(px.roundToInt(), py.roundToInt(), s.command)
-        }
-        val output = EmbPattern(placed, local.threads, local.metadata, local.warnings)
-        return if (generated) GeneratedPatternProcessor.finish(output) else output
-    }
+    fun placedPattern(): EmbPattern = placeDesignPattern(this)
+
 }
 
 /** An imported stitch file (PES/PEC/DST), re-centered on its bounding box. */
@@ -225,3 +210,22 @@ data class StitchObject(
         }
     }
 }
+
+// Shared original placement implementation; text caches its scale-only result separately.
+internal fun placeDesignPattern(obj: DesignObject): EmbPattern = with(obj) {
+        val source = localPattern()
+        val generated = source.metadata.containsKey(GeneratedPatternProcessor.FINISHED_KEY)
+        val gridPreserving = kotlin.math.abs(transform.scaleX) == 1.0 && kotlin.math.abs(transform.scaleY) == 1.0 &&
+            transform.rotationDeg % 90.0 == 0.0 && transform.x % 1.0 == 0.0 && transform.y % 1.0 == 0.0
+        if (generated && gridPreserving) return@with GeneratedPatternProcessor.mapCoordinates(source) { x, y ->
+            val (px, py) = transform.apply(x.toDouble(), y.toDouble())
+            px.roundToInt() to py.roundToInt()
+        }
+        val local = if (generated) GeneratedPatternProcessor.stripGeneratedLocks(source) else source
+        val placed = local.stitches.map { s ->
+            val (px, py) = transform.apply(s.x.toDouble(), s.y.toDouble())
+            Stitch(px.roundToInt(), py.roundToInt(), s.command)
+        }
+        val output = EmbPattern(placed, local.threads, local.metadata, local.warnings)
+        if (generated) GeneratedPatternProcessor.finish(output) else output
+    }
