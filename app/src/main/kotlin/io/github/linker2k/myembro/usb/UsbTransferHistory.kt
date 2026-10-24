@@ -9,7 +9,9 @@ import java.util.UUID
 
 /** File bytes and verified FAT data-cluster allocation are separate; SAF/old logs may not know allocation. */
 data class UsbTransferredFile(val name: String, val size: Long,
-    val allocatedBytes: Long? = null, val allocationUnitBytes: Int? = null, val sourceName: String? = null, val manualJumpThreadCount: Int? = null)
+    val allocatedBytes: Long? = null, val allocationUnitBytes: Int? = null, val sourceName: String? = null, val manualJumpThreadCount: Int? = null,
+    /** Transfer-time profile snapshot; old records stay unknown, even if settings change. */
+    val automaticJumpTrim: Boolean? = null, val machineName: String? = null)
 
 enum class UsbTransferOutcome { SUCCESS, PARTIAL, FAILURE }
 enum class UsbTransferNotice { NAME_COLLISION, FILESYSTEM }
@@ -79,7 +81,8 @@ internal class UsbTransferHistory(private val file: File) {
                 files = r.getValue("files").jsonArray.map { f -> f.jsonObject.let {
                     UsbTransferredFile(it.getValue("name").jsonPrimitive.content, it.getValue("size").jsonPrimitive.long,
                         it["allocatedBytes"]?.jsonPrimitive?.longOrNull, it["allocationUnitBytes"]?.jsonPrimitive?.intOrNull,
-                        it["sourceName"]?.jsonPrimitive?.contentOrNull, it["manualJumpThreadCount"]?.jsonPrimitive?.intOrNull)
+                        it["sourceName"]?.jsonPrimitive?.contentOrNull, it["manualJumpThreadCount"]?.jsonPrimitive?.intOrNull,
+                        it["automaticJumpTrim"]?.jsonPrimitive?.booleanOrNull, it["machineName"]?.jsonPrimitive?.contentOrNull)
                 } },
                 failures = r.getValue("failures").jsonArray.map { f -> f.jsonArray.let { it[0].jsonPrimitive.content to it[1].jsonPrimitive.content } },
                 remainingBytes = r["remainingBytes"]?.jsonPrimitive?.longOrNull,
@@ -109,6 +112,8 @@ internal class UsbTransferHistory(private val file: File) {
                     put("allocationUnitBytes", f.allocationUnitBytes?.let(::JsonPrimitive) ?: JsonNull)
                     put("sourceName", f.sourceName?.let(::JsonPrimitive) ?: JsonNull)
                     put("manualJumpThreadCount", f.manualJumpThreadCount?.let(::JsonPrimitive) ?: JsonNull)
+                    put("automaticJumpTrim", f.automaticJumpTrim?.let(::JsonPrimitive) ?: JsonNull)
+                    put("machineName", f.machineName?.let(::JsonPrimitive) ?: JsonNull)
                 }) } }
                 putJsonArray("failures") { r.failures.forEach { f -> add(buildJsonArray { add(f.first); add(f.second) }) } }
                 putJsonArray("notices") { r.notices.forEach { add(it.name) } }
