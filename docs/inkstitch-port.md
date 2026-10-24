@@ -1735,3 +1735,13 @@ FontNonzeroMotionTest3건: running/bean/satin/fill의 두 글자 렌더와 PES �
 수정 전 회귀2건 모두 실패, 수정 후 전체 `./gradlew check` 통과:
 엔진589·앱 Debug/Release 각190개 실패0, Lint 및 기존 고정 오라클4건 통과.
 출력: `/tmp/myembro-port-out/letter/p4-nonzero/output.txt` 및 `tests.xml`.
+
+### StrokeToSatin 원본 포트 인계 단위
+
+`elements/utils/StrokeToSatin.kt`: `lib/elements/utils/stroke_to_satin.py`,
+`lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py`,
+`lib/utils/geometry.py`@b0edd96311ece82ee48816dc93466274b12c2a9c.
+레일 offset은 승인된 JTS, 새틴 생성은 기존 SatinColumn 포트를 사용한다.
+골든 상태·원본 함수 목록과 모든 차이점은 `docs/hangul-centerline.md`의
+“letter 인계 단위1”에 기록했다. AutoTrace 원본 centerline10/10 exact 재검증,
+선→새틴7개 수식 회귀 통과; 선→새틴 공식 출력 동등성·한글 PES는 아직 미판정이다.

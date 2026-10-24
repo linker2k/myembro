@@ -99,3 +99,49 @@ Copyright AutoTrace contributors로 고지하고 COPYING 원문을 함께 배포
 앱/PES 미연결; 곡선 근사·폭 측정·새틴 변환·봉제 게이트는 이번 단위가 아니다.
 다음 제안: 원본 `fit.c` 중심선 곡선화의 비교 골든부터 작은 단위로 확보하고,
 원본 Ink/Stitch convert-to-satin 포트와의 입력 계약을 확인한다.
+
+## letter 인계 단위 1 — 경로 골든 재검증·원본 선→새틴 코어
+
+`codex/hangul-centerline` 최신 **e1d0ce0**에는 thinning뿐 아니라
+`find_centerline_pixels` Kotlin 포트도 이미 있었다. 이를 codex/letter에 통합하고
+thinning 골든10/10·centerline 골든10/10 exact를 다시 확인했다.
+두 테스트 클래스 합계23개(입력 오류/경계 검사 포함) 실패0. 원본 코드를 재실행하지 않았다.
+
+다음으로 Ink/Stitch **v3.3.0 b0edd96311ece82ee48816dc93466274b12c2a9c**의
+`lib/elements/utils/stroke_to_satin.py`를 `elements/utils/StrokeToSatin.kt`로 포팅했다:
+`convert_path_to_satin/convert_path_to_satins`, `fix_loop`, `path_to_satin`,
+`get_scores`, `local_minima`, `generate_rungs`, `_merge`, `set_first_node`.
+`lib/extensions/stroke_to_satin.py:filtered_rungs`, `lib/svg/styles.py:get_join_style_args`,
+`lib/utils/geometry.py:remove_duplicate_points/roll_linear_ring`도 대응한다.
+원본 score101칸·각도제곱/int32·평활 kernel·minima, 4자리 반올림, depth20 이분,
+1px endpoint 판정, tangent0.001·렁1.2배·1/2mm 간격은 변경하지 않았다.
+자체 miter 오프셋 대신 JTS OffsetCurve를 사용하고 결과 레일·렁을 기존
+Ink/Stitch SatinColumn 생성자에 직접 전달한다. 원본 CLI/Inkex UI는 이 API 범위가 아니다.
+
+Shapely LineString.offset_curve 기본 quad_segs16·mitre_limit5를
+[공식 API 문서](https://shapely.readthedocs.io/en/2.0.6/reference/shapely.LineString.html#shapely.LineString.offset_curve)와 대조했다.
+원본 SVG style에서 miter를 명시한 경우에만 SVG 기본 miter-limit4를 사용하고,
+명시하지 않은 경우는 Shapely 기본5를 유지한다. 스타일 코드는 기본 mitre다.
+
+**이번 검증 범위:** StrokeToSatinTest7건(직선 레일/중앙 렁 수치, 90° corner score8100,
+miter 좌표, 닫힌 경로 midpoint/분할 병합, node 렁, closed extension 시작점, 렁 교차 필터,
+style 기본값; 일부 항목은 같은 테스트 안에 포함). 이는 원본 수식의 분석적 회귀이며
+**공식 convert-to-satin 출력 골든과의 동등성은 미판정**이다. 자료 경로를 총괄에 요청했다.
+기존 원본 centerline 골든10/10 판정과 이 미판정을 혼동하지 않는다.
+
+차이점/범위:
+- Shapely/GEOS는 기존 승인 JTS1.20 OffsetCurve·LengthIndexedLine·intersection으로 대체.
+  곡선 join 및 자기교차의 전체 수치 동등성은 공식 출력 비교 전까지 미확인.
+- 입력은 SVG px의 명시적 경로와 양수 **상수 strokeWidth**다. 폭 추정·새틴/채우기 선택 없음.
+  빈/중복만 있는 경로는 null, 잘못된 폭은 Kotlin 입력 오류, closed-start API는 닫힌 ring을 요구한다.
+- 길이1px 미만 경로는 재귀분할해도 모든 자손이 원본 endpoint<1 조건에서 실패하므로
+  결과가 항상 비는 재귀를 조기 생략한다. 1px 이상 및 루프의 depth20 규칙은 유지한다.
+- JVM List를 반환하며 SVG DOM/CLI 종료·로그·진행률 콜백은 포함하지 않는다.
+
+전체 `./gradlew check`: BUILD SUCCESSFUL in50s. 원본20개 골든·수식7회귀 모두 통과.
+JUnit/출력: `/tmp/myembro-port-out/letter/hangul-unit1/output.txt`.
+Noto Sans KR400 ‘정민’15mm PES는 아직 만들지 않았다. 원본 `fit.c` 곡선화/
+`image-proc.c` 거리맵·preserve_width 계약은 아직 Kotlin에 없다. 단순 SVG 출력
+`output-svg.c`는 centerline path에 stroke-width를 따로 기록하지 않으므로, 임의 평균 폭이나
+1px 기본폭으로 새틴을 만들지 않는다. 다음 단위는 공식 변환 출력 비교와 원본 곡선·폭 계약을
+작게 확인한 뒤 이 명시적 폭 API에 연결하는 것으로 제안한다. 앱/자동 선택은 계속 보류한다.
