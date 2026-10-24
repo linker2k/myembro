@@ -659,3 +659,7 @@ EditorScreen/LetteringScreen으로 확인했다. AB, Hershey,12mm, Transform(230
 
 검증: `./gradlew check :app:assembleDebug` 전체 통과, 엔진586·앱 Debug/Release 각190개 실패0,
 Lint 통과. LetteringPreviewPlacementTest3건은 위치·회전·크기, 새 글자 중앙, 초안 변경 필드를 검증한다.
+
+### 글꼴 라이브러리의 한글 새틴 품질 표시 (2026-10-24)
+
+한글 TTF 카드의 이전 채우기 `fontq` 등급·권장 최소 높이는 표시하지 않는다. 실제 중심선 새틴 미리보기와 캐시, 세 글꼴 높이 스윕 및 한계는 [검증 기록](qa/font-library-satin-preview.md)에 정리했다. 두 글자 표본의 게이트 통과만으로 글꼴 전체의 권장 높이를 인증하지 않는다.

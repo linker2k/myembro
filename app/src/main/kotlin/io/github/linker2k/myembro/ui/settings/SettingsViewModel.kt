@@ -37,6 +37,7 @@ data class EmbroiderySettings(
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val customFrames: List<CustomFrame> = emptyList(),
     val defaultFrameId: String? = null,
+    val favoriteFontIds: Set<String> = emptySet(),
 ) {
     /** Fixed Ink/Stitch defaults; intentionally not a user preference. */
     val sewing: SewingOptions get() = SewingOptions()
@@ -69,7 +70,13 @@ class SettingsPreferences(context: Context) {
         themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
         customFrames = CustomFrameCodec.decode(preferences.getString("custom_frames", null)),
         defaultFrameId = preferences.getString("default_frame_id", null),
+        favoriteFontIds = preferences.getStringSet("favorite_font_ids", emptySet()).orEmpty().toSet(),
     ).validated()
+
+    fun toggleFavoriteFont(id: String) {
+        val current = read().favoriteFontIds
+        preferences.edit().putStringSet("favorite_font_ids", if (id in current) current - id else current + id).apply()
+    }
 
     fun setMachineModel(model: String) {
         val name = model.trim().take(120).ifBlank { MachineProfiles.default.displayName }

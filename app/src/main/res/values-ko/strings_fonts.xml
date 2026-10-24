@@ -51,4 +51,11 @@
     <string name="fonts_analyzing">분석 중…</string>
     <string name="fonts_size_kb">%1$dKB</string>
     <string name="fonts_verified_embroidery">검증된 자수 글꼴</string>
+    <string name="fonts_preview_loading">땀 미리보기를 만들고 있어요…</string>
+    <string name="fonts_preview_failed">땀 미리보기를 만들지 못했어요</string>
+    <string name="fonts_input_hangul_unsupported">입력한 “%1$s”의 한글을 지원하지 않아요</string>
+    <string name="fonts_input_unsupported">입력한 “%1$s”에 지원하지 않는 글자가 있어요</string>
+    <string name="fonts_favorite">글꼴 즐겨찾기 추가</string>
+    <string name="fonts_unfavorite">글꼴 즐겨찾기 해제</string>
+    <string name="fonts_favorites">즐겨찾는 글꼴</string>
 </resources>

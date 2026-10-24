@@ -43,6 +43,14 @@ class InkStitchCatalogTest {
         assertTrue(upper.covers("abc") && upper.glyphs!!.none { it == "a" })
     }
 
+    @Test fun libraryWithoutInputNeverDisablesEmbroideryFonts() {
+        assertTrue(fonts.all { it.covers("") && it.covers("  ") })
+        for (font in fonts.filter { it.id.contains("alchemy") || it.id.contains("allegria") }) {
+            assertTrue(font.covers(""), font.id)
+            kotlin.test.assertFalse(font.covers("정민"), font.id)
+        }
+    }
+
     @Test fun everyFontHasABundledStitchPreview() {
         fonts.forEach { assertTrue(File("src/main/assets/fonts/previews/${it.id}.png").isFile, it.id) }
     }
