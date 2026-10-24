@@ -14,6 +14,7 @@ import android.util.Log
 import android.os.SystemClock
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoStyle
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorDrawingPipeline
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,14 +33,23 @@ import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.abs
 
+enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
+
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var step by mutableIntStateOf(0); private set
     var source by mutableStateOf<Bitmap?>(null); private set
     var zoom by mutableFloatStateOf(1f); private set
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
-    var style by mutableStateOf(PhotoStyle.SILHOUETTE); private set
+    var style by mutableStateOf(PhotoMode.SILHOUETTE); private set
     var detail by mutableIntStateOf(1); private set
+    var colorCount by mutableIntStateOf(4); private set
+    var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
+    val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
+    fun changeColorCount(value:Int) {
+        val count=value.coerceIn(2,6)
+        if(count!=colorCount) { colorCount=count; step=1; prepare() }
+    }
     /** Picture width in mm (height follows the frame aspect); recomputed only when a choice is committed. */
     var widthMm by mutableDoubleStateOf(photoMaxWidthMm(EmbroiderySettings().defaultFrame.spec)); private set
     /** Actual stitched width × height in mm of the step-3 result. */
@@ -66,7 +76,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; style = PhotoStyle.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
     /** [inkMm]: wanted embroidery width. Converted to the frame width with the size-independent ink ratio. */
@@ -116,22 +126,23 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         zoom = (zoom * scale).coerceIn(1f, 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
     }
-    fun changeStyle(value: PhotoStyle) {
+    fun changeStyle(value: PhotoMode) {
         if(value==style) return
         work?.cancel(); revision++; busy=false; style=value; error=null
-        render=null; report=null; bytes=null
+        render=null; report=null; bytes=null; step=1; prepare()
     }
     fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
     fun cancel() { work?.cancel(); revision++; busy = false; error = null; if (step == 1) step = 0 }
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
+    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
+        val selectedMode = style; val selectedColors=colorCount
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -145,11 +156,23 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                     // RGB-only engine contract: composite transparent photo pixels onto white paper.
                     Canvas(scaled).apply {
-                        drawColor(android.graphics.Color.WHITE)
+                        if(selectedMode!=PhotoMode.COLOR) drawColor(android.graphics.Color.WHITE)
                         drawBitmap(bitmap, Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height),
                             Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
+                    if(selectedMode==PhotoMode.COLOR) {
+                        val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2) { phase ->
+                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                            progressStage=if(phase=="quantization") 1 else 2
+                        }
+                        if(version==revision) {
+                            colorPreview=preview
+                            separatedPreview=Bitmap.createBitmap(preview.previewPixels(),preview.width,preview.height,Bitmap.Config.ARGB_8888)
+                        }
+                        return@runInterruptible preview.inkOutline to photoInkRatio(preview.inkOutline)
+                    }
                     pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
                     fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
@@ -176,7 +199,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
         }
     }
@@ -188,15 +211,19 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
-                    val generated = RedworkPipeline.generate(traced,
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoStyle.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=selectedStyle) {
+                    val generatedPattern = if(selectedStyle==PhotoMode.COLOR) {
+                        ColorDrawingPipeline.generate(requireNotNull(colorPreview)) {
+                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                        }.pattern
+                    } else RedworkPipeline.generate(traced,
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoMode.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
-                    }
+                    }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
-                    val pes = PesWriter.write(generated.pattern,snapshot.writeSettings)
+                    val pes = PesWriter.write(generatedPattern,snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes,viewerSewoutMachine(snapshot.machineProfile?.id,snapshot.machineModel),
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(generated.pattern),pes,check)
+                    Triple(RenderData(generatedPattern),pes,check)
                 } }
                 if (version == revision) { render=output.first; bytes=output.second; report=output.third
                     resultSizeMm=output.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
@@ -214,7 +241,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val file = withContext(Dispatchers.IO) {
                     val directory = File(getApplication<Application>().filesDir, "designs")
-                    val name = suggestDesignName(getApplication<Application>().getString(if(style==PhotoStyle.OUTLINE) R.string.photo_outline_file_stem else R.string.photo_file_stem)) { stem ->
+                    val name = suggestDesignName(getApplication<Application>().getString(when(style) { PhotoMode.OUTLINE -> R.string.photo_outline_file_stem; PhotoMode.COLOR -> R.string.photo_color_file_stem; else -> R.string.photo_file_stem })) { stem ->
                         directory.listFiles()?.any { it.nameWithoutExtension.equals(stem, true) } == true
                     }
                     writeNamedDesign(directory, name, "pes", false, pes)
