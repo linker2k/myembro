@@ -1,177 +1,177 @@
-# SE400 직접 USB / FAT12 — integrator 메모
+# SE400 Direct USB / FAT12 — Integrator Notes
 
-`main`을 먼저 fast-forward(`ba4f5e2`)한 `codex/worker`에서 구현했다. push는 하지 않는다.
-기존 도안 목록·뷰어→목록 USB 내보내기 콜백에 이미 연결되어 별도의 MainActivity Kotlin 연결은 필요 없다.
+Implemented on `codex/worker` after first fast-forwarding `main` (`ba4f5e2`). No push is performed.
+Already connected to the existing design-list/viewer→list USB export callbacks, so no separate MainActivity Kotlin wiring is needed.
 
-## 계층과 동작
+## Layers and behavior
 
-- `engine/fat12/BlockDevice`: `sectorSize`, `sectorCount`, LBA 단위 read/write. Android 의존성 없음.
-- `Fat12Volume.mount`: sector0의 BPB를 먼저 검사해 슈퍼플로피를 인식한다. BPB가 아니면 MBR의
-  첫 비어 있지 않은 **primary FAT12(type 01)** 파티션을 사용한다. GPT/확장 파티션과 FAT16/32는 거부한다.
-  BPB 섹터 크기와 장치 섹터 크기는 같아야 하며 512/1024/2048/4096바이트를 지원한다.
-- 루트 파일 목록·용량/할당 가능한 여유 공간·고정 루트 엔트리 수, 새 파일 쓰기/읽기/삭제를 제공한다.
-  하위 폴더 생성/탐색·포맷·복구는 제공하지 않는다. 읽기 전용 파일/디렉터리는 삭제하지 않는다.
-- FAT12 홀짝 12비트 엔트리와 섹터 경계 걸침을 처리한다. 2개 FAT 볼륨은 두 사본을 모두 갱신한다.
-  기존 사본 불일치, 루트 파일의 교차/순환 체인, 잘못된 크기/범위를 발견하면 거부한다.
-- 쓰기 순서: 데이터→FAT 사본들→루트 엔트리. 삭제 순서: 루트 참조 제거→FAT 해제.
-  각 전송 후 장치에서 다시 읽어 비교하고 새 파일 전체도 재읽기한다. I/O 실패 후에는 그 세션을
-  폐기하며 후속 파일을 계속 쓰거나 자동 재시도하지 않는다. 기존 BPB/MBR은 쓰지 않는다.
-- `ShortNames`: ASCII 대문자 8.3, 중복 `_1`… 접미사, 비ASCII-only 이름은 DESIGN.PES 등으로 매핑.
-  LFN은 생성하지 않는다. 기존 LFN이 붙은 파일의 삭제는 순번/체크섬이 확인된 소유 슬롯만 함께 지운다.
-- app `LibaumsBlockDevice`: libaums **core 0.10.0** `BlockDeviceDriver`를 사용한다. 이 버전의
-  `ScsiBlockDevice.blocks`는 실제로 마지막 LBA이므로 **+1**해 sectorCount로 바꾼다. 버전 갱신 시
-  이 의미를 재확인해야 한다. 블록 전송은 최대 16KiB 청크이며 offset은 바이트가 아닌 LBA다.
-- `DirectUsbAccess`: class 8 / transparent SCSI 6 / BOT 80 인터페이스·bulk IN/OUT·LUN 0만 지원한다.
-  libaums `UsbMassStorageDevice.init`, Partition/FS factory는 호출하지 않는다. USB attach/detach,
-  명시적 UsbManager 권한 요청, 거부/분리/해제를 처리한다. 권한 전에 장치에 쓰거나 마운트하지 않는다.
-- `UsbExporter.drives`: 마운트된 SAF 드라이브가 있으면 기존 경로, 없으면 BOT/SCSI 타깃을 직접 드라이브로
-  노출한다. 라벨에는 실제 productName(없으면 VID/PID)을 함께 보여준다. 라벨이 SE400 인증을 뜻하지 않으며
-  FAT12 이외의 장치는 쓰지 않는다. 여러 직접 타깃은 기존 드라이브 선택 창으로 구분한다.
-- 모든 파일 변환·장치 열기·마운트·쓰기/삭제/재읽기는 Dispatchers.IO에서 수행한다. 권한/선택 UI만 메인 스레드다.
-- 배치 공간/루트 엔트리 검사를 먼저 한다. 부족하면 `DirectUsbSpaceDialog`의 기본 선택 없는 체크 목록을
-  표시한다. 선택한 PES만 지우며 충분한 공간/슬롯이 되는 경우에만 확인 버튼을 켠다. 다시 열었을 때
-  USB 장치 ID와 BPB/FAT/루트 fingerprint가 달라지면 삭제하지 않는다. 파일 내용 전체의 fingerprint는 아니다.
+- `engine/fat12/BlockDevice`: `sectorSize`, `sectorCount`, LBA-based read/write. No Android dependencies.
+- `Fat12Volume.mount`: Checks the BPB in sector0 first to recognize a superfloppy. Otherwise, uses the
+  first nonempty **primary FAT12(type 01)** partition in the MBR. Rejects GPT/extended partitions and FAT16/32.
+  BPB and device sector sizes must match; 512/1024/2048/4096 bytes are supported.
+- Provides root file listing, capacity/allocatable free space, fixed root entry count, and new-file writing/reading/deletion.
+  Does not provide subfolder creation/browsing, formatting, or repair. Does not delete read-only files/directories.
+- Handles odd/even FAT12 12-bit entries and sector-boundary crossings. Updates both copies on volumes with 2 FATs.
+  Rejects existing copy mismatches, cross-linked/cyclic root-file chains, and invalid sizes/ranges.
+- Write order: data→FAT copies→root entry. Delete order: remove root reference→release FAT.
+  Reads back and compares after each transfer, then rereads the entire new file. After I/O failure, discards the session
+  without continuing subsequent file writes or automatically retrying. Does not write existing BPB/MBR.
+- `ShortNames`: ASCII uppercase 8.3, duplicate suffixes `_1`…, names containing only non-ASCII characters mapped to DESIGN.PES and similar names.
+  Does not create LFN. When deleting a file with an existing LFN, also removes only owned slots with verified order/checksum.
+- App `LibaumsBlockDevice`: Uses libaums **core 0.10.0** `BlockDeviceDriver`. In this version,
+  `ScsiBlockDevice.blocks` is actually the last LBA, so **+1** converts it to sectorCount. Reconfirm this meaning
+  when updating versions. Block transfers use chunks of at most 16KiB, with offsets in LBA rather than bytes.
+- `DirectUsbAccess`: Supports only class 8 / transparent SCSI 6 / BOT 80 interfaces, bulk IN/OUT, and LUN 0.
+  Does not call libaums `UsbMassStorageDevice.init` or Partition/FS factories. Handles USB attach/detach,
+  explicit UsbManager permission requests, denial/disconnection/release. Does not write or mount before permission.
+- `UsbExporter.drives`: Uses the existing path when a mounted SAF drive exists; otherwise exposes BOT/SCSI targets
+  as direct drives. Labels include the actual productName (or VID/PID). A label does not certify SE400 compatibility;
+  non-FAT12 devices are not written. Multiple direct targets are distinguished through the existing drive chooser.
+- All file conversion, device opening, mounting, writing/deletion/rereading runs on Dispatchers.IO. Only permission/selection UI uses the main thread.
+- Checks batch space/root entries first. If insufficient, displays the checklist in `DirectUsbSpaceDialog` with nothing selected
+  by default. Deletes only selected PES and enables confirmation only when sufficient space/slots will be available. On reopening,
+  does not delete if the USB device ID or BPB/FAT/root fingerprint changed. This is not a fingerprint of all file contents.
 
-libaums 고정 버전 소스:
+Pinned libaums version source:
 https://repo.maven.apache.org/maven2/me/jahnen/libaums/core/0.10.0/core-0.10.0-sources.jar
-프로젝트: https://github.com/magnusja/libaums
-USB 권한/인터페이스 필터: https://developer.android.com/develop/connectivity/usb/host
-FAT 포맷 근거: Microsoft-authored [Microsoft FAT Specification](https://www.scs.stanford.edu/~zyedidia/docs/_other/fat.pdf).
+Project: https://github.com/magnusja/libaums
+USB permission/interface filtering: https://developer.android.com/develop/connectivity/usb/host
+FAT format reference: Microsoft-authored [Microsoft FAT Specification](https://www.scs.stanford.edu/~zyedidia/docs/_other/fat.pdf).
 
-## 검증
+## Validation
 
-필수 JVM 테스트 도구는 dosfstools의 `/usr/sbin/mkfs.fat`, `/usr/sbin/fsck.fat`다.
-Ubuntu CI에는 dosfstools 설치 단계와 engine/app JVM 테스트를 추가했다.
+Required JVM test tools are dosfstools' `/usr/sbin/mkfs.fat` and `/usr/sbin/fsck.fat`.
+Ubuntu CI now includes dosfstools installation and engine/app JVM tests.
 
 ```bash
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-테스트 중 `mkfs.fat -F 12 -C ... 480`으로 480KiB 이미지를 임시 디렉터리에 생성한다. 생성 이미지와
-MBR 변형은 커밋하지 않는다. 정상 쓰기/삭제 뒤 `fsck.fat -n` exit 0을 확인한다. MBR 변형은 파티션
-내용을 별도 임시 파일에 꺼내 fsck하고 MBR/앞쪽 영역 불변도 검사한다.
+Tests create a 480KiB image in a temporary directory using `mkfs.fat -F 12 -C ... 480`. Generated images and
+MBR variants are not committed. Successful write/delete is followed by verifying `fsck.fat -n` exit 0. For MBR variants,
+partition contents are extracted into a separate temporary file for fsck, and MBR/preceding-area immutability is checked.
 
-2026-10-23 최종 실행: 엔진 **196개**, 앱 JVM **110개** 테스트가 모두 통과하고 assembleDebug가 성공했다.
-새 FAT12/USB 테스트는 엔진 10개 + 어댑터 3개 + 삭제 계획 2개다. APK의 libaums 라이선스/공지 포함도 확인했다.
+Final run on 2026-10-23: All **196** engine and **110** app JVM tests passed, and assembleDebug succeeded.
+New FAT12/USB tests comprise 10 engine + 3 adapter + 2 deletion-plan tests. Inclusion of the libaums license/notices in the APK was also checked.
 
-검증 항목: 실제 PES 바이트 왕복, 홀짝/섹터 경계 FAT 엔트리, 조각난 할당, FAT 사본 일치,
-디스크/루트 엔트리 부족 시 무변경, 8.3 중복 이름, LFN 삭제, 손상 BPB/짧은 장치/사본 불일치 거부,
-외부 메타데이터 변경 거부, 읽기 비교 실패 및 두 번째 FAT 사본 쓰기 도중 실패 후 추가 쓰기 차단.
-앱 JVM 테스트는 fake SCSI 드라이버로 마지막 섹터/16KiB 청크/짧은 읽기/엔진 브리지를 검사하고,
-삭제 목록 기본 미선택·선택된 파일만 허용·공간과 루트 슬롯 동시 충족 조건을 검사한다.
+Checks cover actual PES byte round trips, odd/even/sector-boundary FAT entries, fragmented allocation, FAT copy consistency,
+no changes on disk/root-entry exhaustion, 8.3 duplicate names, LFN deletion, rejection of corrupt BPB/short devices/copy mismatches,
+rejection of external metadata changes, and blocking further writes after readback comparison failure or failure while writing the second FAT copy.
+App JVM tests use a fake SCSI driver to inspect the final sector/16KiB chunks/short reads/engine bridge,
+and check default-unselected deletion lists, allowing only selected files, and simultaneous space/root-slot requirements.
 
-## 실제 SE400 + Fold7 검증
+## Actual SE400 + Fold7 validation
 
-2026-10-23 alpha26: 사용자가 **직접 USB 전송 및 SE400에서 도안이 정상적으로 열림**을 확인했다.
-아래는 최초 확인 절차이며 봉제, 전원/케이블 분리 중 오류 등은 별도 확인 범위다.
+2026-10-23 alpha26: The user confirmed **direct USB transfer and successful opening of the design on SE400**.
+The following is the initial verification procedure; sewing and errors during power/cable disconnection require separate verification.
 
-1. 다른 USB 파일 관리자와 Windows 연결을 닫고 SE400 전원을 켠 상태에서 Fold7에 연결한다.
-2. 내보내기 드라이브에 ‘SE400 직접 연결 · 실제 장치명’이 보이고 USB 권한 허용 후 FAT12 BPB가
-   읽히는지 확인한다. VID/PID, sectorSize/sectorCount와 실제 BPB/MBR 유무는 현재 미확인이다.
-3. 작은 100×100 이내 PES 한 개를 전송해 앱의 실제 8.3 이름·재읽기 완료 메시지와 미싱 목록 인식을 확인한다.
-4. 공간 부족 시 취소하면 파일이 유지되는지, 선택한 PES만 삭제하는지, 충분한 용량으로 재시도되는지 확인한다.
-5. 미싱 전원을 끄면 파일이 사라지는 실측 특성을 안내한다. 쓰는 도중 전원/케이블을 분리하지 않는다.
+1. Close other USB file managers and Windows connections, and connect the powered-on SE400 to Fold7.
+2. Check that the export drive shows ‘SE400 direct connection · actual device name’ and that the FAT12 BPB
+   can be read after granting USB permission. VID/PID, sectorSize/sectorCount, and actual BPB/MBR presence are currently unconfirmed.
+3. Transfer one small PES within 100×100, and verify the app's actual 8.3 name/readback-complete message and recognition in the machine's list.
+4. When space is insufficient, verify cancellation preserves files, only selected PES are deleted, and retry has sufficient capacity.
+5. Explain the measured behavior that files disappear when the machine is powered off. Do not disconnect power/cable during writing.
 
-FAT는 저널 파일시스템이 아니므로 전원/케이블 분리가 FAT 사본 업데이트 중 발생하면 불일치/할당 누수가
-남을 수 있다. 코드는 복구/포맷하지 않는다. 비정상 볼륨에서 반복 쓰기를 하지 말고 다시 연결해 확인한다.
-SE400의 실제 펌웨어·BOT 명령 호환, 폴드7 USB 권한 UI, native AAR 동작 및 봉제는 실기 확인 범위다.
+FAT is not a journaled filesystem, so power/cable disconnection during FAT-copy updates can leave inconsistencies/allocation leaks.
+The code does not repair/format. Do not repeatedly write an abnormal volume; reconnect and inspect it.
+Actual SE400 firmware/BOT command compatibility, Fold7 USB permission UI, native AAR behavior, and sewing require physical-device verification.
 
-## alpha14 긴급 통합: RAM 디스크 호환성과 진단
+## alpha14 emergency integration: RAM disk compatibility and diagnostics
 
-main `7aa0806` 기반. `:engine:test` **214개**, `:app:testDebugUnitTest` **117개**, `:app:assembleDebug` 통과.
-추가 회귀 검증은 비표준 점프·OEM·미디어, BPB/FAT 미디어 차이, 16/32비트 BPB 용량 클램프,
-파티션 뒤 영역 불변, MBR 오인 거부, FAT12 범위·FAT 크기 유지, 512바이트 진단 hex 왕복,
-실제 BOT 응답 관찰 시 버퍼 위치·통신 횟수 불변이다. 생성 이미지 바이너리는 커밋하지 않는다.
+Based on main `7aa0806`. `:engine:test` **214**, `:app:testDebugUnitTest` **117**, `:app:assembleDebug` passed.
+Additional regressions cover nonstandard jumps/OEM/media, BPB/FAT media differences, 16/32-bit BPB capacity clamping,
+immutability after the partition, rejection of false MBR recognition, preservation of FAT12 range/FAT size, 512-byte diagnostic hex round trips,
+and unchanged buffer positions/communication counts while observing actual BOT responses. Generated image binaries are not committed.
 
-`Fat12Volume.warnings`에 호환 경고를 보관하고 내보내기 결과에도 표시한다. 클램프는 접근 가능한
-영역만 제한하며 BPB·볼륨명은 쓰지 않는다. 원래 선언된 클러스터 수가 FAT12가 아니거나 FAT가
-작으면 여전히 거부한다. 실제 영역 밖을 가리키는 기존 파일 체인도 거부하며 자동으로 고치지 않는다.
+Compatibility warnings are retained in `Fat12Volume.warnings` and displayed in export results. Clamping only limits the accessible
+area; BPB/volume labels are not written. Volumes are still rejected if the originally declared cluster count is not FAT12 or the FAT
+is too small. Existing file chains outside the actual area are also rejected rather than automatically repaired.
 
-실기 재시도에서 실패하면 도안 목록의 USB 실패 다이얼로그에서 **진단 정보 복사** 또는 **공유**로
-텍스트를 전달한다. Superfloppy/MBR 실패 원인 모두와 INQUIRY vendor/product/revision,
-READ CAPACITY 원시값·블록 수·블록 크기, sector0 512바이트 hex·BPB 해석값이 포함된다.
-진단용 추가 SCSI 명령은 없고 libaums 초기화 응답을 관찰한다. 초기화/읽기 이전 실패 항목은 미확인으로
-표시한다. 실기 성공 여부는 이 텍스트와 사용자 재시험 결과를 기다린다.
+If a physical-device retry fails, send text using **Copy diagnostics** or **Share** in the design list's USB failure dialog.
+It includes both Superfloppy/MBR failure reasons, INQUIRY vendor/product/revision, raw READ CAPACITY values/block count/block size,
+and sector0 512-byte hex/parsed BPB values. No additional diagnostic SCSI commands are issued; libaums initialization responses are observed.
+Items failing before initialization/reading are displayed as unconfirmed.
+Physical-device success awaits this text and the user's retest results.
 
-일괄 가져오기는 긴급 작업과 분리해 `WIP batch design import before urgent SE400 diagnostics`
-이름의 git stash에 보관했다. 이 긴급 커밋만 통합해 alpha14를 배포할 수 있다.
+Batch import was separated from emergency work and stored in a git stash named
+`WIP batch design import before urgent SE400 diagnostics`. Integrating only this emergency commit permits alpha14 release.
 
-## alpha20 긴급 통합: 실제 MBR 길이 제한
+## alpha20 emergency integration: actual MBR length limit
 
-실기 진단: 순수 MBR, boot `0x80`, type `0x01`, start `32`, count `987`,
+Physical-device diagnostics: pure MBR, boot `0x80`, type `0x01`, start `32`, count `987`,
 READ CAPACITY lastLBA `987` / blockCount `988`.
-파티션 길이를 **956섹터(LBA 32..987)**로 제한하고 기존 BPB total 클램프에 넘긴다.
-장치 밖 start·0 길이, 범위 안에 들어오지 않는 FAT/루트/데이터 및 파일 체인은 계속 거부한다.
-파티션 길이를 제한해도 MBR·BPB·라벨 바이트는 그대로 두며 포맷하지 않는다.
+Partition length is limited to **956 sectors (LBA 32..987)** and passed to the existing BPB total clamp.
+Starts outside the device, 0 length, FAT/root/data outside the bounds, and out-of-bounds file chains remain rejected.
+Limiting partition length leaves MBR/BPB/label bytes unchanged and does not format.
 
-`Fat12Volume.mount(device, onBootSector)`는 기존 읽기 결과를 파싱 전에 관찰할 수 있게 한다.
-USB 진단 v2는 이를 이용해 sector0와 partition start sector (LBA 32)의 512바이트 hex·BPB를
-별도로 남긴다. 실제 BPB가 실패해도 진단에 포함하며, 진단을 위한 추가 SCSI 읽기는 없다.
+`Fat12Volume.mount(device, onBootSector)` allows observing existing read results before parsing.
+USB diagnostics v2 uses this to record separate 512-byte hex/BPB for sector0 and the partition start sector (LBA 32).
+The actual BPB is included even if it fails; no additional SCSI reads are issued for diagnostics.
 
-`Se400FirmwareLayoutTest`는 제공된 MBR 필드를 리터럴로 재현하고 988블록 장치와 합성 BPB/FAT를
-만든다. 제공되지 않은 CHS/부트코드는 0으로 채웠다. PES 쓰기→재마운트→읽기, 남은 공간을
-마지막 LBA 987까지 채우기, 모든 쓰기가 상대 섹터 0..955 안에 있는지, FAT 사본 일치,
-MBR/파티션 앞 영역/BPB/두 볼륨 라벨 불변, 잘못된 start와 손상된 제한 영역의 거부를 검사한다.
-실제 LBA 32 BPB와 미싱의 파일 인식 여부는 다음 실기 보고로 확인한다.
+`Se400FirmwareLayoutTest` literally reproduces the provided MBR fields and creates a 988-block device with synthetic BPB/FAT.
+Unprovided CHS/boot code is filled with 0. Checks cover PES write→remount→read, filling remaining space to the
+last LBA 987, all writes staying within relative sectors 0..955, FAT copy consistency,
+immutability of MBR/pre-partition area/BPB/both volume labels, and rejection of invalid starts and corrupt clamped areas.
+The actual LBA 32 BPB and machine file recognition will be confirmed in the next physical-device report.
 
-검증 완료: `:engine:test` **240개**, `:app:testDebugUnitTest` **156개**, `:app:assembleDebug` 통과.
+Validation complete: `:engine:test` **240**, `:app:testDebugUnitTest` **156**, `:app:assembleDebug` passed.
 
-## 진단 v3 긴급 통합: FAT 예약 바이트·사본 차이와 실제 115클러스터
+## Diagnostics v3 emergency integration: FAT reserved bytes/copy differences and actual 115 clusters
 
-실측 BPB는 512B/sector, 8 sectors/cluster, reserved 1, FAT 2개 × 1섹터,
-root 512 entries, total 987, hidden 32다. FAT1=LBA33, FAT2=LBA34, root=LBA35..66,
-data=LBA67이다. 선언 119클러스터 중 장치 안에 완전히 들어가는 **115개(FAT ID 2..116)**만
-할당한다. LBA987은 한 섹터만 남아 클러스터로 사용하지 않는다. 어느 FAT든 초과 네 슬롯
-**ID 117..120**이 비어 있지 않으면 마운트/쓰기를 거부하고 사본·ID·값을 보고한다.
+The measured BPB has 512B/sector, 8 sectors/cluster, reserved 1, 2 FATs × 1 sector,
+root 512 entries, total 987, hidden 32. FAT1=LBA33, FAT2=LBA34, root=LBA35..66,
+data=LBA67. Of the declared 119 clusters, only **115 (FAT ID 2..116)** entirely within the device
+are allocated. LBA987 has only one sector left and is not used as a cluster. If any of the four excess slots
+**ID 117..120** in either FAT is nonempty, mounting/writing is rejected and the copy/ID/value reported.
 
-예약 엔트리 `00 00 00`도 경고로 받아들인다. FAT1의 예약 바이트는 유지하고 정상값으로
-고치지 않는다. FAT 사본 차이도 경고로 받아들이며 FAT1 기준으로 파일을 쓸 때 두 사본을
-동일하게 갱신한다. 마운트는 수정하지 않는다. `unchanged()`는 각 사본의 초기 스냅샷과 비교해
-기존 차이와 마운트 후 외부 변경을 구분한다. I/O 실패 후 같은 세션에서 추가 쓰기는 계속 금지한다.
+Reserved entries `00 00 00` are accepted with a warning. FAT1's reserved bytes are preserved rather than
+corrected to normal values. FAT copy differences are also accepted with warnings; when writing files based on FAT1,
+both copies are updated identically. Mounting makes no modifications. `unchanged()` compares each copy with its initial snapshot
+to distinguish existing differences from external changes after mounting. Further writes in the same session remain prohibited after I/O failure.
 
-`Fat12Volume.MountObserver`는 부트섹터뿐 아니라 기존 FAT/루트 읽기도 검증 전에 관찰한다.
-진단 v3는 FAT1·FAT2의 앞 64바이트와 루트 첫 섹터 전체 hex를 포함한다. 실패 뒤 추가 읽기를
-보내지 않으므로 이 값은 **마운트 시점 스냅샷**이다. 포맷·볼륨명 변경은 없다.
+`Fat12Volume.MountObserver` observes existing FAT/root reads as well as boot sectors before validation.
+Diagnostics v3 includes the first 64 bytes of FAT1/FAT2 and full hex of the first root sector. No additional reads
+are sent after failure, so these values are **snapshots at mount time**. No formatting or volume renaming occurs.
 
-실측 BPB 필드를 재현한 테스트에서 예약 바이트 두 경우의 PES 왕복, 115개 클러스터 전체 채우기,
-예약 바이트·MBR·BPB·라벨·LBA987 불변, FAT 사본 차이/동기화, 양쪽 FAT의 초과 할당 거부,
-마운트 이후 외부 FAT 변경 거부와 진단 원시 바이트 보존을 검증한다. 제공되지 않은 부트코드·CHS·OEM
-등은 테스트에서 합성한 값이며, 생성 이미지 바이너리는 커밋하지 않는다.
+Tests reproducing the measured BPB fields verify PES round trips for both reserved-byte cases, filling all 115 clusters,
+immutability of reserved bytes/MBR/BPB/labels/LBA987, FAT copy differences/synchronization, rejection of excess allocation in either FAT,
+rejection of external FAT changes after mounting, and preservation of raw diagnostic bytes. Unprovided boot code/CHS/OEM
+and similar fields are synthetic test values; generated image binaries are not committed.
 
-검증 완료: `:engine:test` **269개**, `:app:testDebugUnitTest` **156개**, `:app:assembleDebug` 통과.
+Validation complete: `:engine:test` **269**, `:app:testDebugUnitTest` **156**, `:app:assembleDebug` passed.
 
-## alpha26 이후: 지속되는 결과 창과 최근 20건 기록
+## After alpha26: persistent result dialog and latest 20 records
 
-- SAF/직접 USB 모두 성공·부분 실패·실패를 스낵바 대신 명시적 닫기 버튼이 있는 결과 창으로 표시한다.
-- 기본 화면에는 사용자 요약(실제 이름·전송 크기·남은 공간)과 실제 문제만 표시한다.
-  기술 로그/원시 실패 이유는 기본으로 접힌 ‘자세히’와 ‘진단 복사/공유’에만 표시한다.
-- 확인된 SE400의 MBR/BPB 보정, 115개 클러스터 한도, 예약 바이트 00과 파생 미디어 차이는
-  해당 실측 geometry에서만 정상 펌웨어 동작으로 취급한다. 엔진의 검증/쓰기 경계는 변경하지 않는다.
-- 도안 목록 상단 기록 버튼에서 최근 20건을 시간·파일·결과로 열람한다. 앱 내부 JSON을 원자적으로
-  교체해 보존하며 미닫힘 결과도 복원한다. 실패 후에는 손상 가능 세션에서 여유 공간을 다시 읽지 않는다.
-- 전송 크기는 실제 PES 출력 바이트, 여유 공간은 FAT에서 남은 클러스터를 기준으로 한다.
-  SAF 공급자가 여유 공간을 제공하지 않으면 ‘알 수 없음’으로 표시한다.
+- Both SAF/direct USB display success/partial failure/failure in a result dialog with an explicit close button rather than a snackbar.
+- The default view shows user-facing summaries (actual names/transfer size/remaining space) and actual problems only.
+  Technical logs/raw failure reasons appear only in collapsed-by-default ‘Details’ and ‘Copy/share diagnostics’.
+- Confirmed SE400 MBR/BPB adjustments, the 115-cluster limit, reserved bytes 00, and derived media differences
+  are treated as normal firmware behavior only for that measured geometry. Engine validation/write boundaries are unchanged.
+- The history button above the design list shows the latest 20 records by time/file/result. They are persisted by atomically replacing
+  app-internal JSON, and unclosed results are restored. After failure, free space is not reread from a potentially damaged session.
+- Transfer size uses actual PES output bytes; free space uses remaining clusters in the FAT.
+  If the SAF provider does not supply free space, it is displayed as ‘Unknown’.
 
-검증: `:engine:test` 269개, `:app:testDebugUnitTest` 162개, `:app:assembleDebug` 통과.
-추가 JVM 검증은 최근 20건 보존/닫힘 복원/진단 왕복, 실측 SE400 배치에서 실제 이름·크기·여유
-공간, 이름 충돌, 부분 쓰기 실패 시 완료 파일 보존·추가 I/O 금지, 예상 밖 FAT 차이 경고를 포함한다.
-분리된 QA applicationId와 테스트 기록으로 에뮬레이터에서 en/ko 요약, 기본 접힘, 뒤로/바깥 터치로
-결과 유지, 진단 복사, 닫힘의 프로세스 재실행 후 유지, 최근 기록 및 부분 실패 화면을 확인했다.
-이번 후속 UI 빌드의 실제 미싱 재전송은 수행하지 않았다. QA 앱/앱별 언어 설정은 정리했다.
+Validation: `:engine:test` 269, `:app:testDebugUnitTest` 162, `:app:assembleDebug` passed.
+Additional JVM checks cover retaining the latest 20 records/closed-state restoration/diagnostic round trips, actual names/sizes/free
+space on the measured SE400 layout, name collisions, preservation of completed files/no further I/O on partial write failure, and unexpected FAT-difference warnings.
+Using a separate QA applicationId and test records, emulator checks covered en/ko summaries, default collapsed details, retaining results on back/outside touch,
+copying diagnostics, preserving closed state after process restart, recent history, and partial-failure screens.
+No retransmission to an actual machine was performed with this follow-up UI build. The QA app/per-app language settings were cleaned up.
 
-## 파일 점유량과 원본 기반 8.3 이름
+## Disk usage and original-based 8.3 names
 
-실측 `10120`바이트 PES는 4KB 클러스터 3개(`12288`바이트)를 차지한다. 결과/기록/파일별
-상세에 파일 바이트와 실제 할당 바이트를 구분하고, KB=1024 기준 짧은 요약과 정확한 진단을
-제공한다. 이전 기록은 점유량 필드가 없어도 읽으며 ‘알 수 없음’으로 둔다. 디스크 여유 공간은
-115개 사용 가능 클러스터의 FAT 할당 상태를 쓰는 기존 계산을 유지한다. 테스트에서 빈 디스크,
-10120바이트 쓰기, 별도 1바이트 파일의 1클러스터 소비, 삭제 및 재마운트의 여유 공간을 확인한다.
+The measured `10120`-byte PES occupies 3 clusters of 4KB (`12288` bytes). Results/history/per-file
+details distinguish file bytes from actual allocated bytes, providing short summaries using KB=1024 and precise diagnostics.
+Older records remain readable without an allocation field and display ‘Unknown’. Disk free space retains the existing
+calculation using FAT allocation state across 115 usable clusters. Tests check free space on an empty disk,
+a 10120-byte write, consumption of 1 cluster by a separate 1-byte file, deletion, and remounting.
 
-이름이 `EMBROIDE`로 잘린 직접 원인은 입력 stem 앞 8자만 보던 `ShortNames.unique`였다.
-`UsbDesignNames`는 원본의 의미 있는 부분을 먼저 골라 8.3으로 만들고, 충돌은 `~1` 등으로
-해결한다. 엔진은 `~`를 유효한 FAT 문자로 보존하도록만 확장했다(기존 `_1` 정책은 유지).
-원본 이름을 진단에 보존해 공급자/입력 파일에서 이미 일반 이름이 된 경우를 구분할 수 있다.
+The direct cause of names being truncated to `EMBROIDE` was `ShortNames.unique` considering only the first 8 characters of the input stem.
+`UsbDesignNames` first selects meaningful parts of the original to form 8.3 names, resolving collisions with `~1` and similar suffixes.
+The engine was extended only to preserve `~` as a valid FAT character (existing `_1` policy retained).
+Original names remain in diagnostics to distinguish cases already given generic names by the provider/input file.
 
-후속 검증: 엔진 269개·앱 JVM 167개 테스트와 assembleDebug 통과. 기록 저장/복원은 JVM 테스트로, 분리된 QA 앱의 한국어
-결과 창에서 ‘파일 10KB · 디스크 사용 12KB(4KB 단위)’와 448KB 남은 공간을
-테스트 기록으로 확인했다. 실제 미싱의 남은 공간 화면과의 교차 확인은 사용자 보고 대기 중이다.
+Follow-up validation: 269 engine and 167 app JVM tests and assembleDebug passed. History persistence/restoration is covered by JVM tests;
+in the separate QA app's Korean result dialog, ‘File 10KB · Disk usage 12KB (4KB units)’ and 448KB free space
+were checked using test records. Cross-checking with the actual machine's free-space screen awaits the user's report.

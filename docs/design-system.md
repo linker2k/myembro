@@ -1,146 +1,146 @@
-# myembro 디자인 시스템 — A안 "따뜻한 크래프트" (확정)
+# myembro Design System — Option A "Warm Craft" (Confirmed)
 
-2026-10-22 확정. 캔버스의 B안(모던 스튜디오)·C안(밝은 미니멀)은 보류이며 참고용으로 남긴다.
-(`Color.kt`의 `BOTANICAL`/`INK` colorway는 A 팔레트의 변형으로, 캔버스의 B·C안과는 다르다.)
+Confirmed 2026-10-22. Canvas options B (Modern Studio) and C (Bright Minimal) are deferred and retained for reference.
+(The `BOTANICAL`/`INK` colorways in `Color.kt` are variations of palette A, distinct from canvas options B/C.)
 
-- 캔버스: https://claude.ai/artifact/Xa3DHb178qPXu6drysJFW8 — 페이지 "디자인 방향"(목업),
-  "디자인 시스템"(토큰·타이포·컴포넌트·스플래시/시작 화면 프로토타입), "프로토타입"(화면 흐름)
-- 구현: `app/.../ui/theme/` — `MyembroTheme`, `Color.kt`, `Type.kt`, `Shape.kt`, `MyembroSplash.kt`
-  (연결 방법은 아래 "구현 연결")
+- Canvas: https://claude.ai/artifact/Xa3DHb178qPXu6drysJFW8 — pages "Design Direction" (mockups),
+  "Design System" (tokens, typography, components, splash/start-screen prototypes), "Prototype" (screen flows)
+- Implementation: `app/.../ui/theme/` — `MyembroTheme`, `Color.kt`, `Type.kt`, `Shape.kt`, `MyembroSplash.kt`
+  (See "Implementation integration" below for wiring.)
 
-## 규칙
+## Rules
 
-1. 모든 화면은 `MyembroTheme` 안에서 `MaterialTheme.colorScheme.*`, `MaterialTheme.typography.*`,
-   `MaterialTheme.shapes.*`/`MyembroShapes`만 쓴다. **`Color(0x…)` 하드코딩 금지** — 예외는 실 색
-   (도안 데이터)과 `Color.kt` 자체뿐이다.
-2. 글자/배경 쌍은 4.5:1 이상(큰 글자 3:1). 아래 표의 `on*` 짝을 그대로 쓰면 만족한다.
-3. **세이지(secondary)·골드(tertiary)는 채움 전용.** 린넨 위 글자로 쓰면 2.7:1·2.0:1로 기준 미달이다.
-   그 위 글자는 `onSecondary`/`onTertiary`(잉크)를 쓰고, 세이지·골드 계열 글자가 필요하면
-   `onSecondaryContainer`/`onTertiaryContainer`를 쓴다.
-4. 상태를 색만으로 구분하지 않는다(배지에는 글자, 경고에는 아이콘과 문구).
-5. 터치 영역 최소 48dp(아이콘 버튼 포함). 본문 최소 12sp.
-6. 다크 모드는 아래 다크 열을 쓴다. 다크에서는 그림자 대신 surfaceContainer 단계로 높이를 표현한다.
+1. All screens use only `MaterialTheme.colorScheme.*`, `MaterialTheme.typography.*`,
+   and `MaterialTheme.shapes.*`/`MyembroShapes` inside `MyembroTheme`. **No hardcoded `Color(0x…)`** — exceptions
+   are thread colors (design data) and `Color.kt` itself.
+2. Text/background pairs must achieve at least 4.5:1 (3:1 for large text). Using the `on*` pairs below satisfies this.
+3. **Sage (secondary) and gold (tertiary) are for fills only.** As text on linen, their 2.7:1/2.0:1 ratios fall short.
+   Use `onSecondary`/`onTertiary` (ink) for text on those colors; when sage/gold-toned text is needed,
+   use `onSecondaryContainer`/`onTertiaryContainer`.
+4. Do not distinguish states by color alone (text on badges, icons and wording for warnings).
+5. Minimum touch target 48dp (including icon buttons). Minimum body text 12sp.
+6. Dark mode uses the dark column below. In dark mode, express elevation with surfaceContainer levels instead of shadows.
 
-## 컬러 토큰
+## Color tokens
 
-| 토큰 (`colorScheme.`) | 역할 | 라이트 | 다크 |
+| Token (`colorScheme.`) | Role | Light | Dark |
 |---|---|---|---|
-| `primary` | 주 버튼, 선택 상태, 강조 | `#B5492A` | `#EF9A78` |
-| `onPrimary` | primary 위 글자 | `#FFFFFF` | `#472314` |
-| `primaryContainer` | 선택된 칩, 탭 알약, 선택 레이어 행 | `#F5DED1` | `#693923` |
+| `primary` | Main buttons, selection, emphasis | `#B5492A` | `#EF9A78` |
+| `onPrimary` | Text on primary | `#FFFFFF` | `#472314` |
+| `primaryContainer` | Selected chips, tab pills, selected layer rows | `#F5DED1` | `#693923` |
 | `onPrimaryContainer` | | `#492516` | `#FFDBC8` |
-| `secondary` | 세이지 — 채움 전용 | `#7F9A76` | `#A4BC99` |
-| `onSecondary` | secondary 위 글자(잉크) | `#2B2420` | `#1F331E` |
-| `secondaryContainer` | 토널 버튼, PES 배지 배경 | `#E6ECDF` | `#354A30` |
-| `onSecondaryContainer` | 세이지 계열 글자 | `#273522` | `#E0EAD8` |
-| `tertiary` | 골드 — 후프 나사, 하이라이트 채움 | `#D9A441` | `#E8BE68` |
-| `onTertiary` | tertiary 위 글자(잉크) | `#2B2420` | `#402E05` |
-| `tertiaryContainer` | 주의 배너, 팁 | `#F7E8C6` | `#5C4313` |
-| `onTertiaryContainer` | 골드 계열 글자 | `#493506` | `#FFE2A5` |
-| `background` | 앱 바탕(린넨) | `#F6F0E6` | `#1C1815` |
-| `onBackground`, `onSurface` | 본문 글자(잉크) | `#2B2420` | `#F4EBDF` |
-| `surface` | 카드, 시트, 하단 탭 | `#FFFDF8` | `#26211D` |
-| `surfaceVariant` | 입력칸, 캔버스 바탕 | `#EEE5D8` | `#443A32` |
-| `onSurfaceVariant` | 보조 글자·아이콘 | `#72645A` | `#D2C3B4` |
-| `outline` | 테두리, 구분선 | `#D8CBB8` | `#998A7A` |
-| `outlineVariant` | 약한 구분선 | `#E8DED0` | `#50463C` |
-| `error` / `onError` | 오류, 후프 초과 | `#AD352C` / `#FFFFFF` | `#FFB4AA` / `#690005` |
-| `errorContainer` / `onErrorContainer` | 경고 배너 | `#F9DEDB` / `#4B1715` | `#89251E` / `#FFDAD4` |
-| (확장) hoop | 후프 나무테 (`LightHoopArgb`/`DarkHoopArgb`) | `#916448` | `#D7B58F` |
+| `secondary` | Sage — fills only | `#7F9A76` | `#A4BC99` |
+| `onSecondary` | Text on secondary (ink) | `#2B2420` | `#1F331E` |
+| `secondaryContainer` | Tonal buttons, PES badge backgrounds | `#E6ECDF` | `#354A30` |
+| `onSecondaryContainer` | Sage-toned text | `#273522` | `#E0EAD8` |
+| `tertiary` | Gold — hoop screw, highlight fills | `#D9A441` | `#E8BE68` |
+| `onTertiary` | Text on tertiary (ink) | `#2B2420` | `#402E05` |
+| `tertiaryContainer` | Caution banners, tips | `#F7E8C6` | `#5C4313` |
+| `onTertiaryContainer` | Gold-toned text | `#493506` | `#FFE2A5` |
+| `background` | App background (linen) | `#F6F0E6` | `#1C1815` |
+| `onBackground`, `onSurface` | Body text (ink) | `#2B2420` | `#F4EBDF` |
+| `surface` | Cards, sheets, bottom tabs | `#FFFDF8` | `#26211D` |
+| `surfaceVariant` | Input fields, canvas background | `#EEE5D8` | `#443A32` |
+| `onSurfaceVariant` | Secondary text/icons | `#72645A` | `#D2C3B4` |
+| `outline` | Borders, dividers | `#D8CBB8` | `#998A7A` |
+| `outlineVariant` | Subtle dividers | `#E8DED0` | `#50463C` |
+| `error` / `onError` | Errors, hoop overflow | `#AD352C` / `#FFFFFF` | `#FFB4AA` / `#690005` |
+| `errorContainer` / `onErrorContainer` | Warning banners | `#F9DEDB` / `#4B1715` | `#89251E` / `#FFDAD4` |
+| (extension) hoop | Wooden hoop frame (`LightHoopArgb`/`DarkHoopArgb`) | `#916448` | `#D7B58F` |
 
-surfaceContainer 단계(라이트 / 다크): Lowest `#FFFFFF`/`#15120F`, Low `#FBF6ED`/`#211C18`,
-기본 `#F2E9DC`/`#2B2520`, High `#ECE1D1`/`#362E28`, Highest `#E5D7C4`/`#413831`.
+surfaceContainer levels (light / dark): Lowest `#FFFFFF`/`#15120F`, Low `#FBF6ED`/`#211C18`,
+default `#F2E9DC`/`#2B2520`, High `#ECE1D1`/`#362E28`, Highest `#E5D7C4`/`#413831`.
 
-`Color.kt`는 primary `0xFFB5492A`로 맞춰져 있고(흰 글자 대비 기준 충족), 이전 값 `#C4552D`는 실 색 팔레트(`ThreadTerracotta`)로 옮겼다.
+`Color.kt` uses primary `0xFFB5492A` (meeting white-text contrast requirements); the previous `#C4552D` moved to the thread palette (`ThreadTerracotta`).
 
-### 실 색 팔레트 (콘텐츠 색, UI 상태에 쓰지 않음)
+### Thread palette (content colors, not for UI states)
 
-테라코타 `#C4552D`, 크림 `#EFE3C8`, 세이지 `#7F9A76`, 잎새 `#4F6B3A`, 골드 `#D9A441`,
-로즈 `#D86A7A`, 하늘 `#7FA7D9`, 먹색 `#2B2420`. 실제 도안의 실 색은 도안/PEC 팔레트 값을 그대로 쓴다.
+Terracotta `#C4552D`, cream `#EFE3C8`, sage `#7F9A76`, leaf `#4F6B3A`, gold `#D9A441`,
+rose `#D86A7A`, sky `#7FA7D9`, ink `#2B2420`. Actual design thread colors use the design/PEC palette values unchanged.
 
-## 타이포그래피 (`MyembroTypography`)
+## Typography (`MyembroTypography`)
 
-본문은 **Noto Sans KR**(가변, OFL), 디스플레이는 **Gowun Batang**(OFL) 하나만 쓴다. 둘 다 앱에 번들된다.
+Body text uses **Noto Sans KR** (variable, OFL), and display text uses only **Gowun Batang** (OFL). Both are bundled with the app.
 
-| 스타일 | 서체 | 크기/행간 (sp) | 굵기 | 쓰임 |
+| Style | Typeface | Size/line height (sp) | Weight | Usage |
 |---|---|---|---|---|
-| displayLarge | Gowun Batang | 48/62 | 400 | 스플래시 워드마크 |
-| displayMedium | Gowun Batang | 40/54 | 400 | 시작 화면 제목 |
-| displaySmall | Gowun Batang | 34/46 | 400 | 화면 큰 제목 |
-| headlineLarge/Medium/Small | Gowun Batang | 30/42 · 26/38 · 24/34 | 400 | 섹션 제목 |
-| titleLarge | Noto Sans KR | 22/32 | 600 | 앱 바 제목 |
-| titleMedium | Noto Sans KR | 18/28 | 600 | 카드·시트 제목 |
-| titleSmall | Noto Sans KR | 16/24 | 500 | 목록 제목 |
-| bodyLarge | Noto Sans KR | 16/26 | 400 | 본문 |
-| bodyMedium | Noto Sans KR | 14/22 | 400 | 보조 본문 |
-| bodySmall | Noto Sans KR | 12/18 | 400 | 메타 정보(최소 본문) |
-| labelLarge | Noto Sans KR | 14/22 | 600 | 버튼 |
-| labelMedium | Noto Sans KR | 12/18 | 500 | 칩, 하단 탭 |
-| labelSmall | Noto Sans KR | 11/16 | 500 | 배지 |
+| displayLarge | Gowun Batang | 48/62 | 400 | Splash wordmark |
+| displayMedium | Gowun Batang | 40/54 | 400 | Start-screen title |
+| displaySmall | Gowun Batang | 34/46 | 400 | Large screen titles |
+| headlineLarge/Medium/Small | Gowun Batang | 30/42 · 26/38 · 24/34 | 400 | Section titles |
+| titleLarge | Noto Sans KR | 22/32 | 600 | App-bar titles |
+| titleMedium | Noto Sans KR | 18/28 | 600 | Card/sheet titles |
+| titleSmall | Noto Sans KR | 16/24 | 500 | List titles |
+| bodyLarge | Noto Sans KR | 16/26 | 400 | Body text |
+| bodyMedium | Noto Sans KR | 14/22 | 400 | Secondary body text |
+| bodySmall | Noto Sans KR | 12/18 | 400 | Metadata (minimum body size) |
+| labelLarge | Noto Sans KR | 14/22 | 600 | Buttons |
+| labelMedium | Noto Sans KR | 12/18 | 500 | Chips, bottom tabs |
+| labelSmall | Noto Sans KR | 11/16 | 500 | Badges |
 
-숫자(mm, 땀 수)는 `fontFeatureSettings = "tnum"`으로 폭을 고정한다.
+Numbers (mm, stitch counts) use `fontFeatureSettings = "tnum"` for fixed-width digits.
 
-## 간격 · 모양 · 높이
+## Spacing · shape · elevation
 
-- 간격(dp, 4 단위): 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40. 화면 좌우 여백 20, 카드 안쪽 16,
-  목록 항목 사이 12, 섹션 사이 24.
-- 모양(`MyembroShapeScheme`): extraSmall 8(배지·툴팁), small 12(칩), medium 16(버튼·입력칸),
-  large 20(카드·캔버스), extraLarge 28(바텀시트 위 모서리·다이얼로그), 완전 원형(FAB·스위치·탭 알약).
-- 높이: 카드 1dp, 떠 있는 툴바·레이어 패널 3dp, 바텀시트·FAB 6dp. 그림자 색은 잉크 계열이고,
-  다크에서는 surfaceContainer 단계로 대신한다.
+- Spacing (dp, increments of 4): 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40. Screen horizontal margins 20, card padding 16,
+  gaps between list items 12, between sections 24.
+- Shapes (`MyembroShapeScheme`): extraSmall 8 (badges/tooltips), small 12 (chips), medium 16 (buttons/input fields),
+  large 20 (cards/canvas), extraLarge 28 (bottom-sheet top corners/dialogs), fully rounded (FAB/switches/tab pills).
+- Elevation: cards 1dp, floating toolbars/layer panels 3dp, bottom sheets/FAB 6dp. Shadows use ink tones;
+  in dark mode, surfaceContainer levels replace them.
 
-## 컴포넌트 규격 (dp)
+## Component specifications (dp)
 
-| 컴포넌트 | 규격 |
+| Component | Specification |
 |---|---|
-| Primary 버튼 | 높이 52, shape medium(16), `primary`/`onPrimary`, labelLarge, 아이콘 18 + 간격 8. 화면당 하나 |
-| Tonal 버튼 | 높이 52, `secondaryContainer`/`onSecondaryContainer` |
-| Outline 버튼 | 높이 48, 1.5dp `outline` 테두리, 글자 `onSurface`. 비활성: `surfaceVariant` 바탕 + `onSurfaceVariant` |
-| 필터 칩 | 높이 40, 좌우 16, shape small(12). 선택 `primary`/`onPrimary`, 기본 `surface` + 1dp `outline` |
-| 배지 | 좌우 8, 상하 4, shape extraSmall(8), labelSmall. PES = `secondaryContainer`, 후프 초과 = `errorContainer`, 품질 좋음/주의/부적합 = `secondaryContainer`/`tertiaryContainer`/`errorContainer` + 글자 |
-| 도안 카드 | shape large(20), `surface`, 1dp `outlineVariant` 테두리, 썸네일 높이 176(후프 안 미리보기, `surfaceContainer` 바탕), 본문 패딩 12/14, 제목 titleMedium, 메타 bodySmall `onSurfaceVariant` |
-| 하단 탭 | 높이 80, `surface`, 4개 고정(홈 · 도안 · 만들기 · 설정, 동선은 "화면 동선 (IA)"). 선택은 64×32 알약 `primaryContainer`, 아이콘·글자 `primary`, labelMedium |
-| 바텀시트 | 위 모서리 28, 손잡이 32×4 `outline`, 안쪽 좌우 24, 제목 titleMedium + 탭(변형/스티치/색상), 아래 주 버튼 하나. 뒤 scrim은 `onBackground` 40% |
-| 슬라이더 | 트랙 4, 활성 `primary`, 비활성 `surfaceVariant`, 썸 20. 값은 항상 오른쪽에 숫자+단위 |
-| 세그먼트 | 높이 44, 바탕 `surfaceVariant` + 패딩 4, 선택 `primary`/`onPrimary`, 모서리 12 |
-| 입력칸 | 높이 52, shape medium(16), `surface` + 1dp `outline`, 단위(mm)는 오른쪽 bodyMedium. 오류는 2dp `error` 테두리 + 아래 문구 |
-| 검색창 | 높이 52, 왼쪽 돋보기 20, 오른쪽 필터 버튼 |
-| 상태 배너 | 높이 52 이상, shape medium. USB 연결·후프 맞음 = `secondaryContainer`, 주의 = `tertiaryContainer`, 오류 = `errorContainer`. 아이콘 20 + 문구 |
-| 새 프로젝트 시트 | 바텀시트 규격. 제목 "새 프로젝트"(headlineMedium) + 기종 이름, (지원 후프 2개 이상일 때만) 후프 칩 줄, 갈래 3개: 첫째 "빈 후프에서 시작"은 `primary` 채움 카드(높이 76), 나머지는 `surface` + `outline` 카드(높이 72), 왼쪽 44dp 원형 아이콘 |
+| Primary button | Height 52, shape medium(16), `primary`/`onPrimary`, labelLarge, icon 18 + gap 8. One per screen |
+| Tonal button | Height 52, `secondaryContainer`/`onSecondaryContainer` |
+| Outline button | Height 48, 1.5dp `outline` border, `onSurface` text. Disabled: `surfaceVariant` background + `onSurfaceVariant` |
+| Filter chip | Height 40, horizontal padding 16, shape small(12). Selected `primary`/`onPrimary`, default `surface` + 1dp `outline` |
+| Badge | Horizontal padding 8, vertical padding 4, shape extraSmall(8), labelSmall. PES = `secondaryContainer`, hoop overflow = `errorContainer`, good quality/caution/unsuitable = `secondaryContainer`/`tertiaryContainer`/`errorContainer` + text |
+| Design card | shape large(20), `surface`, 1dp `outlineVariant` border, thumbnail height 176 (preview inside hoop, `surfaceContainer` background), body padding 12/14, title titleMedium, metadata bodySmall `onSurfaceVariant` |
+| Bottom tabs | Height 80, `surface`, 4 fixed tabs (Home · Designs · Create · Settings; flows in "Screen flows (IA)"). Selected 64×32 pill `primaryContainer`, icon/text `primary`, labelMedium |
+| Bottom sheet | Top corners 28, handle 32×4 `outline`, horizontal padding 24, title titleMedium + tabs (Transform/Stitches/Colors), one main button below. Background scrim `onBackground` 40% |
+| Slider | Track 4, active `primary`, inactive `surfaceVariant`, thumb 20. Value always shown as number+unit on right |
+| Segmented control | Height 44, `surfaceVariant` background + padding 4, selected `primary`/`onPrimary`, corners 12 |
+| Input field | Height 52, shape medium(16), `surface` + 1dp `outline`, unit (mm) in bodyMedium on right. Error: 2dp `error` border + text below |
+| Search field | Height 52, magnifier 20 on left, filter button on right |
+| Status banner | Height at least 52, shape medium. USB connected/hoop fits = `secondaryContainer`, caution = `tertiaryContainer`, error = `errorContainer`. Icon 20 + text |
+| New project sheet | Bottom-sheet specification. Title "New project" (headlineMedium) + machine name, hoop-chip row (only when 2 or more hoops are supported), 3 branches: first "Start with an empty hoop" is a `primary` filled card (height 76), others are `surface` + `outline` cards (height 72), circular 44dp icon on left |
 
-FAB는 쓰지 않는다. 새로 만들기는 아래 "화면 동선 (IA)"의 단일 흐름만 쓴다.
+Do not use FABs. Creation uses only the single flow in "Screen flows (IA)" below.
 
-## 화면 동선 (IA)
+## Screen flows (IA)
 
-2026-10-22 확정. **새 진입점(버튼·카드·탭·링크)은 이 섹션을 기준으로만 추가한다.** 여기에 없는
-진입점이 필요하면 이 표와 그림을 먼저 고친다. 캔버스: "디자인 시스템" 페이지의 "화면 동선 (IA)",
-"새 프로젝트 시트".
+Confirmed 2026-10-22. **Add new entry points (buttons/cards/tabs/links) only according to this section.** If an entry
+point absent here is needed, update this table and diagram first. Canvas: "Screen flows (IA)" and
+"New project sheet" on the "Design System" page.
 
-### 규칙
+### Rules
 
-1. **새로 만들기는 한 길.** 홈의 "새 프로젝트" 카드와 하단 "만들기" 탭은 같은 `NewProjectSheet`를
-   연다. 시트의 갈래는 셋뿐이다.
-   - **빈 후프에서 시작** → 편집기(빈 프로젝트). 후프 목록은 설정의 기종 프로필 기준이며, 지원 후프가
-     1개인 기종(SE400 등)은 묻지 않고 바로 시작한다. 2개 이상이면 시트 안 후프 칩에서 고른다.
-   - **내 도안으로 시작** → 도안 선택 → 그 도안이 든 프로젝트로 편집기.
-   - **글자로 시작** → 레터링 화면 → "도안에 추가" → 편집기.
-2. **홈 갤러리는 실제 샘플 도안만** 보여 준다(빈 캔버스 템플릿 없음). 샘플 탭 → 뷰어 → "편집" → 편집기.
-3. **도안 목록은 관리 전용**이다(가져오기·검색·정렬·선택·삭제·USB 내보내기). "만들기" 버튼을 두지 않는다.
-   항목 탭 → 뷰어 → "편집" → 편집기.
-4. **홈 "레터링" 빠른 시작**은 레터링 화면이 생기면 그 화면으로 연결하고, 그 전까지는 숨긴다.
-   빈 프로젝트로 보내지 않는다.
-5. 편집기로 들어가는 길은 시트의 세 갈래와 뷰어의 "편집"뿐이다.
+1. **One creation path.** The Home "New project" card and bottom "Create" tab open the same `NewProjectSheet`.
+   The sheet has only three branches.
+   - **Start with an empty hoop** → editor (empty project). The hoop list comes from the machine profile in Settings;
+     machines supporting 1 hoop (such as SE400) start immediately without asking. With 2 or more, select a hoop chip in the sheet.
+   - **Start with my design** → design picker → editor with a project containing that design.
+   - **Start with text** → lettering screen → "Add to design" → editor.
+2. **The Home gallery shows actual sample designs only** (no empty-canvas templates). Tap sample → viewer → "Edit" → editor.
+3. **The design list is for management only** (import/search/sort/select/delete/USB export). Do not add a "Create" button.
+   Tap item → viewer → "Edit" → editor.
+4. **Home's "Lettering" quick start** links to the lettering screen once available and stays hidden until then.
+   Do not send it to an empty project.
+5. The only editor entry points are the sheet's three branches and the viewer's "Edit".
 
-### 하단 탭
+### Bottom tabs
 
-| 탭 | 화면 | 만들기 관련 동작 |
+| Tab | Screen | Creation-related action |
 |---|---|---|
-| 홈 | 새 프로젝트 카드, 최근 작업, 샘플 갤러리, (레터링 빠른 시작) | 카드 → `NewProjectSheet` |
-| 도안 | 도안 목록(관리 전용) | 없음. 항목 → 뷰어 |
-| 만들기 | 화면이 아니라 `NewProjectSheet`를 연다 | 시트 |
-| 설정 | 기종 프로필(후프 목록의 근거), 실 브랜드, 단위, 앱 정보 | 없음 |
+| Home | New project card, recent work, sample gallery, (lettering quick start) | Card → `NewProjectSheet` |
+| Designs | Design list (management only) | None. Item → viewer |
+| Create | Opens `NewProjectSheet`, not a screen | Sheet |
+| Settings | Machine profile (source of hoop list), thread brand, units, app information | None |
 
-### 화면 전환도
+### Screen transition diagram
 
 ```mermaid
 flowchart LR
@@ -157,92 +157,92 @@ flowchart LR
   Settings["하단 탭 · 설정 · 기종 프로필"] -.->|후프 목록| Sheet
 ```
 
-### 없앤 진입점
+### Removed entry points
 
-- 홈 갤러리의 빈 캔버스 템플릿(정사각·세로형) — 갤러리는 샘플 도안만.
-- 도안 목록의 "만들기" 버튼, 목록의 FAB.
-- 홈 빠른 시작에서 빈 프로젝트로 바로 가는 링크(레터링 포함).
+- Empty-canvas templates (square/portrait) in the Home gallery — gallery contains sample designs only.
+- "Create" button in the design list, list FAB.
+- Direct links to empty projects from Home quick start (including lettering).
 
-## 화면별 목업
+## Screen mockups
 
-목업 이미지는 저장소 밖(로컬 Codex 출력)에 있고, 캔버스 "디자인 방향" 페이지에도 같은 이미지가 있다.
-목업의 글자·수치는 예시다. 색과 간격은 목업보다 이 문서의 토큰이 우선한다.
+Mockup images are outside the repository (local Codex output); the same images appear on the canvas "Design Direction" page.
+Text/numbers in mockups are examples. This document's tokens take precedence over mockups for colors and spacing.
 
-| 화면 | 목업 경로 |
+| Screen | Mockup path |
 |---|---|
-| A1 스플래시 | `~/.codex/generated_images/myembro-themes-20261022/A1-splash-1080x2520.png` |
-| A2 시작 화면 | `~/.codex/generated_images/myembro-themes-20261022/A2-start-1080x2520.png` |
-| 편집기 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-59d08e72-95f9-4155-af93-a0055b778bde.png` |
-| 도안 목록 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-a850e7a3-73ee-4ece-88a0-32ff3b188695.png` |
-| 뷰어 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-f8b7e243-980e-46f3-884d-e5a6c093b51f.png` |
-| 스티치 설정 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-b7d3effa-3b53-4d78-9992-5d8ae9619788.png` |
-| 레터링 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-5b2a6777-b290-4895-bc8e-ac0e47585153.png` |
-| 사진 → 자수 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-e3c010f6-a74b-445a-8b89-37554b64ee2d.png` |
-| 내보내기 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-38c45026-4aba-462b-9bca-68e626a3a6ba.png` |
-| 설정 | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-bfe5f9e9-cbd6-43d0-b83b-ac18014da551.png` |
+| A1 splash | `~/.codex/generated_images/myembro-themes-20261022/A1-splash-1080x2520.png` |
+| A2 start screen | `~/.codex/generated_images/myembro-themes-20261022/A2-start-1080x2520.png` |
+| Editor | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-59d08e72-95f9-4155-af93-a0055b778bde.png` |
+| Design list | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-a850e7a3-73ee-4ece-88a0-32ff3b188695.png` |
+| Viewer | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-f8b7e243-980e-46f3-884d-e5a6c093b51f.png` |
+| Stitch settings | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-b7d3effa-3b53-4d78-9992-5d8ae9619788.png` |
+| Lettering | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-5b2a6777-b290-4895-bc8e-ac0e47585153.png` |
+| Photo → embroidery | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-e3c010f6-a74b-445a-8b89-37554b64ee2d.png` |
+| Export | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-38c45026-4aba-462b-9bca-68e626a3a6ba.png` |
+| Settings | `~/.codex/generated_images/01a162d0-39d1-7b21-819b-44594fafe232/exec-bfe5f9e9-cbd6-43d0-b83b-ac18014da551.png` |
 
-## 구현 연결
+## Implementation integration
 
-embro-worker가 작성한 테마·서체·스플래시·홈 연결 안내(원문 유지).
+Theme/typeface/splash/Home integration guidance written by embro-worker (original content retained).
 
-### 공통 테마
+### Shared theme
 
-`ui/theme/MyembroTheme`은 라이트·다크 테마, 서체, 모서리를 제공합니다. Dynamic color는
-사용하지 않습니다. 중첩된 기존 `EmbroideryTheme`도 상위의 명시적 모드·팔레트를 유지합니다.
-목록·뷰어·설정·내보내기 시트는 공통 테마로 전환했습니다. MainActivity와 편집기 소스는
-통합 담당의 작업 범위이므로 수정하지 않았습니다.
+`ui/theme/MyembroTheme` provides light/dark themes, typography, and corners. Dynamic color is
+not used. Nested legacy `EmbroideryTheme` also preserves the parent's explicit mode/palette.
+The list/viewer/settings/export sheet have migrated to the shared theme. MainActivity and editor sources
+were not modified because they belong to the integrator's scope.
 
-- `Color.kt`: A `CRAFT`가 기본값입니다. 린넨 `#F6F0E6`, 표면 `#FFFDF8`, 테라코타
-  `#B5492A`, 세이지 `#7F9A76`, 골드 `#D9A441`, 외곽선 `#D8CBB8`, 잉크 `#2B2420`.
-  기존 테라코타 `#C4552D`는 실 팔레트용 `ThreadTerracotta`로 분리했습니다.
-  다크 팔레트는 따뜻한 검정·갈색 표면과 밝은 테라코타·세이지·골드를 사용합니다.
-- `DefaultColorway` 하나를 `BOTANICAL`(B: 세이지 강조) 또는 `INK`(C: 라이트 잉크 /
-  다크 골드 강조)로 바꾸면 전체 기본 팔레트가 전환됩니다. 호출별 `colorway` 지정도 가능합니다.
-- Android 스플래시·런처 배경은 Gradle의 `generateMyembroBrandColors`가 같은 파일의
-  ARGB 상수와 기본 팔레트 선택에서 생성합니다. 생성 XML은 직접 편집하지 않습니다.
-- `Type.kt`: 본문·UI는 Noto Sans KR 가변 폰트의 400/500/600/700 축, 디스플레이·큰 제목은
-  고운바탕 Regular를 사용합니다. 기본 가변 축이 100이므로 400을 명시했습니다.
-- `Shape.kt`: 카드 20dp, 버튼 16dp, 칩 12dp. 화면별 색상과 주요 모서리는 이 토큰을 참조합니다.
+- `Color.kt`: A `CRAFT` is the default. Linen `#F6F0E6`, surface `#FFFDF8`, terracotta
+  `#B5492A`, sage `#7F9A76`, gold `#D9A441`, outline `#D8CBB8`, ink `#2B2420`.
+  The previous terracotta `#C4552D` was separated as `ThreadTerracotta` for the thread palette.
+  The dark palette uses warm black/brown surfaces and light terracotta/sage/gold.
+- Changing just `DefaultColorway` to `BOTANICAL` (B: sage emphasis) or `INK` (C: light ink /
+  dark gold emphasis) switches the entire default palette. Per-call `colorway` selection is also supported.
+- Android splash/launcher backgrounds are generated by Gradle's `generateMyembroBrandColors` from
+  ARGB constants and the default palette selection in the same file. Do not edit generated XML directly.
+- `Type.kt`: Body/UI uses Noto Sans KR variable-font axes 400/500/600/700; display/large titles use
+  Gowun Batang Regular. The default variable axis is 100, so 400 is explicitly specified.
+- `Shape.kt`: Cards 20dp, buttons 16dp, chips 12dp. Screen colors and main corners reference these tokens.
 
 ```kotlin
 MyembroTheme { /* app navigation */ }
 MyembroTheme(darkTheme = true, colorway = MyembroColorway.BOTANICAL) { /* preview */ }
 ```
 
-### 서체 출처
+### Typeface sources
 
-두 폰트는 Google Fonts에서 받은 **변형·서브셋 없는 원본**으로, 오프라인 사용이 가능합니다.
-한글 음절·자모·라틴 문자 범위를 확인했습니다. 폰트 원본은 합계 약 18MiB이며,
-OFL 원문은 `assets/licenses/`와 `THIRD_PARTY_NOTICES.md`에 포함했습니다.
+Both fonts are **unmodified, unsubsetted originals** downloaded from Google Fonts and work offline.
+Hangul syllable/jamo/Latin coverage was checked. Original fonts total approximately 18MiB;
+full OFL texts are included in `assets/licenses/` and `THIRD_PARTY_NOTICES.md`.
 
-| 폰트 | 출처 | SHA-256 |
+| Font | Source | SHA-256 |
 | --- | --- | --- |
 | Noto Sans KR | [google/fonts/notosanskr](https://github.com/google/fonts/tree/main/ofl/notosanskr) | `194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252` |
 | Gowun Batang Regular | [google/fonts/gowunbatang](https://github.com/google/fonts/tree/main/ofl/gowunbatang) | `466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849` |
 
-### 스플래시 연결
+### Splash integration
 
-`core-splashscreen:1.2.0`은 이 프로젝트의 SDK 35 / AGP 8.7.3과 호환됩니다.
-Manifest의 시작 테마는 `Theme.Myembro.Starting`, 이후 테마는 `Theme.Myembro`입니다.
-기존 런처 후프·새틴 스티치 형상을 이용해 후프가 펼쳐지고 실이 그려지는 760ms AVD를
-추가했으며 브랜드 배경은 라이트·다크에 대응합니다. 오래 실행시키는 타이머는 없습니다.
+`core-splashscreen:1.2.0` is compatible with this project's SDK 35 / AGP 8.7.3.
+The manifest launch theme is `Theme.Myembro.Starting`, followed by `Theme.Myembro`.
+A 760ms AVD using the existing launcher hoop/satin-stitch shapes unfolds the hoop and draws thread;
+the brand background supports light/dark modes. There is no timer to prolong display.
 
-통합 담당이 MainActivity의 **super.onCreate 이전**에 다음을 호출해야 합니다.
+The integrator must call the following in MainActivity **before super.onCreate**.
 
 ```kotlin
 installMyembroSplashScreen()
 super.onCreate(savedInstanceState)
 ```
 
-이 훅은 compat 설치·시작 테마 전환과 180ms 퇴장 페이드를 처리합니다. AVD 재생은 Android
-12 이상에서 지원되며, 이전 버전에서는 완성된 정적 아이콘을 사용합니다.
-[Android 스플래시 연결 문서](https://developer.android.com/develop/ui/views/launch/splash-screen/migrate)
-참고. MainActivity의 기존 dynamic palette 블록도 통합 시 `MyembroTheme`으로 교체합니다.
+This hook handles compat installation/start-theme transition and a 180ms exit fade. AVD playback is supported on Android
+12 and later; earlier versions use the completed static icon.
+See [Android splash integration documentation](https://developer.android.com/develop/ui/views/launch/splash-screen/migrate).
+Also replace MainActivity's existing dynamic palette block with `MyembroTheme` during integration.
 
-### 홈 화면 연결
+### Home screen integration
 
-> **2026-10-22 IA 확정으로 바뀐 점**(위 "화면 동선 (IA)"이 우선): 정사각·세로형 빈 프로젝트 템플릿은 갤러리에서 빼고,
-> `onNewProject`와 만들기 탭은 `NewProjectSheet`를 연다. `onLettering`은 레터링 화면이 생기기 전까지 숨긴다.
+> **Changes from the 2026-10-22 IA confirmation** ("Screen flows (IA)" above takes precedence): Remove square/portrait empty-project templates from the gallery;
+> `onNewProject` and the Create tab open `NewProjectSheet`. Hide `onLettering` until the lettering screen exists.
 
 ```kotlin
 HomeScreen(
@@ -255,36 +255,36 @@ HomeScreen(
 )
 ```
 
-- 새 프로젝트 카드와 만들기 탭은 같은 `NewProjectSheet`로 연결합니다. 기종별 후프와 생성 동선은
-  [미싱 프로필 및 통합 메모](machines.md)를 참조하세요. SE400이 기본이며 세 기종은 100×100만 선택할 수 있습니다.
-- `HomeViewModel`은 화면 재개 시 `files/projects/*.myembro`와 기존 `files/designs/`를
-  수정 시각 역순으로 최대 6개 읽습니다. 실제 파일만 표시하며 파일 IO와 썸네일은 백그라운드에서 처리합니다.
-- 꽃 샘플은 번들 PES를 전용 캐시에 복사해 실제 파일을 뷰어 콜백으로 전달합니다. 갤러리의 빈 템플릿은 제거했습니다.
-- 도안 가져오기는 기존 콜백으로 연결합니다. 글자 넣기는 실제 레터링 화면 연결 전까지 숨기며, 사진→자수는 준비 중으로 비활성화했습니다.
-- 하단 탭은 홈 / 도안 / 만들기 / 설정이며, 화면 라우팅은 호스트 콜백이 담당합니다.
-- `HomeLightPreview` / `HomeDarkPreview`는 파일 IO나 ViewModel 없이 디자인을 확인할 수 있습니다.
+- Connect the New project card and Create tab to the same `NewProjectSheet`. For machine-specific hoops and creation flows,
+  see [Machine profiles and integration notes](machines.md). SE400 is the default; the three machines allow only 100×100.
+- On screen resume, `HomeViewModel` reads up to 6 entries from `files/projects/*.myembro` and the existing `files/designs/`
+  in reverse modification-time order. It displays actual files only; file IO and thumbnails run in the background.
+- Flower samples copy bundled PES into a dedicated cache and pass actual files to the viewer callback. Empty gallery templates were removed.
+- Design import connects to the existing callback. Text insertion is hidden until the actual lettering screen is wired; photo→embroidery is disabled as pending.
+- Bottom tabs are Home / Designs / Create / Settings; host callbacks handle screen routing.
+- `HomeLightPreview` / `HomeDarkPreview` allow reviewing the design without file IO or ViewModel.
 
-## A안 화면 컴포넌트
+## Option A screen components
 
-- 목록은 작업실 헤더, 세이지 USB 안내 배너, 검색·정렬·필터와 20dp 카드로 구성합니다.
-  하트는 `myembro_library`의 즐겨찾기로 저장하며 즐겨찾기 필터에도 반영합니다.
-- 뷰어는 크기·땀 수·색상·예상 시간 카드, 실제 실 색상의 순서 칩, 재생 카드를 사용합니다.
-  저장·공유는 `ExportSheet`로 통합했습니다. `ViewerScreen.onExportUsb`는 선택 콜백으로,
-  호스트에서 기존 라이브러리 USB 동작에 연결합니다. 연결 전에는 시트에서 해당 버튼이 비활성화됩니다.
-- `ExportSheet`의 `preview`·`designSummary`는 선택 사항이며 실제 도안 정보만 전달합니다.
-  파일명과 PES 배지는 출력 파일을 나타내며 저장 위치는 기존 호스트 콜백이 결정합니다.
-- 설정의 후프 카드는 실제 기본값에 저장됩니다. 썸네일은 투명 배경으로 렌더링하고
-  캔버스의 원단·이동선·바늘 표시도 현재 테마 토큰을 사용합니다. 실 자체의 색상은 도안 데이터를 유지합니다.
+- The list consists of a studio header, sage USB guidance banner, search/sort/filter, and 20dp cards.
+  Hearts are saved as favorites in `myembro_library` and reflected in the favorites filter.
+- The viewer uses size/stitch-count/color/estimated-time cards, ordered chips in actual thread colors, and a playback card.
+  Save/share are unified in `ExportSheet`. `ViewerScreen.onExportUsb` is an optional callback;
+  the host connects it to the existing library USB action. Until connected, that button is disabled in the sheet.
+- `ExportSheet`'s `preview`/`designSummary` are optional and pass only actual design information.
+  The filename and PES badge indicate the output file; the existing host callback determines the save destination.
+- The Settings hoop card saves to the actual default. Thumbnails render with transparent backgrounds;
+  canvas fabric/travel lines/needle indicators also use current theme tokens. Thread colors retain design data.
 
-## 전용 도안 picker와 펼친 화면
+## Dedicated design picker and unfolded layout
 
-`DesignPickerScreen`은 프로젝트 생성용 단일 선택 화면입니다. 검색, 내 도안/샘플 탭,
-썸네일 그리드만 제공하고 삭제·즐겨찾기·USB 관리 상태를 만들지 않습니다.
-파일 읽기와 썸네일은 IO에서 처리하며 읽을 수 없는 도안은 선택되지 않습니다.
-검색어와 탭, 탭별 스크롤 위치는 크기 변경 시 유지합니다.
+`DesignPickerScreen` is a single-selection screen for project creation. It provides only search, My designs/Samples tabs,
+and a thumbnail grid, without deletion/favorites/USB management state.
+File reading and thumbnails run on IO; unreadable designs cannot be selected.
+Search query, tab, and per-tab scroll positions survive resizing.
 
-**통합 담당:** MainActivity의 `Screen.PICK_DESIGN`에서 기존 `LibraryScreen` 호출을 아래로 교체하세요.
-MainActivity와 편집기 소스는 변경하지 않았습니다.
+**Integrator:** Replace the existing `LibraryScreen` call in MainActivity's `Screen.PICK_DESIGN` with the following.
+MainActivity and editor sources were not changed.
 
 ```kotlin
 DesignPickerScreen(
@@ -296,16 +296,16 @@ DesignPickerScreen(
 )
 ```
 
-- 샘플은 번들 팩의 독립적인 캐시 사본입니다. 목록의 샘플 삭제 여부와 별개로 다시 선택할 수 있습니다.
-  내 도안 탭은 기존 `DesignLibrary.isSample` 구분을 사용하며 원본 사용자 파일은 수정하지 않습니다.
-  홈 갤러리도 같은 번들 카탈로그에서 실제 샘플 최대 6개를 보여줍니다.
-- `MyembroLayout`은 기기 종류 대신 현재 컨테이너 폭을 사용합니다. 홈은 600dp 미만에서는
-  세로 섹션/가로 도안 행, 600–839dp는 2열, 840dp 이상은 3열입니다.
-  목록과 picker는 360dp 미만 1열, 360–839dp 2열, 840dp 이상 3열입니다.
-- 홈의 펼침 레이아웃은 새 프로젝트와 빠른 시작을 나란히 놓고 최근 프로젝트·샘플을 그리드로
-  배치합니다. 목록의 헤더와 검색·필터도 스크롤되어 낮은 창에서도 도안에 접근할 수 있습니다.
-- 뷰어는 600dp 이상에서 캔버스와 280–400dp 정보 패널을 나란히 배치합니다.
-  정보 패널은 독립적으로 스크롤하며 통계는 2×2, 옵션은 줄바꿈됩니다. 좁은 화면은 기존 상하 배치입니다.
-  재생 진행과 후프 설정은 ViewModel에 유지하며 분할 배치 전환 시 캔버스는 새 크기에 맞춰 표시합니다.
-- 검증: `:app:assembleDebug` 성공, 600·840dp 에뮬레이터에서 홈/목록/뷰어 배치를 확인했습니다.
-  화면 크기·밀도는 확인 후 원복했으며 언어 설정은 변경하지 않았습니다.
+- Samples are independent cached copies of the bundled pack. They can be selected again regardless of sample deletion in the list.
+  My designs uses the existing `DesignLibrary.isSample` distinction and does not modify original user files.
+  The Home gallery also shows up to 6 actual samples from the same bundled catalog.
+- `MyembroLayout` uses current container width rather than device type. Home uses vertical sections/horizontal design rows
+  below 600dp, 2 columns at 600–839dp, and 3 columns at 840dp or above.
+  The list and picker use 1 column below 360dp, 2 at 360–839dp, and 3 at 840dp or above.
+- Home's unfolded layout places New project and quick start side by side, with recent projects/samples in grids.
+  List headers and search/filter also scroll, keeping designs accessible in short windows.
+- At 600dp or above, the viewer places the canvas beside a 280–400dp information panel.
+  The panel scrolls independently; statistics use 2×2 and options wrap. Narrow screens retain the vertical layout.
+  Playback progress and hoop settings stay in the ViewModel; after switching split layouts, the canvas fits its new size.
+- Validation: `:app:assembleDebug` succeeded; Home/list/viewer layouts were checked on 600/840dp emulators.
+  Screen size/density were restored after checks; language settings were not changed.
