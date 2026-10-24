@@ -16,10 +16,14 @@ import kotlin.math.sqrt
 
 /**
  * The one region → stitch-type rule shared by every automatic source (logo, emoji, image/editor):
- * median width in satin range → satin, wider → tatami, narrower → running.
  *
- * 0.9–6mm was set by the coordinator; there is no upstream value, so both bounds are **unverified**
- * until the satin-width sweep (docs/emoji-to-design.md B5) and live here only, in one place.
+ * - maximum width > 6.0mm → tatami. Satin needs every crossing within its limit; the maximum width is
+ *   the largest inscribed circle diameter (JTS MaximumInscribedCircle). 6.0mm = corpus satin crossing p95.
+ * - else median width ≥ 0.9mm → satin
+ * - else → running
+ *
+ * 0.9mm has no measured source yet (**unverified**, satin-width sweep pending: docs/emoji-to-design.md B5).
+ * Both bounds live here only.
  */
 object StitchTypeRule {
     enum class Type { TATAMI, SATIN, RUNNING }
@@ -27,17 +31,30 @@ object StitchTypeRule {
     const val SATIN_MIN_MM = 0.9
     const val SATIN_MAX_MM = 6.0
 
-    fun classify(medianWidthMm: Double, satinMinMm: Double = SATIN_MIN_MM, satinMaxMm: Double = SATIN_MAX_MM): Type {
-        require(medianWidthMm.isFinite() && medianWidthMm >= 0 && satinMinMm <= satinMaxMm)
+    /** Maximum and median width of one region, in mm. */
+    data class Widths(val maxMm: Double, val medianMm: Double)
+
+    fun classify(widths: Widths, satinMinMm: Double = SATIN_MIN_MM, satinMaxMm: Double = SATIN_MAX_MM): Type {
+        require(widths.maxMm.isFinite() && widths.medianMm.isFinite() && widths.medianMm >= 0 && satinMinMm <= satinMaxMm)
         return when {
-            medianWidthMm > satinMaxMm -> Type.TATAMI
-            medianWidthMm >= satinMinMm -> Type.SATIN
+            widths.maxMm > satinMaxMm -> Type.TATAMI
+            widths.medianMm >= satinMinMm -> Type.SATIN
             else -> Type.RUNNING
         }
     }
 
-    /** Classifies a region given in any unit; [unitsPerMm] converts its width to mm. */
-    fun classify(region: Geometry, unitsPerMm: Double): Type = classify(medianWidth(region) / unitsPerMm)
+    /** Widths of a region given in any unit; [unitsPerMm] converts to mm. */
+    fun widths(region: Geometry, unitsPerMm: Double): Widths = Widths(maxWidth(region) / unitsPerMm, medianWidth(region) / unitsPerMm)
+
+    fun classify(region: Geometry, unitsPerMm: Double): Type = classify(widths(region, unitsPerMm))
+
+    /** Largest inscribed circle diameter over all polygons (= 2 × largest distance to the boundary). */
+    fun maxWidth(region: Geometry): Double = polygons(region).maxOfOrNull { 2 * inscribedRadius(it) } ?: 0.0
+
+    private fun polygons(region: Geometry) =
+        (0 until region.numGeometries).map(region::getGeometryN).filterIsInstance<Polygon>().filter { !it.isEmpty && it.area > 0 }
+
+    private fun inscribedRadius(p: Polygon) = MaximumInscribedCircle.getRadiusLine(p, 1e-3 * sqrt(p.area)).length
 
     /**
      * Area-weighted median of local thickness, in the geometry's units: each interior point gets the
@@ -49,8 +66,7 @@ object StitchTypeRule {
      */
     fun medianWidth(region: Geometry, maxSamples: Int = 60_000): Double {
         if (region.isEmpty || region.area <= 0) return 0.0
-        val polygons = (0 until region.numGeometries).map(region::getGeometryN).filterIsInstance<Polygon>().filter { !it.isEmpty }
-        val radius = polygons.maxOf { MaximumInscribedCircle.getRadiusLine(it, 1e-3 * sqrt(it.area)).length }
+        val radius = polygons(region).maxOfOrNull(::inscribedRadius) ?: return 0.0
         if (radius <= 0) return 0.0
         val env = region.envelopeInternal
         val step = max(radius / 8, sqrt(env.width * env.height / maxSamples))

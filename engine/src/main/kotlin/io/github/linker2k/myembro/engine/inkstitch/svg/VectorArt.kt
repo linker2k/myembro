@@ -43,11 +43,14 @@ object VectorArt {
 
     /** Bounds of the shared [StitchTypeRule]; overridable only for sweeps. */
     data class Rules(val satinMinMm: Double = StitchTypeRule.SATIN_MIN_MM, val satinMaxMm: Double = StitchTypeRule.SATIN_MAX_MM) {
-        fun classify(widthMm: Double) = StitchTypeRule.classify(widthMm, satinMinMm, satinMaxMm)
+        fun classify(region: Geometry, scale: Double) =
+            StitchTypeRule.classify(StitchTypeRule.widths(region, 1 / scale), satinMinMm, satinMaxMm)
     }
 
     /** What one source shape became: method, Brother thread and its measured width. */
-    data class Part(val shape: Int, val role: String, val method: StitchTypeRule.Type, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int)
+    data class Part(val shape: Int, val role: String, val method: StitchTypeRule.Type, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int,
+        /** Measured region widths (mm) the shared rule decided on. */
+        val widths: StitchTypeRule.Widths? = null)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double)
 
     /** Minimal reader for flat SVG: root viewBox and `<path>` elements. Gradients, masks, transforms are rejected. */
@@ -129,8 +132,6 @@ object VectorArt {
         return UnaryUnionOp.union(lines.map { org.locationtech.jts.operation.buffer.BufferOp.bufferOp(it, shape.strokeWidth / 2, p) })
     }
 
-    /** Median width ([StitchTypeRule.medianWidth]) in source units. */
-    private fun width(g: Geometry): Double = StitchTypeRule.medianWidth(g)
 
     /** Footprints in document order: what each shape covers once sewn (fill area ∪ stroke band). */
     private fun footprint(shape: Shape): Geometry = listOfNotNull(
@@ -156,21 +157,21 @@ object VectorArt {
             val later = footprints.drop(index + 1)
             val visible = if (later.isEmpty()) area else area.difference(UnaryUnionOp.union(later))
             val pieces = (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()
-                .filter { rules.classify(width(it) * scale) != StitchTypeRule.Type.RUNNING }
+                .filter { rules.classify(it, scale) != StitchTypeRule.Type.RUNNING }
             if (pieces.isEmpty()) return
             val paths = pieces.flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
                 .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
             val element = InkFill(paths, FillRule.EVEN_ODD, thread.color, InkStitchParams(emptyMap()))
             groups += FontTatami.stitchGroups(element, { q -> px(q.x, q.y) }, emptyMap(), thread, previous())
-            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb)
+            parts += Part(index, role, StitchTypeRule.Type.TATAMI, thread, widthMm, sourceRgb, StitchTypeRule.widths(area, 1 / scale))
         }
         art.shapes.forEachIndexed { index, shape ->
             shape.fill?.let { rgb ->
                 val thread = nearestThread(rgb)
                 val area = fillGeometry(shape)
-                val w = width(area) * scale
+                val w = StitchTypeRule.maxWidth(area) * scale
                 // A satin-width area still needs a centerline/rail solver (next unit), so it is tatami for now.
-                if (rules.classify(w) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
+                if (rules.classify(area, scale) != StitchTypeRule.Type.RUNNING) tatami(index, "fill", area, thread, w, rgb)
                 else {
                     groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
                     parts += Part(index, "fill", StitchTypeRule.Type.RUNNING, thread, w, rgb)
@@ -179,8 +180,8 @@ object VectorArt {
             shape.stroke?.let { rgb ->
                 val thread = nearestThread(rgb)
                 val w = shape.strokeWidth * scale
-                // A stroke's band has its stroke width as median width: classify that exact value.
-                when (rules.classify(w)) {
+                // The stroke's band is the region: bends widen its maximum, so a 6.5mm arch line is tatami.
+                when (rules.classify(strokeGeometry(shape), scale)) {
                     StitchTypeRule.Type.TATAMI -> tatami(index, "stroke", strokeGeometry(shape), thread, w, rgb)
                     StitchTypeRule.Type.SATIN -> {
                         for (line in subpaths(shape.d)) {
@@ -188,11 +189,11 @@ object VectorArt {
                                 Units.mmToPixels(w), StrokeToSatin.Style.fromSvg(shape.lineJoin)) ?: continue
                             groups += section.column(SatinParameters(), thread).toStitchGroups(previous())
                         }
-                        parts += Part(index, "stroke", StitchTypeRule.Type.SATIN, thread, w, rgb)
+                        parts += Part(index, "stroke", StitchTypeRule.Type.SATIN, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
                     }
                     StitchTypeRule.Type.RUNNING -> {
                         groups += Stroke(subpaths(shape.d).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous())
-                        parts += Part(index, "stroke", StitchTypeRule.Type.RUNNING, thread, w, rgb)
+                        parts += Part(index, "stroke", StitchTypeRule.Type.RUNNING, thread, w, rgb, StitchTypeRule.widths(strokeGeometry(shape), 1 / scale))
                     }
                 }
             }

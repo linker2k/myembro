@@ -16,11 +16,13 @@ class StitchTypeRuleTest {
     private fun near(expected: Double, actual: Double, tolerance: Double) =
         assertTrue(abs(expected - actual) <= tolerance, "expected $expected ± $tolerance, was $actual")
 
-    @Test fun boundsAreInclusiveSatinBetween09And6mm() {
-        assertEquals(Type.RUNNING, StitchTypeRule.classify(0.89))
-        assertEquals(Type.SATIN, StitchTypeRule.classify(0.9))
-        assertEquals(Type.SATIN, StitchTypeRule.classify(6.0))
-        assertEquals(Type.TATAMI, StitchTypeRule.classify(6.01))
+    @Test fun satinNeedsMaximumAtMost6AndMedianAtLeast09() {
+        fun c(max: Double, median: Double) = StitchTypeRule.classify(StitchTypeRule.Widths(max, median))
+        assertEquals(Type.RUNNING, c(0.89, 0.89))
+        assertEquals(Type.SATIN, c(0.9, 0.9))
+        assertEquals(Type.SATIN, c(6.0, 5.0))
+        assertEquals(Type.TATAMI, c(6.01, 3.0)) // one crossing over the satin limit is enough for tatami
+        assertEquals(Type.RUNNING, c(4.0, 0.5))
     }
 
     /** Median local thickness: band width for strips, rings and bent strokes, short side for rectangles, diameter for disks. */
@@ -35,5 +37,19 @@ class StitchTypeRuleTest {
         near(6.5, StitchTypeRule.medianWidth(zigzag), 0.5)
         // Classification in other units: 10 units per mm (PEC 0.1mm).
         assertEquals(Type.SATIN, StitchTypeRule.classify(line(0.0, 0.0, 400.0, 0.0).buffer(15.0, 8, BufferParameters.CAP_FLAT), 10.0))
+    }
+
+    /** Recheck table (mm): logo parts at 60mm and a robot-body stand-in. Widths are printed for the report. */
+    @Test fun recheckTable() {
+        val logo = VectorArt.render(VectorArt.parseSvg(VectorArt.vectorDrawableToSvg(
+            java.io.File("../app/src/main/res/drawable/ic_launcher_foreground.xml").readText())), 60.0)
+        val names = listOf("clamp body", "clamp bar", "hoop ring", "logo M")
+        val rows = logo.parts.map { names[it.shape] to (it.widths!! to it.method) }.toMutableList()
+        // Robot body stand-in: 20×28mm rounded rectangle (editor's own robot fixture rechecks the same function).
+        val body = f.toGeometry(org.locationtech.jts.geom.Envelope(2.0, 18.0, 2.0, 26.0)).buffer(2.0)
+        rows += "robot body (20×28 stand-in)" to (StitchTypeRule.widths(body, 1.0) to StitchTypeRule.classify(body, 1.0))
+        rows.forEach { (name, r) -> println("RULE | $name | max ${"%.2f".format(r.first.maxMm)} | median ${"%.2f".format(r.first.medianMm)} | ${r.second} |") }
+        assertEquals(listOf("clamp bar" to Type.SATIN, "hoop ring" to Type.SATIN, "logo M" to Type.TATAMI,
+            "robot body (20×28 stand-in)" to Type.TATAMI), rows.map { it.first to it.second.second })
     }
 }
