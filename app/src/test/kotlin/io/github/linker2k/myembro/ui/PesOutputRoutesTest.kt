@@ -48,4 +48,25 @@ class PesOutputRoutesTest {
         assertSame(original,opened.source)
         for(v in PesVersion.entries)assertSame(original,PesExport.prepare(opened.source,opened.sourceName,PesWriteSettings(v)).bytes)
     }
+    @Test fun everyCatalogMachineAndCustomHoopUsesItsOwnIntegerBoundary() {
+        val custom=io.github.linker2k.myembro.ui.machines.CustomFrame("test","custom",731,1247)
+        val frames=io.github.linker2k.myembro.ui.machines.FrameCatalog.options(listOf(custom)).map { it.spec } +
+            io.github.linker2k.myembro.ui.machines.MachineProfiles.all.flatMap { it.projectHoops }
+        for(hoop in frames)for(axis in 0..1)for(delta in -1..1) {
+            val x=if(axis==0)hoop.width-1+delta else 20
+            val y=if(axis==1)hoop.height-1+delta else 20
+            val p=EmbPattern(listOf(Stitch(x,0,Command.STITCH),Stitch(0,y,Command.STITCH),Stitch(x,0,Command.STITCH)),pattern.threads)
+            for(version in PesVersion.entries) {
+                val settings=PesWriteSettings(version,hoop=hoop)
+                if(delta>0)assertFailsWith<IllegalArgumentException> { PesWriter.write(p,settings) }
+                else assertTrue(io.github.linker2k.myembro.engine.sewout.PecViewportCheck.check(PesWriter.write(p,settings),hoop).valid)
+            }
+        }
+    }
+    @Test fun invalidExistingPesCannotBypassTheSaveShareOrUsbPreparer() {
+        val bytes=PesWriter.write(pattern)
+        bytes[22+520]=(bytes[22+520]+1).toByte()
+        assertFailsWith<IllegalArgumentException> { PesExport.prepare(bytes,"invalid.pes") }
+    }
+
 }

@@ -17,7 +17,7 @@ class SewingProcessingFlowTest {
     private val custom = SewingOptions(locks = LockStitchParameters(lock_start = "triangle", lock_end = "back_forth"),
         min_stitch_length_mm = 0.3, trim_after = true)
     private val imported = EmbPattern(listOf(NativeStitch(0, 0, Command.JUMP), NativeStitch(0, 0, Command.STITCH),
-        NativeStitch(1, 0, Command.STITCH), NativeStitch(50, 0, Command.STITCH), NativeStitch(50, 0, Command.END)),
+        NativeStitch(1, 0, Command.STITCH), NativeStitch(50, 0, Command.STITCH), NativeStitch(0, 0, Command.STITCH), NativeStitch(50, 0, Command.END)),
         listOf(EmbThread(0xFF123456.toInt(), "Original")))
 
     @Test fun `automatic app policy uses source defaults without a user setting`() {

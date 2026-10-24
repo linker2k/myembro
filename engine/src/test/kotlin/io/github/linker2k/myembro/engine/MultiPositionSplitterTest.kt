@@ -86,7 +86,9 @@ class MultiPositionSplitterTest {
     @Test fun multiplePesFilesRoundTripAndExportForPythonOracle() {
         val result = MultiPositionSplitter.split(design(), positions)
         val output = File("build/multiposition-check").apply { mkdirs() }
-        for (version in PesVersion.entries) for (file in result.writePes("test", PesWriteSettings(version))) {
+        for (version in PesVersion.entries) {
+            assertFailsWith<IllegalArgumentException> { result.writePes("test",PesWriteSettings(version)) }
+            for (file in result.parts.map { PositionPesFile("test_position${it.ordinal}.pes",PolicyFixtureWriter.write(it.pattern,PesWriteSettings(version)),it) }) {
             assertTrue(file.fileName.matches(Regex("test_position[1-3]\\.pes")))
             assertEquals(file.part.ordinal.toString(), file.metadata["multiposition.index"])
             assertTrue(file.instructions.contains("프레임"))
@@ -110,6 +112,7 @@ class MultiPositionSplitterTest {
             val manifest = "{\"source\":{\"stitches\":${stitches(file.part.pattern)},\"threads\":${colors(file.part.pattern)},\"threadDetails\":${details(file.part.pattern)},\"metadata\":$metadata},\"expected\":{\"stitches\":${stitches(expected)},\"threads\":${colors(expected)}}}"
             kotlinx.serialization.json.Json.parseToJsonElement(manifest)
             File(path.path + ".json").writeText(manifest)
+        }
         }
     }
 }

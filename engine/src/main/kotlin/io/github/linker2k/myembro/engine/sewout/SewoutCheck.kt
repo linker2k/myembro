@@ -43,19 +43,21 @@ object SewoutCheck {
                 it.copy(command = colors.next().command) else it }
             EmbPattern(commands, read.threads, read.metadata, read.warnings)
         }
+        val viewportErrors = runCatching { PecViewportCheck.check(bytes,options.hoop).errors }.getOrDefault(emptyList())
         return parsed.fold({ pattern -> run(pattern, machine, options, artifact,
-            pattern.warnings.firstOrNull { it.contains("truncated", ignoreCase = true) }) }, {
+            pattern.warnings.firstOrNull { it.contains("truncated", ignoreCase = true) }, viewportErrors) }, {
             run(EmbPattern(emptyList(), emptyList()), machine, options, artifact, "PES를 읽을 수 없습니다: ${it.message}")
         })
     }
 
     private fun run(pattern: EmbPattern, machine: SewoutMachine, o: SewoutOptions,
-        file: PesFileInfo? = null, fileError: String? = null): SewoutReport {
+        file: PesFileInfo? = null, fileError: String? = null, viewportErrors:List<String> = emptyList()): SewoutReport {
         val generated = o.origin == DesignOrigin.APP_GENERATED || o.origin == DesignOrigin.AUTO &&
             originOf(pattern) == DesignOrigin.APP_GENERATED
         val safetySeverity = if (generated) Severity.BLOCKER else Severity.WARNING
         val findings = Findings(o.maxFindings)
         if (fileError != null) findings.add(FindingCode.INVALID_PES, Severity.BLOCKER, fileError)
+        viewportErrors.forEach { findings.add(FindingCode.INVALID_PES,Severity.BLOCKER,it) }
         val terminal = pattern.stitches.indexOfFirst { it.command == Command.END }
         val inputCount = if (terminal < 0) pattern.stitches.size else terminal+1
         val active = pattern.stitches.take(min(inputCount, o.maxCommands))
@@ -199,8 +201,8 @@ object SewoutCheck {
                     val length = from?.let { hypot(p.x-it.x, p.y-it.y)/10 } ?: 0.0
                     maximumStitchMm = max(maximumStitchMm, length)
                     if (from != null) {
-                        if (length > o.longStitchMm) findings.add(FindingCode.LONG_STITCH, Severity.BLOCKER,
-                            "보수적 땀 길이 기준 ${o.longStitchMm}mm를 초과합니다.", Highlight(index, from = from, to = p), length, o.longStitchMm)
+                        if (SewoutLimits.exceedsStitchLength(p.x.toLong()-from.x.toLong(),p.y.toLong()-from.y.toLong())) findings.add(FindingCode.LONG_STITCH, safetySeverity,
+                            "최대 땀 길이 12.0mm를 초과합니다.", Highlight(index, from = from, to = p), length, 12.0)
                         if (length < o.shortStitchMm && (length > 0.0 || connected)) findings.add(FindingCode.SHORT_STITCH, Severity.INFO,
                             "${o.shortStitchMm}mm 미만의 짧은 땀입니다. 실 뭉침·끊김 가능성을 확인하세요.", Highlight(index, from = from, to = p), length, o.shortStitchMm)
                         machine.maximumStitchMm.value?.let { if (length > it) findings.add(FindingCode.MACHINE_STITCH_LENGTH_EXCEEDED,
@@ -254,7 +256,7 @@ object SewoutCheck {
             cells + shiftedPeak else cells
         for (cell in densityChecks) {
             val location = Highlight(cell.firstCommandIndex, area = cell.area)
-            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, if (generated || cell.penetrations > 30) Severity.BLOCKER else Severity.WARNING,
+            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, if (generated || cell.penetrations > SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL) Severity.BLOCKER else Severity.WARNING,
                 "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담 위험을 확인하세요.",
                 location, cell.penetrations.toDouble(), o.hotspotPenetrations.toDouble())
             if (cell.segmentPasses >= o.overlapPassThreshold && cell.stageIndices.size > 1) findings.add(FindingCode.OVERLAP_ACCUMULATION,

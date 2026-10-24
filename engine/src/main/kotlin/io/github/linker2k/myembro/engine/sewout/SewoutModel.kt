@@ -97,11 +97,11 @@ data class SewoutOptions(
     val hoop: HoopSpec = HoopSpec.H100,
     val placement: Placement = Placement.CENTER_DESIGN,
     val destination: Destination = Destination.TRANSFER,
-    // Frozen gate v5: 334-file corpus maximum + 0.15mm quantization allowance.
-    val longStitchMm: Double = 12.184118164618463, val shortStitchMm: Double = 0.3,
+    // P8: exact native integer displacement squared <= 120^2.
+    val longStitchMm: Double = SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM / 10.0, val shortStitchMm: Double = 0.3,
     /** Inclusive blocking thresholds: defaults mean >15 punctures per cell and >2 consecutive STITCH/JUMP destinations at one point. */
-    val gridMm: Double = 0.5, val hotspotPenetrations: Int = 16,
-    val repeatedPointThreshold: Int = 3, val overlapPassThreshold: Int = 6,
+    val gridMm: Double = SewoutLimits.DENSITY_CELL_UNITS_0P1MM / 10.0, val hotspotPenetrations: Int = SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL + 1,
+    val repeatedPointThreshold: Int = SewoutLimits.MAX_CONSECUTIVE_POSITIONS + 1, val overlapPassThreshold: Int = 6,
     val plannedSpm: Double? = null, val assumedSpm: Double = 400.0,
     val profileSpeedFraction: Double = 0.8,
     val jumpMmPerSecond: Double = 50.0, val jumpOverheadSeconds: Double = 0.2,

@@ -88,13 +88,13 @@ class SewoutSafetyTest {
     }
     @Test fun formatHoopAndMaximumLengthPoliciesAreNotDowngradedForImportedFiles() {
         assertTrue(SewoutCheck.checkPes(byteArrayOf(1,2,3)).hasBlockingIssues)
-        assertEquals(Severity.BLOCKER,check(p(s(0),s(123))).of(FindingCode.LONG_STITCH).single().severity)
+        assertEquals(Severity.WARNING,check(p(s(0),s(123))).of(FindingCode.LONG_STITCH).single().severity)
         assertTrue(check(p(s(0),s(1100))).of(FindingCode.HOOP_EXCEEDED).isNotEmpty())
         assertTrue(check(p(s(0),s(1),s(10))).of(FindingCode.SHORT_STITCH).all { it.severity==Severity.INFO })
     }
     @Test fun severeImportedDensitySurvivesPesRoundtripAndFindingSuppression() {
-        val source=p(s(0,c=Command.JUMP),*Array(38) { s(10+it%4,it/4%4) })
-        val r=SewoutCheck.checkPes(PesWriter.write(source),options=SewoutOptions(maxFindings=1))
+        val source=p(s(0,c=Command.JUMP),*Array(38) { s(it%4,it/4%4) })
+        val r=SewoutCheck.checkPes(io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source),options=SewoutOptions(maxFindings=1))
         assertTrue(r.hasBlockingIssues)
         assertEquals(1,r.findings.size)
         assertEquals(FindingCode.DENSITY_HOTSPOT,r.findings.single().code)

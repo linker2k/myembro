@@ -10,7 +10,7 @@ import kotlin.test.*
 
 /** Ten public/synthetic byte-identical cases. Python is needed only to refresh snapshots. */
 class GatePolicyParityTest {
-    private fun pes(points: List<Pair<Int,Int>>): ByteArray = PesWriter.write(EmbPattern(
+    private fun pes(points: List<Pair<Int,Int>>): ByteArray = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(EmbPattern(
         points.map { (x,y) -> Stitch(x,y,Command.STITCH) }, listOf(EmbPattern.DEFAULT_PALETTE[0])))
     private fun resource(name: String) = javaClass.getResourceAsStream("/sewout/gate-v5/$name")!!.readBytes()
     private fun current(name: String) = javaClass.getResourceAsStream("/sewout/gate-v6/$name")!!.readBytes()

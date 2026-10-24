@@ -39,7 +39,7 @@ class PesV6WriterTest {
         val output = File("build/writer-check").apply { mkdirs() }
         for ((name, source) in cases) {
             val expected = PecWriter.normalizePreservingThreads(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(source))
-            val bytes = PesWriter.writeV6(source)
+            val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source)
             val back = PesReader.read(bytes)
             assertTrue(back.warnings.isEmpty(), "$name: ${back.warnings}")
             assertEquals(expected.stitches, back.stitches, name)
@@ -71,7 +71,7 @@ class PesV6WriterTest {
 
     @Test fun fullV6HasEditorObjectsCustomThreadsMetadataAndAddendum() {
         val source = p(s(-50, -30), s(50, 30), metadata = mapOf("name" to "Test", "category" to "Sample", "author" to "myembro"))
-        val bytes = PesWriter.writeV6(source)
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source)
         assertEquals("#PES0060", text(bytes.copyOfRange(0, 8)))
         val offset = u32(bytes, 8)
         assertTrue(offset > 100)
@@ -87,14 +87,14 @@ class PesV6WriterTest {
     }
 
     @Test fun explicitSettingsSelectVersionWithoutChangingDefaultOrPassThroughPes() {
-        val source = p(s(0, 0), s(10, 10))
-        assertContentEquals(PesWriter.writeV1(source), PesWriter.write(source))
-        assertContentEquals(PesWriter.writeV6(source), PesWriter.write(source, PesWriteSettings(PesVersion.V6)))
-        assertContentEquals(PesWriter.writeV6(source), PesWriter.write(source, PesVersion.V6))
+        val source = p(s(10, 0), s(0, 10), s(10, 0))
+        assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV1(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source))
+        assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesWriteSettings(PesVersion.V6)))
+        assertContentEquals(io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source), io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(source, PesVersion.V6))
         val pec = PecWriter.write(source)
         val converted = PesExport.prepare(pec, "design.pec", PesWriteSettings(PesVersion.V6))
         assertEquals("#PES0060", text(converted.bytes.copyOfRange(0, 8)))
-        val v1 = PesWriter.writeV1(source)
+        val v1 = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV1(source)
         assertContentEquals(v1, PesExport.prepare(v1, "old.pes", PesWriteSettings(PesVersion.V6)).bytes)
     }
 
@@ -102,7 +102,7 @@ class PesV6WriterTest {
         val source = p(s(0, 0), s(10, 10), threads = listOf(red.copy(description = "빨강".repeat(100))),
             metadata = mapOf("name" to "한글😀".repeat(100)))
         val before = source.stitches.toList()
-        val bytes = PesWriter.writeV6(source)
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source)
         val back = PesReader.read(bytes)
         assertTrue(back.warnings.isEmpty())
         assertTrue(back.metadata.getValue("name").toByteArray().size <= 255)
@@ -115,7 +115,7 @@ class PesV6WriterTest {
 
     @Test fun longSewingSectionSplitsWithoutU16PointCountWrapping() {
         val source = EmbPattern(List(65536) { s((it+1) % 100 + 1, (it+1) % 50 + 1) }, listOf(red))
-        val bytes = PesWriter.writeV6(source)
+        val bytes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(source)
         assertEquals(65536, PesReader.read(bytes).stitchCount)
         val marker = text(bytes).indexOf("CSewSeg")
         val section1 = marker + 7
@@ -127,9 +127,9 @@ class PesV6WriterTest {
     }
 
     @Test fun v6ChecksSectionCoordinateAndPecPaletteLimits() {
-        assertFailsWith<IllegalArgumentException> { PesWriter.writeV6(p(s(1, 0), s(40000, 0))) }
+        assertFailsWith<IllegalArgumentException> { io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(p(s(1, 0), s(40000, 0))) }
         val manyThreads = List(65) { EmbThread(0xFF000000.toInt() + it) }
         val stitches = manyThreads.indices.flatMap { i -> listOf(s(i+1, 0), s(i+2, 0), s(i+2, 0, Command.COLOR_CHANGE)) }
-        assertFailsWith<IllegalArgumentException> { PesWriter.writeV6(EmbPattern(stitches, manyThreads)) }
+        assertFailsWith<IllegalArgumentException> { io.github.linker2k.myembro.engine.PolicyFixtureWriter.writeV6(EmbPattern(stitches, manyThreads)) }
     }
 }

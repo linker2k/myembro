@@ -13,7 +13,7 @@ import kotlin.test.*
 class EditorSourceRecoveryTest {
     private val gold = EmbThread(0xFFFFD911.toInt(), "Gold", "206", "Brother")
     private fun bytes() = PesWriter.writeV6(EmbPattern(listOf(Stitch(0, 0, Command.STITCH),
-        Stitch(100, 100, Command.STITCH), Stitch(100, 100, Command.END)), listOf(gold)))
+        Stitch(100, 100, Command.STITCH), Stitch(0, 100, Command.STITCH), Stitch(100, 0, Command.STITCH), Stitch(100, 100, Command.END)), listOf(gold)))
     private fun oldProject(embedded: Boolean = false): Project {
         val obj = StitchObject.fromBytes("old", "test", bytes(), "synthetic.pes")
         return Project(objects = listOf(obj.copy(sourceBytes = bytes().takeIf { embedded }, source = EmbPattern(
@@ -77,7 +77,7 @@ class EditorSourceRecoveryTest {
         assertEquals(stitch(old).source.threads, missing.source.threads)
         assertEquals("085", missing.source.threads.single().displayName)
         val other = EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(101, 100, Command.STITCH),
-            Stitch(101, 100, Command.END)), listOf(gold))
+            Stitch(0, 100, Command.STITCH), Stitch(101, 0, Command.STITCH), Stitch(101, 100, Command.END)), listOf(gold))
         designs.resolve("synthetic.pes").writeBytes(PesWriter.writeV6(other))
         assertEquals(stitch(old).source.threads, stitch(readEditorProject(old.toJson(), resolver)).source.threads)
         assertNull(stitch(readEditorProject(old.toJson(), resolver)).sourceBytes)

@@ -42,10 +42,8 @@ class PesViewportTest {
         val input=EmbPattern(listOf(Stitch(-100,-50,Command.JUMP),Stitch(-100,-50,Command.STITCH),
             Stitch(100,50,Command.STITCH)),source.threads)
         for(v in PesVersion.entries) {
-            val bytes=PesWriter.write(input,v)
-            assertEquals(listOf(Stitch(200,100,Command.STITCH),Stitch(200,100,Command.END)),PesReader.read(bytes).stitches)
-            val pec=u32(bytes,8)
-            assertEquals(200,u16(bytes,pec+520));assertEquals(100,u16(bytes,pec+522))
+            val error=assertFailsWith<IllegalArgumentException> { PesWriter.write(input,v) }
+            assertTrue(error.message!!.contains("PEC_ORIGIN"))
         }
     }
 }

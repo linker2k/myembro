@@ -59,3 +59,11 @@ tasks.register<JavaExec>("makeSampler") {
         providers.gradleProperty("samplerGapMm").orElse("5").get())
     args(providers.gradleProperty("samplerInputs").orElse("").get().split('|').filter(String::isNotBlank))
 }
+
+// Python gate consumes dimensions emitted from the same runtime HoopSpec as the app.
+tasks.register<JavaExec>("exportGateHoop") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.HoopConfigCli")
+    args(providers.gradleProperty("gateHoopOutput").orElse(layout.buildDirectory.file("hoop-spec.json").get().asFile.path).get())
+}

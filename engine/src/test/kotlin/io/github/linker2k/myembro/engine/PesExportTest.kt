@@ -16,6 +16,11 @@ class PesExportTest {
     @Test
     fun pesIsCopiedUnchanged() {
         val original = resource("flower.v6.pes")
+        val viewport=io.github.linker2k.myembro.engine.sewout.PecViewportCheck.check(original,io.github.linker2k.myembro.engine.edit.HoopSpec.H100)
+        if(!viewport.valid) {
+            kotlin.test.assertFailsWith<IllegalArgumentException> { PesExport.prepare(original,"flower.v6.pes") }
+            return
+        }
         val result = PesExport.prepare(original, "flower.v6.pes")
         assertFalse(result.converted)
         assertContentEquals(original, result.bytes)

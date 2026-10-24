@@ -9,7 +9,7 @@ import kotlin.test.*
 
 class ViewerSewoutTest {
     private fun pattern(x: Int = 0) = EmbPattern(listOf(Stitch(x, 0, Command.STITCH),
-        Stitch(x + 50, 50, Command.STITCH), Stitch(x + 50, 50, Command.END)), listOf(EmbThread(0xFFAA5500.toInt(), "thread")))
+        Stitch(x + 50, 50, Command.STITCH), Stitch(x, 50, Command.STITCH), Stitch(x + 50, 0, Command.STITCH), Stitch(x + 50, 50, Command.END)), listOf(EmbThread(0xFFAA5500.toInt(), "thread")))
     private fun report() = checkViewerSewout(pattern(), SewoutMachines.SE400, HoopSpec.H100, false)
 
     @Test fun `badge uses functional verdict and generated origin survives byte parsing`() {

@@ -102,7 +102,7 @@ class WriterParityTest {
     }
 
     private fun export(output: File, name: String, source: EmbPattern, expected: List<Stitch>, colors: List<Int>) {
-        for ((extension, write) in listOf("pec" to PecWriter::write, "pes" to { p: EmbPattern -> PesWriter.write(p) })) {
+        for ((extension, write) in listOf("pec" to PecWriter::write, "pes" to { p: EmbPattern -> io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(p) })) {
             val data = write(source)
             val reread = PesReader.read(data)
             assertTrue(reread.warnings.isEmpty(), "$name.$extension: ${reread.warnings}")
@@ -145,7 +145,7 @@ class WriterParityTest {
     fun headerLengthsGraphicsAndPesOffsetAreCorrect() {
         val p = pattern(s(0, 0), s(100, 50), s(100, 50, Command.STOP), s(200, 100), s(200, 100, Command.END))
         val pec = PecWriter.write(p)
-        val pes = PesWriter.write(p)
+        val pes = io.github.linker2k.myembro.engine.PolicyFixtureWriter.write(p)
         assertEquals("#PES0001", pes.copyOfRange(0, 8).toString(Charsets.US_ASCII))
         assertEquals(22, u24(pes, 8))
         assertContentEquals(ByteArray(10), pes.copyOfRange(12, 22))

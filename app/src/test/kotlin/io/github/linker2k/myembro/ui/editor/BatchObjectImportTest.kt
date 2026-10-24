@@ -13,7 +13,7 @@ class BatchObjectImportTest {
         val dir = Files.createTempDirectory("editor-batch-").toFile()
         try {
             val pattern = EmbPattern(listOf(Stitch(0, 0, Command.STITCH), Stitch(40, 20, Command.STITCH),
-                Stitch(40, 20, Command.END)), listOf(EmbThread(0xFF112233.toInt())))
+                Stitch(0, 20, Command.STITCH), Stitch(40, 0, Command.STITCH), Stitch(40, 20, Command.END)), listOf(EmbThread(0xFF112233.toInt())))
             val pes = PesWriter.write(pattern)
             val files = (1..3).map { File(dir, "part-$it.pes").apply { writeBytes(pes) } }
             val objects = files.map(::importDesignObject)
