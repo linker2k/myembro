@@ -12,6 +12,61 @@ import kotlin.test.*
 
 /** Two original synthetic masks, no private designs or photographs. */
 class RedworkPipelineTest {
+    @Test fun photoSilhouetteRetainsTatamiAndFinishedBoundsFitExclusiveHoop() {
+        val rgb=IntArray(64*64) { if(it%64 in 2..61 && it/64 in 2..61) 0 else 0xFFFFFF }
+        val thread=EmbThread(0xFF000000.toInt())
+        val outline=RedworkPipeline.trace(64,64,rgb,99.9,0,thread)
+        val result=RedworkPipeline.generate(outline,thread,photoMode=true)
+        assertEquals("inkstitch-default-tatami-underlay",result.pattern.metadata["myembro.fill.backend"])
+        assertEncodedViewport(result.copyPesBytes())
+        val report=SewoutCheck.checkPes(result.copyPesBytes(),options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
+        assertTrue(report.analysisComplete)
+        assertFalse(report.hasBlockingIssues,report.findings.joinToString())
+    }
+    @Test fun standardMedianRemovesIsolatedNoiseAndPreservesAnEdge() {
+        val rgb=IntArray(25) { if(it%5>=3) 0 else 0xFFFFFF };rgb[11]=0
+        val filtered=PhotoRasterFilters.median3(5,5,rgb)
+        assertEquals(0xFFFFFF,filtered[11])
+        assertEquals(0,filtered[14])
+        assertEquals(0xFFFFFF,filtered[0])
+    }
+    @Test fun rejectedUniformImageStillPublishesTwoColorPreviewBeforeAnyStitchWork() {
+        var preview:IntArray?=null
+        val phases=mutableListOf<String>()
+        assertFailsWith<IllegalArgumentException> {
+            RedworkPipeline.trace(32,32,IntArray(1024) { 0x777777 },20.0,0,EmbThread(0xFF000000.toInt()),
+                onQuantized={ preview=it },checkpoint={ phases.add(it) })
+        }
+        assertContentEquals(IntArray(1024) { 0xFFFFFF },preview)
+        assertEquals(listOf("quantization"),phases)
+    }
+    @Test fun previewNeverGeneratesStitchesAndSplitOutputMatchesExistingApi() {
+        val rgb=IntArray(32*32) { if(it%32 in 8..23 && it/32 in 8..23) 0 else 0xFFFFFF }
+        val thread=EmbThread(0xFF000000.toInt())
+        val phases=mutableListOf<String>()
+        val outline=RedworkPipeline.trace(32,32,rgb,20.0,0,thread,checkpoint={ phases.add(it) })
+        assertTrue("preview_ready" in phases)
+        assertFalse("stitches" in phases || "pes" in phases)
+        assertContentEquals(RedworkPipeline.generate(32,32,rgb,20.0,0,thread).copyPesBytes(),
+            RedworkPipeline.generate(outline,thread).copyPesBytes())
+    }
+    @Test fun photoAreaFilterAndComplexityLimitRunBeforeCurveAndFillWork() {
+        val rgb=IntArray(64*64) { i ->
+            val x=i%64; val y=i/64
+            if((x in 4..20 && y in 4..20) || (x in 40..42 && y in 40..42)) 0 else 0xFFFFFF
+        }
+        val thread=EmbThread(0xFF000000.toInt())
+        assertEquals(2,RedworkPipeline.trace(64,64,rgb,64.0,0,thread).contourCount)
+        assertEquals(1,RedworkPipeline.trace(64,64,rgb,64.0,0,thread,minAreaMm2=10.0).contourCount)
+        val phases=mutableListOf<String>()
+        assertFailsWith<IllegalArgumentException> {
+            RedworkPipeline.trace(64,64,rgb,64.0,0,thread,maxContours=1,checkpoint={phases.add(it)})
+        }
+        assertFalse("preview_ready" in phases || "stitches" in phases)
+        assertFailsWith<InterruptedException> {
+            RedworkPipeline.trace(64,64,rgb,64.0,0,thread,checkpoint={ throw InterruptedException() })
+        }
+    }
     @Test fun rectangleBitmapToFinishedSingleColorPes() = fixture("rectangle")
     @Test fun roundBitmapToFinishedSingleColorPes() = fixture("round")
 

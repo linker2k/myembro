@@ -6,6 +6,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PhotoCropTest {
+    @Test fun contrastStretchHasExactEndpointsAndDoesNotInventUniformDetail() {
+        kotlin.test.assertContentEquals(intArrayOf(0,0x7F7F7F,0xFFFFFF),
+            photoContrastStretch(intArrayOf(0x646464,0x656565,0x666666)))
+        kotlin.test.assertContentEquals(intArrayOf(0x646464,0x646464),photoContrastStretch(intArrayOf(0x646464,0x646464)))
+    }
+    @Test fun workingRasterIsBoundedByHoopAndDetail() {
+        assertEquals(192,photoRasterSize(1))
+        assertEquals(256,photoRasterSize(2,100.0,100.0))
+        assertEquals(100,photoRasterSize(2,20.0,20.0))
+        assertEquals(1.0,photoMinimumArea(0))
+        assertEquals(0.25,photoMinimumArea(2))
+    }
     @Test fun widePhotoCentersInSquareHoop() {
         assertEquals(PhotoCrop(200, 0, 800, 800), photoCrop(1200, 800, 1.0, 1f, 0f, 0f))
     }

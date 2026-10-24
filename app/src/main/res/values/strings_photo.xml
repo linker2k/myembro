@@ -1,13 +1,13 @@
 <resources>
-    <string name="photo_title">Photo to embroidery</string>
+    <string name="photo_title">Photo to silhouette</string>
     <string name="photo_from_photo">From a photo</string>
-    <string name="photo_from_photo_hint">Turn a photo into single-color linework</string>
+    <string name="photo_from_photo_hint">Turn a photo into a single-color silhouette</string>
     <string name="photo_back">Back</string>
     <string name="photo_step">%1$d / 3</string>
     <string name="photo_crop_title">Choose and crop</string>
-    <string name="photo_preview_title">Single-color linework</string>
+    <string name="photo_preview_title">Single-color silhouette</string>
     <string name="photo_result_title">Your embroidery</string>
-    <string name="photo_crop_hint">Pinch to zoom and drag to position. Keep the top-left dot over the background.</string>
+    <string name="photo_crop_hint">Best for clear drawings, logos and handwriting. Pinch to zoom and drag to position. Keep the top-left dot over the background.</string>
     <string name="photo_pick">Choose photo</string>
     <string name="photo_pick_again">Change photo</string>
     <string name="photo_detail">Detail</string>
@@ -24,9 +24,24 @@
     <string name="photo_blocked_hint">A hoop or stitch safety issue blocks transfer. Adjust the crop or detail, or open the editor.</string>
     <string name="photo_check_hint">Automatically checked for the selected machine and hoop. Test on matching scrap fabric before sewing.</string>
     <string name="photo_crop_accessibility">Photo in hoop frame. Pinch and drag to crop</string>
-    <string name="photo_name">Photo linework</string>
+    <string name="photo_name">Photo silhouette</string>
     <string name="photo_load_failed">Unable to open the photo. Choose another image.</string>
-    <string name="photo_generate_failed">Unable to separate lines and background. Try a simpler image or a different crop.</string>
+    <string name="photo_generate_failed">Contrast was retried once, but no usable outlines remain. The two-color preview shows the separation. Try clear drawings, logos or handwriting.</string>
     <string name="photo_save_failed">Unable to prepare the file for transfer. Try again.</string>
-    <string name="photo_file_stem">photo_linework</string>
+    <string name="photo_file_stem">photo_silhouette</string>
+    <string name="photo_progress_decode">Opening photo</string>
+    <string name="photo_progress_quantize">Separating colors · 1/3</string>
+    <string name="photo_progress_trace">Finding outlines · 2/3</string>
+    <string name="photo_progress_stitches">Generating stitches · 3/3</string>
+    <string name="photo_elapsed">%1$d seconds elapsed</string>
+    <string name="photo_estimate">Preview estimate: about 2 seconds. Time varies by image and device.</string>
+    <string name="photo_cancel">Cancel</string>
+    <string name="photo_slow_hint">Taking longer than expected? Try lower detail.</string>
+    <string name="photo_lower_detail">Lower detail</string>
+    <string name="photo_too_complex">Too many small regions. Lower detail or crop a simpler area.</string>
+    <string name="photo_retry">Try again</string>
+    <string name="photo_separated_preview">Two-color separation preview</string>
+    <string name="photo_stitches_failed">Outlines were found, but stitches could not be generated. Lower detail or try a simpler crop.</string>
+    <string name="photo_timed_out">Stitch generation took too long. Lower detail or crop a smaller area.</string>
+    <string name="photo_estimate_result">Generation estimate: about 10 seconds. Time varies; after 30 seconds, try lower detail.</string>
 </resources>

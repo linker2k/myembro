@@ -151,3 +151,11 @@ tasks.register<JavaExec>("sweepS4Fill") {
     mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.S4FillSweepCli")
     args("/tmp/myembro-sewtest/s4/fill-sweep")
 }
+
+// Opt-in synthetic 12MP photo timing; not part of CI's representative fixture tier.
+tasks.register<JavaExec>("photoTiming") {
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.PhotoTimingCli")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("photoTimingArgs").orElse("192,baseline,full").get().split(','))
+}

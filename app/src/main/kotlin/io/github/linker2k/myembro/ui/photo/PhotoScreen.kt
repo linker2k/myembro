@@ -7,6 +7,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -33,18 +38,27 @@ import io.github.linker2k.myembro.ui.sewoutMinutes
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import java.io.File
+import androidx.core.graphics.PathParser
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
+import io.github.linker2k.myembro.engine.inkstitch.svg.Units
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
     onEdit: () -> Unit, onSend: (File) -> Unit) {
     LaunchedEffect(settings) { vm.configure(settings) }
-    val back = { if (vm.step > 0) vm.back() else onBack() }
+    val back = { if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.load(uri) }
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
+    var elapsed by remember { mutableIntStateOf(0) }
+    LaunchedEffect(vm.busy, vm.step) {
+        elapsed = 0
+        while (vm.busy) { delay(1000); elapsed++ }
+    }
     var showCheck by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
         IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
@@ -55,6 +69,22 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             Text(stringResource(when(vm.step) { 0 -> R.string.photo_crop_title; 1 -> R.string.photo_preview_title; else -> R.string.photo_result_title }),
                 style = MaterialTheme.typography.headlineSmall)
             Text(Dimensions.size(vm.hoop.width / 10.0, vm.hoop.height / 10.0), style = MaterialTheme.typography.bodySmall)
+            if (vm.busy) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(stringResource(when (vm.progressStage) {
+                    0 -> R.string.photo_progress_decode
+                    1 -> R.string.photo_progress_quantize
+                    2 -> R.string.photo_progress_trace
+                    else -> R.string.photo_progress_stitches
+                }))
+                Text(stringResource(R.string.photo_elapsed,elapsed),style=MaterialTheme.typography.bodySmall)
+                Text(stringResource(if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
+            }
+            if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
+                Text(stringResource(R.string.photo_slow_hint))
+                TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
+            }
             if (vm.step == 0) {
                 if (vm.source != null) CropPreview(vm) else Surface(Modifier.fillMaxWidth().height(260.dp), color = colors.surfaceVariant) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
@@ -65,7 +95,11 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 }
             } else {
                 val data = vm.render
-                if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.detail,
+                if (vm.step == 1 && vm.outline != null) OutlinePreview(vm.outline!!)
+                else if (vm.step == 1 && vm.separatedPreview != null) Image(vm.separatedPreview!!.asImageBitmap(),
+                    contentDescription=stringResource(R.string.photo_separated_preview),
+                    modifier=Modifier.fillMaxWidth().height(300.dp),contentScale=ContentScale.Fit)
+                else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.detail,
                     Modifier.fillMaxWidth().height(300.dp), colors.background.toArgb(), colors.outline.toArgb(), frame = vm.hoop, preservePlacement = true)
                 else Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) { if (vm.busy) CircularProgressIndicator() }
                 if (vm.step == 1) {
@@ -84,13 +118,15 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 }
             }
             vm.error?.let { Text(stringResource(it), color = colors.error) }
-            if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (vm.step < 2) Button(onClick = vm::next,
-                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.render != null), modifier = Modifier.fillMaxWidth()) {
+                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.outline != null), modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.photo_next))
-            } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            } else {
+                if (!vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onEdit, enabled = !vm.busy && vm.render != null, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
                 Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
+                }
             }
         }
     }
@@ -116,6 +152,29 @@ private fun CropPreview(vm: PhotoViewModel) {
                 android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)) }
             drawRect(accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawCircle(accent, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(7.dp.toPx(), 7.dp.toPx()))
+        }
+    }
+}
+
+
+@Composable
+private fun OutlinePreview(outline: RedworkOutline) {
+    val shape = remember(outline) {
+        android.graphics.Path().apply {
+            fillType = android.graphics.Path.FillType.EVEN_ODD
+            outline.paths.mapNotNull { PathParser.createPathFromPathData(it) }.forEach { addPath(it) }
+        }.asComposePath()
+    }
+    val ink = MaterialTheme.colorScheme.primary
+    Canvas(Modifier.fillMaxWidth().height(300.dp)) {
+        val w = Units.mmToPixels(outline.widthMm).toFloat()
+        val h = Units.mmToPixels(outline.heightMm).toFloat()
+        val factor = minOf(size.width / w, size.height / h) * .95f
+        withTransform({
+            translate(size.width / 2, size.height / 2)
+            scale(factor, factor, pivot = androidx.compose.ui.geometry.Offset.Zero)
+        }) {
+            drawPath(shape, ink)
         }
     }
 }

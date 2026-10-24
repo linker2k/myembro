@@ -79,6 +79,7 @@ object FillRouting {
         var lastVertex: Node? = null
         var lastEdge: Edge? = null
         while (stack.isNotEmpty()) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
             val (vertex, via) = stack.last()
             val edges = graph.at(vertex)
             if (edges.isEmpty()) {
@@ -243,6 +244,7 @@ object FillRouting {
         val matchingGraph = SimpleWeightedGraph<Int,DefaultWeightedEdge>(DefaultWeightedEdge::class.java)
         odd.indices.forEach(matchingGraph::addVertex)
         for (i in odd.indices) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
             val distances = unweightedDistances(graph,odd[i])
             for (j in i+1 until odd.size) {
                 val distance = distances[odd[j]] ?: error("Disconnected fill graph")
@@ -270,6 +272,7 @@ object FillRouting {
         val distances = hashMapOf(start to 0)
         val queue = ArrayDeque<Node>(); queue += start
         while (queue.isNotEmpty()) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
             val node = queue.removeFirst()
             for (edge in graph.at(node)) {
                 val neighbor = edge.other(node)
@@ -343,6 +346,7 @@ object FillRouting {
         var order = 0
         queue += Entry(start, 0.0, order++)
         while (queue.isNotEmpty()) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
             val entry = queue.remove()
             if (entry.distance != distances[entry.node]) continue
             if (entry.node == end) break
