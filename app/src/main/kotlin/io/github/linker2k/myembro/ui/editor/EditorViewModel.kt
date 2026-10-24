@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.edit.commands.ProjectCommand
+import io.github.linker2k.myembro.engine.edit.commands.CommandResult
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.DesignSourceResolver
@@ -318,10 +319,12 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         session.commit(next)
         sync()
     }
-    private fun edit(command: ProjectCommand) {
-        if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return
-        session.commit(command)
+    private fun edit(command: ProjectCommand) { dispatch(command) }
+    private fun dispatch(command: ProjectCommand): CommandResult? {
+        if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return null
+        val result = session.commit(command)
         sync()
+        return result
     }
     /** Existing geometry calculations prepare values; command validation is shared with tools. */
     private fun editPoses(next: Project) = edit(project.poseCommand(next))
@@ -371,10 +374,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun commitLettering(obj: TextObject): Boolean {
         if (busy || gestureInProgress || !letteringOpen) return false
         val target = letteringTargetId
-        val next = project.withLettering(obj, target)
-        if (target != null && next === project) return false
-        edit(next)
-        selectedIds = setOf(target ?: next.objects.last().id)
+        val result = dispatch(project.letteringCommand(obj, target)) as? CommandResult.Applied ?: return false
+        selectedIds = setOf(target ?: result.project.objects.last().id)
         selectionMode = false
         dismissLettering()
         return true
@@ -435,7 +436,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 val changed = withContext(Dispatchers.Default) {
                     original.withThreadWeight(threadWeight ?: original.threadWeight).copy(transform = transform, stitchStyle = style).also { it.localPattern() }
                 }
-                if (project == before) edit(project.replace(changed))
+                if (project == before) edit(textPropertiesCommand(original.id, changed))
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.lettering_failed, e)
             } finally { busy = false }
