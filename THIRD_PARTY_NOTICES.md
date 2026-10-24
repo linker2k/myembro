@@ -721,3 +721,15 @@ dealings in these Data Files or Software without prior written
 authorization of the copyright holder.
 
 SPDX-License-Identifier: Unicode-3.0
+
+## Android-generated bundled TTF snapshots (tests only)
+
+- `engine/src/test/resources/font-snapshots/` contains finite glyph outline and binary
+  raster snapshots generated on Android from the existing unmodified Gowun Batang,
+  Jua and Noto Sans KR font assets described above, plus app-generated regression PES.
+- Each font's complete existing OFL-1.1 copyright/license notice is copied beside the
+  snapshots. Font software remains under OFL-1.1; these assets are not sold separately.
+- `manifest.json` pins source font SHA-256, Android build/face selection, snapshot
+  hashes and sizes. Reproduction and scope: `tools/font-snapshots/README.md`.
+- No uploaded/personal design files, remote font code, or additional TTF binaries are
+  included. The fixed test input subset does not imply full-font coverage.
