@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.fonts
 
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class InkStitchCatalogTest {
@@ -44,5 +45,23 @@ class InkStitchCatalogTest {
 
     @Test fun everyFontHasABundledStitchPreview() {
         fonts.forEach { assertTrue(File("src/main/assets/fonts/previews/${it.id}.png").isFile, it.id) }
+    }
+
+    @Test fun bundledFontsAreOnePerThemeVerifiedAndMatchTheCatalog() {
+        val bundled = fonts.filter { it.bundled }
+        assertEquals(5, bundled.size)
+        assertEquals(setOf("script", "serif", "sans", "display"), bundled.map { it.theme }.toSet())
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        fun sha(f: File) = md.digest(f.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
+        var total = 0L
+        for (f in bundled) {
+            val dir = File("src/main/assets/fonts/bundled/${f.id}")
+            assertEquals(f.sha256, sha(File(dir, "ltr.svg")), f.id)
+            assertEquals(f.metaSha256, sha(File(dir, "font.json")), f.id)
+            assertEquals(f.licenseSha256, sha(File(dir, "LICENSE")), f.id)
+            total += dir.listFiles()!!.sumOf { it.length() }
+        }
+        // Raw size; SVG deflates about 6x in the APK.
+        assertTrue(total < 3_200_000, "$total bytes")
     }
 }

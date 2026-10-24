@@ -25,6 +25,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -519,6 +520,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -713,6 +715,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -908,6 +911,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1091,6 +1095,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1231,6 +1236,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1371,6 +1377,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "0",
@@ -1434,6 +1441,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1670,6 +1678,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1829,6 +1838,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -1988,6 +1998,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -2170,6 +2181,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -2355,6 +2367,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": true,
    "glyphs": [
     "!",
     "&",
@@ -2488,6 +2501,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -2621,6 +2635,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -2760,6 +2775,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "%",
@@ -2903,6 +2919,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "%",
@@ -3046,6 +3063,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -3227,6 +3245,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -3367,6 +3386,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "serif",
+   "bundled": true,
    "glyphs": [
     "!",
     "\"",
@@ -3530,6 +3550,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -3693,6 +3714,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": true,
    "glyphs": [
     "!",
     "\"",
@@ -3820,6 +3842,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -3961,6 +3984,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -4127,6 +4151,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -4273,6 +4298,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -4764,6 +4790,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -4890,6 +4917,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "0",
     "1",
@@ -4951,6 +4979,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "0",
     "1",
@@ -5012,6 +5041,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "0",
     "1",
@@ -5073,6 +5103,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "0",
     "1",
@@ -5134,6 +5165,7 @@
    "thinThreadRequired": true,
    "letterCase": "upper",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "0",
     "1",
@@ -5195,6 +5227,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -5364,6 +5397,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -5533,6 +5567,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "-",
@@ -5598,6 +5633,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -5743,6 +5779,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -5886,6 +5923,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -6069,6 +6107,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -6254,6 +6293,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "&",
     "(",
@@ -6327,6 +6367,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -6396,6 +6437,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -6465,6 +6507,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -6604,6 +6647,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -6743,6 +6787,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -6882,6 +6927,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -7021,6 +7067,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "&",
@@ -7135,6 +7182,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -7261,6 +7309,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -7448,6 +7497,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": true,
    "glyphs": [
     "\"",
     "#",
@@ -7573,6 +7623,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "$",
@@ -7700,6 +7751,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -7890,6 +7942,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -8080,6 +8133,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -8905,6 +8959,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -9565,6 +9620,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10232,6 +10288,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10382,6 +10439,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10532,6 +10590,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10667,6 +10726,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10847,6 +10907,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -10979,6 +11040,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "display",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -11160,6 +11222,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -11341,6 +11404,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -11473,6 +11537,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": true,
    "glyphs": [
     "!",
     "#",
@@ -11615,6 +11680,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "\"",
     "#",
@@ -11738,6 +11804,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "script",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -11868,6 +11935,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -11983,6 +12051,7 @@
    "thinThreadRequired": false,
    "letterCase": "upper",
    "theme": "sans",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -12123,6 +12192,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -12319,6 +12389,7 @@
    "thinThreadRequired": true,
    "letterCase": "",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "!",
     "\"",
@@ -12515,6 +12586,7 @@
    "thinThreadRequired": false,
    "letterCase": "",
    "theme": "serif",
+   "bundled": false,
    "glyphs": [
     "!",
     "$",

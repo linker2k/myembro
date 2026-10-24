@@ -46,7 +46,7 @@ derived from the following projects, whose notices are reproduced as their licen
   data, or other assets were copied into that implementation; no remote code was executed.
   The newer source-derived ports under `engine/.../inkstitch/` are separately attributed below.
 
-## Ink/Stitch embroidery fonts (downloaded data; stitch previews bundled)
+## Ink/Stitch embroidery fonts (downloaded data; five fonts and stitch previews bundled)
 
 - Source: https://github.com/inkstitch/embroidery-fonts at commit
   `c7e3a05c3d6f5c77b881c50f257851af9a8e9cb8`; per-font licenses (OFL-1.1, CC BY-SA, CC BY,
@@ -56,6 +56,10 @@ derived from the following projects, whose notices are reproduced as their licen
   the license beside it. No font file is in this repository or the APK; `assets/fonts/previews/` holds one
   small picture per font of its stitches (the sample "Abc"), rendered from that font under its own
   license (OFL-1.1, CC BY / BY-SA, GPL-3.0 or public domain, as listed in the catalog with its authors).
+- Five fonts are bundled in the APK for offline use, unmodified and verified against the same
+  pinned sha256: `assets/fonts/bundled/<id>/` holds each font's `ltr.svg`, `font.json` and `LICENSE`
+  (all SIL Open Font License 1.1): sacramarif, chicken_scratch, chicken_little, medium_font,
+  bathaus_FI. Selection basis: `docs/inkstitch-fonts.md` (번들 글꼴).
 
 ## pyembroidery
 

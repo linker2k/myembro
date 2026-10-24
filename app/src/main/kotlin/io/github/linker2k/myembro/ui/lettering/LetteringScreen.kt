@@ -128,6 +128,14 @@ private fun LetteringContent(
     }
     val recentFonts = remember { RecentLetteringFonts(context) }
     var recent by remember { mutableStateOf(recentFonts.list()) }
+    // First open with no history: Latin text starts in a downloaded verified embroidery font.
+    val firstOpen = remember { recent.isEmpty() && initialObject == null && initialFontId == "gowun-batang" }
+    LaunchedEffect(catalogFonts, installedCatalog) {
+        if (!firstOpen || catalogFonts.isEmpty() || fontId != "gowun-batang") return@LaunchedEffect
+        val installed = catalogFonts.filter { it.predigitized && it.id in installedCatalog }
+            .map { f -> QuickFont(f.id, true, f.korean, f.themeKey, covers = f::covers) }
+        fontId = defaultLetteringFont(emptyList(), text, installed)
+    }
     // Every font the sheet shows becomes the most recent; the one before moves to the second slot.
     LaunchedEffect(fontId) { recentFonts.use(fontId); recent = recentFonts.list() }
     val quickFonts = remember(catalogFonts, installedCatalog) {

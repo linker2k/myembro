@@ -36,6 +36,19 @@ internal fun quickFontSlots(current: String, recent: List<String>, fonts: List<Q
     return slots.take(3)
 }
 
+/**
+ * First-open default (no recent fonts): Latin text starts in a verified embroidery font that is
+ * installed — bundled or downloaded ([installedEmbroidery]) — and covers it, script first; otherwise, and for
+ * Hangul text, [fallback] (고운바탕).
+ */
+internal fun defaultLetteringFont(recent: List<String>, text: String, installedEmbroidery: List<QuickFont>,
+    fallback: String = "gowun-batang"): String {
+    if (recent.isNotEmpty() || text.any { it in '\uAC00'..'\uD7A3' || it in '\u3131'..'\u318E' }) return fallback
+    // A script font first: names are the main use (bundled sacramarif / chicken_scratch).
+    return installedEmbroidery.filter { it.embroidery && it.covers(text) }.sortedByDescending { it.theme == "script" }
+        .firstOrNull()?.id ?: fallback
+}
+
 /** Recently used lettering fonts, newest first, kept in the app's preferences. */
 internal class RecentLetteringFonts(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("lettering", Context.MODE_PRIVATE)
