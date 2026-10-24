@@ -7,7 +7,7 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 python3 tools/redwork/make-s4-sample
 ```
 
 The script draws two original black/white 192px line drawings (flower, house),
-uses the actual S4 Wu → Potrace → model DefaultTatami（타타미+바탕 땀） → S1 pipeline with upstream
+uses the actual S4 Wu → Potrace → model DefaultTatami（tatami+underlay） → S1 pipeline with upstream
 stitch defaults, then calls the existing worker `tools/make_sewtest_sampler.py`.
 No personal photos, downloaded artwork, fonts or model-generated bitmap assets.
 Each motif's maximum sewn dimension is 30mm; input physical scale is calibrated
