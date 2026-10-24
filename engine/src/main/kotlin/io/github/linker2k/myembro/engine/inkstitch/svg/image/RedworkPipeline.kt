@@ -10,7 +10,8 @@ import io.github.linker2k.myembro.engine.geometry.FillRule
 import io.github.linker2k.myembro.engine.geometry.Point as RegionPoint
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
-import io.github.linker2k.myembro.engine.io.PesV6Writer
+import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.io.PesVersion
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 
@@ -81,6 +82,6 @@ object RedworkPipeline {
         val svgWidth = Units.mmToPixels(widthMm)
         val svgHeight = svgWidth * height / width
         val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill-rule="evenodd" fill="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
-        return RedworkResult(pattern, svg, contours.size, PesV6Writer.write(pattern))
+        return RedworkResult(pattern, svg, contours.size, PesWriter.write(pattern, PesVersion.V6))
     }
 }
