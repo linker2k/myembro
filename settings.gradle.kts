@@ -15,3 +15,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "myembro"
 include(":engine", ":app")
+
+include(":mcp")
+project(":mcp").projectDir = file("tools/mcp")

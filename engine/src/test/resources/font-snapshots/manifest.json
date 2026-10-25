@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "source": "Android emulator-5556; FontSnapshotInstrumentation",
+  "files": {
+    "CAPTURE_OK": {
+      "bytes": 77,
+      "sha256": "84daa4a085d0ffebaa757309ebd0972093f55a833410c39efef7241bf1478168"
+    },
+    "cases.json": {
+      "bytes": 581,
+      "sha256": "2c6751adbf52a8914416659c8fc3cc6e6f4af4b93cc457010b31341fd1402799"
+    },
+    "gowun-batang-OFL.txt": {
+      "bytes": 4397,
+      "sha256": "49a57cc769fa9affd6eefb9070a61e3d3f6b757c97cafb15848bc6d1c81acc78"
+    },
+    "gowun-batang-outline.json.gz": {
+      "bytes": 158105,
+      "sha256": "e63e863811d1cb5aaa0e9d6275fd6f04d3f076f8924ec7b9e43a3879178c428e",
+      "json_bytes": 1274260,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "gowun-batang",
+        "variant": "outline",
+        "fontSha256": "466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "bundled TTF default",
+        "license": "OFL-1.1"
+      }
+    },
+    "gowun-batang-satin.json.gz": {
+      "bytes": 158105,
+      "sha256": "931cf8887507f7220f9deedbb0bf1ca5b5f6bd50a4e616a06d5bfc35c812ec3f",
+      "json_bytes": 1274258,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "gowun-batang",
+        "variant": "satin",
+        "fontSha256": "466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "bundled TTF default",
+        "license": "OFL-1.1"
+      }
+    },
+    "jua-OFL.txt": {
+      "bytes": 4341,
+      "sha256": "37c7903f9c06b3c7935ea3f28f1dbf01f2fe45696da6b7eef5942ec61f4c1c09"
+    },
+    "jua-latin.myembro.gz": {
+      "bytes": 7446,
+      "sha256": "32a4fb1388f771bcf79f71a8d5f0cfe94adaf765ee4c220fba8f9287043956da"
+    },
+    "jua-latin.pes": {
+      "bytes": 3196,
+      "sha256": "08c9828a9b39ac532f2a679cbc89b9b15682bda23b5947717e6163c9b097c757"
+    },
+    "jua-outline.json.gz": {
+      "bytes": 141678,
+      "sha256": "3bae8b22891ae934d0b35fa553fbd8e1dabf273ec5aa5ef2ab83c7011ce1d683",
+      "json_bytes": 1182572,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "jua",
+        "variant": "outline",
+        "fontSha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "bundled TTF default",
+        "license": "OFL-1.1"
+      }
+    },
+    "jua-satin.json.gz": {
+      "bytes": 141679,
+      "sha256": "54d083284a8d0cdc5bb154a5d645e7fe75ef7f1b96afe909be8283853bd0e451",
+      "json_bytes": 1182570,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "jua",
+        "variant": "satin",
+        "fontSha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "bundled TTF default",
+        "license": "OFL-1.1"
+      }
+    },
+    "jua-안녕.myembro.gz": {
+      "bytes": 12900,
+      "sha256": "25c73bdca245af079ef65c4472b816a13ea8e97bd18f0c9e8b34e0ba30ebbbfa"
+    },
+    "jua-안녕.pes": {
+      "bytes": 2234,
+      "sha256": "3429f7f77ad6543aa6ed9ea6626edaf0dd9119f7159b94eabc61d94daf74b913"
+    },
+    "jua-정민.myembro.gz": {
+      "bytes": 11807,
+      "sha256": "6cf8511016ca6c2d1ce0f8e18d9b4fee1fc70343f62b30dada3956f1f7af7f59"
+    },
+    "jua-정민.pes": {
+      "bytes": 2316,
+      "sha256": "0297cbd1e9da2fdd0d1de0eb26b31201f11da2dd4df16934f1203584916ed9f9"
+    },
+    "noto-sans-kr-OFL.txt": {
+      "bytes": 4388,
+      "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"
+    },
+    "noto-sans-kr-latin.myembro.gz": {
+      "bytes": 4956,
+      "sha256": "818bc9b5af27e5f8d3402429d84ae689948a08cc9d9e8613c3fdfec8fa2e577c"
+    },
+    "noto-sans-kr-latin.pes": {
+      "bytes": 2916,
+      "sha256": "054edaac486d74a147282ecbad3b780fca1e958c41be4c6516176fd42fc58f51"
+    },
+    "noto-sans-kr-outline.json.gz": {
+      "bytes": 90428,
+      "sha256": "33faa4693abbb99268d8137280263073f9a43e9d6dc41dc5ff3b1e6db079ca0b",
+      "json_bytes": 1011943,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "noto-sans-kr",
+        "variant": "outline",
+        "fontSha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "bundled TTF default",
+        "license": "OFL-1.1"
+      }
+    },
+    "noto-sans-kr-satin.json.gz": {
+      "bytes": 94306,
+      "sha256": "8d8b0d5561498c99defbcd12f5cae84dc1d9d057c7a3d73846aaa9ad933749b6",
+      "json_bytes": 1079712,
+      "glyphs": 72,
+      "provenance": {
+        "fontId": "noto-sans-kr",
+        "variant": "satin",
+        "fontSha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+        "sdkInt": 35,
+        "androidFingerprint": "google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys",
+        "extractor": "glyph-extractor-v3; centerline128-pad8-v1",
+        "face": "myembro_sans.xml wght=400",
+        "license": "OFL-1.1"
+      }
+    },
+    "noto-sans-kr-안녕.myembro.gz": {
+      "bytes": 7363,
+      "sha256": "059981e05dfc0d213bdf510ebd080e25b37887203c51ccf147ed32d7d3d1ebb2"
+    },
+    "noto-sans-kr-안녕.pes": {
+      "bytes": 2258,
+      "sha256": "0cf40339e4c4d7c21fca651855f75f6e19d63e220a61e3052708ea54f3d61b74"
+    },
+    "noto-sans-kr-정민.myembro.gz": {
+      "bytes": 7437,
+      "sha256": "12b5ea6c5adb2099044b1ef2d295b42928cda4e785b7a03231af79313a509284"
+    },
+    "noto-sans-kr-정민.pes": {
+      "bytes": 2278,
+      "sha256": "63f45b09ef88651e9e264f18d67c2700d473c29f9cd39a322aa23d6e7775b6b8"
+    }
+  },
+  "total_bytes": 865192,
+  "snapshot_gzip_bytes": 784301,
+  "snapshot_json_bytes": 7005315
+}

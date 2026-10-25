@@ -1,0 +1,46 @@
+{
+  "font": "app/src/main/res/font/noto_sans_kr.ttf",
+  "font_sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+  "weight": 400,
+  "size": 128,
+  "padding": 8,
+  "generator": "Pillow 10.2.0 binary mode; getbbox/draw anchor=ls",
+  "glyphs": [
+    {
+      "character": "정",
+      "file": "uc815.pgm",
+      "left": 0,
+      "top": -106,
+      "width": 134,
+      "height": 132,
+      "sha256": "0afa2f172d36d13da17d6ee94d82345b2023adb8902c9af1dc6ba25e3018abb2"
+    },
+    {
+      "character": "민",
+      "file": "ubbfc.pgm",
+      "left": 0,
+      "top": -106,
+      "width": 134,
+      "height": 129,
+      "sha256": "82f98c7239269650751b6fa0de2283917e72760eba23c5435d0758987ee2a3a7"
+    },
+    {
+      "character": "안",
+      "file": "uc548.pgm",
+      "left": 0,
+      "top": -106,
+      "width": 134,
+      "height": 130,
+      "sha256": "401fa68003ba4300ec86d6a3e54c0cfe8ae167d8978da37a9709c9c2b2ad9e3d"
+    },
+    {
+      "character": "녕",
+      "file": "ub155.pgm",
+      "left": 0,
+      "top": -106,
+      "width": 134,
+      "height": 132,
+      "sha256": "baf42d9866fe9dbd37ba25d1c6b6a971c7216cd0d29cd046212b8178bf3cd691"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "mid-failure-rollback",
+  "cases": [
+    {
+      "id": "mid-failure-rollback",
+      "script": {
+        "initialProject": {
+          "builtinDesign": "myembro_logo.pes",
+          "objectId": "logo",
+          "frameId": "H100"
+        },
+        "calls": [
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "logo"
+              ],
+              "deltaXMm": 2,
+              "deltaYMm": 3,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "recolor_object",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "logo",
+              "threadIndex": 0,
+              "threadColor": "#00AA00"
+            }
+          },
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "missing"
+              ],
+              "deltaXMm": 1,
+              "deltaYMm": 1,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": false,
+        "code": "INVALID_ARGUMENTS",
+        "sewout": "PASS",
+        "stitchCount": 2810,
+        "pesSha256": "19b136b1b7f2a6cf9ccdef435d7e489596a7f484a1e0ea4c2e9bf9e3314947c9",
+        "released": false,
+        "unchanged": true,
+        "undoCount": 0
+      }
+    }
+  ]
+}

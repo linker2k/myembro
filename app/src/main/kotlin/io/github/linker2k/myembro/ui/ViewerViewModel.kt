@@ -257,7 +257,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     fun preflight(): List<String> {
         val request = exportRequest() ?: return emptyList()
         val pattern = render?.pattern ?: return emptyList()
-        return ExportChecks.check(pattern, request.fileName, settingsPreferences.read())
+        return ExportChecks.check(pattern, request.fileName, settingsPreferences.read(), resources = getApplication<Application>().resources)
     }
 
     private fun exportRequest(suggestCopy: Boolean = false): ExportRequest? {

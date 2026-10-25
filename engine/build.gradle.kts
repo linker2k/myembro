@@ -204,3 +204,54 @@ tasks.register<JavaExec>("measureSingleLinePasses") {
         providers.gradleProperty("passText").orElse("Yeonwoo").get(),
         providers.gradleProperty("passHeight").orElse("10").get())
 }
+
+// One authoritative wire catalog, bundled unchanged for Android-free validation.
+tasks.processResources {
+    from(rootProject.file("docs/agent/tools.json")) { into("agent") }
+}
+tasks.register<JavaExec>("runAgentScenario") {
+    group = "verification"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.agent.AgentScenarioCli")
+    workingDir = rootProject.projectDir
+    args(providers.gradleProperty("agentScenario").orElse("").get(), providers.gradleProperty("agentOutput").orElse("").get())
+    if (providers.gradleProperty("agentDryRun").orElse("false").get().toBooleanStrict()) args("--dry-run")
+}
+
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/samples/sample_heart_running.pes")) { into("agent/builtins") }
+    from(rootProject.file("app/src/main/assets/designs/myembro_logo.pes")) { into("agent/builtins") }
+}
+
+// Same policy data and redistributable fonts used by the phone; no network resolution.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/lettering/ttf-fill-height-ranges.json")) { into("lettering") }
+    from(rootProject.file("app/src/main/assets/fonts/bundled")) { into("agent/fonts") }
+    from(rootProject.file("app/src/main/assets/fonts/inkstitch-catalog.json")) { into("agent/fonts") }
+}
+
+// Same redistributable sample catalog used by the Android built-in gallery.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/samples")) {
+        include("*.pes", "manifest.json", "LICENSES.md", "CC0-1.0.txt")
+        into("agent/designs")
+    }
+}
+
+// Identical local Fluent/CLDR catalog, 30 verified SVGs and their notices; no downloader in JVM tools.
+tasks.processResources {
+    from(rootProject.file("app/src/main/assets/emoji")) { into("emoji") }
+}
+
+// Opt-in artifact export/measurement. CI tests only compare pinned JSON, never update it.
+tasks.register<JavaExec>("runAgentRegression") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.agent.AgentScenarioRegression")
+    args(providers.gradleProperty("agentRegressionOutput").orElse("/tmp/myembro-agent-regression").get())
+    if(providers.gradleProperty("agentRegressionMeasure").orElse("false").get().toBooleanStrict()) args("--measure")
+}
+
+// Shared adversarial fixtures compile in tests only, never the engine/application artifacts.
+sourceSets.test { kotlin.srcDir(rootProject.file("tools/safety-tests/kotlin")) }

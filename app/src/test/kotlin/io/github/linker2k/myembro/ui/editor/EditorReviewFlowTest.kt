@@ -61,7 +61,7 @@ class EditorReviewFlowTest {
         assertEquals("lemon_2", suggestDesignName("lemon.pes") { false })
         assertEquals("lemon_4", suggestDesignName("lemon.myembro") { it in setOf("lemon_2", "lemon_3") })
         assertEquals("lemon_3", suggestDesignName("lemon_2.PES") { false })
-        assertEquals("레몬_2", suggestDesignName("레몬.myembro") { false })
+        assertEquals("design_2", suggestDesignName("레몬.myembro") { false })
         assertEquals("design_2", suggestDesignName("design") { false })
         assertFailsWith<IllegalArgumentException> { suggestDesignName("  ") { false } }
         val longName = "a".repeat(80)
@@ -74,7 +74,7 @@ class EditorReviewFlowTest {
         try {
             assertEquals(directory.resolve("lemon.pes"), designSaveTarget(directory, "../lemon.PES", "pes"))
             assertEquals("lemon_name", designSaveStem("lemon:name"))
-            assertEquals("lemon.v2_2", suggestDesignName("lemon.v2.myembro") { false })
+            assertEquals("lemon_v2_2", suggestDesignName("lemon.v2.myembro") { false })
         } finally { directory.deleteRecursively() }
     }
     @Test fun `matching name requires explicit overwrite and cancel leaves file unchanged`() {

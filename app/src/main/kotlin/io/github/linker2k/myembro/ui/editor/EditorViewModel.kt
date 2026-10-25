@@ -11,6 +11,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.*
+import io.github.linker2k.myembro.engine.edit.commands.ProjectCommand
+import io.github.linker2k.myembro.engine.edit.commands.CommandResult
 import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.DesignSourceResolver
@@ -41,6 +43,17 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     var settings by mutableStateOf(preferences.read())
         private set
     private val stopObserving = preferences.observe { settings = preferences.read() }
+    /** Same installed-font loading as the lettering screen; shared by Ask AI preview and apply. */
+    private val agentFonts by lazy { io.github.linker2k.myembro.ui.lettering.AndroidTextFontResolver(app) }
+    /** "Ask AI" flow on this editor's session; survives rotation with the rest of the editor. */
+    internal val agent = io.github.linker2k.myembro.ui.agent.AgentAssistController(
+        EditorAgentExecutor({ session }, { settings }, { availableHoops }, publish = { block ->
+            busy = true
+            try { block() } finally { busy = false; sync() }
+        }, kernelFactory = { frames -> androidAgentKernel(app, agentFonts, frames) }, fontRevision = { agentFonts.revision(it) }),
+        revision = { session.history.revision }, catalog = {
+            io.github.linker2k.myembro.ui.agent.AgentCatalog.fonts(app) to io.github.linker2k.myembro.ui.agent.AgentCatalog.designs(app)
+        })
     val availableHoops get() = editorHoops(settings.machineProfile)
     val multiPositionFrames get() = settings.machineProfile?.hoops.orEmpty().filter { it.requiresRepositioning }
     val multiPositionFrame get() = multiPositionFrames.firstOrNull { it.coverage.sameArea(project.hoop) }
@@ -55,7 +68,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         val supported = multiPositionFrames.firstOrNull { it == frame } ?: return
         if (project.hoop.sameArea(supported.coverage)) return
         sewingPositions = emptyList()
-        edit(project.copy(hoop = supported.coverage))
+        edit(ProjectCommand.SetHoop(supported.coverage))
     }
     internal fun prepareMultiPositionExport(onReady: (EditorSplitPreview) -> Unit) {
         if (interactionBlocked || gestureInProgress || multiPositionFrame == null || sewingPositions.isEmpty()) return
@@ -68,7 +81,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val split = MultiPositionSplitter.split(snapshot.flatten(preferences.read().sewing), positions)
                     if (split.errors.isNotEmpty()) throw EditorExportBlocked(split.errors.take(8).map { it.message })
                     val problems = split.parts.flatMap { part ->
-                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read())
+                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read(), resources = getApplication<Application>().resources)
                     }
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems.distinct())
                     require(split.parts.isNotEmpty()) { getApplication<Application>().getString(R.string.editor_empty_export) }
@@ -317,6 +330,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         session.commit(next)
         sync()
     }
+    private fun edit(command: ProjectCommand) { dispatch(command) }
+    private fun dispatch(command: ProjectCommand): CommandResult? {
+        if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return null
+        val result = session.commit(command)
+        sync()
+        return result
+    }
+    /** Existing geometry calculations prepare values; command validation is shared with tools. */
+    private fun editPoses(next: Project) = edit(project.poseCommand(next))
     fun select(id: String?) {
         if (gestureInProgress) return
         if (selectionMode && id != null) toggleSelection(id)
@@ -342,7 +364,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         val supported = availableHoops.firstOrNull { it.sameArea(hoop) } ?: return
         if (project.hoop.sameArea(supported)) return
         sewingPositions = emptyList()
-        edit(project.copy(hoop = supported))
+        edit(ProjectCommand.SetHoop(supported))
     }
     fun undo(): Boolean {
         val changed = session.stepHistory(redo = false, blocked = interactionBlocked || letteringOpen)
@@ -363,10 +385,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun commitLettering(obj: TextObject): Boolean {
         if (busy || gestureInProgress || !letteringOpen) return false
         val target = letteringTargetId
-        val next = project.withLettering(obj, target)
-        if (target != null && next === project) return false
-        edit(next)
-        selectedIds = setOf(target ?: next.objects.last().id)
+        val result = dispatch(project.letteringCommand(obj, target)) as? CommandResult.Applied ?: return false
+        selectedIds = setOf(target ?: result.project.objects.last().id)
         selectionMode = false
         dismissLettering()
         return true
@@ -402,13 +422,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun changeThread(index: Int, thread: io.github.linker2k.myembro.engine.model.EmbThread) {
         if (busy || gestureInProgress || selectedIds.size != 1) return
         val obj = selected ?: return
-        edit(project.replace(obj.recolored(index, thread)))
+        edit(project.recolorCommand(obj.id, index, thread))
     }
 
     fun applyProperties(transform: Transform) {
         if (selectedIds.size != 1) return
         val obj = selected ?: return
-        edit(project.replace(obj.withTransform(transform)))
+        edit(ProjectCommand.SetTransforms(obj.id, transform))
     }
 
     /** Precompute filled glyphs off the UI thread; commit style and transform in one undo step. */
@@ -417,7 +437,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         if (busy || gestureInProgress || selectedIds.size != 1) return
         val original = selected as? TextObject ?: return
         if(style==original.stitchStyle && (threadWeight==null || threadWeight==original.threadWeight)) {
-            edit(project.replace(original.withTransform(transform)))
+            edit(ProjectCommand.SetTransforms(original.id, transform))
             return
         }
         val before = project
@@ -427,42 +447,37 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 val changed = withContext(Dispatchers.Default) {
                     original.withThreadWeight(threadWeight ?: original.threadWeight).copy(transform = transform, stitchStyle = style).also { it.localPattern() }
                 }
-                if (project == before) edit(project.replace(changed))
+                if (project == before) edit(textPropertiesCommand(original.id, changed))
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.lettering_failed, e)
             } finally { busy = false }
         }
     }
-    fun align(alignment: Alignment) = edit(project.align(selectedIds, alignment))
-    fun distribute(axis: Axis) = edit(project.distribute(selectedIds, axis))
-    fun mirror() = edit(selectedIds.fold(project) { p, id -> p.mirrorX(id) })
-    fun rotate90() = edit(selectedIds.fold(project) { p, id -> p.rotateBy(id, 90.0) })
+    fun align(alignment: Alignment) = editPoses(project.align(selectedIds, alignment))
+    fun distribute(axis: Axis) = editPoses(project.distribute(selectedIds, axis))
+    fun mirror() = editPoses(selectedIds.fold(project) { p, id -> p.mirrorX(id) })
+    fun rotate90() = editPoses(selectedIds.fold(project) { p, id -> p.rotateBy(id, 90.0) })
     fun center() {
-        if (selectedIds.size == 1) edit(project.alignCenter(selectedId!!))
+        if (selectedIds.size == 1) editPoses(project.alignCenter(selectedId!!))
         else project.selectionBounds(selectedIds)?.let { b ->
-            edit(project.transformGroup(selectedIds, -(b.minX.toDouble() + b.maxX) / 2,
+            editPoses(project.transformGroup(selectedIds, -(b.minX.toDouble() + b.maxX) / 2,
                 -(b.minY.toDouble() + b.maxY) / 2, 1.0, 0.0))
         }
     }
-    fun delete() = edit(project.copy(objects = project.objects.filterNot { it.id in selectedIds }))
+    fun delete() = edit(ProjectCommand.Remove(selectedIds.filterTo(linkedSetOf()) { project.find(it) != null }))
     fun duplicate() {
         if (gestureInProgress) return
-        var next = project
-        val copies = linkedSetOf<String>()
-        for (id in selectedIds) {
-            val newId = UUID.randomUUID().toString()
-            next = next.duplicate(id, newId).update(newId) {
-                it.withTransform(it.transform.copy(x = it.transform.x + 50, y = it.transform.y + 50))
-            }
-            copies += newId
-        }
-        edit(next)
-        selectedIds = copies
+        val copies = selectedIds.associateWith { UUID.randomUUID().toString() }
+        edit(project.duplicateCommand(copies))
+        selectedIds = copies.values.toSet()
     }
-    fun toggleVisible(id: String) = edit(project.update(id) { it.withVisible(!it.visible) })
+    fun toggleVisible(id: String) {
+        val obj = project.find(id) ?: return
+        edit(ProjectCommand.SetVisible(id, !obj.visible))
+    }
     fun reorder(id: String, index: Int, duringGesture: Boolean = false) {
-        val next = project.reorder(id, index)
-        if (duringGesture) { session.updateGesture(next); sync() } else edit(next)
+        if (duringGesture) { session.updateGesture(project.reorder(id, index)); sync() }
+        else edit(project.reorderCommand(id, index))
     }
     fun addDesign(file: File) {
         if (interactionBlocked || gestureInProgress) return
@@ -590,7 +605,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val exportSettings = preferences.read() // Re-read immediately before writing.
                     val pattern = snapshot.flatten(exportSettings.sewing)
                     require(pattern.stitchCount > 0) { getApplication<Application>().getString(R.string.editor_empty_export) }
-                    val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes")
+                    val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes", getApplication<Application>().resources)
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings.copy(hoop = snapshot.hoop))
                     writeNamedDesign(projectDir, name, "pes", overwrite, bytes).also {

@@ -32,6 +32,9 @@ import io.github.linker2k.myembro.ui.theme.MyembroTheme
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.rememberDesignImporter
 import io.github.linker2k.myembro.ui.DesignImportDialogs
+import io.github.linker2k.myembro.ui.agent.AgentAskButton
+import io.github.linker2k.myembro.ui.agent.AgentAssistHost
+import io.github.linker2k.myembro.ui.agent.AgentPendingCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -114,6 +117,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         navigationIcon = { IconButton(onClick = { vm.leave(onBack) }, enabled = enabled) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
                         } }, actions = {
+                            AgentAskButton(vm.agent, vm.project, enabled)
                             EditorHistoryButton(vm, redo = false)
                             EditorHistoryButton(vm, redo = true)
                             Box {
@@ -165,6 +169,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             }
                         }
                     }
+                    AgentPendingCard(vm.agent)
                     if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                     if (outside) Row(Modifier.fillMaxWidth().background(colors.errorContainer).padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
@@ -323,6 +328,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             text = { Text(stringResource(R.string.editor_overwrite_body, name)) },
             confirmButton = { TextButton(onClick = { vm.submitSaveName(name, overwrite = true) }) { Text(stringResource(R.string.editor_overwrite)) } },
             dismissButton = { TextButton(onClick = vm::cancelOverwrite) { Text(stringResource(R.string.editor_cancel)) } }) }
+        AgentAssistHost(vm.agent)
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
             onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
             onDevice = { showOpenProjects = false; openDocument() })

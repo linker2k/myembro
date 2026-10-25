@@ -15,6 +15,7 @@ This guide covers myembro v0.2.8.
 9. [Sending to the machine](#9-sending-to-the-machine)
 10. [Backup and restore](#10-backup-and-restore)
 11. [About and known limitations](#11-about-and-known-limitations)
+12. [Ask AI](#12-ask-ai)
 
 ## 1. Getting started
 
@@ -167,3 +168,43 @@ Known limitations:
 - SE400: no automatic thread cutting; trim travel threads by hand.
 - Signing key change: uninstall/reinstall will be needed once; back up first.
 - SE600/SE700: transfer not yet tested on real machines.
+
+## 12. Ask AI
+
+Ask AI lets any chatbot app edit your design: Gemini, ChatGPT, Claude or another chat app on your phone. myembro has no AI built in and stores no account or API key. You use the chatbot you already have.
+
+![Ask AI sheet](../images/manual/en/18-ask-sheet.png)
+
+1. In the editor, tap the **Ask AI** button (sparkle icon, top bar).
+2. Type what should change, for example *Put "Mina" under the logo in red*, or tap the microphone if your phone has speech input.
+3. Tap **Share to chatbot** and pick your chat app, or tap **Copy** and paste it into the chat yourself. A bar shows **Waiting for the chatbot's reply (p-…)**. The code ties the reply to this request.
+4. When the chatbot answers, copy its whole reply and either share it back to myembro or tap **Paste reply** in the bar, then **Check**.
+
+   ![Pasted chatbot reply](../images/manual/en/18a-ask-reply.png)
+
+5. **Check the changes** shows **Before** and **After** pictures, a list of the changes, and the **Sewout check** result. Nothing has changed yet. Tap **Apply**, **Cancel**, or **Ask for changes** to send a follow-up to the chatbot.
+
+   ![Check the changes](../images/manual/en/18-ask-preview.png)
+
+6. **Apply** makes the whole change one undo step. Tap **Undo** once to return to the design as it was.
+
+   ![After Apply](../images/manual/en/18c-ask-after-apply.png)
+
+**What the chatbot receives** (tap **What the chatbot will see** to read it before sending):
+- the instructions and the list of commands myembro accepts;
+- the hoop name and size;
+- for each object: a short handle (o1, o2, …), whether it is text or a design, its name, the text and text height, the font (as a handle f1, f2, …), centre position, size, rotation, scale, thread colours, sewing order and whether it is hidden;
+- the fonts on your phone that cover the text (handle, name, Korean/Latin, height range) and the built-in designs (handle, name, size);
+- your request.
+
+myembro sends **no stitches, pictures or files**, and the chatbot cannot reach your phone. The reply is only text that myembro reads and checks.
+
+**Always confirmed by you in the app:** deleting objects, saving, sharing and USB transfer. If the reply asks for these, the app shows them after Apply so you can confirm each one, for example **USB transfer…**.
+
+**When a reply is refused,** the app says why and changes nothing. Reasons include no myembro commands in the reply, damaged commands, or a reply for an older request or a design that has changed since. **Copy a fix-up request** gives the chatbot a short correction to answer.
+
+**What Ask AI cannot do:**
+- It cannot see or create pictures. Use **Photo/drawing** for photos.
+- It cannot download fonts.
+- It can add text only in fonts already on your phone (the prompt lists them with their height ranges).
+- Sizes and stitch types still follow the app's automatic rules and the sew-out check.

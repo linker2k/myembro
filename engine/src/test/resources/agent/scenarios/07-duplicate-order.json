@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "duplicate-order",
+  "cases": [
+    {
+      "id": "duplicate-order",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "inkstitch-medium-font",
+              "fontRevision": "2fd50594ed768897ada1fd78251848e1cb10b969b19e9f9bf7a00a5c65762cb8:glyph-extractor-v3",
+              "text": "A",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          },
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "text"
+              ],
+              "deltaXMm": -15,
+              "deltaYMm": 0,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "duplicate_object",
+            "arguments": {
+              "transactionId": "scenario",
+              "sourceId": "text",
+              "newObjectId": "copy",
+              "transform": {
+                "xMm": 15,
+                "yMm": 0,
+                "rotationDeg": 0,
+                "scaleXPercent": 100,
+                "scaleYPercent": 100
+              }
+            }
+          },
+          {
+            "name": "reorder_object",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "copy",
+              "index": 0
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 486,
+        "pesSha256": "5ba7f604cfc8e225ffa7025fea796d7c19a047b07b1e586ddadd811d7900d3de",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}

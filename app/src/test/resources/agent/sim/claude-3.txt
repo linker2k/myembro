@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM3","summary":"로고와 텍스트를 한 그룹으로 후프 가운데에 배치","commands":[{"tool":"center_objects","args":{"objectIds":["o1","o2"]}}]}
+```

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "height-rejected",
+  "cases": [
+    {
+      "id": "height-rejected",
+      "script": {
+        "initialProject": {
+          "builtinDesign": "myembro_logo.pes",
+          "objectId": "logo",
+          "frameId": "H100"
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "hershey-futural",
+              "fontRevision": "bundled-hershey-v1:glyph-extractor-v3",
+              "text": "A",
+              "heightMm": 61,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": false,
+        "code": "INVALID_ARGUMENTS",
+        "sewout": "PASS",
+        "stitchCount": 2810,
+        "pesSha256": "19b136b1b7f2a6cf9ccdef435d7e489596a7f484a1e0ea4c2e9bf9e3314947c9",
+        "released": false,
+        "unchanged": true,
+        "undoCount": 0
+      }
+    }
+  ]
+}

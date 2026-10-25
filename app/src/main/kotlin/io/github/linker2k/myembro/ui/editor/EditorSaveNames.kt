@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor
 
+import io.github.linker2k.myembro.engine.export.Preflight
 import java.io.File
 
 internal enum class EditorSaveKind { PROJECT, PES }
 internal data class EditorSavePrompt(val kind: EditorSaveKind, val suggestedName: String)
 internal class EditorSaveConflict(val fileName: String) : Exception(fileName)
 
-internal fun designSaveStem(name: String): String {
-    val leaf = name.replace('\\', '/').substringAfterLast('/')
-    val stem = if (leaf.substringAfterLast('.', "").lowercase() in setOf("pes", "pec", "dst", "myembro")) leaf.substringBeforeLast('.') else leaf
-    return stem.map { if (it.isISOControl() || it in "/\\:*?\"<>|") '_' else it }
-        .joinToString("").trim().trim('.').take(80)
-}
+internal fun designSaveStem(name: String): String =
+    io.github.linker2k.myembro.engine.agent.documentSaveStem(name)
 
 /** Existing numeric suffixes advance rather than accumulating (_2 -> _3). */
 internal fun suggestDesignName(original: String, exists: (String) -> Boolean): String {
-    val stem = designSaveStem(original)
-    require(stem.isNotBlank())
+    val originalStem = designSaveStem(original)
+    require(originalStem.isNotBlank())
+    // Suggestions must satisfy the same character rule as export preflight. Keep manual
+    // names/local project saving unchanged; use a readable fallback for non-ASCII names.
+    val stem = originalStem.map { if (Preflight.isValidFileNameStem(it.toString())) it else '_' }
+        .joinToString("").takeUnless { it.all { c -> c == '_' } } ?: "design"
     val match = Regex("^(.*)_([0-9]+)$").matchEntire(stem)
     val root = match?.groupValues?.get(1)?.takeIf { it.isNotBlank() } ?: stem
     val previous = match?.groupValues?.get(2)?.toLongOrNull()
@@ -25,6 +26,7 @@ internal fun suggestDesignName(original: String, exists: (String) -> Boolean): S
     while (true) {
         val suffix = "_$number"
         val candidate = root.take(80 - suffix.length) + suffix
+        check(Preflight.isValidFileNameStem(candidate))
         if (!exists(candidate)) return candidate
         check(number < Long.MAX_VALUE)
         number++

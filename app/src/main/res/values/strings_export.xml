@@ -7,4 +7,6 @@
     <string name="preflight_intro">Checked against %1$s:</string>
     <string name="preflight_continue">Export anyway</string>
     <string name="preflight_cancel">Cancel</string>
+    <string name="preflight_filename_characters">Use only letters A–Z, numbers, hyphens (-), and underscores (_) in file names. Special characters or Korean letters may not display on %1$s.</string>
+    <string name="preflight_filename_too_long">The file name exceeds %1$d characters.</string>
 </resources>

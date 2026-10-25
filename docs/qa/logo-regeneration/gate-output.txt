@@ -1,0 +1,3 @@
+PASS /tmp/myembro-logo-regen/before/LOGO60.PES within five-condition checks
+PASS /tmp/myembro-logo-regen/after/LOGO60.PES within five-condition checks
+PASS 2/2 cases passed

@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.engine.io
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.sewout.PecViewportCheck
 import io.github.linker2k.myembro.engine.sewout.PesOutputSafety
+import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
@@ -34,6 +35,15 @@ object PesWriter {
         val local = EmbPattern(commands.map { it.copy(x=(it.x.toLong()-minX).toInt(),y=(it.y.toLong()-minY).toInt()) },
             safe.threads,safe.metadata,safe.warnings)
         return GeneratedPatternProcessor.forSewout(local)
+    }
+
+    /** Exact default PES/PEC header size, including needle-up destinations and command cleanup.
+     * No encoding or export authorization; editable/outside-hoop projects may still be measured.
+     * The same normalized integer destinations and payloadBounds feed both V1 and V6 headers.
+     */
+    fun outputBounds(pattern: EmbPattern): Bounds? {
+        val normalized = PecWriter.normalizeForPes(prepareForOutput(pattern))
+        return if (normalized.stitchCount == 0) null else PecWriter.payloadBounds(normalized, topLeftViewport = true)
     }
 
     /** App/default output uses the common T3 safety pass; explicit source-oracle profile remains verbatim. */

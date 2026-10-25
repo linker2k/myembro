@@ -1,0 +1,2056 @@
+{
+  "tools": [
+    {
+      "name": "get_project",
+      "description": "Read the current project, revision, objects, history, and export status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.getSnapshot"
+      }
+    },
+    {
+      "name": "list_fonts",
+      "description": "List fonts, availability, glyph coverage, revisions, and allowed heights.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "KOREAN",
+                "LATIN",
+                "SCRIPT",
+                "SINGLE_LINE",
+                "OUTLINE"
+              ]
+            }
+          },
+          "installedOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text",
+          "filters",
+          "installedOnly"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "FontService.list"
+      }
+    },
+    {
+      "name": "list_builtin_designs",
+      "description": "List built-in designs and their immutable asset handles.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "DesignCatalog.listBuiltins"
+      }
+    },
+    {
+      "name": "list_designs",
+      "description": "List library designs with search, filter, and sort.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "filter": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "FITS_100",
+              "PES",
+              "RECENT",
+              "FAVORITES"
+            ]
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "RECENT",
+              "NAME",
+              "STITCHES"
+            ]
+          }
+        },
+        "required": [
+          "query",
+          "filter",
+          "sort"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "DesignLibraryService.list"
+      }
+    },
+    {
+      "name": "get_settings",
+      "description": "Read settings, machine profiles, frames, and supported choices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "SettingsService.get"
+      }
+    },
+    {
+      "name": "list_usb_drives",
+      "description": "List detected USB destinations, permissions, and available space.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "UsbService.listDrives"
+      }
+    },
+    {
+      "name": "get_usb_history",
+      "description": "Read USB transfer history and detailed results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "UsbService.history"
+      }
+    },
+    {
+      "name": "get_operation",
+      "description": "Read progress or results of an asynchronous operation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "OperationService.get"
+      }
+    },
+    {
+      "name": "sewout_check",
+      "description": "Check a project revision or approved PES asset without changing it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectRevision": {
+            "type": "string"
+          },
+          "pesAssetId": {
+            "type": "string"
+          },
+          "machineId": {
+            "type": "string"
+          },
+          "frameId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectRevision",
+          "pesAssetId",
+          "machineId",
+          "frameId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "SewoutService.check"
+      }
+    },
+    {
+      "name": "begin_edit_turn",
+      "description": "Start an isolated edit turn against an expected project revision.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.beginTurn"
+      }
+    },
+    {
+      "name": "commit_edit_turn",
+      "description": "Commit a fully prepared turn as one undo step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.commitTurn"
+      }
+    },
+    {
+      "name": "cancel_edit_turn",
+      "description": "Discard a staged edit turn without changing project history.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.cancelTurn"
+      }
+    },
+    {
+      "name": "add_design",
+      "description": "Add an approved design asset to the staged project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "assetId",
+          "objectId",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.addDesign"
+      }
+    },
+    {
+      "name": "add_text",
+      "description": "Prepare and add text with automatic stitch selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "fontId": {
+            "type": "string"
+          },
+          "fontRevision": {
+            "type": "string"
+          },
+          "heightMm": {
+            "type": "number",
+            "maximum": 60
+          },
+          "threadColor": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "singleLineBold": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectId",
+          "text",
+          "fontId",
+          "fontRevision",
+          "heightMm",
+          "threadColor",
+          "singleLineBold"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.addText"
+      }
+    },
+    {
+      "name": "replace_text",
+      "description": "Regenerate an existing text object while retaining its identity and placement.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "fontId": {
+            "type": "string"
+          },
+          "fontRevision": {
+            "type": "string"
+          },
+          "heightMm": {
+            "type": "number",
+            "maximum": 60
+          },
+          "threadColor": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "singleLineBold": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectId",
+          "text",
+          "fontId",
+          "fontRevision",
+          "heightMm",
+          "threadColor",
+          "singleLineBold"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.replaceText"
+      }
+    },
+    {
+      "name": "set_object_transforms",
+      "description": "Set explicit transforms for staged objects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "transforms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string"
+                },
+                "xMm": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "yMm": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "rotationDeg": {
+                  "type": "number"
+                },
+                "scaleXPercent": {
+                  "type": "number",
+                  "minimum": 5,
+                  "maximum": 2000
+                },
+                "scaleYPercent": {
+                  "type": "number",
+                  "minimum": 5,
+                  "maximum": 2000
+                }
+              },
+              "required": [
+                "objectId",
+                "xMm",
+                "yMm",
+                "rotationDeg",
+                "scaleXPercent",
+                "scaleYPercent"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "transactionId",
+          "transforms"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectCommand.SetTransforms"
+      }
+    },
+    {
+      "name": "transform_objects",
+      "description": "Move, scale, and rotate a selection about its shared pivot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deltaXMm": {
+            "type": "number"
+          },
+          "deltaYMm": {
+            "type": "number"
+          },
+          "scaleFactor": {
+            "type": "number"
+          },
+          "rotationDeg": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds",
+          "deltaXMm",
+          "deltaYMm",
+          "scaleFactor",
+          "rotationDeg"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.transformGroup"
+      }
+    },
+    {
+      "name": "mirror_objects",
+      "description": "Mirror objects horizontally using the existing editor behavior.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.mirror"
+      }
+    },
+    {
+      "name": "center_objects",
+      "description": "Center the selected objects as a group in the hoop.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.center"
+      }
+    },
+    {
+      "name": "align_objects",
+      "description": "Align selected objects by their actual placed bounds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alignment": {
+            "type": "string",
+            "enum": [
+              "LEFT",
+              "CENTER_X",
+              "RIGHT",
+              "TOP",
+              "CENTER_Y",
+              "BOTTOM"
+            ]
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds",
+          "alignment"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.align"
+      }
+    },
+    {
+      "name": "distribute_objects",
+      "description": "Distribute gaps between selected object bounds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "axis": {
+            "type": "string",
+            "enum": [
+              "HORIZONTAL",
+              "VERTICAL"
+            ]
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds",
+          "axis"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.distribute"
+      }
+    },
+    {
+      "name": "duplicate_object",
+      "description": "Copy an object with an explicit new identity and final transform.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "newObjectId": {
+            "type": "string"
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "xMm": {
+                "type": "number",
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "yMm": {
+                "type": "number",
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "rotationDeg": {
+                "type": "number"
+              },
+              "scaleXPercent": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 2000
+              },
+              "scaleYPercent": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "xMm",
+              "yMm",
+              "rotationDeg",
+              "scaleXPercent",
+              "scaleYPercent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "transactionId",
+          "sourceId",
+          "newObjectId",
+          "transform"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectCommand.Duplicate"
+      }
+    },
+    {
+      "name": "reorder_object",
+      "description": "Set an object’s sewing-order index.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectId",
+          "index"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectCommand.Reorder"
+      }
+    },
+    {
+      "name": "set_object_visibility",
+      "description": "Show or hide an object in the staged project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectId",
+          "visible"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectCommand.SetVisible"
+      }
+    },
+    {
+      "name": "recolor_object",
+      "description": "Change one object thread without changing its stitches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "threadIndex": {
+            "type": "integer"
+          },
+          "threadColor": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectId",
+          "threadIndex",
+          "threadColor"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectCommand.Recolor"
+      }
+    },
+    {
+      "name": "remove_objects",
+      "description": "Remove explicit objects from the staged project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "transactionId",
+          "objectIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "ProjectCommand.Remove"
+      }
+    },
+    {
+      "name": "set_project_frame",
+      "description": "Set the staged project’s configured hoop or frame.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "frameId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "frameId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.setHoop"
+      }
+    },
+    {
+      "name": "add_generated_art",
+      "description": "Add an approved photo or emoji result to the staged project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "resultId": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "resultId",
+          "objectId",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreparation.addGeneratedArt"
+      }
+    },
+    {
+      "name": "undo",
+      "description": "Undo one committed editor turn.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.undo"
+      }
+    },
+    {
+      "name": "redo",
+      "description": "Redo one undone editor turn.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectSession.redo"
+      }
+    },
+    {
+      "name": "new_project",
+      "description": "Create a project using a configured frame.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "frameId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "string"
+          },
+          "discardUnsaved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "frameId",
+          "expectedRevision",
+          "discardUnsaved"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "DocumentService.newProject"
+      }
+    },
+    {
+      "name": "open_project",
+      "description": "Open an approved editable project and replace the active session.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "string"
+          },
+          "discardUnsaved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assetId",
+          "expectedRevision",
+          "discardUnsaved"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "DocumentService.openProject"
+      }
+    },
+    {
+      "name": "recover_project",
+      "description": "Restore the autosaved editor draft.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "DocumentService.restoreDraft"
+      }
+    },
+    {
+      "name": "discard_recovery",
+      "description": "Delete the autosaved editor draft.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "DocumentService.discardDraft"
+      }
+    },
+    {
+      "name": "prepare_import",
+      "description": "Validate approved file or folder handles and report import duplicates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "assetIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ImportService.prepare"
+      }
+    },
+    {
+      "name": "commit_import",
+      "description": "Publish a prepared import with explicit duplicate choices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "itemId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "SKIP",
+                    "COPY",
+                    "REPLACE"
+                  ]
+                }
+              },
+              "required": [
+                "itemId",
+                "action"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "operationId",
+          "decisions"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "ImportService.commit"
+      }
+    },
+    {
+      "name": "set_design_favorite",
+      "description": "Mark a library design as favorite or not favorite.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "designId": {
+            "type": "string"
+          },
+          "favorite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "designId",
+          "favorite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "DesignLibraryService.setFavorite"
+      }
+    },
+    {
+      "name": "delete_designs",
+      "description": "Delete explicit local library designs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "designIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "designIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "DesignLibraryService.delete"
+      }
+    },
+    {
+      "name": "download_font",
+      "description": "Install a catalog font from pinned sources.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fontId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fontId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "FontService.download"
+      }
+    },
+    {
+      "name": "import_font",
+      "description": "Import an approved font after the user acknowledges its license.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "FontService.importUserFont"
+      }
+    },
+    {
+      "name": "delete_font",
+      "description": "Remove a downloaded or personal font.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fontId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fontId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "FontService.delete"
+      }
+    },
+    {
+      "name": "set_font_favorite",
+      "description": "Mark a font as favorite or not favorite.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fontId": {
+            "type": "string"
+          },
+          "favorite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fontId",
+          "favorite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "FontService.setFavorite"
+      }
+    },
+    {
+      "name": "get_font_license",
+      "description": "Read a font’s license and source notices.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fontId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fontId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "FontService.license"
+      }
+    },
+    {
+      "name": "prepare_photo",
+      "description": "Prepare an app-selected photo using only its approved attachmentId as the image source.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "string"
+          },
+          "frameId": {
+            "type": "string"
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "SILHOUETTE",
+              "OUTLINE",
+              "COLOR"
+            ]
+          },
+          "detail": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          },
+          "colorCount": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 6
+          },
+          "grayscale": {
+            "type": "boolean"
+          },
+          "widthMm": {
+            "type": "number"
+          },
+          "crop": {
+            "type": "object",
+            "properties": {
+              "zoom": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 4
+              },
+              "panX": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1
+              },
+              "panY": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "zoom",
+              "panX",
+              "panY"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "attachmentId",
+          "frameId",
+          "style",
+          "detail",
+          "colorCount",
+          "grayscale",
+          "widthMm",
+          "crop"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PhotoService.prepare"
+      }
+    },
+    {
+      "name": "list_emoji",
+      "description": "List emoji by query or catalog group.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "groupId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "EmojiService.list"
+      }
+    },
+    {
+      "name": "prepare_emoji",
+      "description": "Generate an emoji preview at a requested embroidery width.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "emojiId": {
+            "type": "string"
+          },
+          "frameId": {
+            "type": "string"
+          },
+          "widthMm": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "emojiId",
+          "frameId",
+          "widthMm"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "EmojiService.prepare"
+      }
+    },
+    {
+      "name": "prepare_pes",
+      "description": "Generate and check a uniquely named managed PES artifact.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectRevision": {
+            "type": "string"
+          },
+          "machineId": {
+            "type": "string"
+          },
+          "frameId": {
+            "type": "string"
+          },
+          "pesVersion": {
+            "type": "string",
+            "enum": [
+              "V1",
+              "V6"
+            ]
+          }
+        },
+        "required": [
+          "projectRevision",
+          "machineId",
+          "frameId",
+          "pesVersion"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "ExportService.preparePes"
+      }
+    },
+    {
+      "name": "save_project",
+      "description": "Save an editable project to an approved destination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectRevision": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "projectRevision",
+          "destinationId",
+          "name",
+          "overwrite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": "onOverwrite",
+        "mapsTo": "DocumentService.saveProject"
+      }
+    },
+    {
+      "name": "save_pes",
+      "description": "Write a checked PES artifact to an approved destination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifactId": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "artifactId",
+          "destinationId",
+          "name",
+          "overwrite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": "onOverwrite",
+        "mapsTo": "ExportService.savePes"
+      }
+    },
+    {
+      "name": "share_pes",
+      "description": "Share a checked PES artifact through the system chooser.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifactId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifactId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "ExportService.sharePes"
+      }
+    },
+    {
+      "name": "send_usb",
+      "description": "Transfer checked artifacts to an approved USB drive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifactIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "driveId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifactIds",
+          "driveId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "UsbService.export"
+      }
+    },
+    {
+      "name": "resume_usb_after_delete",
+      "description": "Delete confirmed USB files and resume a frozen transfer plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "deleteFileIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "operationId",
+          "deleteFileIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "UsbService.resumeAfterDelete"
+      }
+    },
+    {
+      "name": "share_diagnostics",
+      "description": "Share the selected transfer’s diagnostic text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transferId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transferId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "UsbService.shareDiagnostics"
+      }
+    },
+    {
+      "name": "create_backup",
+      "description": "Write a full backup to an approved destination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "destinationId": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "destinationId",
+          "overwrite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "BackupService.write"
+      }
+    },
+    {
+      "name": "prepare_restore",
+      "description": "Validate a backup and show its file and duplicate counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "BackupService.prepareRestore"
+      }
+    },
+    {
+      "name": "restore_backup",
+      "description": "Restore a validated backup with an explicit duplicate policy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "duplicatePolicy": {
+            "type": "string",
+            "enum": [
+              "COPY",
+              "SKIP"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "duplicatePolicy"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "BackupService.restore"
+      }
+    },
+    {
+      "name": "cancel_operation",
+      "description": "Cancel a cancellable operation or discard its staged plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "OperationService.cancel"
+      }
+    },
+    {
+      "name": "set_settings",
+      "description": "Set machine, default frame, thread brand, PES version, and theme.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machineId": {
+            "type": "string"
+          },
+          "defaultFrameId": {
+            "type": "string"
+          },
+          "threadBrand": {
+            "type": "string",
+            "enum": [
+              "BROTHER",
+              "MADEIRA",
+              "ISACORD"
+            ]
+          },
+          "pesVersion": {
+            "type": "string",
+            "enum": [
+              "V1",
+              "V6"
+            ]
+          },
+          "themeMode": {
+            "type": "string",
+            "enum": [
+              "LIGHT",
+              "DARK",
+              "SYSTEM"
+            ]
+          }
+        },
+        "required": [
+          "machineId",
+          "defaultFrameId",
+          "threadBrand",
+          "pesVersion",
+          "themeMode"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "SettingsService.set"
+      }
+    },
+    {
+      "name": "save_custom_frame",
+      "description": "Create or replace a custom frame definition in millimeters.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "frameId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "widthMm": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10000
+          },
+          "heightMm": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10000
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "frameId",
+          "name",
+          "widthMm",
+          "heightMm",
+          "overwrite"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "SettingsService.saveCustomFrame"
+      }
+    },
+    {
+      "name": "delete_custom_frame",
+      "description": "Delete an existing custom frame definition.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "frameId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "frameId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "SettingsService.deleteCustomFrame"
+      }
+    },
+    {
+      "name": "navigate",
+      "description": "Open an existing app destination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "enum": [
+              "HOME",
+              "LIBRARY",
+              "CREATE",
+              "PICK_DESIGN",
+              "LETTERING",
+              "FONTS",
+              "PHOTO",
+              "EMOJI",
+              "EDITOR",
+              "VIEWER",
+              "SETTINGS",
+              "FREE_DESIGNS"
+            ]
+          }
+        },
+        "required": [
+          "screen"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.navigate"
+      }
+    },
+    {
+      "name": "set_selection",
+      "description": "Select explicit editor objects without editing them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "objectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "objectIds"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.setSelection"
+      }
+    },
+    {
+      "name": "set_view",
+      "description": "Set display state without changing stitch geometry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "enum": [
+              "EDITOR",
+              "VIEWER"
+            ]
+          },
+          "zoom": {
+            "type": "number"
+          },
+          "panXMm": {
+            "type": "number"
+          },
+          "panYMm": {
+            "type": "number"
+          },
+          "showJumps": {
+            "type": "boolean"
+          },
+          "previewFraction": {
+            "type": "number"
+          },
+          "fit": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "screen",
+          "zoom",
+          "panXMm",
+          "panYMm",
+          "showJumps",
+          "previewFraction",
+          "fit"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.setView"
+      }
+    },
+    {
+      "name": "seek_playback",
+      "description": "Seek the viewer’s command timeline.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "commandIndex": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "commandIndex"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.seekPlayback"
+      }
+    },
+    {
+      "name": "set_playback",
+      "description": "Play or pause the viewer simulation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "playing": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "playing"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.setPlayback"
+      }
+    },
+    {
+      "name": "focus_sewout_finding",
+      "description": "Focus a current check finding or clear focus.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "string"
+          },
+          "findingId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reportId",
+          "findingId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": false,
+        "mapsTo": "PresentationService.focusFinding"
+      }
+    },
+    {
+      "name": "list_free_design_sources",
+      "description": "List verified free-design sites, terms, formats, and check dates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "SourceDirectory.list"
+      }
+    },
+    {
+      "name": "open_free_design_source",
+      "description": "Open a listed design source or its terms in the browser.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string",
+            "enum": [
+              "DESIGNS",
+              "TERMS"
+            ]
+          }
+        },
+        "required": [
+          "sourceId",
+          "page"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "SourceDirectory.open"
+      }
+    },
+    {
+      "name": "copy_diagnostics",
+      "description": "Copy a transfer’s diagnostic text to the system clipboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transferId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transferId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": false,
+        "needsUserConfirmation": true,
+        "mapsTo": "UsbService.copyDiagnostics"
+      }
+    }
+  ]
+}

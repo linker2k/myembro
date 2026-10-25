@@ -19,7 +19,7 @@ class PreflightTest {
         assertEquals(4, warnings.size)
         assertTrue(warnings.any { "100×100mm" in it })
         assertTrue(warnings.any { "30000땀" in it && "30001땀" in it })
-        assertTrue(warnings.any { "파일명" in it })
+        assertTrue(warnings.any { "file names" in it })
         assertTrue(warnings.any { "12개" in it })
     }
 
