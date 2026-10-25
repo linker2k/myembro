@@ -100,3 +100,18 @@ Add engine tests for input immutability/determinism and app tests for revision i
 3. Wire the named selector and existing Wu color workflow, then measure synthetic inputs on development emulator/handset. Decide whether CLAHE is warranted from those results.
 
 This document does not claim implemented filters, an upstream-oracle PASS, or mobile performance PASS. Documentation checks cover only source/default transcription, local links, English text, and formatting.
+
+## First implementation unit (2026-10-25)
+
+`feature/photo-filters` adds two pure JVM APIs in `engine/inkstitch/svg/image`:
+
+- `OtsuThreshold.thresholdOtsu(ByteArray): Int` accepts nonempty uint8 grayscale bytes with the original integer-image/default-histogram behavior. `darkMask` is a separate dark-ink adapter returning ink=0/background=255 using `image <= threshold`. No luminance conversion is hidden inside the threshold algorithm.
+- `Autocontrast.apply(ByteArray, channels=1): ByteArray` accepts uint8 L or interleaved RGB (`channels=3`) with original defaults only. Channels are independent. Empty arrays remain empty; incomplete pixels/unsupported channel counts fail explicitly.
+
+Both APIs preserve caller input. Otsu retains float32 histogram counts/cumulative weights and their product, float64 moments/means/squared differences, observed-range histogram trimming, and first-maximum selection. Autocontrast retains the original floating scale/offset, truncation toward zero, and clipping rather than substituting integer normalization.
+
+Scope differences from the full originals are explicit: Otsu has no float-image/custom-histogram API; autocontrast has no nondefault cutoff/ignore/mask/preserve-tone options or additional image modes. Histogram/storage allocation uses JVM arrays instead of NumPy/Pillow containers. No app route, median/Wu implementation, embroidery algorithm, dependency, or stitch setting changed. The complete original license inventory/Pillow license are packaged in engine resources; the root and APK notice copies are updated together.
+
+Small boundary/immutability tests are not a substitute for the independently generated upstream goldens. Exact threshold and byte-array comparisons against the oracle are required before claiming upstream equivalence.
+
+Implementation validation: the independently generated corpus at `/tmp/myembro-filter-oracle/goldens` matched on all 39 cases (`ORACLE_EXACT_TOTAL 39`, `BUILD SUCCESSFUL in 17s`). Normal JVM tests retain 10 representative inputs in `engine/src/test/resources/photo-filters/port-manifest.json`; every selected input/output file remains byte-identical to that oracle. The full engine command `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:cleanTest :engine:check --console=plain` returned `BUILD SUCCESSFUL in 44s`. These verify the scoped raster ports; no PES/sewing quality verdict or app integration is claimed.
