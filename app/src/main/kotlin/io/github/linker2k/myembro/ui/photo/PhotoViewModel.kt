@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.photo
 
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrection
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrections
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -48,6 +50,12 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeGrayscale(value:Boolean) {
         if(value!=grayscale) { grayscale=value;step=1;prepare() }
     }
+    var correction by mutableStateOf(PhotoCorrection.ORIGINAL); private set
+    var correctionAlphaBypassed by mutableStateOf(false); private set
+    fun changeCorrection(value: PhotoCorrection) {
+        if (value == correction || (style == PhotoMode.COLOR && value == PhotoCorrection.OTSU)) return
+        correction = value; step = 1; prepare()
+    }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
     fun missingThread(thread: EmbThread) = settings.myThreads.missing(thread)
@@ -82,6 +90,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
+        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
@@ -135,6 +144,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeStyle(value: PhotoMode) {
         if(value==style) return
         work?.cancel(); revision++; busy=false; style=value; error=null
+        if(value == PhotoMode.COLOR && correction == PhotoCorrection.OTSU) correction = PhotoCorrection.ORIGINAL
         render=null; report=null; bytes=null; step=1; prepare()
     }
     fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
@@ -148,7 +158,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale
+        val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale; val selectedCorrection=correction
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -167,8 +177,13 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
+                    val corrected = PhotoCorrections.apply(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedCorrection)
+                    if (version == revision) {
+                        correctionAlphaBypassed = corrected.alphaBypassed
+                        if(corrected.alphaBypassed) correction = PhotoCorrection.ORIGINAL
+                    }
                     if(selectedMode==PhotoMode.COLOR) {
-                        val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
+                        val preview=ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
                             minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads) { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                             progressStage=if(phase=="quantization") 1 else 2
@@ -179,7 +194,6 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         return@runInterruptible preview.inkOutline to photoInkRatio(preview.inkOutline)
                     }
-                    pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
                     fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
@@ -195,8 +209,21 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         progressStage = if (next == "quantization") 1 else 2
                     }
-                    val denoised=io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoRasterFilters.median3(w,h,pixels)
+                    val binaryMask = corrected.mask
+                    if (binaryMask != null) {
+                        val traced = RedworkPipeline.traceMask(w,h,binaryMask,pictureWidth,
+                            EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
+                            minAreaMm2=photoMinimumArea(detail),maxContours=128,
+                            onQuantized={ separated -> if(version==revision) separatedPreview=Bitmap.createBitmap(
+                                separated.map { it or 0xff000000.toInt() }.toIntArray(),w,h,Bitmap.Config.ARGB_8888) }) {
+                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                            progressStage=if(it=="quantization") 1 else 2
+                        }
+                        return@runInterruptible traced to photoInkRatio(traced)
+                    }
+                    val denoised=corrected.pixels
                     (try { trace(denoised) } catch (failure: IllegalArgumentException) {
+                        if (selectedCorrection == PhotoCorrection.CONTRAST) throw failure
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
@@ -205,7 +232,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedCorrection!=PhotoCorrection.ORIGINAL && selectedCorrection!=PhotoCorrection.CLEAN) R.string.photo_correction_failed else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
         }
     }

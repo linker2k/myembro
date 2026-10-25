@@ -721,3 +721,45 @@ dealings in these Data Files or Software without prior written
 authorization of the copyright holder.
 
 SPDX-License-Identifier: Unicode-3.0
+
+## Android-generated bundled TTF snapshots (tests only)
+
+- `engine/src/test/resources/font-snapshots/` contains finite glyph outline and binary
+  raster snapshots generated on Android from the existing unmodified Gowun Batang,
+  Jua and Noto Sans KR font assets described above, plus app-generated regression PES.
+- Each font's complete existing OFL-1.1 copyright/license notice is copied beside the
+  snapshots. Font software remains under OFL-1.1; these assets are not sold separately.
+- `manifest.json` pins source font SHA-256, Android build/face selection, snapshot
+  hashes and sizes. Reproduction and scope: `tools/font-snapshots/README.md`.
+- No uploaded/personal design files, remote font code, or additional TTF binaries are
+  included. The fixed test input subset does not imply full-font coverage.
+
+## Photo preprocessing: scikit-image Otsu (BSD-2-Clause)
+
+- Source: scikit-image 0.25.2, commit `e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae`,
+  https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/filters/thresholding.py.
+- `engine/.../inkstitch/svg/image/OtsuThreshold.kt` ports `threshold_otsu` and the
+  uint8 histogram-validation path. Keeps float32 counts/cumulative weights, float64
+  integer-bin moments, first-maximum ties, constant-image behavior, and default arguments.
+  The dark-ink mask adapter follows the upstream `image <= threshold` example.
+- Copyright 2009-2015 Board of Regents of the University of Wisconsin-Madison,
+  Broad Institute of MIT and Harvard, and Max Planck Institute of Molecular Cell
+  Biology and Genetics; 2009 Zachary Pincus; 2009 Almar Klein.
+- This file's license is BSD-2-Clause, not scikit-image's general BSD-3-Clause.
+  The unmodified per-file copyright/license inventory and complete terms are packaged
+  in `licenses/scikit-image/LICENSE.txt` in the engine JAR/APK. No Python/NumPy runtime
+  is bundled. Kotlin adaptation by myembro contributors, 2026; only nonempty uint8
+  images are accepted, without custom histograms, float images, or extra options.
+
+## Photo preprocessing: Pillow autocontrast (MIT-CMU)
+
+- Source: Pillow 11.3.0, commit `89f1f4626a2aaf5f3d5ca6437f41def2998fbe09`,
+  https://github.com/python-pillow/Pillow/blob/89f1f4626a2aaf5f3d5ca6437f41def2998fbe09/src/PIL/ImageOps.py.
+- Copyright (c) 2001-2004 Secret Labs AB; Copyright (c) 2001-2004 Fredrik Lundh.
+- `engine/.../inkstitch/svg/image/Autocontrast.kt` ports `autocontrast` with original
+  defaults only: cutoff=0, ignore=None, mask=None, preserve_tone=False. Retains
+  per-channel histograms, constant-channel identity, floating LUT arithmetic,
+  truncation and clipping for L/RGB byte arrays. Does not support alpha/other modes
+  or nondefault options. Kotlin adaptation by myembro contributors, 2026.
+- Full unmodified Pillow/PIL copyright and MIT-CMU terms are packaged at
+  `licenses/pillow/LICENSE` in the engine JAR/APK. No Pillow runtime/native code bundled.

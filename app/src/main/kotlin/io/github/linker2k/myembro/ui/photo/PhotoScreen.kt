@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.photo
 
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrection
 import android.graphics.Rect
 import android.graphics.RectF
 import androidx.activity.compose.BackHandler
@@ -45,7 +46,7 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
     onEdit: () -> Unit, onSend: (File) -> Unit) {
@@ -104,6 +105,22 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                             Text(stringResource(when(value) { PhotoMode.SILHOUETTE -> R.string.photo_style_silhouette; PhotoMode.OUTLINE -> R.string.photo_style_outline; PhotoMode.COLOR -> R.string.photo_style_color }))
                         }
                     }
+                }
+                if (vm.step == 1) {
+                    Text(stringResource(R.string.photo_correction),style=MaterialTheme.typography.titleSmall)
+                    FlowRow(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        PhotoCorrection.entries.filter { vm.style != PhotoMode.COLOR || it != PhotoCorrection.OTSU }.forEach { value ->
+                            FilterChip(selected=vm.correction==value,onClick={vm.changeCorrection(value)},
+                                enabled=!vm.busy && (!vm.correctionAlphaBypassed || value==PhotoCorrection.ORIGINAL),
+                                label={Text(stringResource(when(value) {
+                                    PhotoCorrection.ORIGINAL -> R.string.photo_correction_original
+                                    PhotoCorrection.CLEAN -> R.string.photo_correction_clean
+                                    PhotoCorrection.CONTRAST -> R.string.photo_correction_contrast
+                                    PhotoCorrection.OTSU -> R.string.photo_correction_otsu
+                                }))})
+                        }
+                    }
+                    if(vm.correctionAlphaBypassed) Text(stringResource(R.string.photo_correction_alpha_hint),style=MaterialTheme.typography.bodySmall)
                 }
                 val data = vm.render
                 if (vm.step == 1 && vm.style != PhotoMode.COLOR && vm.outline != null) OutlinePreview(vm.outline!!,vm.style)
