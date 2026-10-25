@@ -65,3 +65,40 @@ mkdir -p /tmp/myembro-mythreads-shots
 
 The three PNGs were opened for visual inspection. App language was restored to its
 original empty override after capture. Production behavior was not changed in this QA pass.
+
+## First-install synchronization regression
+
+The runner now waits for screen conditions with a monotonic deadline and
+`UiAutomation.executeAndWaitForEvent`, followed by accessibility idle when rendering
+must settle. It discovers the vertical scroll container, scrolls until the target
+text appears, and waits for the editable search field and persisted selection.
+Photo completion uses the same condition waiter. There are no fixed sleeps or
+fixed scroll-attempt counts. Labels are read from the activity's current locale.
+
+For first-install validation, use a local Gradle init script to override applicationId
+to `io.github.linker2k.myembro.mythreadssmoke`. This isolates the smoke from the
+normal app and its data. Build with the same runner flag above. For each run,
+uninstall both isolated packages, install both APKs, and run:
+
+```sh
+"$ADB" -s emulator-5556 shell am instrument -w -e expectFresh true \
+  io.github.linker2k.myembro.mythreadssmoke.test/io.github.linker2k.myembro.ui.photo.MyThreadsSmokeInstrumentation
+```
+
+`expectFresh=true` additionally asserts default owned-thread preferences and no
+previous `files/mythreads-smoke` directory before opening the activity. Each run
+performs all three screen assertions and captures all three screenshots.
+
+Regression validation command: `python3 /tmp/myembro-mythreads-fresh-test.py`.
+It uninstalls/reinstalls the isolated app and test APK before **each** of the three
+runs (no launcher warm-up). On emulator 5556 the result was:
+
+```text
+FRESH_INSTALL_RUN_1: MY_THREADS_UI_PASS fresh_install=true; INSTRUMENTATION_CODE: -1
+FRESH_INSTALL_RUN_2: MY_THREADS_UI_PASS fresh_install=true; INSTRUMENTATION_CODE: -1
+FRESH_INSTALL_RUN_3: MY_THREADS_UI_PASS fresh_install=true; INSTRUMENTATION_CODE: -1
+FRESH_INSTALL_SMOKE_PASS 3/3 emulator=5556
+```
+
+Full per-run logs and 9 screenshots: `/tmp/myembro-mythreads-fresh/`.
+Build log: `/tmp/myembro-mythreads-fresh-build.log` (`BUILD SUCCESSFUL`).
