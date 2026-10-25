@@ -73,6 +73,19 @@ def main():
     assert height.is_valid(60) and not height.is_valid(61)
     color=Draft202012Validator(by_name['recolor_object']['inputSchema']['properties']['threadColor'])
     assert color.is_valid('#12aBcF') and not color.is_valid('#xyz123')
+    photo=by_name['prepare_photo']['inputSchema']
+    assert set(photo['properties'])=={'attachmentId','mode','colors','widthMm','filter'}
+    assert photo['properties']['mode']['enum']==['silhouette','outline','color','bw']
+    assert photo['properties']['filter']['enum']==['original','clean','contrast','threshold']
+    pv=Draft202012Validator(photo)
+    for f in photo['properties']['filter']['enum']:
+        sample={'attachmentId':'app-picked','mode':'outline','colors':2,'widthMm':20,'filter':f}
+        pv.validate(sample)
+        assert not pv.is_valid({**sample,'filter':'invented'})
+        for colors in (1,7):assert not pv.is_valid({**sample,'colors':colors})
+        for source in ('path','url','bytes','pixels'):
+            assert not pv.is_valid({**sample,source:'forbidden'})
+    print('PHOTO_CONTRACT PASS: 4 filters, closed attachment-only inputs, colors 2–6; threshold/color checked by engine')
     print(f'DRAFT_2020_12 PASS: {len(names)} input schemas')
     print(f'CONTRACT PASS: strict nested objects, required fields, names, {len(DESTRUCTIVE)} confirmation tools, four read queries')
     print(f'PROJECTIONS PASS: {len(names)} MCP / OpenAI / Gemini schemas unchanged; argument rejection and boundary probes PASS')

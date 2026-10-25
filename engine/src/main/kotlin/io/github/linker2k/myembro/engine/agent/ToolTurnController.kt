@@ -50,7 +50,7 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
                 val d=pending
                 if(d==null) {
                     // Read-only checks may run outside a turn; prepare_pes releases bytes only for a committed snapshot.
-                    if(name in setOf("sewout_check","prepare_pes","list_fonts","get_settings","list_builtin_designs","list_designs","list_emoji","prepare_emoji")) {
+                    if(name in setOf("sewout_check","prepare_pes","list_fonts","get_settings","list_builtin_designs","list_designs","list_emoji","prepare_emoji","prepare_photo")) {
                         val s=session.snapshot();documents.publish(kernel.dispatch(s.project,s.revision.toString(),name,arguments,confirmed))
                     } else error("NO_ACTIVE_TURN","begin_edit_turn is required")
                 } else stage(d,Call(name,arguments),confirmed)

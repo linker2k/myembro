@@ -1266,79 +1266,46 @@
     },
     {
       "name": "prepare_photo",
-      "description": "Prepare an app-selected photo using only its approved attachmentId as the image source.",
+      "description": "Prepare an app-picked attachment locally. Uses project hoop and photo screen defaults. colors is required by the strict schema and used only in color mode; bw uses the existing 2-color grayscale pipeline. Image bytes and pixels never appear in responses. filter selects the shared photo-screen preprocessing; original preserves existing output. threshold is allowed only for silhouette/outline; color and bw (the screen's grayscale color path) reject it.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "attachmentId": {
             "type": "string"
           },
-          "frameId": {
-            "type": "string"
-          },
-          "style": {
+          "mode": {
             "type": "string",
             "enum": [
-              "SILHOUETTE",
-              "OUTLINE",
-              "COLOR"
+              "silhouette",
+              "outline",
+              "color",
+              "bw"
             ]
           },
-          "detail": {
-            "type": "integer",
-            "enum": [
-              0,
-              1,
-              2
-            ]
-          },
-          "colorCount": {
+          "colors": {
             "type": "integer",
             "minimum": 2,
             "maximum": 6
           },
-          "grayscale": {
-            "type": "boolean"
-          },
           "widthMm": {
             "type": "number"
           },
-          "crop": {
-            "type": "object",
-            "properties": {
-              "zoom": {
-                "type": "number",
-                "minimum": 1,
-                "maximum": 4
-              },
-              "panX": {
-                "type": "number",
-                "minimum": -1,
-                "maximum": 1
-              },
-              "panY": {
-                "type": "number",
-                "minimum": -1,
-                "maximum": 1
-              }
-            },
-            "required": [
-              "zoom",
-              "panX",
-              "panY"
-            ],
-            "additionalProperties": false
+          "filter": {
+            "type": "string",
+            "enum": [
+              "original",
+              "clean",
+              "contrast",
+              "threshold"
+            ]
           }
         },
         "required": [
           "attachmentId",
-          "frameId",
-          "style",
-          "detail",
-          "colorCount",
-          "grayscale",
+          "mode",
+          "colors",
           "widthMm",
-          "crop"
+          "filter"
         ],
         "additionalProperties": false
       },
