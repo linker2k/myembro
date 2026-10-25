@@ -96,7 +96,7 @@ class EmojiToolTest {
     }
     @Test fun `photo accepts attachment references only and requires an approved attachment`() {
         val p=Project();val kernel=ToolDispatcher()
-        val a=args("""{"attachmentId":"picked-photo","mode":"outline","colors":2,"widthMm":20}""")
+        val a=args("""{"attachmentId":"picked-photo","mode":"outline","colors":2,"widthMm":20,"filter":"original"}""")
         assertEquals("ATTACHMENT_NOT_FOUND",kernel.dispatch(p,"0","prepare_photo",a).code)
         for(k in listOf("assetId","path","url","bytes"))
             assertEquals("INVALID_ARGUMENTS",kernel.dispatch(p,"0","prepare_photo",JsonObject(a+(k to JsonPrimitive("anything")))).code)

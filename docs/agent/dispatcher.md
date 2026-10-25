@@ -345,8 +345,8 @@ undo and exact source stitches/threads/metadata against the existing VectorArt p
 
 ### App-picked photo tools
 
-`prepare_photo({attachmentId, mode, colors, widthMm})` uses the current project
-hoop. Modes are `silhouette`, `outline`, `color`, and `bw`. All four fields are
+`prepare_photo({attachmentId, mode, colors, widthMm, filter})` uses the current project
+hoop. Modes are `silhouette`, `outline`, `color`, and `bw`. All five fields are
 required by the existing strict tool-schema contract. `colors` must be 2–6;
 only color mode uses the requested value. BW selects the existing 2-color
 ColorDrawingPipeline with grayscale enabled. Other modes ignore the validated
@@ -357,7 +357,7 @@ attachment IDs after the user chooses a photo. A store must return null for any
 other ID, including strings which happen to look like existing paths/URLs.
 `PhotoRasterRequest` specifies the exact raster dimensions and selected hoop.
 Render the existing `photoCrop(..., zoom=1, panX=0, panY=0)` centered crop with
-filtered sampling; composite white for silhouette/outline, preserve alpha for
+filtered bitmap sampling, returning uncorrected pixels so the engine applies the preset once; composite white for silhouette/outline, preserve alpha for
 color/BW. Canvas owns the attachment picker/Android store; no decoder, network
 fetch or filesystem path resolver is installed in the JVM dispatcher.
 
@@ -388,3 +388,28 @@ PhotoToolTest uses ImageIO only in JVM test code to sample that local artwork.
 It covers all four prepare -> add -> prepare_pes PASS chains, shared policy size
 boundaries and ±0.1mm neighbors, missing/forged IDs, colors 1/7, forbidden image
 source fields, exact response field allowlist and unchanged session history.
+
+
+The shared boundary is from `feature/photo-filters@9be0a0f` (upstream ports at
+`a0d63f3`); no alternate filter algorithm is implemented in the agent tools.
+Photo filtering uses the exact `PhotoCorrections.apply` raster boundary used by
+PhotoViewModel: `original` -> ORIGINAL (the engine API default), `clean` -> CLEAN,
+`contrast` -> CONTRAST, `threshold` -> OTSU. The strict JSON catalog requires an
+explicit filter value; hosts initialize it to `original`. The raster returned by
+the shared engine function is consumed without another median pass. Otsu masks
+go directly to `RedworkPipeline.traceMask` without Wu or background inference;
+contrast disables the legacy hidden contrast retry, matching the screen path.
+
+Threshold returns FILTER_NOT_SUPPORTED before attachment access for both color
+and bw. BW is the screen's COLOR + grayscale implementation and can contain
+multiple gray threads; single-thread filters are restricted to silhouette and
+outline. Invalid filter names return INVALID_ARGUMENTS. Existing image privacy,
+width policy, prepared result and output-gate contracts are unchanged. The
+filter is applied only locally and its pixels/mask are never put in JSON results.
+
+PhotoToolTest compares every applicable filter's pixels/mask/alpha-bypass flag
+against the screen's shared engine call on the repository-owned artwork. Its
+original/default assertion also compares against the preceding mono-median and
+unmodified-color raster behavior; threshold has a prepare/add/prepare_pes PASS
+regression. `python3 tools/check_agent_tools.py` checks the filter vocabulary and
+closed input schema; cross-field mode restrictions are enforced by the engine.

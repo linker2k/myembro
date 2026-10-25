@@ -4,7 +4,7 @@ package io.github.linker2k.myembro.engine.agent
 import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.geometry.PICTURE_MIN_WIDTH_MM
-import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.*
 import java.awt.Color
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -29,11 +29,11 @@ class PhotoToolTest {
         }
     }
     private fun args(text: String)=Json.parseToJsonElement(text).jsonObject
-    private fun request(mode: String,width: Double=40.0,colors: Int=4,id: String="app-picked-artwork") =
-        args("""{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width}""")
-    private fun roundTrip(mode: String) {
+    private fun request(mode: String,width: Double=40.0,colors: Int=4,id: String="app-picked-artwork",filter: String="original") =
+        args("""{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width,"filter":"$filter"}""")
+    private fun roundTrip(mode: String, filter: String = "original") {
         val kernel=ToolDispatcher(attachmentStore=attachments)
-        val prepared=kernel.dispatch(Project(),"0","prepare_photo",request(mode))
+        val prepared=kernel.dispatch(Project(),"0","prepare_photo",request(mode,filter=filter))
         assertTrue(prepared.ok,prepared.output.toString())
         assertNull(prepared.pesBytes);assertEquals("READY",prepared.output.string("status"))
         assertEquals(setOf("ok","resultId","status","downloadRequired","widthMm","heightMm","minWidthMm","maxWidthMm","verdict"),prepared.output.keys)
@@ -82,4 +82,37 @@ class PhotoToolTest {
         val result=ToolDispatcher(attachmentStore=attachments).bind(session).dispatch("prepare_photo",request("outline"))
         assertTrue(result.ok,result.output.toString());assertEquals(before,session.snapshot())
     }
+    @Test fun `every filter produces the exact photo screen raster and original retains legacy preprocessing`() {
+        val edge=PhotoPreparationPolicy.photoRasterSize(1,PICTURE_MIN_WIDTH_MM,PICTURE_MIN_WIDTH_MM)
+        for(mode in listOf("silhouette","outline","color","bw")) {
+            val monochrome=mode !in setOf("color","bw")
+            val raster=attachments.raster("app-picked-artwork",PhotoRasterRequest(edge,edge,HoopSpec.H100,monochrome))!!
+            val original=raster.pixels()
+            val filters=linkedMapOf("original" to PhotoCorrection.ORIGINAL,"clean" to PhotoCorrection.CLEAN,
+                "contrast" to PhotoCorrection.CONTRAST)
+            if(monochrome) filters["threshold"]=PhotoCorrection.OTSU
+            for((name,correction) in filters) {
+                val expected=PhotoCorrections.apply(edge,edge,original,monochrome,correction)
+                val actual=photoToolRaster(raster,mode,name)
+                assertContentEquals(expected.pixels,actual.pixels,"$mode/$name pixels")
+                assertContentEquals(expected.mask,actual.mask,"$mode/$name mask")
+                assertEquals(expected.alphaBypassed,actual.alphaBypassed)
+            }
+            val legacy=if(monochrome) PhotoRasterFilters.median3(edge,edge,IntArray(original.size) { original[it] and 0xffffff }) else original
+            assertContentEquals(legacy,photoToolRaster(raster,mode).pixels,"default original/$mode")
+            assertContentEquals(photoToolRaster(raster,mode,"original").pixels,photoToolRaster(raster,mode).pixels)
+            assertContentEquals(original,raster.pixels(),"input immutable")
+        }
+    }
+    @Test fun `threshold is rejected for screen color and grayscale color modes before attachment access`() {
+        val kernel=ToolDispatcher(attachmentStore=attachments)
+        for(mode in listOf("color","bw")) {
+            val result=kernel.dispatch(Project(),"0","prepare_photo",request(mode,filter="threshold"))
+            assertEquals("FILTER_NOT_SUPPORTED",result.code);assertNull(result.output["resultId"]);assertNull(result.pesBytes)
+        }
+        assertEquals("INVALID_ARGUMENTS",kernel.dispatch(Project(),"0","prepare_photo",request("outline",filter="invented")).code)
+        assertEquals(0,reads)
+    }
+    @Test fun `threshold uses the direct binary mask path and still exports a checked design`() = roundTrip("outline","threshold")
+
 }

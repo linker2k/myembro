@@ -71,7 +71,7 @@ class ToolDispatcher(
             }
             if(name == "prepare_emoji" || name == "prepare_photo") {
                 val prepared=if(name=="prepare_emoji") emojiPreparation.prepare(a.string("emojiId"),frame(a.string("frameId")),a.number("widthMm"))
-                    else photoPreparation.prepare(a.string("attachmentId"),a.string("mode"),a.getValue("colors").jsonPrimitive.int,a.number("widthMm"),project.hoop)
+                    else photoPreparation.prepare(a.string("attachmentId"),a.string("mode"),a.getValue("colors").jsonPrimitive.int,a.number("widthMm"),project.hoop,a.string("filter"))
                 preparedArt[prepared.id]=prepared
                 return Result(project,buildJsonObject {
                     put("ok",true);put("resultId",prepared.id);put("status","READY");put("downloadRequired",false)
