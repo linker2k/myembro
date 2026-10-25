@@ -3,13 +3,16 @@ package io.github.linker2k.myembro.usb
 
 import io.github.linker2k.myembro.engine.fat12.Fat12Volume
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
+import io.github.linker2k.myembro.engine.io.PesExport
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.sewout.DesignOrigin
 import io.github.linker2k.myembro.library.DesignFormats
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.io.File
 import java.io.IOException
 
 internal class DirectUsbExporter(private val access: DirectUsbAccess) {
-    data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean, val designLabel: String? = null, val manualJumpThreadCount: Int? = null, val automaticJumpTrim: Boolean? = null, val machineName: String? = null)
+    data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean, val designLabel: String? = null, val manualJumpThreadCount: Int? = null, val automaticJumpTrim: Boolean? = null, val machineName: String? = null, val hoop: HoopSpec = HoopSpec.H100, val origin: DesignOrigin = DesignOrigin.IMPORTED)
     data class SpacePlan(val fingerprint: String, val candidates: List<Fat12Volume.Entry>,
         val payloads: List<Payload>, val failures: List<Pair<String, String>>, val freeBytes: Long,
         val requiredBytes: Long, val freeEntries: Int, val clusterBytes: Int, val diagnostics: String = "") {
@@ -33,7 +36,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             // Only parse a content label if the actual filename contains no meaningful design name.
             val label = if (UsbDesignNames.needsDesignLabel(file.name))
                 runCatching { DesignFormats.read(file).metadata["name"] }.getOrNull() else null
-            Payload(file.name, prepared.fileName, prepared.bytes, prepared.converted, label, machine?.let { io.github.linker2k.myembro.engine.sewout.JumpThreadCleanup.assessPes(prepared.bytes,it).manualCutCount }, machine?.automaticJumpTrim?.value, machine?.name)
+            Payload(file.name, prepared.fileName, prepared.bytes, prepared.converted, label, machine?.let { io.github.linker2k.myembro.engine.sewout.JumpThreadCleanup.assessPes(prepared.bytes,it).manualCutCount }, machine?.automaticJumpTrim?.value, machine?.name, prepared.hoop, prepared.origin)
         }.onFailure { failures += file.name to (it.message ?: it.javaClass.simpleName) }.getOrNull() }
         if (payloads.isEmpty()) return Result.Complete(UsbExporter.Report(emptyList(), 0, failures))
         return access.open(target).use { session ->
@@ -46,20 +49,24 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
         }
     }
 
-    fun resume(target: DirectUsbTarget, plan: SpacePlan, deleteNames: Set<String>): Result = access.open(target).use { session ->
-        try {
-            val fs = session.volume
-            // No deletion if the device/volume was changed since the exact list was shown to the user.
-            if (fs.fingerprint() != plan.fingerprint) throw IOException("USB contents changed; reopen export before deleting")
-            require(plan.canProceed(deleteNames)) { "Select enough existing PES files to free space/root entries" }
-            for (name in deleteNames) {
-                val current = fs.listRoot().singleOrNull { it.name == name }
-                require(current != null && current in plan.candidates && !current.isDirectory && !current.isReadOnly && current.name.endsWith(".PES", true))
-            }
-            for (name in deleteNames) fs.deleteFile(name)
-            fs.checkSpace(plan.payloads.map { it.bytes.size })
-            write(session, plan.payloads, plan.failures)
-        } catch (e: Exception) { throw session.failure(e) }
+    fun resume(target: DirectUsbTarget, plan: SpacePlan, deleteNames: Set<String>): Result {
+        // Validate a frozen copy before opening the device, especially before deleting anything.
+        val payloads = checkedPayloads(plan.payloads)
+        return access.open(target).use { session ->
+            try {
+                val fs = session.volume
+                // No deletion if the device/volume changed after the user saw the exact list.
+                if (fs.fingerprint() != plan.fingerprint) throw IOException("USB contents changed; reopen export before deleting")
+                require(plan.canProceed(deleteNames)) { "Select enough existing PES files to free space/root entries" }
+                for (name in deleteNames) {
+                    val current = fs.listRoot().singleOrNull { it.name == name }
+                    require(current != null && current in plan.candidates && !current.isDirectory && !current.isReadOnly && current.name.endsWith(".PES", true))
+                }
+                for (name in deleteNames) fs.deleteFile(name)
+                fs.checkSpace(payloads.map { it.bytes.size })
+                write(session, payloads, plan.failures)
+            } catch (e: Exception) { throw session.failure(e) }
+        }
     }
 
     private fun plan(fs: Fat12Volume, payloads: List<Payload>, failures: List<Pair<String, String>>, e: Fat12Volume.NoSpace, diagnostics: String) =
@@ -67,7 +74,19 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             payloads, failures, fs.freeBytes, e.requiredBytes, fs.freeRootEntries, fs.geometry.clusterBytes, diagnostics)
 
     companion object {
+        private fun checkedPayloads(payloads: List<Payload>): List<Payload> = payloads.map {
+            it.copy(bytes = it.bytes.copyOf())
+        }.also { frozen ->
+            frozen.forEach { PesExport.requireSafe(it.bytes, it.hoop, it.origin) }
+        }
+
         internal fun write(session: DirectUsbAccess.Session, payloads: List<Payload>, initialFailures: List<Pair<String, String>>): Result {
+            // Reject the entire batch before any filesystem mutation. Keep validation failures
+            // separate from I/O failures: validation has not poisoned the volume.
+            val frozen = try { checkedPayloads(payloads) } catch (e: Exception) {
+                return Result.Complete(UsbExporter.Report(emptyList(), 0,
+                    initialFailures + payloads.map { it.source to (e.message ?: e.javaClass.simpleName) }))
+            }
             val fs = session.volume
             val exported = mutableListOf<String>()
             val written = mutableListOf<UsbTransferredFile>()
@@ -77,7 +96,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             val failures = initialFailures.toMutableList()
             var converted = 0
             var failure: DirectUsbFailure? = null
-            for ((index, payload) in payloads.withIndex()) {
+            for ((index, payload) in frozen.withIndex()) {
                 try {
                     val preferred = UsbDesignNames.unique(payload.source, emptyList(), payload.designLabel)
                     val name = UsbDesignNames.unique(payload.source, fs.listRoot().map { it.name }, payload.designLabel)
@@ -92,7 +111,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
                     remaining = null // A failed mutation poisons the session; do not query it again.
                     failure = session.failure(e)
                     // Never retry against a potentially half-written filesystem or continue after detach.
-                    payloads.drop(index).forEach { failures += it.source to (e.message ?: e.javaClass.simpleName) }
+                    frozen.drop(index).forEach { failures += it.source to (e.message ?: e.javaClass.simpleName) }
                     break
                 }
             }

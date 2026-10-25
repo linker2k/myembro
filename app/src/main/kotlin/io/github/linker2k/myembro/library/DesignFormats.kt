@@ -38,8 +38,9 @@ object DesignFormats {
             val project = ProjectJson.decode(file.readText().removePrefix("\uFEFF"), sourceResolver = sourceResolver(file))
             val flattened = project.flatten(sewingOptions)
             io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,flattened.bounds)
-            PesExport.Result(PesWriter.write(flattened, settings.copy(hoop = project.hoop)),
-                "${file.nameWithoutExtension}.pes", true)
+            val origin = io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(flattened)
+            PesExport.Result(PesExport.requireSafe(PesWriter.write(flattened, settings.copy(hoop = project.hoop)), project.hoop, origin),
+                "${file.nameWithoutExtension}.pes", true, project.hoop, origin)
         } else PesExport.prepare(file.readBytes(), file.name, settings)
 
     fun read(bytes: ByteArray, name: String, sourceResolver: ProjectSourceResolver? = null, sewingOptions: SewingOptions? = null): EmbPattern {
