@@ -155,6 +155,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         vm.requiredThreads.forEach { thread ->
                             Text(stringResource(R.string.photo_thread_row,thread.catalogNumber.orEmpty(),thread.description.orEmpty()),
                                 style=MaterialTheme.typography.bodyMedium)
+                            if(vm.missingThread(thread)) Text(stringResource(R.string.my_threads_missing), style=MaterialTheme.typography.labelSmall, color=colors.error)
                         }
                     }
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)

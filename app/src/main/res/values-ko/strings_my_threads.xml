@@ -1,0 +1,9 @@
+<resources>
+    <string name="my_threads_title">내 실</string>
+    <string name="my_threads_hint">내가 가진 Brother 실에서만 색을 골라요. 목록이 비어 있으면 모든 색을 사용해요.</string>
+    <string name="my_threads_choose">실 선택 (%1$d)</string>
+    <string name="my_threads_search">이름·번호 검색</string>
+    <string name="my_threads_clear">전체 해제</string>
+    <string name="my_threads_missing">내 실에 없음</string>
+    <string name="my_threads_match">가까운 Brother 실 색</string>
+</resources>

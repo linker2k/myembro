@@ -344,7 +344,7 @@ private fun ViewerDetails(vm: ViewerViewModel, data: RenderData, modifier: Modif
                 LinearProgressIndicator(progress = {
                     vm.progress.toFloat().coerceAtLeast(0f) / data.playback.endIndex.coerceAtLeast(1)
                 }, modifier = Modifier.fillMaxWidth())
-                ColorBlocks(pattern, vm.progress, vm::seekPlayback)
+                ColorBlocks(pattern, vm.progress, vm::seekPlayback, vm.myThreads)
             }
         }
 
@@ -409,7 +409,7 @@ private fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
 
 /** One chip per color block; tapping shows the design sewn through the end of that block. */
 @Composable
-private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Unit) {
+private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Unit, myThreads: io.github.linker2k.myembro.engine.io.MyThreads) {
     val counts = remember(pattern) {
         pattern.colorBlocks.map { block ->
             pattern.stitches.subList(block.start, block.end).count {
@@ -439,6 +439,8 @@ private fun ColorBlocks(pattern: EmbPattern, progress: Int, onSeek: (Int) -> Uni
                 }
                 Text(block.thread.displayName,
                     style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (myThreads.missing(block.thread)) Text(stringResource(R.string.my_threads_missing),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 Text(stringResource(R.string.viewer_thread_stitches, counts[i]),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

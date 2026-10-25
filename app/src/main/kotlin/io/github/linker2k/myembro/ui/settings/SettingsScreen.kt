@@ -195,6 +195,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     SettingRow(Icons.Default.Description, stringResource(R.string.settings_pes_version),
                         pesVersionLabel(settings.pesVersion)) { pesDialog = true }
                 }
+                MyThreadsSection(vm)
                 Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Card(shape = MyembroShapes.Card,

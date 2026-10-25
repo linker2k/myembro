@@ -338,8 +338,14 @@ private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
     Text(current.displayDetails,
         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (obj != null) {
+        Text(stringResource(R.string.my_threads_match), style = MaterialTheme.typography.labelMedium)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            vm.settings.myThreads.ranked(parsed ?: current.color, 5).forEach { (candidate, _) ->
+                ThreadSwatch(candidate, candidate.sameColor(current), enabled) { vm.changeThread(index, candidate) }
+            }
+        }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (listOf(EmbThread(ThreadTerracotta.toArgb(), stringResource(R.string.editor_thread_terracotta))) + EmbPattern.DEFAULT_PALETTE).forEach { thread -> ThreadSwatch(thread, thread.sameColor(current), enabled) {
+            vm.settings.myThreads.candidates(listOf(EmbThread(ThreadTerracotta.toArgb(), stringResource(R.string.editor_thread_terracotta))) + EmbPattern.DEFAULT_PALETTE).forEach { thread -> ThreadSwatch(thread, thread.sameColor(current), enabled) {
                 vm.changeThread(index, thread)
             } }
         }
@@ -348,7 +354,7 @@ private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
                 isError = parsed == null, label = { Text(stringResource(R.string.editor_thread_hex)) },
                 prefix = { Text("#") }, textStyle = MaterialTheme.typography.bodyMedium,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii))
-            IconButton(onClick = { parsed?.let { vm.changeThread(index, EmbThread(it)) } }, enabled = enabled && parsed != null && parsed != current.color) {
+            IconButton(onClick = { parsed?.let { vm.changeThread(index, if(vm.settings.myThreads.active) vm.settings.myThreads.nearest(it) else EmbThread(it)) } }, enabled = enabled && parsed != null && parsed != current.color) {
                 Icon(Icons.Default.Check, stringResource(R.string.editor_apply))
             }
         }

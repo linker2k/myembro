@@ -31,6 +31,20 @@ class BackupArchiveTest {
         }
         assertEquals(before,snapshot(data));assertEquals(prefs,restoredPrefs)
     }
+    @Test fun myThreadsSurviveBackupDeleteAndRestore()=sandbox { root ->
+        val data=File(root,"data").apply {mkdirs()}
+        val settings=buildJsonObject { put("myembro_settings",buildJsonObject {
+            put("my_threads_enabled",buildJsonObject {put("type","boolean");put("value",true)})
+            put("my_thread_indices",buildJsonObject {put("type","set");put("value",kotlinx.serialization.json.JsonArray(listOf("2","5","19").map {kotlinx.serialization.json.JsonPrimitive(it)}))})
+        }) }
+        val zip=ByteArrayOutputStream().also {BackupArchive.write(data,settings,it)}.toByteArray()
+        data.deleteRecursively();data.mkdirs()
+        var restored=buildJsonObject {}
+        BackupArchive.read(zip.inputStream(),File(root,"cache")).use { plan ->
+            plan.restore(data,BackupArchive.Duplicates.SKIP) {restored=it}
+        }
+        assertEquals(settings,restored)
+    }
     @Test fun defaultLogoDesignIsNotBackedUpButUserDesignsAre()=sandbox { root ->
         val data=File(root,"data");seed(data)
         io.github.linker2k.myembro.library.DefaultLogoInstaller(File(data,"designs")).install("myembro logo.pes") { File("src/main/assets/designs/myembro_logo.pes").inputStream() }

@@ -50,6 +50,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
+    fun missingThread(thread: EmbThread) = settings.myThreads.missing(thread)
     val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
     fun changeColorCount(value:Int) {
         val count=value.coerceIn(2,6)
@@ -168,7 +169,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     if(selectedMode==PhotoMode.COLOR) {
                         val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
-                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale) { phase ->
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads) { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                             progressStage=if(phase=="quantization") 1 else 2
                         }
