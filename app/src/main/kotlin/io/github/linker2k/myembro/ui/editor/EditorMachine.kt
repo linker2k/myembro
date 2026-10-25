@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor
 
+import android.content.res.Resources
+
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
@@ -18,11 +20,11 @@ internal fun editorHoops(profile: MachineProfile?): List<HoopSpec> = profile?.le
 internal fun HoopSpec.sameArea(other: HoopSpec) = width == other.width && height == other.height
 
 /** Returned problems block PES creation; .myembro remains savable to preserve unfinished work. */
-internal fun editorExportProblems(project: Project, settings: EmbroiderySettings, fileName: String): List<String> {
+internal fun editorExportProblems(project: Project, settings: EmbroiderySettings, fileName: String, resources: Resources? = null): List<String> {
     val problems = mutableListOf<String>()
     if (settings.machineProfile == null) problems += "machine_unknown"
     else if (editorHoops(settings.machineProfile).none { it.sameArea(project.hoop) }) problems += "hoop_unsupported"
     if (project.exceedsHoop()) problems += "hoop_overflow"
-    problems += ExportChecks.check(project.flatten(settings.sewing), fileName, settings)
+    problems += ExportChecks.check(project.flatten(settings.sewing), fileName, settings, resources = resources)
     return problems
 }

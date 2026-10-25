@@ -31,6 +31,14 @@ object Preflight {
     /** Existing machine filename character rule; length remains profile-specific. */
     fun isValidFileNameStem(stem: String): Boolean = stem.matches(fileNameStemPattern)
 
+    /** JVM callers use English; UI callers supply localized resource-backed messages. */
+    data class FileNameMessages(
+        val invalidCharacters: (String) -> String = { machine ->
+            "Use only letters A–Z, numbers, hyphens (-), and underscores (_) in file names. Special characters or Korean letters may not display on $machine."
+        },
+        val tooLong: (Int) -> String = { limit -> "The file name exceeds $limit characters." },
+    )
+
     /** [patternCount]/[totalBytes] describe the entire destination batch, including this file. */
     fun check(
         pattern: EmbPattern,
@@ -39,6 +47,7 @@ object Preflight {
         destination: ExportDestination = ExportDestination.PC_TRANSFER,
         patternCount: Int = 1,
         totalBytes: Long? = null,
+        fileNameMessages: FileNameMessages = FileNameMessages(),
     ): List<String> {
         require(patternCount > 0 && (totalBytes == null || totalBytes >= 0))
         val active = pattern.stitches.takeWhile { it.command != Command.END } +
@@ -68,12 +77,12 @@ object Preflight {
         if (leaf != fileName) warnings += "${profile.name}은 폴더 안의 도안을 읽지 못합니다. 이동식 디스크의 최상위에 파일을 넣어 주세요."
         val base = leaf.substringBeforeLast('.', leaf)
         if (!isValidFileNameStem(base)) {
-            warnings += "파일명에는 영문·숫자·하이픈(-)·밑줄(_)을 사용해 주세요. 특수 문자나 한글이 있으면 ${profile.name}에 표시되지 않을 수 있습니다."
+            warnings += fileNameMessages.invalidCharacters(profile.name)
         }
         if (leaf.substringAfterLast('.', "").lowercase(Locale.ROOT) !in setOf("pes", "dst")) {
             warnings += "${profile.name}에 전송할 파일은 PES 또는 DST 형식이어야 합니다. ZIP은 먼저 풀어 주세요."
         }
-        profile.maxFileNameLength?.let { if (base.length > it) warnings += "파일명이 ${it}자를 초과합니다." }
+        profile.maxFileNameLength?.let { if (base.length > it) warnings += fileNameMessages.tooLong(it) }
         val countLimit = if (destination == ExportDestination.PC_TRANSFER) profile.maxTransferPatterns else profile.maxInternalPatterns
         countLimit?.let { if (patternCount > it) warnings += "${profile.name}에 한 번에 넣을 도안이 ${it}개를 초과합니다(현재 ${patternCount}개). 전송할 도안을 나누어 주세요." }
         if (destination == ExportDestination.INTERNAL_MEMORY && totalBytes != null) {

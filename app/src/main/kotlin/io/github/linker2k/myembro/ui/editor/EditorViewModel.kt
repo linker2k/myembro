@@ -81,7 +81,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val split = MultiPositionSplitter.split(snapshot.flatten(preferences.read().sewing), positions)
                     if (split.errors.isNotEmpty()) throw EditorExportBlocked(split.errors.take(8).map { it.message })
                     val problems = split.parts.flatMap { part ->
-                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read())
+                        ExportChecks.check(part.pattern, "myembro_position${part.ordinal}.pes", preferences.read(), resources = getApplication<Application>().resources)
                     }
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems.distinct())
                     require(split.parts.isNotEmpty()) { getApplication<Application>().getString(R.string.editor_empty_export) }
@@ -605,7 +605,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val exportSettings = preferences.read() // Re-read immediately before writing.
                     val pattern = snapshot.flatten(exportSettings.sewing)
                     require(pattern.stitchCount > 0) { getApplication<Application>().getString(R.string.editor_empty_export) }
-                    val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes")
+                    val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes", getApplication<Application>().resources)
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings.copy(hoop = snapshot.hoop))
                     writeNamedDesign(projectDir, name, "pes", overwrite, bytes).also {
