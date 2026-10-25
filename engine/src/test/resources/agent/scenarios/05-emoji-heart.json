@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "emoji-heart",
+  "cases": [
+    {
+      "id": "emoji-heart",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_generated_art",
+            "arguments": {
+              "transactionId": "scenario",
+              "resultId": "$prepared.heart",
+              "objectId": "heart",
+              "name": "Heart"
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 854,
+        "pesSha256": "400c02244dbb373348df83a95170594126f40df5e9d3db52d69cb0206df8db96",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      },
+      "preparations": [
+        {
+          "id": "heart",
+          "name": "prepare_emoji",
+          "arguments": {
+            "emojiId": "red-heart",
+            "frameId": "H100",
+            "widthMm": 20
+          }
+        }
+      ]
+    }
+  ]
+}

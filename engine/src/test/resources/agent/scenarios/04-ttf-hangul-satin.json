@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "ttf-hangul-satin",
+  "cases": [
+    {
+      "id": "ttf-hangul-satin",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "noto-sans-kr",
+              "fontRevision": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252:glyph-extractor-v3",
+              "text": "정민",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 623,
+        "pesSha256": "c47fb3296227ea4125d09271cc2f5bc6696978d8c63e45086270767f56f44c29",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}

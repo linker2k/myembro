@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "align-distribute",
+  "cases": [
+    {
+      "id": "align-distribute",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "a",
+              "fontId": "inkstitch-medium-font",
+              "fontRevision": "2fd50594ed768897ada1fd78251848e1cb10b969b19e9f9bf7a00a5c65762cb8:glyph-extractor-v3",
+              "text": "A",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          },
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "a"
+              ],
+              "deltaXMm": -25,
+              "deltaYMm": -10,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "b",
+              "fontId": "inkstitch-medium-font",
+              "fontRevision": "2fd50594ed768897ada1fd78251848e1cb10b969b19e9f9bf7a00a5c65762cb8:glyph-extractor-v3",
+              "text": "B",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          },
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "b"
+              ],
+              "deltaXMm": 0,
+              "deltaYMm": 0,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "c",
+              "fontId": "inkstitch-medium-font",
+              "fontRevision": "2fd50594ed768897ada1fd78251848e1cb10b969b19e9f9bf7a00a5c65762cb8:glyph-extractor-v3",
+              "text": "C",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          },
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "c"
+              ],
+              "deltaXMm": 25,
+              "deltaYMm": 10,
+              "rotationDeg": 0,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "align_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "alignment": "TOP"
+            }
+          },
+          {
+            "name": "distribute_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "axis": "HORIZONTAL"
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 779,
+        "pesSha256": "2631cc946fdfbee29ce24c7e812bec7b2f4e88ab8005726572598ab5788cdc0d",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}
