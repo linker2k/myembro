@@ -1,0 +1,512 @@
+{
+  "tool_version": 7,
+  "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d",
+  "verdict": "PASS",
+  "cases": 2,
+  "blocked": 0,
+  "all_required_checks_complete": true,
+  "release_ready": false,
+  "final_acceptance": "user sewout",
+  "results": [
+    {
+      "path": "/tmp/myembro-logo-regen/before/LOGO60.PES",
+      "text": false,
+      "style": "mixed",
+      "verdict": "PASS",
+      "reasons": [],
+      "warnings": [],
+      "reference_flags": [],
+      "reference_metrics": {
+        "canonical_start_count": 0,
+        "zero_length_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_ratio": 0.0641025641025641,
+        "body_short_lt03_ratio": 0.0641025641025641,
+        "body_tiny_lt027_ratio": 0.05626780626780627,
+        "satin_same_side_mm": {
+          "n": 1008,
+          "min": 0.2,
+          "p01": 0.28284271247461906,
+          "p10": 0.30000000000000004,
+          "p50": 0.36055512754639896,
+          "p90": 0.4242640687119285,
+          "p95": 0.447213595499958,
+          "p99": 0.447213595499958,
+          "max": 0.7615773105863909
+        },
+        "length_mm": {
+          "n": 2808,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.34725691908753015,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        }
+      },
+      "hoop_check": {
+        "status": "PASS",
+        "viewport_native": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 600,
+          "max_y": 633,
+          "header_width": 600,
+          "header_height": 633,
+          "errors": [],
+          "valid": true,
+          "motion_count": 2810
+        },
+        "errors": [],
+        "size_units": [
+          1000,
+          1000
+        ],
+        "integer_units": "0.1mm",
+        "boundary": "exclusive size bound",
+        "source": "HoopSpec"
+      },
+      "all_required_checks_complete": true,
+      "release_ready": false,
+      "scope": "Automated PES checks only; final acceptance requires user sewout",
+      "metrics": {
+        "sha256": "db7327b352a3f426404e59ead131f2fe23b41626b663d0a4563b291d2e78e8ac",
+        "bytes": 6863,
+        "pec_end": "FF00",
+        "trim_jump_combined_flags": 0,
+        "decoded_trim_count": 0,
+        "encoded_trim_count": 0,
+        "stitch_count": 2808,
+        "run_count": 2,
+        "jump_count": 2,
+        "trim_count": 0,
+        "stop_count": 0,
+        "color_change_count": 1,
+        "zero_length_count": 0,
+        "expected_lock_zero_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_count": 180,
+        "short_lt03_ratio": 0.0641025641025641,
+        "body_short_lt03_ratio": 0.0641025641025641,
+        "body_short_lt03_count": 180,
+        "body_count": 2808,
+        "body_tiny_lt027_count": 158,
+        "body_tiny_lt027_ratio": 0.05626780626780627,
+        "max_same_point_consecutive": 1,
+        "cell_peak_05mm": 7,
+        "cell_peaks_by_phase": [
+          7,
+          5,
+          6,
+          5
+        ],
+        "lock_edge_count": 0,
+        "canonical_start_count": 0,
+        "start_lock_missing": 0,
+        "start_lock_missing_ratio": 0.0,
+        "end_lock_missing": 0,
+        "trim_before_opportunities": 0,
+        "trim_before_lock_missing": 0,
+        "trim_after_opportunities": 0,
+        "trim_after_lock_missing": 0,
+        "length_mm": {
+          "n": 2808,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.34725691908753015,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        },
+        "nonzero_length_mm": {
+          "n": 2808,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.34725691908753015,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        },
+        "satin_candidate_count": 1008,
+        "satin_same_side_mm": {
+          "n": 1008,
+          "min": 0.2,
+          "p01": 0.28284271247461906,
+          "p10": 0.30000000000000004,
+          "p50": 0.36055512754639896,
+          "p90": 0.4242640687119285,
+          "p95": 0.447213595499958,
+          "p99": 0.447213595499958,
+          "max": 0.7615773105863909
+        },
+        "runs": [
+          {
+            "start_record": 1,
+            "end_record": 1025,
+            "before": "jump",
+            "after": "color",
+            "stitches": 1025,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1028,
+            "end_record": 2810,
+            "before": "color",
+            "after": "end",
+            "stitches": 1783,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          }
+        ],
+        "max_stitch_delta_squared_units": 2925,
+        "stitch_count_exceeding_12mm": 0,
+        "zero_motion_count": 0,
+        "pec_viewport": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 600,
+          "max_y": 633,
+          "header_width": 600,
+          "header_height": 633,
+          "errors": [],
+          "valid": true,
+          "motion_count": 2810
+        },
+        "max_same_point_needle_only": 1,
+        "legacy_lock_diagnostics": {
+          "start_lock_missing": 2,
+          "end_lock_missing": 2,
+          "start_lock_missing_ratio": 1.0,
+          "trim_before_lock_missing": 0,
+          "trim_after_lock_missing": 0
+        },
+        "lock_sections": [
+          {
+            "before": "file_start",
+            "after": "color",
+            "stitches": 1025,
+            "start_record": 1,
+            "end_record": 1025,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                1024,
+                1023,
+                1022,
+                1021
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "color",
+            "after": "end",
+            "stitches": 1783,
+            "start_record": 1028,
+            "end_record": 2810,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                1782,
+                1781,
+                1780,
+                1779
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          }
+        ],
+        "needle_bbox_mm": [
+          0.0,
+          0.0,
+          60.0,
+          63.300000000000004
+        ],
+        "lock_section_count": 2
+      }
+    },
+    {
+      "path": "/tmp/myembro-logo-regen/after/LOGO60.PES",
+      "text": false,
+      "style": "mixed",
+      "verdict": "PASS",
+      "reasons": [],
+      "warnings": [],
+      "reference_flags": [],
+      "reference_metrics": {
+        "canonical_start_count": 0,
+        "zero_length_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_ratio": 0.06263345195729537,
+        "body_short_lt03_ratio": 0.06263345195729537,
+        "body_tiny_lt027_ratio": 0.056227758007117434,
+        "satin_same_side_mm": {
+          "n": 1008,
+          "min": 0.2,
+          "p01": 0.28284271247461906,
+          "p10": 0.30000000000000004,
+          "p50": 0.36055512754639896,
+          "p90": 0.4242640687119285,
+          "p95": 0.447213595499958,
+          "p99": 0.447213595499958,
+          "max": 0.7615773105863909
+        },
+        "length_mm": {
+          "n": 2810,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.36055512754639896,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        }
+      },
+      "hoop_check": {
+        "status": "PASS",
+        "viewport_native": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 600,
+          "max_y": 633,
+          "header_width": 600,
+          "header_height": 633,
+          "errors": [],
+          "valid": true,
+          "motion_count": 2812
+        },
+        "errors": [],
+        "size_units": [
+          1000,
+          1000
+        ],
+        "integer_units": "0.1mm",
+        "boundary": "exclusive size bound",
+        "source": "HoopSpec"
+      },
+      "all_required_checks_complete": true,
+      "release_ready": false,
+      "scope": "Automated PES checks only; final acceptance requires user sewout",
+      "metrics": {
+        "sha256": "9e3a369ba8de95e00129ec1684da9d78aa66360b8759fe0c8aec0dbae0e6bc52",
+        "bytes": 6867,
+        "pec_end": "FF00",
+        "trim_jump_combined_flags": 0,
+        "decoded_trim_count": 0,
+        "encoded_trim_count": 0,
+        "stitch_count": 2810,
+        "run_count": 2,
+        "jump_count": 2,
+        "trim_count": 0,
+        "stop_count": 0,
+        "color_change_count": 1,
+        "zero_length_count": 0,
+        "expected_lock_zero_count": 0,
+        "unexplained_zero_count": 0,
+        "short_lt03_count": 176,
+        "short_lt03_ratio": 0.06263345195729537,
+        "body_short_lt03_ratio": 0.06263345195729537,
+        "body_short_lt03_count": 176,
+        "body_count": 2810,
+        "body_tiny_lt027_count": 158,
+        "body_tiny_lt027_ratio": 0.056227758007117434,
+        "max_same_point_consecutive": 1,
+        "cell_peak_05mm": 6,
+        "cell_peaks_by_phase": [
+          6,
+          5,
+          6,
+          5
+        ],
+        "lock_edge_count": 0,
+        "canonical_start_count": 0,
+        "start_lock_missing": 0,
+        "start_lock_missing_ratio": 0.0,
+        "end_lock_missing": 0,
+        "trim_before_opportunities": 0,
+        "trim_before_lock_missing": 0,
+        "trim_after_opportunities": 0,
+        "trim_after_lock_missing": 0,
+        "length_mm": {
+          "n": 2810,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.36055512754639896,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        },
+        "nonzero_length_mm": {
+          "n": 2810,
+          "min": 0.1,
+          "p01": 0.2,
+          "p10": 0.36055512754639896,
+          "p50": 4.0,
+          "p90": 5.303772242470448,
+          "p95": 5.323532661682466,
+          "p99": 5.360037313302959,
+          "max": 5.408326913195984
+        },
+        "satin_candidate_count": 1008,
+        "satin_same_side_mm": {
+          "n": 1008,
+          "min": 0.2,
+          "p01": 0.28284271247461906,
+          "p10": 0.30000000000000004,
+          "p50": 0.36055512754639896,
+          "p90": 0.4242640687119285,
+          "p95": 0.447213595499958,
+          "p99": 0.447213595499958,
+          "max": 0.7615773105863909
+        },
+        "runs": [
+          {
+            "start_record": 1,
+            "end_record": 1025,
+            "before": "jump",
+            "after": "color",
+            "stitches": 1025,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          },
+          {
+            "start_record": 1028,
+            "end_record": 2812,
+            "before": "color",
+            "after": "end",
+            "stitches": 1785,
+            "start_lock": true,
+            "end_lock": true,
+            "canonical_start": false,
+            "jump_before_start": true
+          }
+        ],
+        "max_stitch_delta_squared_units": 2925,
+        "stitch_count_exceeding_12mm": 0,
+        "zero_motion_count": 0,
+        "pec_viewport": {
+          "min_x": 0,
+          "min_y": 0,
+          "max_x": 600,
+          "max_y": 633,
+          "header_width": 600,
+          "header_height": 633,
+          "errors": [],
+          "valid": true,
+          "motion_count": 2812
+        },
+        "max_same_point_needle_only": 1,
+        "legacy_lock_diagnostics": {
+          "start_lock_missing": 2,
+          "end_lock_missing": 2,
+          "start_lock_missing_ratio": 1.0,
+          "trim_before_lock_missing": 0,
+          "trim_after_lock_missing": 0
+        },
+        "lock_sections": [
+          {
+            "before": "file_start",
+            "after": "color",
+            "stitches": 1025,
+            "start_record": 1,
+            "end_record": 1025,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                1024,
+                1023,
+                1022,
+                1021
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          },
+          {
+            "before": "color",
+            "after": "end",
+            "stitches": 1785,
+            "start_record": 1028,
+            "end_record": 2812,
+            "start_lock": {
+              "present": true,
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            },
+            "end_lock": {
+              "present": true,
+              "indices": [
+                1784,
+                1783,
+                1782,
+                1781
+              ],
+              "kind": "short_return_legs_within_1mm",
+              "max_leg_mm": 1.0
+            }
+          }
+        ],
+        "needle_bbox_mm": [
+          0.0,
+          0.0,
+          60.0,
+          63.300000000000004
+        ],
+        "lock_section_count": 2
+      }
+    }
+  ]
+}

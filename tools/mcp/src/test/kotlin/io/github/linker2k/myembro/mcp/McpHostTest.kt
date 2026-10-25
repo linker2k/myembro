@@ -12,7 +12,8 @@ class McpHostTest {
         val h=host();val expected=checkNotNull(javaClass.getResourceAsStream("/agent/tools.json")).bufferedReader().use { Json.parseToJsonElement(it.readText()) }
         assertEquals(expected,h.listTools());assertEquals(69,h.listTools().getValue("tools").jsonArray.size)
         assertEquals("INVALID_ARGUMENTS",h.call("get_project",args("""{"unknown":true}""")).getValue("code").jsonPrimitive.content)
-        assertEquals("NOT_IMPLEMENTED",h.call("get_settings",args("{}")).getValue("code").jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true),h.call("get_settings",args("{}"))["ok"])
+        assertEquals("INVALID_ARGUMENTS",h.call("get_settings",args("""{"unknown":true}""")).getValue("code").jsonPrimitive.content)
     }
     @Test fun confirmationIsRequiredBoundToActionRevisionAndSingleUse() {
         val h=host();val a=args("""{"transactionId":"t","objectIds":["x"]}""")

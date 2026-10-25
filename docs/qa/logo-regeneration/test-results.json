@@ -1,0 +1,27 @@
+{
+  "engine": {
+    "tests": 852,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app Debug": {
+    "tests": 325,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app Release": {
+    "tests": 325,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "MCP": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "LogoDesignTest output": "LOGO part 1 stroke SATIN 3.16mm #B27624 26 Light Brown\nLOGO part 2 stroke SATIN 5.27mm #B27624 26 Light Brown\nLOGO part 3 stroke TATAMI 6.85mm #B54B64 49 Amber Red\nLOGO size 60.0x63.3mm stitches 2810 colors 2 blockers 0 warnings []"
+}

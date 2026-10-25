@@ -1,0 +1,38 @@
+[
+  {
+    "side": "before",
+    "bytes": 6863,
+    "stitches": 2808,
+    "palette_indices": [
+      26,
+      49
+    ],
+    "thread_rgb": [
+      "#B27624",
+      "#B54B64"
+    ],
+    "thread_names": [
+      "Light Brown",
+      "Amber Red"
+    ],
+    "color_change_count": 1
+  },
+  {
+    "side": "after",
+    "bytes": 6867,
+    "stitches": 2810,
+    "palette_indices": [
+      26,
+      49
+    ],
+    "thread_rgb": [
+      "#B27624",
+      "#B54B64"
+    ],
+    "thread_names": [
+      "Light Brown",
+      "Amber Red"
+    ],
+    "color_change_count": 1
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "side": "before",
+    "sha256": "db7327b352a3f426404e59ead131f2fe23b41626b663d0a4563b291d2e78e8ac",
+    "bytes": 6863,
+    "stitches": 2808,
+    "stitches_by_color": [
+      1025,
+      1783
+    ],
+    "viewport": {
+      "min_x": 0,
+      "min_y": 0,
+      "max_x": 600,
+      "max_y": 633,
+      "header_width": 600,
+      "header_height": 633,
+      "errors": [],
+      "valid": true,
+      "motion_count": 2810
+    },
+    "quality_gate": "PASS"
+  },
+  {
+    "side": "after",
+    "sha256": "9e3a369ba8de95e00129ec1684da9d78aa66360b8759fe0c8aec0dbae0e6bc52",
+    "bytes": 6867,
+    "stitches": 2810,
+    "stitches_by_color": [
+      1025,
+      1785
+    ],
+    "viewport": {
+      "min_x": 0,
+      "min_y": 0,
+      "max_x": 600,
+      "max_y": 633,
+      "header_width": 600,
+      "header_height": 633,
+      "errors": [],
+      "valid": true,
+      "motion_count": 2812
+    },
+    "quality_gate": "PASS"
+  }
+]

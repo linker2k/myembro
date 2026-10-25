@@ -35,8 +35,8 @@
         "success": false,
         "code": "INVALID_ARGUMENTS",
         "sewout": "PASS",
-        "stitchCount": 2808,
-        "pesSha256": "d86a9d276e82bd8e567a46fce4edc7487103e31f96b329bcef9c78e08cc37bab",
+        "stitchCount": 2810,
+        "pesSha256": "19b136b1b7f2a6cf9ccdef435d7e489596a7f484a1e0ea4c2e9bf9e3314947c9",
         "released": false,
         "unchanged": true,
         "undoCount": 0
