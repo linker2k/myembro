@@ -45,6 +45,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     multiPositionPositions: List<SewingPosition> = emptyList(),
     onMultiPositionExport: ((Project, List<SewingPosition>) -> Unit)? = null,
 ) {
+    // Screens drawn inside the editor (lettering, fonts) get no Home of their own: leaving goes
+    // through the editor's unsaved-change check, from its own top bar.
+    val home = io.github.linker2k.myembro.ui.LocalGoHome.current
+    androidx.compose.runtime.CompositionLocalProvider(io.github.linker2k.myembro.ui.LocalGoHome provides null) {
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
@@ -114,8 +118,12 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                 overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                         }
                     }, colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
-                        navigationIcon = { IconButton(onClick = { vm.leave(onBack) }, enabled = enabled) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
+                        navigationIcon = { Row {
+                            IconButton(onClick = { vm.leave(onBack) }, enabled = enabled) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
+                            }
+                            // Same unsaved-change dialog and draft handling as back.
+                            io.github.linker2k.myembro.ui.HomeButton(enabled, home) { goHome -> vm.leave(goHome) }
                         } }, actions = {
                             AgentAskButton(vm.agent, vm.project, enabled)
                             EditorHistoryButton(vm, redo = false)
@@ -332,6 +340,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
             onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
             onDevice = { showOpenProjects = false; openDocument() })
+    }
     }
 }
 

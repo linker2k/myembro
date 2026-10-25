@@ -208,13 +208,16 @@ private fun LetteringContent(
     val initialDraft = remember { LetteringDraftSnapshot(initialText, initialFontId, heightDraft, thread.color, singleLineBold) }
     val draftChanged = LetteringDraftSnapshot(text, fontId, heightDraft, thread.color, singleLineBold) != initialDraft
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
-    val requestBack = { if (draftChanged) confirmDiscard = true else onBack() }
+    // Where the discard dialog leaves to: back (default) or Home.
+    var discardTo by remember { mutableStateOf(onBack) }
+    val requestExit = { exit: () -> Unit -> if (draftChanged) { discardTo = exit; confirmDiscard = true } else exit() }
+    val requestBack = { requestExit(onBack) }
     BackHandler(onBack = requestBack)
     if (confirmDiscard) AlertDialog(
         onDismissRequest = { confirmDiscard = false },
         title = { Text(stringResource(R.string.lettering_discard_title)) },
         text = { Text(stringResource(R.string.lettering_discard_body)) },
-        confirmButton = { TextButton(onClick = { confirmDiscard = false; onBack() }) {
+        confirmButton = { TextButton(onClick = { confirmDiscard = false; discardTo() }) {
             Text(stringResource(R.string.editor_discard)) } },
         dismissButton = { TextButton(onClick = { confirmDiscard = false }) {
             Text(stringResource(R.string.editor_cancel)) } })
@@ -269,7 +272,10 @@ private fun LetteringContent(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.lettering_title), style = MaterialTheme.typography.titleMedium) },
-                navigationIcon = { IconButton(requestBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) } },
+                navigationIcon = { Row {
+                    IconButton(requestBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lettering_back)) }
+                    io.github.linker2k.myembro.ui.HomeButton { home -> requestExit(home) }
+                } },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colors.background))
         },
         bottomBar = {

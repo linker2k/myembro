@@ -116,47 +116,50 @@ private fun AskSheet(controller: AgentAssistController) {
     }
     val prompt = controller.prompt
     ModalBottomSheet(onDismissRequest = controller::close) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.agent_ask), style = MaterialTheme.typography.titleLarge)
-            Row(verticalAlignment = Alignment.Top) {
-                OutlinedTextField(controller.request, { controller.request = it }, Modifier.weight(1f), minLines = 3,
-                    placeholder = { Text(stringResource(R.string.agent_request_hint)) })
-                if (voiceAvailable) IconButton(onClick = { voice.launch(voiceIntent) }) {
-                    Icon(Icons.Default.Mic, stringResource(R.string.agent_voice))
-                }
-            }
-            controller.attachments.forEach { a ->
-                InputChip(selected = false, onClick = { controller.detach(a.id) },
-                    label = { Text(stringResource(R.string.agent_photo_chip, a.id, a.widthPx, a.heightPx)) },
-                    leadingIcon = { Icon(Icons.Default.Image, null, Modifier.size(18.dp)) },
-                    trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.agent_photo_remove), Modifier.size(18.dp)) })
-            }
-            OutlinedButton(onClick = { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.agent_attach_photo))
-            }
-            if (controller.attachments.isNotEmpty()) Text(stringResource(R.string.agent_photo_note),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            val summary = controller.summary
-            if (summary == null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.agent_preparing), style = MaterialTheme.typography.bodySmall)
-                }
-            } else {
-                TextButton(onClick = { showPrompt = !showPrompt }, contentPadding = PaddingValues(0.dp)) {
-                    Icon(if (showPrompt) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
-                    Text(pluralStringResource(R.plurals.agent_what_is_sent, summary.objects.size, summary.objects.size))
-                }
-                if (showPrompt && prompt != null) Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
-                    SelectionContainer {
-                        Text(prompt.text, Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()).padding(10.dp),
-                            fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp)
+        // Only the content scrolls; Copy and Share stay at the bottom however long it gets (photos, prompt).
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.agent_ask), style = MaterialTheme.typography.titleLarge)
+                Row(verticalAlignment = Alignment.Top) {
+                    OutlinedTextField(controller.request, { controller.request = it }, Modifier.weight(1f), minLines = 3,
+                        placeholder = { Text(stringResource(R.string.agent_request_hint)) })
+                    if (voiceAvailable) IconButton(onClick = { voice.launch(voiceIntent) }) {
+                        Icon(Icons.Default.Mic, stringResource(R.string.agent_voice))
                     }
                 }
+                controller.attachments.forEach { a ->
+                    InputChip(selected = false, onClick = { controller.detach(a.id) },
+                        label = { Text(stringResource(R.string.agent_photo_chip, a.id, a.widthPx, a.heightPx)) },
+                        leadingIcon = { Icon(Icons.Default.Image, null, Modifier.size(18.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.agent_photo_remove), Modifier.size(18.dp)) })
+                }
+                OutlinedButton(onClick = { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                    Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.agent_attach_photo))
+                }
+                if (controller.attachments.isNotEmpty()) Text(stringResource(R.string.agent_photo_note),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val summary = controller.summary
+                if (summary == null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.agent_preparing), style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    TextButton(onClick = { showPrompt = !showPrompt }, contentPadding = PaddingValues(0.dp)) {
+                        Icon(if (showPrompt) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                        Text(pluralStringResource(R.plurals.agent_what_is_sent, summary.objects.size, summary.objects.size))
+                    }
+                    if (showPrompt && prompt != null) Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
+                        SelectionContainer {
+                            Text(prompt.text, Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()).padding(10.dp),
+                                fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp)
+                        }
+                    }
+                }
+                Text(stringResource(R.string.agent_privacy), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(stringResource(R.string.agent_privacy), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
             val ready = prompt != null && controller.request.isNotBlank()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
