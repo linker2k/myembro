@@ -22,6 +22,10 @@ class FontFillProbeTest {
             .map { it.getValue("stage") to it.getValue("sha256") }
         assertTrue(values(runs.first()).isNotEmpty())
         runs.forEach { assertEquals(values(runs.first()),values(it),"Numeric geometry/rows must remain exact") }
+        assertEquals(10,runs.size)
+        val outputs=runs.map { it.jsonObject.getValue("stages").jsonArray.last().jsonObject }
+        assertEquals(1,outputs.map { it.getValue("sha256") }.distinct().size,"Ten PES outputs must be byte identical")
+        println("FILL_REPEAT_EXACT 10/10 PES sha256=${outputs.first().getValue("sha256")} bytes=${outputs.first()["bytes"]}")
         println("FILL_PROBE JVM /tmp/myembro-font-fill-probe/jvm.json")
     }
 }

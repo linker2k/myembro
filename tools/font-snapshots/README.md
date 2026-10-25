@@ -33,7 +33,7 @@ classes. Gzip is a host storage envelope. Supply the decoded `outline` to `prepa
 for Hangul satin, replay its rasters through `CenterlineGlyph`, measure widths from
 its contours, lay out by glyph advances/ownership and provide `CenterlineSatinData`.
 `AndroidFontSnapshotTest` demonstrates the exact current app assembly and compares
-object JSON for all 6 cases and satin PES bytes for the 4 Hangul cases against independently
+object JSON and PES bytes for all 6 cases against independently
 captured app outputs, not a JVM-generated oracle.
 
 Only the finite captured subset is supported. Missing glyphs fail lookup; snapshots
@@ -49,22 +49,15 @@ sold separately. Source paths, copyright and upstream links remain in
 `THIRD_PARTY_NOTICES.md`. The snapshots are reproducible public-font-generated test
 inputs; they contain no uploaded/personal design files. Keep the notices with them.
 
-## Observed limitation: existing FILL nondeterminism
+## Historical FILL divergence and the ordering fix
 
-All 6 captured app TextObject JSON payloads match JVM preparation exactly. Jua and
-Noto Hangul satin PES match byte-for-byte (4 cases); Jua Latin FILL also matched in
-the initial diagnostic. Noto default/Thin `Ab12`, 15mm FILL did not: observed PES
-sizes were 2934 and 2942 bytes. A second Android capture and JVM run exchanged
-those sizes despite identical prepared object JSON. This is evidence of downstream
-FILL nondeterminism, not missing snapshot precision. The cause is **unconfirmed**;
-no fill-routing algorithm or production default is changed in this snapshot task.
+The first capture exposed Noto default/Thin `Ab12`, 15mm FILL variation (2934/2942
+bytes), with exact prepared object JSON. [Investigation](../../docs/agent/noto-fill-parity.md)
+traced it to identity-hashed JTS Polygonizer ring starts and alternating boundary
+extra-edge phase, rather than floating-point arithmetic.
 
-The default regression asserts all 6 object JSON payloads and 4 satin PES files.
-The 2 extra FILL PES files remain pinned for explicit investigation. To include
-FILL in strict byte assertions (can fail; not a passing parity claim):
-
-```sh
-MYEMBRO_SNAPSHOT_FILL_PARITY=1 ./gradlew :engine:cleanTest :engine:test --tests '*AndroidFontSnapshotTest'
-```
-
-Do not relabel the FILL mismatch as equivalent or add a coordinate tolerance.
+Ring direction and every vertex are preserved; cyclic starts and ring/component
+lists are now ordered at the polygon adapter boundary. Re-captured actual app PES
+is the new reference. The default test strictly compares **all 6** objects and PES
+files, including both Latin FILL cases. No environment flag or tolerance bypass
+remains. [Fix, 10-run cross-runtime proof and 430-case changes](../../docs/agent/noto-fill-order-fix.md).

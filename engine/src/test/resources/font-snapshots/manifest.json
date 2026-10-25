@@ -55,8 +55,8 @@
       "sha256": "32a4fb1388f771bcf79f71a8d5f0cfe94adaf765ee4c220fba8f9287043956da"
     },
     "jua-latin.pes": {
-      "bytes": 3180,
-      "sha256": "cb9d6317438a23aed1729c2493109b16b2c9a31353739c917e4561ada4478e6e"
+      "bytes": 3196,
+      "sha256": "08c9828a9b39ac532f2a679cbc89b9b15682bda23b5947717e6163c9b097c757"
     },
     "jua-outline.json.gz": {
       "bytes": 141678,
@@ -115,8 +115,8 @@
       "sha256": "818bc9b5af27e5f8d3402429d84ae689948a08cc9d9e8613c3fdfec8fa2e577c"
     },
     "noto-sans-kr-latin.pes": {
-      "bytes": 2942,
-      "sha256": "7354fa23deb2c4c26584026de19a8a12b4ea434f0e4db1b713b228005b8576d8"
+      "bytes": 2916,
+      "sha256": "054edaac486d74a147282ecbad3b780fca1e958c41be4c6516176fd42fc58f51"
     },
     "noto-sans-kr-outline.json.gz": {
       "bytes": 90428,
@@ -167,7 +167,7 @@
       "sha256": "63f45b09ef88651e9e264f18d67c2700d473c29f9cd39a322aa23d6e7775b6b8"
     }
   },
-  "total_bytes": 865202,
+  "total_bytes": 865192,
   "snapshot_gzip_bytes": 784301,
   "snapshot_json_bytes": 7005315
 }

@@ -1,5 +1,7 @@
 # Noto Latin FILL: first divergence investigation
 
+Historical investigation; see the subsequent [ordering fix and verification](noto-fill-order-fix.md).
+
 2026-10-25, parent `4413c6a`, branch `agent/font-snapshots`. Investigation only:
 no canonicalization, rounding, route selection, stitch defaults or output fix applied.
 Opt-in thread-local observations are inactive outside a diagnostic scope.

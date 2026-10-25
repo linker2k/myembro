@@ -12,7 +12,7 @@ import java.security.MessageDigest
 /** Diagnostic replay of an actual app-prepared object; no font extraction or algorithm substitution. */
 object FontFillProbe {
     fun sha(bytes:ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
-    fun run(projectJson:String,repeats:Int=4):String=buildJsonObject {
+    fun run(projectJson:String,repeats:Int=10):String=buildJsonObject {
         put("object_sha256",sha(projectJson.toByteArray(Charsets.UTF_8)))
         put("runs",buildJsonArray { repeat(repeats) { iteration->
             val stages=buildJsonArray {

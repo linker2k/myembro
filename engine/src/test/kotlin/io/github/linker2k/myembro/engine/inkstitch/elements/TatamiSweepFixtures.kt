@@ -48,7 +48,7 @@ object TatamiSweepFixtures {
                     val pattern=EmbPatternAdapter.toEmbPattern(StitchPlanBuilder.fromGroups(groups))
                     val bytes=PesWriter.writeV6(pattern)
                     val decoded=PesReader.read(bytes)
-                    require(decoded.stitchCount==pattern.stitchCount) { "PES round-trip needle count differs" }
+                    require(decoded.stitchCount==PesWriter.prepareForOutput(pattern).stitchCount) { "PES round-trip needle count differs" }
                     pes.writeBytes(bytes)
                     put("sha256",MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) })
                     put("stitches",decoded.stitchCount);put("status","GENERATED")

@@ -36,7 +36,7 @@ class AndroidFontSnapshotTest {
         }
     }
 
-    @Test fun jvmPreparedObjectsAndSatinPesMatchActualAppForTwoFonts() {
+    @Test fun jvmPreparedObjectsAndPesMatchActualAppForTwoFonts() {
         val cases=Json.parseToJsonElement(bytes("cases.json").decodeToString()).jsonArray
         assertEquals(6,cases.size)
         cases.forEach { value->
@@ -69,10 +69,6 @@ class AndroidFontSnapshotTest {
             val objectJson=Project(objects=listOf(prepared.textObject)).toJson()
             val expectedJson=GZIPInputStream(bytes(field("file").removeSuffix(".pes")+".myembro.gz").inputStream()).bufferedReader().use { it.readText() }
             check(objectJson==expectedJson) { "Android/JVM TextObject JSON mismatch $id $text at ${objectJson.zip(expectedJson).indexOfFirst { it.first!=it.second }}" }
-            if(style==StitchStyle.FILL && System.getenv("MYEMBRO_SNAPSHOT_FILL_PARITY")!="1") {
-                println("ANDROID_JVM_OBJECT_EXACT $id text=$text style=$style; FILL PES parity unconfirmed (opt-in diagnostic)")
-                return@forEach
-            }
             val raw=prepared.localPattern()
             val pattern=if(raw.metadata[GeneratedPatternProcessor.FINISHED_KEY]=="v1")
                 GeneratedPatternProcessor.finish(raw,options=SewingOptions()) else raw
