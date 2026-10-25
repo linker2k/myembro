@@ -48,7 +48,7 @@ class AgentPhotoColorCountTest {
         val store = AttachmentStore { id, r -> if (id == "a1") PhotoRaster(r.width, r.height, raster(r.width, r.height)) else null }
         val kernel = ToolDispatcher(attachmentStore = store)
         val prepared = kernel.dispatch(Project(hoop), "0", "prepare_photo",
-            Json.parseToJsonElement("""{"attachmentId":"a1","mode":"color","colors":2,"widthMm":40}""").jsonObject)
+            Json.parseToJsonElement("""{"attachmentId":"a1","mode":"color","colors":2,"widthMm":40,"filter":"original"}""").jsonObject)
         assertTrue(prepared.ok, prepared.output.toString())
         val added = kernel.dispatch(Project(hoop), "0", "add_generated_art", Json.parseToJsonElement(
             """{"transactionId":"t","resultId":"${prepared.output.getValue("resultId").jsonPrimitive.content}","objectId":"p","name":"p"}""").jsonObject)

@@ -39,8 +39,10 @@ class AgentChatbotSimulationTest {
             AgentDesignInfo(v("file").content.substringBeforeLast('.'), v("title").content, v("widthMm").double, v("heightMm").double)
         }
     private val summary = AgentProjectSummary.of(project, fonts, designs) { it.placedBounds() }
-    private val requests = listOf("로고 아래에 안녕 15mm", "글자 빨간색으로", "전체 가운데")
-    private fun prompt(i: Int) = AgentPromptBuilder.build(summary, requests[i], "p-SIM${i + 1}")
+    private val requests = listOf("로고 아래에 안녕 15mm", "글자 빨간색으로", "전체 가운데", "이 사진을 실루엣 40mm로 로고 옆에")
+    /** Request 4 has an attached photo (the size of the repository's robot.png): only its id and size are in the prompt. */
+    private val attachments = mapOf(3 to listOf(AgentAttachment("a1", 128, 128)))
+    private fun prompt(i: Int) = AgentPromptBuilder.build(summary, requests[i], "p-SIM${i + 1}", attachments = attachments[i].orEmpty())
 
     @Test fun promptFilesAreTheAppsPrompts() {
         requests.indices.forEach { i ->
@@ -48,6 +50,10 @@ class AgentChatbotSimulationTest {
             if (System.getenv("AGENT_SIM_WRITE") == "1") file.writeText(prompt(i).text)
             assertEquals(prompt(i).text, file.readText(), "regenerate with AGENT_SIM_WRITE=1, then collect replies again")
         }
+        val photo = File(dir, "prompt-4.txt").readText()
+        assertTrue("- photo a1 attached (128x128 px)" in photo && "- ${AgentTools.PHOTO_SIGNATURE}" in photo)
+        assertTrue("filter:original|clean|contrast|threshold" in photo)
+        (1..3).forEach { assertFalse("prepare_photo" in File(dir, "prompt-$it.txt").readText(), "prompt-$it") }
     }
 
     private data class Row(val client: String, val turn: String, val parse: String, val validate: String, val sewout: String, val tools: String)

@@ -94,8 +94,8 @@ class AgentPhotoAttachTest {
         { listOf(base.hoop) }, publish = { block -> block() }, kernelFactory = { ToolDispatcher(frames = it, attachmentStore = store) })
     private fun script(commands: String) = (AgentScriptParser.parse(
         """{"myembroScript":1,"promptId":"p-T","summary":"s","commands":[$commands]}""") as AgentParseResult.Parsed).script
-    private fun prepare(id: String = "a1", mode: String = "silhouette", colors: Int = 2, width: Double = 40.0) =
-        """{"tool":"prepare_photo","args":{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width}}"""
+    private fun prepare(id: String = "a1", mode: String = "silhouette", colors: Int = 2, width: Double = 40.0, filter: String = "original") =
+        """{"tool":"prepare_photo","args":{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width,"filter":"$filter"}}"""
     private fun add(result: String = "r1") = """{"tool":"add_generated_art","args":{"resultId":"$result","objectId":"new:photo","name":"Robot"}}"""
     private val handles = AgentHandles(emptyMap(), emptyMap(), attachments = mapOf("a1" to "a1"))
 
@@ -131,6 +131,18 @@ class AgentPhotoAttachTest {
         assertEquals("ATTACHMENT_NOT_FOUND", assertIs<AgentPreviewResult.Rejected>(executor().preview(script(prepare("a1") + "," + add()),
             handles.copy(attachments = mapOf("a1" to "a7")), 0)).problems.single().code)
         assertSame(empty, session.project)
+    }
+
+    @Test fun thresholdIsForSilhouetteAndOutlineOnly() = runBlocking {
+        for (mode in listOf("color", "bw")) assertEquals("FILTER_NOT_SUPPORTED",
+            assertIs<AgentPreviewResult.Rejected>(executor().preview(script(prepare(mode = mode, filter = "threshold") + "," + add()), handles, 0))
+                .problems.single().code, mode)
+        // Refused before the photo is read.
+        assertEquals(0, reads)
+        assertEquals("INVALID_ARGUMENTS", assertIs<AgentPreviewResult.Rejected>(executor().preview(
+            script(prepare(filter = "sharpen") + "," + add()), handles, 0)).problems.single().code)
+        val ready = assertIs<AgentPreviewResult.Ready>(executor().preview(script(prepare(filter = "threshold") + "," + add()), handles, 0))
+        assertNull(ready.preview.blockingFindings)
     }
 
     @Test fun onlyAPhotoAttachedToThisPromptIsAccepted() = runBlocking {

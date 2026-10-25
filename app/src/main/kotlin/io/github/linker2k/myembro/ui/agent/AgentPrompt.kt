@@ -46,9 +46,11 @@ internal object AgentTools {
     fun separate(tool: String): Boolean =
         tool in SETTINGS || (tool != "remove_objects" && schema.contains(tool) && schema.confirmation(tool))
 
-    /** prepare_photo of docs/agent/tools.json (agent/photo-tool f6687e9), listed only when a photo is attached. */
-    const val PHOTO_SIGNATURE = "prepare_photo(attachmentId:str, mode:silhouette|outline|color|bw, colors:int[2..6], widthMm:num) - " +
-        "Prepare an attached photo for the project hoop; colors is used only in color mode. " +
+    /** prepare_photo of docs/agent/tools.json (agent/photo-tool 9ea1085), listed only when a photo is attached. */
+    const val PHOTO_SIGNATURE = "prepare_photo(attachmentId:str, mode:silhouette|outline|color|bw, colors:int[2..6], widthMm:num, " +
+        "filter:original|clean|contrast|threshold) - Prepare an attached photo for the project hoop; colors is used only in color mode. " +
+        "filter is the photo screen's correction: original = as picked, clean = remove specks, contrast = stretch light and dark, " +
+        "threshold = split into black and white (silhouette and outline only). " +
         "Then add it with add_generated_art(resultId:\"r1\", …): r1 is your first prepare_photo, r2 the second."
 }
 
