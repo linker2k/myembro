@@ -26,6 +26,11 @@ data class MachineProfile(
 enum class ExportDestination { PC_TRANSFER, INTERNAL_MEMORY }
 
 object Preflight {
+    private val fileNameStemPattern = Regex("[A-Za-z0-9_-]+")
+
+    /** Existing machine filename character rule; length remains profile-specific. */
+    fun isValidFileNameStem(stem: String): Boolean = stem.matches(fileNameStemPattern)
+
     /** [patternCount]/[totalBytes] describe the entire destination batch, including this file. */
     fun check(
         pattern: EmbPattern,
@@ -62,7 +67,7 @@ object Preflight {
         val leaf = fileName.replace('\\', '/').substringAfterLast('/')
         if (leaf != fileName) warnings += "${profile.name}은 폴더 안의 도안을 읽지 못합니다. 이동식 디스크의 최상위에 파일을 넣어 주세요."
         val base = leaf.substringBeforeLast('.', leaf)
-        if (!base.matches(Regex("[A-Za-z0-9_-]+"))) {
+        if (!isValidFileNameStem(base)) {
             warnings += "파일명에는 영문·숫자·하이픈(-)·밑줄(_)을 사용해 주세요. 특수 문자나 한글이 있으면 ${profile.name}에 표시되지 않을 수 있습니다."
         }
         if (leaf.substringAfterLast('.', "").lowercase(Locale.ROOT) !in setOf("pes", "dst")) {
