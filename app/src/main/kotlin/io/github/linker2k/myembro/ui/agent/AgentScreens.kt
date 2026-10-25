@@ -115,7 +115,8 @@ private fun AskSheet(controller: AgentAssistController) {
         }
     }
     val prompt = controller.prompt
-    ModalBottomSheet(onDismissRequest = controller::close) {
+    // Fully expanded: a half-open sheet would leave the pinned buttons below a small screen's edge.
+    ModalBottomSheet(onDismissRequest = controller::close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         // Only the content scrolls; Copy and Share stay at the bottom however long it gets (photos, prompt).
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {

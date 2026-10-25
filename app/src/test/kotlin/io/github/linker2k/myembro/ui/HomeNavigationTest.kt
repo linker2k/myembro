@@ -48,6 +48,7 @@ class HomeNavigationTest {
         val end = sheet.indexOf("R.string.agent_privacy")
         val copy = sheet.indexOf("R.string.agent_copy)"); val share = sheet.indexOf("R.string.agent_share)")
         assertTrue(scroll in 0 until end && end < copy && copy < share, sheet)
+        assertTrue("rememberModalBottomSheetState(skipPartiallyExpanded = true)" in sheet)
         // The sheet's outer column (which holds the buttons) does not scroll.
         assertFalse(sheet.lines().first { "Column(Modifier.fillMaxWidth()" in it }.contains("verticalScroll"))
     }
