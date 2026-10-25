@@ -27,18 +27,28 @@ class AgentScriptCallsTest {
         assertEquals(listOf(0, 1, 2), calls.indices)
     }
 
-    @Test fun followUpsNeverEnterTheTurn() {
+    @Test fun separateToolsNeverEnterTheTurn() {
         val calls = AgentScriptCalls.of(script(
             """{"tool":"send_usb","args":{}},{"tool":"recolor_object","args":{"objectId":"o1","threadIndex":0,"threadColor":"#112233"}},""" +
-            """{"tool":"save_pes","args":{}},{"tool":"send_usb","args":{}}"""), handles, "t")
-        assertEquals(listOf("recolor_object"), calls.calls.map { it.name })
-        assertEquals(listOf(1), calls.indices)
-        assertEquals(listOf("send_usb", "save_pes"), calls.followUps)
+            """{"tool":"save_pes","args":{}},{"tool":"send_usb","args":{}},{"tool":"restore_backup","args":{}},{"tool":"set_settings","args":{}},""" +
+            """{"tool":"delete_designs","args":{}},{"tool":"remove_objects","args":{"objectIds":["o2"]}}"""), handles, "t")
+        assertEquals(listOf("recolor_object", "remove_objects"), calls.calls.map { it.name }) // undoable removal stays in the turn
+        assertEquals(listOf(1, 7), calls.indices)
+        assertEquals(listOf("send_usb", "save_pes", "restore_backup", "set_settings", "delete_designs"), calls.separate)
+    }
+
+    @Test fun everyConfirmationToolButRemovalIsSeparate() {
+        val schema = io.github.linker2k.myembro.engine.agent.ToolSchema.bundled()
+        val confirmation = Regex("\"name\"\\s*:\\s*\"([a-z_]+)\"").findAll(java.io.File("../docs/agent/tools.json").readText())
+            .map { it.groupValues[1] }.filter { schema.contains(it) && schema.confirmation(it) }.toSet()
+        assertEquals(21, confirmation.size)
+        assertEquals(confirmation - "remove_objects", confirmation.filter(AgentTools::separate).toSet())
+        assertFalse(AgentTools.separate("remove_objects")); assertTrue(AgentTools.separate("set_settings"))
     }
 
     @Test fun unknownHandlesAreProblemsAndOtherToolsKeepTheirArguments() {
         val calls = AgentScriptCalls.of(script(
-            """{"tool":"remove_objects","args":{"objectIds":["o7"]}},{"tool":"delete_font","args":{"fontId":"x"}}"""), handles, "t")
+            """{"tool":"remove_objects","args":{"objectIds":["o7"]}},{"tool":"make_rainbow","args":{"fontId":"x"}}"""), handles, "t")
         assertEquals(listOf(AgentProblem("UNKNOWN_HANDLE", 0, "remove_objects", "o7")), calls.problems)
         assertNull(calls.calls[1].arguments.jsonObject["transactionId"])
     }
@@ -53,6 +63,8 @@ class AgentScriptCallsTest {
             AgentChange(AgentChange.Kind.CHANGE, "align_objects", listOf("Logo", "Name"), listOf("CENTER_X")),
             AgentChange(AgentChange.Kind.CHANGE, "recolor_object", listOf("Logo"), listOf("1", "#D0021B")),
             AgentChange(AgentChange.Kind.REMOVE, "remove_objects", listOf("Name"))), calls.changes(before))
-        assertEquals(listOf("Name"), calls.removedNames(before))
+        assertEquals(listOf(AgentRemoval(2, listOf("Name"))), calls.removals(before))
+        val created = AgentScriptCalls.of(script("""{"tool":"remove_objects","args":{"objectIds":["new:copy"]}}"""), handles, "t")
+        assertEquals(listOf(AgentRemoval(0, listOf("copy"))), created.removals(before))
     }
 }

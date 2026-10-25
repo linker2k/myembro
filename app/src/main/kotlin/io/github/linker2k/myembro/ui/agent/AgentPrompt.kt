@@ -32,8 +32,17 @@ internal object AgentTools {
         "add_generated_art(resultId:str, objectId:str, name:str) - Add an approved photo or emoji result to the staged project.",
     )
     val NAMES: Set<String> = SIGNATURES.mapTo(linkedSetOf()) { it.substringBefore('(') }
-    /** Requested by a script but run only afterwards, each from its own existing confirmation. */
-    val FOLLOW_UPS = setOf("save_project", "save_pes", "share_pes", "send_usb")
+    private val schema by lazy { io.github.linker2k.myembro.engine.agent.ToolSchema.bundled() }
+    /** Settings changes are not undoable project edits either, though tools.json does not mark them. */
+    private val SETTINGS = setOf("set_settings")
+
+    /**
+     * Tools a script may name but Apply never runs: file deletion, transfer, overwrite, restore and
+     * settings changes (every tools.json needsUserConfirmation tool except undoable remove_objects).
+     * They are shown as "do this separately in the app" and make the whole script unappliable.
+     */
+    fun separate(tool: String): Boolean =
+        tool in SETTINGS || (tool != "remove_objects" && schema.contains(tool) && schema.confirmation(tool))
 }
 
 /** Short names the chatbot uses instead of UUIDs, font ids and asset ids; the app expands them back. */
@@ -69,7 +78,9 @@ internal data class AgentProjectSummary(
             bounds: (DesignObject) -> Bounds?): AgentProjectSummary {
             val fontInfo = linkedMapOf<String, AgentFontInfo>()
             val fontIds = linkedMapOf<String, String>()
-            fonts.distinctBy { it.id }.forEach { f -> "f${fontIds.size + 1}".let { fontIds[it] = f.id; fontInfo[it] = f } }
+            // A blank display name would leave the chatbot only an empty string; the stable id is never blank.
+            fonts.distinctBy { it.id }.forEach { f -> "f${fontIds.size + 1}".let { fontIds[it] = f.id
+                fontInfo[it] = if (f.name.isBlank()) f.copy(name = f.id) else f } }
             val objects = linkedMapOf<String, String>()
             val summaries = project.objects.mapIndexed { i, obj ->
                 val handle = "o${i + 1}"
@@ -168,12 +179,12 @@ internal object AgentPromptBuilder {
         }
         if (fonts.isNotEmpty()) {
             appendLine()
-            appendLine("Fonts (ko = has Korean, la = has Latin; h = text height):")
+            appendLine("Fonts (name in the user's language, stable id; ko = has Korean, la = has Latin; h = text height):")
             fonts.forEach { (handle, id) ->
                 val f = summary.fonts[handle]
                 if (f == null) appendLine("- $handle = $id") else {
                     val langs = listOfNotNull("ko".takeIf { f.hangul }, "la".takeIf { f.latin }).joinToString("+")
-                    appendLine("- $handle \"${f.name}\" $langs h${f.minMm?.let(::mm) ?: ""}-${mm(f.maxMm)}mm")
+                    appendLine("- $handle \"${f.name}\" id=${f.id} $langs h${f.minMm?.let(::mm) ?: ""}-${mm(f.maxMm)}mm")
                 }
             }
             if (fonts.size < summary.handles.fonts.size) appendLine("- (list shortened to fonts for this text)")

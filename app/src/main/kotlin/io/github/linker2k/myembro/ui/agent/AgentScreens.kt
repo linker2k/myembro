@@ -72,15 +72,15 @@ internal fun AgentPendingCard(controller: AgentAssistController) {
     }
 }
 
-/** Sheets and dialogs of the flow; drawn by the editor over its content. [onFollowUp] opens a follow-up's own screen. */
+/** Sheets and dialogs of the flow; drawn by the editor over its content. */
 @Composable
-internal fun AgentAssistHost(controller: AgentAssistController, onFollowUp: (String) -> Unit) {
+internal fun AgentAssistHost(controller: AgentAssistController) {
     // The sample layout covers the result; closing it returns there.
     controller.samplePreview?.let { PreviewScreen(it, applying = false, onDismiss = { controller.samplePreview = null }); return }
     when (controller.stage) {
         AgentAssistController.Stage.ASK -> AskSheet(controller)
         AgentAssistController.Stage.REPLY -> ReplySheet(controller)
-        AgentAssistController.Stage.RESULT -> ResultDialog(controller, onFollowUp)
+        AgentAssistController.Stage.RESULT -> ResultDialog(controller)
         AgentAssistController.Stage.CLOSED -> Unit
     }
 }
@@ -186,14 +186,14 @@ private fun ReplySheet(controller: AgentAssistController) {
 }
 
 @Composable
-private fun ResultDialog(controller: AgentAssistController, onFollowUp: (String) -> Unit) {
+private fun ResultDialog(controller: AgentAssistController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val outcome = controller.outcome ?: return
     val read = outcome as? AgentAssistController.Outcome.Read
     (read?.result as? AgentPreviewResult.Ready)?.let { ready ->
         PreviewScreen(ready.preview, applying = controller.applying, onDismiss = controller::close,
-            onApply = { confirmed -> scope.launch { controller.apply(confirmed) } },
+            onApply = { ticked -> scope.launch { controller.apply(ticked) } },
             onAskChanges = { controller.close(); controller.openReply() })
         return
     }
@@ -220,14 +220,6 @@ private fun ResultDialog(controller: AgentAssistController, onFollowUp: (String)
                 problems.forEach { Text("✕ $it", style = MaterialTheme.typography.bodyMedium) }
                 if (applied != null) {
                     Text(stringResource(R.string.agent_applied_body), style = MaterialTheme.typography.bodyMedium)
-                    if (applied.followUps.isNotEmpty()) {
-                        Text(stringResource(R.string.agent_applied_followups), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        applied.followUps.forEach { tool ->
-                            // Each opens the existing screen with its own confirmation; nothing runs from here.
-                            OutlinedButton(onClick = { controller.close(); onFollowUp(tool) }) { Text(followUpLabel(tool) + "…") }
-                        }
-                    }
                 } else if (read != null && problems.isEmpty()) {
                     Text(pluralStringResource(R.plurals.agent_read_count, read.script.commands.size, read.script.commands.size), style = MaterialTheme.typography.bodyMedium)
                     read.script.commands.forEachIndexed { i, c -> Text("${i + 1}. ${c.tool}", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
@@ -238,7 +230,11 @@ private fun ResultDialog(controller: AgentAssistController, onFollowUp: (String)
                     contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.agent_sample)) }
             }
         },
-        confirmButton = { TextButton(onClick = controller::close) { Text(stringResource(R.string.agent_close)) } },
+        confirmButton = {
+            if (outcome is AgentAssistController.Outcome.ApplyFailed)
+                TextButton(onClick = controller::backToPreview) { Text(stringResource(R.string.agent_back_to_preview)) }
+            else TextButton(onClick = controller::close) { Text(stringResource(R.string.agent_close)) }
+        },
         dismissButton = if (problems.isEmpty()) null else ({
             val fix = AgentPromptBuilder.repair(controller.pending?.promptId ?: "-", problems)
             TextButton(onClick = {
@@ -279,6 +275,8 @@ private fun problemText(p: AgentProblem): String {
         "UNKNOWN_HANDLE" -> stringResource(R.string.agent_code_unknown_handle, p.message)
         "REVISION_MISMATCH", "STALE_REVISION" -> stringResource(R.string.agent_code_stale)
         "CONFIRMATION_REQUIRED" -> stringResource(R.string.agent_code_confirmation)
+        "INVALID_APPROVAL" -> stringResource(R.string.agent_code_invalid_approval)
+        "SCRIPT_TOOL_FORBIDDEN" -> stringResource(R.string.agent_code_separate)
         "SEWOUT_BLOCKED" -> stringResource(R.string.agent_code_sewout_blocked)
         "MACHINE_UNKNOWN" -> stringResource(R.string.agent_code_machine_unknown)
         "GESTURE_IN_PROGRESS", "TURN_IN_PROGRESS" -> stringResource(R.string.agent_code_busy)
@@ -292,8 +290,9 @@ private fun problemText(p: AgentProblem): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PreviewScreen(preview: AgentPreview, applying: Boolean, onDismiss: () -> Unit,
-    onApply: (removalConfirmed: Boolean) -> Unit = {}, onAskChanges: () -> Unit = {}) {
-    var removeTicked by remember(preview) { mutableStateOf(false) }
+    onApply: (approvedRemovals: Set<Int>) -> Unit = {}, onAskChanges: () -> Unit = {}) {
+    // Every removal starts unticked; Apply sends approvals for ticked ones only (the engine refuses the rest).
+    var ticked by remember(preview) { mutableStateOf(emptySet<Int>()) }
     // A full-screen layer over the editor (like the font library over lettering), not a Dialog window,
     // so the activity's edge-to-edge insets apply unchanged.
     BackHandler(onBack = onDismiss)
@@ -312,8 +311,9 @@ private fun PreviewScreen(preview: AgentPreview, applying: Boolean, onDismiss: (
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = onDismiss) { Text(stringResource(R.string.agent_cancel)) }
                         if (applying) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Button(onClick = { onApply(removeTicked) }, enabled = !applying && !preview.sample && preview.blockingFindings == null &&
-                            preview.changes.isNotEmpty() && (preview.removals.isEmpty() || removeTicked)) {
+                        // Unticked removals do not disable Apply: the engine refuses the whole script and says why.
+                        Button(onClick = { onApply(ticked) }, enabled = !applying && !preview.sample && preview.blockingFindings == null &&
+                            preview.changes.isNotEmpty() && preview.separate.isEmpty()) {
                             Text(stringResource(R.string.agent_apply))
                         }
                     }
@@ -362,13 +362,25 @@ private fun PreviewScreen(preview: AgentPreview, applying: Boolean, onDismiss: (
                         blocked?.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
                     }
                 }
-                if (preview.removals.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(removeTicked, { removeTicked = it })
-                    Text(stringResource(R.string.agent_remove_confirm, preview.removals.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
+                preview.removals.forEach { removal ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(removal.callIndex in ticked, { on -> ticked = if (on) ticked + removal.callIndex else ticked - removal.callIndex })
+                        Text(stringResource(R.string.agent_remove_confirm, removal.names.joinToString(", ")), style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
-                if (preview.followUps.isNotEmpty()) Text(stringResource(R.string.agent_followups,
-                    preview.followUps.map { followUpLabel(it) }.joinToString(", ")),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (preview.removals.isNotEmpty()) Text(stringResource(R.string.agent_remove_hint), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (preview.separate.isNotEmpty()) Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Block, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.agent_separate_title), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        preview.separate.forEach { Text("• " + followUpLabel(it), style = MaterialTheme.typography.bodySmall) }
+                        Text(stringResource(R.string.agent_separate_body), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
         }
     }

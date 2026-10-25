@@ -28,9 +28,9 @@ class AgentPromptLengthTest {
 
     @Test fun listsFontsAndDesignsWithHandles() {
         val text = AgentPromptBuilder.build(summary, requests[0], "p-AB12").text
-        assertTrue("- f2 \"둥근고딕\" ko+la h5-60mm\n" in text, text)
-        assertTrue("- f3 \"담백한 고딕\" ko+la h26.3-60mm\n" in text, text)
-        assertTrue("- f5 \"Abril En Flor\" la h10-40mm\n" in text, text)
+        assertTrue("- f2 \"둥근고딕\" id=jua ko+la h5-60mm\n" in text, text)
+        assertTrue("- f3 \"담백한 고딕\" id=noto-sans-kr ko+la h26.3-60mm\n" in text, text)
+        assertTrue("- f5 \"Abril En Flor\" id=inkstitch-abril la h10-40mm\n" in text, text)
         assertTrue("- d29 \"샘플 도안 29\" 89x55.5mm\n" in text, text)
         assertTrue("- o2 text \"안녕\" text=\"안녕\" font=f2 " in text, text) // the design's font reuses its list handle
         assertEquals("jua", summary.handles.fonts["f2"]); assertEquals("sample_1", summary.handles.designs["d1"])
