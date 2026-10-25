@@ -193,7 +193,8 @@ Ask AI lets any chatbot app edit your design: Gemini, ChatGPT, Claude or another
 **What the chatbot receives** (tap **What the chatbot will see** to read it before sending):
 - the instructions and the list of commands myembro accepts;
 - the hoop name and size;
-- for each object: a short handle (o1, o2, …), whether it is text or a design, its name, the text and text height, the font (as a handle f1, f2, … for fonts already used in the design), centre position, size, rotation, scale, thread colours, sewing order and whether it is hidden;
+- for each object: a short handle (o1, o2, …), whether it is text or a design, its name, the text and text height, the font (as a handle f1, f2, …), centre position, size, rotation, scale, thread colours, sewing order and whether it is hidden;
+- the fonts on your phone that cover the text (handle, name, Korean/Latin, height range) and the built-in designs (handle, name, size);
 - your request.
 
 myembro sends **no stitches, pictures or files**, and the chatbot cannot reach your phone. The reply is only text that myembro reads and checks.
@@ -205,5 +206,5 @@ myembro sends **no stitches, pictures or files**, and the chatbot cannot reach y
 **What Ask AI cannot do:**
 - It cannot see or create pictures. Use **Photo/drawing** for photos.
 - It cannot download fonts.
-- It can add text only in fonts already used by text in the design.
+- It can add text only in fonts already on your phone (the prompt lists them with their height ranges).
 - Sizes and stitch types still follow the app's automatic rules and the sew-out check.
