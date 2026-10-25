@@ -50,7 +50,6 @@
     <string name="agent_sewout_ready">보낼 수 있음</string>
     <string name="agent_sewout_blocked">아직 보낼 수 없음</string>
     <string name="agent_remove_confirm">%1$s 지우기</string>
-    <string name="agent_followups">적용한 뒤 하나씩 확인합니다: %1$s</string>
     <string name="agent_follow_send_usb">USB 전송</string>
     <string name="agent_follow_save_pes">PES로 저장</string>
     <string name="agent_follow_save_project">프로젝트 저장</string>
@@ -61,14 +60,13 @@
     <string name="agent_sample_banner">예시 데이터입니다. 적용할 수 없습니다.</string>
     <string name="agent_applied_title">적용했습니다</string>
     <string name="agent_applied_body">되돌리기 한 번이면 이번 변경이 모두 취소됩니다.</string>
-    <string name="agent_applied_followups">챗봇이 이것도 요청했습니다. 각각 자기 화면에서 확인합니다:</string>
     <string name="agent_problem_at">명령 %1$d (%2$s): %3$s</string>
     <string name="agent_code_not_implemented">챗봇으로는 아직 할 수 없는 일입니다</string>
     <string name="agent_code_unknown_tool">myembro에 없는 명령입니다</string>
     <string name="agent_code_invalid_arguments">값이 빠졌거나 모르는 값이거나 범위를 벗어났습니다</string>
     <string name="agent_code_unknown_handle">이 도안에 없는 %1$s을(를) 가리킵니다</string>
     <string name="agent_code_stale">요청한 뒤 도안이 바뀌었습니다. 새로 요청하세요.</string>
-    <string name="agent_code_confirmation">적용하기 전에 지우기를 체크하세요.</string>
+    <string name="agent_code_confirmation">체크하지 않은 삭제가 있어 아무것도 적용하지 않았습니다 (일부만 적용하지 않음)</string>
     <string name="agent_code_sewout_blocked">결과가 봉제 점검을 통과하지 못합니다</string>
     <string name="agent_code_machine_unknown">먼저 설정에서 자수기를 고르세요.</string>
     <string name="agent_code_busy">지금 하던 편집을 먼저 끝내세요.</string>
@@ -98,4 +96,10 @@
     <string name="agent_change_add_text">글자 “%1$s” 추가 (%2$s mm)</string>
     <string name="agent_change_replace_text">%1$s 글자를 “%2$s”(%3$s mm)로 바꾸기</string>
     <string name="agent_change_add_design">도안 %1$s 추가</string>
+    <string name="agent_back_to_preview">미리보기로 돌아가기</string>
+    <string name="agent_remove_hint">지울 항목마다 체크하세요. 하나라도 체크하지 않으면 아무것도 적용되지 않습니다.</string>
+    <string name="agent_separate_title">앱에서 따로 해야 함</string>
+    <string name="agent_separate_body">전송·저장·삭제·복원·설정 변경은 챗봇 스크립트로 적용하지 않습니다. 편집만 다시 요청하고, 이것들은 해당 화면에서 직접 하세요.</string>
+    <string name="agent_code_invalid_approval">승인이 이 스크립트와 맞지 않습니다. 미리보기를 다시 확인하세요</string>
+    <string name="agent_code_separate">앱에서 따로 해야 하는 일입니다</string>
 </resources>

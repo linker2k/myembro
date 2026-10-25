@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.ui.editor
 
 import io.github.linker2k.myembro.engine.agent.BundledFontResolver
+import io.github.linker2k.myembro.engine.agent.ScriptApprovals
 import io.github.linker2k.myembro.engine.agent.ToolDispatcher
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
@@ -52,7 +53,7 @@ internal class EditorAgentExecutor(
         val (setup, problems) = withContext(Dispatchers.Default) { setup(script, handles) }
         setup ?: return AgentPreviewResult.Rejected(problems)
         if (setup.calls.calls.isEmpty()) return AgentPreviewResult.Ready(AgentPreview(script.summary, emptyList(), null,
-            emptyList(), setup.calls.followUps, setup.base, setup.base))
+            emptyList(), setup.calls.separate, setup.base, setup.base))
         val result = withContext(Dispatchers.Default) {
             session().runCommandScript(setup.kernel, setup.calls.transactionId, expectedRevision, setup.calls.calls, setup.export, dryRun = true)
         }
@@ -61,27 +62,35 @@ internal class EditorAgentExecutor(
         // The dry run returns only a summary; the same calls on a throwaway session give the picture.
         val after = withContext(Dispatchers.Default) {
             setup.kernel.bind(EditSession(setup.base))
-                .executeScript(setup.calls.transactionId, 0, setup.calls.calls, setup.export, confirmed = true).takeIf { it.ok }?.project
+                .executeScript(setup.calls.transactionId, 0, setup.calls.calls, setup.export,
+                    approvals = approvals(setup.calls, 0, setup.calls.removals(setup.base).map { it.callIndex })).takeIf { it.ok }?.project
         }
         return AgentPreviewResult.Ready(AgentPreview(script.summary, setup.calls.changes(setup.base),
-            if (blocked) findings(result.output) else null, setup.calls.removedNames(setup.base), setup.calls.followUps,
+            if (blocked) findings(result.output) else null, setup.calls.removals(setup.base), setup.calls.separate,
             before = setup.base, after = after))
     }
 
-    override suspend fun apply(script: AgentScript, handles: AgentHandles, expectedRevision: Long, removalConfirmed: Boolean): AgentApplyResult {
+    override suspend fun apply(script: AgentScript, handles: AgentHandles, expectedRevision: Long, approvedRemovals: Set<Int>): AgentApplyResult {
         // Font revisions load fonts: never on the main thread.
         val (setup, problems) = withContext(Dispatchers.Default) { setup(script, handles) }
         setup ?: return AgentApplyResult.Rejected(problems)
-        if (setup.calls.calls.isEmpty()) return AgentApplyResult.Applied(setup.calls.followUps)
+        // One turn, nothing partial: a script that also asks for a separate action is not applied at all.
+        if (setup.calls.separate.isNotEmpty()) return AgentApplyResult.Rejected(setup.calls.separate.map {
+            AgentProblem("SCRIPT_TOOL_FORBIDDEN", script.commands.indexOfFirst { c -> c.tool == it }, it, "") })
+        if (setup.calls.calls.isEmpty()) return AgentApplyResult.Applied
         return publish {
             val result = withContext(Dispatchers.Default) {
                 session().runCommandScript(setup.kernel, setup.calls.transactionId, expectedRevision, setup.calls.calls, setup.export,
-                    confirmed = removalConfirmed)
+                    approvals = approvals(setup.calls, expectedRevision, approvedRemovals))
             }
-            if (result.ok) AgentApplyResult.Applied(setup.calls.followUps)
+            if (result.ok) AgentApplyResult.Applied
             else AgentApplyResult.Rejected(listOf(problem(result, setup.calls)))
         }
     }
+
+    /** Per-item approvals for the ticked removals only, bound to the whole script and its base revision. */
+    private fun approvals(calls: AgentScriptCalls, revision: Long, indices: Collection<Int>) =
+        indices.sorted().map { ScriptApprovals.request(calls.transactionId, revision, calls.calls, it) }
 
     private fun problem(result: ToolDispatcher.Result, calls: AgentScriptCalls): AgentProblem {
         val index = result.output["failedCallIndex"]?.jsonPrimitive?.intOrNull

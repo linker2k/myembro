@@ -52,7 +52,6 @@
     <string name="agent_sewout_ready">Ready to send</string>
     <string name="agent_sewout_blocked">Can’t be sent yet</string>
     <string name="agent_remove_confirm">Remove %1$s</string>
-    <string name="agent_followups">After applying, you confirm each: %1$s</string>
     <string name="agent_follow_send_usb">USB transfer</string>
     <string name="agent_follow_save_pes">Save as PES</string>
     <string name="agent_follow_save_project">Save project</string>
@@ -63,14 +62,13 @@
     <string name="agent_sample_banner">Sample data: nothing can be applied.</string>
     <string name="agent_applied_title">Applied</string>
     <string name="agent_applied_body">One undo removes the whole change.</string>
-    <string name="agent_applied_followups">The chatbot also asked for these. Each opens its own screen to confirm:</string>
     <string name="agent_problem_at">Command %1$d (%2$s): %3$s</string>
     <string name="agent_code_not_implemented">myembro can’t do this from a chatbot yet</string>
     <string name="agent_code_unknown_tool">this is not something myembro can do</string>
     <string name="agent_code_invalid_arguments">a value is missing, unknown or out of range</string>
     <string name="agent_code_unknown_handle">refers to %1$s, which isn’t in this design</string>
     <string name="agent_code_stale">The design changed after you asked. Make a new request.</string>
-    <string name="agent_code_confirmation">Tick the removal before applying.</string>
+    <string name="agent_code_confirmation">a removal was not ticked, so nothing was applied (one change at a time, never partly)</string>
     <string name="agent_code_sewout_blocked">the result would not pass the sewout check</string>
     <string name="agent_code_machine_unknown">Choose your embroidery machine in Settings first.</string>
     <string name="agent_code_busy">Finish the current edit first.</string>
@@ -100,4 +98,10 @@
     <string name="agent_change_add_text">Add text “%1$s” (%2$s mm)</string>
     <string name="agent_change_replace_text">Change %1$s to “%2$s” (%3$s mm)</string>
     <string name="agent_change_add_design">Add design %1$s</string>
+    <string name="agent_back_to_preview">Back to preview</string>
+    <string name="agent_remove_hint">Tick each removal you want. If any removal is left unticked, nothing is applied.</string>
+    <string name="agent_separate_title">Do this separately in the app</string>
+    <string name="agent_separate_body">Transfers, saves, deletions, restores and settings changes are never applied from a chatbot script. Ask for the edits alone, then do these from their own screens.</string>
+    <string name="agent_code_invalid_approval">the approval does not match this script; check the preview again</string>
+    <string name="agent_code_separate">must be done separately in the app</string>
 </resources>

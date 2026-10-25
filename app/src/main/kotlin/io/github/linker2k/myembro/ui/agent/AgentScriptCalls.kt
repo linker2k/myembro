@@ -14,7 +14,8 @@ internal data class AgentScriptCalls(
     val transactionId: String,
     val calls: List<ToolTurnController.Call>,
     val indices: List<Int>,
-    val followUps: List<String>,
+    /** Tools that must be done separately in the app; any of them blocks Apply ([AgentTools.separate]). */
+    val separate: List<String>,
     val problems: List<AgentProblem>,
 ) {
     /** Change list rows from the expanded calls; ids become object names from [before] (or the new id's word). */
@@ -54,8 +55,9 @@ internal data class AgentScriptCalls(
         }
     }
 
-    fun removedNames(before: Project): List<String> = calls.filter { it.name == "remove_objects" }.flatMap { call ->
-        (call.arguments as JsonObject).getValue("objectIds").jsonArray.map { id -> id.jsonPrimitive.content.let { before.find(it)?.name ?: it } }
+    /** One row per remove_objects call: its call index (what a ScriptApproval binds) and object names. */
+    fun removals(before: Project): List<AgentRemoval> = calls.withIndex().filter { it.value.name == "remove_objects" }.map { (i, call) ->
+        AgentRemoval(i, (call.arguments as JsonObject).getValue("objectIds").jsonArray.map { id -> id.jsonPrimitive.content.let { before.find(it)?.name ?: it } })
     }
 
     companion object {
@@ -71,13 +73,13 @@ internal data class AgentScriptCalls(
          * calls, and new ids (`new:<word>` → `agent-<transaction>-<word>`) are the same both times.
          */
         fun of(script: AgentScript, handles: AgentHandles, transactionId: String,
-            fontRevision: (String) -> String? = { null }): AgentScriptCalls {
+            fontRevision: (String) -> String? = { null }, isSeparate: (String) -> Boolean = AgentTools::separate): AgentScriptCalls {
             val calls = mutableListOf<ToolTurnController.Call>()
             val indices = mutableListOf<Int>()
-            val followUps = linkedSetOf<String>()
+            val separate = linkedSetOf<String>()
             val problems = mutableListOf<AgentProblem>()
             script.commands.forEachIndexed { index, command ->
-                if (command.tool in AgentTools.FOLLOW_UPS) { followUps += command.tool; return@forEachIndexed }
+                if (isSeparate(command.tool)) { separate += command.tool; return@forEachIndexed }
                 fun id(key: String?, value: String, font: Boolean): String = when {
                     !font && value.startsWith("new:") && value.length > 4 -> "$NEW_PREFIX$transactionId-${value.removePrefix("new:")}"
                     !font && OBJECT_HANDLE.matches(value) -> handles.objects[value]
@@ -103,7 +105,7 @@ internal data class AgentScriptCalls(
                 calls += ToolTurnController.Call(command.tool, args)
                 indices += index
             }
-            return AgentScriptCalls(transactionId, calls, indices, followUps.toList(), problems)
+            return AgentScriptCalls(transactionId, calls, indices, separate.toList(), problems)
         }
 
         private fun fmt(value: Double) = String.format(java.util.Locale.ROOT, "%.1f", value).removeSuffix(".0")

@@ -25,8 +25,9 @@ internal class AgentAssistController(
         /** The reply answers a prompt that is not the pending one (or none is pending). */
         data class OtherPrompt(val promptId: String) : Outcome
         data class Read(val script: AgentScript, val result: AgentPreviewResult) : Outcome
-        data class Applied(val script: AgentScript, val followUps: List<String>) : Outcome
-        data class ApplyFailed(val script: AgentScript, val problems: List<AgentProblem>) : Outcome
+        data class Applied(val script: AgentScript) : Outcome
+        /** Nothing was applied; [read] is the preview to go back to. */
+        data class ApplyFailed(val read: Read, val problems: List<AgentProblem>) : Outcome
     }
 
     private data class Pending(val prompt: AgentPrompt, val revision: Long)
@@ -78,20 +79,23 @@ internal class AgentAssistController(
     }
 
     /** Commits the previewed script as one undo step; the pending prompt is used up on success. */
-    suspend fun apply(removalConfirmed: Boolean) {
+    suspend fun apply(approvedRemovals: Set<Int>) {
         val read = outcome as? Outcome.Read ?: return
         val waiting = pendingPrompt ?: return
         if (applying) return
         applying = true
         try {
-            outcome = when (val result = executor.apply(read.script, waiting.prompt.handles, waiting.revision, removalConfirmed)) {
-                is AgentApplyResult.Applied -> Outcome.Applied(read.script, result.followUps).also { pendingPrompt = null; reply = "" }
-                is AgentApplyResult.Rejected -> Outcome.ApplyFailed(read.script, result.problems)
+            outcome = when (val result = executor.apply(read.script, waiting.prompt.handles, waiting.revision, approvedRemovals)) {
+                AgentApplyResult.Applied -> Outcome.Applied(read.script).also { pendingPrompt = null; reply = "" }
+                is AgentApplyResult.Rejected -> Outcome.ApplyFailed(read, result.problems)
             }
         } finally { applying = false }
     }
 
     fun close() { stage = Stage.CLOSED; samplePreview = null }
+
+    /** After a refused Apply: the same preview again, so the user can tick removals and retry. */
+    fun backToPreview() { (outcome as? Outcome.ApplyFailed)?.let { outcome = it.read } }
 
     fun cancelPending() { pendingPrompt = null; reply = ""; outcome = null; close() }
 
