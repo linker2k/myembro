@@ -34,11 +34,11 @@ Design:
 - o1 design "myembro_logo.pes" center=(0,0.1)mm size=60x63.3mm rotation=0deg scale=100%x100% colors=#B27624,#B54B64 order=0
 - o2 text "myembro" text="myembro" font=f4 textHeight=8mm center=(0.1,42)mm size=58.5x10.7mm rotation=0deg scale=100%x100% colors=#1E5AA8 order=1
 
-Fonts (ko = has Korean, la = has Latin; h = text height):
-- f1 "고운바탕" ko+la h5-60mm
-- f2 "둥근고딕" ko+la h5-60mm
-- f3 "담백한 고딕" ko+la h26.3-60mm
-- f4 "Hershey Sans 1-stroke" la h5-60mm
+Fonts (name in the user's language, stable id; ko = has Korean, la = has Latin; h = text height):
+- f1 "고운바탕" id=gowun-batang ko+la h5-60mm
+- f2 "둥근고딕" id=jua ko+la h5-60mm
+- f3 "담백한 고딕" id=noto-sans-kr ko+la h26.3-60mm
+- f4 "Hershey Sans 1-stroke" id=hershey-futural la h5-60mm
 
 Built-in designs:
 - d1 "하트 · 러닝" 67.2x60.7mm

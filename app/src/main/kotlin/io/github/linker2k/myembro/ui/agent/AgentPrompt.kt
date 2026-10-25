@@ -69,7 +69,9 @@ internal data class AgentProjectSummary(
             bounds: (DesignObject) -> Bounds?): AgentProjectSummary {
             val fontInfo = linkedMapOf<String, AgentFontInfo>()
             val fontIds = linkedMapOf<String, String>()
-            fonts.distinctBy { it.id }.forEach { f -> "f${fontIds.size + 1}".let { fontIds[it] = f.id; fontInfo[it] = f } }
+            // A blank display name would leave the chatbot only an empty string; the stable id is never blank.
+            fonts.distinctBy { it.id }.forEach { f -> "f${fontIds.size + 1}".let { fontIds[it] = f.id
+                fontInfo[it] = if (f.name.isBlank()) f.copy(name = f.id) else f } }
             val objects = linkedMapOf<String, String>()
             val summaries = project.objects.mapIndexed { i, obj ->
                 val handle = "o${i + 1}"
@@ -168,12 +170,12 @@ internal object AgentPromptBuilder {
         }
         if (fonts.isNotEmpty()) {
             appendLine()
-            appendLine("Fonts (ko = has Korean, la = has Latin; h = text height):")
+            appendLine("Fonts (name in the user's language, stable id; ko = has Korean, la = has Latin; h = text height):")
             fonts.forEach { (handle, id) ->
                 val f = summary.fonts[handle]
                 if (f == null) appendLine("- $handle = $id") else {
                     val langs = listOfNotNull("ko".takeIf { f.hangul }, "la".takeIf { f.latin }).joinToString("+")
-                    appendLine("- $handle \"${f.name}\" $langs h${f.minMm?.let(::mm) ?: ""}-${mm(f.maxMm)}mm")
+                    appendLine("- $handle \"${f.name}\" id=${f.id} $langs h${f.minMm?.let(::mm) ?: ""}-${mm(f.maxMm)}mm")
                 }
             }
             if (fonts.size < summary.handles.fonts.size) appendLine("- (list shortened to fonts for this text)")
