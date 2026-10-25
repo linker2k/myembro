@@ -63,6 +63,26 @@ object RedworkPipeline {
         val bottomUp = BooleanArray(rgb.size) { index ->
             labels[(height - 1 - index / width) * width + index % width] != background
         }
+        return traceBinary(width, height, bottomUp, widthMm, thread, minAreaMm2, maxContours, checkpoint)
+    }
+
+    /** Explicit dark-ink mask: no Wu, no background-pixel polarity inference. */
+    fun traceMask(width: Int, height: Int, mask: ByteArray, widthMm: Double,
+        thread: EmbThread, minAreaMm2: Double = 0.0, maxContours: Int = Int.MAX_VALUE,
+        onQuantized: (IntArray) -> Unit = {}, checkpoint: (String) -> Unit = {}): RedworkOutline {
+        require(width in 1..4096 && height in 1..4096 && width.toLong() * height == mask.size.toLong())
+        require(widthMm.isFinite() && widthMm > 0 && widthMm <= 1000)
+        require(minAreaMm2.isFinite() && minAreaMm2 >= 0 && maxContours > 0)
+        require(mask.all { it == 0.toByte() || it == 255.toByte() })
+        checkpoint("quantization")
+        onQuantized(IntArray(mask.size) { if (mask[it] == 0.toByte()) 0 else 0xffffff })
+        require(mask.any { it == 0.toByte() } && mask.any { it == 255.toByte() }) { "No distinguishable foreground and background" }
+        val bottomUp = BooleanArray(mask.size) { i -> mask[(height - 1 - i / width) * width + i % width] == 0.toByte() }
+        return traceBinary(width, height, bottomUp, widthMm, thread, minAreaMm2, maxContours, checkpoint)
+    }
+
+    private fun traceBinary(width: Int, height: Int, bottomUp: BooleanArray, widthMm: Double,
+        thread: EmbThread, minAreaMm2: Double, maxContours: Int, checkpoint: (String) -> Unit): RedworkOutline {
         checkpoint("tracing")
         val contours = BinaryContourTracer.trace(width, height, bottomUp, maxOf(2, kotlin.math.ceil(minAreaMm2 / (widthMm / width) / (widthMm / width)).toInt()))
         require(contours.isNotEmpty()) { "No contour remains after Potrace area filtering" }

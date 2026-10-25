@@ -64,4 +64,11 @@
     <string name="photo_color_preview_accessibility">Color drawing separation preview</string>
     <string name="photo_excluded_regions">Excluded %1$d regions that could not be sewn safely.</string>
     <string name="photo_grayscale">Black &amp; white</string>
+    <string name="photo_correction">Correction</string>
+    <string name="photo_correction_original">Original</string>
+    <string name="photo_correction_clean">Clean</string>
+    <string name="photo_correction_contrast">Contrast</string>
+    <string name="photo_correction_otsu">Black-and-white separation</string>
+    <string name="photo_correction_alpha_hint">Color images with transparency keep the original processing.</string>
+    <string name="photo_correction_failed">No usable outlines remain with this correction. Try Original or a simpler crop.</string>
 </resources>

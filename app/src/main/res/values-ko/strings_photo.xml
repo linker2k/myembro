@@ -64,4 +64,11 @@
     <string name="photo_color_preview_accessibility">컬러 그림 색 분리 미리보기</string>
     <string name="photo_excluded_regions">제외 %1$d개 · 봉제하기 어려운 조각을 제외했습니다.</string>
     <string name="photo_grayscale">흑백</string>
+    <string name="photo_correction">보정</string>
+    <string name="photo_correction_original">원본</string>
+    <string name="photo_correction_clean">깨끗하게</string>
+    <string name="photo_correction_contrast">대비</string>
+    <string name="photo_correction_otsu">흑백 분리</string>
+    <string name="photo_correction_alpha_hint">투명도가 있는 컬러 그림은 기존 처리 방식을 유지합니다.</string>
+    <string name="photo_correction_failed">이 보정으로 사용할 수 있는 윤곽을 찾지 못했습니다. 원본이나 더 단순한 자르기를 시도하세요.</string>
 </resources>
