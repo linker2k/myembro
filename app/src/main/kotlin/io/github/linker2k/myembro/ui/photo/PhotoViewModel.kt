@@ -33,6 +33,29 @@ import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.abs
 
+/** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
+internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: Uri): Bitmap {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
+    require(bounds.outWidth > 0 && bounds.outHeight > 0)
+    val options = BitmapFactory.Options().apply {
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+        while (maxOf(bounds.outWidth, bounds.outHeight) / inSampleSize.coerceAtLeast(1) > 1536) {
+            inSampleSize = inSampleSize.coerceAtLeast(1) * 2
+        }
+    }
+    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
+    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
+        ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+    } }.getOrDefault(1)
+    val matrix = Matrix().apply { when (orientation) {
+        2 -> setScale(-1f, 1f); 3 -> setRotate(180f); 4 -> setScale(1f, -1f)
+        5 -> { setRotate(90f); postScale(-1f, 1f) }; 6 -> setRotate(90f)
+        7 -> { setRotate(-90f); postScale(-1f, 1f) }; 8 -> setRotate(-90f)
+    } }
+    return if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+}
+
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
@@ -99,26 +122,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 val bitmap = withContext(Dispatchers.IO) {
                     val decodeStart = SystemClock.elapsedRealtime()
                     val resolver = getApplication<Application>().contentResolver
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
-                    require(bounds.outWidth > 0 && bounds.outHeight > 0)
-                    val options = BitmapFactory.Options().apply {
-                        inPreferredConfig = Bitmap.Config.ARGB_8888
-                        while (maxOf(bounds.outWidth, bounds.outHeight) / inSampleSize.coerceAtLeast(1) > 1536) {
-                            inSampleSize = inSampleSize.coerceAtLeast(1) * 2
-                        }
-                    }
-                    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
-                    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
-                        ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
-                    } }.getOrDefault(1)
-                    val matrix = Matrix().apply { when (orientation) {
-                        2 -> setScale(-1f, 1f); 3 -> setRotate(180f); 4 -> setScale(1f, -1f)
-                        5 -> { setRotate(90f); postScale(-1f, 1f) }; 6 -> setRotate(90f)
-                        7 -> { setRotate(-90f); postScale(-1f, 1f) }; 8 -> setRotate(-90f)
-                    } }
-                    val oriented = if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
-                    Log.i("PhotoTiming", "decode_ms=${SystemClock.elapsedRealtime()-decodeStart} input=${bounds.outWidth}x${bounds.outHeight} decoded=${oriented.width}x${oriented.height}")
+                    val oriented = decodeUprightPhoto(resolver, uri)
+                    Log.i("PhotoTiming", "decode_ms=${SystemClock.elapsedRealtime()-decodeStart} decoded=${oriented.width}x${oriented.height}")
                     oriented
                 }
                 if (version == revision) { source = bitmap; zoom = 1f; panX = 0f; panY = 0f; step = 0; invalidateResult() }

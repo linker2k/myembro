@@ -6,6 +6,8 @@ import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.StitchObject
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.model.Bounds
+import io.github.linker2k.myembro.engine.geometry.PICTURE_MIN_WIDTH_MM
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy
 import java.util.Locale
 
 /**
@@ -44,10 +46,10 @@ internal object AgentTools {
     fun separate(tool: String): Boolean =
         tool in SETTINGS || (tool != "remove_objects" && schema.contains(tool) && schema.confirmation(tool))
 
-    /** prepare_photo of docs/agent/tools.json, listed only when a photo is attached. Not an edit tool: no transaction. */
-    const val PHOTO_SIGNATURE = "prepare_photo(attachmentId:str, frameId:str, style:SILHOUETTE|OUTLINE|COLOR, detail:0|1|2, " +
-        "colorCount:int[2..6], grayscale:bool, widthMm:num, crop:{zoom:num[1..4], panX:num[-1..1], panY:num[-1..1]}) - " +
-        "Prepare an app-selected photo using only its attachmentId; add the result with add_generated_art."
+    /** prepare_photo of docs/agent/tools.json (agent/photo-tool f6687e9), listed only when a photo is attached. */
+    const val PHOTO_SIGNATURE = "prepare_photo(attachmentId:str, mode:silhouette|outline|color|bw, colors:int[2..6], widthMm:num) - " +
+        "Prepare an attached photo for the project hoop; colors is used only in color mode. " +
+        "Then add it with add_generated_art(resultId:\"r1\", …): r1 is your first prepare_photo, r2 the second."
 }
 
 /**
@@ -223,6 +225,8 @@ internal object AgentPromptBuilder {
             appendLine()
             appendLine("Photos (only the id and size are sent, not the image; use the id as attachmentId):")
             attachments.forEach { appendLine("- photo ${it.id} attached (${it.widthPx}x${it.heightPx} px)") }
+            appendLine("- photo width: ${mm(PICTURE_MIN_WIDTH_MM)}-${mm(PhotoPreparationPolicy.photoMaxWidthMm(io.github.linker2k.myembro.engine.edit.HoopSpec(summary.hoopName,
+                Math.round(summary.hoopWidthMm * 10).toInt(), Math.round(summary.hoopHeightMm * 10).toInt())))}mm, cropped to the hoop shape")
         }
         appendLine()
         appendLine("Request:")

@@ -40,8 +40,10 @@ internal fun androidAgentDispatcher(context:Context):ToolDispatcher = ToolDispat
 )
 
 /** Ask AI kernel: the phone binding above plus the Ask AI frame set, design library and local emoji. */
-internal fun androidAgentKernel(context:Context,fonts:io.github.linker2k.myembro.engine.agent.FontResolver,frames:Map<String,io.github.linker2k.myembro.engine.edit.HoopSpec>)=ToolDispatcher(
+internal fun androidAgentKernel(context:Context,fonts:io.github.linker2k.myembro.engine.agent.FontResolver,frames:Map<String,io.github.linker2k.myembro.engine.edit.HoopSpec>,
+    attachments:io.github.linker2k.myembro.engine.agent.AttachmentStore=io.github.linker2k.myembro.engine.agent.AttachmentStore { _, _ -> null })=ToolDispatcher(
     frames=frames,fontResolver=fonts,documentStore=AndroidDocumentStore(context),settingsResolver=androidAgentSettings(context),
     designResolver=io.github.linker2k.myembro.library.AndroidDesignResolver(context),
     emojiResolver=io.github.linker2k.myembro.emoji.AndroidEmojiResolver(context),
+    attachmentStore=attachments,
 )

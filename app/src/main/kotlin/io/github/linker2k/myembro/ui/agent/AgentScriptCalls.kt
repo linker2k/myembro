@@ -17,7 +17,27 @@ internal data class AgentScriptCalls(
     /** Tools that must be done separately in the app; any of them blocks Apply ([AgentTools.separate]). */
     val separate: List<String>,
     val problems: List<AgentProblem>,
+    /**
+     * prepare_photo commands, run by the host before the turn (they change nothing). The k-th one is
+     * the result handle `r<k>` that add_generated_art names in [calls]; the host puts in the real id.
+     */
+    val prepares: List<Prepare> = emptyList(),
 ) {
+    data class Prepare(val handle: String, val index: Int, val call: ToolTurnController.Call)
+
+    /** [calls] with each result handle replaced by its prepared id; null names the handle that has none. */
+    fun withResults(results: Map<String, String>): Pair<List<ToolTurnController.Call>, AgentProblem?> {
+        var missing: AgentProblem? = null
+        val resolved = calls.mapIndexed { i, call ->
+            val a = call.arguments as? JsonObject
+            val handle = a?.get("resultId")?.jsonPrimitive?.contentOrNull
+            if (call.name != "add_generated_art" || handle == null || !RESULT_HANDLE.matches(handle)) return@mapIndexed call
+            val id = results[handle] ?: handle.also { missing = missing ?: AgentProblem("UNKNOWN_HANDLE", indices[i], call.name, handle) }
+            ToolTurnController.Call(call.name, JsonObject(a + ("resultId" to JsonPrimitive(id))))
+        }
+        return resolved to missing
+    }
+
     /** Change list rows from the expanded calls; ids become object names from [before] (or the new id's word). */
     /** Object name in [before], or the script's own word for an object the script creates (`new:<word>`). */
     private fun name(before: Project, id: String) = before.find(id)?.name ?: id.substringAfter("$NEW_PREFIX$transactionId-")
@@ -70,6 +90,8 @@ internal data class AgentScriptCalls(
         private val OBJECT_HANDLE = Regex("o\\d+")
         private val FONT_HANDLE = Regex("f\\d+")
         private val DESIGN_HANDLE = Regex("d\\d+")
+        private val RESULT_HANDLE = Regex("r\\d+")
+        const val PREPARE_PHOTO = "prepare_photo"
 
         /**
          * Deterministic for a given script and [transactionId]: the preview and the apply produce the same
@@ -81,6 +103,7 @@ internal data class AgentScriptCalls(
             val indices = mutableListOf<Int>()
             val separate = linkedSetOf<String>()
             val problems = mutableListOf<AgentProblem>()
+            val prepares = mutableListOf<Prepare>()
             script.commands.forEachIndexed { index, command ->
                 if (isSeparate(command.tool)) { separate += command.tool; return@forEachIndexed }
                 fun id(key: String?, value: String, font: Boolean): String = when {
@@ -108,10 +131,11 @@ internal data class AgentScriptCalls(
                 // arguments untouched so the dispatcher reports them as they are (unknown, not implemented…).
                 val expanded = expand(null, command.args).jsonObject
                 val args = if (command.tool in AgentTools.NAMES) JsonObject(expanded + ("transactionId" to JsonPrimitive(transactionId))) else expanded
+                if (command.tool == PREPARE_PHOTO) { prepares += Prepare("r${prepares.size + 1}", index, ToolTurnController.Call(command.tool, args)); return@forEachIndexed }
                 calls += ToolTurnController.Call(command.tool, args)
                 indices += index
             }
-            return AgentScriptCalls(transactionId, calls, indices, separate.toList(), problems)
+            return AgentScriptCalls(transactionId, calls, indices, separate.toList(), problems, prepares)
         }
 
         private fun fmt(value: Double) = String.format(java.util.Locale.ROOT, "%.1f", value).removeSuffix(".0")
