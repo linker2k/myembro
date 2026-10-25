@@ -11,7 +11,7 @@ import kotlinx.serialization.json.*
 import kotlin.math.*
 
 /** Snapshot-in/snapshot-out kernel, NOT the proposed session/turn/history controller.
- * No implicit selection, filesystem, Android, network, UUID or global session state.
+ * No implicit selection, filesystem, Android, network, implicit object IDs or global session state.
  * Host resolves frames/assets and consent; JSON cannot grant itself permission. */
 class ToolDispatcher(
     private val schema: ToolSchema = ToolSchema.bundled(),
@@ -22,6 +22,7 @@ class ToolDispatcher(
     private val settingsResolver: SettingsResolver = SettingsResolver { AgentSettings() },
     private val designResolver: DesignResolver = BundledDesignResolver(),
     private val emojiResolver: EmojiResolver = BundledEmojiResolver(),
+    private val attachmentStore: AttachmentStore = AttachmentStore { _, _ -> null },
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val heightLimits: LetteringHeightLimits = LetteringHeightLimits.decode(
         checkNotNull(ToolDispatcher::class.java.getResourceAsStream("/lettering/ttf-fill-height-ranges.json")).bufferedReader().use { it.readText() }),
@@ -30,6 +31,7 @@ class ToolDispatcher(
     private val assets = assets.mapValues { it.value.copyOf() }
     private val preparedArt = mutableMapOf<String, PreparedEmoji>()
     private val emojiPreparation = EmojiPreparation(emojiResolver)
+    private val photoPreparation = PhotoPreparation(attachmentStore)
     data class Result(val project: Project, val output: JsonObject, val pesBytes: ByteArray? = null,
         val preparedCommand: ProjectCommand? = null, val generatedPes:Boolean=false) {
         val ok get() = output.getValue("ok").jsonPrimitive.boolean
@@ -67,8 +69,9 @@ class ToolDispatcher(
                     } }))
                 })
             }
-            if(name == "prepare_emoji") {
-                val prepared=emojiPreparation.prepare(a.string("emojiId"),frame(a.string("frameId")),a.number("widthMm"))
+            if(name == "prepare_emoji" || name == "prepare_photo") {
+                val prepared=if(name=="prepare_emoji") emojiPreparation.prepare(a.string("emojiId"),frame(a.string("frameId")),a.number("widthMm"))
+                    else photoPreparation.prepare(a.string("attachmentId"),a.string("mode"),a.getValue("colors").jsonPrimitive.int,a.number("widthMm"),project.hoop,a.string("filter"))
                 preparedArt[prepared.id]=prepared
                 return Result(project,buildJsonObject {
                     put("ok",true);put("resultId",prepared.id);put("status","READY");put("downloadRequired",false)
@@ -206,7 +209,7 @@ class ToolDispatcher(
     }
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("list_fonts", "get_settings", "list_emoji", "prepare_emoji", "add_generated_art", "list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = setOf("list_fonts", "get_settings", "list_emoji", "prepare_emoji", "prepare_photo", "add_generated_art", "list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {

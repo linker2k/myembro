@@ -71,6 +71,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private val settingsPreferences = SettingsPreferences(app)
     private var settings by mutableStateOf(settingsPreferences.read())
     private var selectedFrameId by mutableStateOf(settings.defaultFrame.id)
+    val myThreads get() = settings.myThreads
     val machineProfile get() = settings.machineProfile
     val availableHoops: List<Hoop> get() = settings.availableViewerHoops
     val availableFrames: List<FrameOption> get() = settings.frames

@@ -145,7 +145,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                 navigationIcon = {
                     if (selecting) IconButton(onClick = vm::clearSelection) {
                         Icon(Icons.Default.Close, stringResource(R.string.cancel))
-                    }
+                    } else HomeButton()
                 },
                 actions = {
                     IconButton(onClick = { vm.showUsbHistory = true }) {

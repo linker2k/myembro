@@ -40,4 +40,5 @@
     <string name="picker_browse_samples">샘플 둘러보기</string>
     <string name="picker_load_failed">도안을 불러오지 못했습니다 · 다시 시도</string>
     <string name="picker_unreadable">사용할 수 없는 도안</string>
+    <string name="home_go">홈으로 가기</string>
 </resources>

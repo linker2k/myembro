@@ -45,7 +45,7 @@ object ColorDrawingPipeline {
      * opaque background before the requested N-color quantization.
      */
     fun trace(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
-        minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,grayscale:Boolean=false,checkpoint:(String)->Unit={}):Preview {
+        minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,grayscale:Boolean=false,myThreads:io.github.linker2k.myembro.engine.io.MyThreads=io.github.linker2k.myembro.engine.io.MyThreads(),checkpoint:(String)->Unit={}):Preview {
         require(width in 1..512 && height in 1..512 && width*height==argb.size)
         require(widthMm.isFinite() && widthMm>0 && colorCount in 2..6)
         checkpoint("quantization")
@@ -73,7 +73,7 @@ object ColorDrawingPipeline {
         val layers=quantized.palette.mapIndexedNotNull { color,rgb ->
             checkpoint("tracing")
             if(labels.none { it==color }) null else {
-                val thread=if(grayscale) Bt709Grayscale.nearestThread(rgb) else io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
+                val thread=if(myThreads.active) myThreads.nearest(rgb) else if(grayscale) Bt709Grayscale.nearestThread(rgb) else io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
                 try {
                     Layer(color,thread,RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
                         paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint))

@@ -24,6 +24,10 @@ class BackupInstrumentation: Instrumentation() {
             check(prefs.edit().putString("machine_model","Brother SE600").putString("theme_mode","LIGHT")
                 .putStringSet("test_set",setOf("a","한글")).putInt("test_int",3).putLong("test_long",1234567890123)
                 .putFloat("test_float",1.5f).putBoolean("test_bool",true).commit())
+            val settings = io.github.linker2k.myembro.ui.settings.SettingsPreferences(targetContext)
+            val owned = io.github.linker2k.myembro.engine.io.MyThreads(true, setOf(2, 5, 19))
+            settings.setMyThreads(owned)
+            check(settings.read().myThreads == owned)
             fun files()=root.walkTopDown().filter {it.isFile}.associate {it.relativeTo(root).path to it.readBytes().toList()}
             val before=files();val preferences=BackupPreferences.snapshot(targetContext)
             val zip=ByteArrayOutputStream().also {BackupArchive.write(root,preferences,it)}.toByteArray()
@@ -35,6 +39,7 @@ class BackupInstrumentation: Instrumentation() {
                 val result=plan.restore(root,BackupArchive.Duplicates.SKIP){BackupPreferences.restore(targetContext,it)}
                 check(result.added==before.size && result.skipped==0)
             }
+            check(settings.read().myThreads == owned)
             check(files()==before);check(BackupPreferences.snapshot(targetContext)==preferences)
             finish(-1,Bundle().apply {putString("result","BACKUP_DELETE_RESTORE_PASS files=${before.size} byte_equal=true typed_preferences_equal=true")})
         }catch(e:Throwable){finish(0,Bundle().apply {putString("error",e.stackTraceToString())})}

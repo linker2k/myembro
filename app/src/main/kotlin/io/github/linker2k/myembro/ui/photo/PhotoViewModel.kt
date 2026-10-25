@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.photo
 
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrection
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrections
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -33,6 +35,29 @@ import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.abs
 
+/** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
+internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: Uri): Bitmap {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
+    require(bounds.outWidth > 0 && bounds.outHeight > 0)
+    val options = BitmapFactory.Options().apply {
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+        while (maxOf(bounds.outWidth, bounds.outHeight) / inSampleSize.coerceAtLeast(1) > 1536) {
+            inSampleSize = inSampleSize.coerceAtLeast(1) * 2
+        }
+    }
+    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
+    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
+        ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+    } }.getOrDefault(1)
+    val matrix = Matrix().apply { when (orientation) {
+        2 -> setScale(-1f, 1f); 3 -> setRotate(180f); 4 -> setScale(1f, -1f)
+        5 -> { setRotate(90f); postScale(-1f, 1f) }; 6 -> setRotate(90f)
+        7 -> { setRotate(-90f); postScale(-1f, 1f) }; 8 -> setRotate(-90f)
+    } }
+    return if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+}
+
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
@@ -48,8 +73,15 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeGrayscale(value:Boolean) {
         if(value!=grayscale) { grayscale=value;step=1;prepare() }
     }
+    var correction by mutableStateOf(PhotoCorrection.ORIGINAL); private set
+    var correctionAlphaBypassed by mutableStateOf(false); private set
+    fun changeCorrection(value: PhotoCorrection) {
+        if (value == correction || (style == PhotoMode.COLOR && value == PhotoCorrection.OTSU)) return
+        correction = value; step = 1; prepare()
+    }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
+    fun missingThread(thread: EmbThread) = settings.myThreads.missing(thread)
     val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
     fun changeColorCount(value:Int) {
         val count=value.coerceIn(2,6)
@@ -81,6 +113,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
+        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
@@ -99,26 +132,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 val bitmap = withContext(Dispatchers.IO) {
                     val decodeStart = SystemClock.elapsedRealtime()
                     val resolver = getApplication<Application>().contentResolver
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
-                    require(bounds.outWidth > 0 && bounds.outHeight > 0)
-                    val options = BitmapFactory.Options().apply {
-                        inPreferredConfig = Bitmap.Config.ARGB_8888
-                        while (maxOf(bounds.outWidth, bounds.outHeight) / inSampleSize.coerceAtLeast(1) > 1536) {
-                            inSampleSize = inSampleSize.coerceAtLeast(1) * 2
-                        }
-                    }
-                    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
-                    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
-                        ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
-                    } }.getOrDefault(1)
-                    val matrix = Matrix().apply { when (orientation) {
-                        2 -> setScale(-1f, 1f); 3 -> setRotate(180f); 4 -> setScale(1f, -1f)
-                        5 -> { setRotate(90f); postScale(-1f, 1f) }; 6 -> setRotate(90f)
-                        7 -> { setRotate(-90f); postScale(-1f, 1f) }; 8 -> setRotate(-90f)
-                    } }
-                    val oriented = if (matrix.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
-                    Log.i("PhotoTiming", "decode_ms=${SystemClock.elapsedRealtime()-decodeStart} input=${bounds.outWidth}x${bounds.outHeight} decoded=${oriented.width}x${oriented.height}")
+                    val oriented = decodeUprightPhoto(resolver, uri)
+                    Log.i("PhotoTiming", "decode_ms=${SystemClock.elapsedRealtime()-decodeStart} decoded=${oriented.width}x${oriented.height}")
                     oriented
                 }
                 if (version == revision) { source = bitmap; zoom = 1f; panX = 0f; panY = 0f; step = 0; invalidateResult() }
@@ -134,6 +149,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeStyle(value: PhotoMode) {
         if(value==style) return
         work?.cancel(); revision++; busy=false; style=value; error=null
+        if(value == PhotoMode.COLOR && correction == PhotoCorrection.OTSU) correction = PhotoCorrection.ORIGINAL
         render=null; report=null; bytes=null; step=1; prepare()
     }
     fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
@@ -147,7 +163,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
-        val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale
+        val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale; val selectedCorrection=correction
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -166,9 +182,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
+                    val corrected = PhotoCorrections.apply(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedCorrection)
+                    if (version == revision) {
+                        correctionAlphaBypassed = corrected.alphaBypassed
+                        if(corrected.alphaBypassed) correction = PhotoCorrection.ORIGINAL
+                    }
                     if(selectedMode==PhotoMode.COLOR) {
-                        val preview=ColorDrawingPipeline.trace(w,h,pixels,pictureWidth,selectedColors,
-                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale) { phase ->
+                        val preview=ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads) { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                             progressStage=if(phase=="quantization") 1 else 2
                         }
@@ -178,7 +199,6 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         return@runInterruptible preview.inkOutline to photoInkRatio(preview.inkOutline)
                     }
-                    pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
                     fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
@@ -194,8 +214,21 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         progressStage = if (next == "quantization") 1 else 2
                     }
-                    val denoised=io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoRasterFilters.median3(w,h,pixels)
+                    val binaryMask = corrected.mask
+                    if (binaryMask != null) {
+                        val traced = RedworkPipeline.traceMask(w,h,binaryMask,pictureWidth,
+                            EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
+                            minAreaMm2=photoMinimumArea(detail),maxContours=128,
+                            onQuantized={ separated -> if(version==revision) separatedPreview=Bitmap.createBitmap(
+                                separated.map { it or 0xff000000.toInt() }.toIntArray(),w,h,Bitmap.Config.ARGB_8888) }) {
+                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                            progressStage=if(it=="quantization") 1 else 2
+                        }
+                        return@runInterruptible traced to photoInkRatio(traced)
+                    }
+                    val denoised=corrected.pixels
                     (try { trace(denoised) } catch (failure: IllegalArgumentException) {
+                        if (selectedCorrection == PhotoCorrection.CONTRAST) throw failure
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
@@ -204,7 +237,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedCorrection!=PhotoCorrection.ORIGINAL && selectedCorrection!=PhotoCorrection.CLEAN) R.string.photo_correction_failed else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
         }
     }

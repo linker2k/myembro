@@ -53,8 +53,11 @@ fun EmojiScreen(vm: EmojiViewModel, settings: EmbroiderySettings, onBack: () -> 
     BackHandler(enabled = picked != null) { vm.close() }
     Scaffold(topBar = {
         TopAppBar(title = { Text(stringResource(R.string.emoji_title)) }, navigationIcon = {
-            IconButton(onClick = { if (picked != null) vm.close() else onBack() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back))
+            Row {
+                IconButton(onClick = { if (picked != null) vm.close() else onBack() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back))
+                }
+                io.github.linker2k.myembro.ui.HomeButton()
             }
         })
     }) { padding ->

@@ -102,4 +102,9 @@
     <string name="agent_separate_body">전송·저장·삭제·복원·설정 변경은 챗봇 스크립트로 적용하지 않습니다. 편집만 다시 요청하고, 이것들은 해당 화면에서 직접 하세요.</string>
     <string name="agent_code_invalid_approval">승인이 이 스크립트와 맞지 않습니다. 미리보기를 다시 확인하세요</string>
     <string name="agent_code_separate">앱에서 따로 해야 하는 일입니다</string>
+    <string name="agent_attach_photo">사진 첨부</string>
+    <string name="agent_photo_chip">사진 %1$s · %2$d×%3$d px</string>
+    <string name="agent_photo_remove">사진 빼기</string>
+    <string name="agent_photo_note">사진은 이 휴대폰에만 남고, 챗봇에는 번호와 크기만 알려 줍니다.</string>
+    <string name="agent_photo_unreadable">이 사진은 읽을 수 없습니다</string>
 </resources>

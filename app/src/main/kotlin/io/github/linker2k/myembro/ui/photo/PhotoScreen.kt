@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.photo
 
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrection
 import android.graphics.Rect
 import android.graphics.RectF
 import androidx.activity.compose.BackHandler
@@ -45,7 +46,7 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
     onEdit: () -> Unit, onSend: (File) -> Unit) {
@@ -64,7 +65,11 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     }
     var showCheck by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
-        IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
+        Row {
+            IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
+            // Backing out all the way only cancels the running step; Home does the same.
+            io.github.linker2k.myembro.ui.HomeButton { home -> vm.cancel(); home() }
+        }
     }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -104,6 +109,22 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                             Text(stringResource(when(value) { PhotoMode.SILHOUETTE -> R.string.photo_style_silhouette; PhotoMode.OUTLINE -> R.string.photo_style_outline; PhotoMode.COLOR -> R.string.photo_style_color }))
                         }
                     }
+                }
+                if (vm.step == 1) {
+                    Text(stringResource(R.string.photo_correction),style=MaterialTheme.typography.titleSmall)
+                    FlowRow(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        PhotoCorrection.entries.filter { vm.style != PhotoMode.COLOR || it != PhotoCorrection.OTSU }.forEach { value ->
+                            FilterChip(selected=vm.correction==value,onClick={vm.changeCorrection(value)},
+                                enabled=!vm.busy && (!vm.correctionAlphaBypassed || value==PhotoCorrection.ORIGINAL),
+                                label={Text(stringResource(when(value) {
+                                    PhotoCorrection.ORIGINAL -> R.string.photo_correction_original
+                                    PhotoCorrection.CLEAN -> R.string.photo_correction_clean
+                                    PhotoCorrection.CONTRAST -> R.string.photo_correction_contrast
+                                    PhotoCorrection.OTSU -> R.string.photo_correction_otsu
+                                }))})
+                        }
+                    }
+                    if(vm.correctionAlphaBypassed) Text(stringResource(R.string.photo_correction_alpha_hint),style=MaterialTheme.typography.bodySmall)
                 }
                 val data = vm.render
                 if (vm.step == 1 && vm.style != PhotoMode.COLOR && vm.outline != null) OutlinePreview(vm.outline!!,vm.style)
@@ -155,6 +176,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         vm.requiredThreads.forEach { thread ->
                             Text(stringResource(R.string.photo_thread_row,thread.catalogNumber.orEmpty(),thread.description.orEmpty()),
                                 style=MaterialTheme.typography.bodyMedium)
+                            if(vm.missingThread(thread)) Text(stringResource(R.string.my_threads_missing), style=MaterialTheme.typography.labelSmall, color=colors.error)
                         }
                     }
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)

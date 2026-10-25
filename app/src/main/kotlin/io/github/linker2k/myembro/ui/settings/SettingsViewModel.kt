@@ -37,6 +37,7 @@ data class EmbroiderySettings(
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val customFrames: List<CustomFrame> = emptyList(),
     val defaultFrameId: String? = null,
+    val myThreads: io.github.linker2k.myembro.engine.io.MyThreads = io.github.linker2k.myembro.engine.io.MyThreads(),
     val favoriteFontIds: Set<String> = emptySet(),
 ) {
     /** Fixed Ink/Stitch defaults; intentionally not a user preference. */
@@ -70,8 +71,16 @@ class SettingsPreferences(context: Context) {
         themeMode = ThemeMode.fromStored(preferences.getString("theme_mode", null)),
         customFrames = CustomFrameCodec.decode(preferences.getString("custom_frames", null)),
         defaultFrameId = preferences.getString("default_frame_id", null),
+        myThreads = io.github.linker2k.myembro.engine.io.MyThreads(
+            preferences.getBoolean("my_threads_enabled", false),
+            preferences.getStringSet("my_thread_indices", emptySet()).orEmpty().mapNotNull { it.toIntOrNull() }.toSet()),
         favoriteFontIds = preferences.getStringSet("favorite_font_ids", emptySet()).orEmpty().toSet(),
     ).validated()
+
+    fun setMyThreads(value: io.github.linker2k.myembro.engine.io.MyThreads) {
+        preferences.edit().putBoolean("my_threads_enabled", value.enabled)
+            .putStringSet("my_thread_indices", value.indices.filter { it in 1 until io.github.linker2k.myembro.engine.io.PecThreads.SET.size }.map { it.toString() }.toSet()).apply()
+    }
 
     fun toggleFavoriteFont(id: String) {
         val current = read().favoriteFontIds
@@ -143,6 +152,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val stopObserving = preferences.observe { settings = preferences.read() }
 
     override fun onCleared() { stopObserving() }
+
+    fun setMyThreads(value: io.github.linker2k.myembro.engine.io.MyThreads) {
+        preferences.setMyThreads(value); settings = preferences.read()
+    }
 
     fun setMachineModel(model: String) {
         val name = model.trim().take(120)

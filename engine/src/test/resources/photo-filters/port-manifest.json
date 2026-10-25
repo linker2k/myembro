@@ -1,0 +1,217 @@
+{
+  "formatVersion": 1,
+  "cases": [
+    "gray-constant-128",
+    "gray-bimodal-tie-128",
+    "gray-ramp-256",
+    "gray-narrow-range-192",
+    "gray-impulse-border-128",
+    "rgb-channel-ranges-192",
+    "rgb-narrow-range-128",
+    "rgb-noise-256",
+    "rgb-narrow-odd-128",
+    "launcher-artwork-192"
+  ],
+  "files": {
+    "gray-constant-128/input.png": {
+      "bytes": 148,
+      "sha256": "7639adc517424cfd1649d3129fd46b91cc03ce389c9bfd2ce3dadc13ad6cfe18"
+    },
+    "gray-constant-128/autocontrast.png": {
+      "bytes": 148,
+      "sha256": "7639adc517424cfd1649d3129fd46b91cc03ce389c9bfd2ce3dadc13ad6cfe18"
+    },
+    "gray-constant-128/otsu-mask.png": {
+      "bytes": 95,
+      "sha256": "c1bb079a3298e3eda500bba7f01ebf32dd4bc3ca023868bcd907a3769e96a845"
+    },
+    "gray-constant-128/expected.json": {
+      "bytes": 5779,
+      "sha256": "317812592b5a61969bba8075605463e883f42fb09c2a3060150833a924c06a4f"
+    },
+    "gray-constant-128/otsu-input.png": {
+      "bytes": 148,
+      "sha256": "7639adc517424cfd1649d3129fd46b91cc03ce389c9bfd2ce3dadc13ad6cfe18"
+    },
+    "gray-bimodal-tie-128/input.png": {
+      "bytes": 155,
+      "sha256": "479a7641512f2daa8159a1bf2107339da1292b6eb336fd506d5016dae586e330"
+    },
+    "gray-bimodal-tie-128/autocontrast.png": {
+      "bytes": 152,
+      "sha256": "60003776541cde7c6967f161f71903d8811d5a1003fcdeaa35d830f85d868131"
+    },
+    "gray-bimodal-tie-128/otsu-mask.png": {
+      "bytes": 152,
+      "sha256": "60003776541cde7c6967f161f71903d8811d5a1003fcdeaa35d830f85d868131"
+    },
+    "gray-bimodal-tie-128/expected.json": {
+      "bytes": 30578,
+      "sha256": "f9ade3089f543629950fa1e3ea262afa679417b599d2195a7c9d18f1adef1966"
+    },
+    "gray-bimodal-tie-128/otsu-input.png": {
+      "bytes": 155,
+      "sha256": "479a7641512f2daa8159a1bf2107339da1292b6eb336fd506d5016dae586e330"
+    },
+    "gray-ramp-256/input.png": {
+      "bytes": 405,
+      "sha256": "d54496020c41d407b930dbc233389193e77ac8d40cd3fcfba966c67b1574732b"
+    },
+    "gray-ramp-256/autocontrast.png": {
+      "bytes": 405,
+      "sha256": "d54496020c41d407b930dbc233389193e77ac8d40cd3fcfba966c67b1574732b"
+    },
+    "gray-ramp-256/otsu-mask.png": {
+      "bytes": 1111,
+      "sha256": "4db17da9b6cf27cd18b65401da86e13b46282fa5484dede5ffde243d0b153df1"
+    },
+    "gray-ramp-256/expected.json": {
+      "bytes": 46824,
+      "sha256": "08b8317346bef90e1676b60d570b11eec3569d0bd2dc7635050d2a8dcc86297c"
+    },
+    "gray-ramp-256/otsu-input.png": {
+      "bytes": 405,
+      "sha256": "d54496020c41d407b930dbc233389193e77ac8d40cd3fcfba966c67b1574732b"
+    },
+    "gray-narrow-range-192/input.png": {
+      "bytes": 315,
+      "sha256": "594e6b4f648cbfa26a1a9326a248d79dd0768f0f82e45854e14c7c13279b4da2"
+    },
+    "gray-narrow-range-192/autocontrast.png": {
+      "bytes": 316,
+      "sha256": "9c6c0d85c83f666ea456570beab0935011b91c5ce5693ecfedc06f674d107851"
+    },
+    "gray-narrow-range-192/otsu-mask.png": {
+      "bytes": 302,
+      "sha256": "e3d0a6967bfbe387b6c3e8062161d62ad3878f1d03f1f758bbf8fb64288a31e0"
+    },
+    "gray-narrow-range-192/expected.json": {
+      "bytes": 7260,
+      "sha256": "06634eacb52449bc11b5a988aad0ec6192ecdef469a19810d811f8d279570b26"
+    },
+    "gray-narrow-range-192/otsu-input.png": {
+      "bytes": 315,
+      "sha256": "594e6b4f648cbfa26a1a9326a248d79dd0768f0f82e45854e14c7c13279b4da2"
+    },
+    "gray-impulse-border-128/input.png": {
+      "bytes": 166,
+      "sha256": "5e7245cd2a56de80374b8e66ff220c6ad704392a7c78a7ab77c3df3440410759"
+    },
+    "gray-impulse-border-128/autocontrast.png": {
+      "bytes": 166,
+      "sha256": "5e7245cd2a56de80374b8e66ff220c6ad704392a7c78a7ab77c3df3440410759"
+    },
+    "gray-impulse-border-128/otsu-mask.png": {
+      "bytes": 157,
+      "sha256": "33e45721b799ca046a171a42cb89c374b869d0721097c7980a92bb88d172f172"
+    },
+    "gray-impulse-border-128/expected.json": {
+      "bytes": 44372,
+      "sha256": "ba43d720e0bfa962db8977578e4f38f4393d792099f24e8027d5f60616195470"
+    },
+    "gray-impulse-border-128/otsu-input.png": {
+      "bytes": 166,
+      "sha256": "5e7245cd2a56de80374b8e66ff220c6ad704392a7c78a7ab77c3df3440410759"
+    },
+    "rgb-channel-ranges-192/input.png": {
+      "bytes": 461,
+      "sha256": "82a44e7b05bc3a030c2626bc734a3e2169cd5fd0bfc485bb5669d1a7a074642b"
+    },
+    "rgb-channel-ranges-192/autocontrast.png": {
+      "bytes": 493,
+      "sha256": "fbd85b1f73f5d2dcf457112349d9fdadd6f6047d83b690c3498a6f9e60647eee"
+    },
+    "rgb-channel-ranges-192/otsu-mask.png": {
+      "bytes": 279,
+      "sha256": "7ca2ff0a0e0f74313b1fcb702ae209f8e9999619c0b7c10a081e0351695484a8"
+    },
+    "rgb-channel-ranges-192/expected.json": {
+      "bytes": 26563,
+      "sha256": "d8f11feef9a9d1d01b7acbeffcfab7362cdca46a0fa3a3a3d7f9322cd726994e"
+    },
+    "rgb-channel-ranges-192/otsu-input.png": {
+      "bytes": 390,
+      "sha256": "de19bab57c14359fd7a9099b3f81533411de3d72129514dd3f999dadbb194226"
+    },
+    "rgb-narrow-range-128/input.png": {
+      "bytes": 493,
+      "sha256": "7291663c2146ea445552a4ee0bfdab14d9fa4bcd112a09027aa6237e49ff8fe7"
+    },
+    "rgb-narrow-range-128/autocontrast.png": {
+      "bytes": 529,
+      "sha256": "0194c4f71df4e82e8dda0aab863ad6059a86cbf04566cd7676a8d5cfe962cb55"
+    },
+    "rgb-narrow-range-128/otsu-mask.png": {
+      "bytes": 194,
+      "sha256": "335d863acb12eef6a44df2e5b82713544f918137bf072f77139c56ecd7eb4176"
+    },
+    "rgb-narrow-range-128/expected.json": {
+      "bytes": 17192,
+      "sha256": "95d52b8dc8dc82ad8981fd24e47bc362784e065c9000c4424ad5bbc69b2577df"
+    },
+    "rgb-narrow-range-128/otsu-input.png": {
+      "bytes": 240,
+      "sha256": "6ea237b4f5ced2402d4618c34c9c1248b6f41e9f158fbde155908956447a43da"
+    },
+    "rgb-noise-256/input.png": {
+      "bytes": 197173,
+      "sha256": "d9bfeabd96687dcc19673cc407cb25e54d672797959edce09f4fd449744206bf"
+    },
+    "rgb-noise-256/autocontrast.png": {
+      "bytes": 197173,
+      "sha256": "d9bfeabd96687dcc19673cc407cb25e54d672797959edce09f4fd449744206bf"
+    },
+    "rgb-noise-256/otsu-mask.png": {
+      "bytes": 14077,
+      "sha256": "4b8f18efb7de24687a9fe4a96166d84daab5b773e6c6bc06ac11a7a6eab61361"
+    },
+    "rgb-noise-256/expected.json": {
+      "bytes": 57304,
+      "sha256": "e324292d347b9115a4c8d7efc4cc3b5e40b0ce01707a59d76367cfda7d4e9ec9"
+    },
+    "rgb-noise-256/otsu-input.png": {
+      "bytes": 65908,
+      "sha256": "bc4571c4652a850691bb1e8f95e64ae763019e4653eb605e260a1f4749f3bc75"
+    },
+    "rgb-narrow-odd-128/input.png": {
+      "bytes": 98,
+      "sha256": "516364de803a5536a5e6df0971884e48f2fb674c664a8371acd2e80c1bc84885"
+    },
+    "rgb-narrow-odd-128/autocontrast.png": {
+      "bytes": 98,
+      "sha256": "516364de803a5536a5e6df0971884e48f2fb674c664a8371acd2e80c1bc84885"
+    },
+    "rgb-narrow-odd-128/otsu-mask.png": {
+      "bytes": 90,
+      "sha256": "a1e69b460ecc974d3340b21481633d89091a6e24a836913d3f5e2b41df7dff23"
+    },
+    "rgb-narrow-odd-128/expected.json": {
+      "bytes": 51698,
+      "sha256": "f3d8c93eb6800ac8b50f28fb2437b7db981dbba7bb81c717aae2745fc683152f"
+    },
+    "rgb-narrow-odd-128/otsu-input.png": {
+      "bytes": 110,
+      "sha256": "703855e2c8ecb4cfd40dc7092fd7e4d1ccf2787cb792127a9ce2066244827c86"
+    },
+    "launcher-artwork-192/input.png": {
+      "bytes": 60035,
+      "sha256": "67a95a312bc365b89e90fe89e7f4f0b9edbeb468dca852f8f529ed3c7591514a"
+    },
+    "launcher-artwork-192/autocontrast.png": {
+      "bytes": 63772,
+      "sha256": "ad5fdb55b881553c3176587829cac59de52c365137884beeb3b6ed82fb034d09"
+    },
+    "launcher-artwork-192/otsu-mask.png": {
+      "bytes": 1175,
+      "sha256": "39484c4b2145f6bbde221db0832957a18a5d53a30a9598f72f0436d9bcb9f85f"
+    },
+    "launcher-artwork-192/expected.json": {
+      "bytes": 51349,
+      "sha256": "3fbfc4534c74e5649456045cb75cf676654ac9869f265159c5b74f5afb098236"
+    },
+    "launcher-artwork-192/otsu-input.png": {
+      "bytes": 21382,
+      "sha256": "1418e73704be6296fb37898ae3461695b098ec0a7bf589052af87534060e2b2f"
+    }
+  }
+}

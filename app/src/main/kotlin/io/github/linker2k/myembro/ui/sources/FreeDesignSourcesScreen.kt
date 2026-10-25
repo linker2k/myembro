@@ -72,8 +72,11 @@ fun FreeDesignSourcesScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.sources_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.sources_back))
+                    Row {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.sources_back))
+                        }
+                        io.github.linker2k.myembro.ui.HomeButton()
                     }
                 },
             )
