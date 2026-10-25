@@ -36,8 +36,16 @@ internal object AgentTools {
     val FOLLOW_UPS = setOf("save_project", "save_pes", "share_pes", "send_usb")
 }
 
-/** Short names the chatbot uses instead of UUIDs and font ids; the app expands them back. */
-internal data class AgentHandles(val objects: Map<String, String>, val fonts: Map<String, String>)
+/** Short names the chatbot uses instead of UUIDs, font ids and asset ids; the app expands them back. */
+internal data class AgentHandles(val objects: Map<String, String>, val fonts: Map<String, String>,
+    val designs: Map<String, String> = emptyMap())
+
+/** A font the lettering screen can use now; [minMm]/[maxMm] come from font metadata or pinned sweeps, capped at 60mm. */
+internal data class AgentFontInfo(val id: String, val name: String, val hangul: Boolean, val latin: Boolean,
+    val minMm: Double?, val maxMm: Double)
+
+/** A built-in design (assets/samples/manifest.json). */
+internal data class AgentDesignInfo(val id: String, val name: String, val widthMm: Double, val heightMm: Double)
 
 internal data class AgentObjectSummary(
     val handle: String, val kind: String, val name: String, val text: String?, val font: String?, val textHeightMm: Double?,
@@ -48,18 +56,27 @@ internal data class AgentObjectSummary(
 internal data class AgentProjectSummary(
     val hoopName: String, val hoopWidthMm: Double, val hoopHeightMm: Double,
     val objects: List<AgentObjectSummary>, val handles: AgentHandles,
+    /** By handle, in handle order. */
+    val fonts: Map<String, AgentFontInfo> = emptyMap(),
+    val designs: Map<String, AgentDesignInfo> = emptyMap(),
 ) {
     companion object {
-        /** [bounds] is the placed bounds in 0.1mm (the caller computes it off the main thread). */
-        fun of(project: Project, bounds: (DesignObject) -> Bounds?): AgentProjectSummary {
-            val fonts = linkedMapOf<String, String>()
+        /**
+         * [bounds] is the placed bounds in 0.1mm (the caller computes it off the main thread). Fonts get
+         * handles in [fonts] order; a font used in the design but not listed is added after them by id.
+         */
+        fun of(project: Project, fonts: List<AgentFontInfo> = emptyList(), designs: List<AgentDesignInfo> = emptyList(),
+            bounds: (DesignObject) -> Bounds?): AgentProjectSummary {
+            val fontInfo = linkedMapOf<String, AgentFontInfo>()
+            val fontIds = linkedMapOf<String, String>()
+            fonts.distinctBy { it.id }.forEach { f -> "f${fontIds.size + 1}".let { fontIds[it] = f.id; fontInfo[it] = f } }
             val objects = linkedMapOf<String, String>()
             val summaries = project.objects.mapIndexed { i, obj ->
                 val handle = "o${i + 1}"
                 objects[handle] = obj.id
                 val text = obj as? TextObject
-                val font = text?.let { t -> fonts.entries.firstOrNull { it.value == t.fontId }?.key
-                    ?: "f${fonts.size + 1}".also { fonts[it] = t.fontId } }
+                val font = text?.let { t -> fontIds.entries.firstOrNull { it.value == t.fontId }?.key
+                    ?: "f${fontIds.size + 1}".also { fontIds[it] = t.fontId } }
                 val colors = when (obj) {
                     is TextObject -> listOf(obj.thread.color)
                     is StitchObject -> obj.source.threads.map { it.color }
@@ -69,22 +86,46 @@ internal data class AgentProjectSummary(
                     runCatching { bounds(obj) }.getOrNull(), obj.transform.rotationDeg,
                     obj.transform.scaleX * 100, obj.transform.scaleY * 100, colors, obj.visible)
             }
+            val designHandles = designs.distinctBy { it.id }.mapIndexed { i, d -> "d${i + 1}" to d }.toMap()
             return AgentProjectSummary(project.hoop.name, project.hoop.width / 10.0, project.hoop.height / 10.0,
-                summaries, AgentHandles(objects, fonts))
+                summaries, AgentHandles(objects, fontIds, designHandles.mapValues { it.value.id }), fontInfo, designHandles)
         }
     }
 }
 
-internal data class AgentPrompt(val promptId: String, val text: String, val handles: AgentHandles)
+/** [level] is the shortening step used (0 = full); [overBudget] when even the last step did not fit. */
+internal data class AgentPrompt(val promptId: String, val text: String, val handles: AgentHandles,
+    val level: Int = 0, val overBudget: Boolean = false)
 
-/** Builds the text shared to any chatbot app. Deterministic for a given summary, request and id. */
+/**
+ * Builds the text shared to any chatbot app. Deterministic for a given summary, request and id.
+ * With a [budgetChars], shortens in the order of docs/agent/mobile-standalone.md "Length" until it fits:
+ * 1. fonts → only those covering the scripts of the design and request; built-in designs left out,
+ * 2. objects → those named in the request plus a count of the rest, 3. tool descriptions → signatures only.
+ * Instructions, format, tool signatures and the request are never cut. No budget is set by default:
+ * the chatbot apps' limits are not measured yet (unverified), so no number is used.
+ */
 internal object AgentPromptBuilder {
-    fun build(summary: AgentProjectSummary, request: String, promptId: String): AgentPrompt = AgentPrompt(promptId, buildString {
+    const val LEVELS = 3
+
+    fun build(summary: AgentProjectSummary, request: String, promptId: String, budgetChars: Int? = null): AgentPrompt {
+        for (level in 0..LEVELS) {
+            val text = text(summary, request, promptId, level)
+            if (budgetChars == null || text.length <= budgetChars || level == LEVELS)
+                return AgentPrompt(promptId, text, summary.handles, level, budgetChars != null && text.length > budgetChars)
+        }
+        error("unreachable")
+    }
+
+    private val HANGUL = Regex("[\\uAC00-\\uD7A3\\u3131-\\u318E]")
+    private val LATIN = Regex("[A-Za-z]")
+
+    private fun text(summary: AgentProjectSummary, request: String, promptId: String, level: Int) = buildString {
         appendLine("You are helping edit an embroidery design in the Android app myembro.")
         appendLine("Answer with ONLY the JSON command list: one ```json fenced block in the format below and nothing else.")
         appendLine("If the request is unclear, ask a short question instead of guessing.")
         appendLine("Use only the tools and handles listed here. Never invent ids: existing objects are o1, o2, …; fonts are f1, f2, …;")
-        appendLine("name new objects new:<word>. For fonts put the handle in both fontId and fontRevision.")
+        appendLine("built-in designs are d1, d2, … (use as assetId). Name new objects new:<word>. For fonts put the handle in both fontId and fontRevision.")
         appendLine("Units: millimeters (center of the hoop is 0,0; y grows downward), degrees, percent.")
         appendLine("Deleting, saving, sharing and USB transfer are confirmed by the user in the app.")
         appendLine()
@@ -94,12 +135,16 @@ internal object AgentPromptBuilder {
         appendLine("```")
         appendLine()
         appendLine("Tools (args are required exactly as listed):")
-        AgentTools.SIGNATURES.forEach { appendLine("- $it") }
+        AgentTools.SIGNATURES.forEach { appendLine("- " + if (level >= 3) it.substringBefore(" - ") else it) }
         appendLine()
         appendLine("Design:")
         appendLine("- hoop: ${summary.hoopName} ${mm(summary.hoopWidthMm)} x ${mm(summary.hoopHeightMm)} mm")
         if (summary.objects.isEmpty()) appendLine("- no objects yet")
+        val shown = if (level < 2) summary.objects else summary.objects.filter { o ->
+            listOfNotNull(o.handle, o.name, o.text).any { it.isNotBlank() && request.contains(it, ignoreCase = true) }
+        }
         summary.objects.forEachIndexed { order, o ->
+            if (o !in shown) return@forEachIndexed
             append("- ${o.handle} ${o.kind} \"${o.name}\"")
             o.text?.let { append(" text=\"$it\"") }
             o.font?.let { append(" font=$it") }
@@ -114,15 +159,35 @@ internal object AgentPromptBuilder {
             if (!o.visible) append(" hidden")
             appendLine()
         }
-        if (summary.handles.fonts.isNotEmpty()) {
+        (summary.objects.size - shown.size).takeIf { it > 0 }?.let { appendLine("- (list shortened) $it more objects: o1…o${summary.objects.size}") }
+        val scripts = (summary.objects.mapNotNull { it.text } + request).joinToString(" ")
+        val needHangul = HANGUL.containsMatchIn(scripts); val needLatin = LATIN.containsMatchIn(scripts)
+        val fonts = summary.handles.fonts.filter { (handle, _) ->
+            val f = summary.fonts[handle] ?: return@filter true // fonts used by the design always stay
+            level < 1 || ((!needHangul || f.hangul) && (!needLatin || f.latin))
+        }
+        if (fonts.isNotEmpty()) {
             appendLine()
-            appendLine("Fonts:")
-            summary.handles.fonts.forEach { (handle, id) -> appendLine("- $handle = $id") }
+            appendLine("Fonts (ko = has Korean, la = has Latin; h = text height):")
+            fonts.forEach { (handle, id) ->
+                val f = summary.fonts[handle]
+                if (f == null) appendLine("- $handle = $id") else {
+                    val langs = listOfNotNull("ko".takeIf { f.hangul }, "la".takeIf { f.latin }).joinToString("+")
+                    appendLine("- $handle \"${f.name}\" $langs h${f.minMm?.let(::mm) ?: ""}-${mm(f.maxMm)}mm")
+                }
+            }
+            if (fonts.size < summary.handles.fonts.size) appendLine("- (list shortened to fonts for this text)")
+        }
+        if (summary.designs.isNotEmpty()) {
+            appendLine()
+            appendLine("Built-in designs:")
+            if (level >= 1) appendLine("- (list left out to save space)")
+            else summary.designs.forEach { (handle, d) -> appendLine("- $handle \"${d.name}\" ${mm(d.widthMm)}x${mm(d.heightMm)}mm") }
         }
         appendLine()
         appendLine("Request:")
         append("\"\"\"\n${request.trim()}\n\"\"\"")
-    }, summary.handles)
+    }
 
     /** A short follow-up for the same chat thread, listing what the app could not use. */
     fun repair(promptId: String, problems: List<String>): String = buildString {

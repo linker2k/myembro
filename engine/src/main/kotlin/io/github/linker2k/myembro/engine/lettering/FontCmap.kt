@@ -25,6 +25,8 @@ class FontCmap private constructor(private val starts: IntArray, private val end
         return false
     }
 
+    fun ranges():List<IntRange> = starts.indices.map { starts[it]..ends[it] }
+
     fun has(text: String): Boolean = text.codePoints().allMatch { it in this }
 
     companion object {

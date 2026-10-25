@@ -46,7 +46,9 @@ internal data class AgentScriptCalls(
                 "recolor_object" -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId"),
                     listOf(((a["threadIndex"]?.jsonPrimitive?.intOrNull ?: 0) + 1).toString(), value("threadColor").uppercase()))
                 "set_project_frame" -> AgentChange(AgentChange.Kind.CHANGE, call.name, emptyList(), listOf(value("frameId")))
-                "add_text", "add_design", "add_generated_art" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("text")))
+                "add_text" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("text"), num("heightMm")))
+                "replace_text" -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId"), listOf(value("text"), num("heightMm")))
+                "add_design", "add_generated_art" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("name")))
                 else -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId") + ids("objectIds"))
             }
         }
@@ -58,27 +60,32 @@ internal data class AgentScriptCalls(
 
     companion object {
         const val NEW_PREFIX = "agent-"
-        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId")
+        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId", "assetId")
         private val FONT_KEYS = setOf("fontId", "fontRevision")
         private val OBJECT_HANDLE = Regex("o\\d+")
         private val FONT_HANDLE = Regex("f\\d+")
+        private val DESIGN_HANDLE = Regex("d\\d+")
 
         /**
          * Deterministic for a given script and [transactionId]: the preview and the apply produce the same
          * calls, and new ids (`new:<word>` → `agent-<transaction>-<word>`) are the same both times.
          */
-        fun of(script: AgentScript, handles: AgentHandles, transactionId: String): AgentScriptCalls {
+        fun of(script: AgentScript, handles: AgentHandles, transactionId: String,
+            fontRevision: (String) -> String? = { null }): AgentScriptCalls {
             val calls = mutableListOf<ToolTurnController.Call>()
             val indices = mutableListOf<Int>()
             val followUps = linkedSetOf<String>()
             val problems = mutableListOf<AgentProblem>()
             script.commands.forEachIndexed { index, command ->
                 if (command.tool in AgentTools.FOLLOW_UPS) { followUps += command.tool; return@forEachIndexed }
-                fun id(value: String, font: Boolean): String = when {
+                fun id(key: String?, value: String, font: Boolean): String = when {
                     !font && value.startsWith("new:") && value.length > 4 -> "$NEW_PREFIX$transactionId-${value.removePrefix("new:")}"
                     !font && OBJECT_HANDLE.matches(value) -> handles.objects[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
-                    font && FONT_HANDLE.matches(value) -> handles.fonts[value]
+                    // fontRevision gets the resolver's exact revision; the chatbot only knows the handle.
+                    font && FONT_HANDLE.matches(value) -> handles.fonts[value]?.let { id -> if (key == "fontRevision") fontRevision(id) ?: id else id }
+                        ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
+                    !font && key == "assetId" && DESIGN_HANDLE.matches(value) -> handles.designs[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     else -> value
                 }
@@ -86,7 +93,7 @@ internal data class AgentScriptCalls(
                     is JsonObject -> JsonObject(element.mapValues { (k, v) -> expand(k, v) })
                     is JsonArray -> JsonArray(element.map { expand(if (key == "objectIds") "objectId" else key, it) })
                     is JsonPrimitive -> if (element.isString && (key in OBJECT_KEYS || key in FONT_KEYS))
-                        JsonPrimitive(id(element.content, key in FONT_KEYS)) else element
+                        JsonPrimitive(id(key, element.content, key in FONT_KEYS)) else element
                     JsonNull -> element
                 }
                 // The app owns the turn: a script cannot name its own transaction. Other tools keep their

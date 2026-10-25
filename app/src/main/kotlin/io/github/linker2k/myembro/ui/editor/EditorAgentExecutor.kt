@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor
 
+import io.github.linker2k.myembro.engine.agent.BundledFontResolver
 import io.github.linker2k.myembro.engine.agent.ToolDispatcher
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
@@ -23,6 +24,10 @@ internal class EditorAgentExecutor(
     private val hoops: () -> List<HoopSpec>,
     /** Runs [block] with editing blocked, then refreshes the editor state on the main thread. */
     private val publish: suspend (suspend () -> AgentApplyResult) -> AgentApplyResult,
+    /** The phone binds its fonts, designs, emoji, settings and library store here (androidAgentKernel). */
+    private val kernelFactory: (Map<String, HoopSpec>) -> ToolDispatcher = { ToolDispatcher(frames = it) },
+    /** Exact font revision for a font id, as the kernel's font resolver reports it. */
+    private val fontRevision: (String) -> String? = BundledFontResolver()::revision,
 ) : AgentScriptExecutor {
     /** One kernel per frame set, so the session's controller and its receipts are reused. */
     private val kernels = mutableMapOf<Map<String, HoopSpec>, ToolDispatcher>()
@@ -30,7 +35,7 @@ internal class EditorAgentExecutor(
     private class Setup(val calls: AgentScriptCalls, val kernel: ToolDispatcher, val export: JsonObject, val base: Project)
 
     private fun setup(script: AgentScript, handles: AgentHandles): Pair<Setup?, List<AgentProblem>> {
-        val calls = AgentScriptCalls.of(script, handles, "${AgentScriptCalls.NEW_PREFIX}${script.promptId}")
+        val calls = AgentScriptCalls.of(script, handles, "${AgentScriptCalls.NEW_PREFIX}${script.promptId}", fontRevision)
         val base = session().project
         val frames = (hoops() + base.hoop).associateBy(::frameId)
         val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } }
@@ -39,11 +44,12 @@ internal class EditorAgentExecutor(
         val export = buildJsonObject {
             put("machineId", machine); put("frameId", frameId(base.hoop)); put("pesVersion", settings().pesVersion.name)
         }
-        return Setup(calls, kernels.getOrPut(frames) { ToolDispatcher(frames = frames) }, export, base) to emptyList()
+        return Setup(calls, kernels.getOrPut(frames) { kernelFactory(frames) }, export, base) to emptyList()
     }
 
     override suspend fun preview(script: AgentScript, handles: AgentHandles, expectedRevision: Long): AgentPreviewResult {
-        val (setup, problems) = setup(script, handles)
+        // Font revisions load fonts: never on the main thread.
+        val (setup, problems) = withContext(Dispatchers.Default) { setup(script, handles) }
         setup ?: return AgentPreviewResult.Rejected(problems)
         if (setup.calls.calls.isEmpty()) return AgentPreviewResult.Ready(AgentPreview(script.summary, emptyList(), null,
             emptyList(), setup.calls.followUps, setup.base, setup.base))
@@ -54,7 +60,7 @@ internal class EditorAgentExecutor(
         if (!result.ok && !blocked) return AgentPreviewResult.Rejected(listOf(problem(result, setup.calls)))
         // The dry run returns only a summary; the same calls on a throwaway session give the picture.
         val after = withContext(Dispatchers.Default) {
-            ToolDispatcher(frames = mapOf(frameId(setup.base.hoop) to setup.base.hoop)).bind(EditSession(setup.base))
+            setup.kernel.bind(EditSession(setup.base))
                 .executeScript(setup.calls.transactionId, 0, setup.calls.calls, setup.export, confirmed = true).takeIf { it.ok }?.project
         }
         return AgentPreviewResult.Ready(AgentPreview(script.summary, setup.calls.changes(setup.base),
@@ -63,7 +69,8 @@ internal class EditorAgentExecutor(
     }
 
     override suspend fun apply(script: AgentScript, handles: AgentHandles, expectedRevision: Long, removalConfirmed: Boolean): AgentApplyResult {
-        val (setup, problems) = setup(script, handles)
+        // Font revisions load fonts: never on the main thread.
+        val (setup, problems) = withContext(Dispatchers.Default) { setup(script, handles) }
         setup ?: return AgentApplyResult.Rejected(problems)
         if (setup.calls.calls.isEmpty()) return AgentApplyResult.Applied(setup.calls.followUps)
         return publish {

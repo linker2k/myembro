@@ -21,6 +21,14 @@ class EmojiRepository(context: Context) {
 
     fun isAvailable(e: CatalogEmoji): Boolean = e.bundled || file(e).isFile
 
+    /** Local verified bytes only. Tool adapters use this entry and never the downloading svg(). */
+    fun localSvg(e: CatalogEmoji): ByteArray? {
+        val bytes = if(e.bundled) assets.open("${EmojiCatalog.BUNDLED}/${e.id}.svg").use { it.readBytes() }
+            else file(e).takeIf { it.isFile }?.readBytes() ?: return null
+        if(sha256(bytes)!=e.sha256) throw ChecksumMismatchException(e.id)
+        return bytes
+    }
+
     /** SVG text of [e], downloading it first when it is neither bundled nor downloaded. Call off the main thread. */
     suspend fun svg(e: CatalogEmoji): String = withContext(Dispatchers.IO) {
         val bytes = if (e.bundled) assets.open("${EmojiCatalog.BUNDLED}/${e.id}.svg").use { it.readBytes() }

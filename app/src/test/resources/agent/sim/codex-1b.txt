@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM1","summary":"myembro는 유지하고 로고를 위로 옮겨 아래에 ‘안녕’을 15mm로 추가","commands":[{"tool":"transform_objects","args":{"objectIds":["o1"],"deltaXMm":0,"deltaYMm":-15,"scaleFactor":1,"rotationDeg":0}},{"tool":"add_text","args":{"objectId":"new:hello","text":"안녕","fontId":"f2","fontRevision":"f2","heightMm":15,"threadColor":"#1E5AA8","singleLineBold":false}},{"tool":"set_object_transforms","args":{"transforms":[{"objectId":"new:hello","xMm":0,"yMm":26.5,"rotationDeg":0,"scaleXPercent":100,"scaleYPercent":100}]}}]}
+```

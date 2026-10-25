@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM2","summary":"글자를 빨간색으로 변경","commands":[{"tool":"recolor_object","args":{"objectId":"o2","threadIndex":0,"threadColor":"#FF0000"}}]}
+```

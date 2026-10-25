@@ -35,7 +35,7 @@ class ToolDispatcherTest {
         "prepare_pes" to args("""{"projectRevision":"0","machineId":"se700","frameId":"H100","pesVersion":"V6"}"""),
     )
     @Test fun everySupportedToolHasSuccessfulAndRejectedInputWithoutPartialMutation() {
-        assertEquals(ToolDispatcher.SUPPORTED-setOf("add_text","replace_text"), cases().keys)
+        assertEquals(ToolDispatcher.SUPPORTED-setOf("add_text","replace_text","list_fonts","get_settings","add_design","list_builtin_designs","list_designs","list_emoji","prepare_emoji","add_generated_art"), cases().keys)
         for ((name,a) in cases()) {
             // A single actual, upstream-locked component avoids creating artificial cross-object boundaries.
             val p=if(name in setOf("prepare_pes","sewout_check")) objectProject().let { it.copy(objects=it.objects.take(1)) } else objectProject()
@@ -70,7 +70,7 @@ class ToolDispatcherTest {
         assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0","duplicate_object",JsonObject(a-"sourceId")).code)
         assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0","duplicate_object",JsonObject(a+("transform" to JsonObject(a.getValue("transform").jsonObject+("extra" to JsonPrimitive(1)))))).code)
         assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0","list_fonts",args("""{"text":"x","filters":[],"installedOnly":"yes"}""")).code)
-        assertEquals("NOT_IMPLEMENTED",dispatcher.dispatch(p,"0","list_fonts",args("""{"text":"x","filters":[],"installedOnly":true}""")).code)
+        assertTrue(dispatcher.dispatch(p,"0","list_fonts",args("""{"text":"x","filters":[],"installedOnly":true}""")).ok)
         assertEquals("UNKNOWN_TOOL",dispatcher.dispatch(p,"0","nonexistent",args("{}")).code)
     }
     @Test fun everyOtherCatalogToolIsExplicitlyUnimplementedAfterStrictValidation() {
