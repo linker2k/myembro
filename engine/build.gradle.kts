@@ -242,3 +242,6 @@ tasks.processResources {
 tasks.processResources {
     from(rootProject.file("app/src/main/assets/emoji")) { into("emoji") }
 }
+
+// Shared adversarial fixtures compile in tests only, never the engine/application artifacts.
+sourceSets.test { kotlin.srcDir(rootProject.file("tools/safety-tests/kotlin")) }

@@ -21,3 +21,5 @@ tasks.register<Exec>("checkStdio") {
     commandLine("python3",file("check_stdio.py"),layout.buildDirectory.file("install/myembro-mcp/bin/myembro-mcp").get().asFile)
 }
 tasks.check { dependsOn("checkStdio") }
+
+sourceSets.test { kotlin.srcDir(rootProject.file("tools/safety-tests/kotlin")) }
