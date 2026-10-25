@@ -1,0 +1,2248 @@
+{
+  "kind": "EXISTING_HARNESS_NUMERIC_OBSERVATIONS_NOT_FULL_EQUIVALENCE_VERDICT",
+  "results": {
+    "before": {
+      "commit": "810715d41bb05a0a870fa12632d2533f6bc5a0d6",
+      "generated": 178,
+      "compared": 178,
+      "generation_errors": [
+        {
+          "id": "fill_stitch--rectangle--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,696), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,696), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 358
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2512
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 714
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1226
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1048), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1048), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 989
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 8140
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1967
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 4018
+        },
+        {
+          "id": "fill_stitch--circle--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,996), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,996), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 365
+        },
+        {
+          "id": "fill_stitch--circle--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2869
+        },
+        {
+          "id": "fill_stitch--circle--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 719
+        },
+        {
+          "id": "fill_stitch--circle--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1412
+        },
+        {
+          "id": "fill_stitch--circle--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1215
+        },
+        {
+          "id": "fill_stitch--circle--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 9440
+        },
+        {
+          "id": "fill_stitch--circle--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1499,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1499,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2381
+        },
+        {
+          "id": "fill_stitch--circle--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1499,1499), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1499,1499), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 4728
+        },
+        {
+          "id": "fill_stitch--hole--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 400
+        },
+        {
+          "id": "fill_stitch--hole--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2016
+        },
+        {
+          "id": "fill_stitch--hole--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 827
+        },
+        {
+          "id": "fill_stitch--hole--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 987
+        },
+        {
+          "id": "fill_stitch--hole--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1301
+        },
+        {
+          "id": "fill_stitch--hole--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 6824
+        },
+        {
+          "id": "fill_stitch--hole--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2866
+        },
+        {
+          "id": "fill_stitch--hole--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 3515
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 967
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 367
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(996,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(996,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 488
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 394
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 3010
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 849
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1496,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1496,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1504
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 363
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2102
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 732
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1036
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 327
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1370
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 587
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 663
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 139
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 629
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 289
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 317
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 377
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1961
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 789
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 985
+        }
+      ],
+      "count_pass": 151,
+      "hausdorff_pass": 119,
+      "count_and_hausdorff_pass": 115,
+      "ordered_pass": 0,
+      "representative_tatami": {
+        "circle": {
+          "candidate_count": 661,
+          "official_count": 662,
+          "count_ratio": 0.9984894259818731,
+          "count_relative_difference": 0.0015105740181268882,
+          "hausdorff_mm": 0.1414213562373109,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 97,
+          "candidate_prefix_mm": [
+            [
+              -8.9,
+              2.5
+            ],
+            [
+              -8.2,
+              2.3000000000000007
+            ],
+            [
+              -8.9,
+              2.5
+            ],
+            [
+              -9.6,
+              2.6999999999999993
+            ],
+            [
+              -7.4,
+              2.0999999999999996
+            ],
+            [
+              -5.5,
+              0.9000000000000004
+            ],
+            [
+              -3.3,
+              0.6999999999999993
+            ],
+            [
+              -1.0999999999999996,
+              0.0
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              2.5999999999999996
+            ],
+            [
+              -8.9,
+              2.4000000000000004
+            ],
+            [
+              -8.2,
+              2.1999999999999993
+            ],
+            [
+              -8.9,
+              2.4000000000000004
+            ],
+            [
+              -9.6,
+              2.5999999999999996
+            ],
+            [
+              -7.5,
+              2.0
+            ],
+            [
+              -5.5,
+              0.9000000000000004
+            ],
+            [
+              -3.3,
+              0.5999999999999996
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 222,
+              "start_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ],
+              "end_mm": [
+                2.999999999999998,
+                15.281231096761257
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 650,
+              "start_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ]
+            }
+          ],
+          "postprocess_needles": 662
+        },
+        "hole": {
+          "candidate_count": 823,
+          "official_count": 824,
+          "count_ratio": 0.9987864077669902,
+          "count_relative_difference": 0.0012135922330097086,
+          "hausdorff_mm": 0.14142135623731025,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 10,
+          "candidate_prefix_mm": [
+            [
+              -9.1,
+              9.5
+            ],
+            [
+              -8.6,
+              8.899999999999999
+            ],
+            [
+              -9.1,
+              9.5
+            ],
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -8.1,
+              8.399999999999999
+            ],
+            [
+              -5.9,
+              8.100000000000001
+            ],
+            [
+              -3.9000000000000004,
+              8.899999999999999
+            ],
+            [
+              -2.0999999999999996,
+              10.0
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -9.1,
+              9.399999999999999
+            ],
+            [
+              -8.6,
+              8.899999999999999
+            ],
+            [
+              -9.1,
+              9.399999999999999
+            ],
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -8.2,
+              8.399999999999999
+            ],
+            [
+              -6.0,
+              8.0
+            ],
+            [
+              -4.0,
+              8.899999999999999
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 297,
+              "start_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ],
+              "end_mm": [
+                2.9999999999999973,
+                22.645846249999995
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 820,
+              "start_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ]
+            }
+          ],
+          "postprocess_needles": 824
+        },
+        "rectangle": {
+          "candidate_count": 570,
+          "official_count": 571,
+          "count_ratio": 0.9982486865148862,
+          "count_relative_difference": 0.0017513134851138354,
+          "hausdorff_mm": 0.14142135623731025,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 5,
+          "candidate_prefix_mm": [
+            [
+              -9.0,
+              6.5
+            ],
+            [
+              -8.5,
+              6.0
+            ],
+            [
+              -9.0,
+              6.5
+            ],
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -7.8,
+              5.4
+            ],
+            [
+              -6.0,
+              3.5999999999999996
+            ],
+            [
+              -4.3,
+              1.9000000000000004
+            ],
+            [
+              -2.3,
+              0.5
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -9.1,
+              6.5
+            ],
+            [
+              -8.5,
+              6.0
+            ],
+            [
+              -9.1,
+              6.5
+            ],
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -7.8,
+              5.300000000000001
+            ],
+            [
+              -6.1,
+              3.5999999999999996
+            ],
+            [
+              -4.3,
+              1.9000000000000004
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 218,
+              "start_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ],
+              "end_mm": [
+                2.9999999999999973,
+                16.645842374999997
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 512,
+              "start_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ]
+            }
+          ],
+          "postprocess_needles": 571
+        }
+      }
+    },
+    "after": {
+      "commit": "f0dcdd5d9078490350355e854195634d44720f9d",
+      "generated": 178,
+      "compared": 178,
+      "generation_errors": [
+        {
+          "id": "fill_stitch--rectangle--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,696), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,696), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 359
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2515
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 714
+        },
+        {
+          "id": "fill_stitch--rectangle--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,700), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1218
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1048), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1048), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1013
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 8256
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2101
+        },
+        {
+          "id": "fill_stitch--rectangle--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1050), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 3956
+        },
+        {
+          "id": "fill_stitch--circle--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,996), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,996), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 347
+        },
+        {
+          "id": "fill_stitch--circle--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2764
+        },
+        {
+          "id": "fill_stitch--circle--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 712
+        },
+        {
+          "id": "fill_stitch--circle--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1362
+        },
+        {
+          "id": "fill_stitch--circle--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1185
+        },
+        {
+          "id": "fill_stitch--circle--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 9155
+        },
+        {
+          "id": "fill_stitch--circle--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1499,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1499,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2402
+        },
+        {
+          "id": "fill_stitch--circle--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1499,1499), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1499,1499), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 4684
+        },
+        {
+          "id": "fill_stitch--hole--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 445
+        },
+        {
+          "id": "fill_stitch--hole--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2171
+        },
+        {
+          "id": "fill_stitch--hole--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 927
+        },
+        {
+          "id": "fill_stitch--hole--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1142
+        },
+        {
+          "id": "fill_stitch--hole--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1513
+        },
+        {
+          "id": "fill_stitch--hole--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 7801
+        },
+        {
+          "id": "fill_stitch--hole--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 2963
+        },
+        {
+          "id": "fill_stitch--hole--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 3863
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1022
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(998,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 359
+        },
+        {
+          "id": "fill_stitch--self_intersection--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(996,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(996,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 519
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 423
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 3215
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 835
+        },
+        {
+          "id": "fill_stitch--self_intersection--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1496,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1496,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1503
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 307
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1873
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 639
+        },
+        {
+          "id": "fill_stitch--narrow_tip--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 932
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1496), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 302
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1249
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1498,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1498,1497), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 546
+        },
+        {
+          "id": "fill_stitch--sharp_corner--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1497,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 627
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,998), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 132
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 605
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 277
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--100mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1000,1000), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 304
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--horizontal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1498), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 357
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--diagonal",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 1885
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--dense",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 734
+        },
+        {
+          "id": "fill_stitch--crossing_strokes--150mm--sparse",
+          "status": "ERROR",
+          "reason_code": "GENERATION_FAILED",
+          "reason": "IllegalArgumentException: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: PEC_HOOP: max=(1500,1500), hoop=(1000,1000) exclusive size bound; HOOP_EXCEEDED: 선택 후프의 봉제 영역을 벗어납니다.",
+          "elapsed_ms": 944
+        }
+      ],
+      "count_pass": 151,
+      "hausdorff_pass": 119,
+      "count_and_hausdorff_pass": 115,
+      "ordered_pass": 0,
+      "representative_tatami": {
+        "circle": {
+          "candidate_count": 661,
+          "official_count": 662,
+          "count_ratio": 0.9984894259818731,
+          "count_relative_difference": 0.0015105740181268882,
+          "hausdorff_mm": 0.1414213562373109,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 97,
+          "candidate_prefix_mm": [
+            [
+              -8.9,
+              2.5
+            ],
+            [
+              -8.2,
+              2.3000000000000007
+            ],
+            [
+              -8.9,
+              2.5
+            ],
+            [
+              -9.6,
+              2.6999999999999993
+            ],
+            [
+              -7.4,
+              2.0999999999999996
+            ],
+            [
+              -5.5,
+              0.9000000000000004
+            ],
+            [
+              -3.3,
+              0.6999999999999993
+            ],
+            [
+              -1.0999999999999996,
+              0.0
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              2.5999999999999996
+            ],
+            [
+              -8.9,
+              2.4000000000000004
+            ],
+            [
+              -8.2,
+              2.1999999999999993
+            ],
+            [
+              -8.9,
+              2.4000000000000004
+            ],
+            [
+              -9.6,
+              2.5999999999999996
+            ],
+            [
+              -7.5,
+              2.0
+            ],
+            [
+              -5.5,
+              0.9000000000000004
+            ],
+            [
+              -3.3,
+              0.5999999999999996
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 222,
+              "start_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ],
+              "end_mm": [
+                2.999999999999998,
+                15.281231096761257
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 650,
+              "start_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                15.281231079166663
+              ]
+            }
+          ],
+          "postprocess_needles": 662
+        },
+        "hole": {
+          "candidate_count": 823,
+          "official_count": 824,
+          "count_ratio": 0.9987864077669902,
+          "count_relative_difference": 0.0012135922330097086,
+          "hausdorff_mm": 0.14142135623731025,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 10,
+          "candidate_prefix_mm": [
+            [
+              -9.1,
+              9.5
+            ],
+            [
+              -8.6,
+              8.899999999999999
+            ],
+            [
+              -9.1,
+              9.5
+            ],
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -8.1,
+              8.399999999999999
+            ],
+            [
+              -5.9,
+              8.100000000000001
+            ],
+            [
+              -3.9000000000000004,
+              8.899999999999999
+            ],
+            [
+              -2.0999999999999996,
+              10.0
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -9.1,
+              9.399999999999999
+            ],
+            [
+              -8.6,
+              8.899999999999999
+            ],
+            [
+              -9.1,
+              9.399999999999999
+            ],
+            [
+              -9.6,
+              10.0
+            ],
+            [
+              -8.2,
+              8.399999999999999
+            ],
+            [
+              -6.0,
+              8.0
+            ],
+            [
+              -4.0,
+              8.899999999999999
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 297,
+              "start_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ],
+              "end_mm": [
+                2.9999999999999973,
+                22.645846249999995
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 820,
+              "start_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                22.645846249999995
+              ]
+            }
+          ],
+          "postprocess_needles": 824
+        },
+        "rectangle": {
+          "candidate_count": 570,
+          "official_count": 571,
+          "count_ratio": 0.9982486865148862,
+          "count_relative_difference": 0.0017513134851138354,
+          "hausdorff_mm": 0.14142135623731025,
+          "first_difference_index": 0,
+          "first_difference_over_02mm_index": 0,
+          "ordered_max_error_mm": 4.001249804748512,
+          "input_polygon_vertices": 5,
+          "candidate_prefix_mm": [
+            [
+              -9.0,
+              6.5
+            ],
+            [
+              -8.5,
+              6.0
+            ],
+            [
+              -9.0,
+              6.5
+            ],
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -7.8,
+              5.4
+            ],
+            [
+              -6.0,
+              3.5999999999999996
+            ],
+            [
+              -4.3,
+              1.9000000000000004
+            ],
+            [
+              -2.3,
+              0.5
+            ]
+          ],
+          "official_prefix_mm": [
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -9.1,
+              6.5
+            ],
+            [
+              -8.5,
+              6.0
+            ],
+            [
+              -9.1,
+              6.5
+            ],
+            [
+              -9.6,
+              7.0
+            ],
+            [
+              -7.8,
+              5.300000000000001
+            ],
+            [
+              -6.1,
+              3.5999999999999996
+            ],
+            [
+              -4.3,
+              1.9000000000000004
+            ]
+          ],
+          "raw_layers": [
+            {
+              "stage": "underlay",
+              "count": 218,
+              "start_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ],
+              "end_mm": [
+                2.9999999999999973,
+                16.645842374999997
+              ]
+            },
+            {
+              "stage": "top",
+              "count": 512,
+              "start_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ],
+              "end_mm": [
+                3.0000000854166657,
+                16.645842374999997
+              ]
+            }
+          ],
+          "postprocess_needles": 571
+        }
+      }
+    }
+  },
+  "transitions": {
+    "count": {
+      "regressions": [],
+      "improvements": []
+    },
+    "hausdorff": {
+      "regressions": [],
+      "improvements": []
+    },
+    "order": {
+      "regressions": [],
+      "improvements": []
+    },
+    "combined": {
+      "regressions": [],
+      "improvements": []
+    }
+  },
+  "official_full_comparator": "UNAVAILABLE: unchanged export_coordinates.py refuses FROZEN_GATE_CHANGED: thresholds.json; no bypass or criteria edits",
+  "criteria_sha256": "fbbf03ab6872d767b2c996f46f3c1cf3055b0b9f8f54b4c0a35fccdc095d6b74",
+  "byte_identity": {
+    "compared": 178,
+    "identical": 178,
+    "changed_ids": [],
+    "status_changes": [],
+    "cases": [
+      {
+        "id": "fill_stitch--rectangle--004mm--horizontal",
+        "before_sha256": "e6394eb0195c8bdc0d98badcbf2c011c2069166ce1ec7a48a0fad73301c29575",
+        "after_sha256": "e6394eb0195c8bdc0d98badcbf2c011c2069166ce1ec7a48a0fad73301c29575"
+      },
+      {
+        "id": "fill_stitch--rectangle--004mm--diagonal",
+        "before_sha256": "dca899378e374f2d530f653d16fcbc0e41a428095a442d5a32c3721efd65ab17",
+        "after_sha256": "dca899378e374f2d530f653d16fcbc0e41a428095a442d5a32c3721efd65ab17"
+      },
+      {
+        "id": "fill_stitch--rectangle--004mm--dense",
+        "before_sha256": "9a6b9672a0457ce6a224e61828eae91666a4663e5bcefaaefd7671b426bf6a38",
+        "after_sha256": "9a6b9672a0457ce6a224e61828eae91666a4663e5bcefaaefd7671b426bf6a38"
+      },
+      {
+        "id": "fill_stitch--rectangle--004mm--sparse",
+        "before_sha256": "d7d8abbbb45463fabac07f2a5f23e23594552449529590f6e9b4dd5525a0299b",
+        "after_sha256": "d7d8abbbb45463fabac07f2a5f23e23594552449529590f6e9b4dd5525a0299b"
+      },
+      {
+        "id": "fill_stitch--rectangle--006mm--horizontal",
+        "before_sha256": "76edc479e93d2ff15b602afaff98d6b3a67b74fb82257c7c5bc3f6029b3c5227",
+        "after_sha256": "76edc479e93d2ff15b602afaff98d6b3a67b74fb82257c7c5bc3f6029b3c5227"
+      },
+      {
+        "id": "fill_stitch--rectangle--006mm--diagonal",
+        "before_sha256": "1028d8ccc177a3fc2f4d3173f91917b43e9848218fbdf579dcb3cd415af33a9e",
+        "after_sha256": "1028d8ccc177a3fc2f4d3173f91917b43e9848218fbdf579dcb3cd415af33a9e"
+      },
+      {
+        "id": "fill_stitch--rectangle--006mm--dense",
+        "before_sha256": "7afefbbeca3059699c2606a05b2104bd07e24707363abeb6662c108dc2061d81",
+        "after_sha256": "7afefbbeca3059699c2606a05b2104bd07e24707363abeb6662c108dc2061d81"
+      },
+      {
+        "id": "fill_stitch--rectangle--006mm--sparse",
+        "before_sha256": "13fdd270fa4a938ac2a2f219695a9e9b53036cbaf6d983d5487cc6b93f1f7c39",
+        "after_sha256": "13fdd270fa4a938ac2a2f219695a9e9b53036cbaf6d983d5487cc6b93f1f7c39"
+      },
+      {
+        "id": "fill_stitch--rectangle--008mm--horizontal",
+        "before_sha256": "f6ede42f036946c8addd0408ab5719272d7c4e185ece69262682ce6715257f5d",
+        "after_sha256": "f6ede42f036946c8addd0408ab5719272d7c4e185ece69262682ce6715257f5d"
+      },
+      {
+        "id": "fill_stitch--rectangle--008mm--diagonal",
+        "before_sha256": "97491293cb7e412c0e00746fae43b0530550cf466435048a1507510e508b5142",
+        "after_sha256": "97491293cb7e412c0e00746fae43b0530550cf466435048a1507510e508b5142"
+      },
+      {
+        "id": "fill_stitch--rectangle--008mm--dense",
+        "before_sha256": "16427234760d79f7c014e110def3678cea9de2e2cb1082d94c1fb292f4e6bf06",
+        "after_sha256": "16427234760d79f7c014e110def3678cea9de2e2cb1082d94c1fb292f4e6bf06"
+      },
+      {
+        "id": "fill_stitch--rectangle--008mm--sparse",
+        "before_sha256": "8a1ff806d8882021c8ec7e65c6f2a1d494cf998202c8f6c3967cf1018010e3aa",
+        "after_sha256": "8a1ff806d8882021c8ec7e65c6f2a1d494cf998202c8f6c3967cf1018010e3aa"
+      },
+      {
+        "id": "fill_stitch--rectangle--010mm--horizontal",
+        "before_sha256": "6b81892ff4ed2a4540e30a1f886107f33da80480607c9337e1b7cc5c30763571",
+        "after_sha256": "6b81892ff4ed2a4540e30a1f886107f33da80480607c9337e1b7cc5c30763571"
+      },
+      {
+        "id": "fill_stitch--rectangle--010mm--diagonal",
+        "before_sha256": "38bcac5c914052b5dba50d5450f64b2ca3803a2f3ee9bff06fa49cd7500bda40",
+        "after_sha256": "38bcac5c914052b5dba50d5450f64b2ca3803a2f3ee9bff06fa49cd7500bda40"
+      },
+      {
+        "id": "fill_stitch--rectangle--010mm--dense",
+        "before_sha256": "ed66c41ac6b59943978752ce7ddcad80c0ef903970ec85fc5558297430eba19f",
+        "after_sha256": "ed66c41ac6b59943978752ce7ddcad80c0ef903970ec85fc5558297430eba19f"
+      },
+      {
+        "id": "fill_stitch--rectangle--010mm--sparse",
+        "before_sha256": "55a93b96e94131776af295fe68c530eaa0f19f8fff179ad25e7fd2622ce3f6fb",
+        "after_sha256": "55a93b96e94131776af295fe68c530eaa0f19f8fff179ad25e7fd2622ce3f6fb"
+      },
+      {
+        "id": "fill_stitch--rectangle--020mm--horizontal",
+        "before_sha256": "bb1c46ae8255f013f14b14ff5f1969785b6e459d2d105266a66f819d37f89622",
+        "after_sha256": "bb1c46ae8255f013f14b14ff5f1969785b6e459d2d105266a66f819d37f89622"
+      },
+      {
+        "id": "fill_stitch--rectangle--020mm--diagonal",
+        "before_sha256": "726848b406e5b24de5f57e3db6c5b8ee720a6e14a91aede6205566d1abcb7edc",
+        "after_sha256": "726848b406e5b24de5f57e3db6c5b8ee720a6e14a91aede6205566d1abcb7edc"
+      },
+      {
+        "id": "fill_stitch--rectangle--020mm--dense",
+        "before_sha256": "eb6cc1df23cc5c2fc19cbe1a54cc68205fdbac72dee5cd991cf3dffd3c686aa5",
+        "after_sha256": "eb6cc1df23cc5c2fc19cbe1a54cc68205fdbac72dee5cd991cf3dffd3c686aa5"
+      },
+      {
+        "id": "fill_stitch--rectangle--020mm--sparse",
+        "before_sha256": "4af4b029b3f48eed9c93bcdde9885dbca9906735aac6a625ca76d21b98bf34a9",
+        "after_sha256": "4af4b029b3f48eed9c93bcdde9885dbca9906735aac6a625ca76d21b98bf34a9"
+      },
+      {
+        "id": "fill_stitch--rectangle--050mm--horizontal",
+        "before_sha256": "b6a781f79161c9ae5670d51cdf2977a6fbbfd8b285b720f05ffb18641fafccc0",
+        "after_sha256": "b6a781f79161c9ae5670d51cdf2977a6fbbfd8b285b720f05ffb18641fafccc0"
+      },
+      {
+        "id": "fill_stitch--rectangle--050mm--diagonal",
+        "before_sha256": "0bc1fd5f94c9f6cdf45ed1afc46e3cfb6347b89e78ef095d74bbd8fe5900b6f5",
+        "after_sha256": "0bc1fd5f94c9f6cdf45ed1afc46e3cfb6347b89e78ef095d74bbd8fe5900b6f5"
+      },
+      {
+        "id": "fill_stitch--rectangle--050mm--dense",
+        "before_sha256": "923721b783723fa7192e029ae982798077b7390279c0df3659531c99b34e7e9c",
+        "after_sha256": "923721b783723fa7192e029ae982798077b7390279c0df3659531c99b34e7e9c"
+      },
+      {
+        "id": "fill_stitch--rectangle--050mm--sparse",
+        "before_sha256": "3a1180af0345f59fbc21c3b3fcb128e632877705cef64bc6c95c867841c4018e",
+        "after_sha256": "3a1180af0345f59fbc21c3b3fcb128e632877705cef64bc6c95c867841c4018e"
+      },
+      {
+        "id": "fill_stitch--circle--004mm--horizontal",
+        "before_sha256": "669e292098c5542f3950141c4a66fdb11c3e0659a4ddfdf85ace4a2bd1c57545",
+        "after_sha256": "669e292098c5542f3950141c4a66fdb11c3e0659a4ddfdf85ace4a2bd1c57545"
+      },
+      {
+        "id": "fill_stitch--circle--004mm--diagonal",
+        "before_sha256": "38412b90dc86f5053d124749b1f7127cc7ee3d2e02a5ab0ad9cb506f5805486d",
+        "after_sha256": "38412b90dc86f5053d124749b1f7127cc7ee3d2e02a5ab0ad9cb506f5805486d"
+      },
+      {
+        "id": "fill_stitch--circle--004mm--dense",
+        "before_sha256": "388026994bb3e81577225c04f091e3843f49f9d82dc9f334a7bf8c2d602c5787",
+        "after_sha256": "388026994bb3e81577225c04f091e3843f49f9d82dc9f334a7bf8c2d602c5787"
+      },
+      {
+        "id": "fill_stitch--circle--004mm--sparse",
+        "before_sha256": "47f71546c9a6e8ccdf18172aa1340476f3b36f681f7019f5f84bc5ac52fe47ee",
+        "after_sha256": "47f71546c9a6e8ccdf18172aa1340476f3b36f681f7019f5f84bc5ac52fe47ee"
+      },
+      {
+        "id": "fill_stitch--circle--006mm--horizontal",
+        "before_sha256": "85c2a4dac106d12a5dc2b78fa0562a519438a0419c8b66cad85c50896304e8c1",
+        "after_sha256": "85c2a4dac106d12a5dc2b78fa0562a519438a0419c8b66cad85c50896304e8c1"
+      },
+      {
+        "id": "fill_stitch--circle--006mm--diagonal",
+        "before_sha256": "2226f2f7d9aced4449bc7d433a8cf8da4ef46de8d9db2bb9634388a06c574ad6",
+        "after_sha256": "2226f2f7d9aced4449bc7d433a8cf8da4ef46de8d9db2bb9634388a06c574ad6"
+      },
+      {
+        "id": "fill_stitch--circle--006mm--dense",
+        "before_sha256": "05a4c8119f99c6205b7d9318ee61661b905862cbfcb156d2f57aa7b3534fe6e6",
+        "after_sha256": "05a4c8119f99c6205b7d9318ee61661b905862cbfcb156d2f57aa7b3534fe6e6"
+      },
+      {
+        "id": "fill_stitch--circle--006mm--sparse",
+        "before_sha256": "20de6fb08cc1845fc33b5c2cc65075369c90e6c4d58d65210dde51affeebd788",
+        "after_sha256": "20de6fb08cc1845fc33b5c2cc65075369c90e6c4d58d65210dde51affeebd788"
+      },
+      {
+        "id": "fill_stitch--circle--008mm--horizontal",
+        "before_sha256": "f65cbdd31177032054401dfc80685f0ae7ad76698e274baee33b744f455639f4",
+        "after_sha256": "f65cbdd31177032054401dfc80685f0ae7ad76698e274baee33b744f455639f4"
+      },
+      {
+        "id": "fill_stitch--circle--008mm--diagonal",
+        "before_sha256": "6b0264d8e4d85f3523231cd14ce35808af907ebe231a713a15e08912398b3370",
+        "after_sha256": "6b0264d8e4d85f3523231cd14ce35808af907ebe231a713a15e08912398b3370"
+      },
+      {
+        "id": "fill_stitch--circle--008mm--dense",
+        "before_sha256": "5a24449afcd90bdb2599c827fbd6930244b91ecddec0bf13cd7b48f0700a10b2",
+        "after_sha256": "5a24449afcd90bdb2599c827fbd6930244b91ecddec0bf13cd7b48f0700a10b2"
+      },
+      {
+        "id": "fill_stitch--circle--008mm--sparse",
+        "before_sha256": "939f185565eb5ba0a1da5e9247fa8714eeb0f2b4a8333d8e0596ff3d357d658d",
+        "after_sha256": "939f185565eb5ba0a1da5e9247fa8714eeb0f2b4a8333d8e0596ff3d357d658d"
+      },
+      {
+        "id": "fill_stitch--circle--010mm--horizontal",
+        "before_sha256": "a1666bde2574216e9982d13b451ac7752fc2782ae4a2b39a356f6c0fa2378a09",
+        "after_sha256": "a1666bde2574216e9982d13b451ac7752fc2782ae4a2b39a356f6c0fa2378a09"
+      },
+      {
+        "id": "fill_stitch--circle--010mm--diagonal",
+        "before_sha256": "f4c2cce665bf1838f8c7bf0b7c97bf2a671d7482d88ef014c31bf1e2ea7ef9cf",
+        "after_sha256": "f4c2cce665bf1838f8c7bf0b7c97bf2a671d7482d88ef014c31bf1e2ea7ef9cf"
+      },
+      {
+        "id": "fill_stitch--circle--010mm--dense",
+        "before_sha256": "c6de9858dc50c0ab80f5d21c98256d6aae5f728bb982ac93ebadd74c8e72fbfb",
+        "after_sha256": "c6de9858dc50c0ab80f5d21c98256d6aae5f728bb982ac93ebadd74c8e72fbfb"
+      },
+      {
+        "id": "fill_stitch--circle--010mm--sparse",
+        "before_sha256": "840af9206e5645e9f5063c172a4fdc2674dcefd4ac865da7c0322e89e551e9de",
+        "after_sha256": "840af9206e5645e9f5063c172a4fdc2674dcefd4ac865da7c0322e89e551e9de"
+      },
+      {
+        "id": "fill_stitch--circle--020mm--horizontal",
+        "before_sha256": "bc856f95a35f372cda7dc45bd676c3cc03cf1429cb7cfda097a85d744dde7175",
+        "after_sha256": "bc856f95a35f372cda7dc45bd676c3cc03cf1429cb7cfda097a85d744dde7175"
+      },
+      {
+        "id": "fill_stitch--circle--020mm--diagonal",
+        "before_sha256": "8f74bf1d950436737f1a43fc3c395aac677f5ef41f868507a107df890fbaefd5",
+        "after_sha256": "8f74bf1d950436737f1a43fc3c395aac677f5ef41f868507a107df890fbaefd5"
+      },
+      {
+        "id": "fill_stitch--circle--020mm--dense",
+        "before_sha256": "80346708c5f19b018b2d46e802f7b7f7d6dd7b9f48029f687a25d65ba8fad9ba",
+        "after_sha256": "80346708c5f19b018b2d46e802f7b7f7d6dd7b9f48029f687a25d65ba8fad9ba"
+      },
+      {
+        "id": "fill_stitch--circle--020mm--sparse",
+        "before_sha256": "6325289f0bb9613333f79be807526d771634070383ce7da42a67401de8651f28",
+        "after_sha256": "6325289f0bb9613333f79be807526d771634070383ce7da42a67401de8651f28"
+      },
+      {
+        "id": "fill_stitch--circle--050mm--horizontal",
+        "before_sha256": "2d894355fdbc2225085f6b2831c4ae934ab2ff203184d29e240931a2cf02b789",
+        "after_sha256": "2d894355fdbc2225085f6b2831c4ae934ab2ff203184d29e240931a2cf02b789"
+      },
+      {
+        "id": "fill_stitch--circle--050mm--diagonal",
+        "before_sha256": "4c88f6f7f7e8fecaef8e34de2a92ae2ab2eb4f58bc0032f1ee26332c86da747b",
+        "after_sha256": "4c88f6f7f7e8fecaef8e34de2a92ae2ab2eb4f58bc0032f1ee26332c86da747b"
+      },
+      {
+        "id": "fill_stitch--circle--050mm--dense",
+        "before_sha256": "e4015808f606ba2792df2b76211dfd1fdcf8450388c262213423234bf18a6edc",
+        "after_sha256": "e4015808f606ba2792df2b76211dfd1fdcf8450388c262213423234bf18a6edc"
+      },
+      {
+        "id": "fill_stitch--circle--050mm--sparse",
+        "before_sha256": "b9df3ed0ac10ca66dd797c7e633dc190c3a771ab06cb3cf36486abd9032bb446",
+        "after_sha256": "b9df3ed0ac10ca66dd797c7e633dc190c3a771ab06cb3cf36486abd9032bb446"
+      },
+      {
+        "id": "fill_stitch--hole--004mm--horizontal",
+        "before_sha256": "f429c611ce3ab0c7756e6ea74bcd008e098f2c7d993574b2308a75d39bbe5661",
+        "after_sha256": "f429c611ce3ab0c7756e6ea74bcd008e098f2c7d993574b2308a75d39bbe5661"
+      },
+      {
+        "id": "fill_stitch--hole--004mm--diagonal",
+        "before_sha256": "b8afe0a46cf7c0ecadf19ccc58f322a22828af7c595826723496c74f2c89d8b0",
+        "after_sha256": "b8afe0a46cf7c0ecadf19ccc58f322a22828af7c595826723496c74f2c89d8b0"
+      },
+      {
+        "id": "fill_stitch--hole--004mm--dense",
+        "before_sha256": "b70d1fe7e18c31aa566a725b1b99cea6eed2d52ae22ef7caed90a37721a4e37f",
+        "after_sha256": "b70d1fe7e18c31aa566a725b1b99cea6eed2d52ae22ef7caed90a37721a4e37f"
+      },
+      {
+        "id": "fill_stitch--hole--004mm--sparse",
+        "before_sha256": "a3523e46ed0912c8f6cee25666bd071d7b1fdad998c70a5ef6d507032b2fd716",
+        "after_sha256": "a3523e46ed0912c8f6cee25666bd071d7b1fdad998c70a5ef6d507032b2fd716"
+      },
+      {
+        "id": "fill_stitch--hole--006mm--horizontal",
+        "before_sha256": "9367cd506eff9e200166bd4f1408192787547962160ad2504b634218f8a93f09",
+        "after_sha256": "9367cd506eff9e200166bd4f1408192787547962160ad2504b634218f8a93f09"
+      },
+      {
+        "id": "fill_stitch--hole--006mm--diagonal",
+        "before_sha256": "f539d7feef65099a1f8fcb9ca68e233e74d2612e2592bcc13e9b91441023ce5d",
+        "after_sha256": "f539d7feef65099a1f8fcb9ca68e233e74d2612e2592bcc13e9b91441023ce5d"
+      },
+      {
+        "id": "fill_stitch--hole--006mm--dense",
+        "before_sha256": "6598ae6ad89f69f333eed1fc934eb706323657746c22e788635ffc72667127a4",
+        "after_sha256": "6598ae6ad89f69f333eed1fc934eb706323657746c22e788635ffc72667127a4"
+      },
+      {
+        "id": "fill_stitch--hole--006mm--sparse",
+        "before_sha256": "afd80e7344cbf486c4a84a8360eefe1393fe6d369dd2d305e3df5cf05457a7ce",
+        "after_sha256": "afd80e7344cbf486c4a84a8360eefe1393fe6d369dd2d305e3df5cf05457a7ce"
+      },
+      {
+        "id": "fill_stitch--hole--008mm--horizontal",
+        "before_sha256": "cae55c8dd8b1f5fd812eec78d76c715c507ae6b5b89a73f9e6ac0fac4565ecc0",
+        "after_sha256": "cae55c8dd8b1f5fd812eec78d76c715c507ae6b5b89a73f9e6ac0fac4565ecc0"
+      },
+      {
+        "id": "fill_stitch--hole--008mm--diagonal",
+        "before_sha256": "0304d68c4c64f5d3d363b48397a2a75d258686d77770d5287dd8d34ca4d41af8",
+        "after_sha256": "0304d68c4c64f5d3d363b48397a2a75d258686d77770d5287dd8d34ca4d41af8"
+      },
+      {
+        "id": "fill_stitch--hole--008mm--dense",
+        "before_sha256": "94dce46ef9214a03861a7808ad3bdb2a4ee0c951af7925340707f32aa58b66a1",
+        "after_sha256": "94dce46ef9214a03861a7808ad3bdb2a4ee0c951af7925340707f32aa58b66a1"
+      },
+      {
+        "id": "fill_stitch--hole--008mm--sparse",
+        "before_sha256": "10662f24c9ee7a30fb0b45f7b93351d311be99b2031d885b9b854e4b45223bcf",
+        "after_sha256": "10662f24c9ee7a30fb0b45f7b93351d311be99b2031d885b9b854e4b45223bcf"
+      },
+      {
+        "id": "fill_stitch--hole--010mm--horizontal",
+        "before_sha256": "ff770f4e6133f4e28fbf7c38bef7c32642c61ed53244dc684ef1bc3014818ca0",
+        "after_sha256": "ff770f4e6133f4e28fbf7c38bef7c32642c61ed53244dc684ef1bc3014818ca0"
+      },
+      {
+        "id": "fill_stitch--hole--010mm--diagonal",
+        "before_sha256": "774186c28c55c53e957941540378967e36e5e391d46cc2f151e258cdd5385348",
+        "after_sha256": "774186c28c55c53e957941540378967e36e5e391d46cc2f151e258cdd5385348"
+      },
+      {
+        "id": "fill_stitch--hole--010mm--dense",
+        "before_sha256": "1b95133656342ff67bb69e3b7be44202cae87b420272c355d52226e801d851db",
+        "after_sha256": "1b95133656342ff67bb69e3b7be44202cae87b420272c355d52226e801d851db"
+      },
+      {
+        "id": "fill_stitch--hole--010mm--sparse",
+        "before_sha256": "a68fe82b5d3a745fff285cdc9571e3c1098dddec64eb05232b5b193c3a1eda81",
+        "after_sha256": "a68fe82b5d3a745fff285cdc9571e3c1098dddec64eb05232b5b193c3a1eda81"
+      },
+      {
+        "id": "fill_stitch--hole--020mm--horizontal",
+        "before_sha256": "24e7e04e3ec44d285e8e37cb9cffee92b800a15f2878ae5cfa4c2b16f7651242",
+        "after_sha256": "24e7e04e3ec44d285e8e37cb9cffee92b800a15f2878ae5cfa4c2b16f7651242"
+      },
+      {
+        "id": "fill_stitch--hole--020mm--diagonal",
+        "before_sha256": "05ce36ac3869326577b8aea515a1a7205c9908e8629fc9f229103b44e3036496",
+        "after_sha256": "05ce36ac3869326577b8aea515a1a7205c9908e8629fc9f229103b44e3036496"
+      },
+      {
+        "id": "fill_stitch--hole--020mm--dense",
+        "before_sha256": "9f017b83b15a0b44cfa334ee9c49af863051a082bf968238b2a979b774118ace",
+        "after_sha256": "9f017b83b15a0b44cfa334ee9c49af863051a082bf968238b2a979b774118ace"
+      },
+      {
+        "id": "fill_stitch--hole--020mm--sparse",
+        "before_sha256": "66630da7f878fdda3f6a3261b0b63d85492dfb6fdde31cf148e28708962fc5f2",
+        "after_sha256": "66630da7f878fdda3f6a3261b0b63d85492dfb6fdde31cf148e28708962fc5f2"
+      },
+      {
+        "id": "fill_stitch--hole--050mm--horizontal",
+        "before_sha256": "f37182a9eb3276323b6719698f1c3bd94e196a8df1eb8e551b8cb97b2aa130d6",
+        "after_sha256": "f37182a9eb3276323b6719698f1c3bd94e196a8df1eb8e551b8cb97b2aa130d6"
+      },
+      {
+        "id": "fill_stitch--hole--050mm--diagonal",
+        "before_sha256": "5f97b7a5efbe7735e66cd01eca682c6712599d802d3a0d9f0cfc4ad521cbcb43",
+        "after_sha256": "5f97b7a5efbe7735e66cd01eca682c6712599d802d3a0d9f0cfc4ad521cbcb43"
+      },
+      {
+        "id": "fill_stitch--hole--050mm--dense",
+        "before_sha256": "f2d11242d925b45cd68430f9d06a51c7239cdec54288ad31fed805e5ae9ee5bb",
+        "after_sha256": "f2d11242d925b45cd68430f9d06a51c7239cdec54288ad31fed805e5ae9ee5bb"
+      },
+      {
+        "id": "fill_stitch--hole--050mm--sparse",
+        "before_sha256": "47c6e444c8d9a6364ef491711d5a78f132ff7ccee07bcfda3e65d19c77d5fa92",
+        "after_sha256": "47c6e444c8d9a6364ef491711d5a78f132ff7ccee07bcfda3e65d19c77d5fa92"
+      },
+      {
+        "id": "fill_stitch--self_intersection--004mm--horizontal",
+        "before_sha256": "3fb79a5f465952393e79be1e78431cd3c90dd34f3f8c86eac4f69ed148d0b6b5",
+        "after_sha256": "3fb79a5f465952393e79be1e78431cd3c90dd34f3f8c86eac4f69ed148d0b6b5"
+      },
+      {
+        "id": "fill_stitch--self_intersection--004mm--diagonal",
+        "before_sha256": "aac9093c82c20287dd20deee5df2dcda079211276d5b72d876886ea5bb80fe49",
+        "after_sha256": "aac9093c82c20287dd20deee5df2dcda079211276d5b72d876886ea5bb80fe49"
+      },
+      {
+        "id": "fill_stitch--self_intersection--004mm--dense",
+        "before_sha256": "58ea3d9733ff6d6e9bd29dab5e43ec07638d6cf26fae8158f15bcad82ddc6a25",
+        "after_sha256": "58ea3d9733ff6d6e9bd29dab5e43ec07638d6cf26fae8158f15bcad82ddc6a25"
+      },
+      {
+        "id": "fill_stitch--self_intersection--004mm--sparse",
+        "before_sha256": "90a5334399874c7a364fbde2deaf245b09003d05fc605f967a26749bf3997aff",
+        "after_sha256": "90a5334399874c7a364fbde2deaf245b09003d05fc605f967a26749bf3997aff"
+      },
+      {
+        "id": "fill_stitch--self_intersection--006mm--horizontal",
+        "before_sha256": "391baae65e708c89e8e19a43dcc0c2f2ba15fb2098452279e6e9d6efa1a449f2",
+        "after_sha256": "391baae65e708c89e8e19a43dcc0c2f2ba15fb2098452279e6e9d6efa1a449f2"
+      },
+      {
+        "id": "fill_stitch--self_intersection--006mm--diagonal",
+        "before_sha256": "349bb72fb51c805826e40e101974c21f365729eb197a4496182f64ada8e6bd14",
+        "after_sha256": "349bb72fb51c805826e40e101974c21f365729eb197a4496182f64ada8e6bd14"
+      },
+      {
+        "id": "fill_stitch--self_intersection--006mm--dense",
+        "before_sha256": "2a5f6ff9a774b29e30d1605bd306ee8f9c339cca4d402811a4c2ddc21ebd1cb4",
+        "after_sha256": "2a5f6ff9a774b29e30d1605bd306ee8f9c339cca4d402811a4c2ddc21ebd1cb4"
+      },
+      {
+        "id": "fill_stitch--self_intersection--006mm--sparse",
+        "before_sha256": "d1b216c6f03644888d1c4b079429a74d8217acf4c9beaf14feab8c79dfe73d83",
+        "after_sha256": "d1b216c6f03644888d1c4b079429a74d8217acf4c9beaf14feab8c79dfe73d83"
+      },
+      {
+        "id": "fill_stitch--self_intersection--008mm--horizontal",
+        "before_sha256": "0651e7f26fd43e89934cf5848c61ca0d9e9b8d2222a868c7c83a8256a79205b0",
+        "after_sha256": "0651e7f26fd43e89934cf5848c61ca0d9e9b8d2222a868c7c83a8256a79205b0"
+      },
+      {
+        "id": "fill_stitch--self_intersection--008mm--diagonal",
+        "before_sha256": "50a46af3cddf6458dcf63d279aaf55bf0b130e1c6e11a75e1fce39341e0951bb",
+        "after_sha256": "50a46af3cddf6458dcf63d279aaf55bf0b130e1c6e11a75e1fce39341e0951bb"
+      },
+      {
+        "id": "fill_stitch--self_intersection--008mm--dense",
+        "before_sha256": "e09b0b8e779156d62ded252e83e7785083a6dc554764199108065c1ee2fca567",
+        "after_sha256": "e09b0b8e779156d62ded252e83e7785083a6dc554764199108065c1ee2fca567"
+      },
+      {
+        "id": "fill_stitch--self_intersection--008mm--sparse",
+        "before_sha256": "024d94bb84cb7923d6b9ad3f0fe60c7205ee9a487683820c410daceab1ee5808",
+        "after_sha256": "024d94bb84cb7923d6b9ad3f0fe60c7205ee9a487683820c410daceab1ee5808"
+      },
+      {
+        "id": "fill_stitch--self_intersection--010mm--horizontal",
+        "before_sha256": "a4b601d8106b71e671d42ea11857479bf010e21498c9a413c78c62d0c9a18b2f",
+        "after_sha256": "a4b601d8106b71e671d42ea11857479bf010e21498c9a413c78c62d0c9a18b2f"
+      },
+      {
+        "id": "fill_stitch--self_intersection--010mm--diagonal",
+        "before_sha256": "1fcd04bd1a4d9327bbada1c6223c66655369b6ea6e6f45d7ccdde555ab9b2bea",
+        "after_sha256": "1fcd04bd1a4d9327bbada1c6223c66655369b6ea6e6f45d7ccdde555ab9b2bea"
+      },
+      {
+        "id": "fill_stitch--self_intersection--010mm--dense",
+        "before_sha256": "7810b8aa9462e2fbff518cf565da3a8423402592a947e897aa034509dcb5658c",
+        "after_sha256": "7810b8aa9462e2fbff518cf565da3a8423402592a947e897aa034509dcb5658c"
+      },
+      {
+        "id": "fill_stitch--self_intersection--010mm--sparse",
+        "before_sha256": "780209fa25211ee1d2e688ea20bd02bb5de55830416ca8c6087d2f39680140cc",
+        "after_sha256": "780209fa25211ee1d2e688ea20bd02bb5de55830416ca8c6087d2f39680140cc"
+      },
+      {
+        "id": "fill_stitch--self_intersection--020mm--horizontal",
+        "before_sha256": "b56dfc07d813c2beb7e837dfac4ef7383444df4b0500061f6caf21fbb9f34f72",
+        "after_sha256": "b56dfc07d813c2beb7e837dfac4ef7383444df4b0500061f6caf21fbb9f34f72"
+      },
+      {
+        "id": "fill_stitch--self_intersection--020mm--diagonal",
+        "before_sha256": "9b36253b0fd6e099682737934bf7124b8b4c24dc55fee23252d13613bd3450ff",
+        "after_sha256": "9b36253b0fd6e099682737934bf7124b8b4c24dc55fee23252d13613bd3450ff"
+      },
+      {
+        "id": "fill_stitch--self_intersection--020mm--dense",
+        "before_sha256": "6c4d0a9796de20586d4a9cbaae30377d70d381f368bac4bb5813ebfd41c5bd4d",
+        "after_sha256": "6c4d0a9796de20586d4a9cbaae30377d70d381f368bac4bb5813ebfd41c5bd4d"
+      },
+      {
+        "id": "fill_stitch--self_intersection--020mm--sparse",
+        "before_sha256": "9b8cad4eee4dbcee9dd73da6a8ee94417fe32c5cc3c92a578d002d120fba63e1",
+        "after_sha256": "9b8cad4eee4dbcee9dd73da6a8ee94417fe32c5cc3c92a578d002d120fba63e1"
+      },
+      {
+        "id": "fill_stitch--self_intersection--050mm--horizontal",
+        "before_sha256": "2c88df2444bf9aecfaca7d756374a05a49e32fa180e995cf646e18779fbb8bb3",
+        "after_sha256": "2c88df2444bf9aecfaca7d756374a05a49e32fa180e995cf646e18779fbb8bb3"
+      },
+      {
+        "id": "fill_stitch--self_intersection--050mm--diagonal",
+        "before_sha256": "b6598eb22e254f8f458c795c31feb8424e5964f561b1a893aeb0f18efa80e9c5",
+        "after_sha256": "b6598eb22e254f8f458c795c31feb8424e5964f561b1a893aeb0f18efa80e9c5"
+      },
+      {
+        "id": "fill_stitch--self_intersection--050mm--dense",
+        "before_sha256": "2fdbccd869c0ab2fdcbd80d20636433a3e2f97dc9c73fe3a7132c8e1b64c00b5",
+        "after_sha256": "2fdbccd869c0ab2fdcbd80d20636433a3e2f97dc9c73fe3a7132c8e1b64c00b5"
+      },
+      {
+        "id": "fill_stitch--self_intersection--050mm--sparse",
+        "before_sha256": "310314ae1db29ce3e3bbc129acad028dffa475ac870a09a51b801d102253f885",
+        "after_sha256": "310314ae1db29ce3e3bbc129acad028dffa475ac870a09a51b801d102253f885"
+      },
+      {
+        "id": "fill_stitch--self_intersection--100mm--horizontal",
+        "before_sha256": "14762c37890c3bd4fff67c6206f33bab41257e839dfdc33fec450ad1aed9549e",
+        "after_sha256": "14762c37890c3bd4fff67c6206f33bab41257e839dfdc33fec450ad1aed9549e"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--004mm--horizontal",
+        "before_sha256": "76e1f7d6c76e2c81f2214069d5d87ab83565ed5773d03f477832a78f4bbc647c",
+        "after_sha256": "76e1f7d6c76e2c81f2214069d5d87ab83565ed5773d03f477832a78f4bbc647c"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--004mm--diagonal",
+        "before_sha256": "d5b057a3d9b7ead6b60a19221787bebb89b1df6ad35ebd1bd572592262c7b9a3",
+        "after_sha256": "d5b057a3d9b7ead6b60a19221787bebb89b1df6ad35ebd1bd572592262c7b9a3"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--004mm--dense",
+        "before_sha256": "9cd381f72adf1c360b39908e8084b72b16be36940a04e5b544e97996e800894e",
+        "after_sha256": "9cd381f72adf1c360b39908e8084b72b16be36940a04e5b544e97996e800894e"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--004mm--sparse",
+        "before_sha256": "0d8b393b2968a6cbf0632b22d8b5c82753b664138baa9c52c1167b51edd1b3fe",
+        "after_sha256": "0d8b393b2968a6cbf0632b22d8b5c82753b664138baa9c52c1167b51edd1b3fe"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--006mm--horizontal",
+        "before_sha256": "dc9013f734b8d906b606d9232e98fe13b504fb54510112b740f5a7bdc8afba08",
+        "after_sha256": "dc9013f734b8d906b606d9232e98fe13b504fb54510112b740f5a7bdc8afba08"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--006mm--diagonal",
+        "before_sha256": "2068b2c7cc2174130261f145439649c85ea5a3a4f9c247c83726b9f882d0e7a7",
+        "after_sha256": "2068b2c7cc2174130261f145439649c85ea5a3a4f9c247c83726b9f882d0e7a7"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--006mm--dense",
+        "before_sha256": "5781e3559277f78b41f000c6b675fc3e3db4ea8aec44556e82eaf3d025db5bb6",
+        "after_sha256": "5781e3559277f78b41f000c6b675fc3e3db4ea8aec44556e82eaf3d025db5bb6"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--006mm--sparse",
+        "before_sha256": "5a9e046acd3ae19f2586db881220afe1079f128b680632d30e8fd03125b59cf6",
+        "after_sha256": "5a9e046acd3ae19f2586db881220afe1079f128b680632d30e8fd03125b59cf6"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--008mm--horizontal",
+        "before_sha256": "718e54bcc3a5a12d722ed32ce72fb586b59d0e3c9d9456d571156cd1b5656d22",
+        "after_sha256": "718e54bcc3a5a12d722ed32ce72fb586b59d0e3c9d9456d571156cd1b5656d22"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--008mm--diagonal",
+        "before_sha256": "02629d8295afbcb64100420d5be0b2a9234d6d4fa51b51ee593963e43ec522b0",
+        "after_sha256": "02629d8295afbcb64100420d5be0b2a9234d6d4fa51b51ee593963e43ec522b0"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--008mm--dense",
+        "before_sha256": "7994b5d628d6e02bc442bec20219123c8232ab2220392ba24987349ca0e477b8",
+        "after_sha256": "7994b5d628d6e02bc442bec20219123c8232ab2220392ba24987349ca0e477b8"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--008mm--sparse",
+        "before_sha256": "d728971597af61673e634b1f6b39f7295c99dd1926b6f6d902ad4c42ff458934",
+        "after_sha256": "d728971597af61673e634b1f6b39f7295c99dd1926b6f6d902ad4c42ff458934"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--010mm--horizontal",
+        "before_sha256": "b8b070c4dc970b3d5e5122713fd39f512eec1f1d87fb8b8afac3a7ffd7051606",
+        "after_sha256": "b8b070c4dc970b3d5e5122713fd39f512eec1f1d87fb8b8afac3a7ffd7051606"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--010mm--diagonal",
+        "before_sha256": "b43ce1ada68060bb7e9fe038591161e41f3b7d38b11ad7bfcbe5200ad4fa4132",
+        "after_sha256": "b43ce1ada68060bb7e9fe038591161e41f3b7d38b11ad7bfcbe5200ad4fa4132"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--010mm--dense",
+        "before_sha256": "48621a30130389205970e136c6bbb6afad41b6576ebe9f71d275f36d4383956c",
+        "after_sha256": "48621a30130389205970e136c6bbb6afad41b6576ebe9f71d275f36d4383956c"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--010mm--sparse",
+        "before_sha256": "7870762ed798ed98c4746c501705654525ac218811da9c044cdbee716a58de77",
+        "after_sha256": "7870762ed798ed98c4746c501705654525ac218811da9c044cdbee716a58de77"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--020mm--horizontal",
+        "before_sha256": "26b9d0f5389f1432344c9eb53a3bc511c8eba60816392c755eedbd5ce110f8c2",
+        "after_sha256": "26b9d0f5389f1432344c9eb53a3bc511c8eba60816392c755eedbd5ce110f8c2"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--020mm--diagonal",
+        "before_sha256": "be5782ef01fc5b9f673ce5df9cd8882a8b54eb8fb35622360f1b1d6e62ac0cba",
+        "after_sha256": "be5782ef01fc5b9f673ce5df9cd8882a8b54eb8fb35622360f1b1d6e62ac0cba"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--020mm--dense",
+        "before_sha256": "7390a60005b65fbc5f344d4409b06f615de7e671680a76fd97e5b4323b3f8be0",
+        "after_sha256": "7390a60005b65fbc5f344d4409b06f615de7e671680a76fd97e5b4323b3f8be0"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--020mm--sparse",
+        "before_sha256": "4be460405f3d1a80cff01b14a99fd3680dff2559c4807f47a725ce85a87009d1",
+        "after_sha256": "4be460405f3d1a80cff01b14a99fd3680dff2559c4807f47a725ce85a87009d1"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--050mm--horizontal",
+        "before_sha256": "c60ee331359be78f42018582401be3e195dcab1877bf674f93c462c47e12da62",
+        "after_sha256": "c60ee331359be78f42018582401be3e195dcab1877bf674f93c462c47e12da62"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--050mm--diagonal",
+        "before_sha256": "965e4781b1a4146c67a59b7b528df45a5010d0586ca5896403de540de261916c",
+        "after_sha256": "965e4781b1a4146c67a59b7b528df45a5010d0586ca5896403de540de261916c"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--050mm--dense",
+        "before_sha256": "619878dc9689f9b06700af99119a3b2d459951000c6b619db27a9020f1410df6",
+        "after_sha256": "619878dc9689f9b06700af99119a3b2d459951000c6b619db27a9020f1410df6"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--050mm--sparse",
+        "before_sha256": "ca4e74543a1aeb9ebda7270f8828abf373cd8c27a8d811a882c6ced6be3e9aff",
+        "after_sha256": "ca4e74543a1aeb9ebda7270f8828abf373cd8c27a8d811a882c6ced6be3e9aff"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--100mm--horizontal",
+        "before_sha256": "ee4adf091acc01ff4dbbbc9c423cdea1148082774dc65f01c45d5157735a841a",
+        "after_sha256": "ee4adf091acc01ff4dbbbc9c423cdea1148082774dc65f01c45d5157735a841a"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--100mm--diagonal",
+        "before_sha256": "6912f420c16db9f963370302205e77accff3966729a6069ae7ec162c1554f646",
+        "after_sha256": "6912f420c16db9f963370302205e77accff3966729a6069ae7ec162c1554f646"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--100mm--dense",
+        "before_sha256": "e7d0a5c8428fe0eefcd8b5050834c09a29a6654c9c7208fac8538aaade06a8d7",
+        "after_sha256": "e7d0a5c8428fe0eefcd8b5050834c09a29a6654c9c7208fac8538aaade06a8d7"
+      },
+      {
+        "id": "fill_stitch--narrow_tip--100mm--sparse",
+        "before_sha256": "021c7247d8f61980beec33465926ff7e2bf6d3eccff17e52842fb6aa9a024036",
+        "after_sha256": "021c7247d8f61980beec33465926ff7e2bf6d3eccff17e52842fb6aa9a024036"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--004mm--horizontal",
+        "before_sha256": "4244b2a5e86499fbc1b333eca0e0d57c04aa1f4aa700a970eda40d050bf6e739",
+        "after_sha256": "4244b2a5e86499fbc1b333eca0e0d57c04aa1f4aa700a970eda40d050bf6e739"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--004mm--diagonal",
+        "before_sha256": "460692e69a64ef4d8d92c4d3f55f4245495640d928bc02437d8d27afdfdc96c2",
+        "after_sha256": "460692e69a64ef4d8d92c4d3f55f4245495640d928bc02437d8d27afdfdc96c2"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--004mm--dense",
+        "before_sha256": "f3d53375c69a6fb89313b576f8e0c5a052b5a166d83d802d58792e771c46cb2d",
+        "after_sha256": "f3d53375c69a6fb89313b576f8e0c5a052b5a166d83d802d58792e771c46cb2d"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--004mm--sparse",
+        "before_sha256": "514f75fc0335bd82e05e2d23ce548e43ab7f67799a026934f64d0ea5d956947a",
+        "after_sha256": "514f75fc0335bd82e05e2d23ce548e43ab7f67799a026934f64d0ea5d956947a"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--006mm--horizontal",
+        "before_sha256": "46f71caa9fd6e543df3791da5f763229fd85004d0eb7bd802e228dd39cc9f780",
+        "after_sha256": "46f71caa9fd6e543df3791da5f763229fd85004d0eb7bd802e228dd39cc9f780"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--006mm--diagonal",
+        "before_sha256": "070bed5b8b208d137955a7d2f38a5f99ae1328d0d03990d8246a0c769cb8558c",
+        "after_sha256": "070bed5b8b208d137955a7d2f38a5f99ae1328d0d03990d8246a0c769cb8558c"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--006mm--dense",
+        "before_sha256": "44d6e3db382051991b464195ba8cc37590a2b560d1218b38389e284db242c47a",
+        "after_sha256": "44d6e3db382051991b464195ba8cc37590a2b560d1218b38389e284db242c47a"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--006mm--sparse",
+        "before_sha256": "61ef67db39d98c317dbc55bbf2f9f6e56ac0642551c624f172f037fb6500c069",
+        "after_sha256": "61ef67db39d98c317dbc55bbf2f9f6e56ac0642551c624f172f037fb6500c069"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--008mm--horizontal",
+        "before_sha256": "d60317550fb521d06c3b1686b0a474f188d91617ac5e5355b114267bf7d34ca5",
+        "after_sha256": "d60317550fb521d06c3b1686b0a474f188d91617ac5e5355b114267bf7d34ca5"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--008mm--diagonal",
+        "before_sha256": "c96860c9176dd14258ecedd5c5ae9b498de0c43349af6b281dd2977697f5cd00",
+        "after_sha256": "c96860c9176dd14258ecedd5c5ae9b498de0c43349af6b281dd2977697f5cd00"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--008mm--dense",
+        "before_sha256": "876a847aa921bdb471717fc67c6a06a42c2573c0ddf7eaafd7f400698a8f1259",
+        "after_sha256": "876a847aa921bdb471717fc67c6a06a42c2573c0ddf7eaafd7f400698a8f1259"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--008mm--sparse",
+        "before_sha256": "e8b48089f1ea5695b435a0de2c7e3259959490f976a6e250eb99763a728d24d6",
+        "after_sha256": "e8b48089f1ea5695b435a0de2c7e3259959490f976a6e250eb99763a728d24d6"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--010mm--horizontal",
+        "before_sha256": "13e6189e32701e356232343c43fdd406abea064bbd3ef750c4c3d76aa56fccd2",
+        "after_sha256": "13e6189e32701e356232343c43fdd406abea064bbd3ef750c4c3d76aa56fccd2"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--010mm--diagonal",
+        "before_sha256": "88cd3d52ad880752fd5f0f1774a15cc796157fb5ea283334ef93b60c954a5f5c",
+        "after_sha256": "88cd3d52ad880752fd5f0f1774a15cc796157fb5ea283334ef93b60c954a5f5c"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--010mm--dense",
+        "before_sha256": "1203c6b2d6ae8d0538c6361073781b58c65129570e0d634073cd27911588732e",
+        "after_sha256": "1203c6b2d6ae8d0538c6361073781b58c65129570e0d634073cd27911588732e"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--010mm--sparse",
+        "before_sha256": "c025a6ff1bdb18363048878d57f658ef8d62b2ff7c6303d2e7e6a100af96ef1d",
+        "after_sha256": "c025a6ff1bdb18363048878d57f658ef8d62b2ff7c6303d2e7e6a100af96ef1d"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--020mm--horizontal",
+        "before_sha256": "e4179f1cde39f50f2ea034178350f347a72c73855e6dcd828d204df3a696c6ef",
+        "after_sha256": "e4179f1cde39f50f2ea034178350f347a72c73855e6dcd828d204df3a696c6ef"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--020mm--diagonal",
+        "before_sha256": "46fa74363fcf0e362cea34af758f28f902ba3df1d8b489d0b5a8ee7ed9d248e4",
+        "after_sha256": "46fa74363fcf0e362cea34af758f28f902ba3df1d8b489d0b5a8ee7ed9d248e4"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--020mm--dense",
+        "before_sha256": "2cb429d45d386001b2612f9101d3a87a437d70e7b7ea5b9e80db6f01a7567947",
+        "after_sha256": "2cb429d45d386001b2612f9101d3a87a437d70e7b7ea5b9e80db6f01a7567947"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--020mm--sparse",
+        "before_sha256": "71494bf3c3a7a50bfbc0724bfd89bb81d0de46cae89bb276f6d59d1be9d513f0",
+        "after_sha256": "71494bf3c3a7a50bfbc0724bfd89bb81d0de46cae89bb276f6d59d1be9d513f0"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--050mm--horizontal",
+        "before_sha256": "ddd1129b93a02ada0872aa6a2a609c4e4ddc6b27028b360ef2332389d10f49bd",
+        "after_sha256": "ddd1129b93a02ada0872aa6a2a609c4e4ddc6b27028b360ef2332389d10f49bd"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--050mm--diagonal",
+        "before_sha256": "993d2d169d3e3d2d673babf347fe90b09bcd3601d0947e2060543346297a92ad",
+        "after_sha256": "993d2d169d3e3d2d673babf347fe90b09bcd3601d0947e2060543346297a92ad"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--050mm--dense",
+        "before_sha256": "187ed979348f0160dc4e7952cb34f19e386181af3577659388cd134c8e480bf0",
+        "after_sha256": "187ed979348f0160dc4e7952cb34f19e386181af3577659388cd134c8e480bf0"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--050mm--sparse",
+        "before_sha256": "0172ad70b76fdef56dcf54eece9b9fbe8a72f6a6d3b44fbb0b02d4e67a267421",
+        "after_sha256": "0172ad70b76fdef56dcf54eece9b9fbe8a72f6a6d3b44fbb0b02d4e67a267421"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--100mm--horizontal",
+        "before_sha256": "8c57a66c8fa1d12b159c732b2ffe71ec8cb46d38ee72f6ab6a45c03bb3c83ed0",
+        "after_sha256": "8c57a66c8fa1d12b159c732b2ffe71ec8cb46d38ee72f6ab6a45c03bb3c83ed0"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--100mm--diagonal",
+        "before_sha256": "b1bfa06d541d4f24d22abfcf77ac8dde261d3452e56d22a7e7784d26c33a71b6",
+        "after_sha256": "b1bfa06d541d4f24d22abfcf77ac8dde261d3452e56d22a7e7784d26c33a71b6"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--100mm--dense",
+        "before_sha256": "0d56e9db899cbb6ca6eb6719f223c0043d517e6762fd3da584405ec880f2dcba",
+        "after_sha256": "0d56e9db899cbb6ca6eb6719f223c0043d517e6762fd3da584405ec880f2dcba"
+      },
+      {
+        "id": "fill_stitch--sharp_corner--100mm--sparse",
+        "before_sha256": "7b04a04341dade0a818ea085bf1aea6919f0a9f1d474584643e7cd6794c8184f",
+        "after_sha256": "7b04a04341dade0a818ea085bf1aea6919f0a9f1d474584643e7cd6794c8184f"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--004mm--horizontal",
+        "before_sha256": "9deed9548c5c68e4cbdff46fbff3798fe4aa94d7d66aa1a404e9654ad44250fe",
+        "after_sha256": "9deed9548c5c68e4cbdff46fbff3798fe4aa94d7d66aa1a404e9654ad44250fe"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--004mm--diagonal",
+        "before_sha256": "337091a91a001d26aedbcfc42d2b8ed97c04b4b678aa3b28650fe97a8b0361c7",
+        "after_sha256": "337091a91a001d26aedbcfc42d2b8ed97c04b4b678aa3b28650fe97a8b0361c7"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--004mm--dense",
+        "before_sha256": "741d5ea0aecb98ce776074c6868ed157620cedb0151624b48007038fd9fe912e",
+        "after_sha256": "741d5ea0aecb98ce776074c6868ed157620cedb0151624b48007038fd9fe912e"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--004mm--sparse",
+        "before_sha256": "312d1a8170465f414733c2f550a410543e51f8bb45e56bd6ddf0bd1eb93ef407",
+        "after_sha256": "312d1a8170465f414733c2f550a410543e51f8bb45e56bd6ddf0bd1eb93ef407"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--006mm--horizontal",
+        "before_sha256": "a80662d87112855009e04cfb5383cbc218f2a102269254e4b1dda52aecbcbc81",
+        "after_sha256": "a80662d87112855009e04cfb5383cbc218f2a102269254e4b1dda52aecbcbc81"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--006mm--diagonal",
+        "before_sha256": "0e497dc505148f61347081b1635d53d1c6a40631f902afb904613aabd924f10a",
+        "after_sha256": "0e497dc505148f61347081b1635d53d1c6a40631f902afb904613aabd924f10a"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--006mm--dense",
+        "before_sha256": "e4e9907ee82224b7803cec35ebb54c8c0115f8bfb3c56103a010098dab43f6a8",
+        "after_sha256": "e4e9907ee82224b7803cec35ebb54c8c0115f8bfb3c56103a010098dab43f6a8"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--006mm--sparse",
+        "before_sha256": "adacfbd7b43c5bfa0d0c47a3a71e7a3d60cd98dad046150504975f00ef0d6800",
+        "after_sha256": "adacfbd7b43c5bfa0d0c47a3a71e7a3d60cd98dad046150504975f00ef0d6800"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--008mm--horizontal",
+        "before_sha256": "9edfda0b79f93bd47a4542f1b88d8812c28d14b8cb7591139776643d4c43309a",
+        "after_sha256": "9edfda0b79f93bd47a4542f1b88d8812c28d14b8cb7591139776643d4c43309a"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--008mm--diagonal",
+        "before_sha256": "417d27dee3a4f84bdc1773e897e41321efc348f5af854b9a2c9fc88e74bfde86",
+        "after_sha256": "417d27dee3a4f84bdc1773e897e41321efc348f5af854b9a2c9fc88e74bfde86"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--008mm--dense",
+        "before_sha256": "91d41f8064005600f98de835b6c13e94a55a09b28e2f8937a0c065c7dcd2a9e8",
+        "after_sha256": "91d41f8064005600f98de835b6c13e94a55a09b28e2f8937a0c065c7dcd2a9e8"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--008mm--sparse",
+        "before_sha256": "e22dd154be3253c505d010109d2f412d7097f369bd9e6167caae82c27c82e585",
+        "after_sha256": "e22dd154be3253c505d010109d2f412d7097f369bd9e6167caae82c27c82e585"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--010mm--horizontal",
+        "before_sha256": "7655c16bf58924c3fa03f9112c14c2d09b0c1a8423caaea7c7e559fda584b932",
+        "after_sha256": "7655c16bf58924c3fa03f9112c14c2d09b0c1a8423caaea7c7e559fda584b932"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--010mm--diagonal",
+        "before_sha256": "9092e4af35da12d5fce7ec5516da65da138a6256de988041ef65116d51063ae8",
+        "after_sha256": "9092e4af35da12d5fce7ec5516da65da138a6256de988041ef65116d51063ae8"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--010mm--dense",
+        "before_sha256": "23eede3710689d2d5fd4379262a89dddeb3d787857e9513cc73e333981613a62",
+        "after_sha256": "23eede3710689d2d5fd4379262a89dddeb3d787857e9513cc73e333981613a62"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--010mm--sparse",
+        "before_sha256": "90ea6059d351e31cb08338d4e907857ea2a9fbe013f6463a2836efbfaf79a9e2",
+        "after_sha256": "90ea6059d351e31cb08338d4e907857ea2a9fbe013f6463a2836efbfaf79a9e2"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--020mm--horizontal",
+        "before_sha256": "859840fe8c43e13404731674cd4950bc11fa0578c5626cbd070d7722976fba19",
+        "after_sha256": "859840fe8c43e13404731674cd4950bc11fa0578c5626cbd070d7722976fba19"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--020mm--diagonal",
+        "before_sha256": "79645469b86ec85249310f80a3bd1ccebbb7105ad3bb3433c22e5646042011d0",
+        "after_sha256": "79645469b86ec85249310f80a3bd1ccebbb7105ad3bb3433c22e5646042011d0"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--020mm--dense",
+        "before_sha256": "b083362e31a39b5213c7b63c1ac0b2725c3c7d9cd3dc4468999efecca5a6e0bc",
+        "after_sha256": "b083362e31a39b5213c7b63c1ac0b2725c3c7d9cd3dc4468999efecca5a6e0bc"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--020mm--sparse",
+        "before_sha256": "24d6874f32895b7ec46d1a52d4392b2db199a501a0297f0851976622b847d57d",
+        "after_sha256": "24d6874f32895b7ec46d1a52d4392b2db199a501a0297f0851976622b847d57d"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--050mm--horizontal",
+        "before_sha256": "b55f7145bc497503c598575e70215f0945ff2b62b06a90085503eed8de3af178",
+        "after_sha256": "b55f7145bc497503c598575e70215f0945ff2b62b06a90085503eed8de3af178"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--050mm--diagonal",
+        "before_sha256": "810606cf515837ca9524f0ed2e12464602aa25e887a1f5921abc86b1b4753f54",
+        "after_sha256": "810606cf515837ca9524f0ed2e12464602aa25e887a1f5921abc86b1b4753f54"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--050mm--dense",
+        "before_sha256": "95257c189926fb8e5eb9903850649257279dfa41e9c7906933d5abb86d7cd6db",
+        "after_sha256": "95257c189926fb8e5eb9903850649257279dfa41e9c7906933d5abb86d7cd6db"
+      },
+      {
+        "id": "fill_stitch--crossing_strokes--050mm--sparse",
+        "before_sha256": "27c19c0097fadb9ffc4bd030eed1cf5b7a2fc8724e5c74e8341bf1959322c046",
+        "after_sha256": "27c19c0097fadb9ffc4bd030eed1cf5b7a2fc8724e5c74e8341bf1959322c046"
+      },
+      {
+        "id": "fill_stitch--zero-row-spacing--020mm--reject",
+        "before_sha256": "f136da2b3962fb1ba2f5636c7ed1b638be86f565586bd45422fe95d99d623d11",
+        "after_sha256": "f136da2b3962fb1ba2f5636c7ed1b638be86f565586bd45422fe95d99d623d11"
+      }
+    ]
+  },
+  "representative_byte_identity": {
+    "rectangle": true,
+    "circle": true,
+    "hole": true
+  }
+}
