@@ -46,6 +46,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import io.github.linker2k.myembro.ui.RenderData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.graphics.BitmapFactory
+import android.media.ExifInterface
+import android.net.Uri
+import androidx.activity.result.PickVisualMediaRequest
 
 /** Top-bar entry point of "Ask AI". */
 @Composable
@@ -101,6 +105,15 @@ private fun AskSheet(controller: AgentAssistController) {
             controller.request = listOf(controller.request.trim(), heard).filter { it.isNotEmpty() }.joinToString(" ")
     }
     var showPrompt by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    // The same system photo picker as the photo screen; only the picked item is readable, and only here.
+    val photo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) scope.launch {
+            val size = withContext(Dispatchers.IO) { uprightSize(context, uri) }
+            if (size == null) Toast.makeText(context, R.string.agent_photo_unreadable, Toast.LENGTH_SHORT).show()
+            else controller.attach(uri.toString(), size.first, size.second)
+        }
+    }
     val prompt = controller.prompt
     ModalBottomSheet(onDismissRequest = controller::close) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -112,6 +125,18 @@ private fun AskSheet(controller: AgentAssistController) {
                     Icon(Icons.Default.Mic, stringResource(R.string.agent_voice))
                 }
             }
+            controller.attachments.forEach { a ->
+                InputChip(selected = false, onClick = { controller.detach(a.id) },
+                    label = { Text(stringResource(R.string.agent_photo_chip, a.id, a.widthPx, a.heightPx)) },
+                    leadingIcon = { Icon(Icons.Default.Image, null, Modifier.size(18.dp)) },
+                    trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.agent_photo_remove), Modifier.size(18.dp)) })
+            }
+            OutlinedButton(onClick = { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.agent_attach_photo))
+            }
+            if (controller.attachments.isNotEmpty()) Text(stringResource(R.string.agent_photo_note),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             val summary = controller.summary
             if (summary == null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +169,9 @@ private fun AskSheet(controller: AgentAssistController) {
                 }
                 Spacer(Modifier.weight(1f))
                 Button(onClick = {
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, prompt!!.text)
+                    // Text only: an attached photo is never added to the share (AgentShare).
+                    val send = Intent(Intent.ACTION_SEND).setType(AgentShare.MIME_TYPE)
+                    AgentShare.extras(prompt!!).forEach { (key, value) -> send.putExtra(key, value) }
                     context.startActivity(Intent.createChooser(send, context.getString(R.string.agent_share_chooser)))
                     controller.sent()
                 }, enabled = ready) {
@@ -473,3 +500,17 @@ private fun copy(context: Context, text: String) {
 private fun paste(context: Context): String? =
     context.getSystemService(ClipboardManager::class.java).primaryClip?.takeIf { it.itemCount > 0 }
         ?.getItemAt(0)?.coerceToText(context)?.toString()
+
+/** Width × height in pixels as the photo is shown (EXIF rotation applied), from the header only. */
+private fun uprightSize(context: Context, uri: Uri): Pair<Int, Int>? = runCatching {
+    val resolver = context.contentResolver
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
+        ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+    } }.getOrDefault(1)
+    val turned = orientation in setOf(ExifInterface.ORIENTATION_ROTATE_90, ExifInterface.ORIENTATION_ROTATE_270,
+        ExifInterface.ORIENTATION_TRANSPOSE, ExifInterface.ORIENTATION_TRANSVERSE)
+    if (turned) bounds.outHeight to bounds.outWidth else bounds.outWidth to bounds.outHeight
+}.getOrNull()

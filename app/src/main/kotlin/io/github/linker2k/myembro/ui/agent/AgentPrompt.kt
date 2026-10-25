@@ -43,11 +43,24 @@ internal object AgentTools {
      */
     fun separate(tool: String): Boolean =
         tool in SETTINGS || (tool != "remove_objects" && schema.contains(tool) && schema.confirmation(tool))
+
+    /** prepare_photo of docs/agent/tools.json, listed only when a photo is attached. Not an edit tool: no transaction. */
+    const val PHOTO_SIGNATURE = "prepare_photo(attachmentId:str, frameId:str, style:SILHOUETTE|OUTLINE|COLOR, detail:0|1|2, " +
+        "colorCount:int[2..6], grayscale:bool, widthMm:num, crop:{zoom:num[1..4], panX:num[-1..1], panY:num[-1..1]}) - " +
+        "Prepare an app-selected photo using only its attachmentId; add the result with add_generated_art."
 }
+
+/**
+ * A photo the user picked in the app. Only [id] and the pixel size ever leave the app; the image and
+ * its location stay on the phone (docs/agent/mobile-standalone.md).
+ */
+internal data class AgentAttachment(val id: String, val widthPx: Int, val heightPx: Int)
 
 /** Short names the chatbot uses instead of UUIDs, font ids and asset ids; the app expands them back. */
 internal data class AgentHandles(val objects: Map<String, String>, val fonts: Map<String, String>,
-    val designs: Map<String, String> = emptyMap())
+    val designs: Map<String, String> = emptyMap(),
+    /** Attached photo ids (a1, a2, …) to the app's own attachment ids; the same today. */
+    val attachments: Map<String, String> = emptyMap())
 
 /** A font the lettering screen can use now; [minMm]/[maxMm] come from font metadata or pinned sweeps, capped at 60mm. */
 internal data class AgentFontInfo(val id: String, val name: String, val hangul: Boolean, val latin: Boolean,
@@ -106,7 +119,14 @@ internal data class AgentProjectSummary(
 
 /** [level] is the shortening step used (0 = full); [overBudget] when even the last step did not fit. */
 internal data class AgentPrompt(val promptId: String, val text: String, val handles: AgentHandles,
-    val level: Int = 0, val overBudget: Boolean = false)
+    val level: Int = 0, val overBudget: Boolean = false, val attachments: List<AgentAttachment> = emptyList())
+
+/** What the share sheet gets: plain text only, never an image stream (no EXTRA_STREAM, no image type). */
+internal object AgentShare {
+    const val MIME_TYPE = "text/plain"
+    const val EXTRA_TEXT = "android.intent.extra.TEXT"
+    fun extras(prompt: AgentPrompt): Map<String, String> = mapOf(EXTRA_TEXT to prompt.text)
+}
 
 /**
  * Builds the text shared to any chatbot app. Deterministic for a given summary, request and id.
@@ -119,11 +139,13 @@ internal data class AgentPrompt(val promptId: String, val text: String, val hand
 internal object AgentPromptBuilder {
     const val LEVELS = 3
 
-    fun build(summary: AgentProjectSummary, request: String, promptId: String, budgetChars: Int? = null): AgentPrompt {
+    fun build(summary: AgentProjectSummary, request: String, promptId: String, budgetChars: Int? = null,
+        attachments: List<AgentAttachment> = emptyList()): AgentPrompt {
         for (level in 0..LEVELS) {
-            val text = text(summary, request, promptId, level)
+            val text = text(summary, request, promptId, level, attachments)
             if (budgetChars == null || text.length <= budgetChars || level == LEVELS)
-                return AgentPrompt(promptId, text, summary.handles, level, budgetChars != null && text.length > budgetChars)
+                return AgentPrompt(promptId, text, summary.handles.copy(attachments = attachments.associate { it.id to it.id }),
+                    level, budgetChars != null && text.length > budgetChars, attachments)
         }
         error("unreachable")
     }
@@ -131,7 +153,8 @@ internal object AgentPromptBuilder {
     private val HANGUL = Regex("[\\uAC00-\\uD7A3\\u3131-\\u318E]")
     private val LATIN = Regex("[A-Za-z]")
 
-    private fun text(summary: AgentProjectSummary, request: String, promptId: String, level: Int) = buildString {
+    private fun text(summary: AgentProjectSummary, request: String, promptId: String, level: Int,
+        attachments: List<AgentAttachment>) = buildString {
         appendLine("You are helping edit an embroidery design in the Android app myembro.")
         appendLine("Answer with ONLY the JSON command list: one ```json fenced block in the format below and nothing else.")
         appendLine("If the request is unclear, ask a short question instead of guessing.")
@@ -146,7 +169,8 @@ internal object AgentPromptBuilder {
         appendLine("```")
         appendLine()
         appendLine("Tools (args are required exactly as listed):")
-        AgentTools.SIGNATURES.forEach { appendLine("- " + if (level >= 3) it.substringBefore(" - ") else it) }
+        val signatures = AgentTools.SIGNATURES + listOfNotNull(AgentTools.PHOTO_SIGNATURE.takeIf { attachments.isNotEmpty() })
+        signatures.forEach { appendLine("- " + if (level >= 3) it.substringBefore(" - ") else it) }
         appendLine()
         appendLine("Design:")
         appendLine("- hoop: ${summary.hoopName} ${mm(summary.hoopWidthMm)} x ${mm(summary.hoopHeightMm)} mm")
@@ -194,6 +218,11 @@ internal object AgentPromptBuilder {
             appendLine("Built-in designs:")
             if (level >= 1) appendLine("- (list left out to save space)")
             else summary.designs.forEach { (handle, d) -> appendLine("- $handle \"${d.name}\" ${mm(d.widthMm)}x${mm(d.heightMm)}mm") }
+        }
+        if (attachments.isNotEmpty()) {
+            appendLine()
+            appendLine("Photos (only the id and size are sent, not the image; use the id as attachmentId):")
+            attachments.forEach { appendLine("- photo ${it.id} attached (${it.widthPx}x${it.heightPx} px)") }
         }
         appendLine()
         appendLine("Request:")

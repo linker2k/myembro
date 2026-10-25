@@ -104,4 +104,9 @@
     <string name="agent_separate_body">Transfers, saves, deletions, restores and settings changes are never applied from a chatbot script. Ask for the edits alone, then do these from their own screens.</string>
     <string name="agent_code_invalid_approval">the approval does not match this script; check the preview again</string>
     <string name="agent_code_separate">must be done separately in the app</string>
+    <string name="agent_attach_photo">Attach photo</string>
+    <string name="agent_photo_chip">Photo %1$s · %2$d×%3$d px</string>
+    <string name="agent_photo_remove">Remove photo</string>
+    <string name="agent_photo_note">The photo stays on this phone. The chatbot only gets its number and size.</string>
+    <string name="agent_photo_unreadable">This photo can’t be read</string>
 </resources>

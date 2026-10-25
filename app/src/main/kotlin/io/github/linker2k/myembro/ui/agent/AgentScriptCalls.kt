@@ -65,7 +65,7 @@ internal data class AgentScriptCalls(
 
     companion object {
         const val NEW_PREFIX = "agent-"
-        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId", "assetId")
+        private val OBJECT_KEYS = setOf("objectId", "sourceId", "newObjectId", "assetId", "attachmentId")
         private val FONT_KEYS = setOf("fontId", "fontRevision")
         private val OBJECT_HANDLE = Regex("o\\d+")
         private val FONT_HANDLE = Regex("f\\d+")
@@ -91,6 +91,9 @@ internal data class AgentScriptCalls(
                     font && FONT_HANDLE.matches(value) -> handles.fonts[value]?.let { id -> if (key == "fontRevision") fontRevision(id) ?: id else id }
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     !font && key == "assetId" && DESIGN_HANDLE.matches(value) -> handles.designs[value]
+                        ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
+                    // Only a photo attached to this prompt; never a path, URL or another prompt's photo.
+                    !font && key == "attachmentId" -> handles.attachments[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     else -> value
                 }

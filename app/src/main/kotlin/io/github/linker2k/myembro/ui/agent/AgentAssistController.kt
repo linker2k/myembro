@@ -44,8 +44,27 @@ internal class AgentAssistController(
     var samplePreview by mutableStateOf<AgentPreview?>(null)
     private var draftId = newPromptId()
     private var draftRevision = 0L
+    /** Photos picked for the next prompt; only their ids and sizes go into it. */
+    var attachments by mutableStateOf<List<AgentAttachment>>(emptyList()); private set
+    /** The picked content for each attachment id, kept in the app for prepare_photo; never sent. */
+    private var sources = mapOf<String, String>()
+    private var nextAttachment = 1
 
-    val prompt: AgentPrompt? get() = summary?.let { AgentPromptBuilder.build(it, request, draftId) }
+    val prompt: AgentPrompt? get() = summary?.let { AgentPromptBuilder.build(it, request, draftId, attachments = attachments) }
+
+    /** A photo from the app's picker: [source] is its content URI, [widthPx]×[heightPx] its upright size. */
+    fun attach(source: String, widthPx: Int, heightPx: Int): AgentAttachment {
+        val attachment = AgentAttachment("a${nextAttachment++}", widthPx, heightPx)
+        attachments = attachments + attachment
+        sources = sources + (attachment.id to source)
+        return attachment
+    }
+
+    fun detach(id: String) { attachments = attachments.filter { it.id != id }; sources = sources - id }
+
+    /** The picked photo behind an attachment id of the pending prompt (for prepare_photo once connected). */
+    fun source(id: String): String? = pendingSources[id]
+    private var pendingSources = mapOf<String, String>()
 
     suspend fun openAsk(project: Project) {
         stage = Stage.ASK
@@ -58,6 +77,8 @@ internal class AgentAssistController(
     /** The prompt was shared or copied; one pending prompt per editor, a new one replaces it. */
     fun sent() {
         pendingPrompt = Pending(prompt ?: return, draftRevision)
+        pendingSources = sources.filterKeys { id -> attachments.any { it.id == id } }
+        attachments = emptyList(); sources = emptyMap(); nextAttachment = 1
         draftId = newPromptId()
         stage = Stage.CLOSED
     }
@@ -86,7 +107,7 @@ internal class AgentAssistController(
         applying = true
         try {
             outcome = when (val result = executor.apply(read.script, waiting.prompt.handles, waiting.revision, approvedRemovals)) {
-                AgentApplyResult.Applied -> Outcome.Applied(read.script).also { pendingPrompt = null; reply = "" }
+                AgentApplyResult.Applied -> Outcome.Applied(read.script).also { pendingPrompt = null; pendingSources = emptyMap(); reply = "" }
                 is AgentApplyResult.Rejected -> Outcome.ApplyFailed(read, result.problems)
             }
         } finally { applying = false }
@@ -97,7 +118,7 @@ internal class AgentAssistController(
     /** After a refused Apply: the same preview again, so the user can tick removals and retry. */
     fun backToPreview() { (outcome as? Outcome.ApplyFailed)?.let { outcome = it.read } }
 
-    fun cancelPending() { pendingPrompt = null; reply = ""; outcome = null; close() }
+    fun cancelPending() { pendingPrompt = null; pendingSources = emptyMap(); reply = ""; outcome = null; close() }
 
     private companion object {
         val random = SecureRandom()
