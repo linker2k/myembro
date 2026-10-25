@@ -42,4 +42,29 @@ class AdversarialUsbSafetyTest {
             assertEquals(0,fake.writeCalls,"SewoutCheck BLOCK input was written to the actual DirectUsbExporter fake BlockDevice")
         } finally { dir.deleteRecursively() }
     }
+    @Test fun directWriteRejectsDenseAndCorruptPayloadsBeforeAnyBatchMutation() {
+        val dir=Files.createTempDirectory("safety-usb-direct-").toFile()
+        try {
+            val image=File(dir,"disk.img")
+            val mkfs=ProcessBuilder("/usr/sbin/mkfs.fat","-F","12","-C","-s","1","-f","2",image.path,"480").redirectErrorStream(true).start()
+            assertTrue(mkfs.waitFor(15,TimeUnit.SECONDS));assertEquals(0,mkfs.exitValue())
+            val valid=File("../engine/src/test/resources/fixtures/stops.v1.pes").readBytes()
+            val corrupt=valid.copyOf()
+            val p=(0..3).sumOf { (corrupt[8+it].toInt() and 255) shl (8*it) }
+            corrupt[p+520]=(corrupt[p+520]+1).toByte()
+            for(bad in listOf(SafetyFixtures.densePes(),corrupt,byteArrayOf(1,2,3))) {
+                val fake=FakeUsb(image.readBytes());val before=fake.bytes.copyOf()
+                val session=DirectUsbAccess.Session(Fat12Volume.mount(fake),Closeable {},{"fake USB"},{ DirectUsbFailure(it,"fake USB") })
+                session.use {
+                    // A valid first file must not be written before a later bad file is checked.
+                    val result=DirectUsbExporter.write(it,listOf(
+                        DirectUsbExporter.Payload("good.pes","good.pes",valid,false),
+                        DirectUsbExporter.Payload("bad.pes","bad.pes",bad,false)),emptyList()) as DirectUsbExporter.Result.Complete
+                    assertTrue(result.report.exported.isEmpty());assertEquals(2,result.report.failures.size)
+                }
+                assertEquals(0,fake.writeCalls);assertContentEquals(before,fake.bytes)
+            }
+        } finally { dir.deleteRecursively() }
+    }
+
 }

@@ -46,7 +46,10 @@ class UsbTransferReportTest {
             DirectUsbFailure(it, capture.report("SE400", it))
         }
     }
-    private fun payload(name: String, size: Int = 100) = DirectUsbExporter.Payload(name, name, ByteArray(size) { 42 }, false)
+    // Reporting/allocation tests also pass through the real mandatory PES gate.
+    private val validPes = File("../engine/src/test/resources/fixtures/stops.v1.pes").readBytes()
+    private fun payload(name: String, size: Int = validPes.size) =
+        DirectUsbExporter.Payload(name, name, validPes.copyOf(maxOf(size, validPes.size)), false)
 
     /** Production preparation shared by SAF and BOT, followed by the real BOT writer and FAT remount. */
     private fun assertImportedPesRoundTrip(bytes: ByteArray): String {
@@ -136,7 +139,7 @@ class UsbTransferReportTest {
         session(disk).use { s ->
             val complete = DirectUsbExporter.write(s, listOf(payload("lemon.pes")), emptyList()) as DirectUsbExporter.Result.Complete
             val report = complete.report
-            assertEquals(listOf(UsbTransferredFile("LEMON.PES", 100, 4096, 4096, "lemon.pes")), report.files)
+            assertEquals(listOf(UsbTransferredFile("LEMON.PES", validPes.size.toLong(), 4096, 4096, "lemon.pes")), report.files)
             assertEquals(114L * 4096, report.remainingBytes)
             assertTrue(report.warnings.any { "reserved entries" in it })
             assertTrue(report.notices.isEmpty(), report.warnings.joinToString("\n")) // Known SE400 quirks do not alarm the user.
@@ -144,7 +147,7 @@ class UsbTransferReportTest {
             assertTrue(report.warnings.all { expectedSe400Note(it, s.volume.geometry) })
             assertContentEquals(ByteArray(3), disk.bytes.copyOfRange(33 * 512, 33 * 512 + 3))
             val collision = DirectUsbExporter.write(s, listOf(payload("lemon.pes", 200)), emptyList()) as DirectUsbExporter.Result.Complete
-            assertEquals(listOf(UsbTransferredFile("LEMON~1.PES", 200, 4096, 4096, "lemon.pes")), collision.report.files)
+            assertEquals(listOf(UsbTransferredFile("LEMON~1.PES", validPes.size.toLong(), 4096, 4096, "lemon.pes")), collision.report.files)
             assertEquals(setOf(UsbTransferNotice.NAME_COLLISION), collision.report.notices)
             assertEquals(113L * 4096, collision.report.remainingBytes)
         }
@@ -177,7 +180,7 @@ class UsbTransferReportTest {
         disk.failAt = 75 // First cluster for second file, after first file has been verified.
         session(disk).use { s ->
             val result = DirectUsbExporter.write(s, listOf(payload("a.pes"), payload("b.pes"), payload("c.pes")), emptyList()) as DirectUsbExporter.Result.Complete
-            assertEquals(listOf(UsbTransferredFile("A.PES", 100, 4096, 4096, "a.pes")), result.report.files)
+            assertEquals(listOf(UsbTransferredFile("A.PES", validPes.size.toLong(), 4096, 4096, "a.pes")), result.report.files)
             assertEquals(listOf("b.pes", "c.pes"), result.report.failures.map { it.first })
             assertNull(result.report.remainingBytes)
             assertNotNull(result.failure)

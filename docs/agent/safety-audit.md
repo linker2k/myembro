@@ -68,3 +68,53 @@ MCP tests exercise forged, argument-mismatched (or other-action for argumentless
 - The phone Apply button has no production connection yet; tests cover EditorSession.runCommandScript. The default confirmed=false path is safe in these cases, whereas the trusted confirmed=true escape fails the requested stricter policy.
 
 No implementation fix, push or main merge was performed.
+
+## High-severity export boundary fix
+
+`fix/export-gate` enforces the existing SewoutCheck BLOCK policy and exact
+PecViewportCheck at PesExport preparation, project DesignFormats preparation,
+and immediately before DirectUsbExporter writes. Imported PES retain the 30
+penetrations/cell threshold and their exact original bytes. Generated origin and
+selected HoopSpec travel with prepared results/payloads; no limits are enlarged.
+Incomplete analysis also rejects output. USB batches are copied and validated in
+full before the first mutation. Resume validates the frozen payloads before even
+opening the device, so invalid data cannot cause space-recovery deletions.
+
+The original engine-pes-export and USB adversarial assertions remain enabled.
+Additional tests bypass preparation and submit dense, corrupt-header and malformed
+payloads directly after a valid first payload: every case must produce zero writes
+and an unchanged fake disk. Existing USB report/allocation tests now use a real
+public PES fixture instead of arbitrary non-PES filler. Public imported-file tests
+still compare prepared bytes against FAT12-remounted bytes for both export versions.
+Density boundary tests cover imported 30/31 and generated 16. No private designs,
+policy relaxation, disabled tests or real USB device is involved.
+
+The audit's separate confirmation/staging policy mismatches are unchanged by this
+High-severity fix. A full check still reports their deliberately failing assertions;
+these results must not be described as a green overall audit.
+
+Measured verification for this fix (2026-10-25):
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew --continue check
+# BUILD FAILED in 4m 9s. Engine 844/2 failed; app debug 289/1;
+# app release 289/1; MCP 9/2. All 6 failures are the pre-existing
+# confirmation/staging assertions above; lint and checkStdio complete.
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew \
+  :engine:test --tests '*AdversarialSafetyTest.publicPesExportPreparationCannotReturnSewoutBlockedBytes' \
+  --tests '*PesExportSafetyTest' :app:testDebugUnitTest \
+  --tests '*AdversarialUsbSafetyTest' --tests '*UsbTransferReportTest'
+# BUILD SUCCESSFUL in 2s. Engine 3/3; USB 10/10; 0 failures/errors.
+```
+
+JUnit-captured evidence (shared `/tmp` reports can be overwritten by other audit
+runs; the values below are from this worktree's test XML, not a reused report):
+
+```text
+SAFETY_engine-pes-export {"blockedInput":true,"returnedBytes":0}
+SAFETY_usb-blocked {"inputVerdict":"BLOCK","viewportValid":true,"preparedBytes":0,"usbWriteCalls":0,"usbWrittenBytes":0}
+```
+
+The full check therefore remains **FAIL**, while the High-severity export/USB
+regressions and normal public-PES round trips pass. No claim of overall audit
+approval is made.
