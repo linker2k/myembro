@@ -36,8 +36,8 @@
         "success": true,
         "code": null,
         "sewout": "PASS",
-        "stitchCount": 854,
-        "pesSha256": "400c02244dbb373348df83a95170594126f40df5e9d3db52d69cb0206df8db96",
+        "stitchCount": 849,
+        "pesSha256": "5f73ddddb984e6e153cb17466fddf2150f1578377420a05bb34cb2e0f42f27cc",
         "released": true,
         "unchanged": false,
         "undoCount": 1
