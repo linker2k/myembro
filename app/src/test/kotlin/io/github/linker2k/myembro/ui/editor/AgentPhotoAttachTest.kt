@@ -141,7 +141,7 @@ class AgentPhotoAttachTest {
         assertEquals(0, reads)
     }
 
-    private companion object {
+    internal companion object {
         /** 8-bit RGBA, non-interlaced PNG (what tools/image-to-design/generate-inputs.py writes) to ARGB. */
         fun decodePng(bytes: ByteArray): Triple<Int, Int, IntArray> {
             val data = java.io.ByteArrayOutputStream(); var at = 8; var w = 0; var h = 0
