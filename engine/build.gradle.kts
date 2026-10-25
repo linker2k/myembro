@@ -242,3 +242,13 @@ tasks.processResources {
 tasks.processResources {
     from(rootProject.file("app/src/main/assets/emoji")) { into("emoji") }
 }
+
+// Opt-in artifact export/measurement. CI tests only compare pinned JSON, never update it.
+tasks.register<JavaExec>("runAgentRegression") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.agent.AgentScenarioRegression")
+    args(providers.gradleProperty("agentRegressionOutput").orElse("/tmp/myembro-agent-regression").get())
+    if(providers.gradleProperty("agentRegressionMeasure").orElse("false").get().toBooleanStrict()) args("--measure")
+}

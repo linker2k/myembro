@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "id": "hoop-boundary",
+  "cases": [
+    {
+      "id": "hoop-999",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": [
+            {
+              "type": "stitch",
+              "id": "edge",
+              "name": "edge",
+              "transform": {
+                "x": -1,
+                "y": 0,
+                "rotationDeg": 0,
+                "scaleX": 1,
+                "scaleY": 1
+              },
+              "visible": true,
+              "sourcePattern": {
+                "stitches": [
+                  [
+                    0,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    5,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    0,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    100,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    200,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    300,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    400,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    500,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    600,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    700,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    800,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    900,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    999,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    994,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    999,
+                    0,
+                    "STITCH"
+                  ]
+                ],
+                "threads": [
+                  {
+                    "color": -16777216,
+                    "description": "Black"
+                  }
+                ],
+                "metadata": {},
+                "warnings": []
+              }
+            }
+          ]
+        },
+        "calls": [
+          {
+            "name": "get_project",
+            "arguments": {}
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 14,
+        "pesSha256": "9683bdf573fdb060857eed05402366cbe027dc7491e1e93f5aabec0884ee6958",
+        "released": true,
+        "unchanged": true,
+        "undoCount": 0
+      }
+    },
+    {
+      "id": "hoop-1000",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": [
+            {
+              "type": "stitch",
+              "id": "edge",
+              "name": "edge",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "rotationDeg": 0,
+                "scaleX": 1,
+                "scaleY": 1
+              },
+              "visible": true,
+              "sourcePattern": {
+                "stitches": [
+                  [
+                    0,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    5,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    0,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    100,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    200,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    300,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    400,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    500,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    600,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    700,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    800,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    900,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    1000,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    995,
+                    0,
+                    "STITCH"
+                  ],
+                  [
+                    1000,
+                    0,
+                    "STITCH"
+                  ]
+                ],
+                "threads": [
+                  {
+                    "color": -16777216,
+                    "description": "Black"
+                  }
+                ],
+                "metadata": {},
+                "warnings": []
+              }
+            }
+          ]
+        },
+        "calls": [
+          {
+            "name": "get_project",
+            "arguments": {}
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": false,
+        "code": "SEWOUT_BLOCKED",
+        "sewout": "BLOCK",
+        "stitchCount": 14,
+        "pesSha256": "f6229efeb71f24e6f0e1ed8115b4ea7146c1b8340eb9408bb787dc40bbe3718a",
+        "released": false,
+        "unchanged": true,
+        "undoCount": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "inkstitch-english",
+  "cases": [
+    {
+      "id": "inkstitch-english",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "inkstitch-medium-font",
+              "fontRevision": "2fd50594ed768897ada1fd78251848e1cb10b969b19e9f9bf7a00a5c65762cb8:glyph-extractor-v3",
+              "text": "Ab",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 489,
+        "pesSha256": "8ea9463051c88219289c4eea9203853983a7b08b5933735fdbe9538aa982bc1d",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}

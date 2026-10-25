@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "logo-transform",
+  "cases": [
+    {
+      "id": "logo-transform",
+      "script": {
+        "initialProject": {
+          "builtinDesign": "myembro_logo.pes",
+          "objectId": "logo",
+          "frameId": "H100"
+        },
+        "calls": [
+          {
+            "name": "transform_objects",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectIds": [
+                "logo"
+              ],
+              "deltaXMm": 1,
+              "deltaYMm": 2,
+              "rotationDeg": 90,
+              "scaleFactor": 1
+            }
+          },
+          {
+            "name": "recolor_object",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "logo",
+              "threadIndex": 0,
+              "threadColor": "#B5492A"
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 2808,
+        "pesSha256": "5d603dc7e6523cebfd9d489d5cd8340ce0c6155dc78031a513152540ee2bc282",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}

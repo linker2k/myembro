@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "hershey-weights",
+  "cases": [
+    {
+      "id": "hershey-normal",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "hershey-futural",
+              "fontRevision": "bundled-hershey-v1:glyph-extractor-v3",
+              "text": "Ab",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": false
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 75,
+        "pesSha256": "90ed722cdbb1cadbb92b7cf1b704bdbc6a2ee91ab0b8a6f56e9d3232c7f9149a",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    },
+    {
+      "id": "hershey-bold",
+      "script": {
+        "initialProject": {
+          "format": "myembro",
+          "version": 1,
+          "hoop": {
+            "name": "100×100",
+            "width": 1000,
+            "height": 1000
+          },
+          "objects": []
+        },
+        "calls": [
+          {
+            "name": "add_text",
+            "arguments": {
+              "transactionId": "scenario",
+              "objectId": "text",
+              "fontId": "hershey-futural",
+              "fontRevision": "bundled-hershey-v1:glyph-extractor-v3",
+              "text": "Ab",
+              "heightMm": 15,
+              "threadColor": "#B5492A",
+              "singleLineBold": true
+            }
+          }
+        ],
+        "export": {
+          "machineId": "se700",
+          "frameId": "H100",
+          "pesVersion": "V6"
+        }
+      },
+      "expected": {
+        "success": true,
+        "code": null,
+        "sewout": "PASS",
+        "stitchCount": 145,
+        "pesSha256": "18d64aea1c6ca3971be8cb40b19caf0e2863cf2c4fb146a45d4ebb1b1eefe705",
+        "released": true,
+        "unchanged": false,
+        "undoCount": 1
+      }
+    }
+  ]
+}
