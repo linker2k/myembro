@@ -333,12 +333,58 @@ Bind Android with `ToolDispatcher(emojiResolver = AndroidEmojiResolver(context),
 fontResolver = AndroidTextFontResolver(context), designResolver =
 AndroidDesignResolver(context))` on the serialized background executor.
 
-`prepare_photo` remains NOT_IMPLEMENTED. Its source field is now attachmentId,
-meaning only a photo already picked/granted in the app; existing frame/style/crop
-choices stay explicit. Raw path, URL, bytes and the former assetId fields fail
-closed under the strict schema. No attachment is opened by this stub.
+`prepare_photo` resolves only app-picked attachment IDs through the injected
+`AttachmentStore`; no attachment is available by default. The mode and local
+raster contract are documented below.
 
 Verification: `EmojiToolTest` covers heart 20mm prepare/add/prepare_pes PASS,
 minimum/maximum ±0.1mm, Korean search, 30 bundled plus local downloads, no-fetch
 status, missing IDs, integrity/read errors, preparation/history isolation, one-step
 undo and exact source stitches/threads/metadata against the existing VectorArt path.
+
+
+### App-picked photo tools
+
+`prepare_photo({attachmentId, mode, colors, widthMm})` uses the current project
+hoop. Modes are `silhouette`, `outline`, `color`, and `bw`. All four fields are
+required by the existing strict tool-schema contract. `colors` must be 2–6;
+only color mode uses the requested value. BW selects the existing 2-color
+ColorDrawingPipeline with grayscale enabled. Other modes ignore the validated
+color count. The model never supplies pixels, bytes, URLs, filenames or paths.
+
+The host injects `ToolDispatcher(attachmentStore = store)`. Only the app may issue
+attachment IDs after the user chooses a photo. A store must return null for any
+other ID, including strings which happen to look like existing paths/URLs.
+`PhotoRasterRequest` specifies the exact raster dimensions and selected hoop.
+Render the existing `photoCrop(..., zoom=1, panX=0, panY=0)` centered crop with
+filtered sampling; composite white for silhouette/outline, preserve alpha for
+color/BW. Canvas owns the attachment picker/Android store; no decoder, network
+fetch or filesystem path resolver is installed in the JVM dispatcher.
+
+`PhotoPreparationPolicy` contains the unchanged PhotoCrop maximum-width,
+raster-size, minimum-area and contrast functions; the photo screen delegates to
+these same functions. Preparation uses the screen's default detail=1 and existing
+PICTURE_MIN_WIDTH_MM. It calls the original median3 -> Wu/Potrace Redwork trace
+(with the same contrast retry) -> Redwork generate path for silhouette/outline,
+or ColorDrawingPipeline.trace/generate for color/BW. No stitch settings or
+algorithms change. Exact generated PES must pass the writer and SewoutCheck
+before a READY result is registered. Invalid widths return WIDTH_OUT_OF_RANGE
+with the existing range; missing IDs return ATTACHMENT_NOT_FOUND.
+
+Results expose only a dispatcher-local opaque resultId, dimensions, width range,
+status and verdict. No private image hash, bytes, pixels, thumbnails or geometry
+is serialized in the response. `add_generated_art` consumes the result exactly
+as for emoji and creates one generated StitchObject through ProjectCommand.Add.
+Preparation can run outside an edit turn and does not change project/history.
+Do not reuse the dispatcher/results across document or privacy lifetimes.
+
+Reproduction (only the repository-owned docs/images/launcher-icon-artwork.png):
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test --tests '*PhotoToolTest' --tests '*EmojiToolTest'
+```
+
+PhotoToolTest uses ImageIO only in JVM test code to sample that local artwork.
+It covers all four prepare -> add -> prepare_pes PASS chains, shared policy size
+boundaries and ±0.1mm neighbors, missing/forged IDs, colors 1/7, forbidden image
+source fields, exact response field allowlist and unchanged session history.
