@@ -1,0 +1,124 @@
+{
+  "artwork": {
+    "license": "GPL-3.0-or-later",
+    "path": "docs/images/launcher-icon-artwork.png",
+    "resize": "Pillow 11.3.0 RGB LANCZOS to the recorded exact input PNG",
+    "sha256": "d38460c8b6b9abe583bde97b1238a33e6e14ab2e28f205e8a95c5434fb73b9ca"
+  },
+  "byteOrder": "uint8, row-major, L or interleaved R/G/B; PNG masks are L with 0 ink / 255 background",
+  "defaults": {
+    "autocontrast": {
+      "cutoff": 0,
+      "ignore": null,
+      "mask": null,
+      "preserve_tone": false
+    },
+    "otsu": {
+      "hist": null,
+      "image": "2D uint8",
+      "nbins": 256
+    }
+  },
+  "formatVersion": 1,
+  "generatorSha256": "e0c544f1726f106a43d03a4015f713e7188e5c894da8c7ceaa555475af85f351",
+  "inputPreparation": {
+    "alpha": "none: input PNGs use L/RGB only",
+    "cases": 39,
+    "colorOtsu": "existing app BT.709: (2126*r+7152*g+722*b+5000)//10000; recorded as otsu-input.png",
+    "sizes": [
+      128,
+      192,
+      256
+    ],
+    "syntheticPatterns": 12
+  },
+  "platform": "Linux-x86_64",
+  "python": "3.12.3",
+  "repositoryBaseline": "ae576e188cc6d6d1e62b71a06de97fc4e53e2125",
+  "requirementsSha256": "d8b791f6bf2b2caf576808a510efe6afc6ccd720cbbdc08394bba3b125225bed",
+  "researchDocument": {
+    "branch": "docs/photo-filters",
+    "commit": "582f447",
+    "path": "docs/photo-filters.md"
+  },
+  "upstream": {
+    "Pillow": {
+      "commit": "89f1f4626a2aaf5f3d5ca6437f41def2998fbe09",
+      "license": "MIT-CMU",
+      "sha256": "03af6a8edfa6c4323df77f3bcffe1c1c8fb0b47f3948b2ff10d4c8f4478e4062",
+      "source": "src/PIL/ImageOps.py",
+      "version": "11.3.0"
+    },
+    "numpy": {
+      "commit": "3b377854e8b1a55f15bda6f1166fe9954828231b",
+      "version": "2.2.4"
+    },
+    "scikit-image": {
+      "commit": "e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae",
+      "license": "BSD-2-Clause",
+      "sha256": "d0db935f85506c0daf44337c56a01d20de07953901f88b61059d5db12a1a65fd",
+      "source": "skimage/filters/thresholding.py",
+      "version": "0.25.2"
+    },
+    "scipy": {
+      "commit": "0f1fd4a7268b813fa2b844ca6038e4dfdf90084a",
+      "version": "1.15.2"
+    }
+  },
+  "wheels": [
+    {
+      "name": "imageio",
+      "sha256": "11efa15b87bc7871b61590326b2d635439acc321cf7f8ce996f812543ce10eed",
+      "url": "https://files.pythonhosted.org/packages/cb/bd/b394387b598ed84d8d0fa90611a90bee0adc2021820ad5729f7ced74a8e2/imageio-2.37.0-py3-none-any.whl",
+      "version": "2.37.0"
+    },
+    {
+      "name": "lazy_loader",
+      "sha256": "342aa8e14d543a154047afb4ba8ef17f5563baad3fc610d7b15b213b0f119efc",
+      "url": "https://files.pythonhosted.org/packages/83/60/d497a310bde3f01cb805196ac61b7ad6dc5dcf8dce66634dc34364b20b4f/lazy_loader-0.4-py3-none-any.whl",
+      "version": "0.4"
+    },
+    {
+      "name": "networkx",
+      "sha256": "df5d4365b724cf81b8c6a7312509d0c22386097011ad1abe274afd5e9d3bbc5f",
+      "url": "https://files.pythonhosted.org/packages/b9/54/dd730b32ea14ea797530a4479b2ed46a6fb250f682a9cfb997e968bf0261/networkx-3.4.2-py3-none-any.whl",
+      "version": "3.4.2"
+    },
+    {
+      "name": "numpy",
+      "sha256": "4f92084defa704deadd4e0a5ab1dc52d8ac9e8a8ef617f3fbb853e79b0ea3592",
+      "url": "https://files.pythonhosted.org/packages/02/e2/e2cbb8d634151aab9528ef7b8bab52ee4ab10e076509285602c2a3a686e0/numpy-2.2.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "version": "2.2.4"
+    },
+    {
+      "name": "packaging",
+      "sha256": "09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759",
+      "url": "https://files.pythonhosted.org/packages/88/ef/eb23f262cca3c0c4eb7ab1933c3b1f03d021f2c48f54763065b6f0e321be/packaging-24.2-py3-none-any.whl",
+      "version": "24.2"
+    },
+    {
+      "name": "pillow",
+      "sha256": "676b2815362456b5b3216b4fd5bd89d362100dc6f4945154ff172e206a22c024",
+      "url": "https://files.pythonhosted.org/packages/e4/c9/06dd4a38974e24f932ff5f98ea3c546ce3f8c995d3f0985f8e5ba48bba19/pillow-11.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "version": "11.3.0"
+    },
+    {
+      "name": "scikit-image",
+      "sha256": "a17e17eb8562660cc0d31bb55643a4da996a81944b82c54805c91b3fe66f4824",
+      "url": "https://files.pythonhosted.org/packages/6b/b5/b75527c0f9532dd8a93e8e7cd8e62e547b9f207d4c11e24f0006e8646b36/scikit_image-0.25.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "version": "0.25.2"
+    },
+    {
+      "name": "scipy",
+      "sha256": "2b871df1fe1a3ba85d90e22742b93584f8d2b8e6124f8372ab15c71b73e428b8",
+      "url": "https://files.pythonhosted.org/packages/c0/53/eaada1a414c026673eb983f8b4a55fe5eb172725d33d62c1b21f63ff6ca4/scipy-1.15.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "version": "1.15.2"
+    },
+    {
+      "name": "tifffile",
+      "sha256": "0ed6eee7b66771db2d1bfc42262a51b01887505d35539daef118f4ff8c0f629c",
+      "url": "https://files.pythonhosted.org/packages/6e/be/10d23cfd4078fbec6aba768a357eff9e70c0b6d2a07398425985c524ad2a/tifffile-2025.3.30-py3-none-any.whl",
+      "version": "2025.3.30"
+    }
+  ]
+}
