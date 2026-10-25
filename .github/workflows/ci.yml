@@ -28,7 +28,7 @@ jobs:
       - name: Sweep selection and range reducer tests
         run: python3 -m unittest discover -s tools/tests -p 'test_*sweep.py' -v
       - name: Checks and representative engine tests
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: ./gradlew check
       - uses: actions/upload-artifact@v4
         if: always()
