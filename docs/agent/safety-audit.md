@@ -1,70 +1,113 @@
-# Adversarial safety audit
+# Adversarial safety audit and policy follow-up
 
-Baseline: `agent/mcp` at `66a90d0`. This branch adds tests only. Production implementations are unchanged. The deliberately failing assertions remain enabled, so this branch is **not green** and must not be treated as a merge approval.
+Baseline: `agent/mcp` at `66a90d0`; initial tests-only audit: `bacc3f1`.
+The initial run had 12 tests / 7 failures. The manager then clarified the
+save and placement contracts and requested per-item script approvals.
+USB/PesExport production code is deliberately unchanged here: its High fix belongs
+to `fix/export-gate`. The two original High assertions remain enabled and failing.
+
+## Current contract
+
+- `save_project` and `save_pes` have `needsUserConfirmation: "onOverwrite"`.
+  A new filename saves without consent. Existing targets require a single-use
+  token tied to normalized arguments, revision, payload digest and target version.
+  Existing-file tests seed targets before no-token attempts. Separate new-name
+  tests assert exactly 1 fake-store write per successful save on controller and MCP.
+- Other protected tools retain `needsUserConfirmation: true`. The catalog validator
+  checks the exact policy values and preserves conditional policy in the MCP
+  metadata / trusted adapter registry without changing provider argument schemas.
+- Off-hoop placement is permitted while editing. The 9999 native-unit coordinate
+  is intentionally accepted by dispatcher and MCP staging, then committed.
+  `prepare_pes` rejects the committed candidate with SEWOUT_BLOCKED, returns no
+  bytes/artifact; save_pes rejects missing or stale artifacts and writes nothing.
+  send_usb remains NOT_IMPLEMENTED, including after valid MCP consent, with no
+  writes. This verifies current rejection, not a future USB service implementation.
+  Saving the editable project is distinct from exporting a PES.
+- Phone and headless scripts have **no blanket confirmed/allowRemoval boolean**.
+  The trusted preview host passes only checked `ScriptApproval` items. Their
+  zero-based call index, exact target IDs and SHA-256 scope bind the entire
+  canonical script, transaction and base revision. A changed call, target, index,
+  hash, transaction or revision invalidates an approval. Requests are preview
+  metadata, not proof of user consent: never copy all requests automatically or
+  accept approvals from model-controlled tool arguments.
+- Only undoable `remove_objects` can be approved inside scripts. Preview returns
+  `approvalRequests` and applies nothing. A missing item aborts the entire apply;
+  the same transaction can be retried with the selected items. A successful script
+  occupies one undo step. All other protected tools, including saves for new
+  filenames, are forbidden in both script preview and apply; forged approvals
+  also cannot authorize them. File/library deletion, transfer, overwrite, restore
+  and settings use separate confirmation flows.
 
 ## Reproduction
 
 ```sh
 export JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1
-./gradlew --offline --continue :engine:test --tests '*AdversarialSafetyTest' :mcp:test --tests '*AdversarialMcpSafetyTest' :app:testDebugUnitTest --tests '*AdversarialPhoneSafetyTest' --tests '*AdversarialUsbSafetyTest' --console=plain
+python3 tools/check_agent_tools.py
+./gradlew --offline --continue :engine:test --tests 'io.github.linker2k.myembro.engine.agent.*' :mcp:test :app:testDebugUnitTest --tests '*AdversarialPhoneSafetyTest' --tests '*AdversarialUsbSafetyTest' --tests '*EditorCommandScriptTest' --console=plain
 python3 tools/safety-tests/summarize.py .
 ```
 
-Measured on 2026-10-25: **12 tests, 7 failures, 0 errors, 0 skipped**. Both commands exit 1 because the safety expectations fail. Per-case JSON evidence is written to `/tmp/myembro-safety-audit/`; the Gradle run was captured in `/tmp/myembro-safety-final.log`. No private corpus or uploaded design is used. The dense synthetic fixture deliberately uses the oracle writer profile to construct a forbidden input; ordinary output settings are not weakened.
+Safety subset: **15 tests, 2 failures, 0 errors, 0 skipped**;
+`HIGH_FAILURES=2 OTHER_FAILURES=0 ERRORS=0`.
+The broader regression run covers **63 tests (engine 46, MCP 10, app 7), 2 failures, 0 errors**; both failures are the same retained High assertions.
+The Gradle and summary commands exit 1 because the original High failures remain.
+No assertion was ignored or converted into an expected success.
+JSON evidence is written to `/tmp/myembro-safety-audit/`.
+The regression log is `/tmp/myembro-safety-policy-regression.log`.
 
-The USB test requires the existing `/usr/sbin/mkfs.fat`. It formats only a private temporary image and writes through an in-memory `BlockDevice`, never USB hardware. Shared fixtures are added only to test source sets. MCP tests replace the host's captured storage backend through test-only reflection because the host has no public injection seam.
+| Safety test class | Tests | Failures |
+|---|---:|---:|
+| AdversarialSafetyTest | 6 | 1 (High) |
+| AdversarialMcpSafetyTest | 4 | 0 |
+| AdversarialPhoneSafetyTest | 4 | 0 |
+| AdversarialUsbSafetyTest | 1 | 1 (High) |
 
-## Failures
+## Retained High failure
 
-| Severity | Source | Measured evidence | Suggested follow-up (not implemented) |
-|---|---|---|---|
-| High | `engine/src/main/kotlin/io/github/linker2k/myembro/engine/io/PesExport.kt:19`; `app/src/main/kotlin/io/github/linker2k/myembro/library/DesignFormats.kt:43`; `app/src/main/kotlin/io/github/linker2k/myembro/usb/DirectUsbExporter.kt:84` | A synthetic 1092-byte PES has a valid viewport but imported-origin SewoutCheck BLOCK (40 penetrations in one cell). PesExport returns all 1092 bytes. Passing the actual DesignFormats result into DirectUsbExporter.write causes **6 fake-device write calls / 20992 bytes**, including filesystem metadata. | Enforce both checks before release of PES bytes and before a USB mutation. |
-| Medium: strict-policy mismatch | `engine/src/main/kotlin/io/github/linker2k/myembro/engine/agent/DocumentTools.kt:46` | `save_project` and `save_pes`, each annotated needsUserConfirmation, perform **1 fake-store write each without a token**, independently through controller and MCP. | Resolve whether the annotation requires consent for all writes or only replacement. The previous conditional-overwrite contract intentionally allows new names; this is **not an existing-file overwrite bypass**. |
-| Medium: phone API policy gap | `app/src/main/kotlin/io/github/linker2k/myembro/ui/editor/EditorSession.kt:24`; `engine/src/main/kotlin/io/github/linker2k/myembro/engine/agent/ToolTurnController.kt:139` | `runCommandScript(confirmed=true)` executes remove_objects with no per-action token: project changes and 18835 PES bytes are returned. | Remove blanket consent if scripts must never execute these tools. This is a trusted-host boolean under the old API contract, not a model-supplied JSON field. No production call site or Apply button exists for runCommandScript yet, so an actual button exploit is **unconfirmed**. |
-| Low: staging policy mismatch | `docs/agent/tools.json:437` | xMm=999.9 (9999 native 0.1mm units) is accepted by dispatcher and MCP staging. The phone script rejects final output with SEWOUT_BLOCKED; no PES bytes are released. | Decide whether staging must reject out-of-hoop transforms. This value lies inside the published ±10000mm schema, so acceptance is **not a schema-validation bypass**. |
+`engine/.../io/PesExport.kt:19` checks viewport validity but returns a synthetic
+1092-byte PES with imported-origin SewoutCheck BLOCK (40 penetrations in one cell).
+`app/.../library/DesignFormats.kt:43` passes it through; the actual
+`DirectUsbExporter.write` (`app/.../usb/DirectUsbExporter.kt:84`) causes **6 fake
+block-device writes / 20992 bytes**, including FAT/directory metadata.
+Its production fix is outside this branch's follow-up scope.
 
-There are 4 failure categories above but 7 failing tests: the same category is asserted at more than one boundary.
+## Passing adversarial checks
 
-## Confirmation matrix
+- All 21 protected scopes: no-token attempts make zero fake-store writes and no
+  project changes through raw kernel, bound controller, MCP and phone script.
+  Conditional save scopes use existing targets; new names are tested separately.
+- MCP forged, different-argument (or other-action for argumentless tools) and
+  replayed tokens: all 21 reject without additional writes or published changes.
+  Controller save token tests additionally cover the two implemented save tools.
+  Only a valid approved overwrite writes once.
+- Unknown fields: **69/69 tools rejected per route** on dispatcher, MCP and phone.
+  NaN, infinity, 1e100, negative scale/height and blank IDs are rejected. Nonfinite
+  values are direct API-boundary tests, not valid JSON wire literals.
+- Phone item tests: preview exposes exact approval scopes; no/partial approval
+  aborts atomically; altered scope, duplicate index and script edits reject;
+  selected removals commit together and one undo restores the original project.
+- Every other protected tool (20 tools × preview/apply × forged/no approval) is
+  rejected before execution. There are zero fake-store writes or returned bytes.
+- Agent prepare/check reject off-hoop, unsafe-density and corrupt-viewport inputs.
+  A read-only asset check may return an OK response containing a BLOCK report;
+  that response contains no PES bytes and makes no writes.
 
-Cells show **fake-store write calls / result code** for valid typed arguments without a token. Each row starts with a fresh session and backend; controller and MCP save_pes receive a real PASS artifact; the phone script has no artifact-registration API and supplies a missing artifact ID. The remove_objects target exists. None of these no-token cases changes the project. Raw kernel dispatch also tests all 21: zero writes and zero project changes; save services are NOT_IMPLEMENTED at that lower boundary.
+## Boundaries and fixtures
 
-| Tool | Bound dispatcher | MCP | Phone script, confirmed=false |
-|---|---|---|---|
-| remove_objects | 0 / CONFIRMATION_REQUIRED | 0 / CONFIRMATION_REQUIRED | 0 / CONFIRMATION_REQUIRED |
-| new_project | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| open_project | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| recover_project | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| discard_recovery | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| commit_import | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| delete_designs | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| import_font | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| delete_font | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| save_project | 1 / OK | 1 / OK | 0 / NOT_IMPLEMENTED |
-| save_pes | 1 / OK | 1 / OK | 0 / NOT_IMPLEMENTED |
-| share_pes | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| send_usb | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| resume_usb_after_delete | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| share_diagnostics | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| create_backup | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| restore_backup | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| save_custom_frame | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| delete_custom_frame | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| open_free_design_source | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
-| copy_diagnostics | 0 / NOT_IMPLEMENTED | 0 / CONFIRMATION_REQUIRED | 0 / NOT_IMPLEMENTED |
+No personal corpus or uploaded design is committed. Dense PES is a synthetic
+forbidden input generated with the explicit oracle writer profile; normal writer
+settings are not weakened. Public bundled logo bytes are used for other fixtures.
+The installed `/usr/sbin/mkfs.fat` formats a private temporary image; real exporter
+code writes to an in-memory BlockDevice, never USB hardware. MCP storage is
+replaced with a RecordingStore through test-only reflection. Shared fixtures are
+compiled only into test source sets.
 
-All 21 tools are also attempted in phone dry-run: zero fake writes, unchanged project/revision/history, no PES bytes. A read-only removal preview may return OK without applying it.
+The USB test composes the same prepare/write functions as DirectUsbExporter.export;
+it does not exercise Android USB permission/open or physical hardware. The SAF
+output stream and Android lifecycle are not executed. Agent USB/restore/settings
+stubs remain unimplemented. No production preview/apply screen is connected to
+runCommandScript yet: this branch provides and tests its shared host API, not a
+new Compose screen. Hosts must implement the actual checked-item UI using this
+contract. Interactive MCP confirmation remains independent of script approvals.
 
-MCP tests exercise forged, argument-mismatched (or other-action for argumentless tools), and replayed tokens for all 21 tools. All negative calls reject and produce no extra writes or project changes. Unimplemented operations remain unimplemented even after valid confirmation. The two implemented save tools additionally exercise controller tokens directly: only the approved overwrite writes once; forged/mismatched/reused tokens do not write. Existing-file byte/version checks are enforced by the fake DocumentStore, not inferred from response text.
-
-## Input and output coverage
-
-- Additional root fields are rejected for **69/69 tools at each of dispatcher, MCP and phone script**, with zero writes. These are dispatcher/host API tests, not a stdio transport fuzz campaign.
-- NaN, infinity, 1e100, negative scale, negative text height, empty object ID and empty transaction ID are rejected on all 3 paths. The 9999-unit exception is listed above. Nonfinite JsonPrimitive values are tested directly at the API boundary; they are not valid JSON wire literals.
-- Agent controller prepare_pes and project sewout_check reject out-of-hoop placement, the dense input and a deliberately corrupted PEC header; no bytes or artifact are returned. A fabricated artifact cannot be saved. An approved asset sewout_check may successfully return a BLOCK report but returns no PES bytes and makes no writes.
-- MCP blocked-placement prepare_pes returns no artifact and makes no writes. Phone script BLOCK inputs do not commit or release bytes. These pass while the lower existing PesExport/USB path fails.
-- Agent send_usb/share_pes and other service stubs currently return NOT_IMPLEMENTED. Their zero side effects establish rejection today, **not safety of a future USB/restore/settings implementation**. There is no fake USB service plugged into those stubs. The separate USB test exercises the actual existing writer against a fake block device.
-- The actual USB test composes the same preparation and write functions used by DirectUsbExporter.export; it does not simulate Android USB permission/open calls. The SAF exporter shares preparation (`UsbExporter.kt:97`) but its Android output stream and UI lifecycle were not executed. No claim of exhaustive SAF, chooser, backup or physical-device coverage is made.
-- The phone Apply button has no production connection yet; tests cover EditorSession.runCommandScript. The default confirmed=false path is safe in these cases, whereas the trusted confirmed=true escape fails the requested stricter policy.
-
-No implementation fix, push or main merge was performed.
+No push or main merge is performed.

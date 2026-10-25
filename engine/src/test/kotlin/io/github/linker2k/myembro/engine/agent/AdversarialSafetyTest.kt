@@ -11,7 +11,7 @@ import kotlin.test.*
 
 class AdversarialSafetyTest {
     private val f=SafetyFixtures
-    @Test fun all21ConfirmationToolsHaveNoTokenNoSideEffectsAtKernelAndController() {
+    @Test fun all21ProtectedScopesWithoutConsentHaveZeroSideEffects() {
         assertEquals(21,f.confirmation.size);val rows=mutableListOf<JsonObject>();val failures=mutableListOf<String>()
         for(tool in f.confirmation) for(route in listOf("kernel","controller")) {
             val name=tool.getValue("name").jsonPrimitive.content;val store=RecordingStore();val base=f.project();val session=EditSession(base)
@@ -19,12 +19,34 @@ class AdversarialSafetyTest {
             val artifact=controller.dispatch("prepare_pes",f.prepare).output.getValue("artifactId").jsonPrimitive.content
             if(name=="remove_objects")controller.dispatch("begin_edit_turn",f.json("""{"transactionId":"attack","expectedRevision":"0"}"""))
             val a=f.arguments(tool,artifact)
+            if(name in setOf("save_project","save_pes"))store.files["unapproved.${if(name=="save_project")"myembro" else "pes"}"]="seed".toByteArray()
             val r=if(route=="kernel")kernel.dispatch(base,"0",name,a) else controller.dispatch(name,a)
             val changed=session.project!=base || r.project!=base
             rows+=f.row("$route/$name",r.output,store.calls.size,changed,r.pesBytes?.size ?: 0)
             if(store.calls.isNotEmpty() || changed)failures+="$route/$name writes=${store.calls.size} projectChanged=$changed"
         }
         f.report("engine-no-token",rows);assertTrue(failures.isEmpty(),failures.joinToString("\n"))
+    }
+    @Test fun freshNamesSaveWithoutConsentButOffHoopEditsCannotProduceOutput() {
+        for(name in listOf("save_project","save_pes")) {
+            val store=RecordingStore();val c=ToolDispatcher(documentStore=store).bind(EditSession(f.project()))
+            val artifact=c.dispatch("prepare_pes",f.prepare).output.getValue("artifactId").jsonPrimitive.content
+            val tool=f.confirmation.single { it.getValue("name")==JsonPrimitive(name) }
+            assertTrue(c.dispatch(name,f.arguments(tool,artifact)).ok);assertEquals(1,store.calls.size)
+        }
+        val store=RecordingStore();val session=EditSession(f.project());val c=ToolDispatcher(documentStore=store).bind(session)
+        val old=c.dispatch("prepare_pes",f.prepare).output.getValue("artifactId").jsonPrimitive.content
+        assertTrue(c.dispatch("begin_edit_turn",f.json("""{"transactionId":"attack","expectedRevision":"0"}""")).ok)
+        val offHoop=f.malformed().single { !it.mustReject }
+        assertTrue(c.dispatch(offHoop.tool,offHoop.args).ok)
+        assertTrue(c.dispatch("commit_edit_turn",f.json("""{"transactionId":"attack","expectedRevision":"0"}""")).ok)
+        val blocked=c.dispatch("prepare_pes",JsonObject(f.prepare+("projectRevision" to JsonPrimitive("1"))))
+        assertEquals("SEWOUT_BLOCKED",blocked.code);assertNull(blocked.pesBytes);assertNull(blocked.output["artifactId"])
+        val saveTool=f.confirmation.single { it.getValue("name")==JsonPrimitive("save_pes") }
+        val save=c.dispatch("save_pes",f.arguments(saveTool,old));assertEquals("STALE_ARTIFACT",save.code);assertNull(save.pesBytes)
+        val usbTool=f.confirmation.single { it.getValue("name")==JsonPrimitive("send_usb") }
+        val send=c.dispatch("send_usb",f.arguments(usbTool),confirmed=true);assertFalse(send.ok);assertNull(send.pesBytes)
+        assertTrue(store.calls.isEmpty())
     }
     @Test fun knownStoreTokensRejectWrongReuseAndDifferentArguments() {
         val rows=mutableListOf<JsonObject>()
@@ -44,12 +66,12 @@ class AdversarialSafetyTest {
         }
         f.report("engine-token-negative",rows)
     }
-    @Test fun malformedArgumentsAreRejectedIncluding9999NativeUnits() {
+    @Test fun malformedArgumentsRejectButOffHoopEditingIsAllowed() {
         val failures=mutableListOf<String>();val rows=mutableListOf<JsonObject>()
         for(a in f.malformed()) {
             val store=RecordingStore();val base=f.project();val r=ToolDispatcher(documentStore=store).dispatch(base,"0",a.tool,a.args)
             rows+=f.row(a.label,r.output,store.calls.size,r.project!=base,r.pesBytes?.size ?: 0)
-            if(r.ok || store.calls.isNotEmpty())failures+=a.label+" accepted="+r.ok
+            if(r.ok == a.mustReject || store.calls.isNotEmpty())failures+=a.label+" accepted="+r.ok
         }
         val schemaRows=mutableListOf<JsonObject>();val store=RecordingStore();val kernel=ToolDispatcher(documentStore=store)
         for(raw in f.catalog.getValue("tools").jsonArray) {

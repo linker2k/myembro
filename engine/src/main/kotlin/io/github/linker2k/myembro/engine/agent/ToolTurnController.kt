@@ -105,9 +105,9 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
 
     /** Phone command-script path A and CLI share this method: whole-script preparation/check then one commit.
      * dryRun never reserves an id or changes live revision/history/redo/receipts, and returns no PES bytes.
-     * confirmed is host consent bound to this exact script and base revision, not an input JSON flag. */
+     * Only item approvals supplied by the trusted preview host can authorize undoable object removal. */
     @Synchronized fun executeScript(transactionId: String, expectedRevision: Long, calls: List<Call>,
-        exportSettings: JsonObject, dryRun: Boolean = false, confirmed: Boolean = false): ToolDispatcher.Result {
+        exportSettings: JsonObject, dryRun: Boolean = false, approvals: List<ScriptApproval> = emptyList()): ToolDispatcher.Result {
         if(pending!=null || session.snapshot().turnInProgress) return error("TURN_IN_PROGRESS","A turn is already active")
         if(transactionId.isBlank()) return error("INVALID_TRANSACTION_ID","Blank transaction id")
         if(!dryRun) receipts[transactionId]?.let { receipt ->
@@ -118,25 +118,43 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
         if(base.revision!=expectedRevision) return error("REVISION_MISMATCH","Read current project revision")
         val d=Draft(transactionId,base)
         val results=mutableListOf<JsonObject>()
-        fun failed(result: ToolDispatcher.Result, index: Int): ToolDispatcher.Result {
+        fun failed(result: ToolDispatcher.Result, index: Int, remember: Boolean = true): ToolDispatcher.Result {
             val output=buildJsonObject {
                 result.output.forEach { (key,value)->put(key,value) }
                 put("failedCallIndex",index);put("calls",JsonArray(results));put("previewProject",ToolDispatcher.summary(base.project,base.revision.toString()))
                 put("changedIds",JsonArray(emptyList()));put("dryRun",dryRun)
             }
             val rejected=result.copy(project=session.project,output=output,pesBytes=null,preparedCommand=null)
-            if(!dryRun) receipts[transactionId]=Receipt(expectedRevision,calls.toList(),exportSettings,rejected)
+            if(!dryRun && remember) receipts[transactionId]=Receipt(expectedRevision,calls.toList(),exportSettings,rejected)
             return rejected
         }
         if(exportSettings.keys!=setOf("machineId","frameId","pesVersion")) return failed(error("INVALID_ARGUMENTS","Invalid export settings"),calls.size)
+        val byIndex = approvals.associateBy { it.callIndex }
+        if(byIndex.size != approvals.size) return failed(error("INVALID_APPROVAL","Duplicate approval index"),0,false)
+        for(approval in approvals) {
+            val expected = runCatching { ScriptApprovals.request(transactionId,expectedRevision,calls,approval.callIndex) }.getOrNull()
+            if(approval != expected) return failed(error("INVALID_APPROVAL","Approval does not match script, revision or targets"),approval.callIndex,false)
+        }
+        val approvalRequests = mutableListOf<JsonObject>()
         for((index,call) in calls.withIndex()) {
             if(!kernel.knowsTool(call.name)) return failed(error("UNKNOWN_TOOL",call.name),index)
             kernel.validateRequest(call.name,call.arguments)?.let { return failed(error("INVALID_ARGUMENTS",it),index) }
+            // External side effects never belong to a script Apply, even with forged item approvals.
+            if(kernel.needsConfirmation(call.name) && call.name != "remove_objects")
+                return failed(error("SCRIPT_TOOL_FORBIDDEN","Use a separate confirmation screen for ${call.name}"),index)
             // Lifecycle/history inside a script would violate the single atomic turn boundary.
             if(call.name !in ToolDispatcher.SUPPORTED) return failed(error("NOT_IMPLEMENTED","Tool is unavailable inside a script: ${call.name}"),index)
             val supplied=(call.arguments as? JsonObject)?.get("transactionId")
             if(supplied!=null && supplied!=JsonPrimitive(transactionId)) return failed(error("WRONG_TRANSACTION","All script edits must use the outer transactionId"),index)
-            val result=kernel.dispatch(d.candidate,expectedRevision.toString(),call.name,call.arguments,confirmed || dryRun)
+            if(call.name == "remove_objects") {
+                val request = ScriptApprovals.request(transactionId,expectedRevision,calls,index)
+                approvalRequests += request.json()
+                if(!dryRun && byIndex[index] != request) {
+                    val missing=error("CONFIRMATION_REQUIRED","Select this object removal in the trusted preview",buildJsonObject { put("approvalRequest",request.json()) })
+                    return failed(missing,index,false)
+                }
+            }
+            val result=kernel.dispatch(d.candidate,expectedRevision.toString(),call.name,call.arguments,call.name == "remove_objects")
             results+=result.output
             if(!result.ok) return failed(result,index)
             result.preparedCommand?.let { d.commands+=it;d.candidate=result.project }
@@ -148,7 +166,7 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
         val preview=buildJsonObject {
             put("dryRun",dryRun);put("calls",JsonArray(results));put("previewProject",ToolDispatcher.summary(d.candidate,expectedRevision.toString()))
             put("changedIds",JsonArray(changed.changedIds.map(::JsonPrimitive)));put("hoopChanged",base.project.hoop!=d.candidate.hoop)
-            put("sewout",checked.output);put("needsUserConfirmation",calls.any { kernel.needsConfirmation(it.name) })
+            put("sewout",checked.output);put("needsUserConfirmation",approvalRequests.isNotEmpty());put("approvalRequests",JsonArray(approvalRequests))
         }
         if(!checked.ok || checked.pesBytes==null) {
             val result=ToolDispatcher.Result(session.project,buildJsonObject {

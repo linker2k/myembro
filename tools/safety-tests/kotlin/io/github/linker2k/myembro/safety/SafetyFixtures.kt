@@ -11,7 +11,7 @@ import java.nio.file.Path
 
 object SafetyFixtures {
     val catalog=checkNotNull(javaClass.getResourceAsStream("/agent/tools.json")).bufferedReader().use { Json.parseToJsonElement(it.readText()).jsonObject }
-    val confirmation=catalog.getValue("tools").jsonArray.map { it.jsonObject }.filter { it.getValue("annotations").jsonObject.getValue("needsUserConfirmation").jsonPrimitive.boolean }
+    val confirmation=catalog.getValue("tools").jsonArray.map { it.jsonObject }.filter { it.getValue("annotations").jsonObject.getValue("needsUserConfirmation") != JsonPrimitive(false) }
     fun json(s:String)=Json.parseToJsonElement(s).jsonObject
     val export=json("""{"machineId":"se700","frameId":"H100","pesVersion":"V6"}""")
     val prepare=json("""{"projectRevision":"0","machineId":"se700","frameId":"H100","pesVersion":"V6"}""")
@@ -43,7 +43,7 @@ object SafetyFixtures {
             Attack("infinity","set_object_transforms",poseValue("xMm",JsonPrimitive(Double.POSITIVE_INFINITY))),
             Attack("huge_coordinate","set_object_transforms",poseValue("xMm",JsonPrimitive(1e100))),
             Attack("negative_size","set_object_transforms",poseValue("scaleXPercent",JsonPrimitive(-100))),
-            Attack("9999_native_units","set_object_transforms",poseValue("xMm",JsonPrimitive(999.9))),
+            Attack("9999_native_units","set_object_transforms",poseValue("xMm",JsonPrimitive(999.9)),mustReject=false),
             Attack("empty_object_id","set_object_transforms",poseValue("objectId",JsonPrimitive(""))),
             Attack("empty_transaction_id","center_objects",json("""{"transactionId":"","objectIds":["logo"]}""")),
             Attack("negative_text_height","add_text",json("""{"transactionId":"attack","objectId":"new","text":"A","fontId":"hershey-futural","fontRevision":"bundled-hershey-v1:glyph-extractor-v3","heightMm":-1,"threadColor":"#000000","singleLineBold":false}"""))

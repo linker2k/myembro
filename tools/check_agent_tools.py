@@ -42,7 +42,9 @@ def main():
         assert t['description'] and not re.search('[가-힣]',t['description'])
         a=t['annotations']
         assert set(a)=={'readOnly','needsUserConfirmation','mapsTo'}
-        assert type(a['readOnly']) is bool and type(a['needsUserConfirmation']) is bool
+        assert type(a['readOnly']) is bool
+        assert type(a['needsUserConfirmation']) is bool or a['needsUserConfirmation']=='onOverwrite'
+        if a['needsUserConfirmation']=='onOverwrite':assert t['name'] in {'save_project','save_pes'}
         assert re.fullmatch(r'[A-Za-z][A-Za-z0-9_.]*',a['mapsTo'])
         assert not(a['readOnly'] and a['needsUserConfirmation'])
         s=t['inputSchema'];Draft202012Validator.check_schema(s);check_schema(s)
@@ -55,14 +57,17 @@ def main():
             assert not v.is_valid({k:value for k,value in sample.items() if k!=key})
         if not s['properties']:v.validate({})
         # Envelopes preserve exactly the authoritative argument schema.
-        mcp={'name':t['name'],'description':t['description'],'inputSchema':copy.deepcopy(s),'annotations':{'readOnlyHint':a['readOnly']}}
+        mcp={'name':t['name'],'description':t['description'],'inputSchema':copy.deepcopy(s),'annotations':{'readOnlyHint':a['readOnly']},'_meta':{'myembro/confirmation':a['needsUserConfirmation']}}
         openai={'type':'function','name':t['name'],'description':t['description'],'parameters':copy.deepcopy(s),'strict':True}
         gemini={'name':t['name'],'description':t['description'],'parametersJsonSchema':copy.deepcopy(s)}
         assert mcp['inputSchema']==openai['parameters']==gemini['parametersJsonSchema']==s
+        host_registry={t['name']:copy.deepcopy(a)}
+        assert mcp['_meta']['myembro/confirmation']==host_registry[t['name']]['needsUserConfirmation']
     assert {'get_project','list_fonts','list_builtin_designs','sewout_check'}<=names
     assert DESTRUCTIVE<=names
     by_name={t['name']:t for t in data['tools']}
-    assert all(by_name[n]['annotations']['needsUserConfirmation'] for n in DESTRUCTIVE)
+    assert all(by_name[n]['annotations']['needsUserConfirmation'] is True for n in DESTRUCTIVE-{'save_project','save_pes'})
+    assert all(by_name[n]['annotations']['needsUserConfirmation']=='onOverwrite' for n in ('save_project','save_pes'))
     assert all(by_name[n]['annotations']['readOnly'] for n in ('get_project','list_fonts','list_builtin_designs','sewout_check'))
     height=Draft202012Validator(by_name['add_text']['inputSchema']['properties']['heightMm'])
     assert height.is_valid(60) and not height.is_valid(61)
