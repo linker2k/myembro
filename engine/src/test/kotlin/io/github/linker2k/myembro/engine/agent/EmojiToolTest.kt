@@ -94,10 +94,10 @@ class EmojiToolTest {
         // Opaque results belong to one dispatcher/document lifetime, never supplied as arbitrary geometry.
         assertEquals("RESULT_NOT_FOUND",ToolDispatcher().dispatch(Project(),"0","add_generated_art",add(id)).code)
     }
-    @Test fun `photo accepts attachment references only but remains unimplemented`() {
+    @Test fun `photo accepts attachment references only and requires an approved attachment`() {
         val p=Project();val kernel=ToolDispatcher()
-        val a=args("""{"attachmentId":"picked-photo","frameId":"H100","style":"OUTLINE","detail":1,"colorCount":2,"grayscale":false,"widthMm":20,"crop":{"zoom":1,"panX":0,"panY":0}}""")
-        assertEquals("NOT_IMPLEMENTED",kernel.dispatch(p,"0","prepare_photo",a).code)
+        val a=args("""{"attachmentId":"picked-photo","mode":"outline","colors":2,"widthMm":20}""")
+        assertEquals("ATTACHMENT_NOT_FOUND",kernel.dispatch(p,"0","prepare_photo",a).code)
         for(k in listOf("assetId","path","url","bytes"))
             assertEquals("INVALID_ARGUMENTS",kernel.dispatch(p,"0","prepare_photo",JsonObject(a+(k to JsonPrimitive("anything")))).code)
     }
