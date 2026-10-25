@@ -15,7 +15,11 @@ class ToolSchema(catalog: String) {
         val tool = tools[name] ?: return "Unknown tool: $name"
         return validateValue(tool.getValue("inputSchema").jsonObject, arguments, "$")
     }
-    fun confirmation(name: String) = tools.getValue(name).getValue("annotations").jsonObject.getValue("needsUserConfirmation").jsonPrimitive.boolean
+    fun confirmation(name: String): Boolean {
+        val policy = tools.getValue(name).getValue("annotations").jsonObject.getValue("needsUserConfirmation").jsonPrimitive
+        require(policy == JsonPrimitive(false) || policy == JsonPrimitive(true) || policy == JsonPrimitive("onOverwrite")) { "Unknown confirmation policy" }
+        return policy != JsonPrimitive(false)
+    }
 
     private fun checkSchema(s: JsonObject) {
         require(s.keys.all { it in setOf("type","properties","required","additionalProperties","items","enum","minimum","maximum","pattern") })

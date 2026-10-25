@@ -16,6 +16,8 @@ class SnapshotFontResolver : FontResolver {
             TtfFontSnapshotCodec.decode(GZIPInputStream(stream).bufferedReader().use { it.readText() })
         }
     }
+    override fun descriptors()=ids.map { id -> io.github.linker2k.myembro.engine.agent.fontDescriptor(id,checkNotNull(resolve(id)),
+        when(id) { "jua"->"Jua";"noto-sans-kr"->"Noto Sans KR";else->"Gowun Batang" },setOf("KOREAN","LATIN")) }
     override fun resolve(fontId:String)=snapshot(fontId)?.outline
     override fun revision(fontId:String)=snapshot(fontId)?.provenance?.get("fontSha256")?.toString()?.trim('"')?.plus(":glyph-extractor-v3")
     override fun prepare(request:TextPreparationRequest,font:ResolvedTextFont,policy:TextPreparationPolicy):io.github.linker2k.myembro.engine.edit.TextObject {

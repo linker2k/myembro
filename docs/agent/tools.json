@@ -1468,7 +1468,7 @@
       },
       "annotations": {
         "readOnly": false,
-        "needsUserConfirmation": true,
+        "needsUserConfirmation": "onOverwrite",
         "mapsTo": "DocumentService.saveProject"
       }
     },
@@ -1501,7 +1501,7 @@
       },
       "annotations": {
         "readOnly": false,
-        "needsUserConfirmation": true,
+        "needsUserConfirmation": "onOverwrite",
         "mapsTo": "ExportService.savePes"
       }
     },

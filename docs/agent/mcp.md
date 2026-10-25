@@ -1,141 +1,115 @@
 # PC MCP host over the shared dispatcher
 
-This replaces the `agent/mcp-spike` Java2D lettering implementation. `:mcp`
-(`tools/mcp`) depends on `:engine`, uses the existing Kotlin/JSON versions and
-introduces no provider SDK, Java2D rasterizer, font download or stitch algorithm.
-The Android APK does not depend on `:mcp`.
-
-## Build and stdio launch
+`:mcp` (`tools/mcp`) is a stdio host over the common engine ToolTurnController,
+with one in-memory EditSession per connection. It uses the repository's existing
+Kotlin/JSON stack. No Java2D font extraction, font download, provider SDK or new
+stitch algorithm is introduced. The Android APK does not depend on this module.
 
 ```sh
-JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew --offline :mcp:test :mcp:installDist
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew --offline :mcp:check :mcp:installDist
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 \
   tools/mcp/build/install/myembro-mcp/bin/myembro-mcp /tmp/myembro-output
 ```
 
-Use the generated executable, not Gradle, as the MCP command. Stdout contains only
-newline-delimited UTF-8 JSON-RPC; diagnostics use stderr. EOF exits the host. This
-implements the [MCP stdio transport](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports),
-initialization (2025-06-18), ping, tools/list and tools/call. No remote HTTP endpoint,
-filesystem browser, prompts or server-managed LLM is provided. One connection owns
-one in-memory project and one engine EditSession; state is not persisted on exit.
+Use the installed executable as the MCP command, not Gradle. Stdout contains only
+newline-delimited UTF-8 JSON-RPC, diagnostics use stderr, and EOF exits. The host
+supports initialization (2025-06-18), ping, tools/list and tools/call under the
+[MCP stdio specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports).
+It does not expose remote HTTP, arbitrary paths, filesystem browsing or persistent
+project sessions. The output directory is an explicit trusted-host startup grant.
 
-## Tools and state
+## Shared services and JVM bindings
 
-`tools/list` returns the exact 69-tool catalog in `docs/agent/tools.json`, including
-closed input schemas and existing annotations. Tool calls are schema-validated
-before consent or execution. Engine tools go through the bound ToolTurnController;
-unsupported tools return NOT_IMPLEMENTED. The host also binds `list_fonts` to its
-local resolver and `save_pes` to the approved output directory. SCRIPT font tagging
-is unbound and fails explicitly; installedOnly includes only installed snapshots
-and bundled fonts. No network font discovery is attempted.
+`tools/list` preserves all 69 definitions, annotations and strict input schemas in
+`docs/agent/tools.json`. Executable calls and validation failures reach the shared
+controller; confirmation requests may return before execution, and unsupported tools remain explicit NOT_IMPLEMENTED errors. Begin/stage/
+commit/cancel and undo/redo share engine history. A schema failure in a prepared
+turn reaches the controller's abort path; the host cannot leave half a turn pending.
 
-Editing uses get_project → begin_edit_turn → edits using one transactionId →
-commit_edit_turn with the original revision. Cancel, undo and redo share engine
-history. Text placement uses the existing centered hoop coordinate system. It does
-not reinterpret coordinates as top-left mm. center_objects uses the dispatcher.
+- BundledFontResolver supplies Ink/Stitch and Hershey plus SnapshotFontResolver for
+  the licensed Android captures from `agent/font-snapshots` (`4413c6a`). The finite
+  captured TTF subset, exact source revisions and existing automatic height/stitch
+  policy remain authoritative. Hangul satin replays recorded rasters through the
+  existing CenterlineGlyph/layout/width assembly; missing characters fail closed.
+- BundledDesignResolver supplies the shipped logo/sample catalog and original
+  source bytes. The JVM sample library is the resolver's reproducible bundled
+  fixtures, not a scan of arbitrary PC folders.
+- BundledEmojiResolver supplies the same local catalog, checked SVGs and existing
+  VectorArt defaults as the app. Uninstalled emoji return DOWNLOAD_REQUIRED.
+- DirectoryDocumentStore maps destinationId=output to the granted directory.
+  list_fonts, get_settings, checked PES artifacts, save_project and save_pes use
+  the common services. There is no duplicate MCP font list or file writer.
 
-prepare_pes runs the existing writer, SewoutCheck and PecViewportCheck and creates
-an opaque in-memory artifact only after complete PASS. The MCP response includes
-artifactId and the original check report, not raw PES bytes. save_pes accepts that
-artifact, destinationId=output and a plain .pes filename. Paths, traversal and
-symlink targets are refused. New saves use CREATE_NEW-equivalent hard-link
-publication without replacing an existing file. Overwrite is explicit, confirmed
-and uses atomic replacement. This filesystem implementation was tested on Linux;
-other filesystems' atomic-move/hard-link support is unconfirmed.
+get_project includes measured placedBoundsMm for each object, from the engine's
+placed stitch bounds. Coordinates remain centered hoop mm. For H100 the integer
+window is −500..499 in 0.1mm units; no tolerance is added. Query bounds to place
+objects rather than assuming transform positions equal visible bounding centers.
 
-## Font resolution
+New document names save directly. Existing names return CONFIRMATION_REQUIRED,
+needsUserConfirmation=true, a single-use confirmToken and retryArguments with
+normalized filename and overwrite=true. After actual approval the trusted host
+resends retryArguments and `_meta: {"myembro.confirmToken":"..."}`. Shared tokens
+bind the exact project revision, payload, arguments and existing file digest.
+`overwrite=true` alone cannot replace a file. save_pes accepts only an opaque,
+revision-current artifact from complete-PASS prepare_pes; blocked output cannot
+create one. Saves are refused during active turns. See [dispatcher](dispatcher.md).
+Non-storage confirmation tools retain action/arguments/revision-bound host tokens.
 
-BundledFontResolver supplies the five shipped Ink/Stitch fonts and Hershey. Its
-snapshot slot is bound to SnapshotFontResolver, which replays the licensed Android
-captures from `agent/font-snapshots` at `4413c6a`. Only the finite captured glyph
-subset is available. No substitute glyph or java.awt extraction is used. Normal
-outline preparation uses engine prepareText; Hangul satin replays captured rasters
-through existing CenterlineGlyph and the exact layout/width assembly demonstrated
-in AndroidFontSnapshotTest. Missing glyphs and source revisions fail explicitly.
-The existing automatic lettering policy and height ranges are unchanged.
+Ordinary CLI model tool calls do not expose arbitrary MCP `_meta`, so interactive
+confirmation requires a trusted client-host adapter; reading a token is not human
+approval. The schema remains unchanged. The test-only bridge handles only the
+explicitly authorized test-owned filename/destination, and for overwrite checks
+its recorded seed SHA-256 immediately before replaying the token. It records the
+first confirmation response, unchanged target, authorization scope and token retry;
+it never approves another filename or overwrites unrecognized user data. It is not
+the production server launcher.
 
-The module bundles captured geometry/rasters, manifest, provenance README and OFL
-licenses, not the captured sample PES files. The original capture checksums and
-Android/JVM parity tests remain in engine tests. list_fonts returns supported IDs
-and exact revisions; initialize instructions also advertise the installed subset.
+## Actual-client composition and overwrite verification
 
-## Confirmation contract
+Both Claude Code and Codex CLI executed: “내장 로고 넣고 아래에 안녕 15mm,
+하트 이모지 20mm 오른쪽 위, PES로 저장(이미 있는 이름이면 덮어쓰기 확인 거쳐서)”.
+The test starts each client with a separate copy of a valid, public generated PES
+named composition.pes. Its seed digest is recorded before either client starts.
+No personal designs are used. All output/logs remain under
+`/tmp/myembro-mcp-composition/clients/` and are not committed.
 
-Every tool whose catalog annotation needsUserConfirmation=true first returns
-CONFIRMATION_REQUIRED with a random confirmToken, exact arguments and current
-revision. It does not execute. After obtaining user approval, a trusted client host
-must repeat the identical tools/call with:
-
-```json
-{
-  "name": "save_pes",
-  "arguments": {"artifactId": "...", "destinationId": "output", "name": "design.pes", "overwrite": false},
-  "_meta": {"myembro.confirmToken": "..."}
-}
-```
-
-Tokens are session-local, action/argument/revision-bound and consumed on an
-attempt. Changed arguments, changed revision and replay are refused. Possession of
-a token does not prove a human approved it: obtaining approval is the trusted
-host's responsibility. No optional token field is added to tools.json. Ordinary
-CLI model tool calls do not expose arbitrary MCP _meta; direct interactive consent
-therefore needs a client-host adapter. Do not pretend this works automatically in
-an unmodified CLI.
-
-`test_client_bridge.py` is **test only**. The user's explicit integration-test
-request authorizes one new named PES in the supplied /tmp output directory. The
-bridge forwards the first save call, records CONFIRMATION_REQUIRED, then resends
-with its token only for that exact filename/destination and overwrite=false. It
-never approves other actions or overwrites. Its audit records both requests and
-responses and the authorization scope. It is not the production server launcher.
-
-## Client integration and cleanup
-
-Use per-invocation Claude Code --mcp-config / --strict-mcp-config to avoid changing
-persistent registration. For Codex CLI, use a temporary named entry with JAVA_HOME
-and its per-run approval mode; see the [official Codex MCP configuration](https://developers.openai.com/codex/mcp/).
-Back up ~/.codex/config.toml byte-for-byte before registering, remove the test entry
-in finally and restore the backup, including permissions. Do not log credentials
-or commit client config backups.
-
-Automated evidence from this task is kept in `/tmp/myembro-mcp/`:
-
-- `direct-rpc.json`: real newline stdio initialize/list/call/confirmation round trip.
-- `claude-exact-client.jsonl`, `codex-client.jsonl`: actual client execution logs.
-- `claude-exact-rpc.jsonl`, `codex-rpc.jsonl`: host-side tool and confirmation audit.
-- `config-restored.json`: restoration hash and temporary-entry removal check.
-- `quality-gate.json`: independent Python gate results for both clients' PES.
-
-The client task is “안녕 myembro 넣고 가운데 정렬 후 PES 저장”, with a reproducible
-jua 8mm black-thread setup, one edit turn, center_objects, prepare_pes for SE400/H100
-and a new output filename. Unit tests also assert exact catalog, strict fields,
-confirmation binding/replay, third-party snapshot preparation, checked saves,
-existing-file refusal and traversal refusal. Automated PASS is not hardware sewout
-approval.
-
-Observed real-client result: Claude Code and Codex CLI both completed get_project /
-list_fonts → begin → add_text → center_objects → commit → prepare_pes → save_pes.
-Both prepare_pes reports were PASS and both saves logged first-call confirmation
-followed by the scoped host token replay. Independent validation command:
+A reproducible layout retains the logo's full 60×63.3mm extent. Each object is
+centered individually using the existing controller, then translated by the
+explicit test inputs: logo (−12,−10)mm, Jua 안녕 (−12,35)mm at height 15mm, and
+red-heart (35,−35)mm prepared at width 20mm. No logo scaling is needed. Actual
+bounds verify text below the logo, heart to its upper right, nonoverlap and exact
+integer hoop containment. The emoji's painted extent is 19.8×17.7mm after the
+existing digitization/coordinate rounding; requested preparation width is 20mm.
+The entire composition commits as one undo step.
 
 ```sh
+python3 tools/mcp/check_client_composition.py /tmp/myembro-mcp-composition/clients
 /tmp/myembro-quality-gate/quality-gate check \
-  /tmp/myembro-mcp/claude-exact/claude.pes /tmp/myembro-mcp/codex/codex.pes \
-  --text --json /tmp/myembro-mcp/quality-gate.json
+  /tmp/myembro-mcp-composition/clients/claude/composition.pes \
+  /tmp/myembro-mcp-composition/clients/codex/composition.pes \
+  --text --json /tmp/myembro-mcp-composition/clients/quality-gate.json
 ```
 
-Output: `PASS 2/2 cases passed`. Reference-only short-stitch statistics remain
-reported; they are not blocking criteria under the frozen gate policy. The Codex
-config restoration check reports restored=true and temporaryEntryRemoved=true.
-Claude used only an invocation-local config and left no registered MCP item.
+Observed outputs: `CLIENT_COMPOSITION PASS` for both clients, `CONFIG_RESTORED
+PASS`, and independent `PASS 2/2 cases passed`. Each final PES is 29,513 bytes.
+`composition-assertions.json` verifies actual tool arguments and get_project bounds,
+not model prose. Both audits show the first save preserving the seed and the
+confirmed retry replacing it. Client JSONL logs, RPC audits, seed digest and gate
+JSON are in that same directory.
 
-The first Claude trial shortened the wording to 안녕. It is retained as a diagnostic,
-not the requested exact-text evidence. The repeated `claude-exact-*` trial explicitly
-verified the full literal 안녕 myembro in add_text and get_project; the final gate
-report uses that repeated output and the Codex output. Both actual add_text argument
-values are checked by script, not inferred from client prose.
+Claude uses per-invocation --mcp-config/--strict-mcp-config with no persistent entry.
+Codex uses a temporary named entry, explicit JAVA_HOME and per-run tool approval;
+see [official Codex MCP configuration](https://developers.openai.com/codex/mcp/).
+The test removes its registration in finally and restores ~/.codex/config.toml
+byte-for-byte and with original permissions from a private backup. Cleanup is
+verified against the backup, without printing credentials.
 
-`:mcp:check` also runs `check_stdio.py` against the installed executable: JSON-only
-stdout, exact 69-tool schema preservation, invalid-JSON response and clean EOF exit.
-The existing root `./gradlew check` CI step therefore includes this module.
+## Automated checks
+
+The root CI `./gradlew check` includes :mcp:check. check_stdio.py launches the real
+installed executable and asserts JSON-only stdout, exact schemas, parse errors
+and EOF exit. McpHostTest covers common queries, snapshot lettering, protocol and
+strict validation, token binding/replay, real logo/text/emoji composition, spatial
+bounds, one-turn history and existing-file replacement with no preapproval write.
+The existing engine/design/emoji/storage tests remain authoritative. Automated
+PASS is not hardware sewout approval.

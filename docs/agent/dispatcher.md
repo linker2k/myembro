@@ -7,7 +7,7 @@ is introduced in the engine.
 ## Kernel and session controller
 
 `ToolDispatcher.dispatch(project, revision, name, arguments, confirmed=false)` is
-the snapshot-in/snapshot-out preparation kernel. Its supported names cover
+the snapshot-in/snapshot-out preparation kernel. Its 25 supported names cover
 font/settings queries, design and emoji catalogs, text creation/replacement, project inspection, transforms, alignment, distribution, duplication, order,
 visibility, color, removal, frame selection, sewing checks and PES preparation.
 Successful edits return their resolved `ProjectCommand` for session publication.
@@ -49,12 +49,30 @@ are not accepted by these tools. Text creation/replacement uses the local FontRe
 ## Atomic scripts and phone path A
 
 `ToolTurnController.executeScript(transactionId, expectedRevision, calls,
-exportSettings, dryRun=false, confirmed=false)` prepares the entire call list
+exportSettings, dryRun=false, approvals=emptyList())` prepares the entire call list
 against one base revision. Every mutation must use the outer transaction ID.
 Nested lifecycle/history calls are rejected. A failed call or final sewing check
 publishes nothing, preserves revision and redo history, and releases no bytes.
 A successful changed script commits one engine turn: one undo restores the whole
 original project. An unchanged script adds no undo step.
+
+Only `remove_objects` can be approved inside a script. Preview returns
+`approvalRequests` with zero-based `callIndex`, `targetIds` and `argumentsHash`.
+The trusted preview host constructs/passes `ScriptApproval` only for the items
+checked by the user. `ScriptApprovals.request` computes the scope from canonical
+JSON for the entire script, transaction and base revision; any script edit or
+revision change invalidates it. Approval requests are not bearer tokens or proof
+of consent: the host must keep approvals outside model-controlled JSON. Missing
+approvals reject atomically and may be retried with checked items using the same
+transaction ID. A successful removal is in the same undo unit as other edits.
+
+All other confirmation tools, including new-name saves, are rejected with
+`SCRIPT_TOOL_FORBIDDEN` in both preview and apply. Passing an approval for such a
+tool fails `INVALID_APPROVAL`. File/library deletion, transfer, overwrite, restore
+and settings changes must use their separate confirmation flows. Neither
+executeScript nor EditorSession.runCommandScript accepts a blanket boolean.
+AgentScenario.run also accepts trusted per-item approvals rather than allowRemoval.
+
 
 `EditorSession.runCommandScript` is the phone command-script entry point. It
 binds the supplied kernel to the editor's existing `EditSession`; normal toolbar

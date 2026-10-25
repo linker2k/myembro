@@ -12,7 +12,7 @@ class McpHostTest {
         val h=host();val expected=checkNotNull(javaClass.getResourceAsStream("/agent/tools.json")).bufferedReader().use { Json.parseToJsonElement(it.readText()) }
         assertEquals(expected,h.listTools());assertEquals(69,h.listTools().getValue("tools").jsonArray.size)
         assertEquals("INVALID_ARGUMENTS",h.call("get_project",args("""{"unknown":true}""")).getValue("code").jsonPrimitive.content)
-        assertEquals("NOT_IMPLEMENTED",h.call("get_settings",args("{}")).getValue("code").jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true),h.call("get_settings",args("{}"))["ok"])
     }
     @Test fun confirmationIsRequiredBoundToActionRevisionAndSingleUse() {
         val h=host();val a=args("""{"transactionId":"t","objectIds":["x"]}""")
@@ -37,15 +37,65 @@ class McpHostTest {
         val pes=h.call("prepare_pes",args("""{"projectRevision":"1","machineId":"se400","frameId":"H100","pesVersion":"V6"}"""))
         assertEquals(JsonPrimitive(true),pes["ok"],pes.toString())
         val save=args("""{"artifactId":"${pes.getValue("artifactId").jsonPrimitive.content}","destinationId":"output","name":"test.pes","overwrite":false}""")
-        val token=h.call("save_pes",save).getValue("confirmToken").jsonPrimitive.content
-        assertFalse(Files.exists(h.output.resolve("test.pes")))
-        assertEquals(JsonPrimitive(true),h.call("save_pes",save,token)["ok"])
-        assertTrue(Files.size(h.output.resolve("test.pes"))>0)
-        val second=h.call("save_pes",save).getValue("confirmToken").jsonPrimitive.content
-        assertEquals("ALREADY_EXISTS",h.call("save_pes",save,second).getValue("code").jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true),h.call("save_pes",save)["ok"])
+        val original=Files.readAllBytes(h.output.resolve("test.pes"))
+        val conflict=h.call("save_pes",save)
+        assertEquals("CONFIRMATION_REQUIRED",conflict.getValue("code").jsonPrimitive.content)
+        assertContentEquals(original,Files.readAllBytes(h.output.resolve("test.pes")))
+        val token=conflict.getValue("confirmToken").jsonPrimitive.content
+        assertEquals(JsonPrimitive(true),h.call("save_pes",conflict.getValue("retryArguments").jsonObject,token)["ok"])
+        assertEquals("INVALID_CONFIRMATION",h.call("save_pes",conflict.getValue("retryArguments").jsonObject,token).getValue("code").jsonPrimitive.content)
         val escape=JsonObject(save+("name" to JsonPrimitive("../escaped.pes")))
-        val third=h.call("save_pes",escape).getValue("confirmToken").jsonPrimitive.content
-        assertEquals("INVALID_FILENAME",h.call("save_pes",escape,third).getValue("code").jsonPrimitive.content)
+        assertEquals("DOCUMENT_SAVE_FAILED",h.call("save_pes",escape).getValue("code").jsonPrimitive.content)
+
+    }
+    @Test fun logoTextHeartCompositionAndExistingFileConfirmationUseCommonServices() {
+        val h=host()
+        fun ok(name:String,body:String):JsonObject {
+            val r=h.call(name,args(body));assertEquals(JsonPrimitive(true),r["ok"],"$name $r");return r
+        }
+        val seed=checkNotNull(javaClass.getResourceAsStream("/agent/builtins/myembro_logo.pes")).use { it.readBytes() }
+        val target=h.output.resolve("composition.pes");Files.write(target,seed)
+        val designs=ok("list_builtin_designs","{}").getValue("designs").jsonArray
+        assertTrue(designs.any { it.jsonObject.getValue("assetId").jsonPrimitive.content=="builtin:myembro-logo" })
+        val fonts=ok("list_fonts","""{"text":"안녕","filters":["KOREAN"],"installedOnly":true}""").getValue("fonts").jsonArray
+        assertTrue(fonts.any { it.jsonObject.getValue("fontId").jsonPrimitive.content=="jua" })
+        val emoji=ok("prepare_emoji","""{"emojiId":"red-heart","frameId":"H100","widthMm":20}""")
+        ok("begin_edit_turn","""{"transactionId":"t","expectedRevision":"0"}""")
+        ok("add_design","""{"transactionId":"t","assetId":"builtin:myembro-logo","objectId":"logo","name":"Logo"}""")
+        ok("add_text","""{"transactionId":"t","objectId":"text","text":"안녕","fontId":"jua","fontRevision":"${h.fonts.revision("jua")}","heightMm":15,"threadColor":"#000000","singleLineBold":false}""")
+        ok("add_generated_art","""{"transactionId":"t","resultId":"${emoji.getValue("resultId").jsonPrimitive.content}","objectId":"heart","name":"Heart"}""")
+        for((id,x,y) in listOf(Triple("logo",-12,-10),Triple("text",-12,35),Triple("heart",35,-35))) {
+            ok("center_objects","""{"transactionId":"t","objectIds":["$id"]}""")
+            ok("transform_objects","""{"transactionId":"t","objectIds":["$id"],"deltaXMm":$x,"deltaYMm":$y,"scaleFactor":1,"rotationDeg":0}""")
+        }
+        ok("commit_edit_turn","""{"transactionId":"t","expectedRevision":"0"}""")
+        val project=ok("get_project","{}").getValue("project").jsonObject
+        val objects=project.getValue("objects").jsonArray.map { it.jsonObject }.associateBy { it.getValue("id").jsonPrimitive.content }
+        assertEquals(setOf("logo","text","heart"),objects.keys);assertEquals(1,h.session.snapshot().undoCount)
+        fun bounds(id:String)=objects.getValue(id).getValue("placedBoundsMm").jsonObject
+        fun n(id:String,key:String)=bounds(id).getValue(key).jsonPrimitive.double
+        assertTrue(n("text","minYMm")>n("logo","maxYMm"))
+        assertTrue(n("heart","minXMm")>n("logo","maxXMm"));assertTrue(n("heart","maxYMm")<n("text","minYMm"))
+        assertEquals(15.0,objects.getValue("text").getValue("heightMm").jsonPrimitive.double)
+        val pes=ok("prepare_pes","""{"projectRevision":"1","machineId":"se400","frameId":"H100","pesVersion":"V6"}""")
+        val save=args("""{"artifactId":"${pes.getValue("artifactId").jsonPrimitive.content}","destinationId":"output","name":"composition.pes","overwrite":false}""")
+        val conflict=h.call("save_pes",save);assertEquals("CONFIRMATION_REQUIRED",conflict.getValue("code").jsonPrimitive.content)
+        assertContentEquals(seed,Files.readAllBytes(target))
+        val saved=h.call("save_pes",conflict.getValue("retryArguments").jsonObject,conflict.getValue("confirmToken").jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true),saved["ok"],saved.toString());assertEquals(JsonPrimitive(true),saved["overwritten"])
+        assertFalse(seed.contentEquals(Files.readAllBytes(target)))
+        println("COMPOSITION PASS: full-size logo + 안녕 15mm below + heart 20mm upper-right; overwrite handshake")
+    }
+    @Test fun invalidMcpArgumentsAbortTheSharedPreparedTurn() {
+        val h=host()
+        assertEquals(JsonPrimitive(true),h.call("begin_edit_turn",args("""{"transactionId":"t","expectedRevision":"0"}"""))["ok"])
+        assertEquals(JsonPrimitive(true),h.call("add_text",args("""{"transactionId":"t","objectId":"text","text":"A","fontId":"hershey-futural","fontRevision":"${h.fonts.revision("hershey-futural")}","heightMm":15,"threadColor":"#000000","singleLineBold":false}"""))["ok"])
+        val bad=h.call("get_settings",args("""{"unknown":true}"""))
+        assertEquals("INVALID_ARGUMENTS",bad.getValue("code").jsonPrimitive.content)
+        val commit=h.call("commit_edit_turn",args("""{"transactionId":"t","expectedRevision":"0"}"""))
+        assertEquals(JsonPrimitive(false),commit["ok"]);assertEquals(0,h.session.revision)
+        assertTrue(h.session.project.objects.isEmpty());assertEquals(0,h.session.snapshot().undoCount)
     }
     @Test fun eofNotificationAndMethodErrorsAreProtocolMessagesOnly() {
         val h=host()

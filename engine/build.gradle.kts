@@ -252,3 +252,6 @@ tasks.register<JavaExec>("runAgentRegression") {
     args(providers.gradleProperty("agentRegressionOutput").orElse("/tmp/myembro-agent-regression").get())
     if(providers.gradleProperty("agentRegressionMeasure").orElse("false").get().toBooleanStrict()) args("--measure")
 }
+
+// Shared adversarial fixtures compile in tests only, never the engine/application artifacts.
+sourceSets.test { kotlin.srcDir(rootProject.file("tools/safety-tests/kotlin")) }

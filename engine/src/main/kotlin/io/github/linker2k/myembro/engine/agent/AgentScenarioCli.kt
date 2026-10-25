@@ -19,7 +19,7 @@ object AgentScenario {
         return Project(frames.getValue(frame), listOf(StitchObject(id, name, PesReader.read(bytes))))
     }
     data class Outcome(val output: JsonObject, val pesBytes: ByteArray?, val success: Boolean)
-    fun run(input: JsonObject, dispatcher: ToolDispatcher = ToolDispatcher(), allowRemoval: Boolean = false,
+    fun run(input: JsonObject, dispatcher: ToolDispatcher = ToolDispatcher(), approvals: List<ScriptApproval> = emptyList(),
         dryRun: Boolean = false): Outcome {
         require(input.keys == setOf("initialProject", "calls", "export") || input.keys == setOf("initialProject", "calls", "export", "transactionId")) { "Expected initialProject, calls, export and optional transactionId" }
         val initial = input.getValue("initialProject").jsonObject
@@ -34,7 +34,7 @@ object AgentScenario {
             require(c.keys == setOf("name", "arguments")) { "Call must have name and arguments only" }
             ToolTurnController.Call(c.string("name"),resolveRevision(c.getValue("arguments"),session.revision.toString()))
         }
-        val result=dispatcher.bind(session).executeScript(transactionId,session.revision,calls,input.getValue("export").jsonObject,dryRun,allowRemoval)
+        val result=dispatcher.bind(session).executeScript(transactionId,session.revision,calls,input.getValue("export").jsonObject,dryRun,approvals)
         val snapshot=session.snapshot()
         return Outcome(buildJsonObject {
             result.output.forEach { (key,value)->put(key,value) }

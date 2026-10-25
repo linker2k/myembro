@@ -116,3 +116,5 @@ dependencies {
 }
 
 tasks.named("preBuild").configure { dependsOn(generateMyembroBrandColors) }
+
+android.sourceSets.getByName("test").java.srcDir(rootProject.file("tools/safety-tests/kotlin"))

@@ -21,12 +21,12 @@ internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
      * No Compose state or separate history is mutated during dry-run. VM must refresh after a commit. */
     fun runCommandScript(kernel: ToolDispatcher, transactionId: String, expectedRevision: Long,
         calls: List<ToolTurnController.Call>, exportSettings: JsonObject, dryRun: Boolean = false,
-        confirmed: Boolean = false): ToolDispatcher.Result {
+        approvals: List<io.github.linker2k.myembro.engine.agent.ScriptApproval> = emptyList()): ToolDispatcher.Result {
         if(isGesturing) return ToolDispatcher.Result(project,buildJsonObject {
             put("ok",false);put("code","GESTURE_IN_PROGRESS");put("message","Finish the pointer gesture before running a script")
         })
         val controller=scriptControllers.getOrPut(kernel) { kernel.bind(engine) }
-        val result=controller.executeScript(transactionId,expectedRevision,calls,exportSettings,dryRun,confirmed)
+        val result=controller.executeScript(transactionId,expectedRevision,calls,exportSettings,dryRun,approvals)
         if(!dryRun) project=engine.project
         return result
     }
