@@ -14,20 +14,20 @@ class McpHost(val output:Path) {
     val snapshots=SnapshotFontResolver()
     val fonts=BundledFontResolver(snapshots)
     val session=EditSession(Project())
-    private val kernel=ToolDispatcher(fontResolver=fonts)
+    private val kernel=ToolDispatcher(fontResolver=fonts, designResolver=BundledDesignResolver(), emojiResolver=BundledEmojiResolver(), documentStore=DirectoryDocumentStore(output))
     private val controller=kernel.bind(session)
     private val catalog=checkNotNull(javaClass.getResourceAsStream("/agent/tools.json")).bufferedReader().use { Json.parseToJsonElement(it.readText()).jsonObject }
     private val schema=ToolSchema(catalog.toString())
     private data class Consent(val name:String,val args:JsonObject,val revision:Long)
     private val consents=mutableMapOf<String,Consent>()
-    private val artifacts=mutableMapOf<String,ByteArray>()
     fun listTools()=catalog
     fun instructions():String = "myembro: get_project then begin_edit_turn with its revision; stage edits with the same transactionId, then commit_edit_turn using the original revision. Coordinates are mm, centered hoop coordinates. Font resolver revisions: "+
         (snapshots.ids+BundledFontResolver.IDS+HersheyFont.DEFAULT_ID).joinToString { "$it=${fonts.revision(it)}" }+
-        ". TTF snapshots cover 자수봄날정민안녕, A-Z/a-z/0-9/space only. Mixed Korean/Latin uses existing automatic fill; try jua heightMm=8. No invented methods. center_objects centers selected IDs. prepare_pes(machineId=se400,frameId=H100,pesVersion=V6,projectRevision=current) returns artifactId only on complete PASS. save_pes uses destinationId=output, a plain .pes filename and overwrite=false. Confirmation-required tools first return a token; a trusted host must resend the identical call with params._meta.myembro.confirmToken. Do not claim user approval merely because you can read a token. Unsupported tools return NOT_IMPLEMENTED."
+        ". TTF snapshots cover 자수봄날정민안녕, A-Z/a-z/0-9/space only. Mixed Korean/Latin uses existing automatic fill; try jua heightMm=8. No invented methods. center_objects centers selected IDs. prepare_pes(machineId=se400,frameId=H100,pesVersion=V6,projectRevision=current) returns artifactId only on complete PASS. save_project/save_pes use destinationId=output and a plain filename. New names save directly. Existing names return CONFIRMATION_REQUIRED; the approved host resends retryArguments (overwrite=true) with params._meta.myembro.confirmToken. Built-in designs use list_builtin_designs/add_design; local emoji use list_emoji/prepare_emoji/add_generated_art. get_project includes placedBoundsMm; use them to place nonoverlapping objects within centered -50..49.9mm for H100. No unsupported parameter changes. Do not claim user approval merely because you can read a token. Unsupported tools return NOT_IMPLEMENTED."
     fun call(name:String,args:JsonObject,token:String?=null):JsonObject {
-        if(!schema.contains(name))return error("UNKNOWN_TOOL",name)
-        schema.validate(name,args)?.let { return error("INVALID_ARGUMENTS",it) }
+        if(!schema.contains(name))return controller.dispatch(name,args).output
+        schema.validate(name,args)?.let { return controller.dispatch(name,args).output }
+        if(name in setOf("save_project","save_pes")) return controller.dispatch(name,args,confirmToken=token).output
         val needs=schema.confirmation(name)
         if(needs) {
             if(token==null) {
@@ -37,45 +37,7 @@ class McpHost(val output:Path) {
             val consent=consents.remove(token) ?: return error("INVALID_CONFIRMATION","Unknown or consumed token")
             if(consent!=Consent(name,args,session.revision))return error("INVALID_CONFIRMATION","Action, arguments or revision changed")
         } else if(token!=null) return error("INVALID_CONFIRMATION","This action does not use confirmation")
-        if(name=="list_fonts") {
-            val text=args.getValue("text").jsonPrimitive.content
-            val filters=args.getValue("filters").jsonArray.map { it.jsonPrimitive.content }.toSet()
-            if("SCRIPT" in filters)return error("NOT_IMPLEMENTED","Script style tagging is not bound")
-            val rows=(snapshots.ids+BundledFontResolver.IDS+HersheyFont.DEFAULT_ID).mapNotNull { id ->
-                val f=fonts.resolve(id) ?: return@mapNotNull null
-                if(text.codePoints().toArray().any { !Character.isWhitespace(it) && !f.supports(it) })return@mapNotNull null
-                val outline=f is ResolvedTextFont.OutlineSnapshot;val single=f !is ResolvedTextFont.InkStitch && !outline
-                if("LATIN" in filters && !f.supports('A'.code) || "OUTLINE" in filters && !outline || "SINGLE_LINE" in filters && !single || "KOREAN" in filters && !f.supports('안'.code))return@mapNotNull null
-                buildJsonObject { put("fontId",id);put("fontRevision",fonts.revision(id));put("geometry",if(outline)"OUTLINE" else if(single)"SINGLE_LINE" else "INKSTITCH");fonts.inkRange(id,f)?.let { put("minHeightMm",it.start);put("maxHeightMm",it.endInclusive) } }
-            }
-            return buildJsonObject { put("ok",true);put("fonts",JsonArray(rows)) }
-        }
-        if(name=="save_pes") return save(args)
-        val result=controller.dispatch(name,args,confirmed=needs)
-        return if(result.pesBytes!=null) {
-            val id=UUID.randomUUID().toString();artifacts[id]=result.pesBytes!!.copyOf()
-            JsonObject(result.output+("artifactId" to JsonPrimitive(id)))
-        } else result.output
-    }
-    private fun save(a:JsonObject):JsonObject {
-        if(a.getValue("destinationId").jsonPrimitive.content!="output")return error("INVALID_DESTINATION","Only the host-approved output directory is available")
-        val name=a.getValue("name").jsonPrimitive.content
-        if(name.isBlank() || Path.of(name).fileName.toString()!=name || !name.endsWith(".pes") || name.contains('/') || name.contains('\\'))return error("INVALID_FILENAME","Use a plain .pes filename")
-        val bytes=artifacts[a.getValue("artifactId").jsonPrimitive.content] ?: return error("UNKNOWN_ARTIFACT","Prepare a checked PES first")
-        val target=output.resolve(name)
-        if(Files.isSymbolicLink(target))return error("INVALID_DESTINATION","Symlink targets are forbidden")
-        val overwrite=a.getValue("overwrite").jsonPrimitive.boolean
-        if(!overwrite && Files.exists(target))return error("ALREADY_EXISTS","Explicit overwrite and new confirmation are required")
-        val temp=Files.createTempFile(output,".pes-",".tmp")
-        try {
-            Files.write(temp,bytes)
-            if(overwrite) Files.move(temp,target,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
-            else {
-                // CREATE_NEW is enforced by a hard link: no check-then-move overwrite race.
-                Files.createLink(target,temp);Files.delete(temp)
-            }
-        } finally { Files.deleteIfExists(temp) }
-        return buildJsonObject { put("ok",true);put("path",target.toString());put("byteCount",bytes.size) }
+        return controller.dispatch(name,args,confirmed=needs).output
     }
     private fun error(code:String,message:String)=buildJsonObject { put("ok",false);put("code",code);put("message",message) }
     fun rpc(request:JsonObject):JsonObject? {

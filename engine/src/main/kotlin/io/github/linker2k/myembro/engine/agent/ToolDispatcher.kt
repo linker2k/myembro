@@ -213,6 +213,10 @@ class ToolDispatcher(
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {
                 put("id", o.id); put("name", o.name); put("visible", o.visible); put("type", if (o is TextObject) "text" else "stitch")
                 val threads = when(o) { is StitchObject -> o.source.threads; is TextObject -> listOf(o.thread) }
+                o.placedBounds()?.let { b -> put("placedBoundsMm",buildJsonObject {
+                    put("minXMm",b.minX/10.0);put("minYMm",b.minY/10.0);put("maxXMm",b.maxX/10.0);put("maxYMm",b.maxY/10.0)
+                    put("widthMm",b.width/10.0);put("heightMm",b.height/10.0)
+                }) }
                 put("threadColors", JsonArray(threads.map { JsonPrimitive("#%06X".format(java.util.Locale.ROOT, it.color and 0xFFFFFF)) }))
                 if (o is TextObject) { put("text", o.text); put("fontId", o.fontId); put("heightMm", o.heightMm) }
                 put("transform", buildJsonObject { put("xMm", o.transform.x / 10); put("yMm", o.transform.y / 10); put("rotationDeg", o.transform.rotationDeg); put("scaleX", o.transform.scaleX); put("scaleY", o.transform.scaleY) })
