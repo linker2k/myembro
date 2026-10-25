@@ -65,7 +65,11 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     }
     var showCheck by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
-        IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
+        Row {
+            IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
+            // Backing out all the way only cancels the running step; Home does the same.
+            io.github.linker2k.myembro.ui.HomeButton { home -> vm.cancel(); home() }
+        }
     }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {

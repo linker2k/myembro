@@ -161,6 +161,8 @@ private fun ViewerContent(
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
+                // Read-only viewer: nothing to lose on the way Home.
+                navigationIcon = { HomeButton() },
                 actions = {
                     IconButton(onClick = onOpenFile, enabled = !vm.loading && !vm.exporting) {
                         Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.open_file))

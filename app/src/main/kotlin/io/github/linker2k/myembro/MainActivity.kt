@@ -8,6 +8,9 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.CompositionLocalProvider
+import io.github.linker2k.myembro.ui.LocalGoHome
+import io.github.linker2k.myembro.ui.popToHome
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -111,6 +114,10 @@ class MainActivity : ComponentActivity() {
             val back: () -> Unit = {
                 if (stack.removeLastOrNull() == Screen.EDITOR) library.refresh()
             }
+            // Each screen calls this through its own leave path, so unsaved work is handled as on back.
+            val goHome: () -> Unit = {
+                if (Screen.EDITOR in stack.popToHome()) library.refresh()
+            }
             val newProject = { hoop: HoopSpec ->
                 editor.newProject(hoop)
                 stack += Screen.EDITOR
@@ -121,6 +128,8 @@ class MainActivity : ComponentActivity() {
             var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
             MyembroTheme {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
+                // One back already reaches Home from the first level; deeper screens get a Home button.
+                CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 }) {
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
                         onNewProject = { hoop -> newProject(hoop.spec()) },
@@ -232,6 +241,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+                }
                 }
                 val importProgress by library.importProgress.collectAsState()
                 // LibraryScreen also works standalone and owns these dialogs while it is visible.

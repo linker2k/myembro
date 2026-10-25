@@ -40,4 +40,5 @@
     <string name="picker_browse_samples">Browse samples</string>
     <string name="picker_load_failed">Could not load designs · Try again</string>
     <string name="picker_unreadable">Cannot use this file</string>
+    <string name="home_go">Go to home</string>
 </resources>
