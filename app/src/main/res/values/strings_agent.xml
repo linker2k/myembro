@@ -97,4 +97,7 @@
     <string name="agent_change_recolor">%1$s thread %2$s → %3$s</string>
     <string name="agent_change_frame">Change the hoop to %1$s</string>
     <string name="agent_change_other">%1$s: %2$s</string>
+    <string name="agent_change_add_text">Add text “%1$s” (%2$s mm)</string>
+    <string name="agent_change_replace_text">Change %1$s to “%2$s” (%3$s mm)</string>
+    <string name="agent_change_add_design">Add design %1$s</string>
 </resources>

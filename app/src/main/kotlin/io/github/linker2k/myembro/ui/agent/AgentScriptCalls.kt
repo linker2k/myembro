@@ -46,7 +46,9 @@ internal data class AgentScriptCalls(
                 "recolor_object" -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId"),
                     listOf(((a["threadIndex"]?.jsonPrimitive?.intOrNull ?: 0) + 1).toString(), value("threadColor").uppercase()))
                 "set_project_frame" -> AgentChange(AgentChange.Kind.CHANGE, call.name, emptyList(), listOf(value("frameId")))
-                "add_text", "add_design", "add_generated_art" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("text")))
+                "add_text" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("text"), num("heightMm")))
+                "replace_text" -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId"), listOf(value("text"), num("heightMm")))
+                "add_design", "add_generated_art" -> AgentChange(AgentChange.Kind.ADD, call.name, id("objectId"), listOf(value("name")))
                 else -> AgentChange(AgentChange.Kind.CHANGE, call.name, id("objectId") + ids("objectIds"))
             }
         }

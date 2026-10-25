@@ -95,4 +95,7 @@
     <string name="agent_change_recolor">%1$s 실 %2$s → %3$s</string>
     <string name="agent_change_frame">후프를 %1$s(으)로 바꾸기</string>
     <string name="agent_change_other">%1$s: %2$s</string>
+    <string name="agent_change_add_text">글자 “%1$s” 추가 (%2$s mm)</string>
+    <string name="agent_change_replace_text">%1$s 글자를 “%2$s”(%3$s mm)로 바꾸기</string>
+    <string name="agent_change_add_design">도안 %1$s 추가</string>
 </resources>

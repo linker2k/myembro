@@ -397,6 +397,9 @@ private fun changeText(change: AgentChange): String {
         "set_object_visibility" -> stringResource(if (at(0) == "true") R.string.agent_change_show else R.string.agent_change_hide, names)
         "recolor_object" -> stringResource(R.string.agent_change_recolor, names, at(0), at(1))
         "set_project_frame" -> stringResource(R.string.agent_change_frame, at(0))
+        "add_text" -> stringResource(R.string.agent_change_add_text, at(0), at(1))
+        "replace_text" -> stringResource(R.string.agent_change_replace_text, names, at(0), at(1))
+        "add_design", "add_generated_art" -> stringResource(R.string.agent_change_add_design, at(0).ifEmpty { names })
         else -> stringResource(R.string.agent_change_other, change.tool, names)
     }
 }
