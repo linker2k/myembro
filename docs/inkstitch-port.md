@@ -117,6 +117,7 @@ Submit a separate SVG fixture/PES matrix for each algorithm.
 
 | Location | Difference from upstream | Reason/limitation |
 |---|---|---|
+| JTS Polygonizer adapter (`geometry.CanonicalPolygonOrder`) | Rotate each ring to its lexicographically first existing coordinate, preserving direction; sort holes/components before and after union | Ink/Stitch starts with ordered SVG paths in Shapely, whereas JTS Polygonizer uses identity-hashed edge traversal. Stabilize representation only; no precision snap or new stitch algorithm. See [evidence](agent/noto-fill-order-fix.md) |
 | Shared DTOs | Kotlin data/read-only List instead of mutable Python objects; some upstream field names use camelCase | Kotlin public contract; SVG parameter DTOs retain upstream names |
 | `Stitch.minStitchLengthMm` / group `*Mm` | Public values stored in mm instead of upstream internal px | Retain SVG attribute units and convert explicitly at boundaries |
 | `Stitch.end`, plan metadata/warnings/originalThreadPalette | Extensions beyond the upstream plan | Preserve END/palette/read diagnostics in existing EmbPattern raw round trips |

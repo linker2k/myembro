@@ -124,8 +124,13 @@ class PolygonRegion internal constructor(internal val geometry: Geometry) {
             val rings = paths.map { it.closedPoints() }.filter { it.distinct().size >= 3 }
             if (rings.isEmpty()) return empty()
             require(rings.sumOf { it.size.toLong() } <= 200_000) { "Too many polygon vertices" }
+            io.github.linker2k.myembro.engine.inkstitch.stitches.FillTrace.emit("input_rings") {
+                rings.joinToString(";") { ring->ring.joinToString("|") { "${it.x.toBits()}:${it.y.toBits()}" } }
+            }
             val polygonizer = Polygonizer()
-            polygonizer.add(UnaryUnionOp.union(rings.map(::line)))
+            val noded=UnaryUnionOp.union(rings.map(::line))
+            io.github.linker2k.myembro.engine.inkstitch.stitches.FillTrace.emit("noded_lines") { org.locationtech.jts.io.WKBWriter.toHex(org.locationtech.jts.io.WKBWriter().write(noded)) }
+            polygonizer.add(noded)
             fun winding(p: Coordinate): Int {
                 var result = 0
                 for (ring in rings) for ((a, b) in ring.zipWithNext()) {
@@ -135,11 +140,17 @@ class PolygonRegion internal constructor(internal val geometry: Geometry) {
                 }
                 return result
             }
-            val selected = polygonizer.polygons.map { it as Polygon }.filter {
+            val polygonized=CanonicalPolygonOrder.polygons(polygonizer.polygons.map { it as Polygon })
+            io.github.linker2k.myembro.engine.inkstitch.stitches.FillTrace.emit("polygonized_rings") { polygonized.joinToString(";") { org.locationtech.jts.io.WKBWriter.toHex(org.locationtech.jts.io.WKBWriter().write(it)) } }
+            io.github.linker2k.myembro.engine.inkstitch.stitches.FillTrace.emit("polygonized_normalized") { polygonized.map { org.locationtech.jts.io.WKBWriter.toHex(org.locationtech.jts.io.WKBWriter().write(it.norm())) }.sorted().joinToString(";") }
+            val selected = polygonized.filter {
                 val w = winding(it.interiorPoint.coordinate)
                 if (rule == FillRule.NON_ZERO) w != 0 else abs(w) % 2 == 1
             }
-            return if (selected.isEmpty()) empty() else polygonal(UnaryUnionOp.union(selected))
+            if(selected.isEmpty())return empty()
+            // The final union may choose another cyclic start. Canonicalize only representation here,
+            // after parity classification/union, before any fill boundary projection is constructed.
+            return PolygonRegion(CanonicalPolygonOrder.canonicalize(polygonal(UnaryUnionOp.union(selected)).geometry))
         }
     }
 }

@@ -1,0 +1,108 @@
+OBJECT_JSON_SHA256 87943be73059f2b0a1a38a6897d6def8dc348ad87b01d2a2ab7116da36851247 EXACT
+JVM run 0 PES {'stage': 'PES', 'sha256': 'af2b2251a54366eb894947258137eee25c42d8d7e1e0055acd823a58bc359132', 'bytes': 2934, 'stitches': 958}
+ALL_STAGES_EXACT
+JVM run 1 PES {'stage': 'PES', 'sha256': '16aa38b4185c0c19f5a24491fb645066cbcddd80cde0a842823b61ef685a4bc9', 'bytes': 2934, 'stitches': 958}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf 348c2c2267966ec99fe11ed5144391c2fe20d2d10b258bae6e1d3d13e588d16f
+RING 1 0 first (-173.86438053097345, -49.28097345132743) (-178.4412610619469, -43.84679203539824) vertices 5 5 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 8 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 8 / 10
+STAGE travel_graph exact 8 / 10
+STAGE collapsed_euler_path exact 9 / 10
+STAGE rendered_route exact 9 / 10
+JVM run 2 PES {'stage': 'PES', 'sha256': 'a01aa0f788b6beaf92641ff78c5904d31dd61abd79d23a31a7d76155ba090f47', 'bytes': 2942, 'stitches': 962}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf d87f0c5c8b1df1655a8c60c6bc192083820bb36ae4764a2b26bf8ed070ec96b0
+RING 0 0 first (-175.77335784094632, -43.84679203539824) (-125.69937874318404, -43.84679203539824) vertices 29 29 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 6 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 6 / 10
+STAGE travel_graph exact 6 / 10
+STAGE collapsed_euler_path exact 8 / 10
+STAGE rendered_route exact 8 / 10
+JVM run 3 PES {'stage': 'PES', 'sha256': '16aa38b4185c0c19f5a24491fb645066cbcddd80cde0a842823b61ef685a4bc9', 'bytes': 2934, 'stitches': 958}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf 68a0ab9a37ca01052f205c08c7cdaa01a5dc536fc3c4fb5037f8b195a848c2e5
+RING 2 0 first (-125.69937874318404, -43.84679203539824) (-127.58396017699114, -49.28097345132743) vertices 5 5 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 8 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 8 / 10
+STAGE travel_graph exact 8 / 10
+STAGE collapsed_euler_path exact 9 / 10
+STAGE rendered_route exact 9 / 10
+ANDROID run 0 PES {'stage': 'PES', 'sha256': 'a01aa0f788b6beaf92641ff78c5904d31dd61abd79d23a31a7d76155ba090f47', 'bytes': 2942, 'stitches': 962}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf ff250321240714ce854dfea02ccef0b69a8f55d52c1bcbff0b6e0936af2c2381
+RING 0 0 first (-175.77335784094632, -43.84679203539824) (-125.69937874318404, -43.84679203539824) vertices 29 29 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 6 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 6 / 10
+STAGE travel_graph exact 6 / 10
+STAGE collapsed_euler_path exact 8 / 10
+STAGE rendered_route exact 8 / 10
+ANDROID run 1 PES {'stage': 'PES', 'sha256': '2ad9a3a9dcb4979413033a919ee37e8a6e979a3b00a80a2a1c99f9f2ca1e9007', 'bytes': 2934, 'stitches': 958}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf 0a5d1fa6b82f66983d837c8af32f2cea0b4c469ae4e755b755e37aa17064fb2b
+RING 0 0 first (-175.77335784094632, -43.84679203539824) (-197.4816371681416, 0.0) vertices 29 29 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 6 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 6 / 10
+STAGE travel_graph exact 6 / 10
+STAGE collapsed_euler_path exact 7 / 10
+STAGE rendered_route exact 7 / 10
+ANDROID run 2 PES {'stage': 'PES', 'sha256': 'a80b0eacf4ee7f785b62442bf531e1360e6eae5d987a3cecde7b22850318f5cd', 'bytes': 2934, 'stitches': 958}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf a3307e88c8b0f3174060567ed64088625c45d53ea7d9f54a7b6db3447e413739
+RING 0 0 first (-175.77335784094632, -43.84679203539824) (-197.4816371681416, 0.0) vertices 29 29 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 6 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 6 / 10
+STAGE travel_graph exact 6 / 10
+STAGE collapsed_euler_path exact 8 / 10
+STAGE rendered_route exact 8 / 10
+ANDROID run 3 PES {'stage': 'PES', 'sha256': 'af2b2251a54366eb894947258137eee25c42d8d7e1e0055acd823a58bc359132', 'bytes': 2934, 'stitches': 958}
+FIRST_DIFFERENCE 2 polygonized_rings cc503ba70c3eba4423c6310c84fd0564bb7c83d55265dc7027640722068409bf b8903e7be7ba8f0d2b898aee1a9721977c63e92fe1f10f3e90bbf9ec1e2609ee
+RING 0 0 first (-175.77335784094632, -43.84679203539824) (-178.4412610619469, -43.84679203539824) vertices 29 29 vertex_bits_set_equal True
+STAGE input_rings exact 4 / 4
+STAGE noded_lines exact 4 / 4
+STAGE polygonized_rings exact 3 / 4
+STAGE polygonized_normalized exact 4 / 4
+STAGE row_segments exact 10 / 10
+STAGE graph_before_eulerize exact 8 / 10
+STAGE matching_input exact 0 / 0
+STAGE matching_pairs exact 0 / 0
+STAGE graph_after_eulerize exact 8 / 10
+STAGE travel_graph exact 8 / 10
+STAGE collapsed_euler_path exact 10 / 10
+STAGE rendered_route exact 10 / 10

@@ -1,0 +1,64 @@
+{
+  "engine": {
+    "tests": 141,
+    "failures": 0,
+    "errors": 0
+  },
+  "app": {
+    "tests": 247,
+    "failures": 0,
+    "errors": 0
+  },
+  "repeat": {
+    "object_sha256": "87943be73059f2b0a1a38a6897d6def8dc348ad87b01d2a2ab7116da36851247",
+    "runs_per_runtime": 10,
+    "distinct_pes_hashes": 1,
+    "pes": {
+      "stage": "PES",
+      "sha256": "054edaac486d74a147282ecbad3b780fca1e958c41be4c6516176fd42fc58f51",
+      "bytes": 2916,
+      "stitches": 949
+    }
+  },
+  "sweep_before": {
+    "verdict": "PASS",
+    "cases": 430,
+    "blocked": 0,
+    "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d"
+  },
+  "sweep_after": {
+    "verdict": "PASS",
+    "cases": 430,
+    "blocked": 0,
+    "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d"
+  },
+  "fill_regression": {
+    "verdict": "PASS",
+    "cases": 4,
+    "blocked": 0,
+    "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d"
+  },
+  "ttf_fill": {
+    "verdict": "PASS",
+    "cases": 2,
+    "blocked": 0,
+    "threshold_sha256": "18bf3e7cc70e872680368efdb3319e8d1794587337eefdb4e9c7cc97a116b95d"
+  },
+  "changed_pes_files": 70,
+  "changed_stitch_counts": 52,
+  "bundled_snapshot_geometry_raster_hashes_unchanged": true,
+  "chicken_little": {
+    "kind": "Ink/Stitch SVG, no TTF cmap",
+    "glyphs": 138,
+    "hangul_glyphs": 0,
+    "catalog_glyph_set_exact": true,
+    "sha256": "f4c08d4e3d79470febc7c5217a4741f37e8293d53fdc45270309aa09cdfdbc75",
+    "catalog_modified": false
+  },
+  "commands": [
+    "JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:generateTatamiSweep -PtatamiSweepDir=/tmp/myembro-ring-fix/after :engine:test --tests \"*CanonicalPolygonOrderTest\" --tests \"*FontFillProbeTest\" --tests \"*AndroidFontSnapshotTest\" --tests \"*Fill*Test\" --tests \"*DefaultTatami*Test\" --tests \"*TatamiLetteringIntegrationTest\"",
+    "JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest -PmyembroTestRunner=io.github.linker2k.myembro.ui.lettering.FontFillProbeInstrumentation",
+    "/tmp/myembro-quality-gate/quality-gate check --matrix /tmp/myembro-ring-fix/after/generation.json --json /tmp/myembro-ring-fix/after/gate.json",
+    "python3 tools/font-snapshots/compare-fill-sweep.py /tmp/myembro-ring-fix/before /tmp/myembro-ring-fix/after /tmp/changes.json"
+  ]
+}
