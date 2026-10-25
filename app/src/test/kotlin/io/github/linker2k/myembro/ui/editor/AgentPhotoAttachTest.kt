@@ -94,8 +94,8 @@ class AgentPhotoAttachTest {
         { listOf(base.hoop) }, publish = { block -> block() }, kernelFactory = { ToolDispatcher(frames = it, attachmentStore = store) })
     private fun script(commands: String) = (AgentScriptParser.parse(
         """{"myembroScript":1,"promptId":"p-T","summary":"s","commands":[$commands]}""") as AgentParseResult.Parsed).script
-    private fun prepare(id: String = "a1", mode: String = "silhouette", colors: Int = 2, width: Double = 40.0) =
-        """{"tool":"prepare_photo","args":{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width}}"""
+    private fun prepare(id: String = "a1", mode: String = "silhouette", colors: Int = 2, width: Double = 40.0, filter: String = "original") =
+        """{"tool":"prepare_photo","args":{"attachmentId":"$id","mode":"$mode","colors":$colors,"widthMm":$width,"filter":"$filter"}}"""
     private fun add(result: String = "r1") = """{"tool":"add_generated_art","args":{"resultId":"$result","objectId":"new:photo","name":"Robot"}}"""
     private val handles = AgentHandles(emptyMap(), emptyMap(), attachments = mapOf("a1" to "a1"))
 
@@ -133,6 +133,18 @@ class AgentPhotoAttachTest {
         assertSame(empty, session.project)
     }
 
+    @Test fun thresholdIsForSilhouetteAndOutlineOnly() = runBlocking {
+        for (mode in listOf("color", "bw")) assertEquals("FILTER_NOT_SUPPORTED",
+            assertIs<AgentPreviewResult.Rejected>(executor().preview(script(prepare(mode = mode, filter = "threshold") + "," + add()), handles, 0))
+                .problems.single().code, mode)
+        // Refused before the photo is read.
+        assertEquals(0, reads)
+        assertEquals("INVALID_ARGUMENTS", assertIs<AgentPreviewResult.Rejected>(executor().preview(
+            script(prepare(filter = "sharpen") + "," + add()), handles, 0)).problems.single().code)
+        val ready = assertIs<AgentPreviewResult.Ready>(executor().preview(script(prepare(filter = "threshold") + "," + add()), handles, 0))
+        assertNull(ready.preview.blockingFindings)
+    }
+
     @Test fun onlyAPhotoAttachedToThisPromptIsAccepted() = runBlocking {
         for (id in listOf("a2", uri, "/sdcard/Pictures/x.jpg", "https://example.com/x.jpg")) {
             val problems = assertIs<AgentPreviewResult.Rejected>(executor().preview(script(prepare(id)), handles, 0), id).problems
@@ -141,7 +153,7 @@ class AgentPhotoAttachTest {
         assertEquals(0, reads)
     }
 
-    private companion object {
+    internal companion object {
         /** 8-bit RGBA, non-interlaced PNG (what tools/image-to-design/generate-inputs.py writes) to ARGB. */
         fun decodePng(bytes: ByteArray): Triple<Int, Int, IntArray> {
             val data = java.io.ByteArrayOutputStream(); var at = 8; var w = 0; var h = 0
