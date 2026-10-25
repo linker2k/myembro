@@ -1,0 +1,113 @@
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Task :engine:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :engine:compileKotlin UP-TO-DATE
+> Task :engine:compileJava NO-SOURCE
+> Task :engine:processResources UP-TO-DATE
+> Task :engine:classes UP-TO-DATE
+> Task :engine:jar UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateMyembroBrandColors UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :app:generateDebugAndroidTestLintModel UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:generateDebugLintReportModel UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:generateDebugUnitTestLintModel UP-TO-DATE
+> Task :app:lintAnalyzeDebug UP-TO-DATE
+> Task :app:lintAnalyzeDebugAndroidTest UP-TO-DATE
+> Task :app:lintAnalyzeDebugUnitTest UP-TO-DATE
+> Task :app:lintReportDebug UP-TO-DATE
+> Task :app:lintDebug
+> Task :app:lint
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:compileReleaseKotlin UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:bundleReleaseClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleReleaseClassesToCompileJar UP-TO-DATE
+> Task :app:compileReleaseUnitTestKotlin UP-TO-DATE
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileReleaseUnitTest UP-TO-DATE
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processReleaseJavaRes UP-TO-DATE
+> Task :app:processReleaseUnitTestJavaRes UP-TO-DATE
+> Task :app:testReleaseUnitTest UP-TO-DATE
+> Task :app:test UP-TO-DATE
+> Task :app:check
+> Task :engine:compileOracleKotlin UP-TO-DATE
+> Task :engine:compileOracleJava NO-SOURCE
+> Task :engine:processOracleResources NO-SOURCE
+> Task :engine:oracleClasses UP-TO-DATE
+> Task :engine:compileTestKotlin UP-TO-DATE
+> Task :engine:compileTestJava NO-SOURCE
+> Task :engine:processTestResources UP-TO-DATE
+> Task :engine:testClasses UP-TO-DATE
+> Task :engine:test UP-TO-DATE
+> Task :engine:check UP-TO-DATE
+> Task :mcp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :mcp:compileKotlin UP-TO-DATE
+> Task :mcp:compileJava NO-SOURCE
+> Task :mcp:processResources UP-TO-DATE
+> Task :mcp:classes UP-TO-DATE
+> Task :mcp:jar UP-TO-DATE
+> Task :mcp:startScripts UP-TO-DATE
+> Task :mcp:installDist UP-TO-DATE
+
+> Task :mcp:checkStdio
+MCP_STDIO PASS: JSON-only stdout; exact 69 schemas; parse error; EOF exit
+
+> Task :mcp:processTestResources NO-SOURCE
+> Task :mcp:compileTestKotlin
+> Task :mcp:compileTestJava NO-SOURCE
+> Task :mcp:testClasses UP-TO-DATE
+> Task :mcp:test
+> Task :mcp:check
+
+BUILD SUCCESSFUL in 4s
+75 actionable tasks: 4 executed, 71 up-to-date

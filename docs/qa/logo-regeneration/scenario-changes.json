@@ -1,0 +1,38 @@
+[
+  {
+    "id": "logo-transform",
+    "field": "stitchCount",
+    "before": 2808,
+    "after": 2810
+  },
+  {
+    "id": "logo-transform",
+    "field": "pesSha256",
+    "before": "5d603dc7e6523cebfd9d489d5cd8340ce0c6155dc78031a513152540ee2bc282",
+    "after": "12ae343b1b68d9c7f037d44542f47428a65fccff2fea1d6c7c78b768566c0efc"
+  },
+  {
+    "id": "height-rejected",
+    "field": "stitchCount",
+    "before": 2808,
+    "after": 2810
+  },
+  {
+    "id": "height-rejected",
+    "field": "pesSha256",
+    "before": "d86a9d276e82bd8e567a46fce4edc7487103e31f96b329bcef9c78e08cc37bab",
+    "after": "19b136b1b7f2a6cf9ccdef435d7e489596a7f484a1e0ea4c2e9bf9e3314947c9"
+  },
+  {
+    "id": "mid-failure-rollback",
+    "field": "stitchCount",
+    "before": 2808,
+    "after": 2810
+  },
+  {
+    "id": "mid-failure-rollback",
+    "field": "pesSha256",
+    "before": "d86a9d276e82bd8e567a46fce4edc7487103e31f96b329bcef9c78e08cc37bab",
+    "after": "19b136b1b7f2a6cf9ccdef435d7e489596a7f484a1e0ea4c2e9bf9e3314947c9"
+  }
+]

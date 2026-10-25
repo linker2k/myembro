@@ -47,8 +47,6 @@ class LogoDesignTest {
         // The width rule on our own logo: clamp bar 3.2mm and hoop ring 5.3mm → satin, arches 6.8mm > 6 → tatami.
         // The clamp body is covered by the bar and the ring except slivers under 0.9mm, so it is not sewn.
         assertEquals(listOf("1 stroke SATIN", "2 stroke SATIN", "3 stroke TATAMI"), result.parts.map { "${it.shape} ${it.role} ${it.method}" })
-        // The app's bundled default design is exactly this output (regenerate with LOGO_OUT when it changes).
-        assertContentEquals(File("../app/src/main/assets/designs/myembro_logo.pes").readBytes(), pes)
         System.getenv("LOGO_OUT")?.let { File(it) }?.let { out ->
             out.mkdirs()
             File(out, "LOGO60.PES").writeBytes(pes)
@@ -57,6 +55,9 @@ class LogoDesignTest {
             File(out, "THREADS.md").writeText(threads(result))
             File(out, "README.md").writeText(readme(result, report.statistics.stitchCount))
         }
+        // Save regeneration artifacts even when the bundled asset needs updating.
+        // The app's bundled default design is exactly this output (regenerate with LOGO_OUT when it changes).
+        assertContentEquals(File("../app/src/main/assets/designs/myembro_logo.pes").readBytes(), pes)
     }
 
     private fun hex(rgb: Int) = "#%06X".format(rgb and 0xFFFFFF)
