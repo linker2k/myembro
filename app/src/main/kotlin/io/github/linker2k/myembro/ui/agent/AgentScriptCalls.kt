@@ -68,7 +68,8 @@ internal data class AgentScriptCalls(
          * Deterministic for a given script and [transactionId]: the preview and the apply produce the same
          * calls, and new ids (`new:<word>` → `agent-<transaction>-<word>`) are the same both times.
          */
-        fun of(script: AgentScript, handles: AgentHandles, transactionId: String): AgentScriptCalls {
+        fun of(script: AgentScript, handles: AgentHandles, transactionId: String,
+            fontRevision: (String) -> String? = { null }): AgentScriptCalls {
             val calls = mutableListOf<ToolTurnController.Call>()
             val indices = mutableListOf<Int>()
             val followUps = linkedSetOf<String>()
@@ -79,7 +80,8 @@ internal data class AgentScriptCalls(
                     !font && value.startsWith("new:") && value.length > 4 -> "$NEW_PREFIX$transactionId-${value.removePrefix("new:")}"
                     !font && OBJECT_HANDLE.matches(value) -> handles.objects[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
-                    font && FONT_HANDLE.matches(value) -> handles.fonts[value]
+                    // fontRevision gets the resolver's exact revision; the chatbot only knows the handle.
+                    font && FONT_HANDLE.matches(value) -> handles.fonts[value]?.let { id -> if (key == "fontRevision") fontRevision(id) ?: id else id }
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }
                     !font && key == "assetId" && DESIGN_HANDLE.matches(value) -> handles.designs[value]
                         ?: value.also { problems += AgentProblem("UNKNOWN_HANDLE", index, command.tool, value) }

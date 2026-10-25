@@ -40,12 +40,11 @@ internal object AgentCatalog {
         }
     }.getOrDefault(emptyMap())
 
+    /** Built-in designs exactly as the dispatcher resolves them (AndroidDesignResolver ids such as builtin:<file>). */
     suspend fun designs(context: Context): List<AgentDesignInfo> = withContext(Dispatchers.IO) {
-        runCatching {
-            val samples = JSONObject(context.assets.open("samples/manifest.json").bufferedReader().use { it.readText() }).getJSONArray("samples")
-            (0 until samples.length()).map(samples::getJSONObject).map {
-                AgentDesignInfo(it.getString("file").substringBeforeLast('.'), it.getString("title"), it.getDouble("widthMm"), it.getDouble("heightMm"))
-            }
-        }.getOrDefault(emptyList())
+        runCatching { io.github.linker2k.myembro.library.AndroidDesignResolver(context).builtins().map { d ->
+            val b = d.pattern.bounds
+            AgentDesignInfo(d.id, d.name, (b?.width ?: 0) / 10.0, (b?.height ?: 0) / 10.0)
+        } }.getOrDefault(emptyList())
     }
 }

@@ -85,11 +85,13 @@ class AgentChatbotSimulationTest {
         }
         File("build/agent-sim").mkdirs(); File("build/agent-sim/results.md").writeText(table)
         println(table)
-        // Stored outcomes; a change in prompt, parser or dispatcher shows up here. add_text is NOT_IMPLEMENTED
-        // in the dispatcher (agent/dispatcher 45d3f7b), so its replies are rejected there, not by the parser.
+        // Stored outcomes; a change in prompt, parser or dispatcher shows up here. add_text is implemented
+        // (agent/dispatcher 0258c70) and its arguments pass the schema, but this JVM test has only the engine's
+        // BundledFontResolver: the bundled TTF "jua" lives in Android resources, so FONT_NOT_FOUND here is the
+        // environment, not the prompt or parser. On the phone AndroidTextFontResolver resolves it.
         assertEquals(listOf(
-            "claude 1 QUESTION -", "claude 1b OK NOT_IMPLEMENTED@2: Tool is unavailable inside a script: add_text", "claude 2 OK OK PASS", "claude 3 OK OK PASS",
-            "codex 1 QUESTION -", "codex 1b OK NOT_IMPLEMENTED@2: Tool is unavailable inside a script: add_text", "codex 2 OK OK PASS", "codex 3 OK OK PASS",
+            "claude 1 QUESTION -", "claude 1b OK FONT_NOT_FOUND@2: Font is not installed: jua", "claude 2 OK OK PASS", "claude 3 OK OK PASS",
+            "codex 1 QUESTION -", "codex 1b OK FONT_NOT_FOUND@2: Font is not installed: jua", "codex 2 OK OK PASS", "codex 3 OK OK PASS",
         ), rows.map { listOf(it.client, it.turn, it.parse, it.validate, it.sewout.takeIf { s -> s != "-" }).filterNotNull().joinToString(" ") })
     }
 }

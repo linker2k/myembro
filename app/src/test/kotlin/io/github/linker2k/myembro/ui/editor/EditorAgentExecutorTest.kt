@@ -46,6 +46,19 @@ class EditorAgentExecutorTest {
         assertSame(base, session.project)
     }
 
+    @Test fun addTextWithAFontHandleGetsTheResolverRevisionAndIsOneUndo() = runBlocking {
+        val h = AgentHandles(mapOf("o1" to "logo"), mapOf("f1" to io.github.linker2k.myembro.engine.lettering.HersheyFont.DEFAULT_ID))
+        val s = script("""{"tool":"add_text","args":{"objectId":"new:hi","text":"Hi","fontId":"f1","fontRevision":"f1","heightMm":10,"threadColor":"#D0021B","singleLineBold":false}},""" +
+            """{"tool":"set_object_transforms","args":{"transforms":[{"objectId":"new:hi","xMm":0,"yMm":40,"rotationDeg":0,"scaleXPercent":100,"scaleYPercent":100}]}}""")
+        val preview = assertIs<AgentPreviewResult.Ready>(executor().preview(s, h, 0), "preview").preview
+        assertNull(preview.blockingFindings, preview.toString())
+        assertEquals(2, preview.after!!.objects.size); assertSame(base, session.project)
+        assertIs<AgentApplyResult.Applied>(executor().apply(s, h, 0, removalConfirmed = false))
+        assertEquals("Hi", (session.project.find("agent-agent-p-T-hi") as io.github.linker2k.myembro.engine.edit.TextObject).text)
+        assertTrue(session.stepHistory(redo = false)); assertSame(base, session.project)
+        assertTrue(session.stepHistory(redo = true)); assertEquals(2, session.project.objects.size)
+    }
+
     @Test fun staleRevisionAndRemovalConsent() = runBlocking {
         assertEquals("REVISION_MISMATCH", assertIs<AgentPreviewResult.Rejected>(executor().preview(alignRecolor, handles, 5)).problems.single().code)
         val remove = script("""{"tool":"remove_objects","args":{"objectIds":["o1"]}}""")

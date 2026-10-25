@@ -43,12 +43,15 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     var settings by mutableStateOf(preferences.read())
         private set
     private val stopObserving = preferences.observe { settings = preferences.read() }
+    /** Same installed-font loading as the lettering screen; shared by Ask AI preview and apply. */
+    private val agentFonts by lazy { io.github.linker2k.myembro.ui.lettering.AndroidTextFontResolver(app) }
     /** "Ask AI" flow on this editor's session; survives rotation with the rest of the editor. */
     internal val agent = io.github.linker2k.myembro.ui.agent.AgentAssistController(
         EditorAgentExecutor({ session }, { settings }, { availableHoops }, publish = { block ->
             busy = true
             try { block() } finally { busy = false; sync() }
-        }), revision = { session.history.revision }, catalog = {
+        }, kernelFactory = { frames -> androidAgentKernel(app, agentFonts, frames) }, fontRevision = { agentFonts.revision(it) }),
+        revision = { session.history.revision }, catalog = {
             io.github.linker2k.myembro.ui.agent.AgentCatalog.fonts(app) to io.github.linker2k.myembro.ui.agent.AgentCatalog.designs(app)
         })
     val availableHoops get() = editorHoops(settings.machineProfile)
