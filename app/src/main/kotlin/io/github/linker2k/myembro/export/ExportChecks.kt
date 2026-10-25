@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.export
 
+import android.content.res.Resources
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
@@ -26,8 +28,16 @@ object ExportChecks {
     /** Actual selected frame, capped by verified continuous machine area; free models keep the frame. */
     fun profile(settings: EmbroiderySettings): EngineProfile = settings.exportProfile()
 
-    fun check(pattern: EmbPattern, fileName: String, settings: EmbroiderySettings, patternCount: Int = 1): List<String> =
-        Preflight.check(pattern, fileName, profile(settings), patternCount = patternCount)
+    fun check(pattern: EmbPattern, fileName: String, settings: EmbroiderySettings, patternCount: Int = 1,
+        resources: Resources? = null): List<String> =
+        Preflight.check(pattern, fileName, profile(settings), patternCount = patternCount,
+            fileNameMessages = resources?.let { r -> fileNameMessages { id, argument -> r.getString(id, argument) } }
+                ?: Preflight.FileNameMessages())
+
+    internal fun fileNameMessages(string: (Int, Any) -> String) = Preflight.FileNameMessages(
+        invalidCharacters = { machine -> string(R.string.preflight_filename_characters, machine) },
+        tooLong = { limit -> string(R.string.preflight_filename_too_long, limit) },
+    )
 }
 
 /** Lists preflight warnings; the user can still export (limits may be unverified for their unit). */

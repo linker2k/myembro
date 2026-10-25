@@ -327,7 +327,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                         val pattern = runCatching { DesignFormats.read(file, settings.sewing) }.getOrNull()
                             ?: return@flatMap emptyList()
                         val name = "${file.nameWithoutExtension}.pes"
-                        ExportChecks.check(pattern, name, settings, requested.size).map { "$name: $it" }
+                        ExportChecks.check(pattern, name, settings, requested.size, getApplication<Application>().resources).map { "$name: $it" }
                     }
                 }
                 val batch = warnings.map { it.substringAfter(": ") }.groupingBy { it }.eachCount()
