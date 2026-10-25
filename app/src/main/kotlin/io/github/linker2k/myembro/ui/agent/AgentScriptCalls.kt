@@ -19,8 +19,11 @@ internal data class AgentScriptCalls(
     val problems: List<AgentProblem>,
 ) {
     /** Change list rows from the expanded calls; ids become object names from [before] (or the new id's word). */
+    /** Object name in [before], or the script's own word for an object the script creates (`new:<word>`). */
+    private fun name(before: Project, id: String) = before.find(id)?.name ?: id.substringAfter("$NEW_PREFIX$transactionId-")
+
     fun changes(before: Project): List<AgentChange> {
-        fun name(id: String) = before.find(id)?.name ?: id.substringAfter("$NEW_PREFIX$transactionId-")
+        fun name(id: String) = name(before, id)
         return calls.map { call ->
             val a = call.arguments as JsonObject
             fun ids(key: String) = a[key]?.jsonArray?.map { name(it.jsonPrimitive.content) }.orEmpty()
@@ -57,7 +60,7 @@ internal data class AgentScriptCalls(
 
     /** One row per remove_objects call: its call index (what a ScriptApproval binds) and object names. */
     fun removals(before: Project): List<AgentRemoval> = calls.withIndex().filter { it.value.name == "remove_objects" }.map { (i, call) ->
-        AgentRemoval(i, (call.arguments as JsonObject).getValue("objectIds").jsonArray.map { id -> id.jsonPrimitive.content.let { before.find(it)?.name ?: it } })
+        AgentRemoval(i, (call.arguments as JsonObject).getValue("objectIds").jsonArray.map { id -> name(before, id.jsonPrimitive.content) })
     }
 
     companion object {

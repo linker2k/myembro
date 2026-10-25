@@ -64,5 +64,7 @@ class AgentScriptCallsTest {
             AgentChange(AgentChange.Kind.CHANGE, "recolor_object", listOf("Logo"), listOf("1", "#D0021B")),
             AgentChange(AgentChange.Kind.REMOVE, "remove_objects", listOf("Name"))), calls.changes(before))
         assertEquals(listOf(AgentRemoval(2, listOf("Name"))), calls.removals(before))
+        val created = AgentScriptCalls.of(script("""{"tool":"remove_objects","args":{"objectIds":["new:copy"]}}"""), handles, "t")
+        assertEquals(listOf(AgentRemoval(0, listOf("copy"))), created.removals(before))
     }
 }
