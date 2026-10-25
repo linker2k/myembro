@@ -189,11 +189,11 @@ object VectorArt {
     }
 
     /** Nearest Brother/PEC thread by pyembroidery's red-mean distance ([PecThreads.distance]). */
-    fun nearestThread(rgb: Int): EmbThread = threadCandidates(rgb, 1).first().first
+    fun nearestThread(rgb: Int, myThreads: io.github.linker2k.myembro.engine.io.MyThreads = io.github.linker2k.myembro.engine.io.MyThreads()): EmbThread = threadCandidates(rgb, 1, myThreads).first().first
 
     /** The [count] nearest Brother/PEC threads with their red-mean distance (0 = identical). */
-    fun threadCandidates(rgb: Int, count: Int): List<Pair<EmbThread, Int>> =
-        PecThreads.SET.filterNotNull().map { it to PecThreads.distance(it.color, rgb or (0xFF shl 24)) }
+    fun threadCandidates(rgb: Int, count: Int, myThreads: io.github.linker2k.myembro.engine.io.MyThreads = io.github.linker2k.myembro.engine.io.MyThreads()): List<Pair<EmbThread, Int>> =
+        myThreads.candidates().map { it to PecThreads.distance(it.color, rgb or (0xFF shl 24)) }
             .sortedBy { it.second }.take(count)
 
     private val factory = GeometryFactory()

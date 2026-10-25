@@ -124,9 +124,10 @@ private fun LetteringContent(
     var catalogFonts by remember { mutableStateOf<List<CatalogFont>>(emptyList()) }
     var installedCatalog by remember { mutableStateOf<Set<String>>(emptySet()) }
     val favoritePreferences = remember { SettingsPreferences(context) }
+    var myThreads by remember { mutableStateOf(favoritePreferences.read().myThreads) }
     var favorites by remember { mutableStateOf(favoritePreferences.read().favoriteFontIds) }
     androidx.compose.runtime.DisposableEffect(favoritePreferences) {
-        val stop = favoritePreferences.observe { favorites = favoritePreferences.read().favoriteFontIds }
+        val stop = favoritePreferences.observe { favorites = favoritePreferences.read().favoriteFontIds; myThreads = favoritePreferences.read().myThreads }
         onDispose { stop() }
     }
     var userFontOptions by remember { mutableStateOf<List<io.github.linker2k.myembro.fonts.LetterFont>>(emptyList()) }
@@ -171,11 +172,14 @@ private fun LetteringContent(
     var result by remember { mutableStateOf<LetteringResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    val swatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
-    val threadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
+    val defaultSwatches = listOf(MyembroThreadColors.Terracotta, MyembroThreadColors.Ivory, MyembroThreadColors.Sage, MyembroThreadColors.Gold)
+    val defaultThreadNames = listOf(stringResource(R.string.lettering_terracotta), stringResource(R.string.lettering_ivory),
         stringResource(R.string.lettering_sage), stringResource(R.string.lettering_gold))
+    val swatches = if(myThreads.active) myThreads.owned.map { Color(it.color) } else defaultSwatches
+    val threadNames = if(myThreads.active) myThreads.owned.map { it.displayName } else defaultThreadNames
+    val safeThreadIndex = threadIndex.coerceIn(0, swatches.lastIndex)
     val thread = if (keepInitialThread && initialObject != null) initialObject.thread
-        else EmbThread(swatches[threadIndex].toArgb(), threadNames[threadIndex])
+        else if(myThreads.active) myThreads.owned[safeThreadIndex] else EmbThread(swatches[safeThreadIndex].toArgb(), threadNames[safeThreadIndex])
     val hoopHeightLimit=io.github.linker2k.myembro.engine.sewout.SewoutLimits.maxDesignHeightUnits0p1mm(hoop)/10.0
     val ranges = automatic?.heightRanges.orEmpty().mapNotNull { range ->
         minOf(range.maxMm,hoopHeightLimit).takeIf { it>=range.minMm }?.let { range.copy(maxMm=it) }
@@ -386,7 +390,7 @@ private fun LetteringContent(
             }
             LetteringCard {
                 SectionLabel(stringResource(R.string.lettering_thread))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     swatches.forEachIndexed { index, color ->
                         ThreadChip(color, threadNames[index], thread.color == color.toArgb()) {
                             threadIndex = index

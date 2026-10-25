@@ -1,0 +1,9 @@
+<resources>
+    <string name="my_threads_title">My threads</string>
+    <string name="my_threads_hint">Choose colors only from your Brother threads. An empty list uses all colors.</string>
+    <string name="my_threads_choose">Choose threads (%1$d)</string>
+    <string name="my_threads_search">Search name or number</string>
+    <string name="my_threads_clear">Clear all</string>
+    <string name="my_threads_missing">Not in my threads</string>
+    <string name="my_threads_match">Closest Brother colors</string>
+</resources>
