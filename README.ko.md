@@ -11,6 +11,8 @@
 
 사용 설명서: [docs/manual/user-guide.ko.md](docs/manual/user-guide.ko.md)
 
+PC에서 제어(Claude Code, Codex CLI 등 MCP 클라이언트): [docs/agent/mcp.md](docs/agent/mcp.md)
+
 ## 실패 없는 디자인
 
 앱이 만드는 모든 PES는 저장·전송 전에 실제 봉제 실패를 일으키는 조건(0.5mm 칸 바늘 밀집, 같은 점 연속

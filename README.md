@@ -11,6 +11,8 @@ Current release: **v0.2.8** (GitHub pre-release).
 
 User guide: [docs/manual/user-guide.md](docs/manual/user-guide.md)
 
+PC control (Claude Code, Codex CLI and other MCP clients): [docs/agent/mcp.md](docs/agent/mcp.md)
+
 ## Failure-free designs
 
 Before saving or sending, every PES the app generates is checked in code for the conditions that cause
