@@ -110,6 +110,7 @@ fun HomeScreen(
     onPhoto: (() -> Unit)? = null,
     onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
+    onAiPicture: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -117,7 +118,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji, onAiPicture)
     }
 }
 
@@ -135,6 +136,7 @@ private fun HomeContent(
     onPhoto: (() -> Unit)? = null,
     version: String? = null, onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
+    onAiPicture: (() -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -156,7 +158,11 @@ private fun HomeContent(
                         }
                     }
                 },
-                actions = { IconButton(onClick = onSettings) {
+                actions = {
+                    if (onAiPicture != null) IconButton(onClick = onAiPicture) {
+                        Icon(Icons.Default.AutoAwesome, stringResource(R.string.ai_picture_title))
+                    }
+                    IconButton(onClick = onSettings) {
                     Icon(Icons.Default.Settings, stringResource(R.string.home_settings))
                 } },
             )

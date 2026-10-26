@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
     private val editor: EditorViewModel by viewModels()
     private val photo: PhotoViewModel by viewModels()
+    private val aiPictureDraft: io.github.linker2k.myembro.ui.photo.AiPictureDraft by viewModels()
     private val emoji: io.github.linker2k.myembro.ui.emoji.EmojiViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
@@ -129,10 +130,17 @@ class MainActivity : ComponentActivity() {
                 ?: io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.DEFAULT) }
             // Settings opened from the home version label scroll to the version information.
             var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
+            var showAiPicture by remember { mutableStateOf(false) }
             MyembroTheme {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 // One back already reaches Home from the first level; deeper screens get a Home button.
                 CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 }) {
+                if (showAiPicture) {
+                    val hoop = if (stack.lastOrNull() == Screen.EDITOR) editor.project.hoop else settings.settings.defaultFrame.spec
+                    io.github.linker2k.myembro.ui.photo.AiPictureDialog(hoop,
+                        io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMaxWidthMm(hoop),
+                        settings.settings.myThreads, draft = aiPictureDraft, onDismiss = { showAiPicture = false })
+                }
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
                         onNewProject = { hoop -> newProject(hoop.spec()) },
@@ -146,7 +154,8 @@ class MainActivity : ComponentActivity() {
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
-                        onPhoto = { photo.begin(); stack += Screen.PHOTO },
+                        onPhoto = { aiPictureDraft.cancelExpectedImage(); photo.begin(); stack += Screen.PHOTO },
+                        onAiPicture = { showAiPicture = true },
                         onEmoji = { emoji.close(); stack += Screen.EMOJI },
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
@@ -184,7 +193,7 @@ class MainActivity : ComponentActivity() {
                         }
                     })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back, showVersion = settingsAtVersion)
-                    Screen.EDITOR -> EditorScreen(editor, onBack = back)
+                    Screen.EDITOR -> EditorScreen(editor, onBack = back, onAiPicture = { showAiPicture = true })
                     Screen.LETTERING -> {
                         // Exact selected frame, including custom sizes (not just the integer-mm presets).
                         val hoop = settings.settings.defaultFrame.spec
@@ -298,7 +307,14 @@ class MainActivity : ComponentActivity() {
                                 showViewer()
                             }
                         }
-                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> agentReply(intent)?.let { text ->
+                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> if (intent.action == Intent.ACTION_SEND && (intent.type?.startsWith("image/") == true || sharedUris(intent).firstOrNull()?.let { io.github.linker2k.myembro.ui.photo.isSvgPicture(this, it) } == true)) {
+                            sharedUris(intent).firstOrNull()?.let { uri ->
+                                val requestedColors = aiPictureDraft.consumeExpectedColors()
+                                if (requestedColors == null) photo.begin() else photo.beginAiPicture(requestedColors)
+                                photo.configure(settings.settings); photo.load(uri)
+                                if (stack.lastOrNull() != Screen.PHOTO) stack += Screen.PHOTO
+                            }
+                        } else agentReply(intent)?.let { text ->
                             // A chatbot reply shared back: it goes to the editor's paste box, never to the library.
                             editor.agent.openReply(text)
                             if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR

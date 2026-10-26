@@ -51,10 +51,10 @@ import kotlinx.coroutines.delay
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
     onEdit: () -> Unit, onSend: (File) -> Unit) {
     LaunchedEffect(settings) { vm.configure(settings) }
-    val back = { if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
+    val back = { if (vm.isSvg) { vm.cancel(); onBack() } else if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
     // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.load(uri) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.load(uri) }
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
@@ -64,6 +64,10 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
         while (vm.busy) { delay(1000); elapsed++ }
     }
     var showCheck by remember { mutableStateOf(false) }
+    var aiPicture by remember { mutableStateOf(false) }
+    val aiDraft: AiPictureDraft = androidx.lifecycle.viewmodel.compose.viewModel()
+    if (aiPicture) AiPictureDialog(vm.hoop, vm.inkWidthMm ?: vm.widthMm,
+        settings.myThreads, draft = aiDraft, onDismiss = { aiPicture = false })
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
         Row {
             IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
@@ -93,12 +97,24 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 Text(stringResource(R.string.photo_slow_hint))
                 TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
             }
+            if (vm.step < 2) OutlinedButton(onClick = { aiDraft.photo.value = vm.source; aiPicture = true }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.ai_picture_title))
+            }
+            if (vm.isSvg || aiDraft.request.value.isNotBlank()) TextButton(onClick = {
+                aiDraft.retryPng(); aiPicture = true
+            }, enabled = !vm.busy) { Text(stringResource(R.string.ai_picture_retry_png)) }
+            if (vm.isSvg) {
+                Text(stringResource(R.string.svg_picture_direct))
+                val range = vm.inkWidthRange
+                val size = vm.inkWidthMm
+                if (range != null && size != null) EmbroiderySizeSlider(size, range, vm::changeSize)
+            }
             if (vm.step == 0) {
                 if (vm.source != null) CropPreview(vm) else Surface(Modifier.fillMaxWidth().height(260.dp), color = colors.surfaceVariant) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { picker.launch(arrayOf("image/*", "image/svg+xml")) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
                 }
             } else {
@@ -188,7 +204,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.outline != null), modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.photo_next))
             } else {
-                if (!vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
+                if (!vm.isSvg && !vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onEdit, enabled = !vm.busy && (vm.render?.pattern?.stitchCount ?: 0)>0, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
                 Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
