@@ -180,6 +180,7 @@ class ToolDispatcher(
                 "duplicate_object" -> ProjectCommand.Duplicate(a.string("sourceId"), a.string("newObjectId"), transform(a.getValue("transform").jsonObject, project.find(a.string("sourceId"))?.transform))
                 "reorder_object" -> ProjectCommand.Reorder(a.string("objectId"), a.integer("index"))
                 "set_object_visibility" -> ProjectCommand.SetVisible(a.string("objectId"), a.getValue("visible").jsonPrimitive.boolean)
+                "set_block_order" -> BlockTools.orderCommand(a)
                 "set_block_stitch" -> BlockTools.command(a)
                 "recolor_object" -> ProjectCommand.Recolor(a.string("objectId"), a.integer("threadIndex"), EmbThread(a.string("threadColor").removePrefix("#").toInt(16) or (-1 shl 24)))
                 "remove_objects" -> ProjectCommand.Remove(a.ids())

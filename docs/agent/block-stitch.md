@@ -209,3 +209,51 @@ Measured 30mm fixture prerequisites (this check does not assert sewout PASS):
 | grinning_face | region-4 | false | true | true | null | SATIN_GEOMETRY_UNSUPPORTED |
 | grinning_face | region-5 | true | true | true | 5.2094767928414845 | - |
 | grinning_face | region-6 | true | true | true | 1.6584975030878972 | - |
+
+## Sewing order inside a shape
+
+`ProjectCommand.SetBlockOrder(id, regionIds, move)` moves a nonempty region
+selection in one atomic undo unit. `FORWARD` means one place earlier in sewing
+order (toward index 0), `BACKWARD` means one place later, and `FIRST`/`LAST`
+move the selection to the corresponding end. Relative selection order and
+relative unselected order are stable, including discontiguous selections;
+already-at-boundary and all-selected moves are no-ops. Missing objects,
+non-shape targets and unknown regions return typed errors without changes.
+
+`ShapeObject.regionOrder` is the complete permutation of emitted region IDs;
+`regions` retains source geometry order. The additive `regionOrder` codec
+field preserves custom order, while absent fields in older shapeVersion=1
+projects resolve to original source order. Object equality/history includes
+order, and stitch-setting edits retain it. `list_blocks` returns rows in sewing
+order with zero-based `order`; `set_block_order(objectId, regionIds, move)`
+uses the same editor relay turn, command and whole-project machine check as
+`set_block_stitch`. It returns revision and sewing check, never publishes a
+rejected candidate, and never reaches USB/storage.
+
+A fill backend can choose its start from the previous region, so regenerating
+in the new order would change its needle path. Instead, the original source
+order is rendered once, including the current region stitch overrides.
+An optional region-owner trace follows native quantization, duplicate removal
+and zero-motion cleanup; generated locks inherit their region owner. This
+trace does not change normal stitch planning, filtering, source metadata or
+PES bytes. `ShapeObject.regionPattern(id)` exposes the resulting native region
+fragment (its existing internal needle path, locks, jumps/trims and color).
+Pose/order copies share this cache; an order edit does not rerun the renderer.
+
+Reassembly copies native STITCH commands verbatim, remaps lock indices, and
+adds boundary travel/trim and color changes only as necessary. It does not
+reverse, rotate or replan a region, or invent additional lock stitches.
+Index-based source/run anchors spanning the former region sequence are not
+reused. The unchanged order still uses the exact original full pattern.
+If a formerly continuous region cannot safely be separated without new
+needle/lock geometry, full SewoutCheck rejects the requested order instead
+of silently modifying the region body. Hoop and P1–P8 gates remain mandatory.
+
+`GeneratedPatternProcessor.fromGroups` adds only the optional `stitchOwners`
+diagnostic output parameter (existing calls/default behavior are unchanged).
+`VectorArt.render` similarly adds optional `captureRegions=false`; shape model
+construction enables it and shares the initial result instead of rendering a
+second time. Tests retain original V1/V6 byte parity, assert each native region
+STITCH sequence and total count before/after all moves (including same-color
+regions), check encoded PES stitch counts and sewout PASS, assert exact codec
+PES round trips and stable selection semantics, and verify one editor undo.

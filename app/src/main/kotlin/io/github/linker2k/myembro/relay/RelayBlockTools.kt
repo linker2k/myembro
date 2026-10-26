@@ -9,7 +9,7 @@ class BlockRelayTools : RelayToolGroup {
     override val definitions = LOCAL
     override suspend fun call(tool: String, args: JsonObject, document: RelayDocument?): RelayResult {
         document ?: return RelayResult.error(ProjectRelayTools.NO_PROJECT)
-        val validation = if (tool == "set_block_stitch") JsonObject(args + ("transactionId" to JsonPrimitive("validate"))) else args
+        val validation = if (tool != "list_blocks") JsonObject(args + ("transactionId" to JsonPrimitive("validate"))) else args
         if ("transactionId" in args) return RelayResult.error("transactionId is set by myembro")
         BlockTools.validate(tool, validation)?.let { return RelayResult.error("Invalid arguments: $it") }
         val output = if (tool == "list_blocks") {
@@ -120,6 +120,47 @@ class BlockRelayTools : RelayToolGroup {
         "objectId",
         "regionIds",
         "change"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "set_block_order",
+    "description": "Move selected shape regions FORWARD (one earlier), BACKWARD (one later), FIRST or LAST in sewing order. Relative selection order and region needles stay unchanged. One undo step; returns revision and sewing check.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "regionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "move": {
+          "type": "string",
+          "enum": [
+            "FORWARD",
+            "BACKWARD",
+            "FIRST",
+            "LAST"
+          ]
+        }
+      },
+      "required": [
+        "objectId",
+        "regionIds",
+        "move"
       ],
       "additionalProperties": false
     },

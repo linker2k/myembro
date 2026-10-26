@@ -64,7 +64,7 @@ object VectorArt {
         val paths: List<Polyline> = emptyList(), val regionId: String = "")
     data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
         val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
-    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0)
+    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap())
 
     /**
      * Flat SVG 1.1 reader: `<g>` nesting with inherited presentation attributes (and `style`),
@@ -239,7 +239,8 @@ object VectorArt {
      */
     /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
     fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true,
-        regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null): Result {
+        regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null,
+        captureRegions: Boolean = false): Result {
         require(widthMm.isFinite() && widthMm > 0)
         val footprints = art.shapes.map(::footprint)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
@@ -249,6 +250,7 @@ object VectorArt {
         fun px(x: Double, y: Double) = Point(Units.mmToPixels((x - cx) * scale), Units.mmToPixels((y - cy) * scale))
         val groups = ArrayList<StitchGroup>()
         val parts = ArrayList<Part>()
+        val ownedGroups = ArrayList<StitchGroup>()
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
         val toMm = org.locationtech.jts.geom.util.AffineTransformation.translationInstance(-cx, -cy).scale(scale, scale)
         var excludedCount = 0
@@ -277,6 +279,16 @@ object VectorArt {
                 StitchTypeRule.Type.RUNNING -> running()
             } }
             if (resolved.excluded) { excludedCount++; return }
+            if (captureRegions) {
+                val tag = "myembro.region:$regionId"
+                fun tagged(lock: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitch?) =
+                    io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitch { stitches, position ->
+                        (lock ?: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.InkLockStitch()).stitches(stitches, position)
+                            .map { it.copy(tags = it.tags + tag) }
+                    }
+                ownedGroups += resolved.groups.map { it.copy(stitches = it.stitches.map { s -> s.copy(tags = s.tags + tag) },
+                    lockStart = tagged(it.lockStart), lockEnd = tagged(it.lockEnd)) }
+            }
             groups += resolved.groups
             parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths, regionId)
         }
@@ -325,9 +337,10 @@ object VectorArt {
             }
         }
         // Same finishing as Ink/Stitch lettering: locks at thread boundaries, no zero-length motions.
-        val pattern = if (groups.isEmpty()) EmbPattern(emptyList(), emptyList()) else GeneratedPatternProcessor.fromGroups(groups,
-            collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true, lockAtThreadBoundaries = true, omitZeroLengthMotions = true)
+        val owners = mutableListOf<String?>()
+        val pattern = if (groups.isEmpty()) EmbPattern(emptyList(), emptyList()) else GeneratedPatternProcessor.fromGroups(if (captureRegions) ownedGroups else groups,
+            collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true, lockAtThreadBoundaries = true, omitZeroLengthMotions = true, stitchOwners = owners)
         return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name,
-            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount)
+            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap())
     }
 }

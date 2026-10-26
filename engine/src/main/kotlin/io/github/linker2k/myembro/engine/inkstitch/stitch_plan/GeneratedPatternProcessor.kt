@@ -38,6 +38,7 @@ object GeneratedPatternProcessor {
         pecJumpTrims: Boolean = false,
         lockAtThreadBoundaries: Boolean = false,
         omitZeroLengthMotions: Boolean = false,
+        stitchOwners: MutableList<String?>? = null,
     ): EmbPattern {
         val native = adaptAndDeduplicate(StitchPlanBuilder.tracedFromGroups(groups, collapse_len, min_stitch_len, disable_ties, lockAtThreadBoundaries))
         var processed = if (pecJumpTrims) explicitPecJumpTrims(native) else native
@@ -46,6 +47,7 @@ object GeneratedPatternProcessor {
         val source = if (omitZeroLengthMotions) encodeSource(stripGeneratedLocks(
             processed.pattern.copy(metadata = markedMetadata(processed)))) else null
         if (omitZeroLengthMotions) processed = nonzeroMotions(processed)
+        stitchOwners?.addAll(processed.pattern.stitches.indices.map { processed.owners[it] })
         val policy = if (source != null) mapOf(NONZERO_MOTIONS_KEY to "true", SOURCE_STITCHES_KEY to source) else emptyMap()
         return processed.pattern.copy(metadata = markedMetadata(processed) + policy +
             (SEWING_OPTIONS_KEY to SewingOptions().toJson()))
@@ -229,9 +231,10 @@ object GeneratedPatternProcessor {
     }
 
     private data class NativeAnchor(val startX: Int, val startY: Int, val endX: Int, val endY: Int)
-    private data class Processed(val pattern: EmbPattern, val lockIndices: Set<Int>, val runAnchors: Map<Int, NativeAnchor>, val commandAnchors: Map<Int, Pair<Int, Int>>, val summary: ProcessingSummary)
+    private data class Processed(val pattern: EmbPattern, val lockIndices: Set<Int>, val runAnchors: Map<Int, NativeAnchor>, val commandAnchors: Map<Int, Pair<Int, Int>>, val summary: ProcessingSummary, val owners: Map<Int, String> = emptyMap())
 
     private fun explicitPecJumpTrims(processed: Processed): Processed {
+        val owners = mutableMapOf<Int,String>()
         val output = mutableListOf<MachineStitch>()
         val locks = mutableSetOf<Int>()
         val anchors = mutableMapOf<Int, NativeAnchor>()
@@ -246,6 +249,7 @@ object GeneratedPatternProcessor {
                 output += needle.copy(command = Command.TRIM)
                 sewn = false
             }
+            processed.owners[index]?.let { owners[output.size] = it }
             if (index in processed.lockIndices) locks += output.size
             processed.runAnchors[index]?.let { anchors[output.size] = it; active = it }
             processed.commandAnchors[index]?.let { commands[output.size] = it }
@@ -256,13 +260,14 @@ object GeneratedPatternProcessor {
                 Command.JUMP -> Unit
             }
         }
-        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary)
+        return Processed(processed.pattern.copy(stitches = output), locks, anchors, commands, processed.summary, owners)
     }
 
 
     /** P4: compare needle-up and needle-down moves to the same physical cursor, including (0,0).
      * No new lock shape: only redundant stationary commands are omitted; surviving tags are reindexed. */
     private fun nonzeroMotions(processed: Processed): Processed {
+        val owners = mutableMapOf<Int,String>()
         val output=mutableListOf<MachineStitch>()
         val locks=mutableSetOf<Int>()
         val anchors=mutableMapOf<Int,NativeAnchor>()
@@ -281,13 +286,14 @@ object GeneratedPatternProcessor {
                 }
                 x=stitch.x; y=stitch.y
             }
+            processed.owners[index]?.let { owners[output.size] = it }
             if(index in processed.lockIndices) locks+=output.size
             processed.runAnchors[index]?.let { anchors[output.size]=it }
             processed.commandAnchors[index]?.let { commands[output.size]=it }
             output+=stitch
         }
         return Processed(processed.pattern.copy(stitches=output),locks,anchors,commands,
-            processed.summary + ProcessingSummary(shortStitchesRemoved=removed))
+            processed.summary + ProcessingSummary(shortStitchesRemoved=removed),owners)
     }
 
     private fun adaptAndDeduplicate(traced: StitchPlanBuilder.TracedPlan): Processed {
@@ -297,6 +303,7 @@ object GeneratedPatternProcessor {
         val blocks = if (imported) plan.colorBlocks else plan.colorBlocks.filter { it.stitches.isNotEmpty() }
         var index = 0
         var previous: Command? = null
+        val owners = mutableMapOf<Int,String>()
         val locks = mutableSetOf<Int>()
         val anchors = mutableMapOf<Int, NativeAnchor>()
         val commandAnchors = mutableMapOf<Int, Pair<Int, Int>>()
@@ -328,6 +335,7 @@ object GeneratedPatternProcessor {
                         active?.let { commandAnchors[index] = it.endX to it.endY }
                         afterTerminator = true
                     }
+                    stitch.tags.firstOrNull { it.startsWith("myembro.region:") }?.removePrefix("myembro.region:")?.let { owners[index] = it }
                     if (stitch.isLock && command == Command.STITCH) locks += index
                     index++
                     previous = command
@@ -339,12 +347,13 @@ object GeneratedPatternProcessor {
             index++
         }
         check(index == native.stitches.size) { "Native adapter command/tag correspondence changed" }
-        return deduplicate(native, locks, anchors, commandAnchors, traced.summary)
+        return deduplicate(native, locks, anchors, commandAnchors, traced.summary, owners)
     }
 
     /** Quantization can collapse distinct SVG points; remove only consecutive native needle penetrations. */
-    private fun deduplicate(pattern: EmbPattern, lockIndices: Set<Int>, runAnchors: Map<Int, NativeAnchor>, commandAnchors: Map<Int, Pair<Int, Int>>, summary: ProcessingSummary): Processed {
+    private fun deduplicate(pattern: EmbPattern, lockIndices: Set<Int>, runAnchors: Map<Int, NativeAnchor>, commandAnchors: Map<Int, Pair<Int, Int>>, summary: ProcessingSummary, sourceOwners: Map<Int,String> = emptyMap()): Processed {
         val output = mutableListOf<MachineStitch>()
+        val owners = mutableMapOf<Int,String>()
         val locks = mutableSetOf<Int>()
         val anchors = mutableMapOf<Int, NativeAnchor>()
         val commands = mutableMapOf<Int, Pair<Int, Int>>()
@@ -352,12 +361,13 @@ object GeneratedPatternProcessor {
         for ((index, stitch) in pattern.stitches.withIndex()) {
             val previous = output.lastOrNull()
             if (stitch.command == Command.STITCH && previous?.command == Command.STITCH && stitch.x == previous.x && stitch.y == previous.y) { removed++; continue }
+            sourceOwners[index]?.let { owners[output.size] = it }
             if (index in lockIndices) locks += output.size
             runAnchors[index]?.let { anchors[output.size] = it }
             commandAnchors[index]?.let { commands[output.size] = it }
             output += stitch
         }
-        return Processed(pattern.copy(stitches = output), locks, anchors, commands, summary + ProcessingSummary(shortStitchesRemoved = removed))
+        return Processed(pattern.copy(stitches = output), locks, anchors, commands, summary + ProcessingSummary(shortStitchesRemoved = removed), owners)
     }
 
     private fun markedMetadata(processed: Processed): Map<String, String> = processed.pattern.metadata + processed.summary.metadata() + mapOf(

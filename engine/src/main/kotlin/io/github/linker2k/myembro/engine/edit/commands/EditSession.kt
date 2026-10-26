@@ -155,6 +155,7 @@ class EditSession(initial: Project = Project(), maxSteps: Int = 100) {
 
     /** Capture command containers, not caller-owned mutable collection views. */
     private fun capture(command: ProjectCommand): ProjectCommand = when (command) {
+        is ProjectCommand.SetBlockOrder -> command.copy(regionIds=command.regionIds.toSet())
         is ProjectCommand.SetBlockStitch -> command.copy(regionIds=command.regionIds.toSet(),
             change=command.change.copy(meander_scale_percent=command.change.meander_scale_percent?.toList()))
         is ProjectCommand.Batch -> command.copy(commands = command.commands.map(::capture))
