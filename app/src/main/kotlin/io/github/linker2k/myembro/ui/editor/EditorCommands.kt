@@ -35,6 +35,7 @@ internal fun Project.duplicateCommand(copies: Map<String, String>): ProjectComma
 
 internal fun Project.recolorCommand(id: String, index: Int, thread: EmbThread): ProjectCommand {
     val count = when (val obj = find(id)) {
+        is ShapeObject -> 0 // Do not emit unsupported region recolor commands.
         is TextObject -> 1
         is StitchObject -> maxOf(obj.source.threads.size, obj.source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)
         null -> 0

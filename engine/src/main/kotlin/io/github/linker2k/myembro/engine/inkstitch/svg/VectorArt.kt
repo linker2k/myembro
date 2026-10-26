@@ -59,7 +59,9 @@ object VectorArt {
     /** What one source shape became: method, Brother thread and its measured width. */
     data class Part(val shape: Int, val role: String, val method: StitchTypeRule.Type, val thread: EmbThread, val widthMm: Double, val sourceRgb: Int,
         /** Measured region widths (mm) the shared rule decided on. */
-        val widths: StitchTypeRule.Widths? = null)
+        val widths: StitchTypeRule.Widths? = null,
+        /** Actual emitted region boundaries, centered object-local millimeters (including holes). */
+        val paths: List<Polyline> = emptyList())
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0)
 
     /**
@@ -265,7 +267,12 @@ object VectorArt {
             } }
             if (resolved.excluded) { excludedCount++; return }
             groups += resolved.groups
-            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale))
+            val localPaths = boundaryPaths(toMm.transform(region)).ifEmpty {
+                subpaths(art.shapes[index]).map { line -> Polyline(line.points.map { q ->
+                    MmPoint((q.x - cx) * scale, (q.y - cy) * scale)
+                }, line.closed) }
+            }
+            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths)
         }
         /**
          * An area after overlap removal (everything drawn later is cut away, JTS difference): each visible
