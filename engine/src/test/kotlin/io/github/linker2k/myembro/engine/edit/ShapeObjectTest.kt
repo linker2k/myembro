@@ -81,7 +81,7 @@ class ShapeObjectTest {
             assertContains(error.message!!, "PEC_HOOP")
         }
     }
-    @Test fun sourceAndRegionGeometryAreDefensivelyFrozenAndCodecIsExplicitlyUnsupported() {
+    @Test fun sourceAndRegionGeometryAreDefensivelyFrozenAndCodecRetainsSource() {
         val parsed = VectorArt.parseSvg(fixture("inkstitch/fill/hole.svg"))
         val source = parsed.shapes.toMutableList()
         val shape = ShapeObject.fromArt("a", "hole", parsed.copy(shapes = source), 30.0)
@@ -89,6 +89,6 @@ class ShapeObjectTest {
         assertTrue(shape.sourceArt.shapes.isNotEmpty())
         assertFailsWith<UnsupportedOperationException> { (shape.regions as MutableList).clear() }
         assertFailsWith<UnsupportedOperationException> { (shape.regions.first().paths as MutableList).clear() }
-        assertFailsWith<IllegalStateException> { ProjectJson.encode(Project(objects = listOf(shape))) }
+        assertEquals(shape, ProjectJson.decode(ProjectJson.encode(Project(objects = listOf(shape)))).objects.single())
     }
 }

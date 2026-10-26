@@ -2,7 +2,7 @@
 package io.github.linker2k.myembro.engine.agent
 
 import io.github.linker2k.myembro.engine.emoji.*
-import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.edit.*
 import io.github.linker2k.myembro.engine.geometry.pictureWidthRange
 import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
 import io.github.linker2k.myembro.engine.io.PesWriter
@@ -28,7 +28,16 @@ class BundledEmojiResolver : EmojiResolver {
 internal class EmojiToolRejection(val code: String, message: String,
     val details: JsonObject = buildJsonObject {}) : IllegalArgumentException(message)
 internal data class PreparedEmoji(val id: String, val name: String, val pattern: EmbPattern,
-    val widthMm: Double, val range: ClosedFloatingPointRange<Double>, val verdict: SewoutVerdict)
+    val widthMm: Double, val range: ClosedFloatingPointRange<Double>, val verdict: SewoutVerdict,
+    val shape: ShapeObject? = null) {
+    fun objectFor(id: String, name: String): DesignObject {
+        val editable = shape ?: return StitchObject(id, name, pattern) // Redwork/centerline remain stitches.
+        val obj = if (name == editable.name) editable.withId(id) else ShapeObject.fromArt(id, name, editable.sourceArt, editable.widthMm)
+        // StitchObject used to re-center actual sewn bounds at import. Preserve that placement exactly.
+        val b = obj.localPattern().bounds ?: return obj
+        return obj.withTransform(Transform(x = -((b.minX.toLong()+b.maxX)/2).toDouble(), y = -((b.minY.toLong()+b.maxY)/2).toDouble()))
+    }
+}
 
 /** The existing EmojiViewModel pipeline: verified SVG -> VectorArt defaults -> checked PES. */
 internal class EmojiPreparation(private val resolver: EmojiResolver) {
@@ -50,14 +59,15 @@ internal class EmojiPreparation(private val resolver: EmojiResolver) {
             put("minWidthMm",range.start);put("maxWidthMm",range.endInclusive)
         })
         val width=Math.round(requestedMm*10)/10.0 // Same slider precision as EmojiViewModel.changeSize.
-        val pattern=VectorArt.render(art,width,name=emoji.name).pattern
+        val shape=ShapeObject.fromArt("prepared",emoji.name,art,width)
+        val pattern=shape.localPattern()
         val pes=try { PesWriter.writeV1(pattern,hoop) } catch(e:IllegalArgumentException) {
             throw EmojiToolRejection("SEWOUT_BLOCKED",e.message ?: "Writer blocked emoji")
         }
         val report=SewoutCheck.checkPes(pes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
         if(!report.analysisComplete || report.hasBlockingIssues) throw EmojiToolRejection("SEWOUT_BLOCKED","Emoji did not pass the existing generated-design gate")
         val token=sha256("${resolver.catalog.commit}:$id:${emoji.sha256}:$width:${hoop.width}:${hoop.height}".toByteArray())
-        return PreparedEmoji("emoji-$token",emoji.name,pattern,width,range,report.verdict)
+        return PreparedEmoji("emoji-$token",emoji.name,pattern,width,range,report.verdict,shape)
     }
 }
 private fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes)
@@ -72,14 +82,15 @@ internal object SvgPicturePreparation {
             catch(e:Exception) { throw EmojiToolRejection("SVG_NOT_SUPPORTED","This SVG cannot be used: ${e.message ?: "unsupported"}. Send a PNG instead.") }
         val range=pictureWidthRange(hoop,VectorArt.aspectRatio(art))
         val width=Math.round(requestedMm.coerceIn(range)*10)/10.0
-        val pattern=try { VectorArt.render(art,width,name=name).pattern } catch(e:IllegalArgumentException) {
+        val shape=try { ShapeObject.fromArt("prepared",name,art,width) } catch(e:IllegalArgumentException) {
             throw EmojiToolRejection("SVG_NOT_SUPPORTED","This SVG cannot be used: ${e.message ?: "unsupported"}. Send a PNG instead.")
         }
+        val pattern=shape.localPattern()
         val pes=try { PesWriter.writeV1(pattern,hoop) } catch(e:IllegalArgumentException) {
             throw EmojiToolRejection("SEWOUT_BLOCKED",e.message ?: "Writer blocked the picture")
         }
         val report=SewoutCheck.checkPes(pes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
         if(!report.analysisComplete || report.hasBlockingIssues) throw EmojiToolRejection("SEWOUT_BLOCKED","Picture did not pass the existing generated-design gate")
-        return PreparedEmoji("svg-${java.util.UUID.randomUUID()}",name,pattern,width,range,report.verdict)
+        return PreparedEmoji("svg-${java.util.UUID.randomUUID()}",name,pattern,width,range,report.verdict,shape)
     }
 }

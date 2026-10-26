@@ -66,6 +66,8 @@ internal class PhotoPreparation(private val attachments: AttachmentStore) {
         val corrected = photoToolRaster(raster, mode, filter)
         val pixels = corrected.pixels
         val thread = EmbThread(0xFFB5492A.toInt(), "Photo")
+        // ColorDrawingPipeline is not VectorArt: keep its pattern verbatim until ShapeObject
+        // accepts the resolved source regions + cached pattern. AutoTrace/redwork remain StitchObject.
         val pattern = if(color) {
             val preview = ColorDrawingPipeline.trace(raster.width,raster.height,pixels,widthMm,
                 if(mode=="bw") 2 else colors,minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=mode=="bw")
