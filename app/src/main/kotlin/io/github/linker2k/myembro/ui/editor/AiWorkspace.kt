@@ -15,6 +15,8 @@ import androidx.lifecycle.ViewModelStoreOwner
  */
 object AiWorkspace : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
+    /** MainActivity opens the editor on this project as it is (the AI connection notification's tap). */
+    const val ACTION_OPEN = "io.github.linker2k.myembro.action.OPEN_AI_PROJECT"
 
     /** The one editor for this process; call on the main thread. */
     fun editor(app: Application): EditorViewModel =

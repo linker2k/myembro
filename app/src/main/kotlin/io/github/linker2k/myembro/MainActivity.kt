@@ -301,6 +301,8 @@ class MainActivity : ComponentActivity() {
                 },
                 onCurrentLaunch = {
                     when (intent?.action) {
+                        // The AI connection notification: the editor on the AI work project, never replacing it.
+                        io.github.linker2k.myembro.ui.editor.AiWorkspace.ACTION_OPEN -> if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
                         Intent.ACTION_VIEW -> intent.data?.let { uri ->
                             if (uri.scheme == "content") {
                                 importUris(listOf(uri))

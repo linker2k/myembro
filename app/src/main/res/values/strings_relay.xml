@@ -8,7 +8,7 @@
     <string name="relay_connecting">Connecting…</string>
     <string name="relay_connected">Connected</string>
     <string name="relay_waiting">Disconnected, retrying soon</string>
-    <string name="relay_notification">AI connection is on</string>
+    <string name="relay_notification">AI connection is on. Tap to see the AI work project.</string>
     <string name="relay_remove_title">Remove with AI?</string>
     <string name="relay_remove_body">Your chatbot wants to remove: %1$s. Nothing is removed unless you agree within 90 seconds.</string>
     <string name="relay_remove_confirm">Remove</string>

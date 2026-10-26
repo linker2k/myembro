@@ -8,7 +8,7 @@
     <string name="relay_connecting">연결 중…</string>
     <string name="relay_connected">연결됨</string>
     <string name="relay_waiting">끊김, 곧 다시 연결</string>
-    <string name="relay_notification">AI 연결이 켜져 있습니다</string>
+    <string name="relay_notification">AI 연결이 켜져 있습니다. 탭하면 AI 작업 프로젝트를 엽니다.</string>
     <string name="relay_remove_title">AI가 지우려고 합니다</string>
     <string name="relay_remove_body">챗봇이 지우려는 개체: %1$s. 90초 안에 동의하지 않으면 지우지 않습니다.</string>
     <string name="relay_remove_confirm">지우기</string>
