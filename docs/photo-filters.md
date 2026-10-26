@@ -115,3 +115,38 @@ Scope differences from the full originals are explicit: Otsu has no float-image/
 Small boundary/immutability tests are not a substitute for the independently generated upstream goldens. Exact threshold and byte-array comparisons against the oracle are required before claiming upstream equivalence.
 
 Implementation validation: the independently generated corpus at `/tmp/myembro-filter-oracle/goldens` matched on all 39 cases (`ORACLE_EXACT_TOTAL 39`, `BUILD SUCCESSFUL in 17s`). Normal JVM tests retain 10 representative inputs in `engine/src/test/resources/photo-filters/port-manifest.json`; every selected input/output file remains byte-identical to that oracle. The full engine command `JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:cleanTest :engine:check --console=plain` returned `BUILD SUCCESSFUL in 44s`. These verify the scoped raster ports; no PES/sewing quality verdict or app integration is claimed.
+
+
+## Adjustable preprocessing update (2026-10-27)
+
+The current UI supersedes the named Original/Clean/Autocontrast chips above:
+noise reduction is Off/Weak/Medium/Strong (median size 0/3/5/7), followed by
+Pillow ImageEnhance.Contrast with factor 1.0 as identity. The UI range 0.5–2.0
+is a product choice, **unconfirmed**, not a Pillow default. Median size 0 is
+an application bypass. When untouched, existing defaults remain one median3
+for silhouette/outline and no median for color. Explicit selection applies once.
+
+Black-and-white separation (Otsu) remains below those sliders only for silhouette
+and outline. Color retains its single existing grayscale toggle. Autocontrast
+remains available in the engine/legacy tool API but has no photo-screen chip.
+Transparent color input bypasses these adjustments. Changes reuse the existing
+180ms cancellation/revision debounce; preview filtering never generates stitches.
+Explicit contrast suppresses the existing automatic contrast-stretch retry.
+
+The upstream pin is Pillow 11.3.0 commit
+`89f1f4626a2aaf5f3d5ca6437f41def2998fbe09`:
+`src/PIL/ImageFilter.py:85–122`, `src/libImaging/RankFilter.c:29–60`,
+`src/PIL/ImageEnhance.py:63–80`, `src/libImaging/Convert.c:44,230`,
+`src/libImaging/Blend.c:21–78`. The Kotlin port retains Wirth rank selection,
+replicated borders, integer RGB-to-L conversion, rounded image mean and C-float
+blend/truncation/clamping. Only RGB is ported; no Python/native dependency is added.
+Synthetic oracle inputs and generator are in `engine/src/test/resources/photo-adjust`.
+`PillowPhotoFiltersTest` compares all bytes, including narrow images and borders,
+and compares size 3 with the existing median3. Existing legacy API tests remain intact.
+No emulator is used in this unit.
+
+Validation command (JDK 17):
+`./gradlew :engine:test --tests '*PillowPhotoFiltersTest' --tests '*PhotoCorrectionTest' :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --console=plain`.
+Output: `BUILD SUCCESSFUL in 59s`; `PILLOW_EXACT_COMPARISONS 40; MEDIAN3_LEGACY_IDENTICAL 4/4`.
+App XML result totals: 430 tests, 0 failures, 0 errors. Instrumentation code is
+compiled only; no device/emulator execution is claimed.

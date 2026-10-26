@@ -75,6 +75,18 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeGrayscale(value:Boolean) {
         if(value!=grayscale) { grayscale=value;step=1;prepare() }
     }
+    // Null preserves the existing per-mode default: one median3 for mono, none for color.
+    var noiseSize by mutableStateOf<Int?>(null); private set
+    val effectiveNoiseSize get() = noiseSize ?: if (style == PhotoMode.COLOR) 0 else 3
+    var contrastFactor by mutableFloatStateOf(1f); private set
+    fun changeNoiseSize(value: Int) {
+        require(value in listOf(0, 3, 5, 7))
+        if (value != effectiveNoiseSize) { noiseSize = value; step = 1; prepare() }
+    }
+    fun changeContrast(value: Float) {
+        val factor = value.coerceIn(0.5f, 2f)
+        if (factor != contrastFactor) { contrastFactor = factor; step = 1; prepare() }
+    }
     var correction by mutableStateOf(PhotoCorrection.ORIGINAL); private set
     var correctionAlphaBypassed by mutableStateOf(false); private set
     fun changeCorrection(value: PhotoCorrection) {
@@ -119,7 +131,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
         isSvg = false; svgArt = null
-        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false
+        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false; noiseSize = null; contrastFactor = 1f
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     /** Only a returned AI picture carries its requested color count; normal begin retains 4. */
@@ -240,6 +252,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
         val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale; val selectedCorrection=correction
+        val selectedNoise = effectiveNoiseSize; val selectedContrast = contrastFactor
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -258,7 +271,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
-                    val corrected = PhotoCorrections.apply(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedCorrection)
+                    val corrected = PhotoCorrections.adjust(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedNoise,selectedContrast,selectedCorrection == PhotoCorrection.OTSU)
                     if (version == revision) {
                         correctionAlphaBypassed = corrected.alphaBypassed
                         if(corrected.alphaBypassed) correction = PhotoCorrection.ORIGINAL
@@ -304,7 +317,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     val denoised=corrected.pixels
                     (try { trace(denoised) } catch (failure: IllegalArgumentException) {
-                        if (selectedCorrection == PhotoCorrection.CONTRAST) throw failure
+                        if (selectedContrast != 1f) throw failure
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
@@ -313,7 +326,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedCorrection!=PhotoCorrection.ORIGINAL && selectedCorrection!=PhotoCorrection.CLEAN) R.string.photo_correction_failed else R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedContrast != 1f || selectedCorrection == PhotoCorrection.OTSU) R.string.photo_correction_failed else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
         }
     }

@@ -71,4 +71,11 @@
     <string name="photo_correction_otsu">흑백 분리</string>
     <string name="photo_correction_alpha_hint">투명도가 있는 컬러 그림은 기존 처리 방식을 유지합니다.</string>
     <string name="photo_correction_failed">이 보정으로 사용할 수 있는 윤곽을 찾지 못했습니다. 원본이나 더 단순한 자르기를 시도하세요.</string>
+    <string name="photo_noise">노이즈 감쇄: %1$s</string>
+    <string name="photo_noise_off">끔</string>
+    <string name="photo_noise_weak">약</string>
+    <string name="photo_noise_medium">중</string>
+    <string name="photo_noise_strong">강</string>
+    <string name="photo_contrast_factor">대비: %1$.2f×</string>
+    <string name="photo_contrast_range_unconfirmed">0.5–2.0 범위: 제품 선택값(미확인).</string>
 </resources>
