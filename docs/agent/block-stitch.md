@@ -123,3 +123,28 @@ Command: `./gradlew :engine:test --tests '*ShapeObject*' --tests '*ProjectJson*'
 Result: BUILD SUCCESSFUL in 20s, 15 tests, 0 failures/errors/skips. This is a
 fixture regression, not a claim that arbitrary method/geometry combinations
 are sewable; other combinations return an actual blocking reason atomically.
+
+
+## AI connector block tools
+
+`list_blocks(objectId)` reads an editable `ShapeObject` in the editor or viewer. It returns
+`revision`, `objectId`, and `regions` (`id`, actual thread `color`, `stitch`, `areaMm2`).
+`stitch` uses the same effective editable `BlockStitch` fields as the project codec;
+`areaMm2` is local geometry area with holes subtracted (not transformed/placed area).
+`meanderPatterns` contains only bundled tile names, without tile geometry or previews.
+Frozen `StitchObject` inputs return `INVALID_OBJECT_TYPE`; missing ids return `MISSING_OBJECT`.
+
+`set_block_stitch(objectId, regionIds, change)` accepts the patch fields in
+`BlockStitchPatch`. Omitted fields stay unchanged, an empty patch is a no-op, and
+`automatic_angle=true` restores the existing app default. The engine dispatcher
+constructs the existing `ProjectCommand.SetBlockStitch`; no renderer or parameter
+policy is duplicated. The relay owns the transaction id and runs the editor's
+existing `runCommandScript`/`ToolTurnController` path: whole-project machine-specific
+`prepare_pes` checks precede a single undoable commit. Results include `revision`,
+`changed`, `changedIds`, `project`, and the `sewout` verdict when checking ran.
+Argument/parameter/generation failures are errors and publish no candidate or history.
+
+The optional patch vocabulary is validated by `BlockTools` on both JVM and Android;
+the old strict, all-fields-required `tools.json` contract remains unchanged.
+`docs/agent/relay-tools.json` is regenerated from the app hello; the relay static
+catalog imports that file at build time. No relay deployment is part of this change.
