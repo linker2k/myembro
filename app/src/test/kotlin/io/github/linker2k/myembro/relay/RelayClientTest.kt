@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.relay
 
 import io.github.linker2k.myembro.backup.BackupPreferences
 import io.github.linker2k.myembro.engine.agent.AgentScenario
+import io.github.linker2k.myembro.engine.edit.Project
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
@@ -54,18 +55,46 @@ class RelayClientTest {
         assertEquals("0.3.0-test", hello.getValue("appVersion").jsonPrimitive.content)
         val tools = hello.getValue("tools").jsonArray.map { it.jsonObject }
         assertEquals(listOf("get_project", "render_preview"), tools.map { it.getValue("name").jsonPrimitive.content })
-        // get_project is the checked-in definition, unchanged.
-        val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray
-        assertEquals(catalog.single { it.jsonObject.getValue("name").jsonPrimitive.content == "get_project" }, tools[0])
+        // The checked-in definitions, unchanged except for annotations in MCP's standard names.
+        val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
+        for (t in tools) {
+            val source = catalog.single { it.getValue("name") == t.getValue("name") }
+            assertEquals(setOf("name", "description", "inputSchema", "annotations"), t.keys)
+            assertEquals(source - "annotations", t - "annotations")
+            assertTrue(source.getValue("annotations").jsonObject.getValue("readOnly").jsonPrimitive.boolean)
+            assertEquals(buildJsonObject { put("readOnlyHint", true); put("idempotentHint", true); put("openWorldHint", false) },
+                t.getValue("annotations"))
+        }
         val width = tools[1].getValue("inputSchema").jsonObject.getValue("properties").jsonObject.getValue("widthPx").jsonObject
         assertEquals(Triple("integer", 256, 1024), Triple(width.getValue("type").jsonPrimitive.content,
             width.getValue("minimum").jsonPrimitive.int, width.getValue("maximum").jsonPrimitive.int))
-        assertEquals(listOf("widthPx"), tools[1].getValue("inputSchema").jsonObject.getValue("required").jsonArray.map { it.jsonPrimitive.content })
-        for (t in tools) {
-            assertEquals(setOf("name", "description", "inputSchema", "annotations"), t.keys)
-            assertTrue(t.getValue("annotations").jsonObject.getValue("readOnly").jsonPrimitive.boolean)
-            assertFalse(t.getValue("annotations").jsonObject.getValue("needsUserConfirmation").jsonPrimitive.boolean)
-        }
+    }
+
+    @Test fun catalogAnnotationsMapToMcpHints() {
+        fun a(readOnly: Boolean, confirm: Boolean) = buildJsonObject { put("readOnly", readOnly); put("needsUserConfirmation", confirm); put("mapsTo", "X") }
+        assertEquals(buildJsonObject { put("readOnlyHint", false); put("destructiveHint", true); put("idempotentHint", false); put("openWorldHint", false) },
+            RelayProtocol.mcpAnnotations(a(false, true)))
+        assertEquals(buildJsonObject { put("readOnlyHint", false); put("destructiveHint", false); put("idempotentHint", false); put("openWorldHint", false) },
+            RelayProtocol.mcpAnnotations(a(false, false)))
+    }
+
+    @Test fun renderPreviewDrawsTheOpenProjectAtTheAskedWidth() = runBlocking {
+        val drawn = mutableListOf<Pair<Project, Int>>()
+        val image = buildJsonObject { put("type", "image"); put("data", "iVBORw0KGgo="); put("mimeType", "image/png") }
+        val tools = SpikeRelayTools({ RelayProject(project, 3) }, render = { p, w -> drawn += p to w; image })
+        fun args(s: String) = Json.parseToJsonElement(s).jsonObject
+        assertEquals(RelayResult(false, listOf(image)), tools.call("render_preview", args("""{"widthPx":512}""")))
+        assertEquals(listOf(project to 512), drawn)
+        // tools.json bounds are inclusive 256..1024; outside, or not one integer, nothing is drawn.
+        for (bad in listOf("""{"widthPx":255}""", """{"widthPx":1025}""", """{"widthPx":512.5}""", """{"widthPx":"512"}""", "{}",
+            """{"widthPx":512,"path":"/sdcard"}"""))
+            assertTrue(tools.call("render_preview", args(bad)).isError, bad)
+        for (w in listOf(256, 1024)) assertFalse(tools.call("render_preview", args("""{"widthPx":$w}""")).isError)
+        assertEquals(listOf(512, 256, 1024), drawn.map { it.second })
+        assertEquals(RelayResult.error(SpikeRelayTools.NO_PROJECT), SpikeRelayTools({ null }, render = { _, _ -> error("no") })
+            .call("render_preview", args("""{"widthPx":512}""")))
+        assertEquals(RelayResult.error("myembro could not render the preview."),
+            SpikeRelayTools({ RelayProject(project, 3) }, render = { _, _ -> error("bitmap") }).call("render_preview", args("""{"widthPx":512}""")))
     }
 
     @Test fun getProjectRoundTripRunsTheDispatcherOnTheOpenProject() {
@@ -102,8 +131,8 @@ class RelayClientTest {
             assertEquals("Tool ${refused[i]} is not available over the myembro AI connection.", text(r))
         }
         assertEquals(0, ran.get())
-        // render_preview is allowed but still a stub (embro-editor); arguments that are not an object are refused.
-        socket.send(call("r", "render_preview", """{"widthPx":512}"""))
+        // render_preview is allowed (out of range here: the host refuses it); arguments that are not an object never reach it.
+        socket.send(call("r", "render_preview", """{"widthPx":2048}"""))
         assertTrue(relay.next().getValue("isError").jsonPrimitive.boolean)
         assertEquals(1, ran.get())
         socket.send(call("a", "get_project", "[]"))

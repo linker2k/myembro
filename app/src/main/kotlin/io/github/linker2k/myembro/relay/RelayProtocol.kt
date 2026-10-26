@@ -22,32 +22,36 @@ object RelayProtocol {
     val PING = buildJsonObject { put("type", "ping") }.toString()
     val PONG = buildJsonObject { put("type", "pong") }.toString()
 
-    /** get_project exactly as the bundled docs/agent/tools.json defines it. */
-    val getProjectTool: JsonObject by lazy {
+    /**
+     * The spike tools as the bundled docs/agent/tools.json defines them, with annotations in MCP's
+     * standard names ([mcpAnnotations]); name, description and inputSchema are unchanged.
+     */
+    val tools: List<JsonObject> by lazy {
         val text = requireNotNull(ToolSchema::class.java.getResourceAsStream("/agent/tools.json")) { "Missing bundled tools.json" }
             .bufferedReader().use { it.readText() }
-        Json.parseToJsonElement(text).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
-            .single { it.getValue("name").jsonPrimitive.content == GET_PROJECT }
+        val catalog = Json.parseToJsonElement(text).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
+        SPIKE_TOOLS.map { name -> catalog.single { it.getValue("name").jsonPrimitive.content == name } }
+            .map { JsonObject(it + ("annotations" to mcpAnnotations(it.getValue("annotations").jsonObject))) }
     }
 
-    /** Defined by the contract; the tool itself is still being built (embro-editor), so the app answers it with a stub. */
-    val renderPreviewTool: JsonObject = buildJsonObject {
-        put("name", RENDER_PREVIEW)
-        put("description", "Render the current project with its hoop as a PNG image.")
-        putJsonObject("inputSchema") {
-            put("type", "object")
-            putJsonObject("properties") {
-                putJsonObject("widthPx") { put("type", "integer"); put("minimum", 256); put("maximum", 1024) }
-            }
-            putJsonArray("required") { add("widthPx") }
-            put("additionalProperties", false)
+    /**
+     * MCP ToolAnnotations from the catalog's own: readOnly → readOnlyHint; a write is destructive when it
+     * needs the user's confirmation; reads are idempotent; no tool reaches outside the open project, so
+     * openWorldHint is false. needsUserConfirmation and mapsTo have no MCP counterpart and are dropped.
+     */
+    fun mcpAnnotations(catalog: JsonObject): JsonObject {
+        val readOnly = catalog["readOnly"]?.jsonPrimitive?.booleanOrNull == true
+        return buildJsonObject {
+            put("readOnlyHint", readOnly)
+            if (!readOnly) put("destructiveHint", catalog["needsUserConfirmation"]?.jsonPrimitive?.booleanOrNull == true)
+            put("idempotentHint", readOnly)
+            put("openWorldHint", false)
         }
-        putJsonObject("annotations") { put("readOnly", true); put("needsUserConfirmation", false) }
     }
 
     fun hello(appVersion: String): String = buildJsonObject {
         put("type", "hello"); put("appVersion", appVersion)
-        put("tools", JsonArray(listOf(getProjectTool, renderPreviewTool)))
+        put("tools", JsonArray(tools))
     }.toString()
 
     fun result(id: String, result: RelayResult): String = buildJsonObject {
