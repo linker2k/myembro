@@ -188,7 +188,9 @@ class ToolDispatcher(
                 else -> error("Unreachable tool")
             }
             return when (val result = apply(project, command)) {
-                is CommandResult.Rejected -> failure(result.code.name, result.message, buildJsonObject { put("objectIds", JsonArray(result.objectIds.map(::JsonPrimitive))) })
+                is CommandResult.Rejected -> failure(result.code.name, result.message, buildJsonObject { put("objectIds", JsonArray(result.objectIds.map(::JsonPrimitive))) }).let {
+                    if(result.kind==null) it else it.copy(output=JsonObject(it.output+("kind" to JsonPrimitive(result.kind.name))))
+                }
                 is CommandResult.Applied -> Result(result.project, buildJsonObject {
                     put("ok", true); put("changed", result.changed); put("transactionId", a.string("transactionId")); put("changedIds", JsonArray(result.changedIds.map(::JsonPrimitive)))
                 }, preparedCommand = command)

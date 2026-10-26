@@ -257,3 +257,44 @@ second time. Tests retain original V1/V6 byte parity, assert each native region
 STITCH sequence and total count before/after all moves (including same-color
 regions), check encoded PES stitch counts and sewout PASS, assert exact codec
 PES round trips and stable selection semantics, and verify one editor undo.
+
+## Typed block failures
+
+`CommandResult.Rejected` adds optional `kind: BlockGenerationKind`; existing
+constructors remain compatible. Block override and order commands now return:
+
+- `INVALID_BLOCK_SETTINGS` for invalid parameters, ids or gradient color-stop
+  requirements, before generation; no generation kind is attached.
+- `GENERATION_FAILED` plus a stable `kind` for an unsuccessful generator or
+  region composition. Kinds include `MEANDER_GRAPH`, `MEANDER_GENERATION`,
+  `SATIN_GEOMETRY_UNSUPPORTED`, `SATIN_STITCH_TOO_LONG`,
+  `SATIN_GENERATION_FAILED`, `EMPTY_REGION`, `UNSUPPORTED_FILL_BACKEND`,
+  `REGION_SET_CHANGED`, `REGION_GENERATION`, `REGION_ORDER`, and
+  `OUTPUT_ENCODING`. Meander graph exceptions are typed at the graph source;
+  satin uses the existing capability precheck at the object's scale. Human
+  messages are explanatory only and are never parsed to classify failures.
+- `SEWOUT_BLOCKED` only after SewoutCheck reports an actual blocker or incomplete
+  analysis, including the placed-hoop check. `kind` is absent. Encoding/viewport
+  exceptions without a sewing-check blocker return `GENERATION_FAILED` with
+  `OUTPUT_ENCODING` instead. Mandatory output gates and thresholds are unchanged.
+
+The writer's `PesOutputSafety.Rejected` remains an IllegalArgumentException but
+additionally carries its actual SewoutReport and output errors. This lets the
+block boundary distinguish an encoded sewing-check blocker from a failed
+encoding without parsing the combined text or rerunning that check.
+
+Direct engine command results, nested Batch failures, EditSession failures,
+ToolDispatcher and turn/script receipts preserve generation kind. Relay edit
+errors expose top-level `code`, `kind`, and unchanged `revision`/`project`, with
+no PES bytes or fake sewout verdict when generation never completed.
+`BlockApply.rejectedStatus` carries the same typed code/kind into the app's
+BlockStatus.Blocked; the existing displayed explanation is retained. UI can
+select localized messages using these fields instead of inspecting reason text.
+Cancellation/interruption propagates and is not reported as generation failure.
+
+Verification uses redistributable Fluent heart/face fixtures: unsupported fill,
+empty meander graph, unsupported satin geometry, oversized satin segments,
+deferred generation during reorder, Batch paths, stable error receipts and
+unchanged project/history. Separate actual hoop blockers must remain
+SEWOUT_BLOCKED with no generation kind; app tests cover both typed status mapping
+and the relay result envelope.

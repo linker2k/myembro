@@ -46,7 +46,7 @@ class BlockRelayTools : RelayToolGroup {
   },
   {
     "name": "set_block_stitch",
-    "description": "Change selected shape regions in one undo step. Omitted settings stay unchanged; automatic_angle uses the app default. Returns revision and sewing check; invalid or unsafe generation changes nothing.",
+    "description": "Change selected shape regions in one undo step. Omitted settings stay unchanged; automatic_angle uses the app default. Returns revision and sewing check. GENERATION_FAILED includes kind; SEWOUT_BLOCKED means sewing-check rejection. Errors change nothing.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -132,7 +132,7 @@ class BlockRelayTools : RelayToolGroup {
   },
   {
     "name": "set_block_order",
-    "description": "Move selected shape regions FORWARD (one earlier), BACKWARD (one later), FIRST or LAST in sewing order. Relative selection order and region needles stay unchanged. One undo step; returns revision and sewing check.",
+    "description": "Move selected shape regions FORWARD (one earlier), BACKWARD (one later), FIRST or LAST in sewing order. Relative selection order and region needles stay unchanged. One undo step; returns revision and sewing check. GENERATION_FAILED includes kind; SEWOUT_BLOCKED means sewing-check rejection.",
     "inputSchema": {
       "type": "object",
       "properties": {

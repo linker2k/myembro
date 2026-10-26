@@ -115,4 +115,17 @@ class RelayBlockToolsTest {
         assertTrue(session.stepHistory(redo=false));assertEquals(base,session.project)
     }
 
+    @Test fun generationErrorsExposeKindAndRetainRevisionWithoutFakeSewoutVerdict()=runBlocking {
+        for((change,kind) in listOf(
+            """{"fill_method":"guided_fill"}""" to "UNSUPPORTED_FILL_BACKEND",
+            """{"fill_method":"meander_fill","meander_scale_percent":[100000]}""" to "MEANDER_GRAPH")) {
+            val (error,result)=call("set_block_stitch", """{"objectId":"heart","regionIds":["region-0"],"change":$change}""")
+            assertTrue(error,result.toString())
+            assertEquals("GENERATION_FAILED",result.getValue("code").jsonPrimitive.content)
+            assertEquals(kind,result.getValue("kind").jsonPrimitive.content)
+            assertEquals("0",result.getValue("revision").jsonPrimitive.content)
+            assertNull(result["sewout"]);assertEquals(base,session.project);assertEquals(0,session.history.undoCount)
+        }
+    }
+
 }

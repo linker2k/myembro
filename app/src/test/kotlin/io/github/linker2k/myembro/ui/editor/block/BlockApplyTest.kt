@@ -59,6 +59,19 @@ class BlockApplyTest {
         assertTrue(bad.message.isNotBlank())
     }
 
+    @Test fun typedGenerationAndSewoutStatusDoesNotParseHumanMessages() {
+        val p=Project()
+        for(message in listOf("identical message", "후프 초과", "Could not build graph")) {
+            val generated=CommandResult.Rejected(p,CommandError.GENERATION_FAILED,setOf("o"),emptyList(),message,
+                io.github.linker2k.myembro.engine.edit.BlockGenerationKind.MEANDER_GRAPH)
+            val status=BlockApply.rejectedStatus(generated)
+            assertEquals(CommandError.GENERATION_FAILED,status.code)
+            assertEquals(io.github.linker2k.myembro.engine.edit.BlockGenerationKind.MEANDER_GRAPH,status.kind)
+            val blocked=BlockApply.rejectedStatus(generated.copy(code=CommandError.SEWOUT_BLOCKED,kind=null))
+            assertEquals(CommandError.SEWOUT_BLOCKED,blocked.code);assertNull(blocked.kind)
+        }
+    }
+
     @Test fun cancellingInterruptsAMeanderGeneration() = runBlocking {
         // Measured on this fixture (JVM): meander at 10% tile scale takes ~16 s uncancelled (5% is refused at
         // once by the tile repetition limit, 40% takes ~0.4 s). Cancelled after 300 ms it must stop within 3 s.

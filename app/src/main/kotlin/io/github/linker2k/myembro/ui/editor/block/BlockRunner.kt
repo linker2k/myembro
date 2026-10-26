@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor.block
 
+import io.github.linker2k.myembro.engine.edit.BlockGenerationKind
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,7 +29,9 @@ sealed interface BlockStatus {
     /** The user cancelled a generation; nothing was committed, the previous settings stay. */
     data object Cancelled : BlockStatus
     /** [applyFailed]: an Apply was refused and the previous settings stay; otherwise the current design is blocked. */
-    data class Blocked(val failure: BlockFailure, val applyFailed: Boolean) : BlockStatus
+    data class Blocked(val failure: BlockFailure, val applyFailed: Boolean,
+        val code: io.github.linker2k.myembro.engine.edit.commands.CommandError? = null,
+        val kind: io.github.linker2k.myembro.engine.edit.BlockGenerationKind? = null) : BlockStatus
 }
 
 /**
@@ -52,7 +55,7 @@ class BlockRunner(
         job = scope.launch {
             val result = withContext(worker) { runInterruptible { apply(base, command) } }
             status = when {
-                result is CommandResult.Rejected -> BlockStatus.Blocked(BlockFailure.of(result.code, result.message), applyFailed = true)
+                result is CommandResult.Rejected -> BlockApply.rejectedStatus(result)
                 // Something else changed the design meanwhile: never publish a result built on an old project.
                 current() !== base -> BlockStatus.Blocked(BlockFailure(BlockFailure.Kind.DESIGN_CHANGED, "STALE_PROJECT"), applyFailed = true)
                 commit(result.project) -> BlockStatus.Passed
@@ -103,10 +106,18 @@ data class BlockFailure(val kind: Kind, val detail: String, val sewoutCodes: Lis
          * the message decides: generation messages (MeanderFill, ShapeBlockRenderer, ShapeObject) are matched
          * first; everything else is a sewing-check block whose finding codes are kept.
          */
-        fun of(code: CommandError, message: String): BlockFailure {
+        fun of(code: CommandError, message: String, generation: BlockGenerationKind? = null): BlockFailure {
             val detail = "$code: $message"
             if (code == CommandError.INVALID_BLOCK_SETTINGS) return BlockFailure(Kind.SETTINGS_INVALID, detail)
-            if (code != CommandError.SEWOUT_BLOCKED) return BlockFailure(Kind.GENERATION_FAILED, detail)
+            // Typed generation failures (GENERATION_FAILED + kind) map without reading the message.
+            when (generation) {
+                BlockGenerationKind.MEANDER_GRAPH -> return BlockFailure(Kind.MEANDER_REGION_TOO_SMALL, detail)
+                BlockGenerationKind.SATIN_GEOMETRY_UNSUPPORTED -> return BlockFailure(Kind.SATIN_UNSUPPORTED, detail)
+                BlockGenerationKind.EMPTY_REGION, BlockGenerationKind.REGION_SET_CHANGED -> return BlockFailure(Kind.NO_STITCHES, detail)
+                BlockGenerationKind.UNSUPPORTED_FILL_BACKEND -> return BlockFailure(Kind.UNSUPPORTED_METHOD, detail)
+                else -> {}
+            }
+            if (code != CommandError.SEWOUT_BLOCKED && code != CommandError.GENERATION_FAILED) return BlockFailure(Kind.GENERATION_FAILED, detail)
             val kind = when {
                 "Could not build graph for meander" in message || "Meander graph is disconnected" in message -> Kind.MEANDER_REGION_TOO_SMALL
                 "Meander tile repetition resource limit" in message || "Meander node resource limit" in message ||
@@ -115,7 +126,7 @@ data class BlockFailure(val kind: Kind, val detail: String, val sewoutCodes: Lis
                 "EMPTY_REGION" in message || "REGION_SET_CHANGED" in message -> Kind.NO_STITCHES
                 "UNSUPPORTED_FILL_BACKEND" in message || "LINEAR_GRADIENT_REQUIRES_COLOR_STOPS" in message -> Kind.UNSUPPORTED_METHOD
                 "Meander" in message || "meander" in message -> Kind.GENERATION_FAILED
-                else -> return sewout(message, detail)
+                else -> return if (code == CommandError.GENERATION_FAILED) BlockFailure(Kind.GENERATION_FAILED, detail) else sewout(message, detail)
             }
             return BlockFailure(kind, detail)
         }

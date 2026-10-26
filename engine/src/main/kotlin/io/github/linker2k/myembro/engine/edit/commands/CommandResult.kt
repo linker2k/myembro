@@ -4,7 +4,7 @@ package io.github.linker2k.myembro.engine.edit.commands
 import io.github.linker2k.myembro.engine.edit.Project
 
 enum class CommandError {
-    INVALID_BLOCK_SETTINGS, SEWOUT_BLOCKED,
+    INVALID_BLOCK_SETTINGS, GENERATION_FAILED, SEWOUT_BLOCKED,
     INVALID_ID, DUPLICATE_ID, MISSING_OBJECT, INVALID_TRANSFORM,
     INVALID_THREAD_INDEX, INVALID_REORDER_INDEX, INVALID_OBJECT_TYPE,
 }
@@ -27,5 +27,6 @@ sealed interface CommandResult {
         /** Zero-based child indices through nested batches; empty for a root command/input error. */
         val path: List<Int>,
         val message: String,
+        val kind: io.github.linker2k.myembro.engine.edit.BlockGenerationKind? = null,
     ) : CommandResult
 }

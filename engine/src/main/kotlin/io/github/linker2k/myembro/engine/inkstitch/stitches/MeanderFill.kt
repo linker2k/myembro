@@ -45,6 +45,9 @@ data class MeanderTile(val id: String, val segments: List<Pair<FillPoint, FillPo
     init { require(segments.isNotEmpty() && shift0.length() > 0 && shift1.length() > 0) }
 }
 
+/** No graph can be routed; callers must not classify this using the human-readable message. */
+class MeanderGraphException(message: String) : IllegalArgumentException(message)
+
 /** Seeded tile graph expansion, using source edge/edge-pair detours rather than a random walk. */
 object MeanderFill {
     private const val PX_PER_MM = 96.0 / 25.4
@@ -73,7 +76,7 @@ object MeanderFill {
         require(shape.isValid && originalShape.isValid) { "Meander expects a make_valid polygon component" }
         if (shape.isEmpty) return emptyList()
         val graph = tileGraph(shape, tile ?: loadTile(parameters.meander_pattern), parameters)
-        require(graph.size >= 2) { "Could not build graph for meander stitching; enlarge the shape or reduce pattern scale" }
+        if(graph.size < 2) throw MeanderGraphException("Could not build graph for meander stitching; enlarge the shape or reduce pattern scale")
         ensureConnected(graph)
         val (start, end) = startingAndEndingNodes(graph, shape, startingPoint, endingPoint)
         val rng = MeanderPrng(parameters.random_seed, shapeIndex)
@@ -246,7 +249,7 @@ object MeanderFill {
             }
             if (isForward) forward = next else backward = next
         }
-        val meet = meeting ?: error("Meander graph is disconnected")
+        val meet = meeting ?: throw MeanderGraphException("Meander graph is disconnected")
         val left = mutableListOf<FillPoint>()
         var node: FillPoint? = meet
         while (node != null) { left += node; node = pred[node] }
