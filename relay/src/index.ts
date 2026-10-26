@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
 import { Broker, clientName, type ConnectionAttachment } from './broker';
 
@@ -16,15 +17,12 @@ export default {
 /** One object and one active app per deployment. Discovery always uses the bundled static catalog. */
 export class Relay {
   private broker: Broker;
-  /** clientInfo.name from the last legacy initialize (memory only: gone after hibernation, then omitted). */
-  private lastClient?: string;
-  private handler = createMcpHandler(() => this.server(), { legacy: 'reject' });
-  private server(): Server {
+  private server(client?: string): Server {
     const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
     server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
-    // The calling AI's name: per request in 2026 envelopes, else the last legacy initialize (one user per relay).
+    // Capture identity per request; concurrent sessions must never share mutable name state.
     server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {},
-      clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? this.lastClient));
+      clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? client));
     return server;
   }
   constructor(private state: DurableObjectState, private env: Env) {
@@ -62,15 +60,28 @@ export class Relay {
     // No unsolicited notifications: an optional idle GET/SSE would prevent hibernation.
     // MCP Streamable HTTP explicitly permits 405 when this stream is not offered.
     if (request.method === 'GET') return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
-    if (!await isLegacyRequest(request)) return this.handler.fetch(request);
-    if (request.method === 'POST') {
-      const body: any = await request.clone().json().catch(() => undefined);
-      if (body?.method === 'initialize') this.lastClient = clientName(body.params?.clientInfo?.name);
+    const body: any = request.method === 'POST' ? await request.clone().json().catch(() => undefined) : undefined;
+    const supplied = clientName(body?.method === 'initialize' ? body.params?.clientInfo?.name :
+      body?.params?._meta?.['io.modelcontextprotocol/clientInfo']?.name);
+    const session = request.headers.get('Mcp-Session-Id');
+    // Hash caller-controlled session IDs: bounded storage keys and no raw identifiers in storage keys/logs.
+    const key = session ? 'client:session:' + createHash('sha256').update(session).digest('hex') : 'client:last';
+    const client = supplied ?? clientName(await this.state.storage.get<string>(key));
+    let response: Response;
+    if (!await isLegacyRequest(request)) {
+      response = await createMcpHandler(() => this.server(client), { legacy: 'reject' }).fetch(request);
+    } else {
+      const server = this.server(client);
+      const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      await server.connect(transport);
+      try { response = await transport.handleRequest(request); }
+      finally { await server.close(); }
     }
-    const server = this.server();
-    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-    await server.connect(transport);
-    try { return await transport.handleRequest(request); }
-    finally { await server.close(); }
+    // Failed initialize must not poison persisted identity. Store before returning the response.
+    if (supplied && response.ok && (body?.method !== 'initialize' ||
+        !(await response.clone().json().catch(() => ({ error: true })) as any)?.error)) {
+      await this.state.storage.put({ [key]: supplied, 'client:last': supplied });
+    }
+    return response;
   }
 }

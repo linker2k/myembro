@@ -76,3 +76,50 @@ it('does not leave an optional legacy MCP GET/SSE subscription open', async () =
   expect(response.status).toBe(405); expect(response.headers.get('Allow')).toBe('POST');
   expect(await response.text()).toBe('Method not allowed');
 });
+
+async function identityRpc(method: string, params: any, session?: string) {
+  return mf.dispatchFetch('http://local/mcp', { method: 'POST', headers: {
+    Authorization: 'Bearer test-mcp', 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream',
+    ...(session ? { 'Mcp-Session-Id': session } : {}),
+    ...(params._meta ? { 'MCP-Protocol-Version': '2026-07-28', 'Mcp-Method': method, ...(params.name ? { 'Mcp-Name': params.name } : {}) } : {}),
+  }, body: JSON.stringify({ jsonrpc: '2.0', id: 10, method, params }) });
+}
+async function initializeIdentity(name: string, session?: string) {
+  const response = await identityRpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name, version: 'test' } }, session);
+  const body: any = await response.json(); expect(body.error).toBeUndefined(); return body;
+}
+async function calledIdentity(socket: any, session?: string, meta?: any) {
+  const received = next(socket, 'call');
+  const response = identityRpc('tools/call', { name: 'get_project', arguments: {}, ...(meta ? { _meta: meta } : {}) }, session);
+  const call = await received;
+  socket.send(JSON.stringify({ type: 'result', id: call.id, isError: false, content: [] }));
+  expect((await (await response).json() as any).error).toBeUndefined(); return call.client;
+}
+it('persists isolated session identities and last-name fallback across constructor reconstruction', async () => {
+  const s = await app();
+  await initializeIdentity(' Claude\nDesktop\u202e  ', 'session-a');
+  await initializeIdentity('Codex', 'session-b');
+  await mf.dispatchFetch('http://local/__test/reconstruct');
+  expect(await calledIdentity(s, 'session-a')).toBe('Claude Desktop');
+  expect(await calledIdentity(s, 'session-b')).toBe('Codex');
+  expect(await calledIdentity(s)).toBe('Codex');
+  expect(await calledIdentity(s, 'unknown-session')).toBeUndefined();
+});
+it('persists modern per-request clientInfo and keeps explicit identity ahead of stored fallback', async () => {
+  const s = await app(); await initializeIdentity('Old name', 'session-modern');
+  expect(await calledIdentity(s, 'session-modern', {
+    'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+    'io.modelcontextprotocol/clientInfo': { name: ' Gemini\tMobile\u0085\u2028 ', version: '1' },
+    'io.modelcontextprotocol/clientCapabilities': {},
+  })).toBe('Gemini Mobile');
+  await mf.dispatchFetch('http://local/__test/reconstruct');
+  expect(await calledIdentity(s, 'session-modern')).toBe('Gemini Mobile');
+  expect(await calledIdentity(s)).toBe('Gemini Mobile');
+});
+it('rejects failed initialize identity updates and preserves the previously saved name', async () => {
+  const s = await app(); await initializeIdentity('Known good', 'valid-name');
+  const response = await identityRpc('initialize', { clientInfo: { name: 'Poisoned' } }, 'valid-name');
+  expect((await response.json() as any).error).toBeDefined();
+  await mf.dispatchFetch('http://local/__test/reconstruct');
+  expect(await calledIdentity(s, 'valid-name')).toBe('Known good');
+});
