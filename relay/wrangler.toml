@@ -16,5 +16,5 @@ new_sqlite_classes = ["Relay"]
 # Bind a dedicated namespace ID before deployment; omission permits local development only.
 [[kv_namespaces]]
 binding = "OAUTH_KV"
-# id = "<dedicated-OAuth-KV-namespace-ID>"
+id = "9a5c8aea177240b2a6d48d8ad3692ad6"
 # OWNER_PIN is an additional Worker secret; never set it under [vars].
