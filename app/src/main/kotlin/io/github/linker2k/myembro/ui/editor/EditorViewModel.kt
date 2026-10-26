@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.JsonObject
+import io.github.linker2k.myembro.engine.lettering.supports
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.booleanOrNull
@@ -262,13 +263,25 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             (fonts to agentFonts.descriptors().filter { it.id in ids }.associate { it.id to it.codePoints }).also { relayFontCache = it }
         }
     }
+    /** Whether [fontId] writes every letter of [codes]: its code-point set, or the resolver for fonts without one. */
+    private val relayWrites = java.util.Collections.synchronizedMap(object : LinkedHashMap<Pair<String, Set<Int>>, Boolean>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<String, Set<Int>>, Boolean>?) = size > 256
+    })
+    private suspend fun writes(fontId: String, codes: Set<Int>): Boolean {
+        relayFontCoverage().second[fontId]?.let { return it.containsAll(codes) }
+        return relayWrites[fontId to codes] ?: withContext(Dispatchers.IO) {
+            val text = codes.joinToString("") { String(Character.toChars(it)) }
+            agentFonts.resolveText(fontId, text)?.let { f -> codes.all { c -> f.supports(c) } } == true
+        }.also { relayWrites[fontId to codes] = it }
+    }
+
     /** Loads font coverage before the first relay question (the editor attaches while the connection is on). */
     internal fun prewarmRelayFonts() { viewModelScope.launch { runCatching { relayFontCoverage() } } }
     private suspend fun fonts(text: String?, filters: Set<String> = emptySet()): kotlinx.serialization.json.JsonArray {
-        val (fonts, coverage) = relayFontCoverage()
+        val fonts = relayFontCoverage().first
         val codes = text?.let { io.github.linker2k.myembro.engine.lettering.normalizedLetteringText(it).codePoints().toArray().filter { c -> !Character.isWhitespace(c) }.toSet() }
         return kotlinx.serialization.json.JsonArray(fonts.filter { f -> ("KOREAN" !in filters || f.hangul) && ("LATIN" !in filters || f.latin) }.mapNotNull { f ->
-            val supports = codes?.let { c -> coverage[f.id]?.containsAll(c) }
+            val supports = codes?.let { c -> writes(f.id, c) }
             if (codes != null && supports != true) return@mapNotNull null
             io.github.linker2k.myembro.relay.RelayCatalog.fontRow(f.id, f.name, f.hangul, f.latin, f.minMm, f.maxMm, supports)
         })
@@ -304,11 +317,11 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 // add_text without a font: the last one for the text's script, or the default (shown in the answer).
                 val chosen = if (tool == "add_text" && "fontId" !in args) {
                     val text = (args["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
-                    val (fonts, coverage) = relayFontCoverage()
+                    val fonts = relayFontCoverage().first
                     val codes = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.toSet()
-                    io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.choose(text, lastFonts.korean, lastFonts.latin) { id ->
-                        fonts.any { it.id == id } && coverage[id]?.containsAll(codes) == true
-                    }.let { (id, fallback) -> Triple(id, fallback, fonts.firstOrNull { it.id == id }?.name ?: id) }
+                    val last = if (io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.hasHangul(text)) lastFonts.korean else lastFonts.latin
+                    val lastWrites = last != null && fonts.any { it.id == last } && writes(last, codes)
+                    io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.choose(text, lastFonts.korean, lastFonts.latin) { it == last && lastWrites }.let { (id, fallback) -> Triple(id, fallback, fonts.firstOrNull { it.id == id }?.name ?: id) }
                 } else null
                 val strict = chosen?.let { JsonObject(args + ("fontId" to JsonPrimitive(it.first))) } ?: args
                 val result = withContext(Dispatchers.Main.immediate) {
