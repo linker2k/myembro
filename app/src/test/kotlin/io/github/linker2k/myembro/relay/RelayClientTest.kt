@@ -69,26 +69,47 @@ class RelayClientTest {
         assertEquals(RelayPhotoTools.NAMES, photos.map { it.getValue("name").jsonPrimitive.content }.toSet())
         for (p in photos) assertTrue("readOnlyHint" in p.getValue("annotations").jsonObject && "readOnly" !in p.getValue("annotations").jsonObject)
         val tools = all.dropLast(RelayPhotoTools.NAMES.size)
-        // The checked-in definitions, unchanged except for annotations in MCP's standard names and the app-owned transactionId.
+        // The checked-in strict definitions, projected for the relay only (RelayCatalog): short description, no
+        // transactionId, fewer required arguments, add_text's optional position; annotations in MCP's names.
         val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
         for (t in tools) {
+            val name = t.getValue("name").jsonPrimitive.content
             val source = catalog.single { it.getValue("name") == t.getValue("name") }
             assertEquals(setOf("name", "description", "inputSchema", "annotations"), t.keys)
-            assertEquals(source - "annotations" - "inputSchema" - "description", t - "annotations" - "inputSchema" - "description")
-            // remove_objects also says the phone asks first; every other description is the catalog's.
-            val extra = if (t.getValue("name").jsonPrimitive.content == "remove_objects") " ${RelayProtocol.REMOVE_ON_PHONE}" else ""
-            assertEquals(source.getValue("description").jsonPrimitive.content + extra, t.getValue("description").jsonPrimitive.content)
-            val schema = source.getValue("inputSchema").jsonObject
-            assertEquals(JsonObject(schema + ("properties" to JsonObject(schema.getValue("properties").jsonObject - "transactionId")) +
-                ("required" to JsonArray(schema.getValue("required").jsonArray.filter { it.jsonPrimitive.content != "transactionId" }))),
-                t.getValue("inputSchema"))
+            val extra = if (name == "remove_objects") " ${RelayProtocol.REMOVE_ON_PHONE}" else ""
+            assertEquals(RelayCatalog.DESCRIPTIONS.getValue(name) + extra, t.getValue("description").jsonPrimitive.content)
+            assertTrue(RelayCatalog.DESCRIPTIONS.getValue(name).length <= 260, name)
+            val strict = source.getValue("inputSchema").jsonObject
+            val relay = t.getValue("inputSchema").jsonObject
+            val strictProps = strict.getValue("properties").jsonObject.keys - "transactionId"
+            assertEquals(strictProps + (if (name == "add_text") setOf("xMm", "yMm") else emptySet()), relay.getValue("properties").jsonObject.keys, name)
+            assertTrue(strict.getValue("required").jsonArray.containsAll(relay.getValue("required").jsonArray), name)
+            assertEquals(strict["additionalProperties"], relay["additionalProperties"], name)
             assertEquals(RelayProtocol.mcpAnnotations(source.getValue("annotations").jsonObject), t.getValue("annotations"))
         }
+        assertEquals(listOf("text", "heightMm"), tools.single { it.getValue("name").jsonPrimitive.content == "add_text" }
+            .getValue("inputSchema").jsonObject.getValue("required").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(emptyList(), tools.single { it.getValue("name").jsonPrimitive.content == "list_fonts" }
+            .getValue("inputSchema").jsonObject.getValue("required").jsonArray.toList())
+        // Units and coordinates are explained once.
+        assertEquals(1, tools.count { "y grows downward" in it.getValue("description").jsonPrimitive.content })
         for (t in tools.take(5)) assertEquals(buildJsonObject { put("readOnlyHint", true); put("idempotentHint", true); put("openWorldHint", false) },
             t.getValue("annotations"))
         val width = tools[1].getValue("inputSchema").jsonObject.getValue("properties").jsonObject.getValue("widthPx").jsonObject
         assertEquals(Triple("integer", 256, 1024), Triple(width.getValue("type").jsonPrimitive.content,
             width.getValue("minimum").jsonPrimitive.int, width.getValue("maximum").jsonPrimitive.int))
+    }
+
+    /**
+     * The relay tool catalog as a file (docs/agent/relay-tools.json), so the relay can import the same
+     * definitions the app's hello sends. Regenerate with RELAY_TOOLS_WRITE=1 after changing them.
+     */
+    @Test fun relayToolsFileMatchesTheHello() {
+        val file = File("../docs/agent/relay-tools.json")
+        val generated = Json { prettyPrint = true }.encodeToString(JsonElement.serializer(),
+            buildJsonObject { put("tools", JsonArray(editor.definitions)) }) + "\n"
+        if (System.getenv("RELAY_TOOLS_WRITE") == "1") file.writeText(generated)
+        assertEquals(generated, file.readText(), "Run RELAY_TOOLS_WRITE=1 ./gradlew :app:testDebugUnitTest --tests '*RelayClientTest*'")
     }
 
     @Test fun catalogAnnotationsMapToMcpHints() {
@@ -107,11 +128,13 @@ class RelayClientTest {
         assertEquals(RelayResult(false, listOf(image)), tools.call("render_preview", args("""{"widthPx":512}""")))
         assertEquals(listOf(project to 512), drawn)
         // tools.json bounds are inclusive 256..1024; outside, or not one integer, nothing is drawn.
-        for (bad in listOf("""{"widthPx":255}""", """{"widthPx":1025}""", """{"widthPx":512.5}""", """{"widthPx":"512"}""", "{}",
+        for (bad in listOf("""{"widthPx":255}""", """{"widthPx":1025}""", """{"widthPx":512.5}""", """{"widthPx":"512"}""",
             """{"widthPx":512,"path":"/sdcard"}"""))
             assertTrue(tools.call("render_preview", args(bad)).isError, bad)
         for (w in listOf(256, 1024)) assertFalse(tools.call("render_preview", args("""{"widthPx":$w}""")).isError)
-        assertEquals(listOf(512, 256, 1024), drawn.map { it.second })
+        // Over the relay widthPx may be left out: 512.
+        assertFalse(tools.call("render_preview", args("{}")).isError)
+        assertEquals(listOf(512, 256, 1024, 512), drawn.map { it.second })
         assertEquals(RelayResult.error(ProjectRelayTools.NO_PROJECT), tools({ _, _ -> error("no") }, null)
             .call("render_preview", args("""{"widthPx":512}""")))
         assertEquals(RelayResult.error("myembro could not render the preview."),

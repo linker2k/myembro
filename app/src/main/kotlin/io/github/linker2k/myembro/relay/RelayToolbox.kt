@@ -26,6 +26,14 @@ interface RelayEditor {
     suspend fun query(tool: String, args: JsonObject): JsonObject
     /** One edit tool as one turn: one undo step, sewout-checked; the [RelayEdits.result] shape. */
     suspend fun edit(tool: String, args: JsonObject): JsonObject
+    /** What get_project adds in the editor: usable fonts and the current sewing check. */
+    suspend fun overview(): JsonObject = JsonObject(emptyMap())
+    /**
+     * Installed fonts in the short relay form ([RelayCatalog.fontRow]): with [text], only the ones that write
+     * all of it; [filters] KOREAN/LATIN keep fonts with that script. From cached coverage, not the strict
+     * list_fonts sweep (8.8 s and 291,209 chars for one call on a phone).
+     */
+    suspend fun fonts(text: String?, filters: Set<String> = emptySet()): JsonArray = JsonArray(emptyList())
     /** The photo tools on this editor's kernel and session (RelayPhotoTools), null where there are none. */
     val photos: RelayTools? get() = null
 }
@@ -79,10 +87,14 @@ class ProjectRelayTools(
             RelayProtocol.GET_PROJECT -> {
                 val open = document.read() ?: return RelayResult.error(NO_PROJECT)
                 val result = dispatcher.dispatch(open.project, open.revision.toString(), tool, args)
-                val output = if (result.ok) JsonObject(result.output + ("editable" to JsonPrimitive(document.editor != null))) else result.output
-                RelayResult.text(output.toString(), isError = !result.ok)
+                if (!result.ok) return RelayResult.text(result.output.toString(), isError = true)
+                // One call answers what adding text needs: free space, fonts and the last check.
+                val output = JsonObject(result.output + ("editable" to JsonPrimitive(document.editor != null)) +
+                    ("freeSpaceMm" to RelayCatalog.freeSpace(open.project)) + document.editor?.overview().orEmpty())
+                RelayResult.text(output.toString())
             }
             RelayProtocol.RENDER_PREVIEW -> {
+                val args = if ("widthPx" in args) args else JsonObject(args + ("widthPx" to JsonPrimitive(512)))
                 schema.validate(tool, args)?.let { return RelayResult.error("Invalid arguments: $it") }
                 val open = document.read() ?: return RelayResult.error(NO_PROJECT)
                 // A failed render is an error result, never a partial picture.
@@ -91,11 +103,25 @@ class ProjectRelayTools(
             }
             else -> {
                 val editor = document.editor ?: return RelayResult.error(OPEN_EDITOR)
-                val output = if (tool in RelayProtocol.EDITOR_READS) editor.query(tool, args) else editor.edit(tool, args)
+                val output = if (tool == "list_fonts") {
+                    val strict = RelayCatalog.complete(tool, args, open(document) ?: return RelayResult.error(NO_PROJECT)) { null }
+                    val a = strict.calls.singleOrNull()?.arguments?.jsonObject ?: return RelayResult.error(strict.error ?: "Invalid arguments")
+                    schema.validate(tool, a)?.let { return RelayResult.error("Invalid arguments: $it") }
+                    val text = a.getValue("text").jsonPrimitive.content
+                    buildJsonObject {
+                        put("ok", true); if (text.isNotEmpty()) put("text", text)
+                        put("fonts", editor.fonts(text.ifEmpty { null }, a.getValue("filters").jsonArray.map { it.jsonPrimitive.content }.toSet()))
+                    }
+                } else if (tool in RelayProtocol.EDITOR_READS) {
+                    val strict = RelayCatalog.complete(tool, args, open(document) ?: return RelayResult.error(NO_PROJECT)) { null }
+                    editor.query(tool, strict.calls.singleOrNull()?.arguments?.jsonObject ?: return RelayResult.error(strict.error ?: "Invalid arguments"))
+                } else editor.edit(tool, args)
                 RelayResult.text(output.toString(), isError = output["ok"]?.jsonPrimitive?.booleanOrNull != true)
             }
         }
     }
+
+    private suspend fun open(document: RelayDocument) = document.read()?.project
 
     companion object {
         const val NO_PROJECT = "No design is open in myembro. Open one in the editor and try again."
@@ -108,14 +134,15 @@ class ProjectRelayTools(
  * Definitions keep the catalog's arguments; annotations are projected to MCP names like the others.
  */
 class PhotoRelayTools : RelayToolGroup {
-    override val definitions = RelayPhotoTools.definitions.map {
-        JsonObject(it + ("annotations" to RelayProtocol.mcpAnnotations(it.getValue("annotations").jsonObject)))
-    }
+    override val definitions = RelayProtocol.offer(RelayPhotoTools.definitions)
 
     override suspend fun call(tool: String, args: JsonObject, document: RelayDocument?): RelayResult {
         document ?: return RelayResult.error(ProjectRelayTools.NO_PROJECT)
         val photos = document.editor?.photos ?: return RelayResult.error(ProjectRelayTools.OPEN_EDITOR)
-        return photos.call(tool, args)
+        // The relay offers add_generated_art without transactionId; each call is its own turn.
+        val strict = if (tool == "add_generated_art" && "transactionId" !in args)
+            JsonObject(args + ("transactionId" to JsonPrimitive("relay-${java.util.UUID.randomUUID()}"))) else args
+        return photos.call(tool, strict)
     }
 }
 

@@ -33,7 +33,7 @@ object RelayEdits {
         ToolDispatcher.Result(project, buildJsonObject { put("ok", false); put("code", code); put("message", message) }), revision, project)
 
     /** prepare_pes output of the turn's final candidate: PASS only for a complete passing check. */
-    private fun sewout(check: JsonObject) = buildJsonObject {
+    fun sewout(check: JsonObject) = buildJsonObject {
         val passed = check["ok"]?.jsonPrimitive?.booleanOrNull == true
         put("verdict", if (passed) "PASS" else "BLOCK")
         val details = check["checks"]?.jsonObject ?: check["details"]?.jsonObject

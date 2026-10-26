@@ -9,6 +9,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.sewout.SewoutMachines
+import io.github.linker2k.myembro.relay.RelayCatalog
 import io.github.linker2k.myembro.relay.RelayConfirmation
 import io.github.linker2k.myembro.relay.RelayEdits
 import io.github.linker2k.myembro.ui.agent.*
@@ -121,6 +122,24 @@ internal class EditorAgentExecutor(
         return buildJsonObject { put("machineId", machine); put("frameId", frameId(session().project.hoop)); put("pesVersion", settings().pesVersion.name) }
     }
 
+    private var checked: Pair<Pair<EditorSession, Long>, JsonObject>? = null
+
+    /**
+     * AI connection: the sewing check of the live project, as Apply runs it (sewout_check on the same kernel
+     * and export settings), PASS or BLOCK with findings; remembered per session revision.
+     */
+    suspend fun relaySewout(): JsonObject = withContext(Dispatchers.Default) {
+        val s = session(); val key = s to s.history.revision
+        checked?.takeIf { it.first == key }?.let { return@withContext it.second }
+        val export = relayExport() ?: return@withContext buildJsonObject { put("verdict", "UNKNOWN"); put("message", "Choose the machine in myembro settings.") }
+        val check = kernel(s.project).dispatch(s.project, key.second.toString(), "sewout_check", buildJsonObject {
+            put("projectRevision", key.second.toString()); put("pesAssetId", ""); put("machineId", export.getValue("machineId")); put("frameId", export.getValue("frameId"))
+        }).output
+        val verdict = JsonObject(RelayEdits.sewout(check) + ("revision" to JsonPrimitive(key.second.toString())))
+        checked = key to verdict
+        verdict
+    }
+
     /** AI connection: a read tool on this editor's kernel, against the live project and revision. */
     suspend fun relayQuery(tool: String, args: JsonObject): JsonObject = withContext(Dispatchers.Default) {
         val base = session().project
@@ -141,14 +160,17 @@ internal class EditorAgentExecutor(
         // The app owns the turn; a caller cannot name or reuse one.
         if ("transactionId" in args) return RelayEdits.failure("INVALID_ARGUMENTS", "transactionId is set by myembro", revision, base)
         val transactionId = "relay-${java.util.UUID.randomUUID()}"
-        val run = listOf(ToolTurnController.Call(tool, JsonObject(args + ("transactionId" to JsonPrimitive(transactionId)))))
+        // Left-out relay arguments get their defaults; add_text with a position is two calls in this one turn.
+        val strict = withContext(Dispatchers.Default) { RelayCatalog.complete(tool, args, base, fontRevision) }
+        strict.error?.let { return RelayEdits.failure("INVALID_ARGUMENTS", it, revision, base) }
+        val run = strict.calls.map { ToolTurnController.Call(it.name, JsonObject(it.arguments.jsonObject + ("transactionId" to JsonPrimitive(transactionId)))) }
         val export = buildJsonObject { put("machineId", machine); put("frameId", frameId(base.hoop)); put("pesVersion", settings().pesVersion.name) }
         val kernel = withContext(Dispatchers.Default) { kernel(base) }
         var approvals = emptyList<io.github.linker2k.myembro.engine.agent.ScriptApproval>()
         if (tool == "remove_objects") {
             val check = withContext(Dispatchers.Default) { session().runCommandScript(kernel, transactionId, revision, run, export, dryRun = true) }
             if (!check.ok) return RelayEdits.result(check, revision, base)
-            val names = args.getValue("objectIds").jsonArray.map { id -> base.find(id.jsonPrimitive.content)?.name ?: id.jsonPrimitive.content }
+            val names = (args["objectIds"] as? JsonArray ?: return RelayEdits.failure("INVALID_ARGUMENTS", "objectIds is required", revision, base)).map { id -> base.find(id.jsonPrimitive.content)?.name ?: id.jsonPrimitive.content }
             when (confirm(names)) {
                 true -> {}
                 false -> return RelayEdits.failure("USER_DECLINED",

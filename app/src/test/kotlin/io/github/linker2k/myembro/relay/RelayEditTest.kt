@@ -41,8 +41,16 @@ class RelayEditTest {
         override val editor = object : RelayEditor {
             override suspend fun query(tool: String, args: JsonObject) = executor.relayQuery(tool, args)
             override suspend fun edit(tool: String, args: JsonObject) = executor.relayEdit(tool, args) { names -> asked += names; answer(names) }
+            override suspend fun overview() = buildJsonObject { put("fonts", fonts(null)); put("sewout", executor.relaySewout()) }
+            // EditorViewModel's rows from its cached coverage; here the JVM bundled fonts.
+            override suspend fun fonts(text: String?, filters: Set<String>) = JsonArray(jvmFonts.descriptors().mapNotNull { d ->
+                val supports = text?.let { t -> d.codePoints?.containsAll(t.codePoints().toArray().filter { !Character.isWhitespace(it) }.toSet()) }
+                if (text != null && supports != true) null
+                else RelayCatalog.fontRow(d.id, d.displayName, hangul = false, latin = true, minMm = null, maxMm = 60.0, supportsText = supports)
+            })
         }
     }
+    private val jvmFonts = io.github.linker2k.myembro.engine.agent.BundledFontResolver()
 
     @AfterTest fun stop() { scope.cancel(); server.shutdown() }
 
@@ -56,6 +64,7 @@ class RelayEditTest {
     }
 
     /** A connected fake relay; [call] sends one tools/call and returns (isError, the app's JSON text). */
+    private val sizes = mutableListOf<Pair<String, Int>>()
     private inner class Connected(document: RelayDocument?) {
         private val relay = Relay().also { server.enqueue(MockResponse().withWebSocketUpgrade(it)) }
         private val socket: WebSocket
@@ -72,6 +81,11 @@ class RelayEditTest {
             val r = relay.next()
             assertEquals(id, r.getValue("id").jsonPrimitive.content)
             val c = r.getValue("content").jsonArray.single().jsonObject
+            // Every relay answer stays under the cap the chatbot app copes with; font lists under their own.
+            val size = c["text"]?.jsonPrimitive?.content?.length ?: 0
+            assertTrue(size <= RelayProtocol.MAX_RESULT_CHARS, "$tool answered $size chars")
+            if (tool == "list_fonts") assertTrue(size <= RelayProtocol.MAX_FONT_LIST_CHARS, "list_fonts answered $size chars")
+            sizes += tool to size
             // Edit and read results are JSON; refusals before any tool runs are plain text.
             val body = if (c.getValue("type").jsonPrimitive.content == "image") c else c.getValue("text").jsonPrimitive.content
                 .let { t -> runCatching { Json.parseToJsonElement(t).jsonObject }.getOrElse { buildJsonObject { put("text", t) } } }
@@ -83,13 +97,59 @@ class RelayEditTest {
     private fun JsonObject.str(key: String) = getValue(key).jsonPrimitive.content
     private fun objects(r: JsonObject) = r.getValue("project").jsonObject.getValue("objects").jsonArray.map { it.jsonObject }
 
-    private fun addText(relay: Connected, text: String = "Hi", id: String = "hi"): Pair<Boolean, JsonObject> {
-        // The font and its exact revision come from list_fonts on the editor's kernel, as a chatbot reads them.
-        val (fontError, fonts) = relay.call("list_fonts", """{"text":"$text","filters":[],"installedOnly":true}""")
-        assertFalse(fontError, fonts.toString())
-        val font = fonts.getValue("fonts").jsonArray.map { it.jsonObject }.first { it.str("fontId") == HersheyFont.DEFAULT_ID }
-        return relay.call("add_text", """{"objectId":"$id","text":"$text","fontId":"${HersheyFont.DEFAULT_ID}","fontRevision":"${font.str("fontRevision")}",""" +
-            """"heightMm":10,"threadColor":"#D0021B","singleLineBold":false}""")
+    /** add_text with only what a chatbot needs: the app fills the font revision, color and bold. */
+    private fun addText(relay: Connected, text: String = "Hi", id: String = "hi"): Pair<Boolean, JsonObject> =
+        relay.call("add_text", """{"objectId":"$id","text":"$text","fontId":"${HersheyFont.DEFAULT_ID}","heightMm":10,"threadColor":"#D0021B"}""")
+
+    @Test fun textToTheRightOfTheLogoIsGetProjectThenOneAddText() {
+        val relay = Connected(editorDocument)
+        val (projectError, project) = relay.call("get_project")
+        assertFalse(projectError)
+        // What add_text needs is in this one answer: fonts, free space beside the logo, and the current check.
+        assertEquals("PASS", project.getValue("sewout").jsonObject.str("verdict"))
+        val logo = project.getValue("freeSpaceMm").jsonObject.getValue("objects").jsonArray.single().jsonObject
+        assertEquals(20.0, logo.getValue("rightMm").jsonPrimitive.double)
+        assertTrue(project.getValue("fonts").jsonArray.any { it.jsonObject.str("fontId") == HersheyFont.DEFAULT_ID })
+        // Centered at x 40 in the 20 mm right of the logo, in the same turn as the add.
+        val (isError, r) = relay.call("add_text", """{"text":"Hi","fontId":"${HersheyFont.DEFAULT_ID}","heightMm":10,"xMm":40,"yMm":0}""")
+        assertFalse(isError, r.toString())
+        assertEquals("PASS", r.getValue("sewout").jsonObject.str("verdict"))
+        val text = objects(r).single { it.str("id") == "text-1" }.getValue("placedBoundsMm").jsonObject
+        assertEquals(40.0, (text.getValue("minXMm").jsonPrimitive.double + text.getValue("maxXMm").jsonPrimitive.double) / 2, 0.6)
+        assertEquals(1, session.history.undoCount)
+        assertTrue(session.stepHistory(redo = false)); assertSame(base, session.project)
+        // The font list in short form, from coverage.
+        val (fontsError, fonts) = relay.call("list_fonts")
+        assertFalse(fontsError); assertTrue(fonts.getValue("fonts").jsonArray.isNotEmpty())
+        println("RELAY_SIZES " + sizes.joinToString { "${it.first}=${it.second}" })
+    }
+
+    /** Every left-out argument the relay allows is filled into a call the strict tools.json schema accepts. */
+    @Test fun leftOutArgumentsBecomeStrictCalls() {
+        val strict = io.github.linker2k.myembro.engine.agent.ToolSchema.bundled()
+        val project = base.add(io.github.linker2k.myembro.engine.edit.TextObject(id = "t", text = "Hi", fontId = HersheyFont.DEFAULT_ID, heightMm = 10.0))
+        val minimal = mapOf(
+            "list_fonts" to "{}",
+            "add_design" to """{"assetId":"builtin:x"}""",
+            "add_text" to """{"text":"Hi","fontId":"${HersheyFont.DEFAULT_ID}","heightMm":10,"xMm":30,"yMm":5}""",
+            "replace_text" to """{"objectId":"t","text":"Ho"}""",
+            "set_object_transforms" to """{"transforms":[{"objectId":"logo","xMm":1,"yMm":2}]}""",
+            "transform_objects" to """{"objectIds":["logo"]}""",
+            "duplicate_object" to """{"sourceId":"logo","transform":{"xMm":1,"yMm":2}}""",
+            "recolor_object" to """{"objectId":"logo","threadColor":"#112233"}""",
+            "remove_objects" to """{"objectIds":["logo"]}""",
+        )
+        for ((tool, args) in minimal) {
+            val r = RelayCatalog.complete(tool, Json.parseToJsonElement(args).jsonObject, project) { jvmFonts.revision(it) }
+            assertNull(r.error, tool)
+            for (call in r.calls) {
+                val withTx = if (call.name == "list_fonts") call.arguments else JsonObject(call.arguments.jsonObject + ("transactionId" to JsonPrimitive("t")))
+                assertNull(strict.validate(call.name, withTx), "$tool -> ${call.name}: $withTx")
+            }
+        }
+        assertEquals(listOf("add_text", "set_object_transforms"), RelayCatalog.complete("add_text",
+            Json.parseToJsonElement(minimal.getValue("add_text")).jsonObject, project) { "r" }.calls.map { it.name })
+        assertNotNull(RelayCatalog.complete("align_objects", Json.parseToJsonElement("""{"objectIds":["logo"],"alignment":"LEFT","xMm":1}""").jsonObject, project) { null }.error)
     }
 
     @Test fun helloOffersReadsAndEveryAskAiEditButNotPhotosOrSeparateActions() {

@@ -67,3 +67,42 @@ internal class RecentLetteringFonts(context: Context) {
         const val MAX = 8
     }
 }
+
+/**
+ * The last font a text was added with, kept apart for Korean text (any Hangul) and Latin-only text, in the
+ * "lettering" preferences (in the backup ZIP, BackupPreferences.names). Updated after a successful add from
+ * the lettering sheet or the AI connection; read as their default font.
+ */
+internal class LastLetteringFonts(private val store: Store) {
+    interface Store { fun get(key: String): String?; fun put(key: String, value: String) }
+
+    constructor(context: Context) : this(context.applicationContext.getSharedPreferences("lettering", Context.MODE_PRIVATE).let { prefs ->
+        object : Store {
+            override fun get(key: String) = prefs.getString(key, null)
+            override fun put(key: String, value: String) { prefs.edit().putString(key, value).apply() }
+        }
+    })
+
+    val korean: String? get() = store.get(KO)
+    val latin: String? get() = store.get(EN)
+    fun forText(text: String): String? = if (hasHangul(text)) korean else latin
+    fun record(fontId: String, text: String) { if (text.isNotBlank()) store.put(if (hasHangul(text)) KO else EN, fontId) }
+
+    companion object {
+        const val KO = "lastFontKo"
+        const val EN = "lastFontEn"
+        /** The app's default lettering font (bundled; writes Hangul and Latin). */
+        const val DEFAULT = "gowun-batang"
+        fun hasHangul(text: String) = text.any { it in '\uAC00'..'\uD7A3' || it in '\u3131'..'\u318E' || it in '\u1100'..'\u11FF' }
+
+        /**
+         * The font for [text] when none is named: the last one for its script if it writes every letter,
+         * otherwise [DEFAULT]. Mixed Hangul and Latin text counts as Korean. Second = the default was used
+         * instead of a remembered font.
+         */
+        fun choose(text: String, korean: String?, latin: String?, writes: (String) -> Boolean): Pair<String, Boolean> {
+            val last = if (hasHangul(text)) korean else latin
+            return if (last != null && writes(last)) last to false else DEFAULT to (last != null)
+        }
+    }
+}

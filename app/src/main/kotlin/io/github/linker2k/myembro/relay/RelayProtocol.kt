@@ -15,6 +15,9 @@ object RelayProtocol {
     const val RENDER_PREVIEW = "render_preview"
     /** Reads that need the editor's own kernel (its fonts, designs and frames). */
     val EDITOR_READS = listOf("list_fonts", "list_builtin_designs", "get_settings")
+    /** Relay answers stay small: the chatbot app fails or times out on long tool results (291,209 chars seen). */
+    const val MAX_RESULT_CHARS = 8_000
+    const val MAX_FONT_LIST_CHARS = 2_000
     /**
      * Every Ask AI script tool except the photo pair, which RelayPhotoTools.kt registers. Each call is one
      * undoable turn; save, share, USB, file deletion, restore and settings are never offered.
@@ -22,8 +25,7 @@ object RelayProtocol {
     val EDITS = io.github.linker2k.myembro.ui.agent.AgentTools.NAMES.toList() - "add_generated_art"
     const val REMOVE = "remove_objects"
     /** Added to remove_objects' description so the chatbot tells the user before it waits. */
-    const val REMOVE_ON_PHONE = "myembro asks the user on the phone before removing anything (up to 90 s); " +
-        "tell the user: ${RelayConfirmation.ON_PHONE}"
+    const val REMOVE_ON_PHONE = "The phone asks the user first (up to 90 s); tell them: ${RelayConfirmation.ON_PHONE}"
     /** Contract: ping/pong every 30 s, the relay drops the app after 90 s of silence. */
     const val PING_MS = 30_000L
     const val SILENCE_MS = 90_000L
@@ -37,21 +39,19 @@ object RelayProtocol {
     }
 
     /**
-     * [names] as the bundled docs/agent/tools.json defines them, with annotations in MCP's standard names
-     * ([mcpAnnotations]) and without transactionId, which the app sets for each turn; name and description
-     * are unchanged.
+     * [names] as the relay offers them: the bundled docs/agent/tools.json tools projected by [RelayCatalog.project]
+     * (short description, optional arguments, no transactionId), with annotations in MCP's standard names.
      */
-    fun definitions(names: List<String>): List<JsonObject> = names.map { name -> catalog.single { it.getValue("name").jsonPrimitive.content == name } }
-        .map { tool ->
-            val schema = tool.getValue("inputSchema").jsonObject
-            val properties = schema["properties"]?.jsonObject?.let { JsonObject(it - "transactionId") }
-            val required = schema["required"]?.jsonArray?.let { r -> JsonArray(r.filter { it.jsonPrimitive.content != "transactionId" }) }
-            val input = JsonObject(schema + listOfNotNull(properties?.let { "properties" to it }, required?.let { "required" to it }))
-            val description = tool.getValue("description").jsonPrimitive.content +
-                (if (tool.getValue("name").jsonPrimitive.content == REMOVE) " $REMOVE_ON_PHONE" else "")
-            JsonObject(tool + ("description" to JsonPrimitive(description)) + ("inputSchema" to input) +
-                ("annotations" to mcpAnnotations(tool.getValue("annotations").jsonObject)))
-        }
+    fun definitions(names: List<String>): List<JsonObject> =
+        offer(names.map { name -> catalog.single { it.getValue("name").jsonPrimitive.content == name } })
+
+    /** Any tools.json-shaped definitions (also RelayPhotoTools') projected for the relay. */
+    fun offer(tools: List<JsonObject>): List<JsonObject> = tools.map { RelayCatalog.project(it) }.map { tool ->
+        val description = tool.getValue("description").jsonPrimitive.content +
+            (if (tool.getValue("name").jsonPrimitive.content == REMOVE) " $REMOVE_ON_PHONE" else "")
+        JsonObject(tool + ("description" to JsonPrimitive(description)) +
+            ("annotations" to mcpAnnotations(tool.getValue("annotations").jsonObject)))
+    }
 
     /**
      * MCP ToolAnnotations from the catalog's own: readOnly → readOnlyHint; a write is destructive when it

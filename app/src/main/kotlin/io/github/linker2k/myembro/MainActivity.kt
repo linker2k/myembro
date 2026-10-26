@@ -125,7 +125,8 @@ class MainActivity : ComponentActivity() {
                 stack += Screen.EDITOR
             }
             // Font picked in the font library; the lettering screen starts from it.
-            var letteringFontId by rememberSaveable { mutableStateOf("gowun-batang") }
+            var letteringFontId by rememberSaveable { mutableStateOf(io.github.linker2k.myembro.ui.lettering.LastLetteringFonts(this@MainActivity).korean
+                ?: io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.DEFAULT) }
             // Settings opened from the home version label scroll to the version information.
             var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
             MyembroTheme {
@@ -194,6 +195,7 @@ class MainActivity : ComponentActivity() {
                             LetteringScreen(
                                 onBack = back,
                                 onAdd = { text ->
+                                    io.github.linker2k.myembro.ui.lettering.LastLetteringFonts(this@MainActivity).record(text.fontId, text.text)
                                     editor.startWith(text, hoop)
                                     stack[stack.lastIndex] = Screen.EDITOR
                                 },

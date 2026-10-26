@@ -62,6 +62,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
         var relayPhotoRequest by remember { mutableIntStateOf(0) }
         if (relayOn) io.github.linker2k.myembro.relay.RelayPhotoHandoff(vm.relayPhotos, launch = relayPhotoRequest)
+        LaunchedEffect(relayOn) { if (relayOn) vm.prewarmRelayFonts() }
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
@@ -320,7 +321,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             onAdd = { if (vm.commitLettering(it)) { preview = 1f; activeTool = 0 } },
                             onOpenFonts = { text -> fontsText = text; showFonts = true },
                             modifier = Modifier.fillMaxSize(), hoop = vm.project.hoop,
-                            initialFontId = pickedFontId, backgroundPattern = background, initialObject = original)
+                            // New text starts in the last font used (shared with the AI connection); app text is Korean first.
+                            initialFontId = pickedFontId ?: if (original == null) vm.lastFonts.korean else null,
+                            backgroundPattern = background, initialObject = original)
                         if (showFonts) {
                             BackHandler(onBack = closeFonts)
                             FontLibraryScreen(onBack = closeFonts,

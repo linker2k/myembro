@@ -32,12 +32,16 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.JsonPrimitive
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val documents = EditorDocuments()
@@ -247,6 +251,29 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         return tools
     }
 
+    /** Installed fonts (Ask AI catalog) and each one's code points, loaded once: list_fonts answers from these. */
+    private val relayFontLock = kotlinx.coroutines.sync.Mutex()
+    private var relayFontCache: Pair<List<io.github.linker2k.myembro.ui.agent.AgentFontInfo>, Map<String, Set<Int>?>>? = null
+    private suspend fun relayFontCoverage() = relayFontLock.withLock {
+        withContext(Dispatchers.IO) {
+            val fonts = io.github.linker2k.myembro.ui.agent.AgentCatalog.fonts(getApplication())
+            relayFontCache?.takeIf { cached -> cached.first.map { it.id } == fonts.map { it.id } }?.let { return@withContext it }
+            val ids = fonts.map { it.id }.toSet()
+            (fonts to agentFonts.descriptors().filter { it.id in ids }.associate { it.id to it.codePoints }).also { relayFontCache = it }
+        }
+    }
+    /** Loads font coverage before the first relay question (the editor attaches while the connection is on). */
+    internal fun prewarmRelayFonts() { viewModelScope.launch { runCatching { relayFontCoverage() } } }
+    private suspend fun fonts(text: String?, filters: Set<String> = emptySet()): kotlinx.serialization.json.JsonArray {
+        val (fonts, coverage) = relayFontCoverage()
+        val codes = text?.let { io.github.linker2k.myembro.engine.lettering.normalizedLetteringText(it).codePoints().toArray().filter { c -> !Character.isWhitespace(c) }.toSet() }
+        return kotlinx.serialization.json.JsonArray(fonts.filter { f -> ("KOREAN" !in filters || f.hangul) && ("LATIN" !in filters || f.latin) }.mapNotNull { f ->
+            val supports = codes?.let { c -> coverage[f.id]?.containsAll(c) }
+            if (codes != null && supports != true) return@mapNotNull null
+            io.github.linker2k.myembro.relay.RelayCatalog.fontRow(f.id, f.name, f.hangul, f.latin, f.minMm, f.maxMm, supports)
+        })
+    }
+
     /** AI connection (relay): remove_objects waits for the user's answer in this dialog. */
     internal val relayConfirmation = io.github.linker2k.myembro.relay.RelayConfirmation(
         onAsk = { names -> io.github.linker2k.myembro.relay.RelayConfirmNotification.show(app, names) },
@@ -262,11 +289,43 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         }
         override val editor = object : io.github.linker2k.myembro.relay.RelayEditor {
             override val photos get() = relayPhotoTools()
+            override suspend fun fonts(text: String?, filters: Set<String>) = this@EditorViewModel.fonts(text, filters)
+            // Fonts as the Ask AI prompt lists them, so add_text needs no list_fonts call.
+            override suspend fun overview() = buildJsonObject {
+                val fonts = relayFontCoverage().first
+                fun last(id: String?) = id?.let { f -> buildJsonObject { put("fontId", f); put("name", fonts.firstOrNull { it.id == f }?.name ?: f) } }
+                    ?: kotlinx.serialization.json.JsonNull
+                put("lastFontKo", last(lastFonts.korean)); put("lastFontEn", last(lastFonts.latin))
+                put("fonts", fonts(null))
+                put("sewout", executor.relaySewout())
+            }
             override suspend fun query(tool: String, args: JsonObject) = executor.relayQuery(tool, args)
-            override suspend fun edit(tool: String, args: JsonObject) = withContext(Dispatchers.Main.immediate) {
-                if (interactionBlocked || gestureInProgress) io.github.linker2k.myembro.relay.RelayEdits.failure("EDITOR_BUSY",
-                    "myembro is busy with another task on screen. Try again in a moment.", session.history.revision, session.project)
-                else executor.relayEdit(tool, args, relayConfirmation::ask)
+            override suspend fun edit(tool: String, args: JsonObject): JsonObject {
+                // add_text without a font: the last one for the text's script, or the default (shown in the answer).
+                val chosen = if (tool == "add_text" && "fontId" !in args) {
+                    val text = (args["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    val (fonts, coverage) = relayFontCoverage()
+                    val codes = text.codePoints().toArray().filter { !Character.isWhitespace(it) }.toSet()
+                    io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.choose(text, lastFonts.korean, lastFonts.latin) { id ->
+                        fonts.any { it.id == id } && coverage[id]?.containsAll(codes) == true
+                    }.let { (id, fallback) -> Triple(id, fallback, fonts.firstOrNull { it.id == id }?.name ?: id) }
+                } else null
+                val strict = chosen?.let { JsonObject(args + ("fontId" to JsonPrimitive(it.first))) } ?: args
+                val result = withContext(Dispatchers.Main.immediate) {
+                    if (interactionBlocked || gestureInProgress) io.github.linker2k.myembro.relay.RelayEdits.failure("EDITOR_BUSY",
+                        "myembro is busy with another task on screen. Try again in a moment.", session.history.revision, session.project)
+                    else executor.relayEdit(tool, strict, relayConfirmation::ask)
+                }
+                val ok = (result["ok"] as? JsonPrimitive)?.booleanOrNull == true
+                if (ok && (tool == "add_text" || tool == "replace_text")) (strict["fontId"] as? JsonPrimitive)?.contentOrNull?.let { font ->
+                    val id = (strict["objectId"] as? JsonPrimitive)?.contentOrNull
+                    val text = (id?.let { session.project.find(it) } as? TextObject)?.text ?: (strict["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    lastFonts.record((id?.let { session.project.find(it) } as? TextObject)?.fontId ?: font, text)
+                }
+                return chosen?.let { (id, fallback, name) -> JsonObject(result + ("font" to buildJsonObject {
+                    put("fontId", id); put("name", name)
+                    put("chosen", if (fallback) "default font: the last font cannot write this text" else "last font used")
+                })) } ?: result
             }
         }
     }
@@ -432,10 +491,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         letteringOpen = true
     }
     fun dismissLettering() { letteringOpen = false; letteringTargetId = null }
+    /** The last font per script (Korean / Latin-only text), shared by the lettering sheet and the AI connection. */
+    internal val lastFonts by lazy { io.github.linker2k.myembro.ui.lettering.LastLetteringFonts(getApplication<Application>()) }
     fun commitLettering(obj: TextObject): Boolean {
         if (busy || gestureInProgress || !letteringOpen) return false
         val target = letteringTargetId
         val result = dispatch(project.letteringCommand(obj, target)) as? CommandResult.Applied ?: return false
+        lastFonts.record(obj.fontId, obj.text)
         selectedIds = setOf(target ?: result.project.objects.last().id)
         selectionMode = false
         dismissLettering()

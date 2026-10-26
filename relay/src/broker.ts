@@ -72,8 +72,8 @@ export class Broker {
     if (!this.active) return Promise.resolve(failure(DISCONNECTED));
     if (!this.tools.some(t => t.name === tool)) return Promise.resolve(failure('Tool is not available in this relay.'));
     if (tool === 'get_project' && Object.keys(args).length !== 0 ||
-        tool === 'render_preview' && (Object.keys(args).length !== 1 || !Number.isInteger(args.widthPx) ||
-          (args.widthPx as number) < 256 || (args.widthPx as number) > 1024))
+        tool === 'render_preview' && (Object.keys(args).some(k => k !== 'widthPx') || args.widthPx !== undefined &&
+          (!Number.isInteger(args.widthPx) || (args.widthPx as number) < 256 || (args.widthPx as number) > 1024)))
       return Promise.resolve(failure('Invalid tool arguments.'));
     const socket = this.active;
     return new Promise(resolve => {
