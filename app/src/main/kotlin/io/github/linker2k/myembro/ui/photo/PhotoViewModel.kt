@@ -146,12 +146,18 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         if (abs(frame - widthMm) >= 0.05) { widthMm = frame; step = 1; prepare() }
     }
     fun load(uri: Uri) {
-        if (isSvgPicture(getApplication<Application>(), uri)) { loadSvg(uri); return }
-        isSvg = false; svgArt = null
         work?.cancel(); val version = ++revision
         busy = true; progressStage = 0; error = null
         work = viewModelScope.launch {
             try {
+                val kind = withContext(Dispatchers.IO) { inspectPicture(getApplication<Application>(), uri).kind }
+                if (version != revision) return@launch
+                if (kind == PictureIntake.Kind.SVG) { loadSvg(uri); return@launch }
+                isSvg = false; svgArt = null
+                if (!kind.raster) {
+                    source = null; step = 0; invalidateResult(); error = R.string.picture_intake_not_picture
+                    return@launch
+                }
                 val bitmap = withContext(Dispatchers.IO) {
                     val decodeStart = SystemClock.elapsedRealtime()
                     val resolver = getApplication<Application>().contentResolver
