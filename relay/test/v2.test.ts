@@ -1,9 +1,10 @@
+import { RELAY_TOOLS } from '../src/tools';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { Broker, type AppSocket } from '../src/broker';
 const auth = { Authorization: 'Bearer v2-test-token' };
 const meta = { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientInfo': { name: 'test', version: '1' }, 'io.modelcontextprotocol/clientCapabilities': {} };
-const tools = [{ name: 'get_project', description: 'Project', inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true } }];
+const tools = [structuredClone(RELAY_TOOLS.find(t => t.name === 'get_project')!)];
 const hello = (t = tools) => JSON.stringify({ type: 'hello', appVersion: 'v2-test', tools: t });
 function next(socket: any, type: string): Promise<any> { return new Promise(resolve => { const fn = (e: any) => { const m = JSON.parse(e.data); if (m.type === type) { socket.removeEventListener('message', fn); resolve(m); } }; socket.addEventListener('message', fn); }); }
 async function event(reader: ReadableStreamDefaultReader<Uint8Array>) {
@@ -27,28 +28,24 @@ describe.sequential('v2 actual HTTP protocol and notifications', () => {
     expect(fallback.status).toBe(200); expect((await fallback.json() as any).result.protocolVersion).toBe('2025-11-25');
     const discovery = await rpc('server/discover', { _meta: meta });
     expect(discovery.status, await discovery.clone().text()).toBe(200); const body: any = await discovery.json();
-    expect(body.result.supportedVersions).toContain('2026-07-28'); expect(body.result.capabilities.tools.listChanged).toBe(true);
-    const listed: any = await (await rpc('tools/list', { _meta: meta })).json(); expect(listed.result.tools).toEqual(tools);
+    expect(body.result.supportedVersions).toContain('2026-07-28'); expect(body.result.capabilities.tools.listChanged).toBe(false);
+    const listed: any = await (await rpc('tools/list', { _meta: meta })).json(); expect(listed.result.tools).toEqual(RELAY_TOOLS);
   });
-  it('delivers tools/list_changed on a legacy GET stream after changed hello', async () => {
-    const response = await mf.dispatchFetch('http://relay/mcp', { headers: { ...auth, Accept: 'text/event-stream', 'MCP-Protocol-Version': '2025-11-25' } });
-    expect(response.status, response.status === 200 ? '' : await response.clone().text()).toBe(200); const reader = response.body!.getReader();
-    const received = event(reader); app.send(hello([{ ...tools[0], description: 'Changed legacy' }]));
-    expect((await received).method).toBe('notifications/tools/list_changed'); await reader.cancel();
+  it('legacy tools/list stays fixed after a schema/description-changing hello', async () => {
+    app.send(hello([{ ...tools[0], description: 'Changed legacy' }]));
+    const ready = next(app, 'pong'); app.send('{"type":"ping"}'); await ready;
+    const body: any = await (await rpc('tools/list', {})).json(); expect(body.result.tools).toEqual(RELAY_TOOLS);
   });
-  it('delivers tools/list_changed on the official 2026 subscriptions/listen stream', async () => {
-    const response = await rpc('subscriptions/listen', { _meta: meta, notifications: { toolsListChanged: true } });
-    expect(response.status, response.status === 200 ? '' : await response.clone().text()).toBe(200); expect(response.headers.get('content-type')).toContain('text/event-stream');
-    const reader = response.body!.getReader(); await event(reader); // official subscription acknowledgment
-    const received = event(reader); app.send(hello([{ ...tools[0], description: 'Changed modern' }]));
-    expect((await received).method).toBe('notifications/tools/list_changed'); await reader.cancel();
+  it('modern tools/list stays fixed after hello removes all app tools', async () => {
+    app.send(hello([])); const ready = next(app, 'pong'); app.send('{"type":"ping"}'); await ready;
+    const body: any = await (await rpc('tools/list', { _meta: meta })).json(); expect(body.result.tools).toEqual(RELAY_TOOLS);
   });
   it('forwards allowed edit/photo calls unchanged; forbidden file tools stay hidden', async () => {
-    const extra = (name: string) => ({ name, description: name, inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: false } });
+    const extra = (name: string) => structuredClone(RELAY_TOOLS.find(t => t.name === name) ?? { name, description: name, inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: false } });
     const advertised = [tools[0], extra('transform_objects'), extra('remove_objects'), extra('view_attachment'), extra('save_pes'), extra('send_usb'), extra('delete_designs'), extra('set_settings')];
     app.send(hello(advertised)); const ready = next(app, 'pong'); app.send('{"type":"ping"}'); await ready;
     const listed: any = await (await rpc('tools/list', { _meta: meta })).json();
-    expect(listed.result.tools.map((t: any) => t.name)).toEqual(['get_project', 'transform_objects', 'remove_objects', 'view_attachment']);
+    expect(listed.result.tools).toEqual(RELAY_TOOLS);
     const args = { objectIds: ['logo'], deltaXMm: 1, deltaYMm: 0, rotationDeg: 0, scaleFactor: 1 };
     const received = next(app, 'call'); const pending = rpc('tools/call', { _meta: meta, name: 'transform_objects', arguments: args });
     const call = await received; expect(call.args).toEqual(args);
@@ -58,9 +55,9 @@ describe.sequential('v2 actual HTTP protocol and notifications', () => {
   });
 });
 
-it('notifies only for semantically changed hello definitions', () => {
-  const changed = vi.fn(); const broker = new Broker(() => {}, changed); const socket: AppSocket = { send() {}, close() {} }; broker.open(socket);
-  broker.receive(socket, hello()); broker.receive(socket, hello()); expect(changed).toHaveBeenCalledTimes(1);
-  broker.receive(socket, hello([{ ...tools[0], description: 'new' }])); expect(changed).toHaveBeenCalledTimes(2);
-  broker.close(socket);
+it('hello description changes never change the deployment catalog', () => {
+  const broker = new Broker(); const socket: AppSocket = { send() {}, close() {} }; broker.open(socket);
+  broker.receive(socket, hello()); const before = structuredClone(broker.tools);
+  broker.receive(socket, hello([{ ...tools[0], description: 'new' }]));
+  expect(broker.tools).toEqual(before); broker.close(socket);
 });

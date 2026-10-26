@@ -1,0 +1,820 @@
+[
+  {
+    "name": "get_project",
+    "description": "Read the current project, revision, objects, history, and export status.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectSession.getSnapshot"
+    }
+  },
+  {
+    "name": "render_preview",
+    "description": "Render the current project in its hoop as an opaque white square PNG with thread colors. Returns base64 image data and image/png MIME type without changing the project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "widthPx": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 1024
+        }
+      },
+      "required": [
+        "widthPx"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreviewRenderer.renderPreview"
+    }
+  },
+  {
+    "name": "list_fonts",
+    "description": "List fonts, availability, glyph coverage, revisions, and allowed heights.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "KOREAN",
+              "LATIN",
+              "SCRIPT",
+              "SINGLE_LINE",
+              "OUTLINE"
+            ]
+          }
+        },
+        "installedOnly": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "filters",
+        "installedOnly"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false,
+      "mapsTo": "FontService.list"
+    }
+  },
+  {
+    "name": "list_builtin_designs",
+    "description": "List built-in designs and their immutable asset handles.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false,
+      "mapsTo": "DesignCatalog.listBuiltins"
+    }
+  },
+  {
+    "name": "get_settings",
+    "description": "Read settings, machine profiles, frames, and supported choices.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false,
+      "mapsTo": "SettingsService.get"
+    }
+  },
+  {
+    "name": "add_design",
+    "description": "Add an approved design asset to the staged project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "transactionId",
+        "assetId",
+        "objectId",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.addDesign"
+    }
+  },
+  {
+    "name": "add_text",
+    "description": "Prepare and add text with automatic stitch selection.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "fontId": {
+          "type": "string"
+        },
+        "fontRevision": {
+          "type": "string"
+        },
+        "heightMm": {
+          "type": "number",
+          "maximum": 60
+        },
+        "threadColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "singleLineBold": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectId",
+        "text",
+        "fontId",
+        "fontRevision",
+        "heightMm",
+        "threadColor",
+        "singleLineBold"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.addText"
+    }
+  },
+  {
+    "name": "replace_text",
+    "description": "Regenerate an existing text object while retaining its identity and placement.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "fontId": {
+          "type": "string"
+        },
+        "fontRevision": {
+          "type": "string"
+        },
+        "heightMm": {
+          "type": "number",
+          "maximum": 60
+        },
+        "threadColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "singleLineBold": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectId",
+        "text",
+        "fontId",
+        "fontRevision",
+        "heightMm",
+        "threadColor",
+        "singleLineBold"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.replaceText"
+    }
+  },
+  {
+    "name": "set_object_transforms",
+    "description": "Set explicit transforms for staged objects.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "objectId": {
+                "type": "string"
+              },
+              "xMm": {
+                "type": "number",
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "yMm": {
+                "type": "number",
+                "minimum": -10000,
+                "maximum": 10000
+              },
+              "rotationDeg": {
+                "type": "number"
+              },
+              "scaleXPercent": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 2000
+              },
+              "scaleYPercent": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "objectId",
+              "xMm",
+              "yMm",
+              "rotationDeg",
+              "scaleXPercent",
+              "scaleYPercent"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "transactionId",
+        "transforms"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectCommand.SetTransforms"
+    }
+  },
+  {
+    "name": "transform_objects",
+    "description": "Move, scale, and rotate a selection about its shared pivot.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deltaXMm": {
+          "type": "number"
+        },
+        "deltaYMm": {
+          "type": "number"
+        },
+        "scaleFactor": {
+          "type": "number"
+        },
+        "rotationDeg": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds",
+        "deltaXMm",
+        "deltaYMm",
+        "scaleFactor",
+        "rotationDeg"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.transformGroup"
+    }
+  },
+  {
+    "name": "mirror_objects",
+    "description": "Mirror objects horizontally using the existing editor behavior.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.mirror"
+    }
+  },
+  {
+    "name": "center_objects",
+    "description": "Center the selected objects as a group in the hoop.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.center"
+    }
+  },
+  {
+    "name": "align_objects",
+    "description": "Align selected objects by their actual placed bounds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alignment": {
+          "type": "string",
+          "enum": [
+            "LEFT",
+            "CENTER_X",
+            "RIGHT",
+            "TOP",
+            "CENTER_Y",
+            "BOTTOM"
+          ]
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds",
+        "alignment"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.align"
+    }
+  },
+  {
+    "name": "distribute_objects",
+    "description": "Distribute gaps between selected object bounds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "axis": {
+          "type": "string",
+          "enum": [
+            "HORIZONTAL",
+            "VERTICAL"
+          ]
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds",
+        "axis"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.distribute"
+    }
+  },
+  {
+    "name": "duplicate_object",
+    "description": "Copy an object with an explicit new identity and final transform.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string"
+        },
+        "newObjectId": {
+          "type": "string"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "xMm": {
+              "type": "number",
+              "minimum": -10000,
+              "maximum": 10000
+            },
+            "yMm": {
+              "type": "number",
+              "minimum": -10000,
+              "maximum": 10000
+            },
+            "rotationDeg": {
+              "type": "number"
+            },
+            "scaleXPercent": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 2000
+            },
+            "scaleYPercent": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 2000
+            }
+          },
+          "required": [
+            "xMm",
+            "yMm",
+            "rotationDeg",
+            "scaleXPercent",
+            "scaleYPercent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "transactionId",
+        "sourceId",
+        "newObjectId",
+        "transform"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectCommand.Duplicate"
+    }
+  },
+  {
+    "name": "reorder_object",
+    "description": "Set an object’s sewing-order index.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectId",
+        "index"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectCommand.Reorder"
+    }
+  },
+  {
+    "name": "set_object_visibility",
+    "description": "Show or hide an object in the staged project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectId",
+        "visible"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectCommand.SetVisible"
+    }
+  },
+  {
+    "name": "recolor_object",
+    "description": "Change one object thread without changing its stitches.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "threadIndex": {
+          "type": "integer"
+        },
+        "threadColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectId",
+        "threadIndex",
+        "threadColor"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectCommand.Recolor"
+    }
+  },
+  {
+    "name": "remove_objects",
+    "description": "Remove explicit objects from the staged project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "objectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "transactionId",
+        "objectIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": true,
+      "mapsTo": "ProjectCommand.Remove"
+    }
+  },
+  {
+    "name": "set_project_frame",
+    "description": "Set the staged project’s configured hoop or frame.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "transactionId",
+        "frameId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.setHoop"
+    }
+  },
+  {
+    "name": "list_attachments",
+    "description": "List only photos explicitly shared with AI in this app session.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false
+    }
+  },
+  {
+    "name": "view_attachment",
+    "description": "View a consented photo as PNG, preserving aspect ratio, without enlargement; at most 768 pixels on its long edge.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string"
+        },
+        "maxEdgePx": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 768
+        }
+      },
+      "required": [
+        "attachmentId",
+        "maxEdgePx"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": true,
+      "needsUserConfirmation": false
+    }
+  },
+  {
+    "name": "prepare_photo",
+    "description": "Prepare an app-picked attachment locally. Uses project hoop and photo screen defaults. colors is required by the strict schema and used only in color mode; bw uses the existing 2-color grayscale pipeline. Image bytes and pixels never appear in responses. filter selects the shared photo-screen preprocessing; original preserves existing output. threshold is allowed only for silhouette/outline; color and bw (the screen's grayscale color path) reject it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "silhouette",
+            "outline",
+            "color",
+            "bw"
+          ]
+        },
+        "colors": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 6
+        },
+        "widthMm": {
+          "type": "number"
+        },
+        "filter": {
+          "type": "string",
+          "enum": [
+            "original",
+            "clean",
+            "contrast",
+            "threshold"
+          ]
+        }
+      },
+      "required": [
+        "attachmentId",
+        "mode",
+        "colors",
+        "widthMm",
+        "filter"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "PhotoService.prepare"
+    }
+  },
+  {
+    "name": "add_generated_art",
+    "description": "Add an approved photo or emoji result to the staged project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string"
+        },
+        "resultId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "transactionId",
+        "resultId",
+        "objectId",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnly": false,
+      "needsUserConfirmation": false,
+      "mapsTo": "ProjectPreparation.addGeneratedArt"
+    }
+  }
+]

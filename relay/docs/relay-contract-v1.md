@@ -16,12 +16,14 @@ Claude <-> relay (MCP Streamable HTTP):
 - Authentication: Authorization: Bearer <MCP_TOKEN> request header only. Configure this in the claude.ai connector request-header field; the connector stores the value securely. OAuth remains deferred.
 - Compare SHA-256 fixed-size credential digests using the runtime native constant-time comparison. Missing/incorrect credentials return 401 with a generic body containing no credential. Unknown/old /mcp/<x> paths return 404 (no legacy path-secret authentication).
 - MCP query parameters never provide authentication. Do not log authorization values, credential-bearing URLs, or secrets.
-- tools/list = tools from the latest hello; if no app connected, list returns the same tools cached from last hello, and tools/call returns isError text "myembro app is not connected. Open myembro and turn on AI connection."
+- tools/list always returns the deployment-time static catalog in src/tools.ts, independent of app hello or cache. Missing/schema-mismatched app tools return isError "myembro 앱을 최신으로 업데이트해 주세요" without forwarding; compatible tools still work. If no app is connected, tools/call returns isError text "myembro app is not connected. Open myembro and turn on AI connection."
 - tools/call forwarded to app, 120 s timeout (v2) -> isError "timed out".
 - Secrets APP_KEY and MCP_TOKEN are Worker secrets; never committed. MCP_SECRET is retired and is not read. Production routing and application code must not emit credential values in logs.
 
-Tool set: v1 spike was get_project and render_preview(widthPx:int[256..1024]); the edit phase forwards `RELAY_TOOLS` in src/broker.ts (reads, Ask AI edits as one undoable turn each, photo tools). Save, share, USB, file deletion, restore and settings are never forwarded.
+Tool set: v1 spike was get_project and render_preview(widthPx:int[256..1024]); the edit phase forwards `RELAY_TOOLS` in src/tools.ts (reads, Ask AI edits as one undoable turn each, photo tools). Save, share, USB, file deletion, restore and settings are never forwarded.
 Of the needsUserConfirmation tools only remove_objects is forwarded; the app asks the user on the phone before it removes anything. Attachments are only photos the user handed to AI in the app.
 
 Operations: after any Worker secret change, always rerun deployment; see the
 [secret-update operational note](operations.md) for the observed stale Durable Object environment incident.
+
+Discovery details and canonical-schema checks: [static tool contract](static-tools.md).
