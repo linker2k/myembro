@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.ShapeObject
@@ -123,7 +124,7 @@ private fun SewoutBadge(status: BlockStatus) {
         is BlockStatus.Blocked -> if (status.applyFailed) Triple(R.string.block_edit_apply_failed, Icons.Default.ErrorOutline, colors.error)
             else Triple(R.string.block_edit_sewout_blocked, Icons.Default.ErrorOutline, colors.error)
     }
-    AssistChip(onClick = {}, label = { Text(stringResource(text), color = tint) },
+    AssistChip(onClick = {}, label = { Text(stringResource(text), color = tint, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(icon, null, Modifier.size(16.dp), tint = tint) })
 }
 
@@ -238,9 +239,10 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     onDraft(draft.copy(autoAngle = it == 0))
                 }
                 if (!draft.autoAngle) {
+                    val angleLabel = stringResource(R.string.block_edit_angle_label)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Slider(draft.angleDeg.toFloat(), { onDraft(draft.copy(angleDeg = it.roundToInt().coerceIn(0, 179))) },
-                            valueRange = 0f..179f, modifier = Modifier.weight(1f))
+                            valueRange = 0f..179f, modifier = Modifier.weight(1f).semantics { contentDescription = angleLabel })
                         Text(stringResource(R.string.block_edit_angle, draft.angleDeg), Modifier.width(52.dp), style = MaterialTheme.typography.labelLarge)
                     }
                     if (count > 1) Text(stringResource(R.string.block_edit_same_angle, count), style = MaterialTheme.typography.labelSmall,
@@ -286,7 +288,9 @@ private fun Label(text: Int) = Text(stringResource(text), style = MaterialTheme.
 private fun Segmented(labels: List<Int>, selected: Int, enabled: (Int) -> Boolean = { true }, onSelect: (Int) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         labels.forEachIndexed { i, label ->
-            SegmentedButton(i == selected, { onSelect(i) }, SegmentedButtonDefaults.itemShape(i, labels.size), enabled = enabled(i)) { Text(stringResource(label)) }
+            SegmentedButton(i == selected, { onSelect(i) }, SegmentedButtonDefaults.itemShape(i, labels.size), enabled = enabled(i)) {
+                // Dim explicitly: the theme's disabled label color is too close to the enabled one to read.
+                Text(stringResource(label), Modifier.alpha(if (enabled(i)) 1f else 0.38f)) }
         }
     }
 }

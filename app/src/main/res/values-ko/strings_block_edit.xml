@@ -45,4 +45,5 @@
     <string name="block_reason_satin_too_long">새틴 땀이 12mm를 넘음</string>
     <string name="block_reason_no_running">따라갈 선이 없음</string>
     <string name="block_reason_empty_fill">채울 면적이 없음</string>
+    <string name="block_edit_angle_label">바느질 각도</string>
 </resources>

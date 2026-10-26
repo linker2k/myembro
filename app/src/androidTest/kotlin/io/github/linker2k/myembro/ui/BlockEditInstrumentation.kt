@@ -19,6 +19,7 @@ import io.github.linker2k.myembro.ui.editor.AiWorkspace
 import io.github.linker2k.myembro.ui.editor.block.BlockCanvasFit
 import io.github.linker2k.myembro.ui.editor.block.BlockEditState
 import io.github.linker2k.myembro.ui.editor.block.BlockStatus
+import io.github.linker2k.myembro.ui.editor.block.BlockType
 import java.io.File
 
 /**
@@ -47,6 +48,8 @@ class BlockEditInstrumentation : Instrumentation() {
                 .setAction(AiWorkspace.ACTION_OPEN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             fun nodes(): List<AccessibilityNodeInfo> {
                 fun all(n: AccessibilityNodeInfo): List<AccessibilityNodeInfo> = listOf(n) + (0 until n.childCount).flatMap { n.getChild(it)?.let(::all).orEmpty() }
+                // Compose updates (scroll, new controls) can be missing from the accessibility cache (API 34+).
+                runCatching { uiAutomation.clearCache() }
                 return uiAutomation.rootInActiveWindow?.let(::all).orEmpty()
             }
             fun find(text: String) = nodes().firstOrNull { it.text?.toString() == text || it.contentDescription?.toString() == text }
@@ -55,16 +58,19 @@ class BlockEditInstrumentation : Instrumentation() {
                 while (true) { find(text)?.let { return it }; check(SystemClock.uptimeMillis() < end) { "Missing $text" }; Thread.sleep(100) }
             }
             fun click(text: String) {
-                var node: AccessibilityNodeInfo? = await(text)
-                while (!node!!.isClickable) node = node.parent
-                if (!node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    // The folded sheet scrolls: scroll once and look again if the control is below the fold.
-                    nodes().filter { it.isScrollable }.forEach { it.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) }
-                    waitForIdleSync(); Thread.sleep(500)
-                    node = await(text); while (!node!!.isClickable) node = node.parent
-                    check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Cannot click $text" }
+                fun clickable(): AccessibilityNodeInfo? = nodes().firstOrNull { it.text?.toString() == text || it.contentDescription?.toString() == text }
+                    ?.let { n -> generateSequence(n) { it.parent }.firstOrNull { it.isClickable } }
+                // The folded sheet scrolls (off-screen controls are not in the tree): try as is, then scrolled
+                // down, then scrolled back up; each position gets a few seconds to appear.
+                for (action in listOf(0, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
+                    if (action != 0) { nodes().filter { it.isScrollable }.forEach { it.performAction(action) }; waitForIdleSync(); Thread.sleep(400) }
+                    val end = SystemClock.uptimeMillis() + (if (action == 0) 8_000 else 2_000)
+                    while (SystemClock.uptimeMillis() < end) {
+                        if (clickable()?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true) { waitForIdleSync(); Thread.sleep(200); return }
+                        Thread.sleep(150)
+                    }
                 }
-                waitForIdleSync(); Thread.sleep(200)
+                error("Cannot click $text")
             }
             fun tap(x: Float, y: Float) {
                 val t = SystemClock.uptimeMillis()
@@ -105,35 +111,67 @@ class BlockEditInstrumentation : Instrumentation() {
                 }
                 error("No tappable point for $id")
             }
-            // The largest fill region by bounds area (a wing on the butterfly).
-            val target = state.regions.filter { r -> r.paths.any { it.closed } }.maxBy { r ->
-                r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
+            // The largest fill region the engine refuses as satin (its disabled option is shown with a reason).
+            val engineOptions = shape.regions.associate { it.id to io.github.linker2k.myembro.ui.editor.block.BlockApply.options(it, shape.transform) }
+            val target = state.regions.filter { r -> r.paths.any { it.closed } && BlockType.SATIN !in engineOptions.getValue(r.id).types }
+                .maxBy { r -> r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
+            log += "TARGET $target satin=${engineOptions.getValue(target).unavailable[BlockType.SATIN]}"
             pointOf(target).let { (x, y) -> tap(x, y) }
             await(targetContext.getString(R.string.block_edit_selected, 1))
-            click(targetContext.getString(R.string.block_edit_direction_manual))
-            // Slider to 135° through its accessibility progress action.
-            var slider = nodes().firstOrNull { it.rangeInfo != null }
-            repeat(3) {
-                if (slider == null) {   // below the fold of the folded sheet
-                    nodes().filter { it.isScrollable }.forEach { it.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) }
-                    waitForIdleSync(); Thread.sleep(400); slider = nodes().firstOrNull { it.rangeInfo != null }
+            // Engine prechecks for this region: an unavailable type is disabled with a short reason.
+            val satinLabel = targetContext.getString(R.string.block_edit_type_satin)
+            val reasonEnd = SystemClock.uptimeMillis() + 60_000
+            var reason: String? = null
+            while (reason == null && SystemClock.uptimeMillis() < reasonEnd) {
+                reason = nodes().mapNotNull { it.text?.toString() }.firstOrNull { it.startsWith("$satinLabel: ") }; if (reason == null) Thread.sleep(200) }
+            val satinButton = nodes().first { it.text?.toString() == satinLabel }.let { n -> generateSequence(n) { it.parent }.first { it.isClickable || it.isCheckable } }
+            log += "OPTIONS PASS: reason=$reason; satin button enabled=${satinButton.isEnabled}"
+            check(reason != null && !satinButton.isEnabled) { "Satin should be disabled with a reason" }
+            shot("07-disabled-option.png")
+            /** Manual 135°, Pattern (meander N3-11a), Apply; waits for the engine's verdict. */
+            fun pattern135AndApply(): BlockStatus {
+                click(targetContext.getString(R.string.block_edit_direction_manual))
+                val angleLabel = targetContext.getString(R.string.block_edit_angle_label)
+                fun isSlider(n: AccessibilityNodeInfo) = n.contentDescription?.toString() == angleLabel || n.rangeInfo != null
+                var slider = nodes().firstOrNull(::isSlider)
+                repeat(3) {
+                    if (slider == null) {   // below the fold of the folded sheet
+                        nodes().filter { it.isScrollable }.forEach { it.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) }
+                        waitForIdleSync(); Thread.sleep(400); slider = nodes().firstOrNull(::isSlider)
+                    }
                 }
+                checkNotNull(slider) { "No angle slider" }
+                check(slider!!.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.id,
+                    Bundle().apply { putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, 135f) }))
+                await(targetContext.getString(R.string.block_edit_angle, 135))
+                click(targetContext.getString(R.string.block_edit_texture_pattern))
+                click(targetContext.getString(R.string.block_edit_apply))
+                val end = SystemClock.uptimeMillis() + 120_000
+                while (vm.blockStatus !is BlockStatus.Passed && vm.blockStatus !is BlockStatus.Blocked) {
+                    check(SystemClock.uptimeMillis() < end) { "Generation timed out" }; Thread.sleep(200) }
+                return vm.blockStatus
             }
-            checkNotNull(slider) { "No angle slider" }
-            check(slider!!.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.id,
-                Bundle().apply { putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, 135f) }))
-            await(targetContext.getString(R.string.block_edit_angle, 135))
-            click(targetContext.getString(R.string.block_edit_texture_pattern))
-            await("N3-11a")
-            click(targetContext.getString(R.string.block_edit_apply))
-            val end = SystemClock.uptimeMillis() + 120_000
-            while (vm.blockStatus !is BlockStatus.Passed && vm.blockStatus !is BlockStatus.Blocked) {
-                check(SystemClock.uptimeMillis() < end) { "Generation timed out" }; Thread.sleep(200) }
-            check(vm.blockStatus is BlockStatus.Passed) { "Apply refused: ${vm.blockStatus}" }
-            val applied = (vm.project.find(shape.id) as ShapeObject).regions.first { it.id == target }.stitch
-            check(applied.fill.fill_method == "meander_fill" && applied.fill.angle == 135.0 && !applied.automatic_angle)
+            fun stitchOf(id: String) = (vm.project.find(shape.id) as ShapeObject).regions.first { it.id == id }.stitch
+
+            // 1. The small spot: meander cannot build its graph there. Refused, previous settings kept, reason shown.
+            val spotBefore = stitchOf(target)
+            val refused = pattern135AndApply()
+            check(refused is BlockStatus.Blocked && refused.applyFailed && refused.reason.startsWith("SEWOUT_BLOCKED")) { "Expected a refusal: $refused" }
+            check(stitchOf(target) == spotBefore && vm.undoSteps == undoBefore) { "A refused apply changed the design" }
+            await(targetContext.getString(R.string.block_edit_kept, refused.reason))
+            log += "REFUSED PASS: $target kept its settings, undo unchanged; ${refused.reason}"
+            shot("08-refused-kept.png")
+
+            // 2. The largest region (a wing): applied.
+            val wing = state.regions.filter { r -> r.paths.any { it.closed } }.maxBy { r ->
+                r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
+            pointOf(wing).let { (x, y) -> tap(x, y) }
+            val status = pattern135AndApply()
+            check(status is BlockStatus.Passed) { "Apply refused: $status" }
+            val applied = stitchOf(wing)
+            check(applied.fill.fill_method == "meander_fill" && applied.meander_pattern == "N3-11a" && applied.fill.angle == 135.0 && !applied.automatic_angle)
             check(vm.undoSteps == undoBefore + 1) { "undo ${vm.undoSteps} vs $undoBefore" }
-            log += "APPLY PASS: $target -> meander_fill N3-11a, angle 135, one undo step; badge ${vm.blockStatus}"
+            log += "APPLY PASS: $wing -> meander_fill N3-11a, angle 135, one undo step; badge ${vm.blockStatus}"
             shot("05-block-applied.png")
             sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
             await(targetContext.getString(R.string.editor_object_count, 1))
