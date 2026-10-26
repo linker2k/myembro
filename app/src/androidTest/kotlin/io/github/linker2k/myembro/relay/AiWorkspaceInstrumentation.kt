@@ -55,6 +55,14 @@ class AiWorkspaceInstrumentation : Instrumentation() {
             val vm = editor()
             check(vm.project.objects.size == 2 && vm.undoSteps == 2) { "objects=${vm.project.objects.size} undo=${vm.undoSteps}" }
             log += "CLOSED PASS: no Activity; import_picture + add_text ok, sewout PASS; 2 objects, 2 undo steps"
+            // Editor not on screen: one notification, updated by the second change, that opens the AI project.
+            val notifications = targetContext.getSystemService(android.app.NotificationManager::class.java)
+            fun change() = notifications.activeNotifications.firstOrNull { it.id == 7103 }
+            await("change notification") { change()?.notification?.number == 2 }
+            val posted = checkNotNull(change()).notification
+            check(posted.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString() ==
+                targetContext.getString(R.string.relay_change_tap_count, 2))
+            log += "NOTIFY PASS: editor away -> one notification updated to 2 changes (tap checked on the device run)"
 
             // Open the app: the editor shows the same project and history; leaving the Activity keeps them.
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
@@ -84,6 +92,13 @@ class AiWorkspaceInstrumentation : Instrumentation() {
             runOnMainSync { vm.redo() }
             check(vm.project.objects.size == 2 && vm.undoSteps == 2)
             log += "OPEN PASS: same EditorViewModel; screen shows 2 objects; on-screen undo removes the text, redo restores"
+            await("notification cleared") { change() == null }
+            // Editor on screen: no notification, a snackbar instead.
+            check(output(call("add_text", """{"text":"on","heightMm":10,"xMm":30,"yMm":35}""")).getValue("ok") == JsonPrimitive(true))
+            await("snackbar") { find(targetContext.getString(R.string.relay_change_snackbar)) != null }
+            check(change() == null)
+            runOnMainSync { vm.undo() }
+            log += "SHOWN PASS: editor on screen clears the notification; a later AI change is a snackbar, no notification"
             runOnMainSync { activity.finish() }
             await("activity destroyed") { activity.isDestroyed }
             check(editor() === vm && vm.project.objects.size == 2 && vm.undoSteps == 2)

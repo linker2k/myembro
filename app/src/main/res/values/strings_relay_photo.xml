@@ -13,4 +13,7 @@
     <string name="relay_change_snackbar">The AI changed your design (Undo reverts it)</string>
     <string name="ai_project_open">Open the design the AI is working on</string>
     <string name="ai_project_open_hint">%1$d objects · the AI connection works on this design</string>
+    <string name="relay_change_view">View</string>
+    <string name="relay_change_dismiss">Dismiss</string>
+    <string name="relay_change_switched">%1$s (Undo reverts it)</string>
 </resources>

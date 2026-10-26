@@ -302,15 +302,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         if (shown) { unseenChanges = 0; io.github.linker2k.myembro.relay.RelayChangeNotification.cancel(getApplication()) }
     }
     /**
-     * An AI connection change went in ([picture]: the name of a picture it added). On screen: a short snackbar;
-     * otherwise one notification, updated by later changes, whose tap opens this editor (AiWorkspace.ACTION_OPEN).
+     * An AI connection change went in ([picture]: the name of a picture it added). Editor on screen: a short
+     * snackbar. myembro on screen elsewhere: MainActivity switches to the editor or shows a banner
+     * (AiWorkspace.changes). In the background (Android does not let an app bring itself forward): one
+     * notification, updated by later changes, whose tap opens this editor (AiWorkspace.ACTION_OPEN).
      */
     private fun relayChanged(picture: String?) { viewModelScope.launch(Dispatchers.Main) {
         val app = getApplication<Application>()
-        if (editorShown) message = picture?.let { app.getString(R.string.relay_picture_imported, it) } ?: app.getString(R.string.relay_change_snackbar)
-        else io.github.linker2k.myembro.relay.RelayChangeNotification.show(app,
-            picture?.let { app.getString(R.string.relay_change_picture, it) } ?: app.getString(R.string.relay_change_edit), ++unseenChanges)
+        val headline = picture?.let { app.getString(R.string.relay_change_picture, it) } ?: app.getString(R.string.relay_change_edit)
+        when {
+            editorShown -> message = picture?.let { app.getString(R.string.relay_picture_imported, it) } ?: app.getString(R.string.relay_change_snackbar)
+            AiWorkspace.uiStarted -> AiWorkspace.changes.tryEmit(headline)
+            else -> io.github.linker2k.myembro.relay.RelayChangeNotification.show(app, headline, ++unseenChanges)
+        }
     } }
+    /** After MainActivity switched to the editor for an AI change: say what came in. */
+    internal fun showRelayChange(headline: String) {
+        message = getApplication<Application>().getString(R.string.relay_change_switched, headline)
+    }
 
     /**
      * AI connection: ready for a tool call with nobody looking. Waits for the autosave read; a draft left by a

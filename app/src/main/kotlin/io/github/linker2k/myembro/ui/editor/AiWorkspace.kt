@@ -15,6 +15,11 @@ import androidx.lifecycle.ViewModelStoreOwner
  */
 object AiWorkspace : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
+    /** MainActivity is started (on screen, split screen too): it shows AI changes itself instead of a notification. */
+    @Volatile var uiStarted = false
+    /** AI changes for a started MainActivity while its editor is not on screen: the headline to show. */
+    val changes = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 8)
+
     /** MainActivity opens the editor on this project as it is (the AI connection notification's tap). */
     const val ACTION_OPEN = "io.github.linker2k.myembro.action.OPEN_AI_PROJECT"
 

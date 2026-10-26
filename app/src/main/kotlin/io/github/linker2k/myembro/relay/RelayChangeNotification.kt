@@ -35,7 +35,9 @@ object RelayChangeNotification {
         val notification = NotificationCompat.Builder(app, CHANNEL).setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(headline).setContentText(text).setNumber(changes)
             .setOnlyAlertOnce(false).setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setContentIntent(tap).setAutoCancel(true).build()
+            // Its own group: otherwise Android bundles it with the "AI connection" notification, and a tap on the
+            // bundle opens myembro's home instead of the editor (5558, 2026-10-26).
+            .setGroup(CHANNEL).setContentIntent(tap).setAutoCancel(true).build()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED) return
         NotificationManagerCompat.from(app).notify(ID, notification)

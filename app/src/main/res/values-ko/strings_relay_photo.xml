@@ -13,4 +13,7 @@
     <string name="relay_change_snackbar">AI가 도안을 바꿨어요 (되돌리기로 취소)</string>
     <string name="ai_project_open">AI 작업 중인 도안 열기</string>
     <string name="ai_project_open_hint">객체 %1$d개 · AI 연결이 작업하는 도안</string>
+    <string name="relay_change_view">보기</string>
+    <string name="relay_change_dismiss">닫기</string>
+    <string name="relay_change_switched">%1$s (되돌리기로 취소)</string>
 </resources>

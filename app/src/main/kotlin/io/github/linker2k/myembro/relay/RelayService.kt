@@ -46,7 +46,7 @@ class RelayService : Service() {
             .setContentIntent(android.app.PendingIntent.getActivity(this, NOTIFICATION,
                 Intent(this, io.github.linker2k.myembro.MainActivity::class.java).setAction(io.github.linker2k.myembro.ui.editor.AiWorkspace.ACTION_OPEN),
                 android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE))
-            .setOngoing(true).build()
+            .setGroup(CHANNEL).setOngoing(true).build()
         ServiceCompat.startForeground(this, NOTIFICATION, notification,
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0)
         client?.cancel()
