@@ -767,6 +767,47 @@
                 "idempotentHint": false,
                 "openWorldHint": false
             }
+        },
+        {
+            "name": "import_picture",
+            "description": "Put a picture you drew into the open design as embroidery, in one undoable step; the answer has the sewing check. SVG is preferred (format svg, the SVG text itself in data): flat shapes with solid fills, at most 4788 bytes and 14 elements, no text, gradients or images; it keeps its own fill colors. PNG or JPEG go in data as base64 and must be small (at most 1000000 base64 characters, few flat colors); colors 2-6 (default 4) sets their thread colors. If it is too large, ask the user to share the picture to myembro instead.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "format": {
+                        "type": "string",
+                        "enum": [
+                            "svg",
+                            "png",
+                            "jpeg"
+                        ]
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "colors": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 6,
+                        "default": 4
+                    },
+                    "title": {
+                        "type": "string",
+                        "default": "AI picture"
+                    }
+                },
+                "required": [
+                    "format",
+                    "data"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
         }
     ]
 }

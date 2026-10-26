@@ -3,4 +3,5 @@
     <string name="relay_photo_send">AI에게 사진 보내기</string>
     <string name="relay_photo_consent">이 사진을 연결된 AI에게 공개할까요? AI가 축소본(최대 768픽셀)을 보고 기기에서 자수 도안을 준비할 수 있습니다. 다른 사진은 공개되지 않습니다. 사용할 권한이 있는 이미지만 보내 주세요.</string>
     <string name="relay_photo_confirm">이 사진 보내기</string>
+    <string name="relay_picture_imported">AI 그림이 들어왔어요: %1$s (되돌리기로 취소)</string>
 </resources>

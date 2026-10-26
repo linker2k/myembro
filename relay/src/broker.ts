@@ -3,6 +3,14 @@ import { RELAY_TOOLS, RELAY_TOOL_NAMES, sameSchema } from './tools';
 
 export const UPDATE_REQUIRED = 'myembro 앱을 최신으로 업데이트해 주세요';
 export const DISCONNECTED = 'myembro app is not connected. Open myembro and turn on AI connection.';
+/**
+ * Largest relay→app call message (UTF-8 bytes of the JSON). Cloudflare documents 32 MiB only for WebSocket messages
+ * a Worker/Durable Object receives and nothing for the ones it sends; 1 MiB was the documented limit before
+ * 2025-10-31, so calls stay within it. The app's import_picture limits (RelayPicture.kt) fit inside it.
+ */
+export const MAX_CALL_BYTES = 1_048_576;
+export const TOO_LARGE = 'Too large for the AI connection. Ask the user to save the picture and share it to myembro ' +
+  "(Share → myembro) instead; in Korean: '그림을 저장한 뒤 공유 → myembro로 보내 주세요'.";
 export const failure = (text: string): CallToolResult => ({ isError: true, content: [{ type: 'text', text }] });
 export interface AppSocket { send(data: string): void; close(code?: number, reason?: string): void }
 
@@ -80,11 +88,13 @@ export class Broker {
           (!Number.isInteger(args.widthPx) || (args.widthPx as number) < 256 || (args.widthPx as number) > 1024)))
       return Promise.resolve(failure('Invalid tool arguments.'));
     const socket = this.active;
+    const id = crypto.randomUUID();
+    const message = JSON.stringify({ type: 'call', id, tool, args });
+    if (new TextEncoder().encode(message).length > MAX_CALL_BYTES) return Promise.resolve(failure(TOO_LARGE));
     return new Promise(resolve => {
-      const id = crypto.randomUUID();
       const timer = setTimeout(() => { this.pending.delete(id); resolve(failure('timed out')); }, 120_000);
       this.pending.set(id, { socket, resolve, timer });
-      try { socket.send(JSON.stringify({ type: 'call', id, tool, args })); }
+      try { socket.send(message); }
       catch { this.close(socket); }
     });
   }

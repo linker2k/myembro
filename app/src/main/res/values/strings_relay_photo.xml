@@ -3,4 +3,5 @@
     <string name="relay_photo_send">Send a photo to AI</string>
     <string name="relay_photo_consent">Share this photo with your connected AI? It can view a reduced copy (up to 768 pixels) and prepare an embroidery design locally. Other photos stay private. Only share images you have permission to use.</string>
     <string name="relay_photo_confirm">Share this photo</string>
+    <string name="relay_picture_imported">AI picture added: %1$s (Undo removes it)</string>
 </resources>

@@ -42,6 +42,7 @@ object RelayCatalog {
         "view_attachment" to "Look at a handed-over photo (at most 768 px).",
         "prepare_photo" to "Turn a handed-over photo into a stitch design at widthMm; add it with add_generated_art.",
         "add_generated_art" to "Add a prepared photo result to the design.",
+        RelayPhotoTools.IMPORT to RelayPicture.DESCRIPTION,
     )
 
     /** Arguments that may be left out, with their default; null = taken from the open project or font. */
@@ -57,6 +58,7 @@ object RelayCatalog {
             "scaleFactor" to JsonPrimitive(1), "rotationDeg" to JsonPrimitive(0)),
         "duplicate_object" to mapOf("newObjectId" to null),
         "recolor_object" to mapOf("threadIndex" to JsonPrimitive(0)),
+        RelayPhotoTools.IMPORT to mapOf("colors" to JsonPrimitive(RelayPicture.DEFAULT_COLORS), "title" to JsonPrimitive(RelayPicture.DEFAULT_TITLE)),
     )
     /** Inside set_object_transforms rows and duplicate_object's transform: kept from the object. */
     private val POSE = listOf("rotationDeg", "scaleXPercent", "scaleYPercent")
@@ -85,6 +87,10 @@ object RelayCatalog {
         return JsonObject(tool + ("description" to JsonPrimitive(DESCRIPTIONS[name] ?: tool.getValue("description").jsonPrimitive.content)) +
             ("inputSchema" to JsonObject(schema + ("properties" to properties) + ("required" to JsonArray(required.map(::JsonPrimitive))))))
     }
+
+    /** [args] with the left-out arguments that have a fixed default filled in (no project needed). */
+    fun withDefaults(tool: String, args: JsonObject): JsonObject =
+        JsonObject(OPTIONAL[tool].orEmpty().mapNotNull { (k, v) -> v?.let { k to it } }.toMap() + args)
 
     /** An object schema (or an array of them) whose rotation and scale may be left out. */
     private fun poseOptional(value: JsonObject): JsonObject {
@@ -148,7 +154,7 @@ object RelayCatalog {
         return JsonObject(r + pose.filterKeys { it !in r }.mapValues { JsonPrimitive(it.value) })
     }
 
-    private fun newId(project: Project, prefix: String) =
+    internal fun newId(project: Project, prefix: String) =
         generateSequence(1) { it + 1 }.map { "$prefix-$it" }.first { project.find(it) == null }
 
     /**

@@ -142,7 +142,7 @@ class PhotoRelayTools : RelayToolGroup {
         // The relay offers add_generated_art without transactionId; each call is its own turn.
         val strict = if (tool == "add_generated_art" && "transactionId" !in args)
             JsonObject(args + ("transactionId" to JsonPrimitive("relay-${java.util.UUID.randomUUID()}"))) else args
-        return photos.call(tool, strict)
+        return photos.call(tool, RelayCatalog.withDefaults(tool, strict))
     }
 }
 

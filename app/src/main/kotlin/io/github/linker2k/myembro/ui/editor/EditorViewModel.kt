@@ -247,7 +247,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 busy = true
                 try { withContext(Dispatchers.Default) { block() } } finally { session.adoptEngineProject(); busy = false; sync() }
             } },
-            canEdit = { io.github.linker2k.myembro.relay.RelayProjectSource.current() === relayDocument && agentExecutor.relayController() === controller })
+            canEdit = { io.github.linker2k.myembro.relay.RelayProjectSource.current() === relayDocument && agentExecutor.relayController() === controller },
+            announce = { title -> viewModelScope.launch(Dispatchers.Main) {
+                message = getApplication<Application>().getString(R.string.relay_picture_imported, title)
+            } })
         relayPhotoTools = controller to tools
         return tools
     }

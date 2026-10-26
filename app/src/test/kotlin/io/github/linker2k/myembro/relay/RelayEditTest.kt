@@ -282,7 +282,7 @@ class RelayEditTest {
         val relay = connect(withPhotos)
         val socket = relay.socket()
         val names = relay.next().getValue("tools").jsonArray.map { it.jsonObject.str("name") }
-        assertEquals(RelayPhotoTools.NAMES, names.takeLast(4).toSet())
+        assertEquals(RelayPhotoTools.NAMES, names.takeLast(RelayPhotoTools.NAMES.size).toSet())
         socket.send("""{"type":"call","id":"p","tool":"list_attachments","args":{}}""")
         assertFalse(relay.next().getValue("isError").jsonPrimitive.boolean)
         assertEquals(listOf("list_attachments"), calls)

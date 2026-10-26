@@ -58,6 +58,9 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
         }
     }
 
+    /** A host-received SVG picture prepared against the live hoop; changes nothing (ToolDispatcher.prepareSvgPicture). */
+    @Synchronized fun prepareSvgPicture(svg: ByteArray, widthMm: Double, name: String): ToolDispatcher.Result =
+        kernel.prepareSvgPicture(session.project, svg, widthMm, name)
     private fun begin(id: String, revision: Long): ToolDispatcher.Result {
         if(id.isBlank()) return error("INVALID_TRANSACTION_ID","Blank transaction id")
         receipts[id]?.let { return if(it.baseRevision==revision) liveReceipt(it) else error("TRANSACTION_ID_REUSED","Base revision changed") }
