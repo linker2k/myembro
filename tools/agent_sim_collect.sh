@@ -2,11 +2,14 @@
 # Collects mock chatbot replies for AgentChatbotSimulationTest: each app prompt goes once to
 # Claude Code (claude -p) and Codex CLI (codex exec), run in an empty directory with no project
 # access. Replies are stored verbatim next to the prompts; the unit test never calls an LLM.
+# Optional arguments name the prompt numbers to collect (default: all), e.g. `agent_sim_collect.sh 4 5`.
 set -euo pipefail
 dir="$(cd "$(dirname "$0")/.." && pwd)/app/src/test/resources/agent/sim"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-for prompt in "$dir"/prompt-*.txt; do
+prompts=("$dir"/prompt-*.txt)
+[ $# -gt 0 ] && prompts=($(for n in "$@"; do echo "$dir/prompt-$n.txt"; done))
+for prompt in "${prompts[@]}"; do
     n="${prompt##*prompt-}"; n="${n%.txt}"
     (cd "$work" && claude -p < "$prompt" > "$dir/claude-$n.txt") &
     (cd "$work" && codex exec --sandbox read-only --skip-git-repo-check --color never \

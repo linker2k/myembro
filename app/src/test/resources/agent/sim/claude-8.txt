@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM8","summary":"사진을 흑백 분리 외곽선으로 30mm 크기로 만들어 오른쪽 아래에 배치","commands":[{"tool":"prepare_photo","args":{"attachmentId":"a1","mode":"outline","colors":2,"widthMm":30,"filter":"threshold"}},{"tool":"add_generated_art","args":{"resultId":"r1","objectId":"new:photo","name":"사진 외곽선"}},{"tool":"set_object_transforms","args":{"transforms":[{"objectId":"new:photo","xMm":30,"yMm":30,"rotationDeg":0,"scaleXPercent":100,"scaleYPercent":100}]}}]}
+```

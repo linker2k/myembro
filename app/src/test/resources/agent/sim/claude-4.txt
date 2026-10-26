@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM4","summary":"사진을 40mm 실루엣으로 만들어 로고 오른쪽에 배치 (자리를 위해 로고를 90%로 줄이고 왼쪽으로 이동)","commands":[{"tool":"prepare_photo","args":{"attachmentId":"a1","mode":"silhouette","colors":2,"widthMm":40,"filter":"original"}},{"tool":"add_generated_art","args":{"resultId":"r1","objectId":"new:photo","name":"사진 실루엣"}},{"tool":"set_object_transforms","args":{"transforms":[{"objectId":"o1","xMm":-22,"yMm":0.1,"rotationDeg":0,"scaleXPercent":90,"scaleYPercent":90},{"objectId":"new:photo","xMm":28,"yMm":0.1,"rotationDeg":0,"scaleXPercent":100,"scaleYPercent":100}]}}]}
+```

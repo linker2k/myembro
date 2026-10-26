@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM7","summary":"Prepare photo a1 as a high-contrast silhouette and add it","commands":[{"tool":"prepare_photo","args":{"attachmentId":"a1","mode":"silhouette","colors":2,"widthMm":60,"filter":"contrast"}},{"tool":"add_generated_art","args":{"resultId":"r1","objectId":"new:photo","name":"사진 실루엣"}}]}
+```
