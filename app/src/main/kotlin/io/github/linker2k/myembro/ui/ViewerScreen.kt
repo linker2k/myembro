@@ -114,11 +114,6 @@ private fun ViewerContent(
 ) {
     var exportSheet by remember { mutableStateOf(false) }
     LaunchedEffect(vm) { vm.ensureSourceCurrent() }
-    // AI connection (relay) reads the open design while the viewer is on screen; it never edits here.
-    DisposableEffect(vm) {
-        io.github.linker2k.myembro.relay.RelayProjectSource.attach(vm, vm.relayDocument)
-        onDispose { io.github.linker2k.myembro.relay.RelayProjectSource.detach(vm) }
-    }
     val report = vm.sewoutReport
     var confirmUsb by remember(report, vm.render, vm.checkingSewout) { mutableStateOf(false) }
     val checkedUsb: (() -> Unit)? = onExportUsb?.let { transfer -> {

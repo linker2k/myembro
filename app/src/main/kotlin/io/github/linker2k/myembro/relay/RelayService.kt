@@ -38,8 +38,9 @@ class RelayService : Service() {
         ServiceCompat.startForeground(this, NOTIFICATION, notification,
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0)
         client?.cancel()
-        // The screens read and change their project on the main thread themselves (EditorViewModel, ViewerViewModel).
-        val tools = RelayToolbox({ RelayProjectSource.current() })
+        // The AI work project (AiWorkspace), open on screen or not; it reads and changes itself on the main thread.
+        val app = application
+        val tools = RelayToolbox({ io.github.linker2k.myembro.ui.editor.AiWorkspace.relayDocument(app) })
         client = RelayClient(OkHttpClient(), url, config.key, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
         return START_STICKY
     }

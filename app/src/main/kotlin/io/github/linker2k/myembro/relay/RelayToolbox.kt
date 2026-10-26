@@ -145,13 +145,3 @@ class PhotoRelayTools : RelayToolGroup {
         return photos.call(tool, RelayCatalog.withDefaults(tool, strict))
     }
 }
-
-/** The screen that is open now, if any: the editor or the viewer attaches itself while it is shown. */
-object RelayProjectSource {
-    @Volatile private var owner: Any? = null
-    @Volatile private var document: RelayDocument? = null
-
-    fun attach(owner: Any, document: RelayDocument) { this.owner = owner; this.document = document }
-    fun detach(owner: Any) { if (this.owner === owner) { this.owner = null; document = null } }
-    fun current(): RelayDocument? = document
-}

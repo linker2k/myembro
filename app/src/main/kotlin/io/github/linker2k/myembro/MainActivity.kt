@@ -58,7 +58,8 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     private val viewer: ViewerViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
-    private val editor: EditorViewModel by viewModels()
+    /** The AI work project (AiWorkspace): outlives this Activity so the AI connection keeps working. */
+    private val editor: EditorViewModel by lazy { io.github.linker2k.myembro.ui.editor.AiWorkspace.editor(application) }
     private val photo: PhotoViewModel by viewModels()
     private val aiPictureDraft: io.github.linker2k.myembro.ui.photo.AiPictureDraft by viewModels()
     private val emoji: io.github.linker2k.myembro.ui.emoji.EmojiViewModel by viewModels()
@@ -264,6 +265,8 @@ class MainActivity : ComponentActivity() {
                 // After a process restart, offer the editor's autosaved draft on Home once per session;
                 // dismissing keeps the draft (the editor offers it again on entry).
                 var recoveryDismissed by rememberSaveable { mutableStateOf(false) }
+                // AI connection: remove_objects asks here on any screen, since the AI may edit while the editor is closed.
+                io.github.linker2k.myembro.ui.editor.RelayRemovalDialog(editor.relayConfirmation)
                 if (stack.isEmpty() && !recoveryDismissed) {
                     EditorRecoveryDialog(editor, onRestored = { stack += Screen.EDITOR }, onDismiss = { recoveryDismissed = true })
                 }

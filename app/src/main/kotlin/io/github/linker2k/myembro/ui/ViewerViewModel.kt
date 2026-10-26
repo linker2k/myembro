@@ -94,19 +94,6 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         if (exportVersionChanged && project != null) load { project } else refreshSewout()
     }
 
-    /**
-     * AI connection (relay): the open design as the editor would open it (one object in the viewer's frame),
-     * for get_project and render_preview only. The viewer has no history, so the revision is always 0.
-     */
-    internal val relayDocument = object : io.github.linker2k.myembro.relay.RelayDocument {
-        override val editor: io.github.linker2k.myembro.relay.RelayEditor? = null
-        override suspend fun read() = withContext(Dispatchers.Main.immediate) {
-            val pattern = render?.pattern ?: return@withContext null
-            io.github.linker2k.myembro.relay.RelayProject(io.github.linker2k.myembro.engine.edit.Project(hoop = frame.spec)
-                .add(io.github.linker2k.myembro.engine.edit.StitchObject("viewer", fileName.orEmpty(), pattern)), 0)
-        }
-    }
-
     var sewoutReport by mutableStateOf<SewoutReport?>(null)
         private set
     var checkingSewout by mutableStateOf(false)

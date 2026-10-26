@@ -53,12 +53,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
-        // AI connection (relay) reads and edits the project only while the editor is on screen.
-        DisposableEffect(vm) {
-            io.github.linker2k.myembro.relay.RelayProjectSource.attach(vm, vm.relayDocument)
-            onDispose { io.github.linker2k.myembro.relay.RelayProjectSource.detach(vm) }
-        }
-        RelayRemovalDialog(vm.relayConfirmation)
+        // AI connection (relay): it works on this same project (AiWorkspace) whether or not the editor is on
+        // screen, so its edits show here at once; the removal question is asked from MainActivity.
         // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
         val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
         var relayPhotoRequest by remember { mutableIntStateOf(0) }

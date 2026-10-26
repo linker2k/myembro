@@ -114,6 +114,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"), projectSources)
     private val draftWrites = Channel<Project?>(Channel.CONFLATED)
     private var draftLoading by mutableStateOf(true)
+    /** Completes with the draft read; snapshotFlow on [draftLoading] needs a composition, which a closed editor lacks. */
+    private val draftLoaded = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var deferredEntry: (() -> Unit)? = null
     private var lastDraft: Project? = null
     private var draftQueued = false
@@ -231,6 +233,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             catch (e: Exception) { report(R.string.editor_draft_failed, e) }
             finally {
                 draftLoading = false
+                draftLoaded.complete(Unit)
                 if (recoveryProject == null) resumeDeferredEntry()
             }
         }
@@ -247,7 +250,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 busy = true
                 try { withContext(Dispatchers.Default) { block() } } finally { session.adoptEngineProject(); busy = false; sync() }
             } },
-            canEdit = { io.github.linker2k.myembro.relay.RelayProjectSource.current() === relayDocument && agentExecutor.relayController() === controller },
+            canEdit = { agentExecutor.relayController() === controller },
             announce = { title -> viewModelScope.launch(Dispatchers.Main) {
                 message = getApplication<Application>().getString(R.string.relay_picture_imported, title)
             } })
@@ -290,13 +293,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         })
     }
 
+    /**
+     * AI connection: ready for a tool call with nobody looking. Waits for the autosave read; a draft left by a
+     * process restart is taken as the last project (the recovery dialog's Restore, same rules), since no one
+     * may be there to answer that dialog while the AI app is in front.
+     */
+    internal suspend fun relayReady() {
+        draftLoaded.await()
+        if (recoveryProject != null) restoreDraft()
+    }
+
     /** AI connection (relay): remove_objects waits for the user's answer in this dialog. */
     internal val relayConfirmation = io.github.linker2k.myembro.relay.RelayConfirmation(
         onAsk = { names -> io.github.linker2k.myembro.relay.RelayConfirmNotification.show(app, names) },
         onDone = { io.github.linker2k.myembro.relay.RelayConfirmNotification.cancel(app) })
     /**
      * AI connection (relay): this editor's project and revision, as the Ask AI prompt reads them, and its
-     * Ask AI executor for reads and edits. The session is read and changed on the main thread, like the UI.
+     * Ask AI executor for reads and edits, whether or not the editor is on screen (AiWorkspace). The session
+     * is read and changed on the main thread, like the UI.
      */
     internal val relayDocument = object : io.github.linker2k.myembro.relay.RelayDocument {
         private val executor = agentExecutor
