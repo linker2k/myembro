@@ -164,9 +164,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box {
+                        // The hoop chip gives way (ellipsis) so Edit blocks, the object count and Save stay on screen.
+                        Box(Modifier.weight(1f, fill = false)) {
                             SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0))) },
+                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
                                 vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
@@ -181,7 +183,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         val stitchOnly = stringResource(R.string.block_edit_stitch_only)
                         if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
                             onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
-                            label = { Text(stringResource(R.string.block_edit_open)) },
+                            label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
                             leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),

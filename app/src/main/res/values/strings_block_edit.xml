@@ -45,4 +45,5 @@
     <string name="block_reason_satin_too_long">satin stitches would exceed 12mm</string>
     <string name="block_reason_no_running">no line to run along</string>
     <string name="block_reason_empty_fill">no area to fill</string>
+    <string name="block_edit_angle_label">Stitch angle</string>
 </resources>
