@@ -51,8 +51,9 @@ rules supersede v1's two-tool read-only scope and 60-second timeout:
 - Call timeout is **120 seconds**, without automatic retry. The app must continue
   ping/pong while preparing a photo or awaiting remove confirmation; its silence
   limit remains 90 seconds. Client-side deadlines are outside relay control.
-- Only announced, allowlisted Ask AI project-edit tools and approved photo/read
-  registry tools are forwarded. The allowlist follows AgentPrompt.SIGNATURES at
+- Discovery advertises the deployed static Ask AI project-edit and approved
+  photo/read catalog; calls are forwarded only when the active app advertises a
+  matching name/schema. The allowlist follows AgentPrompt.SIGNATURES at
   this baseline and the manager's photo registry additions. Unannounced tools,
   save/share/USB, file/library deletion, restore, settings and export are excluded.
 - No edit logic lives on the relay. App tools must use the existing dispatcher and
@@ -62,13 +63,10 @@ rules supersede v1's two-tool read-only scope and 60-second timeout:
 - Photo access/consent, downscale limits, sewing/hoop checks and read-only viewer
   behavior are app responsibilities. Image/png and image/jpeg inline content pass
   through; no arbitrary attachment or filesystem access is added to this server.
-- A semantically changed hello (including schema/description changes) publishes
-  notifications/tools/list_changed. Repeated identical definitions do not notify.
-  Modern clients use the official handler's subscriptions/listen and notify bus.
-  Legacy clients use an authenticated GET SSE stream and SDK sendToolListChanged.
-  The relay only forwards SDK stream bytes; it does not format MCP/SSE messages.
-  Cancelled legacy streams close their SDK server and leave the subscriber set.
-  A client without an open notification channel can still refresh tools/list.
+- The [static tool contract](static-tools.md) supersedes hello-driven discovery
+  and notifications: tools/list is the fixed deployment catalog, listChanged is
+  false, and hello only gates call compatibility. Both protocol eras continue
+  using the official SDK; no notification is needed for an unchanged static list.
 
 ## Measured validation
 
@@ -79,13 +77,12 @@ npm test
 ```
 
 ```text
-Test Files  3 passed (3)
-     Tests  21 passed (21)
+Test Files  4 passed (4)
+     Tests  31 passed (31)
 ```
 
 This includes real Miniflare Worker/DO/HTTP/WS tests for modern and fallback
-versions, both notification channels and allowed edit forwarding; unchanged
-hello suppression; the exact 120-second timeout with fake timers and app liveness;
-all prior auth, cached-tools, text/image and reconnect tests. The fake app supplies
+versions, static catalog stability, app compatibility and allowed edit forwarding; the exact 120-second timeout with fake timers and app liveness;
+all prior auth, static-discovery, text/image and reconnect tests. The fake app supplies
 edit result JSON; this is not a proof of Android edit/consent behavior or actual
 Claude mobile reconnection on the new SDK. No deployment or login was performed.

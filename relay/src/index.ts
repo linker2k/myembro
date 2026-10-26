@@ -1,5 +1,4 @@
 import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
-import type { Tool } from '@modelcontextprotocol/server';
 import { Broker } from './broker';
 
 import { authorizationFailure, type RelaySecrets } from './auth';
@@ -14,24 +13,20 @@ export default {
   }
 };
 
-/** One object and one active app per deployment. Cached definitions survive reconnects/restarts. */
+/** One object and one active app per deployment. Discovery always uses the bundled static catalog. */
 export class Relay {
   private broker: Broker;
   private legacyStreams = new Set<Server>();
   private handler = createMcpHandler(() => this.server(), { legacy: 'reject' });
   private server(): Server {
-    const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: true } } });
+    const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
     server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
     server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {}));
     return server;
   }
-  private notifyToolsChanged(): void {
-    this.handler.notify.toolsChanged();
-    for (const server of this.legacyStreams) this.state.waitUntil(server.sendToolListChanged().catch(() => { this.legacyStreams.delete(server); return server.close(); }));
-  }
   constructor(private state: DurableObjectState, private env: Env) {
-    this.broker = new Broker(tools => state.waitUntil(state.storage.put('tools', tools)), () => this.notifyToolsChanged());
-    state.blockConcurrencyWhile(async () => { this.broker.tools = await state.storage.get<Tool[]>('tools') ?? []; });
+    // Ignore legacy cached hello definitions: the advertised catalog is a deployment artifact.
+    this.broker = new Broker();
   }
   async fetch(request: Request): Promise<Response> {
     const denied = await authorizationFailure(request, this.env);

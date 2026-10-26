@@ -8,7 +8,7 @@ The edit-phase extension uses official **@modelcontextprotocol/server 2.4.0**:
 createMcpHandler serves proper 2026-07-28 envelopes and subscriptions/listen;
 the official WebStandardStreamableHTTPServerTransport retains legacy JSON POSTs
 and authenticated GET SSE. The Durable Object owns the app connection, pending
-calls, cached tools and notification listeners. See [protocol evidence and the
+calls and app capability checks. Discovery uses the deployed static catalog. See [protocol evidence and the
 edit-phase contract](docs/protocol-support.md) for exact formats, version fallback,
 app responsibilities and the allowlist. No MCP protocol is reimplemented.
 
@@ -56,10 +56,12 @@ when a deployment is separately authorized; this unit does not test Claude mobil
   Wrong/malformed headers never downgrade to query authentication. A valid hello
   selects the active app; a new hello closes the previous socket and fails its
   pending requests. Definitions retain their original inputSchema/annotations.
-- Only announced, allowlisted project/read/photo tools are retained. The existing
-  get_project/render_preview argument guards remain. Edits and photo preparation
-  are forwarded to the app's existing dispatcher; no engine logic is duplicated.
-  Save/share/USB, file deletion, restore, settings and export are never exposed.
+- tools/list always advertises the 24 deployed static definitions, regardless of
+  app hello or connection state. [Static discovery and schema drift gate](docs/static-tools.md)
+  document the snapshot, existing transactionId projection, and per-tool app
+  compatibility checks. Missing/mismatched app tools return the update message;
+  compatible calls keep using the app's existing dispatcher. File/export/settings
+  mutation operations never become available through hello.
 - `/mcp` accepts only `Authorization: Bearer <MCP_TOKEN>`. Configure the URL with
   no secret suffix in the claude.ai connector and add its request header there.
   Missing/incorrect credentials return 401 with the fixed body `Unauthorized`.
@@ -73,8 +75,8 @@ when a deployment is separately authorized; this unit does not test Claude mobil
 - UUIDs route concurrent calls to their own results, even out of order. Text,
   application isError and inline image/png or image/jpeg base64 content pass through unchanged.
   Late results and results from a replaced socket cannot complete a new call.
-- Disconnection returns the exact contract error. Last hello definitions persist
-  in Durable Object storage across both app disconnect and object restart.
+- Disconnection returns the exact contract error. The static catalog survives
+  disconnect/restart without reading any legacy cached hello definitions.
 - Broker timers ping every 30 seconds, drop a silent app at 90 seconds, and resolve
   each call after 120 seconds with isError and text `timed out`. A ping gets pong;
   incoming valid messages renew liveness. No pending call is retried automatically.
@@ -91,12 +93,12 @@ must stop putting credentials in URLs, including obsolete MCP path forms.
 ## Measured verification
 
 `npm run typecheck`: exit 0.
-`npm test`: **3 test files, 21 tests passed** (Miniflare + Vitest).
+`npm test`: **4 test files, 31 tests passed** (Miniflare + Vitest).
 
-The tests include both protocol eras and notification streams, the 120-second
-call timeout, unchanged-definition suppression, allowed edit forwarding and all
-previous authentication/liveness/content/cache tests. See the protocol evidence
-for the precise tested boundary; Android edits and consent are separate app work.
+Tests cover both protocol eras, static discovery before/after hello and restart,
+per-tool app compatibility and zero-forwarding update errors, schema drift,
+120-second timeout, and prior authentication/liveness/content safety checks.
+Android edit/consent behavior remains separate app work.
 
 The following header-auth smoke output was recorded before the v2 SDK upgrade
 (server 0.1.0). It is historical; current protocol/notification verification is
