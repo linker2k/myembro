@@ -125,11 +125,12 @@ describe('contract timers on the production broker with fake clock', () => {
     const sent: any[] = []; const socket: AppSocket = { send: raw => sent.push(JSON.parse(raw)), close: vi.fn() };
     const broker = new Broker(); broker.open(socket); broker.receive(socket, hello()); return { broker, socket, sent };
   }
-  it('times out at exactly 60 seconds; ignores late result', async () => {
+  it('times out at exactly 120 seconds; ignores late result', async () => {
     vi.useFakeTimers();
     try {
       const { broker, socket, sent } = setup(); const pending = broker.call('get_project', {}); const id = sent[0].id;
       let done = false; pending.then(() => { done = true; });
+      await vi.advanceTimersByTimeAsync(60_000); broker.receive(socket, '{"type":"pong"}');
       await vi.advanceTimersByTimeAsync(59_999); expect(done).toBe(false);
       await vi.advanceTimersByTimeAsync(1); expect(await pending).toEqual({ isError: true, content: [{ type: 'text', text: 'timed out' }] });
       broker.receive(socket, JSON.stringify({ type: 'result', id, isError: false, content: [] })); broker.close(socket);
@@ -156,7 +157,7 @@ describe('contract timers on the production broker with fake clock', () => {
   it('never exposes write, confirmation-required or unknown tool definitions', () => {
     const { broker, socket } = setup();
     const extra = [
-      { ...tools[0], name: 'remove_objects' },
+      { ...tools[0], name: 'save_pes' },
       { ...tools[1], annotations: { readOnlyHint: true, needsUserConfirmation: 'onOverwrite' } }
     ];
     broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], ...extra] }));
