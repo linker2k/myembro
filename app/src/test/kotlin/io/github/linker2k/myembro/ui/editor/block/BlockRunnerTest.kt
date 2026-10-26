@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui.editor.block
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.engine.edit.BlockGenerationKind
 import io.github.linker2k.myembro.engine.edit.commands.CommandError
 import io.github.linker2k.myembro.engine.edit.commands.ProjectCommand
 import kotlinx.coroutines.Dispatchers
@@ -65,20 +66,28 @@ class BlockRunnerTest {
         assertTrue(refused.applyFailed); assertEquals(BlockFailure.Kind.SETTINGS_INVALID, refused.failure.kind); assertFalse(committed)
     }
 
-    @Test fun engineTextIsClassifiedAndKeptOnlyAsDetail() {
-        fun kind(m: String) = BlockFailure.of(CommandError.SEWOUT_BLOCKED, m).kind
-        assertEquals(BlockFailure.Kind.MEANDER_REGION_TOO_SMALL, kind("Could not build graph for meander stitching; enlarge the shape or reduce pattern scale"))
-        assertEquals(BlockFailure.Kind.MEANDER_TOO_MANY_REPEATS, kind("Meander tile repetition resource limit exceeded"))
-        assertEquals(BlockFailure.Kind.SATIN_UNSUPPORTED, kind("SATIN_GEOMETRY_UNSUPPORTED"))
-        assertEquals(BlockFailure.Kind.NO_STITCHES, kind("EMPTY_REGION"))
-        assertEquals(BlockFailure.Kind.UNSUPPORTED_METHOD, kind("LINEAR_GRADIENT_REQUIRES_COLOR_STOPS: block gradients need…"))
+    @Test fun typedEngineResultsDecideTheMessageNotTheirText() {
+        // The same text under different codes/kinds gives different kinds: the message is never read.
+        val text = "Could not build graph for meander stitching"
+        fun gen(k: BlockGenerationKind?) = BlockFailure.of(CommandError.GENERATION_FAILED, text, k).kind
+        assertEquals(BlockFailure.Kind.MEANDER_REGION_TOO_SMALL, gen(BlockGenerationKind.MEANDER_GRAPH))
+        assertEquals(BlockFailure.Kind.MEANDER_FAILED, gen(BlockGenerationKind.MEANDER_GENERATION))
+        assertEquals(BlockFailure.Kind.SATIN_UNSUPPORTED, gen(BlockGenerationKind.SATIN_GEOMETRY_UNSUPPORTED))
+        assertEquals(BlockFailure.Kind.SATIN_TOO_LONG, gen(BlockGenerationKind.SATIN_STITCH_TOO_LONG))
+        assertEquals(BlockFailure.Kind.NO_STITCHES, gen(BlockGenerationKind.EMPTY_REGION))
+        assertEquals(BlockFailure.Kind.UNSUPPORTED_METHOD, gen(BlockGenerationKind.UNSUPPORTED_FILL_BACKEND))
+        assertEquals(BlockFailure.Kind.GENERATION_FAILED, gen(BlockGenerationKind.OUTPUT_ENCODING))
+        assertEquals(BlockFailure.Kind.GENERATION_FAILED, gen(null))
+        assertEquals(BlockFailure.Kind.SEWOUT_BLOCKED, BlockFailure.of(CommandError.SEWOUT_BLOCKED, text).kind)
+        assertEquals(BlockFailure.Kind.SETTINGS_INVALID, BlockFailure.of(CommandError.INVALID_BLOCK_SETTINGS, text).kind)
+        // Every engine kind is mapped (the when is exhaustive; this guards new kinds being added silently).
+        BlockGenerationKind.entries.forEach { gen(it) }
         val sew = BlockFailure.of(CommandError.SEWOUT_BLOCKED, "DENSITY_HOTSPOT: 0.5mm 칸에 18회; LONG_STITCH: 12.4mm; DENSITY_HOTSPOT: x")
-        assertEquals(BlockFailure.Kind.SEWOUT_BLOCKED, sew.kind)
         assertEquals(listOf("DENSITY_HOTSPOT", "LONG_STITCH"), sew.sewoutCodes)
         assertEquals("SEWOUT_BLOCKED: DENSITY_HOTSPOT: 0.5mm 칸에 18회; LONG_STITCH: 12.4mm; DENSITY_HOTSPOT: x", sew.detail)
+        assertEquals("GENERATION_FAILED/MEANDER_GRAPH: $text", BlockFailure.of(CommandError.GENERATION_FAILED, text, BlockGenerationKind.MEANDER_GRAPH).detail)
         assertEquals(listOf("HOOP_SAFETY_MARGIN"), BlockFailure.sewout("HOOP_SAFETY_MARGIN: placed design exceeds integer hoop indices 0..size-1").sewoutCodes)
-        assertEquals(emptyList<String>(), BlockFailure.sewout("something unexpected").sewoutCodes)
-        assertEquals(BlockFailure.Kind.SETTINGS_INVALID, BlockFailure.of(CommandError.INVALID_BLOCK_SETTINGS, "UNKNOWN_REGION").kind)
+        assertEquals(emptyList<String>(), BlockFailure.sewout("something mentions LONG_STITCH mid-text").sewoutCodes)
     }
 
     @Test fun theRealSmallRegionRefusalIsAMeanderSizeFailure() = runBlocking {

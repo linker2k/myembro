@@ -52,7 +52,6 @@
     <string name="block_edit_details">자세히</string>
     <string name="block_edit_details_hide">접기</string>
     <string name="block_fail_meander_small">이 무늬는 이 영역에 너무 커요. 영역을 키우거나 무늬 크기를 줄이세요.</string>
-    <string name="block_fail_meander_repeats">이 영역에서 무늬가 너무 많이 반복돼요. 무늬 크기를 키우세요.</string>
     <string name="block_fail_satin">이 모양은 새틴으로 만들 수 없어요.</string>
     <string name="block_fail_no_stitches">이 설정으로는 이 영역에 바늘땀이 생기지 않아요.</string>
     <string name="block_fail_unsupported">이 버전에서 쓸 수 없는 채움이에요.</string>
@@ -70,4 +69,6 @@
     <string name="block_sewout_incomplete">검사를 끝내지 못했어요</string>
     <string name="block_sewout_file">파일 검사에 실패했어요</string>
     <string name="block_sewout_other">기타 검사 항목</string>
+    <string name="block_fail_meander_failed">이 영역에 무늬를 만들지 못했어요. 무늬 크기를 바꿔 보세요.</string>
+    <string name="block_fail_satin_long">여기서는 새틴 땀이 12mm를 넘어요. 이 영역은 채움으로 하세요.</string>
 </resources>

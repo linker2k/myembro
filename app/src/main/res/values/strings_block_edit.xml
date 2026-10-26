@@ -52,7 +52,6 @@
     <string name="block_edit_details">Details</string>
     <string name="block_edit_details_hide">Hide details</string>
     <string name="block_fail_meander_small">This pattern is too large for this region. Enlarge the region or make the pattern smaller.</string>
-    <string name="block_fail_meander_repeats">The pattern repeats too often in this region. Make the pattern larger.</string>
     <string name="block_fail_satin">This shape cannot be made as satin.</string>
     <string name="block_fail_no_stitches">These settings make no stitches in this region.</string>
     <string name="block_fail_unsupported">This fill is not available in this version.</string>
@@ -70,4 +69,6 @@
     <string name="block_sewout_incomplete">the check could not finish</string>
     <string name="block_sewout_file">the file check failed</string>
     <string name="block_sewout_other">another check item</string>
+    <string name="block_fail_meander_failed">This pattern could not be made in this region. Try a different pattern size.</string>
+    <string name="block_fail_satin_long">Satin stitches here would be longer than 12mm. Use a fill for this region.</string>
 </resources>

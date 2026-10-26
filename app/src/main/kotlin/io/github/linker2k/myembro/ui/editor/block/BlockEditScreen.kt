@@ -147,8 +147,9 @@ private fun FailureNote(status: BlockStatus.Blocked) {
 @Composable
 internal fun failureText(f: BlockFailure): String = when (f.kind) {
     BlockFailure.Kind.MEANDER_REGION_TOO_SMALL -> stringResource(R.string.block_fail_meander_small)
-    BlockFailure.Kind.MEANDER_TOO_MANY_REPEATS -> stringResource(R.string.block_fail_meander_repeats)
+    BlockFailure.Kind.MEANDER_FAILED -> stringResource(R.string.block_fail_meander_failed)
     BlockFailure.Kind.SATIN_UNSUPPORTED -> stringResource(R.string.block_fail_satin)
+    BlockFailure.Kind.SATIN_TOO_LONG -> stringResource(R.string.block_fail_satin_long)
     BlockFailure.Kind.NO_STITCHES -> stringResource(R.string.block_fail_no_stitches)
     BlockFailure.Kind.UNSUPPORTED_METHOD -> stringResource(R.string.block_fail_unsupported)
     BlockFailure.Kind.GENERATION_FAILED -> stringResource(R.string.block_fail_generation)
