@@ -9,23 +9,31 @@ import kotlinx.serialization.json.*
 /** Cached photo defaults are part of the source payload: decoding must never route them through VectorArt. */
 internal object PhotoShapeCodec {
     fun encode(obj: ShapeObject) = buildJsonObject {
-        put("version",1)
+        put("version",2)
         put("regions",JsonArray(obj.regions.map { r -> buildJsonObject {
             put("id",r.id);put("sourceShape",r.sourceShape);put("thread",ProjectJson.encodeThread(r.color))
             put("paths",JsonArray(r.paths.map { p -> buildJsonObject {
                 put("closed",p.closed);put("points",JsonArray(p.points.map { q -> buildJsonArray { add(q.x);add(q.y) } }))
             } }))
         } }))
-        val p=obj.localPattern()
-        put("pattern",buildJsonObject {
-            put("stitches",JsonArray(p.stitches.map { s -> buildJsonArray { add(s.x);add(s.y);add(s.command.name) } }))
-            put("threads",JsonArray(p.threads.map(ProjectJson::encodeThread)))
-            put("metadata",JsonObject(p.metadata.mapValues { JsonPrimitive(it.value) }))
-            put("warnings",JsonArray(p.warnings.map(::JsonPrimitive)))
-        })
+        val source=requireNotNull(obj.photoSource)
+        put("pattern",encodePattern(source.pattern))
+        put("fragments",JsonObject(source.fragments.mapValues { encodePattern(it.value) }))
     }
+    private fun encodePattern(p: EmbPattern)=buildJsonObject {
+        put("stitches",JsonArray(p.stitches.map { s -> buildJsonArray { add(s.x);add(s.y);add(s.command.name) } }))
+        put("threads",JsonArray(p.threads.map(ProjectJson::encodeThread)))
+        put("metadata",JsonObject(p.metadata.mapValues { JsonPrimitive(it.value) }))
+        put("warnings",JsonArray(p.warnings.map(::JsonPrimitive)))
+    }
+    private fun decodePattern(p: JsonObject)=EmbPattern(p.getValue("stitches").jsonArray.map { value ->
+        val s=value.jsonArray;require(s.size==3);Stitch(s[0].jsonPrimitive.int,s[1].jsonPrimitive.int,Command.valueOf(s[2].jsonPrimitive.content))
+    },p.getValue("threads").jsonArray.map { ProjectJson.decodeThread(it.jsonObject) },
+        p.getValue("metadata").jsonObject.mapValues { it.value.jsonPrimitive.content },p.getValue("warnings").jsonArray.map { it.jsonPrimitive.content })
+
     fun decode(fields: ProjectObjectFields, art: VectorArt.Art, widthMm: Double, data: JsonObject): ShapeObject {
-        require(data.getValue("version").jsonPrimitive.int==1)
+        val version=data.getValue("version").jsonPrimitive.int
+        require(version in 1..2)
         val regions=data.getValue("regions").jsonArray.map { value ->
             val r=value.jsonObject
             val paths=r.getValue("paths").jsonArray.map { path ->
@@ -36,12 +44,10 @@ internal object PhotoShapeCodec {
             ShapeRegion(r.getValue("id").jsonPrimitive.content,r.getValue("sourceShape").jsonPrimitive.int,
                 ShapeObjectFactory.PHOTO_FILL,paths,ProjectJson.decodeThread(r.getValue("thread").jsonObject),BlockStitch())
         }
-        val p=data.getValue("pattern").jsonObject
-        val pattern=EmbPattern(p.getValue("stitches").jsonArray.map { value ->
-            val s=value.jsonArray;require(s.size==3);Stitch(s[0].jsonPrimitive.int,s[1].jsonPrimitive.int,Command.valueOf(s[2].jsonPrimitive.content))
-        },p.getValue("threads").jsonArray.map { ProjectJson.decodeThread(it.jsonObject) },
-            p.getValue("metadata").jsonObject.mapValues { it.value.jsonPrimitive.content },p.getValue("warnings").jsonArray.map { it.jsonPrimitive.content })
-        return ShapeObjectFactory.retained(fields.id,fields.name,art,widthMm,regions,pattern)
+        val pattern=decodePattern(data.getValue("pattern").jsonObject)
+        val fragments=if(version==2) data.getValue("fragments").jsonObject.mapValues { decodePattern(it.value.jsonObject) } else emptyMap()
+        require(fragments.isEmpty() || fragments.keys==regions.map { it.id }.toSet()) { "INVALID_PHOTO_PROVENANCE" }
+        return ShapeObjectFactory.retained(fields.id,fields.name,art,widthMm,regions,pattern,fragments)
             .withTransform(fields.transform).withVisible(fields.visible)
     }
 }
