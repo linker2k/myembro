@@ -9,6 +9,7 @@ import kotlinx.serialization.json.*
 /** Additive v1 object codec; original import/text formats and codec precedence are unchanged. */
 object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObject::class.java) {
     override fun encodePayload(obj: ShapeObject): JsonObject = buildJsonObject {
+        put("regionOrder",JsonArray(obj.regionOrder.map(::JsonPrimitive)))
         put("shapeVersion",1);put("widthMm",obj.widthMm)
         if (ShapeObjectFactory.isPhoto(obj)) put("photo", PhotoShapeCodec.encode(obj))
         put("viewBox",JsonArray(obj.sourceArt.viewBox.map(::JsonPrimitive)))
@@ -32,11 +33,13 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
             })
         val base = data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
             ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm"))
-        return base
+        val restored = base
             .withOverrides(data.getValue("blocks").jsonObject.mapValues { decodeBlock(it.value.jsonObject) })
             .withTransform(fields.transform).withVisible(fields.visible)
+        return data["regionOrder"]?.let { restored.withRegionOrder(it.jsonArray.map { v -> v.jsonPrimitive.content }) } ?: restored
     }
-    private fun encodeBlock(b: BlockStitch)=buildJsonObject {
+    /** Current editable block settings, shared by persistence and tool inspection. */
+    fun encodeBlock(b: BlockStitch)=buildJsonObject {
         put("type",b.type.name);put("automatic_angle",b.automatic_angle)
         put("fill_method",b.fill.fill_method);put("angle",b.fill.angle);put("row_spacing_mm",b.fill.row_spacing_mm)
         put("meander_pattern",b.meander_pattern);put("meander_scale_percent",JsonArray(b.meander_scale_percent.map(::JsonPrimitive)))

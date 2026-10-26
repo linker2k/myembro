@@ -49,7 +49,7 @@ interface RelayToolGroup {
 }
 
 object RelayToolGroups {
-    fun default(): List<RelayToolGroup> = listOf(ProjectRelayTools(), PhotoRelayTools())
+    fun default(): List<RelayToolGroup> = listOf(ProjectRelayTools(), BlockRelayTools(), PhotoRelayTools())
 }
 
 /** All groups behind one socket: the hello lists their tools and each call goes to the group that offered it. */

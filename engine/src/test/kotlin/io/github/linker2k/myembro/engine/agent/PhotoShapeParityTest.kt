@@ -58,6 +58,7 @@ class PhotoShapeParityTest {
             val shape=assertIs<ShapeObject>(restored.objects.single())
             assertTrue(ShapeObjectFactory.isPhoto(shape));assertEquals(obj.sourceArt,shape.sourceArt)
             assertEquals(obj.transform,shape.transform);assertEquals(obj.visible,shape.visible)
+            assertEquals(obj.regionOrder,shape.regionOrder)
             assertEquals(obj.localPattern().stitches,shape.localPattern().stitches)
             assertEquals(obj.localPattern().threads,shape.localPattern().threads)
             assertEquals(obj.localPattern().metadata,shape.localPattern().metadata)
