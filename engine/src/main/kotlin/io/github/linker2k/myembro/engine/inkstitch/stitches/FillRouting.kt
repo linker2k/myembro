@@ -9,8 +9,7 @@ import org.locationtech.jts.operation.overlayng.OverlayNG
 import org.locationtech.jts.operation.overlayng.OverlayNGRobust
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper
 import org.locationtech.jts.index.strtree.STRtree
-import org.locationtech.jts.operation.relateng.RelateNG
-import org.locationtech.jts.operation.relateng.RelatePredicate
+import io.github.linker2k.myembro.engine.geometry.LegacyCrosses
 import org.locationtech.jts.precision.GeometryPrecisionReducer
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier
 import java.util.PriorityQueue
@@ -331,10 +330,9 @@ object FillRouting {
             val weightedOutline = GeometryPrecisionReducer.reduce(
                 DouglasPeuckerSimplifier.simplify(polygon.boundary, 0.5*PIXELS_PER_MM), PrecisionModel(1e6))
             val index = STRtree()
-            // Keep the same OGC crosses predicate and insertion order, but prepare each row once.
-            // Legacy Geometry.crosses rebuilds/nodes the entire long spiral on every candidate query.
+            // Retain each row and STRtree order, but explicitly use the classic relation engine.
+            // Prepared geometry delegates crosses to GeometryRelate; the newer relation engine fails ART verification.
             val rows = fill.edges.values.filter { it.key == "segment" }.associateWith { FillGeometry.line(it.points!!) }
-            val predicates = rows.mapValues { RelateNG.prepare(it.value) }
             for ((edge, geometry) in rows) index.insert(geometry.envelopeInternal, edge)
             index.build()
             for (line in travelEdges) {
@@ -343,7 +341,7 @@ object FillRouting {
                 val edge = graph.add(a, b, "travel", weight = a.point().distance(b.point())/(line.distance(weightedOutline)+0.1))
                 for (candidate in index.query(line.envelopeInternal)) {
                     val row = candidate as Edge
-                    if (predicates.getValue(row).evaluate(line, RelatePredicate.crosses())) row.underpathEdges += edge.id
+                    if (LegacyCrosses.test(rows.getValue(row), line)) row.underpathEdges += edge.id
                 }
             }
         }
