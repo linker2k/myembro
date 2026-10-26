@@ -52,8 +52,9 @@ class ShapeObject internal constructor(
     regions: List<ShapeRegion>,
     val overrides: Map<String, BlockStitch> = emptyMap(),
     val regionOrder: List<String> = frozen(regions.map { it.id }),
+    internal val photoSource: PhotoShapeSource? = null,
     private val rendered: Lazy<VectorArt.Result> = lazy {
-        val result = VectorArt.render(sourceArt, widthMm, name = name,
+        val result = if(photoSource!=null) PhotoShapeRenderer.render(photoSource,regions,overrides,widthMm) else VectorArt.render(sourceArt, widthMm, name = name,
             regionOverride = { input -> overrides[input.id]?.let { ShapeBlockRenderer.generate(input, it) } }, captureRegions = true)
         require(overrides.isEmpty() || result.parts.map { it.regionId }.toSet() == regions.map { it.id }.toSet()) {
             "REGION_SET_CHANGED: override must not silently exclude another region"
@@ -72,7 +73,10 @@ class ShapeObject internal constructor(
     fun regionPattern(id: String): EmbPattern = rendered.value.regionPatterns.getValue(id)
     internal fun withRegionOrder(order: List<String>): ShapeObject {
         require(order.size==regions.size && order.toSet()==regions.map { it.id }.toSet()) { "INVALID_REGION_ORDER" }
-        return if(order==regionOrder) this else ShapeObject(id,name,sourceArt,widthMm,transform,visible,regions,overrides,frozen(order),rendered)
+        require(order==regionOrder || photoSource==null || photoSource.fragments.keys.containsAll(order)) {
+            "PHOTO_SOURCE_PROVENANCE_MISSING: reimport this picture"
+        }
+        return if(order==regionOrder) this else ShapeObject(id,name,sourceArt,widthMm,transform,visible,regions,overrides,frozen(order),photoSource,rendered)
     }
     override fun withId(id: String) = if (this.id == id) this else copy(id = id)
     override fun withTransform(t: Transform) = if (transform == t) this else copy(transform = t)
@@ -85,7 +89,7 @@ class ShapeObject internal constructor(
     override fun hashCode(): Int = listOf(id, name, sourceArt, widthMm, transform, visible, overrides, regionOrder).hashCode()
 
     private fun copy(id: String = this.id, transform: Transform = this.transform, visible: Boolean = this.visible) =
-        ShapeObject(id, name, sourceArt, widthMm, transform, visible, regions, overrides, regionOrder, rendered)
+        ShapeObject(id, name, sourceArt, widthMm, transform, visible, regions, overrides, regionOrder, photoSource, rendered)
 
     internal fun withOverrides(values: Map<String, BlockStitch>): ShapeObject {
         require(values.keys.all { key -> regions.any { it.id == key } }) { "UNKNOWN_REGION" }
@@ -95,7 +99,7 @@ class ShapeObject internal constructor(
         val updated = regions.map { r -> ShapeRegion(r.id, r.sourceShape, r.role, r.paths, r.color,
             normalized[r.id] ?: r.defaultStitch, r.defaultStitch) }
         return ShapeObject(id, name, sourceArt, widthMm, transform, visible, updated,
-            java.util.Collections.unmodifiableMap(normalized.mapValues { (_,value) -> value.copy(meander_scale_percent=frozen(value.meander_scale_percent)) }), regionOrder)
+            java.util.Collections.unmodifiableMap(normalized.mapValues { (_,value) -> value.copy(meander_scale_percent=frozen(value.meander_scale_percent)) }), regionOrder, photoSource)
     }
 
     companion object {

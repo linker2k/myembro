@@ -22,23 +22,23 @@ object ShapeObjectFactory {
         val x = points.minOf { it.x }; val y = points.minOf { it.y }
         val art = VectorArt.Art(frozen(listOf(x,y,points.maxOf { it.x }-x,points.maxOf { it.y }-y)),
             frozen(regions.map { region -> VectorArt.Shape(pathData(region.paths), region.color.color and 0xffffff, null, fillRule=FillRule.EVEN_ODD) }))
-        return retained(id,name,art,widthMm,regions,result.pattern)
+        return retained(id,name,art,widthMm,regions,result.pattern,result.regionPatterns)
     }
     /** Codec and rename retain the same backend/default pattern, including thread identity and metadata. */
     internal fun retained(id: String, name: String, art: VectorArt.Art, widthMm: Double,
-        regions: List<ShapeRegion>, pattern: EmbPattern): ShapeObject {
+        regions: List<ShapeRegion>, pattern: EmbPattern, fragments: Map<String,EmbPattern> = emptyMap()): ShapeObject {
         require(id.isNotBlank() && widthMm.isFinite() && widthMm > 0)
         require(regions.isNotEmpty() && regions.all { it.role == PHOTO_FILL && it.paths.isNotEmpty() })
         val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes))
         val cached = EmbPattern(frozen(pattern.stitches), frozen(pattern.threads),
             Collections.unmodifiableMap(LinkedHashMap(pattern.metadata)), frozen(pattern.warnings))
+        val native=Collections.unmodifiableMap(fragments.mapValues { (_,p) -> EmbPattern(frozen(p.stitches),frozen(p.threads),
+            Collections.unmodifiableMap(LinkedHashMap(p.metadata)),frozen(p.warnings)) })
         return ShapeObject(id=id,name=name,sourceArt=source,widthMm=widthMm,transform=Transform(),
-            visible=true,regions=regions,rendered=lazyOf(VectorArt.Result(cached,
-                regions.map { r -> VectorArt.Part(r.sourceShape,r.role,StitchTypeRule.Type.TATAMI,r.color,
-                    widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id) },1.0)))
+            visible=true,regions=regions,photoSource=PhotoShapeSource(cached,native))
     }
     fun renamed(obj: ShapeObject, id: String, name: String): ShapeObject = if(isPhoto(obj))
-        retained(id,name,obj.sourceArt,obj.widthMm,obj.regions,obj.localPattern())
+        retained(id,name,obj.sourceArt,obj.widthMm,obj.regions,requireNotNull(obj.photoSource).pattern,obj.photoSource.fragments)
             .withOverrides(obj.overrides).withRegionOrder(obj.regionOrder).withTransform(obj.transform).withVisible(obj.visible)
         else ShapeObject.fromArt(id,name,obj.sourceArt,obj.widthMm).withOverrides(obj.overrides).withRegionOrder(obj.regionOrder)
 

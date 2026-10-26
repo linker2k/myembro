@@ -38,7 +38,8 @@ object ColorDrawingPipeline {
         val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int,val excluded:Boolean=false,
         /** Actual Potrace polygon rings, in object-local mm; holes are retained. */
         val paths:List<Polyline> = emptyList())
-    data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>) {
+    data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>,
+        val regionPatterns:Map<String,io.github.linker2k.myembro.engine.model.EmbPattern> = emptyMap()) {
         val excludedCount get()=regions.count { it.excluded }
     }
 
@@ -93,6 +94,9 @@ object ColorDrawingPipeline {
     }
 
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result {
+        return generate(preview,hoop,true,checkpoint)
+    }
+    internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={}):Result {
         val w=preview.width;val h=preview.height;val labels=preview.indices()
         val mmPerPixel=preview.canvasWidthMm/w
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
@@ -160,7 +164,13 @@ object ColorDrawingPipeline {
                     }
                     val next=resolved.groups
                     if(next.isNotEmpty() && groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
-                    groups+=next
+                    val tag="myembro.region:region-${regions.count { !it.excluded && it.groups>0 }}"
+                    fun tagged(lock:LockStitch?) = LockStitch { stitches,position ->
+                        (lock ?: InkLockStitch()).stitches(stitches,position).map { it.copy(tags=it.tags+tag) }
+                    }
+                    groups+=if(captureRegions) next.map { group -> group.copy(
+                        stitches=group.stitches.map { it.copy(tags=it.tags+tag) },
+                        lockStart=tagged(group.lockStart),lockEnd=tagged(group.lockEnd)) } else next
 
                     val polygon=shape as org.locationtech.jts.geom.Polygon
                     val sourcePaths=(listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN))
@@ -168,10 +178,13 @@ object ColorDrawingPipeline {
                     regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded,sourcePaths)
                 }
             }
+        val owners=mutableListOf<String?>()
         val finished=if(groups.isEmpty()) io.github.linker2k.myembro.engine.model.EmbPattern(emptyList(),emptyList())
-            else GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+            else GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true,stitchOwners=owners)
         val pattern=io.github.linker2k.myembro.engine.model.EmbPattern(finished.stitches,finished.threads,
             finished.metadata+mapOf("myembro.excluded_regions" to regions.count { it.excluded }.toString()),finished.warnings)
-        return Result(pattern,regions)
+        val threads=regions.filter { !it.excluded && it.groups>0 }.mapIndexed { i,r -> "region-$i" to r.thread }.toMap()
+        val fragments=if(captureRegions && groups.isNotEmpty()) io.github.linker2k.myembro.engine.inkstitch.svg.RegionOrderPatterns.split(finished,owners,threads) else emptyMap()
+        return Result(pattern,regions,fragments)
     }
 }
