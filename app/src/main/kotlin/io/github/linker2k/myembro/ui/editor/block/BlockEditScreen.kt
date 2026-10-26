@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -92,7 +93,8 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                         Spacer(Modifier.weight(1f))
                         SewoutBadge(status)
                     }
-                    if (status is BlockStatus.Generating || status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                    if (status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                    if (status is BlockStatus.Generating) GeneratingRow(vm, status)
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
                 }
@@ -113,14 +115,72 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
     }
 }
 
+/** Generation in progress: elapsed seconds and Cancel (nothing is committed, previous settings stay). */
+@Composable
+private fun GeneratingRow(vm: EditorViewModel, status: BlockStatus.Generating) {
+    var elapsed by remember(status) { mutableLongStateOf(vm.blockElapsedMs(status)) }
+    LaunchedEffect(status) { while (true) { elapsed = vm.blockElapsedMs(status); delay(500) } }
+    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        LinearProgressIndicator(Modifier.weight(1f))
+        Text(stringResource(R.string.block_edit_elapsed, elapsed / 1000), Modifier.padding(horizontal = 8.dp),
+            style = MaterialTheme.typography.labelMedium)
+        TextButton(onClick = vm::cancelBlockApply) { Text(stringResource(R.string.block_edit_cancel)) }
+    }
+}
+
+/** Short localized reason; generation failures and sewing-check blocks read differently. Details show the engine text. */
+@Composable
+private fun FailureNote(status: BlockStatus.Blocked) {
+    var details by remember(status) { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    val reason = failureText(status.failure)
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Text(if (status.applyFailed) stringResource(R.string.block_edit_kept, reason) else reason,
+            style = MaterialTheme.typography.bodySmall, color = colors.error)
+        TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) {
+            Text(stringResource(if (details) R.string.block_edit_details_hide else R.string.block_edit_details), style = MaterialTheme.typography.labelSmall)
+        }
+        if (details) Text(status.failure.detail, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+    }
+}
+
+@Composable
+internal fun failureText(f: BlockFailure): String = when (f.kind) {
+    BlockFailure.Kind.MEANDER_REGION_TOO_SMALL -> stringResource(R.string.block_fail_meander_small)
+    BlockFailure.Kind.MEANDER_TOO_MANY_REPEATS -> stringResource(R.string.block_fail_meander_repeats)
+    BlockFailure.Kind.SATIN_UNSUPPORTED -> stringResource(R.string.block_fail_satin)
+    BlockFailure.Kind.NO_STITCHES -> stringResource(R.string.block_fail_no_stitches)
+    BlockFailure.Kind.UNSUPPORTED_METHOD -> stringResource(R.string.block_fail_unsupported)
+    BlockFailure.Kind.GENERATION_FAILED -> stringResource(R.string.block_fail_generation)
+    BlockFailure.Kind.SETTINGS_INVALID -> stringResource(R.string.block_fail_settings)
+    BlockFailure.Kind.DESIGN_CHANGED -> stringResource(R.string.block_fail_changed)
+    BlockFailure.Kind.EDITOR_BUSY -> stringResource(R.string.block_fail_busy)
+    BlockFailure.Kind.SEWOUT_BLOCKED -> stringResource(R.string.block_fail_sewout,
+        f.sewoutCodes.map { sewoutText(it) }.distinct().ifEmpty { listOf(stringResource(R.string.block_sewout_other)) }.joinToString(", "))
+}
+
+@Composable
+private fun sewoutText(code: String): String = stringResource(when (code) {
+    "HOOP_SAFETY_MARGIN", "HOOP_EXCEEDED", "MACHINE_AREA_EXCEEDED" -> R.string.block_sewout_hoop
+    "DENSITY_HOTSPOT" -> R.string.block_sewout_density
+    "LONG_STITCH", "MACHINE_STITCH_LENGTH_EXCEEDED", "PEC_DELTA_EXCEEDED" -> R.string.block_sewout_long
+    "REPEATED_PENETRATION", "ZERO_LENGTH_MOTION" -> R.string.block_sewout_repeated
+    "MISSING_LOCK_STITCH" -> R.string.block_sewout_lock
+    "EMPTY_DESIGN" -> R.string.block_sewout_empty
+    "ANALYSIS_LIMIT", "ANALYSIS_INCOMPLETE" -> R.string.block_sewout_incomplete
+    "INVALID_PES", "PEC_ORIGIN" -> R.string.block_sewout_file
+    else -> R.string.block_sewout_other
+})
+
 /** The whole design's real result: placed inside the hoop and SewoutCheck without blockers. */
 @Composable
 private fun SewoutBadge(status: BlockStatus) {
     val colors = MaterialTheme.colorScheme
     val (text, icon, tint) = when (status) {
         BlockStatus.Idle, BlockStatus.Checking -> Triple(R.string.block_edit_sewout_checking, Icons.Default.HourglassEmpty, colors.onSurfaceVariant)
-        BlockStatus.Generating -> Triple(R.string.block_edit_generating, Icons.Default.HourglassEmpty, colors.onSurfaceVariant)
+        is BlockStatus.Generating -> Triple(R.string.block_edit_generating, Icons.Default.HourglassEmpty, colors.onSurfaceVariant)
         BlockStatus.Passed -> Triple(R.string.block_edit_sewout_pass, Icons.Default.CheckCircle, colors.primary)
+        BlockStatus.Cancelled -> Triple(R.string.block_edit_cancelled_badge, Icons.Default.Info, colors.onSurfaceVariant)
         is BlockStatus.Blocked -> if (status.applyFailed) Triple(R.string.block_edit_apply_failed, Icons.Default.ErrorOutline, colors.error)
             else Triple(R.string.block_edit_sewout_blocked, Icons.Default.ErrorOutline, colors.error)
     }
@@ -205,9 +265,10 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
             Text(stringResource(R.string.block_edit_selected, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Button(onClick = onApply, enabled = status !is BlockStatus.Generating && loaded != null && options.allows(draft)) { Text(stringResource(R.string.block_edit_apply)) }
         }
-        // A refused apply keeps the previous settings; say why (engine code and message, never bypassed).
-        if (status is BlockStatus.Blocked) Text(stringResource(if (status.applyFailed) R.string.block_edit_kept else R.string.block_edit_blocked_now, status.reason),
-            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.bodySmall, color = colors.error, maxLines = 3)
+        // A refused apply keeps the previous settings: a short localized reason; the engine text only in details.
+        if (status is BlockStatus.Blocked) FailureNote(status)
+        if (status is BlockStatus.Cancelled) Text(stringResource(R.string.block_edit_cancelled),
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Label(R.string.block_edit_type)
