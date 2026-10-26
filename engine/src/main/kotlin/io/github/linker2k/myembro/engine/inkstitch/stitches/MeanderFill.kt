@@ -258,25 +258,34 @@ object MeanderFill {
         val initial = shortestPath(graph, start, end)
         val path = initial.zipWithNext { a, b -> Edge(a, b) }.toMutableList()
         path.forEach { removeEdge(graph, it) }
-        val unused = (graph.keys - initial.toSet()).toMutableSet()
+        // Stable IDs preserve graph/adjacency order while avoiding coordinate hashing in deep DFS.
+        val nodes = graph.keys.toList()
+        val ids = nodes.withIndex().associate { it.value to it.index }
+        val initialNodes = initial.toSet()
+        val unused = BooleanArray(nodes.size) { nodes[it] !in initialNodes }
+        val adjacency = Array(nodes.size) { i -> graph.getValue(nodes[i]).map { ids.getValue(it) }.toMutableList() }
+        val visited = BooleanArray(nodes.size)
         val edges = path.toMutableList()
         fun alternative(a: FillPoint, b: FillPoint, cutoff: Int, minimum: Int): List<Edge>? {
-            val allowed = unused + setOf(a, b)
-            val visited = mutableSetOf(a)
-            val candidate = mutableListOf<Edge>()
-            fun dfs(node: FillPoint): List<Edge>? {
-                if (node == b) return if (candidate.size > minimum) candidate.toList() else null
-                if (candidate.size >= cutoff) return null
-                for (neighbor in graph.getValue(node)) {
-                    if (neighbor !in allowed || !visited.add(neighbor)) continue
-                    candidate += Edge(node, neighbor)
-                    val result = dfs(neighbor)
+            val startId = ids.getValue(a); val endId = ids.getValue(b)
+            val candidate = IntArray(cutoff + 1)
+            candidate[0] = startId
+            fun dfs(node: Int, depth: Int): List<Edge>? {
+                if (node == endId) return if (depth > minimum)
+                    List(depth) { Edge(nodes[candidate[it]], nodes[candidate[it + 1]]) } else null
+                if (depth >= cutoff) return null
+                for (neighbor in adjacency[node]) {
+                    if ((!unused[neighbor] && neighbor != startId && neighbor != endId) || visited[neighbor]) continue
+                    visited[neighbor] = true
+                    candidate[depth + 1] = neighbor
+                    val result = dfs(neighbor, depth + 1)
+                    visited[neighbor] = false
                     if (result != null) return result
-                    candidate.removeAt(candidate.lastIndex); visited.remove(neighbor)
                 }
                 return null
             }
-            return dfs(a)
+            visited[startId] = true
+            return try { dfs(startId, 0) } finally { visited[startId] = false }
         }
         fun <T> popRandom(list: MutableList<T>): T {
             val index = Math.rint(rng() * (list.size - 1)).toInt()
@@ -288,7 +297,12 @@ object MeanderFill {
         fun apply(index: Int, removeCount: Int, replacement: List<Edge>) {
             repeat(removeCount) { path.removeAt(index) }
             path.addAll(index, replacement)
-            replacement.forEach { removeEdge(graph, it); unused.remove(it.start) }
+            replacement.forEach {
+                removeEdge(graph, it)
+                val a = ids.getValue(it.start); val b = ids.getValue(it.end)
+                adjacency[a].remove(b); adjacency[b].remove(a)
+                unused[a] = false
+            }
             edges += replacement
         }
         while (edges.isNotEmpty()) {

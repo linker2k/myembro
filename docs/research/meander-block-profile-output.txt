@@ -1,0 +1,23 @@
+BEFORE
+MEANDER_PROFILE shape=circle run=1 total_ms=5308.873283 stitches=994 stages_ms={geometry=9.302541, underlay=84.95147, top=0.266866, tile_graph=80.771775, connect=5.13484, search=5120.18705, post=1.441567, finish=6.817174} golden=RECORDED
+MEANDER_PROFILE shape=circle run=2 total_ms=4845.907106 stitches=994 stages_ms={geometry=8.397086, underlay=69.43419, top=0.085865, tile_graph=56.776986, connect=1.217818, search=4703.610217, post=0.587282, finish=5.797662} golden=RECORDED
+MEANDER_PROFILE shape=circle run=3 total_ms=5807.981328 stitches=994 stages_ms={geometry=5.705408, underlay=51.404774, top=0.086916, tile_graph=28.815528, connect=1.437576, search=5713.819095, post=0.630408, finish=6.081623} golden=RECORDED
+MEANDER_MEDIAN shape=circle ms=5308.873283
+MEANDER_PROFILE shape=square run=1 total_ms=4038.120815 stitches=1234 stages_ms={geometry=10.178388, underlay=64.410345, top=0.062307, tile_graph=6.837995, connect=1.709613, search=3942.445712, post=0.638708, finish=11.837747} golden=RECORDED
+MEANDER_PROFILE shape=square run=2 total_ms=4057.653167 stitches=1234 stages_ms={geometry=5.046206, underlay=48.9048, top=0.059257, tile_graph=5.039544, connect=1.782709, search=3975.874996, post=0.508217, finish=20.437438} golden=RECORDED
+MEANDER_PROFILE shape=square run=3 total_ms=4782.686794 stitches=1234 stages_ms={geometry=5.328964, underlay=96.46546, top=0.061559, tile_graph=10.139436, connect=2.843141, search=4660.983048, post=0.512244, finish=6.352942} golden=RECORDED
+MEANDER_MEDIAN shape=square ms=4057.653167
+
+AFTER
+MEANDER_PROFILE shape=circle run=1 total_ms=1209.394645 stitches=994 stages_ms={geometry=25.799296, underlay=143.357181, top=0.347628, tile_graph=137.00787, connect=20.910045, search=856.380364, post=5.716171, finish=19.87609} golden=IDENTICAL
+MEANDER_PROFILE shape=circle run=2 total_ms=1015.265878 stitches=994 stages_ms={geometry=27.894745, underlay=144.957117, top=0.079165, tile_graph=54.243211, connect=2.208369, search=763.321235, post=5.338059, finish=17.223977} golden=IDENTICAL
+MEANDER_PROFILE shape=circle run=3 total_ms=689.730505 stitches=994 stages_ms={geometry=12.334801, underlay=139.039209, top=0.09029, tile_graph=42.540245, connect=3.852882, search=485.164314, post=0.572071, finish=6.136693} golden=IDENTICAL
+MEANDER_MEDIAN shape=circle ms=1015.265878
+MEANDER_PROFILE shape=square run=1 total_ms=409.190032 stitches=1234 stages_ms={geometry=8.274761, underlay=69.084337, top=0.063876, tile_graph=7.26134, connect=1.908015, search=313.594423, post=0.692555, finish=8.310725} golden=IDENTICAL
+MEANDER_PROFILE shape=square run=2 total_ms=413.099332 stitches=1234 stages_ms={geometry=5.386127, underlay=61.379634, top=0.062996, tile_graph=12.757197, connect=2.024559, search=323.136185, post=0.637201, finish=7.715433} golden=IDENTICAL
+MEANDER_PROFILE shape=square run=3 total_ms=381.409226 stitches=1234 stages_ms={geometry=5.038703, underlay=56.518593, top=0.054607, tile_graph=4.635846, connect=1.614635, search=305.748821, post=0.637668, finish=7.160353} golden=IDENTICAL
+MEANDER_MEDIAN shape=square ms=409.190032
+
+NORMAL FULL ENGINE REGRESSION
+{'tests': 933, 'failures': 0, 'errors': 0, 'skipped': 0}
+BUILD SUCCESSFUL in 1m 18s
