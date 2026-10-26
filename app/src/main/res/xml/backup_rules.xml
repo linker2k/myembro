@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android backup (API 30 and lower): everything as before, except the AI connection's APP_KEY file. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="relay_connection.xml" />
+</full-backup-content>
