@@ -1,0 +1,125 @@
+{
+  "before_commit": "eae1290",
+  "before": {
+    "PASS": 157,
+    "ERROR": 3
+  },
+  "after": {
+    "PASS": 160,
+    "ERROR": 0
+  },
+  "previously_completed_metrics_unchanged": 157,
+  "cases": [
+    {
+      "id": "square__meander_fill__NC5-11a",
+      "before": {
+        "id": "square__meander_fill__NC5-11a",
+        "shape": "square",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-square",
+        "tile": "NC5-11a",
+        "input": "solid red; default params",
+        "status": "ERROR",
+        "pes_written": false,
+        "stitches": null,
+        "peak_cell_0_5mm": null,
+        "analysis_complete": false,
+        "blockers": [],
+        "reason": "IllegalStateException: Meander path search resource limit exceeded",
+        "elapsed_ms": 277,
+        "thumbnail": "square__meander_fill__NC5-11a.png"
+      },
+      "after": {
+        "id": "square__meander_fill__NC5-11a",
+        "shape": "square",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-square",
+        "tile": "NC5-11a",
+        "input": "solid red; default params",
+        "status": "PASS",
+        "pes_written": true,
+        "stitches": 1230,
+        "peak_cell_0_5mm": 3,
+        "analysis_complete": true,
+        "blockers": [],
+        "reason": "",
+        "elapsed_ms": 2115,
+        "thumbnail": "square__meander_fill__NC5-11a.png"
+      }
+    },
+    {
+      "id": "circle__meander_fill__NC5-11a",
+      "before": {
+        "id": "circle__meander_fill__NC5-11a",
+        "shape": "circle",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-circle",
+        "tile": "NC5-11a",
+        "input": "solid red; default params",
+        "status": "ERROR",
+        "pes_written": false,
+        "stitches": null,
+        "peak_cell_0_5mm": null,
+        "analysis_complete": false,
+        "blockers": [],
+        "reason": "IllegalStateException: Meander path search resource limit exceeded",
+        "elapsed_ms": 276,
+        "thumbnail": "circle__meander_fill__NC5-11a.png"
+      },
+      "after": {
+        "id": "circle__meander_fill__NC5-11a",
+        "shape": "circle",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-circle",
+        "tile": "NC5-11a",
+        "input": "solid red; default params",
+        "status": "PASS",
+        "pes_written": true,
+        "stitches": 1007,
+        "peak_cell_0_5mm": 3,
+        "analysis_complete": true,
+        "blockers": [],
+        "reason": "",
+        "elapsed_ms": 3652,
+        "thumbnail": "circle__meander_fill__NC5-11a.png"
+      }
+    },
+    {
+      "id": "circle__meander_fill__P3-1",
+      "before": {
+        "id": "circle__meander_fill__P3-1",
+        "shape": "circle",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-circle",
+        "tile": "P3-1",
+        "input": "solid red; default params",
+        "status": "ERROR",
+        "pes_written": false,
+        "stitches": null,
+        "peak_cell_0_5mm": null,
+        "analysis_complete": false,
+        "blockers": [],
+        "reason": "IllegalStateException: Meander path search resource limit exceeded",
+        "elapsed_ms": 236,
+        "thumbnail": "circle__meander_fill__P3-1.png"
+      },
+      "after": {
+        "id": "circle__meander_fill__P3-1",
+        "shape": "circle",
+        "method": "meander_fill",
+        "resolved_default_seed": "texture-circle",
+        "tile": "P3-1",
+        "input": "solid red; default params",
+        "status": "PASS",
+        "pes_written": true,
+        "stitches": 725,
+        "peak_cell_0_5mm": 3,
+        "analysis_complete": true,
+        "blockers": [],
+        "reason": "",
+        "elapsed_ms": 387,
+        "thumbnail": "circle__meander_fill__P3-1.png"
+      }
+    }
+  ]
+}
