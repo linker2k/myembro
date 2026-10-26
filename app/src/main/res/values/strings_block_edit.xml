@@ -80,4 +80,5 @@
     <string name="block_fail_memory">Not enough memory on this device for these settings. Try a larger pattern or a simpler fill.</string>
     <string name="editor_shape_fallback">%1$d shape(s) could not be generated on this device; showing the last good stitches. Saving and sending are blocked until they generate.</string>
     <string name="editor_generation_failed_device">A shape could not be generated on this device, so nothing was saved or sent.</string>
+    <string name="device_generation_failed">Stitches could not be made on this device, so nothing was saved or sent.</string>
 </resources>

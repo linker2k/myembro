@@ -117,6 +117,7 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
                 sizeMm = result.third?.let { (it.maxX - it.minX) / 10.0 to (it.maxY - it.minY) / 10.0 }
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: java.io.IOException) { error = R.string.emoji_download_failed
+            } catch (_: LinkageError) { error = R.string.device_generation_failed   // e.g. VerifyError: nothing produced, nothing saved
             } catch (_: Exception) { error = R.string.emoji_stitch_failed
             } finally { busy = false }
         }

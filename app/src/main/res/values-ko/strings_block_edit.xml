@@ -80,4 +80,5 @@
     <string name="block_fail_memory">이 기기 메모리로는 이 설정을 만들 수 없어요. 무늬를 키우거나 더 단순한 채움을 고르세요.</string>
     <string name="editor_shape_fallback">이 기기에서 생성하지 못한 도형 %1$d개를 마지막 결과로 표시 중이에요. 생성될 때까지 저장·전송은 막혀요.</string>
     <string name="editor_generation_failed_device">이 기기에서 도형을 생성하지 못해 저장·전송하지 않았어요.</string>
+    <string name="device_generation_failed">이 기기에서 바늘땀을 만들지 못해 저장·전송하지 않았어요.</string>
 </resources>

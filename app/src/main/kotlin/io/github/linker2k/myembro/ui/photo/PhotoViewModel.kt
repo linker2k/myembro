@@ -247,6 +247,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 }
             } catch (_: TimeoutCancellationException) { if (version == revision) error = R.string.svg_picture_unsupported }
             catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: LinkageError) { if (version == revision) error = R.string.device_generation_failed }
             catch (_: Exception) { if (version == revision) error = R.string.svg_picture_unsupported }
             finally { if (version == revision) busy = false }
         }
@@ -382,6 +383,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     resultSizeMm=output.first.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: LinkageError) { if(version==revision) error=R.string.device_generation_failed
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
             } finally { if(version==revision) busy=false }
         }
