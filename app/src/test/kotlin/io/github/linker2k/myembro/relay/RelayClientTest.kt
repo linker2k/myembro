@@ -68,7 +68,7 @@ class RelayClientTest {
         val photos = all.takeLast(RelayPhotoTools.NAMES.size)
         assertEquals(RelayPhotoTools.NAMES, photos.map { it.getValue("name").jsonPrimitive.content }.toSet())
         for (p in photos) assertTrue("readOnlyHint" in p.getValue("annotations").jsonObject && "readOnly" !in p.getValue("annotations").jsonObject)
-        val tools = all.dropLast(RelayPhotoTools.NAMES.size)
+        val tools = all.dropLast(RelayPhotoTools.NAMES.size).filter { it.getValue("name").jsonPrimitive.content !in io.github.linker2k.myembro.engine.agent.BlockTools.names }
         // The checked-in strict definitions, projected for the relay only (RelayCatalog): short description, no
         // transactionId, fewer required arguments, add_text's optional position; annotations in MCP's names.
         val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }

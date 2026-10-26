@@ -33,7 +33,8 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
             .withOverrides(data.getValue("blocks").jsonObject.mapValues { decodeBlock(it.value.jsonObject) })
             .withTransform(fields.transform).withVisible(fields.visible)
     }
-    private fun encodeBlock(b: BlockStitch)=buildJsonObject {
+    /** Current editable block settings, shared by persistence and tool inspection. */
+    fun encodeBlock(b: BlockStitch)=buildJsonObject {
         put("type",b.type.name);put("automatic_angle",b.automatic_angle)
         put("fill_method",b.fill.fill_method);put("angle",b.fill.angle);put("row_spacing_mm",b.fill.row_spacing_mm)
         put("meander_pattern",b.meander_pattern);put("meander_scale_percent",JsonArray(b.meander_scale_percent.map(::JsonPrimitive)))

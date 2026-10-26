@@ -123,3 +123,89 @@ Command: `./gradlew :engine:test --tests '*ShapeObject*' --tests '*ProjectJson*'
 Result: BUILD SUCCESSFUL in 20s, 15 tests, 0 failures/errors/skips. This is a
 fixture regression, not a claim that arbitrary method/geometry combinations
 are sewable; other combinations return an actual blocking reason atomically.
+
+
+## AI connector block tools
+
+`list_blocks(objectId)` reads an editable `ShapeObject` in the editor or viewer. It returns
+`revision`, `objectId`, and `regions` (`id`, actual thread `color`, `stitch`, `areaMm2`).
+`stitch` uses the same effective editable `BlockStitch` fields as the project codec;
+`areaMm2` is local geometry area with holes subtracted (not transformed/placed area).
+`meanderPatterns` contains only bundled tile names, without tile geometry or previews.
+Frozen `StitchObject` inputs return `INVALID_OBJECT_TYPE`; missing ids return `MISSING_OBJECT`.
+
+`set_block_stitch(objectId, regionIds, change)` accepts the patch fields in
+`BlockStitchPatch`. Omitted fields stay unchanged, an empty patch is a no-op, and
+`automatic_angle=true` restores the existing app default. The engine dispatcher
+constructs the existing `ProjectCommand.SetBlockStitch`; no renderer or parameter
+policy is duplicated. The relay owns the transaction id and runs the editor's
+existing `runCommandScript`/`ToolTurnController` path: whole-project machine-specific
+`prepare_pes` checks precede a single undoable commit. Results include `revision`,
+`changed`, `changedIds`, `project`, and the `sewout` verdict when checking ran.
+Argument/parameter/generation failures are errors and publish no candidate or history.
+
+The optional patch vocabulary is validated by `BlockTools` on both JVM and Android;
+the old strict, all-fields-required `tools.json` contract remains unchanged.
+`docs/agent/relay-tools.json` is regenerated from the app hello; the relay static
+catalog imports that file at build time. No relay deployment is part of this change.
+
+## Region option prerequisites
+
+Public JVM/Android API: `BlockStitchCapabilities.forRegion(region, object.transform)`.
+It returns typed `satin`, `running`, and `fill` availability, each with `possible`,
+a rejection `reason` when unavailable, and measured `maxStitchLengthMm` for satin.
+`list_blocks.regions[].capabilities` exposes the same decisions as
+`SATIN`, `RUNNING`, and `FILL`, plus implemented `fillMethods`.
+
+- SATIN must successfully produce nonempty sewn segments through the existing
+  `RegionSatin.groups` with the region's current satin parameters. The maximum
+  sewn segment after object scaling must be at most
+  `SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM / 10.0` (P8: 12.0mm).
+  Pixel coordinates are converted using the existing `PIXELS_PER_MM`.
+  Travel between groups and explicit jump/terminator moves are excluded.
+  Rotation and translation do not change length; nonuniform scale and mirroring
+  are included. Failure codes distinguish unsupported geometry, generation
+  failure and excessive stitch length.
+- RUNNING requires a path containing at least 2 distinct points.
+- FILL requires a nonempty positive-area even-odd polygon using the same JTS
+  geometry conversion as the override renderer, retaining holes and validity
+  repair. Available block backends are tatami, meander, contour and circular.
+
+This is an option prerequisite check, not a PASS verdict or a substitute for
+full generation. It performs no tatami/texture rendering, project flattening,
+PES writing or whole-project sewing analysis. Satin uses the existing
+RegionSatin raster budget/pitch; its result and the geometry decisions are lazy
+and cached per immutable `ShapeRegion`. Pose-only copies share the probe;
+lengths are recomputed for the requested scale. UI callers must pass the
+object transform rather than assume local size. Actual override and export
+continue to enforce all P1–P8, density, hoop and machine checks.
+
+`linear_gradient_fill` is excluded from this version's block tool schema and
+available methods. A direct override command also returns
+`INVALID_BLOCK_SETTINGS` with `LINEAR_GRADIENT_REQUIRES_COLOR_STOPS` and an
+explanation that at least 2 color stops are needed. The current block model
+contains no color-stop list; no gradient approximation is substituted.
+
+Tests: `BlockStitchCapabilitiesTest` prints a 30mm Fluent heart/grinning-face
+region table and compares each satin decision with direct RegionSatin output.
+It also covers the exact 12.0mm boundary, over-limit and nonuniform scaling,
+mirroring, jumps/group travel, missing geometry, open running paths, probe
+reuse, unchanged original pattern and atomic gradient rejection. The relay
+integration test checks that the published options match the public API and
+that gradient rejection publishes no changes/history.
+
+Measured 30mm fixture prerequisites (this check does not assert sewout PASS):
+
+| fixture | region | SATIN | RUNNING | FILL | satin max mm | reason |
+| --- | --- | --- | --- | --- | --- | --- |
+| red_heart | region-0 | true | true | true | 6.043182154073487 | - |
+| red_heart | region-1 | true | true | true | 1.28445928649209 | - |
+| red_heart | region-2 | true | true | true | 2.4268218782830857 | - |
+| red_heart | region-3 | true | true | true | 4.537338501244528 | - |
+| grinning_face | region-0 | true | true | true | 5.459508048962072 | - |
+| grinning_face | region-1 | true | true | true | 1.960163957050729 | - |
+| grinning_face | region-2 | true | true | true | 2.2818040966478255 | - |
+| grinning_face | region-3 | false | true | true | null | SATIN_GEOMETRY_UNSUPPORTED |
+| grinning_face | region-4 | false | true | true | null | SATIN_GEOMETRY_UNSUPPORTED |
+| grinning_face | region-5 | true | true | true | 5.2094767928414845 | - |
+| grinning_face | region-6 | true | true | true | 1.6584975030878972 | - |
