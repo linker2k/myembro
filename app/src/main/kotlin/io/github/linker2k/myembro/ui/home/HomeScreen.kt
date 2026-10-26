@@ -159,9 +159,6 @@ private fun HomeContent(
                     }
                 },
                 actions = {
-                    if (onAiPicture != null) IconButton(onClick = onAiPicture) {
-                        Icon(Icons.Default.AutoAwesome, stringResource(R.string.ai_picture_title))
-                    }
                     IconButton(onClick = onSettings) {
                     Icon(Icons.Default.Settings, stringResource(R.string.home_settings))
                 } },
@@ -233,7 +230,7 @@ private fun HomeContent(
     if (showNewProject) NewProjectSheet(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
-        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji, onAiPicture = onAiPicture,
     )
 }
 

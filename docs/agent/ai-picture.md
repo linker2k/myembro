@@ -5,7 +5,7 @@ request through Android's normal chooser; it does not call an AI API or a relay 
 
 ## Flow
 
-- Home's AI icon, the editor's project menu and the photo screen open the same
+- Home's Create menu, the editor's Add sheet and the photo screen open the same
   `AiPictureDialog`. One description field accepts text or the existing free-form
   `RecognizerIntent` voice input. A reference photo is optional; the system image
   picker can add one from any entry point. No microphone permission or custom audio
@@ -88,3 +88,33 @@ PNG is still the default. The explicit SVG option, safe vector import, request-p
 PNG retry, exact-lettering hardening and one-shot requested color-count hand-off are
 implemented in [SVG picture input](svg-picture.md). Its current verification results
 supersede the initial PNG-only scope above. Consent remains per send, without a remember option.
+
+## Create-menu entry (agent/ai-picture-menu)
+
+The home top-bar AI icon is removed. Home's bottom Create menu includes the AI
+picture row after Photo/drawing and before Emoji, using the existing `CreationChoice`
+card/icon/hint/chevron layout and single-choice dismissal. The editor's project
+menu entry is moved to its existing Add sheet, reusing that exact AI creation row.
+Photo-screen entry and prompt/share behavior are unchanged.
+
+```sh
+ANDROID_HOME=/home/gosh2/Android/Sdk JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew check :app:assembleDebug :app:assembleDebugAndroidTest -PmyembroTestRunner=io.github.linker2k.myembro.ui.home.AiPictureMenuInstrumentation --console=plain
+adb -s emulator-5558 shell am instrument -w io.github.linker2k.myembro.test/io.github.linker2k.myembro.ui.home.AiPictureMenuInstrumentation
+```
+
+Output: `BUILD SUCCESSFUL in 2m 53s` (121 actionable tasks), including debug/release
+unit tests, engine/MCP checks and lint. `HomeNavigationTest` now checks the creation
+entry wiring; actual Android UI output:
+
+```text
+HOME PASS: AI picture entry absent before opening Create
+CREATE PASS: photo -> AI picture -> emoji row order; shared creation style; closes menu and opens description-only dialog
+EDITOR PASS: AI picture uses Add sheet's shared creation row; callback once and sheet dismissed
+AI_PICTURE_MENU_PASS
+INSTRUMENTATION_CODE: 0
+```
+
+Updated local screenshots: `/tmp/myembro-ai-picture-menu-shots/01-home-create-menu.png`,
+`02-editor-add-menu.png`. Logs: `/tmp/myembro-ai-picture-menu-check.log`,
+`/tmp/myembro-ai-picture-menu-smoke.log`. No image generation or external share is
+performed by this menu smoke. Only development emulator-5558 was installed.

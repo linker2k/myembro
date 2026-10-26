@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CollectionsBookmark
@@ -59,6 +60,7 @@ fun NewProjectSheet(
     onBlankFrame: ((HoopSpec) -> Unit)? = null,
     onFromPhoto: (() -> Unit)? = null,
     onFromEmoji: (() -> Unit)? = null,
+    onAiPicture: (() -> Unit)? = null,
 ) {
     val settings: SettingsViewModel = viewModel()
     val options = settings.settings.frames.filter { frame -> frame.preset in hoops || (frame.preset == null && onBlankFrame != null) }
@@ -116,6 +118,7 @@ fun NewProjectSheet(
                         stringResource(R.string.new_project_from_design_hint), !actionTaken) { choose(onFromDesign) }
                     if (onFromPhoto != null) CreationChoice(Icons.Default.AddPhotoAlternate, stringResource(R.string.photo_from_photo),
                         stringResource(R.string.photo_from_photo_hint), !actionTaken) { choose(onFromPhoto) }
+                    if (onAiPicture != null) AiPictureCreationChoice(!actionTaken) { choose(onAiPicture) }
                     if (onFromEmoji != null) CreationChoice(Icons.Default.EmojiEmotions, stringResource(R.string.emoji_from),
                         stringResource(R.string.emoji_from_hint), !actionTaken) { choose(onFromEmoji) }
                     if (letteringAvailable) CreationChoice(Icons.Default.TextFields, stringResource(R.string.new_project_from_text),
@@ -142,4 +145,11 @@ private fun CreationChoice(icon: ImageVector, title: String, hint: String, enabl
             Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
         }
     }
+}
+
+/** Same creation row for Home's Create menu and the editor's Add sheet. */
+@Composable
+internal fun AiPictureCreationChoice(enabled: Boolean, onClick: () -> Unit) {
+    CreationChoice(Icons.Default.AutoAwesome, stringResource(R.string.ai_picture_title),
+        stringResource(R.string.ai_picture_hint), enabled, onClick)
 }

@@ -143,8 +143,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             Box {
                                 IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
                                 DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
-                                    if (onAiPicture != null) DropdownMenuItem(text = { Text(stringResource(R.string.ai_picture_title)) },
-                                        onClick = { projectMenu = false; onAiPicture() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
                                         onClick = { projectMenu = false; vm.requestProjectSave() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
@@ -287,6 +285,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             TextButton(onClick = { showDesigns = false; importDesign() }, modifier = Modifier.padding(horizontal = 12.dp)) {
                 Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.import_title))
+            }
+            if (onAiPicture != null) Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+                io.github.linker2k.myembro.ui.home.AiPictureCreationChoice(enabled = !vm.busy) {
+                    showDesigns = false; onAiPicture()
+                }
             }
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
