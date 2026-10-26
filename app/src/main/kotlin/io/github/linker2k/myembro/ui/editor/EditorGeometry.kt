@@ -12,7 +12,7 @@ internal fun Bounds.outside(hoop: HoopSpec): Boolean = !hoop.contains(this)
 
 /** Hit test in local coordinates, including mirrored and rotated designs. */
 internal fun DesignObject.contains(x: Double, y: Double, tolerance: Double): Boolean {
-    val b = localPattern().bounds ?: return false
+    val b = ShapeStitchGuard.local(this).pattern.bounds ?: return false
     val t = transform
     val r = Math.toRadians(-t.rotationDeg)
     val dx = x - t.x

@@ -109,6 +109,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 onReady(EditorSplitPreview(snapshot, positions, result))
             } catch (e: CancellationException) { throw e
             } catch (e: EditorExportBlocked) { exportProblems = e.problems
+            } catch (e: LinkageError) { message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) { report(R.string.editor_save_failed, e)
             } finally { busy = false }
         }
@@ -826,6 +827,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     resource?.let { getApplication<Application>().getString(it) } ?: problem
                 }
+            } catch (e: LinkageError) {
+                // A shape this device cannot generate: nothing is written; the canvas fallback is never exported.
+                message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) {
                 message = getApplication<Application>().getString(R.string.editor_save_failed, e.localizedMessage.orEmpty())
             } finally { busy = false }

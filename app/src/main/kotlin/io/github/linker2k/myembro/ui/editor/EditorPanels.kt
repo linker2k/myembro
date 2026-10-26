@@ -57,7 +57,7 @@ internal fun ObjectProperties(vm: EditorViewModel, onDismiss: () -> Unit) {
     var sx by remember(obj.id) { mutableStateOf(format(abs(t.scaleX) * 100)) }
     var sy by remember(obj.id) { mutableStateOf(format(abs(t.scaleY) * 100)) }
     val parsed = parseEditorTransform(x, y, rotation, sx, sy, t)?.takeIf { candidate ->
-        obj.withTransform(candidate).placedPattern().bounds?.let { io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(vm.project.hoop,it) } != false
+        ShapeStitchGuard.placed(obj.withTransform(candidate)).pattern.bounds?.let { io.github.linker2k.myembro.engine.sewout.SewoutLimits.placedFits(vm.project.hoop,it) } != false
     }
     val warning = parsed?.let { obj.withTransform(it).densityWarning } == true
     AlertDialog(onDismissRequest = onDismiss,

@@ -320,7 +320,7 @@ private fun rememberObjectRenders(objects: List<DesignObject>, sewingOptions: Se
                     currentCoroutineContext().ensureActive()
                     val cacheKey=key to sewingOptions
                     obj.id to (cacheKey to (previous[obj.id]?.takeIf { it.first==cacheKey }?.second
-                        ?: (obj to RenderData(obj.placedPattern().withSewingDefaults(sewingOptions)).also {
+                        ?: (obj to RenderData(ShapeStitchGuard.placed(obj).pattern.withSewingDefaults(sewingOptions)).also {
                             it.pattern.bounds
                             if(io.github.linker2k.myembro.BuildConfig.DEBUG) android.util.Log.d("EditorTransform",
                                 "render_build id=${obj.id} scale=${obj.transform.scaleX},${obj.transform.scaleY}")
