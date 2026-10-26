@@ -33,6 +33,7 @@ internal object ShapeBlockRenderer {
     val methods = setOf("tatami_fill", "circular_fill", "contour_fill", "cross_stitch", "guided_fill",
         "linear_gradient_fill", "meander_fill", "tartan_fill", "legacy_fill")
     fun validate(p: BlockStitch) {
+        require(p.fill.fill_method != "linear_gradient_fill") { "LINEAR_GRADIENT_REQUIRES_COLOR_STOPS: block gradients need at least 2 color stops and are unavailable in this version" }
         require(p.fill.fill_method in methods) { "INVALID_FILL_METHOD" }
         require(p.fill.angle.isFinite()) { "INVALID_ANGLE" }
         require(!p.automatic_angle || p.fill.angle == FillParameters().angle) { "AUTOMATIC_ANGLE_MUST_MATCH_APP_DEFAULT" }

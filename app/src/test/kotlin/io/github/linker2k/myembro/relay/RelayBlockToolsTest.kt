@@ -64,4 +64,29 @@ class RelayBlockToolsTest {
         assertTrue(viewer.call("set_block_stitch",Json.parseToJsonElement("""{"objectId":"heart","regionIds":["region-0"],"change":{}}""").jsonObject).isError)
         assertTrue(call("set_block_stitch","""{"objectId":"heart","regionIds":[],"change":{}}""").first)
     }
+    @Test fun inspectionPublishesPublicCapabilityDecisionsAndGradientIsUnavailable()=runBlocking {
+        val (error,result)=call("list_blocks", """{"objectId":"heart"}""")
+        assertFalse(error)
+        for(row in result.getValue("regions").jsonArray) {
+            val r=row.jsonObject
+            val region=shape.regions.single { it.id==r.getValue("id").jsonPrimitive.content }
+            val caps=BlockStitchCapabilities.forRegion(region,shape.transform)
+            val published=r.getValue("capabilities").jsonObject
+            for((name,value) in mapOf("SATIN" to caps.satin,"RUNNING" to caps.running,"FILL" to caps.fill)) {
+                val option=published.getValue(name).jsonObject
+                assertEquals(value.possible,option.getValue("possible").jsonPrimitive.boolean)
+                assertEquals(value.reason,option["reason"]?.jsonPrimitive?.content)
+                assertEquals(value.maxStitchLengthMm,option["maxStitchLengthMm"]?.jsonPrimitive?.double)
+            }
+            assertFalse(JsonPrimitive("linear_gradient_fill") in published.getValue("fillMethods").jsonArray)
+        }
+        assertFalse(tools.definitions.single { it.getValue("name").jsonPrimitive.content=="set_block_stitch" }
+            .toString().contains("linear_gradient_fill"))
+        val (blocked,failure)=call("set_block_stitch", """{"objectId":"heart","regionIds":["region-0"],"change":{"fill_method":"linear_gradient_fill"}}""")
+        assertTrue(blocked)
+        assertEquals("INVALID_BLOCK_SETTINGS",failure.getValue("code").jsonPrimitive.content)
+        assertContains(failure.getValue("message").jsonPrimitive.content,"LINEAR_GRADIENT_REQUIRES_COLOR_STOPS")
+        assertEquals(base,session.project);assertEquals(0,session.history.undoCount)
+    }
+
 }

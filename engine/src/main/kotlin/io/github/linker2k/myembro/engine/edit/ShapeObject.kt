@@ -35,6 +35,7 @@ class ShapeRegion internal constructor(
     val defaultStitch: BlockStitch = stitch,
 ) {
     val paths: List<Polyline> = frozen(paths.map { it.copy(points = frozen(it.points)) })
+    internal val capabilityProbe: RegionCapabilityProbe by lazy { BlockStitchCapabilities.probe(this) }
 }
 
 /** Editable-vector model draft. Source paint geometry is retained, never reconstructed from stitches.
