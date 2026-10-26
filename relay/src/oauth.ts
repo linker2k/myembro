@@ -35,7 +35,7 @@ async function authorize(request: Request, env: OAuthEnv): Promise<Response> {
       const details = await oauth.describeConsent(auth);
       const consent = await oauth.beginConsent(auth);
       consent.headers.set('Content-Type', 'text/html; charset=utf-8');
-      consent.headers.set('Referrer-Policy', 'no-referrer');
+      consent.headers.set('Referrer-Policy', 'same-origin');
       return new Response(page(consent.handle, details.clientName, details.redirectHost, auth.scope), { headers: consent.headers });
     }
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
