@@ -91,6 +91,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
             targets(setOf(command.id))?.let { return it }
             val obj = project.find(command.id)!!
             val count = when (obj) {
+                is ShapeObject -> return error(CommandError.INVALID_OBJECT_TYPE, setOf(command.id), "Shape recoloring is not implemented in this draft")
                 is TextObject -> 1 // Existing editor recolor changes only the base thread, not character overrides.
                 is StitchObject -> maxOf(obj.source.threads.size, obj.source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)
             }
@@ -114,6 +115,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
 
 /** Same value operation as the existing app EditorAppearance.recolored; no app dependency. */
 private fun recolor(obj: DesignObject, index: Int, thread: EmbThread): DesignObject = when (obj) {
+    is ShapeObject -> error("Shape recoloring requires a region-aware command")
     is TextObject -> if (obj.thread == thread) obj else obj.copy(thread = thread)
     is StitchObject -> if (obj.source.threadAt(index) == thread) obj else {
         val count = maxOf(obj.source.threads.size, obj.source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)

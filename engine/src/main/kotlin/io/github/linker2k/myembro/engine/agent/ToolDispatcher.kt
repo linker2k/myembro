@@ -226,8 +226,8 @@ class ToolDispatcher(
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {
-                put("id", o.id); put("name", o.name); put("visible", o.visible); put("type", if (o is TextObject) "text" else "stitch")
-                val threads = when(o) { is StitchObject -> o.source.threads; is TextObject -> listOf(o.thread) }
+                put("id", o.id); put("name", o.name); put("visible", o.visible); put("type", when (o) { is TextObject -> "text"; is ShapeObject -> "shape"; is StitchObject -> "stitch" })
+                val threads = when(o) { is StitchObject -> o.source.threads; is TextObject -> listOf(o.thread); is ShapeObject -> o.localPattern().threads }
                 o.placedBounds()?.let { b -> put("placedBoundsMm",buildJsonObject {
                     put("minXMm",b.minX/10.0);put("minYMm",b.minY/10.0);put("maxXMm",b.maxX/10.0);put("maxYMm",b.maxY/10.0)
                     put("widthMm",b.width/10.0);put("heightMm",b.height/10.0)
