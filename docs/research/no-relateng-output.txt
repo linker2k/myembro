@@ -1,0 +1,28 @@
+BEFORE: agent/block-int b59e9bb
+CIRCULAR_PROFILE shape=circle run=1 total_ms=1038.129935 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=796.899818 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=741.116562 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=796.899818
+CIRCULAR_PROFILE shape=square run=1 total_ms=843.384339 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=784.744445 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=714.290189 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=784.744445
+
+AFTER: agent/no-relateng
+CIRCULAR_PROFILE shape=circle run=1 total_ms=6523.740367 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=6734.646665 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=6779.503274 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=6734.646665
+CIRCULAR_PROFILE shape=square run=1 total_ms=9346.530396 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=9808.29184 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=9097.195383 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=9346.530396
+
+FULL ENGINE SUITE
+{'tests': 940, 'failures': 0, 'errors': 0, 'skipped': 0}
+BUILD SUCCESSFUL in 1m 58s
+
+NO_UNSUPPORTED_RELATION_PACKAGE sources=376 violations=0
+CLASSIC_RELATION_ISOLATION pairs=25 forbidden_class_loads=0
+
+CIRCULAR_PREDICATE_PARITY pairs=81 identical=true
