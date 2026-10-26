@@ -42,7 +42,7 @@ class ShapeRegion internal constructor(
  * Rendering reuses VectorArt unchanged, including shared classification, occlusion, routing and finish.
  * Region changes are applied atomically through ProjectCommand.SetBlockStitch.
  * No codec/UI installation is implied by constructing this object. */
-class ShapeObject private constructor(
+class ShapeObject internal constructor(
     override val id: String,
     override val name: String,
     val sourceArt: VectorArt.Art,

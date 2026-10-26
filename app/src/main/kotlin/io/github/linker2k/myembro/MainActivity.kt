@@ -213,8 +213,9 @@ class MainActivity : ComponentActivity() {
                                 val transform = if (b == null) Transform() else Transform(
                                     x = ((b.minX.toLong() + b.maxX) / 2).toDouble(),
                                     y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
-                                editor.startWith(StitchObject(UUID.randomUUID().toString(), context.getString(R.string.photo_name), pattern,
-                                    transform = transform), photo.hoop)
+                                editor.startWith(photo.shapeObject?.withId(UUID.randomUUID().toString())
+                                    ?: StitchObject(UUID.randomUUID().toString(), context.getString(R.string.photo_name), pattern,
+                                        transform = transform), photo.hoop)
                                 stack += Screen.EDITOR
                             }
                         }, onSend = { file ->
@@ -222,12 +223,8 @@ class MainActivity : ComponentActivity() {
                             stack += Screen.LIBRARY; library.exportToUsb()
                         })
                     Screen.EMOJI -> io.github.linker2k.myembro.ui.emoji.EmojiScreen(emoji, settings.settings, onBack = back, onEdit = {
-                        emoji.render?.pattern?.let { pattern ->
-                            val b = pattern.bounds
-                            val transform = if (b == null) Transform() else Transform(
-                                x = ((b.minX.toLong() + b.maxX) / 2).toDouble(), y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
-                            editor.startWith(StitchObject(UUID.randomUUID().toString(), emoji.selected?.name ?: "emoji", pattern,
-                                transform = transform), emoji.hoop)
+                        emoji.shapeObject?.let { shape ->
+                            editor.startWith(shape.withId(UUID.randomUUID().toString()), emoji.hoop)
                             stack += Screen.EDITOR
                         }
                     })

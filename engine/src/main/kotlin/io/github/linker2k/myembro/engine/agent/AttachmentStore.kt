@@ -66,10 +66,13 @@ internal class PhotoPreparation(private val attachments: AttachmentStore) {
         val corrected = photoToolRaster(raster, mode, filter)
         val pixels = corrected.pixels
         val thread = EmbThread(0xFFB5492A.toInt(), "Photo")
+        var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
         val pattern = if(color) {
             val preview = ColorDrawingPipeline.trace(raster.width,raster.height,pixels,widthMm,
                 if(mode=="bw") 2 else colors,minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=mode=="bw")
-            ColorDrawingPipeline.generate(preview,hoop).pattern
+            val generated = ColorDrawingPipeline.generate(preview,hoop)
+            shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared","Photo",generated,widthMm)
+            generated.pattern
         } else {
             pixels.indices.forEach { pixels[it] = pixels[it] and 0xFFFFFF }
             fun trace(rgb: IntArray) = RedworkPipeline.trace(raster.width,raster.height,rgb,widthMm,0,thread,
@@ -90,6 +93,6 @@ internal class PhotoPreparation(private val attachments: AttachmentStore) {
         val report = SewoutCheck.checkPes(pes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
         if(!report.analysisComplete || report.hasBlockingIssues) throw EmojiToolRejection("SEWOUT_BLOCKED","Photo did not pass the existing sewout gate")
         // Opaque local result capability, not a hash of private pixels/bytes or a path.
-        return PreparedEmoji("photo-${UUID.randomUUID()}","Photo",pattern,widthMm,range,report.verdict)
+        return PreparedEmoji("photo-${UUID.randomUUID()}","Photo",pattern,widthMm,range,report.verdict,shape)
     }
 }
