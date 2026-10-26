@@ -37,6 +37,7 @@ import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.semantics.contentDescription
@@ -92,7 +93,7 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                 }
             }
             val sheet = @Composable { modifier: Modifier ->
-                BlockSheet(selected.size, draft, { draft = it }, status,
+                BlockSheet(selected.size, draft, { draft = it }, status, state.options(),
                     onApply = { vm.applyBlockStitch(shape.id, selected, BlockApply.patch(draft)) }, modifier)
             }
             if (wide) Row(Modifier.fillMaxSize()) {
@@ -181,7 +182,7 @@ private fun regionPaths(r: BlockRegion, fit: BlockCanvasFit): Pair<Path, Path> {
 }
 
 @Composable
-private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus,
+private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus, options: BlockOptions,
                        onApply: () -> Unit, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     Surface(modifier, color = colors.surfaceContainerLow, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), tonalElevation = 2.dp) {
@@ -195,7 +196,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         // Apply stays on screen while the settings below scroll.
         Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.block_edit_selected, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Button(onClick = onApply, enabled = status !is BlockStatus.Generating) { Text(stringResource(R.string.block_edit_apply)) }
+            Button(onClick = onApply, enabled = status !is BlockStatus.Generating && options.allows(draft)) { Text(stringResource(R.string.block_edit_apply)) }
         }
         // A refused apply keeps the previous settings; say why (engine code and message, never bypassed).
         if (status is BlockStatus.Blocked) Text(stringResource(if (status.applyFailed) R.string.block_edit_kept else R.string.block_edit_blocked_now, status.reason),
@@ -203,13 +204,16 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Label(R.string.block_edit_type)
+            // Options a selected region does not allow stay visible but disabled.
+            if (!options.allows(draft)) Text(stringResource(R.string.block_edit_option_unavailable), style = MaterialTheme.typography.labelSmall, color = colors.error)
             Segmented(listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running),
-                draft.type.ordinal) { onDraft(draft.copy(type = BlockType.entries[it])) }
+                draft.type.ordinal, enabled = { BlockType.entries[it] in options.types }) { onDraft(draft.copy(type = BlockType.entries[it])) }
             if (draft.type == BlockType.FILL) {
                 Label(R.string.block_edit_texture)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     BlockTexture.entries.forEach { t ->
-                        TextureTile(t, draft.tile, t == draft.texture, Modifier.weight(1f), TEXTURE_NAMES[t.ordinal]) { onDraft(draft.copy(texture = t)) }
+                        TextureTile(t, draft.tile, t == draft.texture, Modifier.weight(1f), TEXTURE_NAMES[t.ordinal], enabled = t in options.textures) {
+                            onDraft(draft.copy(texture = t)) }
                     }
                 }
                 if (draft.texture == BlockTexture.PATTERN) {
@@ -248,7 +252,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
 }
 
 private val TEXTURE_NAMES = listOf(R.string.block_edit_texture_basic, R.string.block_edit_texture_pattern, R.string.block_edit_texture_contour,
-    R.string.block_edit_texture_circular, R.string.block_edit_texture_gradient)
+    R.string.block_edit_texture_circular)
 
 @Composable
 private fun Label(text: Int) = Text(stringResource(text), style = MaterialTheme.typography.labelLarge)
@@ -264,9 +268,9 @@ private fun Segmented(labels: List<Int>, selected: Int, enabled: (Int) -> Boolea
 }
 
 @Composable
-private fun TextureTile(texture: BlockTexture, tile: String, chosen: Boolean, modifier: Modifier, name: Int?, onClick: () -> Unit) {
+private fun TextureTile(texture: BlockTexture, tile: String, chosen: Boolean, modifier: Modifier, name: Int?, enabled: Boolean = true, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column(modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.alpha(if (enabled) 1f else 0.38f).clickable(enabled = enabled, onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(Modifier.fillMaxWidth().aspectRatio(1f)
             .background(colors.surface, RoundedCornerShape(8.dp))
             .border(BorderStroke(if (chosen) 2.dp else 1.dp, if (chosen) colors.primary else colors.outlineVariant), RoundedCornerShape(8.dp))
@@ -295,7 +299,6 @@ private fun DrawScope.drawTexture(texture: BlockTexture, tile: String, ink: Colo
     val w = size.width; val h = size.height; val stroke = Stroke(1.2.dp.toPx())
     when (texture) {
         BlockTexture.BASIC -> for (i in 1..6) drawLine(ink, Offset(0f, h * i / 7), Offset(w, h * i / 7), stroke.width)
-        BlockTexture.GRADIENT -> { var y = 2f; var gap = 2f; while (y < h) { drawLine(ink, Offset(0f, y), Offset(w, y), stroke.width); y += gap; gap *= 1.45f } }
         BlockTexture.CONTOUR -> for (i in 0..3) { val inset = i * w / 9; drawRoundRect(ink, Offset(inset, inset), Size(w - 2 * inset, h - 2 * inset),
             androidx.compose.ui.geometry.CornerRadius(w / 5 - inset / 2), style = stroke) }
         BlockTexture.CIRCULAR -> for (i in 1..4) drawCircle(ink, w / 2 * i / 4.2f, Offset(w / 2, h / 2), style = stroke)

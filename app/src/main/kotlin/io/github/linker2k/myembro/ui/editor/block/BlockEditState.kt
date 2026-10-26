@@ -10,8 +10,21 @@ import kotlin.math.hypot
  */
 enum class BlockType { FILL, SATIN, RUNNING }
 
-/** Fill textures as the PE-Design style menu shows them; PATTERN uses an Ink/Stitch meander tile. */
-enum class BlockTexture { BASIC, PATTERN, CONTOUR, CIRCULAR, GRADIENT }
+/**
+ * Fill textures as the PE-Design style menu shows them; PATTERN uses an Ink/Stitch meander tile.
+ * Gradient is left out of this version: it needs color stops, and the engine rejects it.
+ */
+enum class BlockTexture { BASIC, PATTERN, CONTOUR, CIRCULAR }
+
+/**
+ * What a region allows. The engine will report this per region (e.g. whether SATIN is possible); until it
+ * does, [BlockApply.options] allows everything shown, and the sheet already disables what is not allowed.
+ */
+data class BlockOptions(val types: Set<BlockType> = BlockType.entries.toSet(), val textures: Set<BlockTexture> = BlockTexture.entries.toSet()) {
+    /** Options several selected regions share. */
+    infix fun and(other: BlockOptions) = BlockOptions(types intersect other.types, textures intersect other.textures)
+    fun allows(d: BlockStitchDraft) = d.type in types && (d.type != BlockType.FILL || d.texture in textures)
+}
 
 /** Three steps only; the mm spacing for each is unverified and is set from Ink/Stitch ranges at engine hookup. */
 enum class BlockDensity { DENSE, NORMAL, SPARSE }
@@ -32,7 +45,8 @@ data class BlockStitchDraft(
 class RegionPath(val xs: DoubleArray, val ys: DoubleArray, val closed: Boolean)
 
 /** One region in sewing order: its outline (holes as extra closed rings), thread color and chosen stitch. */
-data class BlockRegion(val id: String, val paths: List<RegionPath>, val color: Int, val stitch: BlockStitchDraft) {
+data class BlockRegion(val id: String, val paths: List<RegionPath>, val color: Int, val stitch: BlockStitchDraft,
+    val options: BlockOptions = BlockOptions()) {
     /** Even-odd inside test over all closed rings (holes excluded); lines and satin edges hit within [lineMm]. */
     fun hit(x: Double, y: Double, lineMm: Double): Boolean {
         var inside = false
@@ -79,6 +93,9 @@ class BlockEditState(val regions: List<BlockRegion>) {
     /** Keeps a selection across a rebuild from the committed shape (ids that still exist). */
     fun restore(ids: Set<String>) { selected = ids.filterTo(linkedSetOf()) { id -> regions.any { it.id == id } } }
 
+    /** What every selected region allows. */
+    fun options(): BlockOptions = regions.filter { it.id in selected }.map { it.options }.reduceOrNull(BlockOptions::and) ?: BlockOptions()
+
     /** The draft the sheet opens with: the first selected region's stitch. */
     fun draft(): BlockStitchDraft = regions.firstOrNull { it.id in selected }?.stitch ?: BlockStitchDraft()
 
@@ -86,7 +103,7 @@ class BlockEditState(val regions: List<BlockRegion>) {
         /** The shape's actually emitted regions, in its sewing order, with their resolved stitch type. */
         fun of(shape: ShapeObject) = BlockEditState(shape.regions.map { r ->
             BlockRegion(r.id, r.paths.map { p -> RegionPath(DoubleArray(p.points.size) { p.points[it].x },
-                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch))
+                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch), BlockApply.options(r))
         })
     }
 }

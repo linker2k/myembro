@@ -16,7 +16,6 @@
     <string name="block_edit_texture_pattern">Pattern</string>
     <string name="block_edit_texture_contour">Contour</string>
     <string name="block_edit_texture_circular">Circular</string>
-    <string name="block_edit_texture_gradient">Gradient</string>
     <string name="block_edit_tiles">Meander tile</string>
     <string name="block_edit_direction">Direction</string>
     <string name="block_edit_direction_auto">Auto</string>
@@ -39,4 +38,5 @@
     <string name="block_edit_kept">Not applied, previous settings kept: %1$s</string>
     <string name="block_edit_blocked_now">The design is blocked now: %1$s</string>
     <string name="block_edit_order_pending">Changing region order needs an engine command (not available yet)</string>
+    <string name="block_edit_option_unavailable">Not available for the selected region</string>
 </resources>

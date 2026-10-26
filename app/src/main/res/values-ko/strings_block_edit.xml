@@ -16,7 +16,6 @@
     <string name="block_edit_texture_pattern">무늬</string>
     <string name="block_edit_texture_contour">윤곽</string>
     <string name="block_edit_texture_circular">원형</string>
-    <string name="block_edit_texture_gradient">그라데이션</string>
     <string name="block_edit_tiles">미앤더 타일</string>
     <string name="block_edit_direction">방향</string>
     <string name="block_edit_direction_auto">자동</string>
@@ -39,4 +38,5 @@
     <string name="block_edit_kept">적용하지 않고 이전 설정을 유지했어요: %1$s</string>
     <string name="block_edit_blocked_now">지금 도안이 차단 상태예요: %1$s</string>
     <string name="block_edit_order_pending">영역 순서 변경은 엔진 명령이 아직 없어 준비 중이에요</string>
+    <string name="block_edit_option_unavailable">선택한 영역에서는 쓸 수 없는 설정이에요</string>
 </resources>

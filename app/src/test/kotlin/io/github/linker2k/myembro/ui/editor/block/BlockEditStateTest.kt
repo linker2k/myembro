@@ -60,3 +60,23 @@ class BlockEditStateTest {
         ids.forEach { assertTrue(it, MeanderThumbnails.lines(it).coords.size >= 4) }
     }
 }
+
+class BlockOptionsTest {
+    private fun region(id: String, options: BlockOptions) = BlockRegion(id,
+        listOf(RegionPath(doubleArrayOf(0.0, 10.0, 10.0, 0.0), doubleArrayOf(0.0, 0.0, 10.0, 10.0), true)), 0, BlockStitchDraft(), options)
+
+    @Test fun selectedRegionsShareOnlyCommonOptions() {
+        val noSatin = BlockOptions(types = setOf(BlockType.FILL, BlockType.RUNNING))
+        val s = BlockEditState(listOf(region("a", BlockOptions()), region("b", noSatin)))
+        s.selectAll()
+        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), s.options().types)
+        assertEquals(false, s.options().allows(BlockStitchDraft(type = BlockType.SATIN)))
+        assertEquals(true, s.options().allows(BlockStitchDraft(texture = BlockTexture.PATTERN)))
+        assertEquals(false, BlockOptions(textures = setOf(BlockTexture.BASIC)).allows(BlockStitchDraft(texture = BlockTexture.CONTOUR)))
+    }
+
+    @Test fun gradientIsNotOfferedThisVersion() {
+        assertEquals(listOf("BASIC", "PATTERN", "CONTOUR", "CIRCULAR"), BlockTexture.entries.map { it.name })
+        assertEquals(BlockTexture.entries.toSet(), BlockApply.FILL_METHOD.keys)
+    }
+}

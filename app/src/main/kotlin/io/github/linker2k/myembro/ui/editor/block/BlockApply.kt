@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.ui.editor.block
 import io.github.linker2k.myembro.engine.edit.BlockStitch
 import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
 import io.github.linker2k.myembro.engine.edit.Project
+import io.github.linker2k.myembro.engine.edit.ShapeRegion
 import io.github.linker2k.myembro.engine.inkstitch.elements.FillParameters
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
@@ -27,7 +28,11 @@ sealed interface BlockStatus {
 object BlockApply {
     /** Sheet texture -> Ink/Stitch fill_method (fill_stitch.py:166–184 option IDs). */
     val FILL_METHOD = mapOf(BlockTexture.BASIC to "tatami_fill", BlockTexture.PATTERN to "meander_fill",
-        BlockTexture.CONTOUR to "contour_fill", BlockTexture.CIRCULAR to "circular_fill", BlockTexture.GRADIENT to "linear_gradient_fill")
+        BlockTexture.CONTOUR to "contour_fill", BlockTexture.CIRCULAR to "circular_fill")
+
+    /** Engine hook: per-region allowed settings once the engine provides them; for now everything shown. */
+    @Suppress("UNUSED_PARAMETER")
+    fun options(region: ShapeRegion): BlockOptions = BlockOptions()
 
     /**
      * Row spacing per density step. Only NORMAL has a basis: the upstream default row_spacing_mm 0.25
