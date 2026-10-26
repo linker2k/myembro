@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { Miniflare } from 'miniflare';
+import { Miniflare, Log, LogLevel } from 'miniflare';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,17 +21,19 @@ function next(socket: any, type: string): Promise<any> {
 describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket', () => {
   let mf: Miniflare;
   const sockets: any[] = [];
+  const logLines: string[] = [];
+  class CapturedLog extends Log { protected log(message: string) { logLines.push(message); } }
   const persistence = mkdtempSync(join(tmpdir(), 'myembro-relay-test-'));
-  const create = () => new Miniflare({ modules: true, scriptPath: 'dist/worker.js', compatibilityDate: '2026-07-30', compatibilityFlags: ['nodejs_compat'],
+  const create = () => new Miniflare({ log: new CapturedLog(LogLevel.INFO), modules: true, scriptPath: 'dist/worker.js', compatibilityDate: '2026-07-30', compatibilityFlags: ['nodejs_compat'],
       durableObjects: { RELAY: { className: 'Relay', useSQLite: true } },
-      durableObjectsPersist: persistence, bindings: { APP_KEY: 'test-only-app-key', MCP_SECRET: 'test-only-mcp-secret' } });
+      durableObjectsPersist: persistence, bindings: { APP_KEY: 'test-only-app-key', MCP_TOKEN: 'test-only-mcp-token' } });
   beforeAll(() => { mf = create(); });
   afterAll(async () => { for (const s of sockets) { try { s.close(); } catch { /* replaced/closed test sockets */ } } await mf.dispose(); rmSync(persistence, { recursive: true, force: true }); });
-  async function rpc(method: string, params = {}, secret = 'test-only-mcp-secret') {
-    return mf.dispatchFetch(`http://localhost/mcp/${secret}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  async function rpc(method: string, params = {}, token: string | null = 'test-only-mcp-token') {
+    return mf.dispatchFetch('http://localhost/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', ...(token === null ? {} : { Authorization: `Bearer ${token}` }) }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
   }
   async function app() {
-    const response = await mf.dispatchFetch('http://localhost/app?key=test-only-app-key', { headers: { Upgrade: 'websocket' } });
+    const response = await mf.dispatchFetch('http://localhost/app', { headers: { Upgrade: 'websocket', Authorization: 'Bearer test-only-app-key' } });
     expect(response.status).toBe(101); const s = response.webSocket!; s.accept(); sockets.push(s);
     s.send(hello()); const ready = next(s, 'pong'); s.send(JSON.stringify({ type: 'ping' })); await ready; return s;
   }
@@ -74,9 +76,47 @@ describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket
     const disconnected = await rpc('tools/call', { name: 'get_project', arguments: {} });
     expect((await disconnected.json() as any).result).toEqual({ isError: true, content: [{ type: 'text', text: DISCONNECTED }] });
   });
-  it('rejects incorrect APP_KEY and MCP_SECRET', async () => {
-    expect((await mf.dispatchFetch('http://localhost/app?key=wrong', { headers: { Upgrade: 'websocket' } })).status).toBe(401);
-    expect((await rpc('tools/list', {}, 'wrong')).status).toBe(401);
+  it('rejects missing, wrong and malformed MCP headers with generic 401 bodies', async () => {
+    for (const token of [null, '', 'wrong', 'test-only-mcp-tokeX', 'test-only-mcp-token-longer']) {
+      const response = await rpc('tools/list', {}, token);
+      expect(response.status).toBe(401); expect(await response.text()).toBe('Unauthorized');
+    }
+    for (const authorization of ['Basic test-only-mcp-token', 'Bearer', 'Bearer test-only-mcp-token,other']) {
+      const response = await mf.dispatchFetch('http://localhost/mcp', { headers: { Authorization: authorization } });
+      expect(response.status).toBe(401); expect(await response.text()).toBe('Unauthorized');
+    }
+    expect((await rpc('tools/list')).status).toBe(200);
+  });
+  it('removes old MCP secret paths and all MCP query authentication', async () => {
+    for (const suffix of ['/retired-path-value', '/anything', '/']) {
+      const response = await mf.dispatchFetch('http://localhost/mcp'+suffix, { headers: { Authorization: 'Bearer test-only-mcp-token' } });
+      expect(response.status).toBe(404); expect(await response.text()).toBe('Not found');
+    }
+    for (const query of ['?key=test-only-mcp-token', '?token=test-only-mcp-token']) {
+      const response = await mf.dispatchFetch('http://localhost/mcp'+query);
+      expect(response.status).toBe(401); expect(await response.text()).toBe('Unauthorized');
+    }
+  });
+  it('allows legacy app query keys temporarily, but explicit bad headers cannot downgrade', async () => {
+    for (const [path, authorization] of [
+      ['/app', undefined], ['/app?key=wrong', undefined], ['/app', 'Bearer wrong'],
+      ['/app?key=test-only-app-key', 'Bearer wrong'], ['/app?key=test-only-app-key', 'Basic test-only-app-key']
+    ]) {
+      const response = await mf.dispatchFetch('http://localhost'+path, { headers: { Upgrade: 'websocket', ...(authorization ? { Authorization: authorization } : {}) } });
+      expect(response.status).toBe(401); expect(await response.text()).toBe('Unauthorized');
+    }
+    for (const [path, authorization] of [['/app?key=test-only-app-key', undefined], ['/app?key=wrong', 'Bearer test-only-app-key']]) {
+      const response = await mf.dispatchFetch('http://localhost'+path, { headers: { Upgrade: 'websocket', ...(authorization ? { Authorization: authorization } : {}) } });
+      expect(response.status).toBe(101); response.webSocket!.accept(); sockets.push(response.webSocket); response.webSocket!.close();
+    }
+  });
+  it('does not emit credentials in captured Worker runtime logs', async () => {
+    // Current credentials are sent in headers only; retired-path probes use a noncredential sentinel.
+    // Access logs can echo arbitrary caller-supplied URLs, so never put a live token in a URL.
+    await rpc('tools/list');
+    expect(logLines.join('\n')).not.toContain('test-only-app-key');
+    expect(logLines.join('\n')).not.toContain('test-only-mcp-token');
+    expect(logLines.join('\n')).not.toContain('Authorization: Bearer');
   });
 });
 

@@ -11,4 +11,4 @@ class_name = "Relay"
 tag = "v1"
 new_sqlite_classes = ["Relay"]
 
-# APP_KEY and MCP_SECRET are secrets. Supply them outside this file.
+# APP_KEY and MCP_TOKEN are secrets. Supply them outside this file.

@@ -3,16 +3,14 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from '@modelcontextprotocol/sdk/types.js';
 import { Broker } from './broker';
 
-interface Env { RELAY: DurableObjectNamespace; APP_KEY: string; MCP_SECRET: string }
-function authorized(request: Request, env: Env): boolean {
-  const u = new URL(request.url);
-  return u.pathname === '/app' ? !!env.APP_KEY && u.searchParams.get('key') === env.APP_KEY :
-    !!env.MCP_SECRET && u.pathname === `/mcp/${env.MCP_SECRET}`;
-}
+import { authorizationFailure, type RelaySecrets } from './auth';
+
+interface Env extends RelaySecrets { RELAY: DurableObjectNamespace }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (!authorized(request, env)) return new Response('Unauthorized', { status: 401 });
+    const denied = await authorizationFailure(request, env);
+    if (denied) return denied;
     return env.RELAY.get(env.RELAY.idFromName('single-relay')).fetch(request);
   }
 };
@@ -25,7 +23,8 @@ export class Relay {
     state.blockConcurrencyWhile(async () => { this.broker.tools = await state.storage.get<Tool[]>('tools') ?? []; });
   }
   async fetch(request: Request): Promise<Response> {
-    if (!authorized(request, this.env)) return new Response('Unauthorized', { status: 401 });
+    const denied = await authorizationFailure(request, this.env);
+    if (denied) return denied;
     if (new URL(request.url).pathname === '/app') {
       if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
         return new Response('WebSocket upgrade required', { status: 426 });
