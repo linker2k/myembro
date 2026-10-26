@@ -53,6 +53,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -111,6 +113,10 @@ fun HomeScreen(
     onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
     onAiPicture: (() -> Unit)? = null,
+    aiProjectObjects: Int = 0,
+    onOpenAiProject: (() -> Unit)? = null,
+    /** Whether the Create sheet is open (MainActivity does not switch screens under it). */
+    onSheetChange: (Boolean) -> Unit = {},
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -118,7 +124,8 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji, onAiPicture)
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji, onAiPicture,
+            aiProjectObjects, onOpenAiProject, onSheetChange)
     }
 }
 
@@ -137,8 +144,13 @@ private fun HomeContent(
     version: String? = null, onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
     onAiPicture: (() -> Unit)? = null,
+    aiProjectObjects: Int = 0,
+    onOpenAiProject: (() -> Unit)? = null,
+    onSheetChange: (Boolean) -> Unit = {},
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(showNewProject) { onSheetChange(showNewProject) }
+    DisposableEffect(Unit) { onDispose { onSheetChange(false) } }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -183,6 +195,9 @@ private fun HomeContent(
                         Text(stringResource(R.string.home_welcome), style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+                if (onOpenAiProject != null && aiProjectObjects > 0) item(key = "ai_project", span = { GridItemSpan(maxLineSpan) }) {
+                    AiProjectChoice(aiProjectObjects, true, onOpenAiProject)
                 }
                 item(key = "new_project", span = { GridItemSpan(if (columns == 3) 2 else 1) }) {
                     NewProjectCard(defaultHoop, defaultFrame) { showNewProject = true }
@@ -231,6 +246,7 @@ private fun HomeContent(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
         hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji, onAiPicture = onAiPicture,
+        aiProjectObjects = aiProjectObjects, onOpenAiProject = onOpenAiProject,
     )
 }
 

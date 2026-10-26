@@ -142,7 +142,27 @@ class MainActivity : ComponentActivity() {
             // Settings opened from the home version label scroll to the version information.
             var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
             var showAiPicture by remember { mutableStateOf(false) }
+            var homeSheet by remember { mutableStateOf(false) }
+            var aiBanner by remember { mutableStateOf<String?>(null) }
+            // An AI change while myembro is on screen but its editor is not: switch to the editor from a resting
+            // screen (home or the library with nothing open); otherwise do not interrupt, offer a banner.
+            val removalAsked = editor.relayConfirmation.request.collectAsState().value != null
+            val resting by androidx.compose.runtime.rememberUpdatedState((stack.isEmpty() && !homeSheet || stack.lastOrNull() == Screen.LIBRARY) &&
+                preflight == null && !showAiPicture && incomingPictures.isEmpty() && library.preflightWarnings == null &&
+                editor.recoveryProject == null && !removalAsked)
+            LaunchedEffect(Unit) {
+                io.github.linker2k.myembro.ui.editor.AiWorkspace.changes.collect { headline ->
+                    if (stack.lastOrNull() == Screen.EDITOR) return@collect
+                    if (resting) { aiBanner = null; stack += Screen.EDITOR; editor.showRelayChange(headline) } else aiBanner = headline
+                }
+            }
+            LaunchedEffect(stack.lastOrNull()) { if (stack.lastOrNull() == Screen.EDITOR) aiBanner = null }
             MyembroTheme {
+                aiBanner?.let { headline ->
+                    io.github.linker2k.myembro.ui.editor.AiChangeBanner(headline,
+                        onView = { aiBanner = null; if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR },
+                        onDismiss = { aiBanner = null })
+                }
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 // One back already reaches Home from the first level; deeper screens get a Home button.
                 CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 }) {
@@ -159,6 +179,9 @@ class MainActivity : ComponentActivity() {
                 }
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
+                        onSheetChange = { homeSheet = it },
+                        aiProjectObjects = editor.project.objects.size,
+                        onOpenAiProject = { stack += Screen.EDITOR },
                         onNewProject = { hoop -> newProject(hoop.spec()) },
                         onOpenRecent = ::openDesign,
                         onImport = openDocument,
@@ -301,6 +324,9 @@ class MainActivity : ComponentActivity() {
         outState.putString(KEY_OPEN, openPath)
         outState.putStringArrayList(KEY_STACK, ArrayList(stack.map { it.name }))
     }
+
+    override fun onStart() { super.onStart(); io.github.linker2k.myembro.ui.editor.AiWorkspace.uiStarted = true }
+    override fun onStop() { io.github.linker2k.myembro.ui.editor.AiWorkspace.uiStarted = false; super.onStop() }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

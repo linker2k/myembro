@@ -230,11 +230,38 @@ class RelayClientTest {
         assertEquals(3, server.requestCount)
     }
 
-    @Test fun backoffDoublesFromOneSecondToASixtySecondCap() {
+    @Test fun backoffDoublesFromOneSecondToATenSecondCap() {
         val b = RelayClient.Backoff()
-        assertEquals(listOf(1_000L, 2_000, 4_000, 8_000, 16_000, 32_000, 60_000, 60_000), (0..7).map(b::delayMs))
-        assertEquals(60_000, b.delayMs(1_000))
-        assertTrue(60_000 < RelayProtocol.SILENCE_MS)
+        assertEquals(listOf(1_000L, 2_000, 4_000, 8_000, 10_000, 10_000), (0..5).map(b::delayMs))
+        assertEquals(10_000, b.delayMs(1_000))
+        assertEquals(10_000, RelayProtocol.PONG_TIMEOUT_MS)
+    }
+
+    @Test fun anUnansweredPingEndsTheSocketWithinThePongTimeout() {
+        // The relay end never answers (a redeployed relay whose old socket is gone): reconnect after pongTimeout,
+        // long before the 90 s silence rule.
+        val dead = relay(); val next = relay()
+        val started = System.nanoTime()
+        RelayClient(OkHttpClient(), url, "k", "t", editor, scope, RelayClient.Backoff(10, 40), pingMs = 100, silenceMs = 90_000,
+            pongTimeoutMs = 300).start()
+        dead.socket(); assertEquals("hello", dead.next().getValue("type").jsonPrimitive.content)
+        assertEquals(buildJsonObject { put("type", "ping") }, dead.next())
+        next.socket(); assertEquals("hello", next.next().getValue("type").jsonPrimitive.content)
+        val ms = (System.nanoTime() - started) / 1_000_000
+        assertTrue(ms in 400..5_000, "reconnected after $ms ms")
+    }
+
+    @Test fun kickSkipsTheBackoffWaitAndChecksAnOpenSocket() {
+        server.enqueue(MockResponse().setResponseCode(503))
+        val live = relay()
+        // A 60 s backoff: only kick can bring the second attempt within the test's 5 s.
+        val client = RelayClient(OkHttpClient(), url, "k", "t", editor, scope, RelayClient.Backoff(60_000, 60_000))
+        client.start()
+        assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+        Thread.sleep(200); client.kick()
+        live.socket(); assertEquals("hello", live.next().getValue("type").jsonPrimitive.content)
+        client.kick()
+        assertEquals(buildJsonObject { put("type", "ping") }, live.next())
     }
 
     @Test fun relayAddressBecomesTheAppSocketUrl() {

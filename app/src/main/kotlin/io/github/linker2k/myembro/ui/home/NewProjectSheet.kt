@@ -61,6 +61,9 @@ fun NewProjectSheet(
     onFromPhoto: (() -> Unit)? = null,
     onFromEmoji: (() -> Unit)? = null,
     onAiPicture: (() -> Unit)? = null,
+    /** Objects in the AI work project (AiWorkspace); its "open" row shows only when there are some. */
+    aiProjectObjects: Int = 0,
+    onOpenAiProject: (() -> Unit)? = null,
 ) {
     val settings: SettingsViewModel = viewModel()
     val options = settings.settings.frames.filter { frame -> frame.preset in hoops || (frame.preset == null && onBlankFrame != null) }
@@ -107,6 +110,7 @@ fun NewProjectSheet(
                 } else {
                     Text(stringResource(R.string.new_project_intro), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (onOpenAiProject != null && aiProjectObjects > 0) AiProjectChoice(aiProjectObjects, !actionTaken) { choose(onOpenAiProject) }
                     CreationChoice(Icons.Default.Add, stringResource(R.string.new_project_blank),
                         if (options.size == 1) options.single().dimensions
                         else stringResource(R.string.new_project_choose_hoop), !actionTaken && options.isNotEmpty()) {
@@ -127,6 +131,13 @@ fun NewProjectSheet(
             }
         }
     }
+}
+
+/** "Open the design the AI is working on": the AI work project as it is, never a new one. */
+@Composable
+internal fun AiProjectChoice(objects: Int, enabled: Boolean, onClick: () -> Unit) {
+    CreationChoice(Icons.Default.AutoAwesome, stringResource(R.string.ai_project_open),
+        stringResource(R.string.ai_project_open_hint, objects), enabled, onClick)
 }
 
 @Composable

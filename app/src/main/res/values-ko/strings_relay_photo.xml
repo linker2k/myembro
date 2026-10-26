@@ -5,4 +5,15 @@
     <string name="relay_photo_confirm">이 사진 보내기</string>
     <string name="relay_picture_imported">AI 그림이 들어왔어요: %1$s (되돌리기로 취소)</string>
     <string name="relay_picture_name">AI 그림 %1$d</string>
+    <string name="relay_change_channel">AI 변경 알림</string>
+    <string name="relay_change_picture">‘%1$s’ 그림이 들어왔어요</string>
+    <string name="relay_change_edit">AI가 도안을 바꿨어요</string>
+    <string name="relay_change_tap">탭해서 보기</string>
+    <string name="relay_change_tap_count">탭해서 보기 · 변경 %1$d건</string>
+    <string name="relay_change_snackbar">AI가 도안을 바꿨어요 (되돌리기로 취소)</string>
+    <string name="ai_project_open">AI 작업 중인 도안 열기</string>
+    <string name="ai_project_open_hint">객체 %1$d개 · AI 연결이 작업하는 도안</string>
+    <string name="relay_change_view">보기</string>
+    <string name="relay_change_dismiss">닫기</string>
+    <string name="relay_change_switched">%1$s (되돌리기로 취소)</string>
 </resources>

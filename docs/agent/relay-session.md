@@ -64,3 +64,45 @@ Device run with local `wrangler dev` (no deploy or login):
    touch, the editor showed "객체 3개" and undo was enabled.
 
 Screenshots: `/tmp/myembro-agent-shots/relay-session/`.
+
+## Showing AI changes, and reconnecting fast (relay5)
+
+On a phone, Claude added a turtle and nothing on the phone showed it. Every successful AI connection
+change now reaches the user in one of three ways (`EditorViewModel.relayChanged`):
+
+| myembro state | What the user sees |
+|---|---|
+| Editor on screen (resumed, split screen included) | A short snackbar in the editor |
+| MainActivity started, editor not shown, at rest (home or library, nothing open) | Switch to the editor, then the snackbar |
+| MainActivity started, busy (a sheet or dialog, a recovery or removal question, another task screen) | A top banner with **보기** and close. It is its own non-focusable window, so it stays above dialogs and sheets. |
+| In the background | One notification (`RelayChangeNotification`). Later changes update it with a count. A tap opens the editor (`AiWorkspace.ACTION_OPEN`). |
+
+- **Notification grouping:** the change notification has its own group. When Android bundled it
+  with the "AI 연결" notification, a tap on the bundle opened Home (5558).
+- **Background:** Android does not let a background app bring itself forward, so the notification
+  is the only way there.
+- **Home card:** Home and the Create sheet show "AI 작업 중인 도안 열기" when the AI work project
+  has objects.
+
+**Reconnect**
+- Backoff is 1, 2, 4 and 8 s, then a 10 s cap (it was 60 s).
+- An app ping not answered within 10 s ends the socket (`RelayProtocol.PONG_TIMEOUT_MS`).
+  Before, only 90 s of silence did.
+- `RelayService` calls `RelayClient.kick()` on network return (default network callback) and on
+  screen-on or unlock. That skips the backoff wait, or checks an open socket at once.
+
+Measured on 5558 with a local relay stopped for 30 s and started again, two runs per build:
+
+| Build | App reconnected after relay ready | First successful call after relay ready |
+|---|---:|---:|
+| 171f07b (60 s cap) | 31.6 s, 31.6 s | 40.8 s, 32.6 s |
+| relay5 (10 s cap) | 3.6 s, 3.6 s | 4.8 s, 3.8 s |
+
+The 101 s seen on the phone matches a socket that was dead but not closed: 90 s of silence plus
+backoff. Locally the relay closes its sockets, so `anUnansweredPingEndsTheSocketWithinThePongTimeout`
+covers that case instead.
+
+Tests:
+- `AiChangeInstrumentation`: VISIBLE, BUSY and BACKGROUND.
+- `AiWorkspaceInstrumentation`: NOTIFY and SHOWN.
+- `RelayClientTest`: the 10 s cap, the pong timeout and kick.

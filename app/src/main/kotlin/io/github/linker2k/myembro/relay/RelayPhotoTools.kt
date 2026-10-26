@@ -98,6 +98,8 @@ class RelayPhotoTools(
     private val canEdit: () -> Boolean,
     /** Tells the user on screen that an AI picture came in (the editor's snackbar); the object's name. */
     private val announce: (String) -> Unit = {},
+    /** Any other change this group made (add_generated_art). */
+    private val changed: () -> Unit = {},
     /** "AI picture n" in the app's language (the editor's string resource). */
     private val numbered: (Int) -> String = { "AI picture $it" },
 ) : RelayTools {
@@ -149,6 +151,7 @@ class RelayPhotoTools(
                         } else controller.executeScript(args.getValue("transactionId").jsonPrimitive.content,
                             controller.session.revision, listOf(ToolTurnController.Call(tool, args)), exportSettings())
                     }
+                    if (result.ok) changed()
                     // The same answer as every relay edit (RelayEdits): the full check details
                     // ran to ~187 KB for one photo, past the chatbot's tool-result limit (5558, 2026-10-26).
                     text(RelayEdits.result(result, controller.session.revision, controller.session.project), !result.ok)

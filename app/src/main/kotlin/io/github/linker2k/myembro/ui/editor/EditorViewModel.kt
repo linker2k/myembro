@@ -251,9 +251,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 try { withContext(Dispatchers.Default) { block() } } finally { session.adoptEngineProject(); busy = false; sync() }
             } },
             canEdit = { agentExecutor.relayController() === controller },
-            announce = { title -> viewModelScope.launch(Dispatchers.Main) {
-                message = getApplication<Application>().getString(R.string.relay_picture_imported, title)
-            } },
+            announce = { title -> relayChanged(title) },
+            changed = { relayChanged(null) },
             numbered = { getApplication<Application>().getString(R.string.relay_picture_name, it) })
         relayPhotoTools = controller to tools
         return tools
@@ -292,6 +291,34 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             if (codes != null && supports != true) return@mapNotNull null
             io.github.linker2k.myembro.relay.RelayCatalog.fontRow(f.id, f.name, f.hangul, f.latin, f.minMm, f.maxMm, supports)
         })
+    }
+
+    /** The editor is on screen (composed and resumed, split screen included): AI changes show as a snackbar there. */
+    private var editorShown = false
+    /** AI changes since the editor was last on screen, for the one updated notification. */
+    private var unseenChanges = 0
+    internal fun setEditorShown(shown: Boolean) {
+        editorShown = shown
+        if (shown) { unseenChanges = 0; io.github.linker2k.myembro.relay.RelayChangeNotification.cancel(getApplication()) }
+    }
+    /**
+     * An AI connection change went in ([picture]: the name of a picture it added). Editor on screen: a short
+     * snackbar. myembro on screen elsewhere: MainActivity switches to the editor or shows a banner
+     * (AiWorkspace.changes). In the background (Android does not let an app bring itself forward): one
+     * notification, updated by later changes, whose tap opens this editor (AiWorkspace.ACTION_OPEN).
+     */
+    private fun relayChanged(picture: String?) { viewModelScope.launch(Dispatchers.Main) {
+        val app = getApplication<Application>()
+        val headline = picture?.let { app.getString(R.string.relay_change_picture, it) } ?: app.getString(R.string.relay_change_edit)
+        when {
+            editorShown -> message = picture?.let { app.getString(R.string.relay_picture_imported, it) } ?: app.getString(R.string.relay_change_snackbar)
+            AiWorkspace.uiStarted -> AiWorkspace.changes.tryEmit(headline)
+            else -> io.github.linker2k.myembro.relay.RelayChangeNotification.show(app, headline, ++unseenChanges)
+        }
+    } }
+    /** After MainActivity switched to the editor for an AI change: say what came in. */
+    internal fun showRelayChange(headline: String) {
+        message = getApplication<Application>().getString(R.string.relay_change_switched, headline)
     }
 
     /**
@@ -348,6 +375,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     else executor.relayEdit(tool, strict, relayConfirmation::ask)
                 }
                 val ok = (result["ok"] as? JsonPrimitive)?.booleanOrNull == true
+                if (ok && (result["changed"] as? JsonPrimitive)?.booleanOrNull != false) relayChanged(null)
                 if (ok && (tool == "add_text" || tool == "replace_text")) (strict["fontId"] as? JsonPrimitive)?.contentOrNull?.let { font ->
                     val id = (strict["objectId"] as? JsonPrimitive)?.contentOrNull
                     val text = (id?.let { session.project.find(it) } as? TextObject)?.text ?: (strict["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()

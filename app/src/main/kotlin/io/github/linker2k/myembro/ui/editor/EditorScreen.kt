@@ -55,6 +55,15 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         BackHandler(onBack = { vm.leave(onBack) })
         // AI connection (relay): it works on this same project (AiWorkspace) whether or not the editor is on
         // screen, so its edits show here at once; the removal question is asked from MainActivity.
+        // On screen (resumed, split screen too) its changes are a snackbar here; otherwise a notification.
+        val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+        DisposableEffect(vm, lifecycle) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, _ ->
+                vm.setEditorShown(lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
+            }
+            lifecycle.addObserver(observer)
+            onDispose { lifecycle.removeObserver(observer); vm.setEditorShown(false) }
+        }
         // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
         val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
         var relayPhotoRequest by remember { mutableIntStateOf(0) }
