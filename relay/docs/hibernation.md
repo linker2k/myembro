@@ -51,3 +51,11 @@ Baseline before edits: 4 files, **32 tests passed**. Existing coverage remains (
 6. Optional MCP GET/SSE returns a completed 405 response.
 
 Final output: **5 files / 38 tests passed**; `tsc --noEmit` passed. The reconstruction seam lives only in `test/hibernation.fixture.ts` and is bundled in memory for Miniflare; no test endpoint is exported in the deployed worker. This deterministically tests constructor re-entry, not actual Cloudflare scheduler eviction or billing. No production deployment or live billing experiment was performed.
+
+## AI client identity after hibernation
+
+`clientInfo.name` is persisted in DO storage before a successful initialize response is returned. MCP session IDs (`Mcp-Session-Id`) select isolated records; their SHA-256 digests form bounded storage keys. Requests without a session ID use the last successfully supplied name. An unknown explicit session does not borrow another session's name. Modern 2026 per-request clientInfo takes precedence and also updates the stored session/last name after successful handling. Failed initialize does not overwrite a saved name.
+
+Names replace Unicode control/format/bidi and line-separator characters with spaces, collapse whitespace and retain at most 40 Unicode code points without splitting surrogate pairs. Request handlers capture their own resolved name, avoiding a shared mutable name across concurrent sessions. Existing compact ping/pong and socket attachments are unchanged; idle heartbeats perform no storage reads/writes.
+
+Client-name regression tests reconstruct Relay with the same DO storage and accepted sockets, verify 2 session names plus the no-session fallback, modern metadata persistence, failed-initialize protection, unknown-session isolation and Unicode cleanup. Run `npm run typecheck && npm test` from `relay/`.

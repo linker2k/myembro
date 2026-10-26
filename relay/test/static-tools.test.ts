@@ -133,3 +133,10 @@ describe('app compatibility never controls advertised definitions', () => {
     expect(broker.tools).toEqual(RELAY_TOOLS);
   });
 });
+
+it('cleans Unicode controls/bidi/newlines and limits AI names without splitting surrogate pairs', () => {
+  expect(clientName(' A\u0085\u202e\u2028\u2029\t B ')).toBe('A B');
+  expect(clientName('\u200b\n\t')).toBeUndefined();
+  const emoji = clientName('😀'.repeat(45))!;
+  expect(Array.from(emoji)).toHaveLength(40); expect(emoji).toBe('😀'.repeat(40));
+});

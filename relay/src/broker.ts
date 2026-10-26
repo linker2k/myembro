@@ -15,7 +15,8 @@ export const TOO_LARGE = 'Too large for the AI connection. Ask the user to save 
 /** The calling AI's MCP clientInfo.name as the app may show it: one line, at most 40 characters, or undefined. */
 export function clientName(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const name = value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40).trim();
+  const clean = value.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, ' ').replace(/\s+/gu, ' ').trim();
+  const name = Array.from(clean).slice(0, 40).join('').trim();
   return name || undefined;
 }
 export const failure = (text: string): CallToolResult => ({ isError: true, content: [{ type: 'text', text }] });
