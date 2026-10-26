@@ -44,6 +44,7 @@ import kotlinx.coroutines.withContext
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     multiPositionPositions: List<SewingPosition> = emptyList(),
     onMultiPositionExport: ((Project, List<SewingPosition>) -> Unit)? = null,
+    onAiPicture: (() -> Unit)? = null,
 ) {
     // Screens drawn inside the editor (lettering, fonts) get no Home of their own: leaving goes
     // through the editor's unsaved-change check, from its own top bar.
@@ -141,6 +142,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             Box {
                                 IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
                                 DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
+                                    if (onAiPicture != null) DropdownMenuItem(text = { Text(stringResource(R.string.ai_picture_title)) },
+                                        onClick = { projectMenu = false; onAiPicture() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
                                         onClick = { projectMenu = false; vm.requestProjectSave() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },

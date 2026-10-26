@@ -64,6 +64,9 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
         while (vm.busy) { delay(1000); elapsed++ }
     }
     var showCheck by remember { mutableStateOf(false) }
+    var aiPicture by remember { mutableStateOf(false) }
+    if (aiPicture) AiPictureDialog(vm.hoop, vm.inkWidthMm ?: vm.widthMm,
+        settings.myThreads, vm.source, onDismiss = { aiPicture = false })
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
         Row {
             IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
@@ -92,6 +95,9 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
                 Text(stringResource(R.string.photo_slow_hint))
                 TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
+            }
+            if (vm.step < 2) OutlinedButton(onClick = { aiPicture = true }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.ai_picture_title))
             }
             if (vm.step == 0) {
                 if (vm.source != null) CropPreview(vm) else Surface(Modifier.fillMaxWidth().height(260.dp), color = colors.surfaceVariant) {

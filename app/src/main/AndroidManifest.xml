@@ -51,6 +51,11 @@
                 <data android:mimeType="application/x-dst" />
                 <data android:mimeType="application/vnd.tajima.dst" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
             <!-- A chatbot reply shared back for "Ask AI". -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
