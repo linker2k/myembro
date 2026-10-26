@@ -1,39 +1,62 @@
-# import_picture: a picture drawn by the connected AI, straight into myembro
+# Picture input: review first, then add a layer
 
-The relay tool `import_picture` lets a chatbot connector put a picture it drew into the
-open editor. There is no new stitch algorithm, sewing exception or setting: each format uses
-an existing path.
+File pickers (Home, library, editor and photo screen), VIEW/SEND/SEND_MULTIPLE,
+and relay `import_picture` open the same photo input screen. The default is color
+drawing. SVG retains the existing vector path and skips raster tracing. Picking or
+receiving a picture does not add a layer or replace the current project. Only the
+screen's explicit confirmation adds the generated object to the existing editor.
+PhotoScreen's correction controls are unchanged; only its picker callback changed.
+
+## Relay contract
 
 | Argument | Meaning |
 |---|---|
-| `format` | `svg`, `png` or `jpeg` |
-| `data` | SVG: the SVG text itself. PNG/JPEG: base64 (a `data:...;base64,` prefix is allowed) |
-| `colors` | 2..6, optional (default 4, the photo screen's `begin()` default). Applies to PNG/JPEG only |
-| `title` | optional object name (default `AI picture`, trimmed to 60 characters) |
+| `format` | `svg`, `png`, `jpeg`, `bmp`, `webp`, `gif`, `heif`, `avif` |
+| `data` | SVG text; raster base64 (data-URL prefix allowed) |
+| `colors` | optional initial color count, 2..6, default 4 |
+| `title` | optional proposed layer name; existing trimming/client-name rules |
 
-The relay offers `colors` and `title` as optional with defaults (`RelayCatalog.OPTIONAL`). The
-strict app schema (`RelayPicture.DEFINITION`) keeps every argument required, as `ToolSchema`
-expects, and the app fills the defaults before validating.
+The strict app schema still requires all fields; the relay projection supplies the
+existing optional defaults. The catalog and deployment golden remain generated from
+the app's hello, with schema drift checked on both sides.
 
-## Path (app, `RelayPhotoTools.importPicture`)
+`import_picture` validates the signature/size and hands bytes to a process-memory
+inbox. It does not prepare stitches, export PES, mutate the project, issue an undo
+step or write an attachment file. Its response is:
 
-1. `RelayPicture.check`: format, size and content come first. SVG must be text that starts
-   with `<svg` or `<?xml`. PNG must start with its 8-byte signature and JPEG with `FF D8 FF`.
-2. Preparation runs outside the turn and changes nothing:
-   - **SVG**: `ToolTurnController.prepareSvgPicture` runs `SvgPictureInput.parse` (the same
-     limits and content checks as docs/agent/svg-picture.md). Then `VectorArt.render` with
-     its defaults, at the photo screen's first SVG width (50 mm,
-     `EmojiViewModel.WIDTH_MM`), clamped by `pictureWidthRange` and rounded to 0.1 mm. Then
-     `PesWriter.writeV1` and `SewoutCheck`, the same gate as emoji.
-   - **PNG/JPEG**: the picture is saved as an AI picture attachment
-     (`cache/ai_picture_imports/<id>.<ext>`). It is then listed by `list_attachments` and
-     `view_attachment` like a handed-over photo, and removed on revoke or clear. It goes
-     through `prepare_photo` in the photo screen's color mode with N = `colors`, at the
-     photo screen's default width (`photoMaxWidthMm`), filter `original`.
-3. `add_generated_art` runs as one turn through the editor's existing `publish`: one undo
-   step, sewout-checked. The answer has the `RelayEdits.result` shape plus a `picture`
-   summary (format, bytes, colors, width and height in mm).
-4. The phone shows a snackbar: "AI 그림이 들어왔어요: <title> (되돌리기로 취소)".
+```json
+{"ok":true,"status":"awaiting_user_confirmation","added":false,"message":"Opened in picture input; added only after user confirmation.","format":"svg","title":"Smile"}
+```
+
+The UI binds incoming requests only while MainActivity is STARTED. In the background
+it posts the existing notification channel with the picture-open action; tapping
+opens the latest pending picture. If notification permission is denied, returning
+to the app still consumes the latest request. Pending image bytes/URIs are not saved
+across process death, by design. Existing explicit AI photo-consent attachments are
+separate from this incoming-picture inbox.
+
+## Latest input and privacy
+
+A single memory slot replaces the previous pending image. A generation ticket stops
+an earlier asynchronous URI inspection from publishing after a newer request. In a
+batch, only the final picture URI opens; nonpicture designs retain their existing
+import handler. There is no multi-picture chooser or pending queue. PhotoViewModel's
+revision/cancellation checks discard older decode/generation results. No original
+picture is copied to cache, the library, or saved state by these ingress paths.
+Only a user-confirmed project/generated PES can subsequently be saved by normal UI.
+
+## Formats and BMP
+
+Routing uses content, independent of MIME/name: PNG/JPEG magic, BMP `BM` file header,
+WebP RIFF brand, GIF header and HEIF/AVIF ftyp brands. Existing PES/PEC/DST/archive
+signatures retain their import path; unsupported SVG is checked by SvgPictureInput.
+Raster decode reuses the bounded BitmapFactory/EXIF decoder for both URI and memory
+streams. [Android's official image support table](https://developer.android.com/media/platform/supported-formats#image-support)
+marks BMP decoding YES for all Android versions, as well as GIF/JPEG/PNG; HEIF/AVIF
+support depends on OS/device. Unsupported/corrupt decode stays in the photo screen
+with an error rather than adding a layer. A generated 70-byte 24-bit 2×2 BMP fixture
+is host-decoded and independently content-sniffed in tests. This is not an Android
+hardware decode result; emulator/device execution was prohibited.
 
 ## Size limits and their basis
 
@@ -48,7 +71,7 @@ Worker has a 100 MB request-body limit (Free/Pro), so it is not the binding limi
   (`MAX_CALL_BYTES`, the last documented 1 MiB). It refuses larger calls itself, without
   sending them, with the share guidance (`TOO_LARGE`): "save the picture and share it to
   myembro".
-- The app caps PNG/JPEG `data` at **1,000,000 base64 characters**
+- The app caps raster `data` at **1,000,000 base64 characters**
   (`RelayPicture.MAX_BASE64_CHARS`). That leaves 48,576 bytes for the envelope; the relay test
   checks the maximum data with a 600-Hangul-character title still fits.
 - SVG keeps `SvgPictureInput.MAX_BYTES` = **4788** UTF-8 bytes (the measured corpus maximum,
@@ -56,25 +79,24 @@ Worker has a 100 MB request-body limit (Free/Pro), so it is not the binding limi
 - No app↔relay chunking: one picture under the cap is one message, and over the cap the user
   shares it instead. The share flow is the existing AI picture return (docs/agent/ai-picture.md).
 
-The tool description says *SVG is preferred (text)* and *PNG or JPEG ... must be small*.
+The tool description requests small raster payloads and explains that addition requires user confirmation.
 
-## Verification (2026-10-26)
+## Automated verification
 
-- `RelayPictureTest` covers the base64 cap at n−4/n/n+4 (base64 grows in steps of 4) and
-  n+1 characters. It also covers the SVG byte cap at n−1/n/n+1, including Hangul UTF-8;
-  signature mismatches; defaults; and strict versus offered schemas.
-- `SvgPictureToolTest` covers:
-  - A 2-color smile gives sewout PASS, one turn and one undo, which restores the project.
-  - Width clamps to 99.9 and 20 and rounds to 42.4.
-  - An oversized, `<text>` or `<image href>` SVG gives SVG_NOT_SUPPORTED with no change.
-- The relay `static-tools.test.ts` checks:
-  - A message of exactly 1 MiB is sent; 1 byte more gets `TOO_LARGE` and is not sent.
-  - The app cap fits inside the message limit.
-  - import_picture matches its strict schema in `RelayPicture.kt`.
-- End to end on emulator-5558 with local `wrangler dev` (no deploy or login) and `claude -p`:
-  - "2색 스마일 SVG를 그려 import_picture로 넣어줘" made one call, ok, sewout PASS. The
-    50×50 mm object had 2 thread colors, and undo returned the editor to 0 objects.
-  - A direct MCP call with the repository synthetic `robot.png` and `colors` 2 gave PASS,
-    2 thread colors, 99.9×78.1 mm, and the snackbar.
-  - A message over 1 MiB was refused by the relay; 1,000,004 characters was refused by the
-    app with PICTURE_TOO_LARGE.
+```text
+./gradlew --offline --max-workers=2 :engine:test :app:testDebugUnitTest
+engine: {'tests': 939, 'failures': 0, 'errors': 0, 'skipped': 0}
+app: {'tests': 434, 'failures': 0, 'errors': 0, 'skipped': 0}
+RELAY_PICTURE_HANDOFF latest=last editor_mutations=0 disk_writes=0 awaiting_user_confirmation=true
+npm test (relay): 6 files, 53 tests passed
+```
+
+PictureIntakeTest covers 234 MIME/action/content combinations; PictureInboxTest covers latest-only ordering, stale publication and defensive memory copies. RelayPictureHandoffTest uses rejecting fake decode/export/publish services to assert no editor or disk effects, including when the editor is unavailable. Existing notification instrumentation scenarios were updated for user confirmation, but not executed.
+
+Final non-writing verification:
+
+```text
+./gradlew --offline --max-workers=2 :engine:test :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin
+BUILD SUCCESSFUL in 56s
+npm test: 6 files / 53 tests PASS
+```

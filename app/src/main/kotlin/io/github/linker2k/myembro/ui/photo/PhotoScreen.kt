@@ -54,7 +54,10 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     val back = { if (vm.isSvg) { vm.cancel(); onBack() } else if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
     // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.load(uri) }
+    val pictureImport=io.github.linker2k.myembro.ui.LocalPictureImport.current
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if(uri!=null) {
+        if(pictureImport!=null) pictureImport(listOf(uri),{}) else { vm.begin();vm.load(uri) }
+    } }
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
