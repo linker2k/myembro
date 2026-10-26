@@ -16,6 +16,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,6 +81,7 @@ class MainActivity : ComponentActivity() {
 
     /** Library path of the design in the viewer, or null for a file read without importing. */
     private var openPath by mutableStateOf<String?>(null)
+    private var incomingPictures by mutableStateOf<List<io.github.linker2k.myembro.ui.photo.PictureSource>>(emptyList())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installMyembroSplashScreen()
@@ -135,6 +145,11 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 // One back already reaches Home from the first level; deeper screens get a Home button.
                 CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 }) {
+                if (incomingPictures.isNotEmpty()) AlertDialog(onDismissRequest = { incomingPictures = emptyList() },
+                    title = { Text(stringResource(R.string.picture_intake_choose)) },
+                    text = { Column { incomingPictures.forEach { picture ->
+                        TextButton(onClick = { incomingPictures = emptyList(); openPicture(picture.uri) }) { Text(picture.name) }
+                    } } }, confirmButton = { TextButton(onClick = { incomingPictures = emptyList() }) { Text(stringResource(android.R.string.cancel)) } })
                 if (showAiPicture) {
                     val hoop = if (stack.lastOrNull() == Screen.EDITOR) editor.project.hoop else settings.settings.defaultFrame.spec
                     io.github.linker2k.myembro.ui.photo.AiPictureDialog(hoop,
@@ -298,33 +313,47 @@ class MainActivity : ComponentActivity() {
                 },
                 onCurrentLaunch = {
                     when (intent?.action) {
-                        Intent.ACTION_VIEW -> intent.data?.let { uri ->
-                            if (uri.scheme == "content") {
-                                importUris(listOf(uri))
-                            } else {
-                                openPath = null
-                                viewer.open(uri)
-                                showViewer()
-                            }
+                        Intent.ACTION_VIEW -> intent.data?.let { uri -> routeIncoming(listOf(uri), view = true) }
+                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
+                            val uris = sharedUris(intent)
+                            if (uris.isNotEmpty()) routeIncoming(uris)
+                            else agentReply(intent)?.let { text ->
+                                editor.agent.openReply(text)
+                                if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
+                            } ?: importUris(uris)
                         }
-                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> if (intent.action == Intent.ACTION_SEND && (intent.type?.startsWith("image/") == true || sharedUris(intent).firstOrNull()?.let { io.github.linker2k.myembro.ui.photo.isSvgPicture(this, it) } == true)) {
-                            sharedUris(intent).firstOrNull()?.let { uri ->
-                                val requestedColors = aiPictureDraft.consumeExpectedColors()
-                                if (requestedColors == null) photo.begin() else photo.beginAiPicture(requestedColors)
-                                photo.configure(settings.settings); photo.load(uri)
-                                if (stack.lastOrNull() != Screen.PHOTO) stack += Screen.PHOTO
-                            }
-                        } else agentReply(intent)?.let { text ->
-                            // A chatbot reply shared back: it goes to the editor's paste box, never to the library.
-                            editor.agent.openReply(text)
-                            if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
-                        } ?: importUris(sharedUris(intent))
                     }
                 },
             )
         } catch (error: Exception) {
             // A stale external launch must not close the existing task or prevent normal startup.
             Log.w("MyembroLaunch", "Ignoring failed launch intent", error)
+        }
+    }
+
+    private fun openPicture(uri: Uri) {
+        val requestedColors = aiPictureDraft.consumeExpectedColors()
+        if (requestedColors == null) photo.begin() else photo.beginAiPicture(requestedColors)
+        photo.configure(settings.settings); photo.load(uri)
+        if (stack.lastOrNull() != Screen.PHOTO) stack += Screen.PHOTO
+    }
+
+    /** All external streams use the same content test. Existing design importer is untouched. */
+    private fun routeIncoming(uris: List<Uri>, view: Boolean = false) {
+        lifecycleScope.launch {
+            val rows = withContext(Dispatchers.IO) { uris.map { io.github.linker2k.myembro.ui.photo.inspectPicture(this@MainActivity, it) } }
+            val (pictures, other) = io.github.linker2k.myembro.ui.photo.PictureIntake.partition(rows.map { it.kind })
+            fun showPictures() {
+                val selected = pictures.map { rows[it] }
+                if (selected.size == 1) openPicture(selected.single().uri)
+                else incomingPictures = selected
+            }
+            if (pictures.isEmpty()) {
+                if (view && uris.size == 1 && uris.single().scheme != "content") {
+                    openPath = null; viewer.open(uris.single()); showViewer()
+                } else importUris(uris)
+            } else if (other.isEmpty()) showPictures()
+            else library.import(other.map { uris[it] }, onComplete = { report -> afterImport(report); showPictures() })
         }
     }
 

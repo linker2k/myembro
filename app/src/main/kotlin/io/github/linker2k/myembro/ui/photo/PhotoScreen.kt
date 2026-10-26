@@ -114,7 +114,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(arrayOf("image/*", "image/svg+xml")) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { picker.launch(PictureIntake.pickerMimes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
                 }
             } else {

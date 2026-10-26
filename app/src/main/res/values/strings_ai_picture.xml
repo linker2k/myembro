@@ -21,4 +21,6 @@
     <string name="svg_picture_unsupported">This SVG cannot be used. Please send a PNG instead.</string>
     <string name="svg_picture_direct">SVG: direct vector conversion, without bitmap tracing</string>
     <string name="ai_picture_retry_png">Request PNG again</string>
+    <string name="picture_intake_not_picture">This is not a picture file.</string>
+    <string name="picture_intake_choose">Choose a picture to open</string>
 </resources>
