@@ -49,7 +49,6 @@ data class MeanderTile(val id: String, val segments: List<Pair<FillPoint, FillPo
 object MeanderFill {
     private const val PX_PER_MM = 96.0 / 25.4
     private const val MAX_NODES = 20_000
-    private const val MAX_SEARCH_STEPS = 2_000_000
     private val tiles = ConcurrentHashMap<String, MeanderTile>()
     private data class Edge(val start: FillPoint, val end: FillPoint)
 
@@ -248,6 +247,12 @@ object MeanderFill {
         return left
     }
 
+    // Ink/Stitch meander_fill.py:116,123 + utils/threading.py:19-23.
+    // Upstream has path-length cutoffs (7/10), not a cumulative search-step budget.
+    private fun checkStopFlag() {
+        if (Thread.currentThread().isInterrupted) throw InterruptedException("Meander generation cancelled")
+    }
+
     internal fun generatePath(graph: LinkedHashMap<FillPoint, LinkedHashSet<FillPoint>>, start: FillPoint,
         end: FillPoint, rng: () -> Double): List<FillPoint> {
         val initial = shortestPath(graph, start, end)
@@ -255,13 +260,11 @@ object MeanderFill {
         path.forEach { removeEdge(graph, it) }
         val unused = (graph.keys - initial.toSet()).toMutableSet()
         val edges = path.toMutableList()
-        var steps = 0
         fun alternative(a: FillPoint, b: FillPoint, cutoff: Int, minimum: Int): List<Edge>? {
             val allowed = unused + setOf(a, b)
             val visited = mutableSetOf(a)
             val candidate = mutableListOf<Edge>()
             fun dfs(node: FillPoint): List<Edge>? {
-                if (++steps > MAX_SEARCH_STEPS) error("Meander path search resource limit exceeded")
                 if (node == b) return if (candidate.size > minimum) candidate.toList() else null
                 if (candidate.size >= cutoff) return null
                 for (neighbor in graph.getValue(node)) {
@@ -290,12 +293,14 @@ object MeanderFill {
         }
         while (edges.isNotEmpty()) {
             while (edges.isNotEmpty()) {
+                checkStopFlag()
                 val edge = popRandom(edges)
                 val replacement = alternative(edge.start, edge.end, 7, 1) ?: continue
                 apply(path.indexOf(edge), 1, replacement)
             }
             val pairs = path.zipWithNext().toMutableList()
             while (pairs.isNotEmpty()) {
+                checkStopFlag()
                 val (first, second) = popRandom(pairs)
                 val replacement = alternative(first.start, second.end, 10, 2) ?: continue
                 apply(path.indexOf(first), 2, replacement)
