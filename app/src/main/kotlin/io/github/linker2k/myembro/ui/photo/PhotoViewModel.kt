@@ -37,8 +37,11 @@ import kotlin.math.abs
 
 /** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
 internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: Uri): Bitmap {
+    return decodeUprightPhoto { requireNotNull(resolver.openInputStream(uri)) }
+}
+internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
+    open().use { BitmapFactory.decodeStream(it, null, bounds) }
     require(bounds.outWidth > 0 && bounds.outHeight > 0)
     val options = BitmapFactory.Options().apply {
         inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -46,8 +49,8 @@ internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: 
             inSampleSize = inSampleSize.coerceAtLeast(1) * 2
         }
     }
-    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
-    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
+    val decoded = requireNotNull(open().use { BitmapFactory.decodeStream(it, null, options) })
+    val orientation = runCatching { open().use { stream ->
         ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
     } }.getOrDefault(1)
     val matrix = Matrix().apply { when (orientation) {
@@ -68,7 +71,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var zoom by mutableFloatStateOf(1f); private set
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
-    var style by mutableStateOf(PhotoMode.SILHOUETTE); private set
+    var style by mutableStateOf(PhotoMode.COLOR); private set
     var detail by mutableIntStateOf(1); private set
     var colorCount by mutableIntStateOf(4); private set
     var grayscale by mutableStateOf(false); private set
@@ -132,7 +135,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
         isSvg = false; svgArt = null
         correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false; noiseSize = null; contrastFactor = 1f
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.COLOR; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     /** Only a returned AI picture carries its requested color count; normal begin retains 4. */
     fun beginAiPicture(colors: Int) {
@@ -184,14 +187,32 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             } finally { if (version == revision) busy = false }
         }
     }
-    private fun loadSvg(uri: Uri) {
+    fun loadBytes(data:ByteArray) {
+        val kind=PictureIntake.sniff(data)
+        if(kind==PictureIntake.Kind.SVG) { loadSvg { data };return }
+        work?.cancel();val version=++revision;busy=true;error=null
+        work=viewModelScope.launch {
+            try {
+                require(kind.raster)
+                val bitmap=withContext(Dispatchers.IO) { decodeUprightPhoto { data.inputStream() } }
+                if(version==revision) { source=bitmap;isSvg=false;svgArt=null;step=0;invalidateResult() }
+            } catch(e:CancellationException) { throw e }
+            catch(_:Exception) { if(version==revision) error=R.string.picture_intake_not_picture }
+            finally { if(version==revision) busy=false }
+        }
+    }
+    private fun loadSvg(uri: Uri) = loadSvg {
+        getApplication<Application>().contentResolver.openInputStream(uri).use {
+            io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.read(requireNotNull(it))
+        }
+    }
+    private fun loadSvg(read: () -> ByteArray) {
         work?.cancel(); val version = ++revision
         isSvg = true; svgArt = null; source = null; step = 2; busy = true; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
                 val parsed = withContext(Dispatchers.IO) {
-                    val resolver = getApplication<Application>().contentResolver
-                    val bytes = resolver.openInputStream(uri).use { io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.read(requireNotNull(it)) }
+                    val bytes = read()
                     io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.parse(bytes)
                 }
                 if (version == revision) {

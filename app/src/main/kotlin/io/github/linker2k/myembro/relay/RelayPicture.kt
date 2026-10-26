@@ -32,18 +32,19 @@ object RelayPicture {
     private val PNG = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     private val JPEG = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
 
-    val DESCRIPTION = "Put a picture you drew into the open design as embroidery, in one undoable step; the answer has " +
-        "the sewing check. SVG is preferred (format svg, the SVG text itself in data): flat shapes with solid fills, at most " +
-        "${SvgPictureInput.MAX_BYTES} bytes and ${SvgPictureInput.MAX_ELEMENTS} elements, no text, gradients or images; it keeps " +
-        "its own fill colors. PNG or JPEG go in data as base64 and must be small (at most $MAX_BASE64_CHARS base64 characters, " +
-        "few flat colors); colors 2-6 (default $DEFAULT_COLORS) sets their thread colors. Each picture becomes its own layer, named " +
-        "title (default 'AI picture n') and your app's name. If it is too large, ask the user to share the picture to myembro instead."
+    val DESCRIPTION = "Open an AI-made picture in myembro's picture input screen. The user must confirm there before a ShapeObject layer is added; this call never changes the design. SVG is preferred: send SVG text in data (flat solid fills, no embedded text/images). Raster PNG, JPEG, BMP, WebP, GIF, HEIF or AVIF must be small base64 (at most $MAX_BASE64_CHARS characters). colors 2-6 (default $DEFAULT_COLORS) is the initial color-mode choice. Only the latest pending picture is kept in memory. If too large, ask the user to share the picture to myembro."
+
+    fun opened(format:String,title:String)=buildJsonObject {
+        put("ok",true);put("status","awaiting_user_confirmation");put("added",false)
+        put("message","Opened in picture input; added only after user confirmation.")
+        put("format",format);put("title",title)
+    }
 
     /** The strict definition (RelayPhotoTools validates calls against it); the relay offers it with [DESCRIPTION],
      * colors and title optional (RelayCatalog fills [DEFAULT_COLORS] and [DEFAULT_TITLE]). */
     val DEFINITION: JsonObject = Json.parseToJsonElement("""
-        {"name":"import_picture","description":"Import an AI-made picture (svg text, or png/jpeg base64) and add it to the open design as one checked turn.",
-         "inputSchema":{"type":"object","properties":{"format":{"type":"string","enum":["svg","png","jpeg"]},"data":{"type":"string"},
+        {"name":"import_picture","description":"Open a picture in the picture input screen; add only after user confirmation.",
+         "inputSchema":{"type":"object","properties":{"format":{"type":"string","enum":["svg","png","jpeg","bmp","webp","gif","heif","avif"]},"data":{"type":"string"},
            "colors":{"type":"integer","minimum":2,"maximum":6},"title":{"type":"string"}},
            "required":["format","data","colors","title"],"additionalProperties":false},
          "annotations":{"readOnly":false,"needsUserConfirmation":false}}""").jsonObject
@@ -81,8 +82,8 @@ object RelayPicture {
             "The picture is ${data.length} base64 characters; at most $MAX_BASE64_CHARS fit. Send a smaller PNG or an SVG. $SHARE_INSTEAD")
         val bytes = try { java.util.Base64.getDecoder().decode(data.substringAfter("base64,")) }
             catch (_: IllegalArgumentException) { return Checked.Rejected("INVALID_PICTURE", "data is not valid base64.") }
-        val signature = if (format == "png") PNG else JPEG
-        if (bytes.size < signature.size || !bytes.copyOfRange(0, signature.size).contentEquals(signature))
+        val kind=io.github.linker2k.myembro.ui.photo.PictureIntake.sniff(bytes)
+        if(kind.name.lowercase(java.util.Locale.ROOT)!=format)
             return Checked.Rejected("INVALID_PICTURE", "data is not a $format file (its first bytes do not match).")
         return Checked.Accepted(format, bytes, colors)
     }

@@ -27,4 +27,5 @@
     <string name="hoop_too_small">Design is larger than this hoop</string>
     <string name="load_failed">Could not open file: %1$s</string>
     <string name="speed">Speed</string>
+    <string name="picture_input_pending">Review the picture input screen to add it to your design</string>
 </resources>
