@@ -20,8 +20,10 @@ export class Relay {
   private server(client?: string): Server {
     const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
     server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
-    // Capture identity per request; concurrent sessions must never share mutable name state.
+    // The calling AI's name per request: the 2026 envelope's clientInfo (the SDK takes it out of params._meta and gives it
+    // to this per-request server), else the name persisted for this session. No shared mutable name state.
     server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {},
+      clientName(server.getClientVersion()?.name) ??
       clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? client));
     return server;
   }
