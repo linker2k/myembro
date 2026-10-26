@@ -4,6 +4,7 @@ package io.github.linker2k.myembro.engine.edit.commands
 import io.github.linker2k.myembro.engine.edit.Project
 
 enum class CommandError {
+    INVALID_BLOCK_SETTINGS, SEWOUT_BLOCKED,
     INVALID_ID, DUPLICATE_ID, MISSING_OBJECT, INVALID_TRANSFORM,
     INVALID_THREAD_INDEX, INVALID_REORDER_INDEX, INVALID_OBJECT_TYPE,
 }

@@ -42,6 +42,32 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
         return if (missing.isEmpty()) null else error(CommandError.MISSING_OBJECT, missing, "Object does not exist")
     }
     val next = when (command) {
+        is ProjectCommand.SetBlockStitch -> {
+            targets(setOf(command.id))?.let { return it }
+            val shape = project.find(command.id) as? ShapeObject
+                ?: return error(CommandError.INVALID_OBJECT_TYPE,setOf(command.id),"Expected ShapeObject")
+            if(command.regionIds.isEmpty() || !command.regionIds.all { key -> shape.regions.any { it.id==key } })
+                return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),"UNKNOWN_REGION")
+            val updated = try {
+                val values = shape.overrides.toMutableMap()
+                for(region in shape.regions.filter { it.id in command.regionIds }) {
+                    val value = command.change.applyTo(region.stitch)
+                    if(value != region.stitch) values[region.id]=value
+                }
+                shape.withOverrides(values)
+            } catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid block settings") }
+            if(updated == shape) project else {
+                val candidate = project.replace(updated)
+                try {
+                    val pattern = candidate.flatten()
+                    io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,pattern.bounds)
+                    io.github.linker2k.myembro.engine.io.PesExport.requireSafe(
+                        io.github.linker2k.myembro.engine.io.PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=project.hoop)),
+                        project.hoop,io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                } catch(e: Exception) { return error(CommandError.SEWOUT_BLOCKED,setOf(command.id),e.message ?: "Block generation failed") }
+                candidate
+            }
+        }
         is ProjectCommand.Add -> {
             val obj = command.obj
             if (obj.id.isBlank()) return error(CommandError.INVALID_ID, setOf(obj.id), "Object id must not be blank")
