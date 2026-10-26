@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { isSpecType, type Tool, type CallToolResult } from '@modelcontextprotocol/server';
 import { RELAY_TOOLS, RELAY_TOOL_NAMES, sameSchema } from './tools';
 
@@ -18,28 +19,33 @@ export function clientName(value: unknown): string | undefined {
   return name || undefined;
 }
 export const failure = (text: string): CallToolResult => ({ isError: true, content: [{ type: 'text', text }] });
+// Fingerprint prevents a sleeping old app from inheriting newly deployed tool schemas.
+const CATALOG = createHash('sha256').update(JSON.stringify(RELAY_TOOLS)).digest('hex');
+export interface ConnectionAttachment { catalog: string; ready: boolean; supported: string[]; lastSeen: number }
 export interface AppSocket { send(data: string): void; close(code?: number, reason?: string): void }
 
 /** Only app JSON is handled here. MCP framing/initialization is entirely the official SDK. */
 export class Broker {
   get tools(): Tool[] { return RELAY_TOOLS; }
-  private appTools: Tool[] = [];
+  private supported = new Set<string>();
   private active?: AppSocket;
-  private connections = new Map<AppSocket, { heartbeat: ReturnType<typeof setInterval>; silence: ReturnType<typeof setTimeout> }>();
+  private connections = new Map<AppSocket, ConnectionAttachment>();
   private pending = new Map<string, { socket: AppSocket; resolve: (result: CallToolResult) => void; timer: ReturnType<typeof setTimeout> }>();
 
 
-  open(socket: AppSocket): void {
-    const heartbeat = setInterval(() => {
-      try { socket.send(JSON.stringify({ type: 'ping' })); } catch { this.close(socket); }
-    }, 30_000);
-    this.connections.set(socket, { heartbeat, silence: this.silenceDeadline(socket) });
-  }
+  constructor(
+    private persist: (socket: AppSocket, attachment: ConnectionAttachment) => void = () => {},
+    private autoResponseTime: (socket: AppSocket) => number = () => 0,
+  ) {}
 
-  private silenceDeadline(socket: AppSocket): ReturnType<typeof setTimeout> {
-    return setTimeout(() => {
-      this.close(socket); socket.close(1000, 'App silent for 90 seconds');
-    }, 90_000);
+  open(socket: AppSocket, restored?: ConnectionAttachment): void {
+    const connection = restored ?? { catalog: CATALOG, ready: false, supported: [], lastSeen: Date.now() };
+    this.connections.set(socket, connection);
+    if (connection.ready) {
+      this.active = socket;
+      this.supported = new Set(connection.catalog === CATALOG ? connection.supported : []);
+    }
+    this.persist(socket, connection);
   }
 
   receive(socket: AppSocket, raw: string): void {
@@ -48,7 +54,7 @@ export class Broker {
     try { m = JSON.parse(raw); } catch { this.reject(socket); return; }
     if (!m || typeof m !== 'object' || Array.isArray(m)) { this.reject(socket); return; }
     const connection = this.connections.get(socket)!;
-    clearTimeout(connection.silence); connection.silence = this.silenceDeadline(socket);
+    connection.lastSeen = Date.now();
     if (m.type === 'hello') {
       if (typeof m.appVersion !== 'string' || !Array.isArray(m.tools)) { this.reject(socket); return; }
       const tools: Tool[] = [];
@@ -63,7 +69,9 @@ export class Broker {
       if (new Set(tools.map(t => t.name)).size !== tools.length) { this.reject(socket); return; }
       const previous = this.active;
       if (previous && previous !== socket) { this.close(previous); previous.close(1000, 'Replaced by new hello'); }
-      this.active = socket; this.appTools = tools;
+      this.active = socket;
+      this.supported = new Set(tools.filter(t => sameSchema(t.inputSchema, RELAY_TOOLS.find(r => r.name === t.name)!.inputSchema)).map(t => t.name));
+      Object.assign(connection, { catalog: CATALOG, ready: true, supported: [...this.supported] });
     } else if (m.type === 'ping') {
       socket.send(JSON.stringify({ type: 'pong' }));
     } else if (m.type === 'pong') {
@@ -81,15 +89,22 @@ export class Broker {
         pending.resolve({ isError: m.isError, content: m.content });
       }
     } else { this.reject(socket); }
+    if (this.connections.has(socket)) this.persist(socket, connection);
   }
 
   /** [client]: the calling AI's name (clientInfo.name), sent to the app only when known. */
   call(tool: string, args: Record<string, unknown>, client?: string): Promise<CallToolResult> {
+    if (this.active) {
+      const seen = Math.max(this.connections.get(this.active)!.lastSeen, this.autoResponseTime(this.active));
+      // Lazy expiry preserves the 90-second liveness rule without an idle timer/alarm.
+      if (Date.now() - seen >= 90_000) {
+        const stale = this.active; this.close(stale); stale.close(1000, 'App silent for 90 seconds');
+      }
+    }
     if (!this.active) return Promise.resolve(failure(DISCONNECTED));
     const advertised = RELAY_TOOLS.find(t => t.name === tool);
     if (!advertised) return Promise.resolve(failure('Tool is not available in this relay.'));
-    const supported = this.appTools.find(t => t.name === tool);
-    if (!supported || !sameSchema(supported.inputSchema, advertised.inputSchema)) return Promise.resolve(failure(UPDATE_REQUIRED));
+    if (!this.supported.has(tool)) return Promise.resolve(failure(UPDATE_REQUIRED));
     if (tool === 'get_project' && Object.keys(args).length !== 0 ||
         tool === 'render_preview' && (Object.keys(args).some(k => k !== 'widthPx') || args.widthPx !== undefined &&
           (!Number.isInteger(args.widthPx) || (args.widthPx as number) < 256 || (args.widthPx as number) > 1024)))
@@ -109,7 +124,7 @@ export class Broker {
 
   close(socket: AppSocket): void {
     const connection = this.connections.get(socket);
-    if (connection) { clearInterval(connection.heartbeat); clearTimeout(connection.silence); }
+    if (connection) { connection.ready = false; this.persist(socket, connection); }
     this.connections.delete(socket);
     if (this.active === socket) this.active = undefined;
     for (const [id, pending] of this.pending) if (pending.socket === socket) {

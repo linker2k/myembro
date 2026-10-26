@@ -1,5 +1,5 @@
 import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
-import { Broker, clientName } from './broker';
+import { Broker, clientName, type ConnectionAttachment } from './broker';
 
 import { authorizationFailure, type RelaySecrets } from './auth';
 
@@ -16,8 +16,7 @@ export default {
 /** One object and one active app per deployment. Discovery always uses the bundled static catalog. */
 export class Relay {
   private broker: Broker;
-  private legacyStreams = new Set<Server>();
-  /** clientInfo.name from the last legacy initialize; legacy tools/call requests do not carry it. */
+  /** clientInfo.name from the last legacy initialize (memory only: gone after hibernation, then omitted). */
   private lastClient?: string;
   private handler = createMcpHandler(() => this.server(), { legacy: 'reject' });
   private server(): Server {
@@ -30,8 +29,25 @@ export class Relay {
   }
   constructor(private state: DurableObjectState, private env: Env) {
     // Ignore legacy cached hello definitions: the advertised catalog is a deployment artifact.
-    this.broker = new Broker();
+    this.state.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}', '{"type":"pong"}'));
+    this.broker = new Broker(
+      (socket, attachment) => (socket as WebSocket).serializeAttachment(attachment),
+      socket => this.state.getWebSocketAutoResponseTimestamp(socket as WebSocket)?.getTime() ?? 0,
+    );
+    // Runtime-owned sockets and their small attachments survive hibernation; promises do not.
+    for (const socket of this.state.getWebSockets()) {
+      if (socket.readyState === WebSocket.OPEN)
+        this.broker.open(socket, socket.deserializeAttachment() as ConnectionAttachment | undefined);
+    }
   }
+  webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): void {
+    if (typeof message === 'string') this.broker.receive(socket, message);
+    else { this.broker.close(socket); socket.close(1008, 'JSON text required'); }
+  }
+  webSocketClose(socket: WebSocket, code: number, reason: string): void {
+    this.broker.close(socket); socket.close(code === 1006 ? 1000 : code, reason);
+  }
+  webSocketError(socket: WebSocket): void { this.broker.close(socket); socket.close(1011, 'WebSocket error'); }
   async fetch(request: Request): Promise<Response> {
     const denied = await authorizationFailure(request, this.env);
     if (denied) return denied;
@@ -39,17 +55,13 @@ export class Relay {
       if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
         return new Response('WebSocket upgrade required', { status: 426 });
       const pair = new WebSocketPair(); const [client, app] = Object.values(pair);
-      app.accept(); this.broker.open(app);
-      app.addEventListener('message', event => {
-        if (typeof event.data === 'string') this.broker.receive(app, event.data);
-        else { this.broker.close(app); app.close(1008, 'JSON text required'); }
-      });
-      app.addEventListener('close', () => this.broker.close(app));
-      app.addEventListener('error', () => this.broker.close(app));
+      this.state.acceptWebSocket(app); this.broker.open(app);
       return new Response(null, { status: 101, webSocket: client });
     }
     // Official v2 routes both 2026 per-request envelopes and legacy POST traffic.
-    // Legacy GET subscriptions retain their official SDK transport until stream cancellation.
+    // No unsolicited notifications: an optional idle GET/SSE would prevent hibernation.
+    // MCP Streamable HTTP explicitly permits 405 when this stream is not offered.
+    if (request.method === 'GET') return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
     if (!await isLegacyRequest(request)) return this.handler.fetch(request);
     if (request.method === 'POST') {
       const body: any = await request.clone().json().catch(() => undefined);
@@ -58,18 +70,7 @@ export class Relay {
     const server = this.server();
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
-    const response = await transport.handleRequest(request);
-    if (request.method !== 'GET' || response.status !== 200 || !response.body) { await server.close(); return response; }
-    this.legacyStreams.add(server);
-    const reader = response.body.getReader();
-    const cleanup = async () => { this.legacyStreams.delete(server); await server.close(); };
-    const body = new ReadableStream<Uint8Array>({
-      async pull(controller) {
-        try { const part = await reader.read(); if (part.done) { controller.close(); await cleanup(); } else controller.enqueue(part.value); }
-        catch (error) { controller.error(error); await cleanup(); }
-      },
-      async cancel() { try { await reader.cancel(); } finally { await cleanup(); } }
-    });
-    return new Response(body, { status: response.status, headers: response.headers });
+    try { return await transport.handleRequest(request); }
+    finally { await server.close(); }
   }
 }

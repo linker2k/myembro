@@ -1,4 +1,3 @@
-import { RELAY_TOOLS } from '../src/tools';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Miniflare, Log, LogLevel } from 'miniflare';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -153,22 +152,28 @@ describe('contract timers on the production broker with fake clock', () => {
       broker.receive(socket, JSON.stringify({ type: 'result', id, isError: false, content: [] })); broker.close(socket);
     } finally { vi.useRealTimers(); }
   });
-  it('pings at 30 seconds, answers ping, and closes after 90 seconds silence', async () => {
-    vi.useFakeTimers();
-    try {
-      const { socket, sent } = setup(); await vi.advanceTimersByTimeAsync(30_000); expect(sent).toEqual([{ type: 'ping' }]);
-      await vi.advanceTimersByTimeAsync(59_999); expect(socket.close).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1); expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
-    } finally { vi.useRealTimers(); }
-  });
-  it('renews the exact 90-second silence deadline after a pong between ping ticks', async () => {
+  it('keeps idle connections timer-free and expires silence only when a call arrives', async () => {
     vi.useFakeTimers();
     try {
       const { broker, socket, sent } = setup();
-      await vi.advanceTimersByTimeAsync(29_123); broker.receive(socket, '{"type":"ping"}');
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(90_000);
+      expect(sent).toEqual([]); expect(socket.close).not.toHaveBeenCalled();
+      expect((await broker.call('get_project', {})).isError).toBe(true);
+      expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
+  it('answers noncanonical JSON ping and renews lazy silence deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const { broker, socket, sent } = setup();
+      await vi.advanceTimersByTimeAsync(29_123); broker.receive(socket, '{ "type": "ping" }');
       expect(sent.at(-1)).toEqual({ type: 'pong' });
-      await vi.advanceTimersByTimeAsync(89_999); expect(socket.close).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1); expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
+      await vi.advanceTimersByTimeAsync(89_999);
+      expect(socket.close).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1); await broker.call('get_project', {});
+      expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
     } finally { vi.useRealTimers(); }
   });
   it('forwards the edit-phase tools only, never separate-screen or unknown tool definitions', () => {

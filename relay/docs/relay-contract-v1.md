@@ -8,11 +8,11 @@ App <-> relay (WebSocket, app connects outbound):
 - app -> relay on open: {"type":"hello","appVersion":"<str>","tools":[<MCP tool defs: name, description, inputSchema, annotations>]}
 - relay -> app: {"type":"call","id":"<uuid>","tool":"<name>","args":{...}}
 - app -> relay: {"type":"result","id":"<same>","isError":false,"content":[{"type":"text","text":"..."} | {"type":"image","data":"<base64>","mimeType":"image/png"}]}
-- either side: {"type":"ping"} / {"type":"pong"} every 30 s; relay drops app after 90 s silence.
+- App sends {"type":"ping"} every 30 s; the runtime automatically returns {"type":"pong"} without waking the relay. Noncanonical JSON ping is still accepted by the handler. To allow hibernation, the relay has no periodic ping/silence timer: a connection silent for 90 s is dropped lazily before the next tool call (automatic pong timestamps count as activity). The app retains its own 90 s watchdog/reconnect. See [hibernation](hibernation.md).
 - One app connection per relay; a new hello replaces the old socket.
 
 Claude <-> relay (MCP Streamable HTTP):
-- Endpoint: https://<host>/mcp only.
+- Endpoint: https://<host>/mcp only. POST uses the official MCP SDK; optional GET/SSE subscriptions return 405 (no unsolicited notifications), so an idle subscription cannot keep the DO awake.
 - Authentication: Authorization: Bearer <MCP_TOKEN> request header only. Configure this in the claude.ai connector request-header field; the connector stores the value securely. OAuth remains deferred.
 - Compare SHA-256 fixed-size credential digests using the runtime native constant-time comparison. Missing/incorrect credentials return 401 with a generic body containing no credential. Unknown/old /mcp/<x> paths return 404 (no legacy path-secret authentication).
 - MCP query parameters never provide authentication. Do not log authorization values, credential-bearing URLs, or secrets.
