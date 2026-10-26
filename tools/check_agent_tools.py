@@ -69,6 +69,14 @@ def main():
     assert all(by_name[n]['annotations']['needsUserConfirmation'] is True for n in DESTRUCTIVE-{'save_project','save_pes'})
     assert all(by_name[n]['annotations']['needsUserConfirmation']=='onOverwrite' for n in ('save_project','save_pes'))
     assert all(by_name[n]['annotations']['readOnly'] for n in ('get_project','list_fonts','list_builtin_designs','sewout_check'))
+    render=by_name['render_preview']
+    assert render['annotations']['readOnly'] and render['annotations']['needsUserConfirmation'] is False
+    assert render['annotations']['mapsTo']=='ProjectPreviewRenderer.renderPreview'
+    rv=Draft202012Validator(render['inputSchema'])
+    for width in (256,1024):rv.validate({'widthPx':width})
+    for width in (255,1025,256.5,'256',True):assert not rv.is_valid({'widthPx':width})
+    assert not rv.is_valid({}) and not rv.is_valid({'widthPx':256,'path':'forbidden'})
+    print('RENDER_PREVIEW PASS: readOnly, strict widthPx, 255/256/1024/1025 boundaries')
     height=Draft202012Validator(by_name['add_text']['inputSchema']['properties']['heightMm'])
     assert height.is_valid(60) and not height.is_valid(61)
     color=Draft202012Validator(by_name['recolor_object']['inputSchema']['properties']['threadColor'])
@@ -87,7 +95,7 @@ def main():
             assert not pv.is_valid({**sample,source:'forbidden'})
     print('PHOTO_CONTRACT PASS: 4 filters, closed attachment-only inputs, colors 2–6; threshold/color checked by engine')
     print(f'DRAFT_2020_12 PASS: {len(names)} input schemas')
-    print(f'CONTRACT PASS: strict nested objects, required fields, names, {len(DESTRUCTIVE)} confirmation tools, four read queries')
+    print(f'CONTRACT PASS: strict nested objects, required fields, names, {len(DESTRUCTIVE)} confirmation tools, read query assertions')
     print(f'PROJECTIONS PASS: {len(names)} MCP / OpenAI / Gemini schemas unchanged; argument rejection and boundary probes PASS')
 
 if __name__=='__main__':main()

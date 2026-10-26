@@ -20,7 +20,7 @@ project sessions. The output directory is an explicit trusted-host startup grant
 
 ## Shared services and JVM bindings
 
-`tools/list` preserves all 69 definitions, annotations and strict input schemas in
+`tools/list` preserves all 70 definitions, annotations and strict input schemas in
 `docs/agent/tools.json`. Executable calls and validation failures reach the shared
 controller; confirmation requests may return before execution, and unsupported tools remain explicit NOT_IMPLEMENTED errors. Begin/stage/
 commit/cancel and undo/redo share engine history. A schema failure in a prepared
