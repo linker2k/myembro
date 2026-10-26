@@ -240,3 +240,144 @@ See [source-line comparison and tests](meander-search-limit.md).
   non-upstream meander search budget and adds cancellation checks. Tile resources,
   fill parameters, exporter, gate, and app UI remain unchanged.
 - No push or merge. No personal files or upstream runtime code are used.
+
+## Desktop JVM timing and remaining resource guards
+
+### Timing scope and distribution
+
+These are the 160 `elapsed_ms` values from the **single, serial JVM catalog run**
+committed with `10fbcef`, not a new benchmark or Android measurement. The interval
+in `TextureCatalogTest.kt:50–90` includes fill generation, S1 processing, output
+preparation, sew-out checks, PES encoding/decoding and saving, and the individual
+PNG rendering/writing. JVM startup, compilation, source SVG writing, final contact
+sheets, and the final summary are outside that interval. Lazy initialization/JIT
+inside a case is included. There was no warm-up exclusion, repetition, randomized
+order, or controlled GC. Do not interpret these numbers as fill-kernel latency or
+as a mobile UI responsiveness guarantee.
+
+Median is the ordinary median (mean of the middle 2 values for even counts).
+The p95 is nearest-rank: sorted values at index `ceil(0.95 * n) - 1`.
+
+| Cases | n | Median (ms) | p95 (ms) | Maximum (ms) |
+|---|---:|---:|---:|---:|
+| All | 160 | 75.0 | 243 | 6839 |
+| Square | 80 | 69.5 | 252 | 6839 |
+| Circle | 80 | 79.0 | 213 | 4871 |
+| `tatami_fill` | 2 | 458.0 | 715 | 715 |
+| `meander_fill` | 150 | 73.5 | 116 | 3652 |
+| `contour_fill` | 2 | 252.5 | 262 | 262 |
+| `circular_fill` | 2 | 5855.0 | 6839 | 6839 |
+| Gradient without explicit gradient | 2 | 124.5 | 143 | 143 |
+| Gradient with 2 stops | 2 | 137.5 | 156 | 156 |
+
+For the groups with only 2 cases, p95 is simply the larger case, not an estimate
+of repeated-run tail latency. The case intervals sum to **31.300 s**, compared with
+**32.361 s** for the catalog JUnit test and **52 s** for Gradle in the committed
+output; these measure different scopes.
+
+| Slowest cases | Time (ms) |
+|---|---:|
+| Square, circular | 6839 |
+| Circle, circular | 4871 |
+| Circle, meander `NC5-11a` | 3652 |
+| Square, meander `NC5-11a` | 2115 |
+| Square, tatami | 715 |
+| Circle, meander `P3-1` | 387 |
+
+Recompute the distribution without generating stitches:
+
+```sh
+python3 - <<'PY'
+import csv, math, statistics
+from collections import defaultdict
+from pathlib import Path
+rows = list(csv.DictReader(Path('docs/research/texture-catalog-results.csv').open()))
+groups = defaultdict(list)
+for r in rows:
+    method = r['method']
+    if method == 'linear_gradient_fill':
+        method = 'gradient_two_stops' if r['id'].endswith('two_stops') else 'gradient_no_gradient'
+    for name in ('All', r['shape'], method):
+        groups[name].append(int(r['elapsed_ms']))
+for name, values in groups.items():
+    values.sort()
+    print(name, len(values), statistics.median(values),
+          values[math.ceil(.95 * len(values)) - 1], max(values))
+assert len(rows) == 160 and all(r['status'] == 'PASS' for r in rows)
+PY
+```
+
+### Remaining port-only resource bounds
+
+Scope: the catalog fill implementations and their shared fill/running/geometry
+helpers, plus the tile SVG reader and the sew-out checker. This is not an audit of
+unrelated lettering, ripple, tartan, import, or app limits. References below use
+Ink/Stitch v3.3.0, commit
+`b0edd96311ece82ee48816dc93466274b12c2a9c`, read without executing upstream code.
+Kotlin stitch filenames are relative to
+`engine/src/main/kotlin/io/github/linker2k/myembro/engine/inkstitch/stitches/`.
+
+Each row below is a port-specific explicit numerical bound: the corresponding
+upstream implementation has no matching numerical bound. **The basis of every
+listed numerical value is unconfirmed**: the inspected code and documentation do
+not establish an upstream default, corpus measurement, or mobile CPU/RAM budget
+for that number. Bounding work is a plausible purpose, not numerical calibration.
+Upstream can still fail because of dependency, recursion, or memory limits; absence
+of an explicit cap does not imply unlimited resources.
+
+| Port location | Remaining bound | Corresponding upstream source | Numerical basis |
+|---|---|---|---|
+| `MeanderFill.kt:51,157` | Graph nodes ≤ 20,000 | `lib/tiles.py:145–175` | unconfirmed |
+| `MeanderFill.kt:145–146` | Tile expansion radius `count` ≤ 225; at the maximum, up to `(2*225)^2 = 202500` candidate placements before bounding-box filtering, not 225 tiles | `lib/tiles.py:148–157` | unconfirmed |
+| `MeanderFill.kt:86` | Tile SVG input ≤ 1,000,000 bytes | `lib/tiles.py:22–24` | unconfirmed |
+| `MeanderFill.kt:348` | Clipping subdivision count and accumulated output each ≤ 1,000,000 | `lib/utils/clamp_path.py:17–29` | unconfirmed |
+| `MeanderFill.kt:39`, `ContourFill.kt:40` | Repeats ≤ 16; bean repeat entries ≤ 20 | `lib/elements/fill_stitch.py:568–597` | unconfirmed |
+| `ContourFill.kt:51,151,171` | Contours ≤ 20,000; nesting depth ≤ 512 | `lib/stitches/contour_fill.py:138–165,312–429` | unconfirmed |
+| `ContourFill.kt:103` | Interpolation points ≤ 1,000,000 | `lib/stitches/contour_fill.py:436–479` | unconfirmed |
+| `CircularFill.kt:64` | Check `rings.size < 100_000` before appending another ring | `lib/stitches/circular_fill.py:52–66` | unconfirmed |
+| `CircularFill.kt:89,96,101` | Repeats ≤ 20; bean output ≤ 1,000,000; size ≤ 500,000 checked before repeat doubling (the doubled result may reach 1,000,000) | `lib/stitches/circular_fill.py:102–115`; fill repeat getter above | unconfirmed |
+| `LinearGradientFill.kt:95–96,196` | Rows ≤ 200,000; stop row indices within ±1,000,000 | `lib/stitches/linear_gradient_fill.py:94–139,142–265` | unconfirmed |
+| `LinearGradientFill.kt:208,217` | Per-row projection count checked below 1,000,000; total points ≤ 1,000,000 | `lib/stitches/linear_gradient_fill.py:127–139` | unconfirmed |
+| `Fill.kt:39,71,82` | Row length / max stitch length ≤ 1,000,000; grating iterations ≤ 100,000; segments ≤ 200,000 | `lib/stitches/fill.py:55–180` | unconfirmed |
+| `FillRouting.kt:41,144,182` | Input segments ≤ 200,000; routed stitches ≤ 1,000,000; graph edges ≤ 1,000,000 | `lib/stitches/tatami_fill.py:206–280,403–525` | unconfirmed |
+| `FillRouting.kt:248` | Odd vertices ≤ 256 and odd vertices × graph edges ≤ 20,000,000 | `lib/stitches/tatami_fill.py:365–384` (NetworkX Euler augmentation) | unconfirmed |
+| `FillRouting.kt:322,390` | Travel nodes ≤ 250,000; requested gap-fill repeats ≤ 100 | `lib/stitches/tatami_fill.py:720ff,930ff` gap filling and travel graph | unconfirmed |
+| `FillRunning.kt:20,51` | Input points ≤ 200,000; accumulated running samples ≤ 1,000,000 | `lib/stitches/running_stitch.py:307–342,428ff` | unconfirmed |
+| `FillGeometry.kt:40` | Smoothing iterations ≤ 10 (default 5 is upstream, upper bound 10 is not) | `lib/utils/smoothing.py:24,49` | unconfirmed |
+
+The shared tile path parser also has local limits in
+`engine/.../geometry/SvgPath.kt:14,30–32,49,152`: 200,000 emissions, default
+200,000 vertices, Bézier subdivision depth below 24 when subdivision is needed,
+and arc subdivisions ≤ 200,000. This parser is a local SVG flattening helper,
+not a direct Ink/Stitch algorithm port; the numerical resource-budget basis is
+**unconfirmed**. These limits differ from validity checks for finite coordinates,
+positive spacing, supported SVG commands, and geometric progress, which are not
+counted as resource budgets here.
+
+The sew-out checker has separate analysis budgets in
+`engine/.../sewout/SewoutModel.kt:117–118`: `maxCommands=250_000`,
+`maxGridCells=200_000`, `maxTracedCells=1_000_000`, `maxFindings=1_000`.
+These are app analysis limits, not Ink/Stitch fill parameters; their numerical
+budget basis is also **unconfirmed**. An incomplete analysis must not be treated
+as a safety PASS. These budgets are distinct from the P1–P8 sewing safety rules.
+
+### Original algorithm cutoffs, not new resource caps
+
+Do not conflate the inventory with the removed cumulative 2,000,000-search-step
+cap. The remaining meander path limits of 7/10 edges come from
+`lib/stitches/meander_fill.py:138–145,156–163`; cancellation follows its
+`check_stop_flag` checks, mapped to JVM interruption. Likewise gradient's
+`maxCount = 1000` (`LinearGradientFill.kt:124`) comes from
+`lib/stitches/linear_gradient_fill.py:196,266–289`, rather than a new global point
+budget. See the [search-limit comparison](meander-search-limit.md) for the removal.
+
+Source references can be inspected at the pinned revision:
+[tiles](https://github.com/inkstitch/inkstitch/blob/b0edd96311ece82ee48816dc93466274b12c2a9c/lib/tiles.py),
+[fill parameters](https://github.com/inkstitch/inkstitch/blob/b0edd96311ece82ee48816dc93466274b12c2a9c/lib/elements/fill_stitch.py),
+[stitch modules](https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/lib/stitches),
+[utility modules](https://github.com/inkstitch/inkstitch/tree/b0edd96311ece82ee48816dc93466274b12c2a9c/lib/utils).
+
+This follow-up changes documentation only: no cap, default, stitch path, gate, or
+UI range is changed, and no catalog generation is repeated. The 160 default-case
+PASS results do not establish headroom near these limits. Mobile timing and
+memory measurements remain unconfirmed.
