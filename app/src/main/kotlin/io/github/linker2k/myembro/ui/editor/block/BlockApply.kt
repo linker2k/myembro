@@ -23,11 +23,17 @@ sealed interface BlockStatus {
     /** Whole project inside the hoop and SewoutCheck has no blocker. */
     data object Passed : BlockStatus
     /** [applyFailed]: an Apply was refused and the previous settings stay; otherwise the current design is blocked. */
-    data class Blocked(val reason: String, val applyFailed: Boolean) : BlockStatus
+    data class Blocked(val reason: String, val applyFailed: Boolean,
+        val code: io.github.linker2k.myembro.engine.edit.commands.CommandError? = null,
+        val kind: io.github.linker2k.myembro.engine.edit.BlockGenerationKind? = null) : BlockStatus
 }
 
 /** Maps between the sheet's choices and the engine's upstream BlockStitch fields (docs/agent/block-stitch.md). */
 object BlockApply {
+    /** Typed command failure for presentation; callers never need to inspect the message. */
+    fun rejectedStatus(result: io.github.linker2k.myembro.engine.edit.commands.CommandResult.Rejected) =
+        BlockStatus.Blocked("${result.code}: ${result.message}",true,result.code,result.kind)
+
     /** Sheet texture -> Ink/Stitch fill_method (fill_stitch.py:166–184 option IDs). */
     val FILL_METHOD = mapOf(BlockTexture.BASIC to "tatami_fill", BlockTexture.PATTERN to "meander_fill",
         BlockTexture.CONTOUR to "contour_fill", BlockTexture.CIRCULAR to "circular_fill")

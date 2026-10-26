@@ -56,9 +56,8 @@ class ShapeObject internal constructor(
     private val rendered: Lazy<VectorArt.Result> = lazy {
         val result = if(photoSource!=null) PhotoShapeRenderer.render(photoSource,regions,overrides,widthMm) else VectorArt.render(sourceArt, widthMm, name = name,
             regionOverride = { input -> overrides[input.id]?.let { ShapeBlockRenderer.generate(input, it) } }, captureRegions = true)
-        require(overrides.isEmpty() || result.parts.map { it.regionId }.toSet() == regions.map { it.id }.toSet()) {
-            "REGION_SET_CHANGED: override must not silently exclude another region"
-        }
+        if(overrides.isNotEmpty() && result.parts.map { it.regionId }.toSet() != regions.map { it.id }.toSet())
+            throw BlockGenerationException(BlockGenerationKind.REGION_SET_CHANGED,"Override must not silently exclude another region")
         result
     },
 ) : DesignObject {

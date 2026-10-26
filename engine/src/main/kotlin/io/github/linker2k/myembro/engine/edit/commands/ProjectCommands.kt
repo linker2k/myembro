@@ -9,7 +9,8 @@ import io.github.linker2k.myembro.engine.model.EmbThread
  * Pure structural reducer. Wraps existing model operations without changing their compatibility
  * behavior. In particular, this entry rejects bad targets/indices instead of silently no-oping
  * or clamping them. A valid edit may still be outside the hoop: export checks remain separate.
- * No localPattern/placedPattern call, random ID, file access, history mutation or registry lookup.
+ * Structural commands do not render. Block commands generate/check a private candidate before publication.
+ * No random ID allocation, history mutation or external registry lookup.
  */
 fun apply(project: Project, command: ProjectCommand): CommandResult {
     val blank = project.objects.filter { it.id.isBlank() }.mapTo(linkedSetOf()) { it.id }
@@ -22,8 +23,8 @@ fun apply(project: Project, command: ProjectCommand): CommandResult {
     }
 }
 
-private fun reject(project: Project, code: CommandError, ids: Set<String>, path: List<Int>, message: String) =
-    CommandResult.Rejected(project, code, ids, path, message)
+private fun reject(project: Project, code: CommandError, ids: Set<String>, path: List<Int>, message: String, kind: BlockGenerationKind? = null) =
+    CommandResult.Rejected(project, code, ids, path, message, kind)
 
 private fun applied(before: Project, candidate: Project): CommandResult.Applied {
     if (candidate == before) return CommandResult.Applied(before, false, emptySet())
@@ -35,6 +36,10 @@ private fun applied(before: Project, candidate: Project): CommandResult.Applied 
 
 private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): CommandResult {
     fun error(code: CommandError, ids: Set<String>, message: String) = reject(project, code, ids, path, message)
+    fun checked(candidate: Project, id: String, precheckSatin: Set<String> = emptySet()): CommandResult.Rejected? {
+        val failure=BlockCommandCheck.check(candidate,id,precheckSatin) ?: return null
+        return reject(project,failure.code,setOf(id),path,failure.message,failure.kind)
+    }
     fun targets(ids: Set<String>): CommandResult.Rejected? {
         val blank = ids.filterTo(linkedSetOf()) { it.isBlank() }
         if (blank.isNotEmpty()) return error(CommandError.INVALID_ID, blank, "Object id must not be blank")
@@ -50,13 +55,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
                 catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid region order") }
             if(updated==shape) project else {
                 val candidate=project.replace(updated)
-                try {
-                    val pattern=candidate.flatten()
-                    io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,pattern.bounds)
-                    io.github.linker2k.myembro.engine.io.PesExport.requireSafe(
-                        io.github.linker2k.myembro.engine.io.PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=project.hoop)),
-                        project.hoop,io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
-                } catch(e: Exception) { return error(CommandError.SEWOUT_BLOCKED,setOf(command.id),e.message ?: "Region order blocked") }
+                checked(candidate,command.id)?.let { return it }
                 candidate
             }
         }
@@ -76,13 +75,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
             } catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid block settings") }
             if(updated == shape) project else {
                 val candidate = project.replace(updated)
-                try {
-                    val pattern = candidate.flatten()
-                    io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,pattern.bounds)
-                    io.github.linker2k.myembro.engine.io.PesExport.requireSafe(
-                        io.github.linker2k.myembro.engine.io.PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=project.hoop)),
-                        project.hoop,io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
-                } catch(e: Exception) { return error(CommandError.SEWOUT_BLOCKED,setOf(command.id),e.message ?: "Block generation failed") }
+                checked(candidate,command.id,command.regionIds)?.let { return it }
                 candidate
             }
         }

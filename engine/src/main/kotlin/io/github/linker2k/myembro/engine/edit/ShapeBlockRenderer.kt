@@ -49,6 +49,22 @@ internal object ShapeBlockRenderer {
 
     fun generate(input: VectorArt.RegionInput, settings: BlockStitch): StitchTypeRule.RegionStitches {
         validate(settings)
+        return try { generateValidated(input, settings) }
+        catch(e: java.util.concurrent.CancellationException) { throw e }
+        catch(e: InterruptedException) { throw e }
+        catch(e: BlockGenerationException) { throw e }
+        catch(e: MeanderGraphException) { throw BlockGenerationException(BlockGenerationKind.MEANDER_GRAPH,e.message ?: "Meander graph failed",e) }
+        catch(e: Exception) {
+            val kind=when {
+                settings.type==BlockStitch.Type.SATIN -> BlockGenerationKind.SATIN_GENERATION_FAILED
+                settings.fill.fill_method=="meander_fill" -> BlockGenerationKind.MEANDER_GENERATION
+                else -> BlockGenerationKind.REGION_GENERATION
+            }
+            throw BlockGenerationException(kind,e.message ?: "Region generation failed",e)
+        }
+    }
+
+    private fun generateValidated(input: VectorArt.RegionInput, settings: BlockStitch): StitchTypeRule.RegionStitches {
         val paths = input.paths.map { line -> Polyline(line.points.map { Point(it.x * PIXELS_PER_MM, it.y * PIXELS_PER_MM) }, line.closed) }
         val region = PolygonRegion.fromPaths(paths, FillRule.EVEN_ODD)
         val previous = input.previous
@@ -63,7 +79,7 @@ internal object ShapeBlockRenderer {
             BlockStitch.Type.RUNNING -> Stroke(paths.map { line -> line.points.map { io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y) } }, thread).toStitchGroups(previous)
             BlockStitch.Type.SATIN -> RegionSatin.groups(PolygonRegion.fromPaths(input.paths,FillRule.EVEN_ODD).geometry,
                 { x,y -> io.github.linker2k.myembro.engine.inkstitch.utils.Point(x*PIXELS_PER_MM,y*PIXELS_PER_MM) }, thread, settings.satin ?: SatinParameters())
-                ?: error("SATIN_GEOMETRY_UNSUPPORTED")
+                ?: throw BlockGenerationException(BlockGenerationKind.SATIN_GEOMETRY_UNSUPPORTED,"No complete satin geometry could be generated")
             BlockStitch.Type.FILL -> if (p.fill_method == "tatami_fill") {
                 val attrs = mapOf("fill_method" to p.fill_method, "angle" to p.angle.toString(), "row_spacing_mm" to p.row_spacing_mm.toString())
                 FontTatami.stitchGroups(InkFill(paths,FillRule.EVEN_ODD,thread.color,InkStitchParams(attrs)),
@@ -88,14 +104,14 @@ internal object ShapeBlockRenderer {
                             meander_scale_percent=settings.meander_scale_percent),startingPoint=start)
                         "contour_fill" -> if(start==null) ContourFill.fill(poly,ContourFillParameters(row_spacing_mm=p.row_spacing_mm)) else ContourFill.fill(poly,ContourFillParameters(row_spacing_mm=p.row_spacing_mm),start!!)
                         "circular_fill" -> CircularFill.generate(poly,CircularFill.Parameters(angle=p.angle,row_spacing_mm=p.row_spacing_mm),start)
-                        else -> error("UNSUPPORTED_FILL_BACKEND: ${p.fill_method}")
+                        else -> throw BlockGenerationException(BlockGenerationKind.UNSUPPORTED_FILL_BACKEND,"Unsupported fill backend: ${p.fill_method}")
                     }
                     add(points)
                 }
                 result
             }
         }
-        require(groups.any { it.stitches.isNotEmpty() }) { "EMPTY_REGION" }
+        if(groups.none { it.stitches.isNotEmpty() }) throw BlockGenerationException(BlockGenerationKind.EMPTY_REGION,"Region generated no stitches")
         return StitchTypeRule.RegionStitches(groups,type)
     }
 }

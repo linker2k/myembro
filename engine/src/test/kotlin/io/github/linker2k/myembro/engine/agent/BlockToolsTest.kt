@@ -35,7 +35,7 @@ class BlockToolsTest {
         for(change in listOf("{\"row_spacing_mm\":0.099}","{\"fill_method\":\"guided_fill\"}")) {
             val failure=k.dispatch(p,"0","set_block_stitch",JsonObject(a+("change" to Json.parseToJsonElement(change))))
             assertFalse(failure.ok);assertSame(p,failure.project)
-            assertEquals(if("guided" in change) "SEWOUT_BLOCKED" else "INVALID_BLOCK_SETTINGS",failure.code)
+            assertEquals(if("guided" in change) "GENERATION_FAILED" else "INVALID_BLOCK_SETTINGS",failure.code)
         }
     }
     @Test fun malformedOptionalPatchesFailClosed() {

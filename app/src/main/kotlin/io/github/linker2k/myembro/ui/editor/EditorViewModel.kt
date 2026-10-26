@@ -524,7 +524,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 runInterruptible { applyCommand(base, ProjectCommand.SetBlockStitch(id, regionIds, patch)) }
             }
             blockStatus = when {
-                result is CommandResult.Rejected -> BlockStatus.Blocked("${result.code}: ${result.message}", applyFailed = true)
+                result is CommandResult.Rejected -> BlockApply.rejectedStatus(result)
                 // Something else changed the design meanwhile: never publish a result built on an old project.
                 project !== base -> BlockStatus.Blocked("STALE_PROJECT", applyFailed = true)
                 else -> { edit(result.project); if (project === result.project) BlockStatus.Passed

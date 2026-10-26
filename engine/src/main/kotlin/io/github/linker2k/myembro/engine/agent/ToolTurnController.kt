@@ -191,7 +191,11 @@ class ToolTurnController(val session: EditSession, private val kernel: ToolDispa
     private fun turn(result: TurnResult): ToolDispatcher.Result = when(result) {
         is TurnResult.Committed -> success("committed",result.changed)
         is TurnResult.Cancelled -> success("cancelled",false)
-        is TurnResult.Rejected -> error(result.code.name,result.failure?.message ?: result.code.name)
+        is TurnResult.Rejected -> result.failure?.let { failure ->
+            error(if(failure.kind!=null || failure.code==CommandError.SEWOUT_BLOCKED) failure.code.name else result.code.name,failure.message).let { r ->
+                if(failure.kind==null) r else r.copy(output=JsonObject(r.output+("kind" to JsonPrimitive(failure.kind.name))))
+            }
+        } ?: error(result.code.name,result.code.name)
         is TurnResult.InProgress -> error("INCOMPLETE_TURN","Unexpected unfinished engine turn")
     }
     private fun history(result: SessionHistoryResult) = when(result) {

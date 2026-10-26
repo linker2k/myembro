@@ -8,7 +8,10 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 /** Final default-writer boundary. Imported source follows the explicit imported policy;
  * generated source markers enable generated density/lock/repetition/length blocking. */
 object PesOutputSafety {
-    fun errors(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern):List<String> {
+    /** Carries the actual report so callers distinguish sewing blockers from encoding failures. */
+    class Rejected(val report: SewoutReport, val outputErrors: List<String>) :
+        IllegalArgumentException(outputErrors.joinToString("; "))
+    private fun analyze(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern): Pair<List<String>,SewoutReport> {
         val errors=PecViewportCheck.check(bytes,hoop).errors.toMutableList()
         var x=0;var y=0
         for((index,s)in boundedPecStitches(bytes).withIndex()) {
@@ -20,11 +23,12 @@ object PesOutputSafety {
         val report=SewoutCheck.checkPes(bytes,machine=SewoutMachine("output","Selected hoop",Specification(),Specification(),knownHoopsMm=emptySet()),options=SewoutOptions(hoop=hoop,origin=SewoutCheck.originOf(source)))
         errors+=report.findings.filter { it.severity==Severity.BLOCKER }.map { "${it.code}: ${it.message}" }
         if(!report.analysisComplete)errors+="ANALYSIS_INCOMPLETE"
-        return errors.distinct()
+        return errors.distinct() to report
     }
+    fun errors(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern):List<String> = analyze(bytes,hoop,source).first
     fun requireValid(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern):ByteArray {
-        val errors=errors(bytes,hoop,source)
-        require(errors.isEmpty()) { errors.joinToString("; ") }
+        val (errors,report)=analyze(bytes,hoop,source)
+        if(errors.isNotEmpty()) throw Rejected(report,errors)
         return bytes
     }
 }
