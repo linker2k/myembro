@@ -124,6 +124,7 @@ class AiPictureInstrumentation : Instrumentation() {
             runOnMainSync {
                 vm.configure(io.github.linker2k.myembro.ui.settings.EmbroiderySettings())
                 vm.changeColorCount(2); vm.changeStyle(PhotoMode.COLOR)
+                if (vm.step == 0) vm.next()
             }
             await("2-color trace") { !vm.busy && vm.outline != null }
             runOnMainSync { vm.changeSize(30.0) }

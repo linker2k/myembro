@@ -18,4 +18,7 @@
     <string name="ai_picture_send">보내기</string>
     <string name="ai_picture_text_only">사진 없이 요청문만</string>
     <string name="ai_picture_colors">그림 색 수: %1$d</string>
+    <string name="svg_picture_unsupported">이 SVG는 쓸 수 없어요, PNG로 보내 주세요</string>
+    <string name="svg_picture_direct">SVG: 이미지 추적 없이 벡터로 직접 변환</string>
+    <string name="ai_picture_retry_png">PNG로 다시 요청</string>
 </resources>

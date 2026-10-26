@@ -29,14 +29,14 @@ import kotlinx.coroutines.withContext
 /** One request field + optional picture, shared by Home/editor/photo. Every send asks again. */
 @Composable
 fun AiPictureDialog(hoop: HoopSpec, targetWidthMm: Double, threads: MyThreads,
-    initialPhoto: Bitmap? = null, onDismiss: () -> Unit) {
+    initialPhoto: Bitmap? = null, draft: AiPictureDraft = androidx.lifecycle.viewmodel.compose.viewModel(), onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var request by remember { mutableStateOf("") }
-    var colors by remember { mutableIntStateOf(AiPicturePrompt.DEFAULT_COLORS) }
-    var photo by remember { mutableStateOf(initialPhoto) }
-    var ownedPhoto by remember { mutableStateOf<Bitmap?>(null) }
-    DisposableEffect(Unit) { onDispose { ownedPhoto?.recycle() } }
+    var request by draft.request
+    var colors by draft.colors
+    var photo by draft.photo
+    var format by draft.format
+    LaunchedEffect(initialPhoto) { if (photo == null && initialPhoto != null) photo = initialPhoto }
     var error by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var disclose by remember { mutableStateOf(false) }
@@ -53,7 +53,7 @@ fun AiPictureDialog(hoop: HoopSpec, targetWidthMm: Double, threads: MyThreads,
             busy = true; error = false
             try {
                 val decoded = withContext(Dispatchers.IO) { decodeUprightPhoto(context.contentResolver, uri) }
-                ownedPhoto?.recycle(); ownedPhoto = decoded; photo = decoded
+                draft.picked(decoded)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (_: Exception) { error = true }
             finally { busy = false }
@@ -64,9 +64,10 @@ fun AiPictureDialog(hoop: HoopSpec, targetWidthMm: Double, threads: MyThreads,
         scope.launch {
             try {
                 val prompt = AiPicturePrompt.build(request, includePhoto, hoop, targetWidthMm, colors,
-                    if (threads.active) threads.owned.map { it.color } else emptyList())
+                    if (threads.active) threads.owned.map { it.color } else emptyList(), format)
                 val send = withContext(Dispatchers.IO) { aiPictureShareIntent(context, prompt, photo, includePhoto) }
                 context.startActivity(Intent.createChooser(send, context.getString(R.string.ai_picture_chooser)))
+                draft.expectImage()
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (_: Exception) { error = true }
             finally { busy = false }
@@ -82,6 +83,11 @@ fun AiPictureDialog(hoop: HoopSpec, targetWidthMm: Double, threads: MyThreads,
                         Icon(Icons.Default.Mic, stringResource(R.string.ai_picture_voice))
                     }
                 })
+            Row {
+                FilterChip(format == AiPicturePrompt.Format.PNG, { format = AiPicturePrompt.Format.PNG }, label = { Text("PNG") })
+                Spacer(Modifier.width(8.dp))
+                FilterChip(format == AiPicturePrompt.Format.SVG, { format = AiPicturePrompt.Format.SVG }, label = { Text("SVG") })
+            }
             Text(stringResource(R.string.ai_picture_colors, colors))
             Slider(colors.toFloat(), { colors = it.toInt() }, valueRange = 2f..6f, steps = 3, enabled = !busy)
             Text(stringResource(if (photo == null) R.string.ai_picture_no_photo else R.string.ai_picture_has_photo))

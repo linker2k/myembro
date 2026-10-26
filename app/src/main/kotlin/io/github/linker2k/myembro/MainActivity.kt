@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
     private val editor: EditorViewModel by viewModels()
     private val photo: PhotoViewModel by viewModels()
+    private val aiPictureDraft: io.github.linker2k.myembro.ui.photo.AiPictureDraft by viewModels()
     private val emoji: io.github.linker2k.myembro.ui.emoji.EmojiViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
@@ -137,7 +138,7 @@ class MainActivity : ComponentActivity() {
                     val hoop = if (stack.lastOrNull() == Screen.EDITOR) editor.project.hoop else settings.settings.defaultFrame.spec
                     io.github.linker2k.myembro.ui.photo.AiPictureDialog(hoop,
                         io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMaxWidthMm(hoop),
-                        settings.settings.myThreads, onDismiss = { showAiPicture = false })
+                        settings.settings.myThreads, draft = aiPictureDraft, onDismiss = { showAiPicture = false })
                 }
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
@@ -152,7 +153,7 @@ class MainActivity : ComponentActivity() {
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
-                        onPhoto = { photo.begin(); stack += Screen.PHOTO },
+                        onPhoto = { aiPictureDraft.cancelExpectedImage(); photo.begin(); stack += Screen.PHOTO },
                         onAiPicture = { showAiPicture = true },
                         onEmoji = { emoji.close(); stack += Screen.EMOJI },
                     )
@@ -304,9 +305,11 @@ class MainActivity : ComponentActivity() {
                                 showViewer()
                             }
                         }
-                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true) {
+                        Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> if (intent.action == Intent.ACTION_SEND && (intent.type?.startsWith("image/") == true || sharedUris(intent).firstOrNull()?.let { io.github.linker2k.myembro.ui.photo.isSvgPicture(this, it) } == true)) {
                             sharedUris(intent).firstOrNull()?.let { uri ->
-                                photo.begin(); photo.configure(settings.settings); photo.load(uri)
+                                val requestedColors = aiPictureDraft.consumeExpectedColors()
+                                if (requestedColors == null) photo.begin() else photo.beginAiPicture(requestedColors)
+                                photo.configure(settings.settings); photo.load(uri)
                                 if (stack.lastOrNull() != Screen.PHOTO) stack += Screen.PHOTO
                             }
                         } else agentReply(intent)?.let { text ->

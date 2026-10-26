@@ -41,6 +41,21 @@ class AiPicturePromptTest {
         assertTrue(prompt.contains("exactly 2 solid foreground colors (+ white background)"))
         assertTrue(prompt.contains("No antialiasing, gradients, shadows"))
     }
+    @Test fun svgChoiceAndPngRetryPreserveDescriptionColorsAndReference() {
+        val draft = AiPictureDraft()
+        draft.request.value = "하트, 글자는 정확히 \"코코\""
+        draft.colors.value = 3
+        draft.format.value = AiPicturePrompt.Format.SVG
+        val svg = AiPicturePrompt.build(draft.request.value, true, HoopSpec.H100, 40.0, draft.colors.value, format = draft.format.value)
+        assertTrue(svg.contains("Output: a flat SVG"))
+        assertTrue(svg.contains("Lettering must be exactly: \"코코\""))
+        assertTrue(svg.contains("Do not add any unrequested lettering, decoration"))
+        draft.retryPng()
+        val png = AiPicturePrompt.build(draft.request.value, true, HoopSpec.H100, 40.0, draft.colors.value, format = draft.format.value)
+        assertTrue(png.contains("2000×2000 px PNG") && png.contains(draft.request.value) && png.contains("exactly 3"))
+        draft.expectImage(); assertEquals(3, draft.consumeExpectedColors()); assertNull(draft.consumeExpectedColors())
+        draft.expectImage(); draft.cancelExpectedImage(); assertNull(draft.consumeExpectedColors())
+    }
     @Test fun photoFlagOnlyChangesReferenceSentence() {
         val with = AiPicturePrompt.build("Smile", true, HoopSpec.H100, 40.0, 2).lines()
         val without = AiPicturePrompt.build("Smile", false, HoopSpec.H100, 40.0, 2).lines()

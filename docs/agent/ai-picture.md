@@ -81,3 +81,10 @@ Synthetic screenshots: `/tmp/myembro-ai-picture-shots/01-shared-image.png`,
 `05-two-color-smile-pass.png`. Screenshots are local artifacts, not committed.
 Only development emulator-5558 was installed; `-d` preserves its existing data when
 its installed development version code is newer than this requested base branch.
+
+## SVG follow-up
+
+PNG is still the default. The explicit SVG option, safe vector import, request-preserving
+PNG retry, exact-lettering hardening and one-shot requested color-count hand-off are
+implemented in [SVG picture input](svg-picture.md). Its current verification results
+supersede the initial PNG-only scope above. Consent remains per send, without a remember option.

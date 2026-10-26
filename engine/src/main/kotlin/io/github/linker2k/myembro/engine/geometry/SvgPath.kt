@@ -7,11 +7,12 @@ import kotlin.math.*
 object SvgPath {
     /** Tolerance is measured AFTER [transform], in output units (default 0.05 mm).
      * Optional [canonicalize] models upstream path serialization before curve subdivision;
-     * existing callers retain full precision. It is not applied to generated needle coordinates.
+     * [maxPoints] optionally bounds emitted vertices for untrusted picture imports; its default
+     * preserves the existing 200000-emission guard. Existing callers retain full precision. It is not applied to generated needle coordinates.
      */
     fun flatten(data: String, transform: Affine2D = Affine2D.IDENTITY, tolerance: Double = 0.5,
-        canonicalize: ((Point) -> Point)? = null): List<Polyline> {
-        require(tolerance.isFinite() && tolerance > 0)
+        canonicalize: ((Point) -> Point)? = null, maxPoints: Int = 200_000): List<Polyline> {
+        require(tolerance.isFinite() && tolerance > 0 && maxPoints > 0)
         fun mapped(p: Point): Point = transform.apply(p).let { canonicalize?.invoke(it) ?: it }
         val input = SvgNumbers(data)
         val output = mutableListOf<Polyline>()
@@ -23,10 +24,14 @@ object SvgPath {
         var cubicControl: Point? = null
         var quadControl: Point? = null
         var count = 0
+        var vertexCount = 0
         var started = false
         fun emit(p: Point) {
             require(++count <= 200_000) { "SVG flattening exceeds 200000 points" }
-            if (points.lastOrNull() != p) points += p
+            if (points.lastOrNull() != p) {
+                require(++vertexCount <= maxPoints) { "SVG flattening exceeds $maxPoints points" }
+                points += p
+            }
         }
         fun flush(closed: Boolean = false) {
             if (points.isNotEmpty()) output += Polyline(points.toList(), closed)

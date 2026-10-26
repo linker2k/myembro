@@ -55,6 +55,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/*" />
+                <data android:mimeType="image/svg+xml" />
             </intent-filter>
             <!-- A chatbot reply shared back for "Ask AI". -->
             <intent-filter>
