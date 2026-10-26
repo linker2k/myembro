@@ -35,7 +35,8 @@ class ToolDispatcherTest {
         "prepare_pes" to args("""{"projectRevision":"0","machineId":"se700","frameId":"H100","pesVersion":"V6"}"""),
     )
     @Test fun everySupportedToolHasSuccessfulAndRejectedInputWithoutPartialMutation() {
-        assertEquals(ToolDispatcher.SUPPORTED-setOf("add_text","replace_text","list_fonts","get_settings","add_design","list_builtin_designs","list_designs","list_emoji","prepare_emoji","prepare_photo","add_generated_art"), cases().keys)
+        // BlockToolsTest covers the optional region patch vocabulary separately.
+        assertEquals(ToolDispatcher.SUPPORTED-BlockTools.names-setOf("add_text","replace_text","list_fonts","get_settings","add_design","list_builtin_designs","list_designs","list_emoji","prepare_emoji","prepare_photo","add_generated_art"), cases().keys)
         for ((name,a) in cases()) {
             // A single actual, upstream-locked component avoids creating artificial cross-object boundaries.
             val p=if(name in setOf("prepare_pes","sewout_check")) objectProject().let { it.copy(objects=it.objects.take(1)) } else objectProject()
@@ -95,7 +96,7 @@ class ToolDispatcherTest {
             assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0",name,JsonObject(a+("extra" to JsonPrimitive(true)))).code,name)
             count++
         }
-        assertEquals(70-ToolDispatcher.SUPPORTED.size,count)
+        assertEquals(rows.count { it.jsonObject.string("name") !in ToolDispatcher.SUPPORTED },count)
         println("UNIMPLEMENTED_CATALOG $count typed errors; strict validation first PASS")
     }
     @Test fun malformedApprovedPesAndInvalidSourceSelectorsReturnErrorsWithoutBytes() {

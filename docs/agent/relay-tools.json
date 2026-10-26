@@ -645,6 +645,114 @@
             }
         },
         {
+            "name": "list_blocks",
+            "description": "List editable regions of a shape object: ids, colors, current block settings and local area in mm² (holes subtracted). Meander tile names only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "objectId"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_block_stitch",
+            "description": "Change selected shape regions in one undo step. Omitted settings stay unchanged; automatic_angle uses the app default. Returns revision and sewing check; invalid or unsafe generation changes nothing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "regionIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                    },
+                    "change": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "FILL",
+                                    "SATIN",
+                                    "RUNNING"
+                                ]
+                            },
+                            "fill_method": {
+                                "type": "string",
+                                "enum": [
+                                    "tatami_fill",
+                                    "meander_fill",
+                                    "contour_fill",
+                                    "circular_fill",
+                                    "cross_stitch",
+                                    "guided_fill",
+                                    "linear_gradient_fill",
+                                    "tartan_fill",
+                                    "legacy_fill"
+                                ]
+                            },
+                            "automatic_angle": {
+                                "type": "boolean"
+                            },
+                            "angle": {
+                                "type": "number"
+                            },
+                            "row_spacing_mm": {
+                                "type": "number",
+                                "minimum": 0.1
+                            },
+                            "meander_pattern": {
+                                "type": "string"
+                            },
+                            "meander_scale_percent": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number",
+                                    "minimum": 1
+                                },
+                                "minItems": 1,
+                                "maxItems": 2
+                            },
+                            "zigzag_spacing_mm": {
+                                "type": "number",
+                                "minimum": 0.002645833333333333
+                            }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "regionIds",
+                    "change"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
             "name": "list_attachments",
             "description": "Photos the user handed to AI in myembro.",
             "inputSchema": {

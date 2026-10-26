@@ -41,12 +41,13 @@ class ToolDispatcher(
         fun failure(code: String, message: String, details: JsonObject = buildJsonObject {}) = Result(project, buildJsonObject {
             put("ok", false); put("code", code); put("message", message); put("details", details)
         })
-        if (!schema.contains(name)) return failure("UNKNOWN_TOOL", name)
-        schema.validate(name, arguments)?.let { return failure("INVALID_ARGUMENTS", it) }
+        if (!knowsTool(name)) return failure("UNKNOWN_TOOL", name)
+        validateRequest(name, arguments)?.let { return failure("INVALID_ARGUMENTS", it) }
         if (name !in SUPPORTED) return failure("NOT_IMPLEMENTED", name)
-        if (schema.confirmation(name) && !confirmed) return failure("CONFIRMATION_REQUIRED", name)
+        if (needsConfirmation(name) && !confirmed) return failure("CONFIRMATION_REQUIRED", name)
         val a = arguments.jsonObject
         try {
+            if(name=="list_blocks") return Result(project,BlockTools.list(project,revision,a.string("objectId")))
             if(name=="list_fonts") return Result(project,fontList(fontResolver,heightLimits,a))
             if(name=="get_settings") {
                 val settings=settingsResolver.read()
@@ -179,6 +180,7 @@ class ToolDispatcher(
                 "duplicate_object" -> ProjectCommand.Duplicate(a.string("sourceId"), a.string("newObjectId"), transform(a.getValue("transform").jsonObject, project.find(a.string("sourceId"))?.transform))
                 "reorder_object" -> ProjectCommand.Reorder(a.string("objectId"), a.integer("index"))
                 "set_object_visibility" -> ProjectCommand.SetVisible(a.string("objectId"), a.getValue("visible").jsonPrimitive.boolean)
+                "set_block_stitch" -> BlockTools.command(a)
                 "recolor_object" -> ProjectCommand.Recolor(a.string("objectId"), a.integer("threadIndex"), EmbThread(a.string("threadColor").removePrefix("#").toInt(16) or (-1 shl 24)))
                 "remove_objects" -> ProjectCommand.Remove(a.ids())
                 "set_project_frame" -> ProjectCommand.SetHoop(frame(a.string("frameId")))
@@ -209,9 +211,9 @@ class ToolDispatcher(
     }
     /** Bind to the same EditSession used by a host's UI/history. Keep this controller for the document lifetime. */
     fun bind(session: EditSession) = ToolTurnController(session, this)
-    internal fun validateRequest(name: String, arguments: JsonElement): String? = schema.validate(name, arguments)
-    internal fun knowsTool(name: String) = schema.contains(name)
-    internal fun needsConfirmation(name: String) = schema.confirmation(name)
+    internal fun validateRequest(name: String, arguments: JsonElement): String? = if(name in BlockTools.names) BlockTools.validate(name,arguments) else schema.validate(name, arguments)
+    internal fun knowsTool(name: String) = name in BlockTools.names || schema.contains(name)
+    internal fun needsConfirmation(name: String) = name !in BlockTools.names && schema.confirmation(name)
     private fun originalPes(project: Project): ByteArray? {
         val obj=project.objects.filter { it.visible }.singleOrNull() as? StitchObject ?: return null
         if(obj.transform!=Transform() || obj.sourceThreadsEdited) return null
@@ -222,12 +224,12 @@ class ToolDispatcher(
     }
     private fun frame(id: String) = frames[id] ?: throw IllegalArgumentException("Unknown frame")
     companion object {
-        val SUPPORTED = setOf("list_fonts", "get_settings", "list_emoji", "prepare_emoji", "prepare_photo", "add_generated_art", "list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
+        val SUPPORTED = BlockTools.names + setOf("list_fonts", "get_settings", "list_emoji", "prepare_emoji", "prepare_photo", "add_generated_art", "list_builtin_designs", "list_designs", "add_design", "add_text", "replace_text", "get_project", "set_object_transforms", "transform_objects", "mirror_objects", "center_objects", "align_objects", "distribute_objects", "duplicate_object", "reorder_object", "set_object_visibility", "recolor_object", "remove_objects", "set_project_frame", "sewout_check", "prepare_pes")
         fun summary(project: Project, revision: String) = buildJsonObject {
             put("revision", revision); put("hoop", buildJsonObject { put("name", project.hoop.name); put("widthMm", project.hoop.width / 10.0); put("heightMm", project.hoop.height / 10.0) })
             put("objects", JsonArray(project.objects.map { o -> buildJsonObject {
-                put("id", o.id); put("name", o.name); put("visible", o.visible); put("type", if (o is TextObject) "text" else "stitch")
-                val threads = when(o) { is StitchObject -> o.source.threads; is TextObject -> listOf(o.thread) }
+                put("id", o.id); put("name", o.name); put("visible", o.visible); put("type", when (o) { is TextObject -> "text"; is ShapeObject -> "shape"; is StitchObject -> "stitch" })
+                val threads = when(o) { is StitchObject -> o.source.threads; is TextObject -> listOf(o.thread); is ShapeObject -> o.localPattern().threads }
                 o.placedBounds()?.let { b -> put("placedBoundsMm",buildJsonObject {
                     put("minXMm",b.minX/10.0);put("minYMm",b.minY/10.0);put("maxXMm",b.maxX/10.0);put("maxYMm",b.maxY/10.0)
                     put("widthMm",b.width/10.0);put("heightMm",b.height/10.0)

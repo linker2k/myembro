@@ -20,6 +20,7 @@ internal fun inspectorTransform(obj: DesignObject, width: String, height: String
 
 /** Changing a thread retains editable geometry; the imported byte copy is no longer current. */
 internal fun DesignObject.recolored(index: Int, thread: EmbThread): DesignObject = when (this) {
+    is ShapeObject -> this // Region-aware editing is not exposed by the model draft.
     is TextObject -> if (index == 0 && this.thread != thread) copy(thread = thread) else this
     is StitchObject -> {
         val count = maxOf(source.threads.size, source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)
