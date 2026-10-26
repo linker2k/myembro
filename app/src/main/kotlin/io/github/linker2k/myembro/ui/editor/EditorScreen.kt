@@ -77,6 +77,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var projectMenu by remember { mutableStateOf(false) }
         var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
+        var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
         var activeTool by rememberSaveable { mutableIntStateOf(0) }
         var inspectorTab by rememberSaveable { mutableIntStateOf(0) }
@@ -173,6 +174,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                     onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
                             }
                         }
+                        if (vm.selectedIds.size == 1) AssistChip(onClick = { blockEdit = true }, enabled = enabled,
+                            label = { Text(stringResource(R.string.block_edit_open)) },
+                            leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
@@ -259,6 +263,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     inspector(Modifier.fillMaxWidth().heightIn(max = inspectorHeight))
                 }
             }
+        }
+        // UI draft: fake regions until the engine's ShapeObject lands (agent/block-model).
+        if (blockEdit) Surface(Modifier.fillMaxSize()) {
+            io.github.linker2k.myembro.ui.editor.block.BlockEditScreen(vm.selected?.name.orEmpty(), onClose = { blockEdit = false })
         }
         splitPreview?.let { ready -> EditorSplitDialog(ready, onCancel = { splitPreview = null }, onExport = {
             splitPreview = null

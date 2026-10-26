@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="block_edit_open">Edit blocks</string>
+    <string name="block_edit_title">Block editing</string>
+    <string name="block_edit_done">Done</string>
+    <string name="block_edit_multi">Multi-select</string>
+    <string name="block_edit_sewout_pending">Sewing check: after engine</string>
+    <string name="block_edit_pick_hint">Tap a region on the canvas. Turn on multi-select to pick several.</string>
+    <string name="block_edit_selected">%1$d regions selected</string>
+    <string name="block_edit_apply">Apply</string>
+    <string name="block_edit_type">Stitch type</string>
+    <string name="block_edit_type_fill">Fill</string>
+    <string name="block_edit_type_satin">Satin</string>
+    <string name="block_edit_type_running">Running</string>
+    <string name="block_edit_texture">Texture</string>
+    <string name="block_edit_texture_basic">Basic</string>
+    <string name="block_edit_texture_pattern">Pattern</string>
+    <string name="block_edit_texture_contour">Contour</string>
+    <string name="block_edit_texture_circular">Circular</string>
+    <string name="block_edit_texture_gradient">Gradient</string>
+    <string name="block_edit_tiles">Meander tile</string>
+    <string name="block_edit_direction">Direction</string>
+    <string name="block_edit_direction_auto">Auto</string>
+    <string name="block_edit_direction_manual">Manual</string>
+    <string name="block_edit_angle">%1$d°</string>
+    <string name="block_edit_same_angle">The same angle goes to all %1$d regions</string>
+    <string name="block_edit_density">Density</string>
+    <string name="block_edit_density_dense">Dense</string>
+    <string name="block_edit_density_normal">Normal</string>
+    <string name="block_edit_density_sparse">Sparse</string>
+    <string name="block_edit_density_unverified">mm spacing unverified; set from Ink/Stitch ranges when the engine is connected</string>
+    <string name="block_edit_order">Sewing order</string>
+    <string name="block_edit_forward">Forward</string>
+    <string name="block_edit_back">Backward</string>
+</resources>
