@@ -31,8 +31,9 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
                     s.number("strokeWidth"),s.getValue("lineCap").jsonPrimitive.contentOrNull,s.getValue("lineJoin").jsonPrimitive.contentOrNull,
                     Affine2D(m[0],m[1],m[2],m[3],m[4],m[5]),FillRule.valueOf(s.text("fillRule")))
             })
-        val restored = (data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
-            ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm")))
+        val base = data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
+            ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm"))
+        val restored = base
             .withOverrides(data.getValue("blocks").jsonObject.mapValues { decodeBlock(it.value.jsonObject) })
             .withTransform(fields.transform).withVisible(fields.visible)
         return data["regionOrder"]?.let { restored.withRegionOrder(it.jsonArray.map { v -> v.jsonPrimitive.content }) } ?: restored

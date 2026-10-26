@@ -1,0 +1,24 @@
+BEFORE
+CIRCULAR_PROFILE shape=circle run=1 total_ms=5264.061787 stitches=2625 stages_ms={geometry=12.5391, underlay=108.552046, top=127.209511, routing=5005.134052, finish=10.627078} golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=5101.501143 stitches=2625 stages_ms={geometry=6.353883, underlay=68.700418, top=71.683751, routing=4945.452525, finish=9.310566} golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=4994.365226 stitches=2625 stages_ms={geometry=4.731775, underlay=44.363438, top=54.558577, routing=4881.982812, finish=8.728624} golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=5101.501143
+CIRCULAR_PROFILE shape=square run=1 total_ms=7019.787573 stitches=3500 stages_ms={geometry=4.465238, underlay=53.33603, top=121.839934, routing=6828.212186, finish=11.934185} golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=6986.296886 stitches=3500 stages_ms={geometry=4.526483, underlay=45.185959, top=101.801304, routing=6824.199609, finish=10.583531} golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=6871.956853 stitches=3500 stages_ms={geometry=3.884987, underlay=43.290342, top=96.685237, routing=6718.307368, finish=9.788919} golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=6986.296886
+
+AFTER
+CIRCULAR_PROFILE shape=circle run=1 total_ms=721.905797 stitches=2625 stages_ms={geometry=11.015728, underlay=80.93424, top=111.67649, routing=508.807789, finish=9.47155} golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=545.356565 stitches=2625 stages_ms={geometry=5.767797, underlay=50.461379, top=64.642596, routing=414.375464, finish=10.109329} golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=565.233815 stitches=2625 stages_ms={geometry=5.775671, underlay=55.762049, top=68.006678, routing=426.073596, finish=9.615821} golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=565.233815
+CIRCULAR_PROFILE shape=square run=1 total_ms=707.003028 stitches=3500 stages_ms={geometry=5.497249, underlay=55.595072, top=127.766816, routing=507.424923, finish=10.718968} golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=636.846259 stitches=3500 stages_ms={geometry=3.952096, underlay=39.468446, top=99.929036, routing=482.856087, finish=10.640594} golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=632.536895 stitches=3500 stages_ms={geometry=4.062056, underlay=36.528063, top=94.637547, routing=485.691303, finish=11.617926} golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=636.846259
+
+FULL REGRESSION
+{'tests': 917, 'failures': 0, 'errors': 0, 'skipped': 0}
+BUILD SUCCESSFUL in 1m 18s
+CIRCULAR_PREDICATE_PARITY pairs=81 identical=true

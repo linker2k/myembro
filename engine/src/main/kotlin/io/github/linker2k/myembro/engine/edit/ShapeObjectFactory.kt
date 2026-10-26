@@ -33,12 +33,14 @@ object ShapeObjectFactory {
         val cached = EmbPattern(frozen(pattern.stitches), frozen(pattern.threads),
             Collections.unmodifiableMap(LinkedHashMap(pattern.metadata)), frozen(pattern.warnings))
         return ShapeObject(id=id,name=name,sourceArt=source,widthMm=widthMm,transform=Transform(),
-            visible=true,regions=regions,rendered=lazyOf(cached))
+            visible=true,regions=regions,rendered=lazyOf(VectorArt.Result(cached,
+                regions.map { r -> VectorArt.Part(r.sourceShape,r.role,StitchTypeRule.Type.TATAMI,r.color,
+                    widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id) },1.0)))
     }
     fun renamed(obj: ShapeObject, id: String, name: String): ShapeObject = if(isPhoto(obj))
         retained(id,name,obj.sourceArt,obj.widthMm,obj.regions,obj.localPattern())
-            .withOverrides(obj.overrides).withTransform(obj.transform).withVisible(obj.visible)
-        else ShapeObject.fromArt(id,name,obj.sourceArt,obj.widthMm).withOverrides(obj.overrides)
+            .withOverrides(obj.overrides).withRegionOrder(obj.regionOrder).withTransform(obj.transform).withVisible(obj.visible)
+        else ShapeObject.fromArt(id,name,obj.sourceArt,obj.widthMm).withOverrides(obj.overrides).withRegionOrder(obj.regionOrder)
 
     private fun pathData(paths: List<Polyline>) = paths.joinToString(" ") { path ->
         buildString { path.points.forEachIndexed { i,p -> append(if(i==0) "M " else "L ");append(p.x);append(' ');append(p.y);append(' ') };if(path.closed) append('Z') }
