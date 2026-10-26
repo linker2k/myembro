@@ -25,24 +25,33 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
-import kotlin.math.min
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /**
- * Block editing draft: tap regions of one object (multi-select adds), then set stitch type, texture,
- * direction, density and order in the sheet. Folded/phone: the sheet sits under the canvas; unfolded or
- * tablet (>= 600dp): it docks on the right. Works on [BlockEditState] until ShapeObject replaces it.
+ * Block editing: tap a ShapeObject's regions (topmost wins where they overlap; multi-select adds), then set
+ * stitch type, texture, direction, density and order in the sheet. Folded/phone: the sheet sits under the
+ * canvas; unfolded or tablet (>= 600dp): it docks on the right. Settings stay in [BlockEditState] until the
+ * engine's region command exists.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlockEditScreen(objectName: String, onClose: () -> Unit, state: BlockEditState = remember { BlockEditState.sample() }) {
+fun BlockEditScreen(objectName: String, state: BlockEditState, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     var version by remember { mutableIntStateOf(0) }
     var multi by remember { mutableStateOf(false) }
@@ -75,8 +84,8 @@ fun BlockEditScreen(objectName: String, onClose: () -> Unit, state: BlockEditSta
                         Spacer(Modifier.weight(1f))
                         SewoutBadge()
                     }
-                    key(version) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y ->
-                        state.tap(x, y, multi); changed() } }
+                    key(version) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y, lineMm ->
+                        state.tap(x, y, multi, lineMm); changed() } }
                 }
             }
             val sheet = @Composable { modifier: Modifier ->
@@ -89,7 +98,8 @@ fun BlockEditScreen(objectName: String, onClose: () -> Unit, state: BlockEditSta
                 sheet(Modifier.width(360.dp).fillMaxHeight())
             } else Column(Modifier.fillMaxSize()) {
                 canvas(Modifier.fillMaxWidth().weight(1f))
-                sheet(Modifier.fillMaxWidth().heightIn(max = sheetMax))
+                // Fixed height: the canvas keeps its size (and the regions their place) when a selection opens the settings.
+                sheet(Modifier.fillMaxWidth().height(sheetMax))
             }
         }
     }
@@ -102,42 +112,62 @@ private fun SewoutBadge() {
         leadingIcon = { Icon(Icons.Default.HourglassEmpty, null, Modifier.size(16.dp)) })
 }
 
+/** Object-local mm to canvas pixels: the regions' bounds fitted and centered, y down. */
+internal class BlockCanvasFit(bounds: RegionBounds?, width: Float, height: Float) {
+    private val b = bounds ?: RegionBounds(-1.0, -1.0, 1.0, 1.0)
+    val scale = minOf(width / (b.maxX - b.minX), height / (b.maxY - b.minY)).toFloat() * 0.92f
+    private val ox = width / 2f - ((b.minX + b.maxX) / 2).toFloat() * scale
+    private val oy = height / 2f - ((b.minY + b.maxY) / 2).toFloat() * scale
+    fun x(mm: Double) = ox + mm.toFloat() * scale
+    fun y(mm: Double) = oy + mm.toFloat() * scale
+    fun mmX(px: Float) = ((px - ox) / scale).toDouble()
+    fun mmY(px: Float) = ((px - oy) / scale).toDouble()
+}
+
 @Composable
-private fun RegionCanvas(state: BlockEditState, modifier: Modifier, onTap: (Float, Float) -> Unit) {
+private fun RegionCanvas(state: BlockEditState, modifier: Modifier, onTap: (Double, Double, Double) -> Unit) {
     val outline = MaterialTheme.colorScheme.primary
-    val hoop = MaterialTheme.colorScheme.outlineVariant
-    Canvas(modifier.pointerInput(Unit) {
+    val description = stringResource(R.string.block_edit_canvas)
+    val touchPx = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.toPx() }
+    // The tap handler outlives recompositions; read the latest one (multi-select may have changed).
+    val latestTap by rememberUpdatedState(onTap)
+    Canvas(modifier.semantics { contentDescription = description }.pointerInput(state) {
         detectTapGestures { p ->
-            val side = min(size.width, size.height).toFloat()
-            val left = (size.width - side) / 2f; val top = (size.height - side) / 2f
-            onTap((p.x - left) / side, (p.y - top) / side)
+            val fit = BlockCanvasFit(state.bounds, size.width.toFloat(), size.height.toFloat())
+            latestTap(fit.mmX(p.x), fit.mmY(p.y), maxOf(0.5, (touchPx / fit.scale).toDouble()))
         }
     }) {
-        val side = min(size.width, size.height)
-        val origin = Offset((size.width - side) / 2f, (size.height - side) / 2f)
-        drawRect(hoop, origin, Size(side, side), style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))))
+        val fit = BlockCanvasFit(state.bounds, size.width, size.height)
         val dim = state.selected.isNotEmpty()
         state.regions.forEach { r ->
             val chosen = r.id in state.selected
-            val color = Color(r.color).copy(alpha = if (!dim || chosen) 1f else 0.35f)
-            drawShape(r.shape, origin, side, color, null)
-            if (r.stitch.type == BlockType.SATIN) drawShape(r.shape, origin, side, Color.White.copy(alpha = 0.5f), Stroke(1.dp.toPx()))
+            val color = Color(r.color).copy(alpha = if (!dim || chosen) 1f else 0.3f)
+            val (rings, lines) = regionPaths(r, fit)
+            drawPath(rings, color)
+            drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
         }
         state.regions.filter { it.id in state.selected }.forEach { r ->
-            drawShape(r.shape, origin, side, Color.White, Stroke(5.dp.toPx()))
-            drawShape(r.shape, origin, side, outline, Stroke(3.dp.toPx()))
+            val (rings, lines) = regionPaths(r, fit)
+            listOf(rings, lines).forEach { path ->
+                drawPath(path, Color.White, style = Stroke(5.dp.toPx()))
+                drawPath(path, outline, style = Stroke(2.5.dp.toPx()))
+            }
         }
     }
 }
 
-private fun DrawScope.drawShape(shape: FakeShape, origin: Offset, side: Float, color: Color, stroke: Stroke?) {
-    val style = stroke ?: androidx.compose.ui.graphics.drawscope.Fill
-    when (shape) {
-        is FakeShape.Ellipse -> drawOval(color, Offset(origin.x + (shape.cx - shape.rx) * side, origin.y + (shape.cy - shape.ry) * side),
-            Size(shape.rx * 2 * side, shape.ry * 2 * side), style = style)
-        is FakeShape.Rect -> drawRect(color, Offset(origin.x + shape.left * side, origin.y + shape.top * side),
-            Size((shape.right - shape.left) * side, (shape.bottom - shape.top) * side), style = style)
+/** Closed rings as one even-odd path (holes stay open), open paths as lines. */
+private fun regionPaths(r: BlockRegion, fit: BlockCanvasFit): Pair<Path, Path> {
+    val rings = Path().apply { fillType = PathFillType.EvenOdd }
+    val lines = Path()
+    r.paths.forEach { p ->
+        if (p.xs.isEmpty()) return@forEach
+        val target = if (p.closed) rings else lines
+        target.moveTo(fit.x(p.xs[0]), fit.y(p.ys[0]))
+        for (i in 1 until p.xs.size) target.lineTo(fit.x(p.xs[i]), fit.y(p.ys[i]))
+        if (p.closed) target.close()
     }
+    return rings to lines
 }
 
 @Composable
@@ -166,17 +196,12 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                 Label(R.string.block_edit_texture)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     BlockTexture.entries.forEach { t ->
-                        TextureTile(t, 0, t == draft.texture, Modifier.weight(1f), TEXTURE_NAMES[t.ordinal]) { onDraft(draft.copy(texture = t)) }
+                        TextureTile(t, draft.tile, t == draft.texture, Modifier.weight(1f), TEXTURE_NAMES[t.ordinal]) { onDraft(draft.copy(texture = t)) }
                     }
                 }
                 if (draft.texture == BlockTexture.PATTERN) {
                     Text(stringResource(R.string.block_edit_tiles), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                    (0 until TILE_COUNT).chunked(4).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            row.forEach { i -> TextureTile(BlockTexture.PATTERN, i, i == draft.tile, Modifier.weight(1f), null) {
-                                onDraft(draft.copy(tile = i)) } }
-                        }
-                    }
+                    MeanderGrid(draft.tile) { onDraft(draft.copy(tile = it)) }
                 }
             }
             if (draft.type != BlockType.RUNNING) {
@@ -213,7 +238,6 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
 
 private val TEXTURE_NAMES = listOf(R.string.block_edit_texture_basic, R.string.block_edit_texture_pattern, R.string.block_edit_texture_contour,
     R.string.block_edit_texture_circular, R.string.block_edit_texture_gradient)
-private const val TILE_COUNT = 8
 
 @Composable
 private fun Label(text: Int) = Text(stringResource(text), style = MaterialTheme.typography.labelLarge)
@@ -229,7 +253,7 @@ private fun Segmented(labels: List<Int>, selected: Int, onSelect: (Int) -> Unit)
 }
 
 @Composable
-private fun TextureTile(texture: BlockTexture, tile: Int, chosen: Boolean, modifier: Modifier, name: Int?, onClick: () -> Unit) {
+private fun TextureTile(texture: BlockTexture, tile: String, chosen: Boolean, modifier: Modifier, name: Int?, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column(modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Canvas(Modifier.fillMaxWidth().aspectRatio(1f)
@@ -240,8 +264,23 @@ private fun TextureTile(texture: BlockTexture, tile: Int, chosen: Boolean, modif
     }
 }
 
+/** Every bundled meander tile, rendered from its SVG (cached), in a fixed-height grid inside the scrolling sheet. */
+@Composable
+private fun MeanderGrid(selected: String, onSelect: (String) -> Unit) {
+    val ids by produceState(emptyList<String>()) { value = withContext(Dispatchers.IO) { MeanderThumbnails.ids() } }
+    LazyVerticalGrid(GridCells.Adaptive(64.dp), Modifier.fillMaxWidth().height(232.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        items(ids, key = { it }) { id ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                TextureTile(BlockTexture.PATTERN, id, id == selected, Modifier.fillMaxWidth(), null) { onSelect(id) }
+                Text(id, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
+        }
+    }
+}
+
 /** Thumbnails only, drawn as plain lines; not stitch output. */
-private fun DrawScope.drawTexture(texture: BlockTexture, tile: Int, ink: Color) {
+private fun DrawScope.drawTexture(texture: BlockTexture, tile: String, ink: Color) {
     val w = size.width; val h = size.height; val stroke = Stroke(1.2.dp.toPx())
     when (texture) {
         BlockTexture.BASIC -> for (i in 1..6) drawLine(ink, Offset(0f, h * i / 7), Offset(w, h * i / 7), stroke.width)
@@ -249,24 +288,31 @@ private fun DrawScope.drawTexture(texture: BlockTexture, tile: Int, ink: Color) 
         BlockTexture.CONTOUR -> for (i in 0..3) { val inset = i * w / 9; drawRoundRect(ink, Offset(inset, inset), Size(w - 2 * inset, h - 2 * inset),
             androidx.compose.ui.geometry.CornerRadius(w / 5 - inset / 2), style = stroke) }
         BlockTexture.CIRCULAR -> for (i in 1..4) drawCircle(ink, w / 2 * i / 4.2f, Offset(w / 2, h / 2), style = stroke)
-        BlockTexture.PATTERN -> drawPath(meander(tile, w, h), ink, style = stroke)
+        BlockTexture.PATTERN -> drawMeander(tile, ink, stroke.width)
     }
 }
 
-/** A few simple meander-like tile drawings (Greek key, zigzag, waves, steps...) to stand in for Ink/Stitch tiles. */
-private fun meander(tile: Int, w: Float, h: Float): Path = Path().apply {
-    val n = 3; val cw = w / n; val ch = h / n
-    for (row in 0 until n) for (col in 0 until n) {
-        val x = col * cw; val y = row * ch
-        when (tile % TILE_COUNT) {
-            0 -> { moveTo(x, y + ch); lineTo(x, y); lineTo(x + cw * .8f, y); lineTo(x + cw * .8f, y + ch * .6f); lineTo(x + cw * .35f, y + ch * .6f); lineTo(x + cw * .35f, y + ch * .3f) }
-            1 -> { moveTo(x, y + ch * .8f); lineTo(x + cw / 2, y + ch * .2f); lineTo(x + cw, y + ch * .8f) }
-            2 -> { moveTo(x, y + ch / 2); quadraticTo(x + cw / 4, y, x + cw / 2, y + ch / 2); quadraticTo(x + cw * .75f, y + ch, x + cw, y + ch / 2) }
-            3 -> { moveTo(x, y + ch); lineTo(x, y + ch / 2); lineTo(x + cw / 2, y + ch / 2); lineTo(x + cw / 2, y); lineTo(x + cw, y) }
-            4 -> { addOval(androidx.compose.ui.geometry.Rect(x + cw * .2f, y + ch * .2f, x + cw * .8f, y + ch * .8f)) }
-            5 -> { moveTo(x + cw / 2, y); lineTo(x + cw, y + ch / 2); lineTo(x + cw / 2, y + ch); lineTo(x, y + ch / 2); close() }
-            6 -> { moveTo(x, y + ch * .25f); lineTo(x + cw, y + ch * .25f); moveTo(x + cw * .5f, y + ch * .25f); lineTo(x + cw * .5f, y + ch * .75f); moveTo(x, y + ch * .75f); lineTo(x + cw, y + ch * .75f) }
-            else -> { moveTo(x, y); lineTo(x + cw, y + ch); moveTo(x + cw, y); lineTo(x, y + ch) }
+/** The tile's real lines, loaded off the main thread on first use and cached by [MeanderThumbnails]. */
+private fun DrawScope.drawMeander(id: String, ink: Color, width: Float) {
+    val lines = thumbnails[id] ?: run { loadThumbnail(id); return }
+    val c = lines.coords
+    clipRect {
+        var i = 0
+        while (i + 3 < c.size) {
+            drawLine(ink, Offset(c[i] * size.width, c[i + 1] * size.height), Offset(c[i + 2] * size.width, c[i + 3] * size.height), width)
+            i += 4
         }
+    }
+}
+
+private val thumbnails = androidx.compose.runtime.snapshots.SnapshotStateMap<String, MeanderThumbnails.Lines>()
+private val loading = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+@OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+private fun loadThumbnail(id: String) {
+    if (!loading.add(id)) return
+    kotlinx.coroutines.GlobalScope.launch(Dispatchers.Default) {
+        val lines = runCatching { MeanderThumbnails.lines(id) }
+            .onFailure { android.util.Log.w("BlockEdit", "Meander tile $id", it) }.getOrNull() ?: return@launch
+        withContext(Dispatchers.Main) { thumbnails[id] = lines }
     }
 }

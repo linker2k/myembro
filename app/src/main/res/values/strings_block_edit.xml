@@ -32,4 +32,6 @@
     <string name="block_edit_order">Sewing order</string>
     <string name="block_edit_forward">Forward</string>
     <string name="block_edit_back">Backward</string>
+    <string name="block_edit_canvas">Block regions; tap to select</string>
+    <string name="block_edit_stitch_only">This design has stitches only, so block settings are not available</string>
 </resources>

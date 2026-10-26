@@ -32,4 +32,6 @@
     <string name="block_edit_order">순서</string>
     <string name="block_edit_forward">앞으로</string>
     <string name="block_edit_back">뒤로</string>
+    <string name="block_edit_canvas">블럭 영역, 탭해서 선택</string>
+    <string name="block_edit_stitch_only">스티치만 있는 도안이라 블럭 설정을 할 수 없어요</string>
 </resources>

@@ -85,15 +85,24 @@ object MeanderFill {
     /** Source tile SVGs are data only. DTDs and external entities are disabled. */
     fun tileFromSvg(id: String, svg: ByteArray): MeanderTile {
         require(svg.size <= 1_000_000) { "Meander tile is too large" }
+        // Same layers as SvgPictureInput: a lexical declaration ban that does not depend on JAXP feature
+        // support (Android's factory rejects the Xerces features below), then features where available,
+        // then a resolver that refuses any external entity.
+        val text = svg.decodeToString()
+        require('\u0000' !in text && !Regex("<!\\s*(DOCTYPE|ENTITY)", RegexOption.IGNORE_CASE).containsMatchIn(text)) { "Tile declarations forbidden" }
         val builder = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = true
-            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-            setFeature("http://xml.org/sax/features/external-general-entities", false)
-            setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-            setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-            isXIncludeAware = false
+            for ((feature, enabled) in listOf(
+                "http://apache.org/xml/features/disallow-doctype-decl" to true,
+                "http://xml.org/sax/features/external-general-entities" to false,
+                "http://xml.org/sax/features/external-parameter-entities" to false,
+                "http://apache.org/xml/features/nonvalidating/load-external-dtd" to false)) {
+                try { setFeature(feature, enabled) } catch (_: javax.xml.parsers.ParserConfigurationException) { }
+            }
             isExpandEntityReferences = false
-        }.newDocumentBuilder()
+        }.newDocumentBuilder().apply {
+            setEntityResolver { _, _ -> throw IllegalArgumentException("External tile entity forbidden") }
+        }
         val root = builder.parse(ByteArrayInputStream(svg)).documentElement
         val segments = mutableListOf<Pair<FillPoint, FillPoint>>()
         var parallelogram: List<FillPoint>? = null
