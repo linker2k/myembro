@@ -1,7 +1,7 @@
 # Tool dispatcher and atomic edit turns
 
 Base: `agent/commands` at `b8309f6`, including engine `EditSession`, and the
-69-tool catalog from `agent/tools`. No Android dependency or new stitch algorithm
+70-tool catalog from `agent/tools`. No Android dependency or new stitch algorithm
 is introduced in the engine.
 
 ## Kernel and session controller

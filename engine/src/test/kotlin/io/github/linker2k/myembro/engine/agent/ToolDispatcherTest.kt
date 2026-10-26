@@ -95,7 +95,7 @@ class ToolDispatcherTest {
             assertEquals("INVALID_ARGUMENTS",dispatcher.dispatch(p,"0",name,JsonObject(a+("extra" to JsonPrimitive(true)))).code,name)
             count++
         }
-        assertEquals(69-ToolDispatcher.SUPPORTED.size,count)
+        assertEquals(70-ToolDispatcher.SUPPORTED.size,count)
         println("UNIMPLEMENTED_CATALOG $count typed errors; strict validation first PASS")
     }
     @Test fun malformedApprovedPesAndInvalidSourceSelectorsReturnErrorsWithoutBytes() {

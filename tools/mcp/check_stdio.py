@@ -15,4 +15,4 @@ with tempfile.TemporaryDirectory(prefix='myembro-mcp-stdio-') as out:
  assert rows[1]['result']==expected
  assert rows[2]['error']['code']==-32700
  assert rows[0]['result']['serverInfo']['name']=='myembro'
- print('MCP_STDIO PASS: JSON-only stdout; exact 69 schemas; parse error; EOF exit')
+ print(f"MCP_STDIO PASS: JSON-only stdout; exact {len(expected['tools'])} schemas; parse error; EOF exit")
