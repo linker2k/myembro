@@ -70,6 +70,14 @@ describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket
       expect((await (await pending).json() as any).result).toEqual(result);
     }
   });
+  it('sends the last legacy initialize clientInfo.name with each call, one line and at most 40 characters', async () => {
+    const s = await app();
+    await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: ' Claude\nDesktop ' + 'x'.repeat(60), version: '1' } });
+    const received = next(s, 'call'); const pending = rpc('tools/call', { name: 'get_project', arguments: {} });
+    const call = await received; expect(call.client).toBe(('Claude Desktop ' + 'x'.repeat(60)).slice(0, 40));
+    s.send(JSON.stringify({ type: 'result', id: call.id, isError: false, content: [{ type: 'text', text: '{}' }] })); await pending;
+    await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
+  });
   it('retains static tools across disconnect/restart and rejects unsupported calls', async () => {
     const s = await app();
     const bad = await rpc('tools/call', { name: 'render_preview', arguments: { widthPx: 99999 } });

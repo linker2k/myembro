@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { isSpecType } from '@modelcontextprotocol/server';
 import { RELAY_TOOLS, RELAY_TOOL_NAMES } from '../src/tools';
-import { Broker, DISCONNECTED, MAX_CALL_BYTES, TOO_LARGE, UPDATE_REQUIRED, type AppSocket } from '../src/broker';
+import { Broker, DISCONNECTED, MAX_CALL_BYTES, TOO_LARGE, UPDATE_REQUIRED, clientName, type AppSocket } from '../src/broker';
 
 const catalog = JSON.parse(readFileSync(new URL('../../docs/agent/tools.json', import.meta.url), 'utf8')).tools;
 const byName = (name: string) => structuredClone(RELAY_TOOLS.find(t => t.name === name)!);
@@ -53,6 +53,17 @@ describe('deployment tool contract drift gate', () => {
     expect(RELAY_TOOL_NAMES.size).toBe(25);
     for (const forbidden of ['save_project','save_pes','share_pes','send_usb','delete_designs','restore_backup','set_settings','undo','prepare_pes']) expect(RELAY_TOOL_NAMES.has(forbidden)).toBe(false);
     expect(RELAY_TOOL_NAMES.has('get_settings')).toBe(true); // read, not a settings mutation
+  });
+});
+
+describe('calling AI name', () => {
+  it('is sent only when known, as one trimmed line of at most 40 characters', () => {
+    const { broker, socket, sent } = connected([byName('get_project')]);
+    void broker.call('get_project', {}); void broker.call('get_project', {}, '  '); void broker.call('get_project', {}, 'claude-code');
+    expect(sent.map(m => m.client)).toEqual([undefined, undefined, 'claude-code']);
+    expect('client' in sent[0]).toBe(false);
+    expect(clientName('a\u0000b\tc')).toBe('a b c'); expect(clientName(7)).toBeUndefined(); expect(clientName('y'.repeat(41))).toHaveLength(40);
+    broker.close(socket);
   });
 });
 

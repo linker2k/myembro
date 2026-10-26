@@ -75,4 +75,14 @@ class RelayPictureTest {
         assertEquals(listOf("format", "data"), input.getValue("required").jsonArray.map { it.jsonPrimitive.content })
         assertEquals(JsonPrimitive(4), input.getValue("properties").jsonObject.getValue("colors").jsonObject["default"])
     }
+
+    @Test fun layerNameIsTitleOrFirstFreeNumberPlusTheCallingAi() {
+        val n = { i: Int -> "AI 그림 $i" }
+        assertEquals("AI 그림 1", RelayPicture.name("", null, emptyList(), n))
+        assertEquals("AI 그림 2 (claude-code)", RelayPicture.name(" ", "claude-code", listOf("AI 그림 1 (other)", "AI 그림 10"), n))
+        assertEquals("스마일 (claude-code)", RelayPicture.name(" 스마일 ", "claude-code", listOf("AI 그림 1"), n))
+        assertEquals(null, RelayCaller.of(" \n ").name)
+        assertEquals("Claude Desktop", RelayCaller.of("Claude\nDesktop").name)
+        assertEquals(40, RelayCaller.of("x".repeat(60)).name!!.length)
+    }
 }

@@ -21,7 +21,8 @@ object RelayPicture {
     const val DEFAULT_COLORS = 4
     /** The photo screen's first SVG width (EmojiViewModel.WIDTH_MM), clamped to the hoop by the engine. */
     const val SVG_WIDTH_MM = 50.0
-    const val DEFAULT_TITLE = "AI picture"
+    /** Left out: the layer is called "AI picture n" ([name]). */
+    const val DEFAULT_TITLE = ""
     const val MAX_TITLE = 60
     const val TOO_LARGE = "PICTURE_TOO_LARGE"
     /** Shown to the chatbot when a picture cannot come over the connection. */
@@ -35,8 +36,8 @@ object RelayPicture {
         "the sewing check. SVG is preferred (format svg, the SVG text itself in data): flat shapes with solid fills, at most " +
         "${SvgPictureInput.MAX_BYTES} bytes and ${SvgPictureInput.MAX_ELEMENTS} elements, no text, gradients or images; it keeps " +
         "its own fill colors. PNG or JPEG go in data as base64 and must be small (at most $MAX_BASE64_CHARS base64 characters, " +
-        "few flat colors); colors 2-6 (default $DEFAULT_COLORS) sets their thread colors. If it is too large, ask the user to share " +
-        "the picture to myembro instead."
+        "few flat colors); colors 2-6 (default $DEFAULT_COLORS) sets their thread colors. Each picture becomes its own layer, named " +
+        "title (default 'AI picture n') and your app's name. If it is too large, ask the user to share the picture to myembro instead."
 
     /** The strict definition (RelayPhotoTools validates calls against it); the relay offers it with [DESCRIPTION],
      * colors and title optional (RelayCatalog fills [DEFAULT_COLORS] and [DEFAULT_TITLE]). */
@@ -46,6 +47,17 @@ object RelayPicture {
            "colors":{"type":"integer","minimum":2,"maximum":6},"title":{"type":"string"}},
            "required":["format","data","colors","title"],"additionalProperties":false},
          "annotations":{"readOnly":false,"needsUserConfirmation":false}}""").jsonObject
+
+    /**
+     * The layer name: [title], or the first "AI picture n" ([numbered]) no layer uses yet, then the calling AI's
+     * name in parentheses when the relay sent one ([client]).
+     */
+    fun name(title: String, client: String?, names: Collection<String>, numbered: (Int) -> String): String {
+        val base = title.trim().take(MAX_TITLE).ifEmpty {
+            generateSequence(1) { it + 1 }.map(numbered).first { n -> names.none { it == n || it.startsWith("$n (") } }
+        }
+        return if (client == null) base else "$base ($client)"
+    }
 
     sealed interface Checked {
         class Accepted(val format: String, val bytes: ByteArray, val colors: Int) : Checked

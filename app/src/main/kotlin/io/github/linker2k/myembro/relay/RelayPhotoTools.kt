@@ -98,6 +98,8 @@ class RelayPhotoTools(
     private val canEdit: () -> Boolean,
     /** Tells the user on screen that an AI picture came in (the editor's snackbar); the object's name. */
     private val announce: (String) -> Unit = {},
+    /** "AI picture n" in the app's language (the editor's string resource). */
+    private val numbered: (Int) -> String = { "AI picture $it" },
 ) : RelayTools {
     override val definitions: List<JsonObject> get() = Companion.definitions
     private val mutex = Mutex()
@@ -166,7 +168,8 @@ class RelayPhotoTools(
             is RelayPicture.Checked.Rejected -> return error(checked.code, checked.message)
             is RelayPicture.Checked.Accepted -> checked
         }
-        val title = args["title"]?.jsonPrimitive?.content?.trim()?.take(RelayPicture.MAX_TITLE)?.ifEmpty { null } ?: RelayPicture.DEFAULT_TITLE
+        val title = RelayPicture.name(args["title"]?.jsonPrimitive?.content.orEmpty(),
+            kotlin.coroutines.coroutineContext[RelayCaller]?.name, controller.session.project.objects.map { it.name }, numbered)
         val prepared = if (picture.format == "svg") controller.prepareSvgPicture(picture.bytes, RelayPicture.SVG_WIDTH_MM, title) else {
             val id = photos.importPicture(picture.bytes, picture.format)
             controller.dispatch("prepare_photo", buildJsonObject {

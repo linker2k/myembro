@@ -11,6 +11,12 @@ export const DISCONNECTED = 'myembro app is not connected. Open myembro and turn
 export const MAX_CALL_BYTES = 1_048_576;
 export const TOO_LARGE = 'Too large for the AI connection. Ask the user to save the picture and share it to myembro ' +
   "(Share → myembro) instead; in Korean: '그림을 저장한 뒤 공유 → myembro로 보내 주세요'.";
+/** The calling AI's MCP clientInfo.name as the app may show it: one line, at most 40 characters, or undefined. */
+export function clientName(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const name = value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40).trim();
+  return name || undefined;
+}
 export const failure = (text: string): CallToolResult => ({ isError: true, content: [{ type: 'text', text }] });
 export interface AppSocket { send(data: string): void; close(code?: number, reason?: string): void }
 
@@ -77,7 +83,8 @@ export class Broker {
     } else { this.reject(socket); }
   }
 
-  call(tool: string, args: Record<string, unknown>): Promise<CallToolResult> {
+  /** [client]: the calling AI's name (clientInfo.name), sent to the app only when known. */
+  call(tool: string, args: Record<string, unknown>, client?: string): Promise<CallToolResult> {
     if (!this.active) return Promise.resolve(failure(DISCONNECTED));
     const advertised = RELAY_TOOLS.find(t => t.name === tool);
     if (!advertised) return Promise.resolve(failure('Tool is not available in this relay.'));
@@ -89,7 +96,8 @@ export class Broker {
       return Promise.resolve(failure('Invalid tool arguments.'));
     const socket = this.active;
     const id = crypto.randomUUID();
-    const message = JSON.stringify({ type: 'call', id, tool, args });
+    const name = clientName(client);
+    const message = JSON.stringify({ type: 'call', id, tool, args, ...(name ? { client: name } : {}) });
     if (new TextEncoder().encode(message).length > MAX_CALL_BYTES) return Promise.resolve(failure(TOO_LARGE));
     return new Promise(resolve => {
       const timer = setTimeout(() => { this.pending.delete(id); resolve(failure('timed out')); }, 120_000);

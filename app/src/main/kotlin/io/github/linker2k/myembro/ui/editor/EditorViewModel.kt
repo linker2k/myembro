@@ -253,7 +253,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             canEdit = { agentExecutor.relayController() === controller },
             announce = { title -> viewModelScope.launch(Dispatchers.Main) {
                 message = getApplication<Application>().getString(R.string.relay_picture_imported, title)
-            } })
+            } },
+            numbered = { getApplication<Application>().getString(R.string.relay_picture_name, it) })
         relayPhotoTools = controller to tools
         return tools
     }

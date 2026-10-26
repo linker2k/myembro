@@ -86,10 +86,12 @@ object RelayProtocol {
                 val id = m["id"]?.jsonPrimitive?.contentOrNull ?: return null
                 val tool = m["tool"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 val args = m["args"] ?: JsonObject(emptyMap())
+                val caller = RelayCaller.of(m["client"]?.jsonPrimitive?.contentOrNull)
                 result(id, when {
                     tool !in tools.names -> RelayResult.error("Tool $tool is not available over the myembro AI connection.")
                     args !is JsonObject -> RelayResult.error("Arguments must be a JSON object.")
-                    else -> runCatching { tools.call(tool, args) }.getOrElse { RelayResult.error("myembro could not run $tool.") }
+                    else -> runCatching { kotlinx.coroutines.withContext(caller) { tools.call(tool, args) } }
+                        .getOrElse { RelayResult.error("myembro could not run $tool.") }
                 })
             }
             else -> null
@@ -125,6 +127,14 @@ data class RelayResult(val isError: Boolean, val content: List<JsonObject>) {
 }
 
 /** The tools the hello offers and runs; [RelayProtocol.respond] refuses every other name before [call]. */
+/** The calling AI's name (MCP clientInfo.name) the relay sent with a call, for naming what that call adds. */
+class RelayCaller private constructor(val name: String?) : kotlin.coroutines.AbstractCoroutineContextElement(Key) {
+    companion object Key : kotlin.coroutines.CoroutineContext.Key<RelayCaller> {
+        /** One line of at most 40 characters, as the relay sends it; null when unknown. */
+        fun of(name: String?) = RelayCaller(name?.replace(Regex("\\p{Cntrl}"), " ")?.trim()?.take(40)?.trim()?.ifEmpty { null })
+    }
+}
+
 interface RelayTools {
     val definitions: List<JsonObject>
     val names: Set<String> get() = definitions.mapTo(mutableSetOf()) { it.getValue("name").jsonPrimitive.content }

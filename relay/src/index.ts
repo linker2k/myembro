@@ -1,5 +1,5 @@
 import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
-import { Broker } from './broker';
+import { Broker, clientName } from './broker';
 
 import { authorizationFailure, type RelaySecrets } from './auth';
 
@@ -17,11 +17,15 @@ export default {
 export class Relay {
   private broker: Broker;
   private legacyStreams = new Set<Server>();
+  /** clientInfo.name from the last legacy initialize; legacy tools/call requests do not carry it. */
+  private lastClient?: string;
   private handler = createMcpHandler(() => this.server(), { legacy: 'reject' });
   private server(): Server {
     const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
     server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
-    server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {}));
+    // The calling AI's name: per request in 2026 envelopes, else the last legacy initialize (one user per relay).
+    server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {},
+      clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? this.lastClient));
     return server;
   }
   constructor(private state: DurableObjectState, private env: Env) {
@@ -47,6 +51,10 @@ export class Relay {
     // Official v2 routes both 2026 per-request envelopes and legacy POST traffic.
     // Legacy GET subscriptions retain their official SDK transport until stream cancellation.
     if (!await isLegacyRequest(request)) return this.handler.fetch(request);
+    if (request.method === 'POST') {
+      const body: any = await request.clone().json().catch(() => undefined);
+      if (body?.method === 'initialize') this.lastClient = clientName(body.params?.clientInfo?.name);
+    }
     const server = this.server();
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);

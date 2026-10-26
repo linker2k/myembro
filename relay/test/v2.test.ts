@@ -49,6 +49,7 @@ describe.sequential('v2 actual HTTP protocol and notifications', () => {
     const args = { objectIds: ['logo'], deltaXMm: 1, deltaYMm: 0, rotationDeg: 0, scaleFactor: 1 };
     const received = next(app, 'call'); const pending = rpc('tools/call', { _meta: meta, name: 'transform_objects', arguments: args });
     const call = await received; expect(call.args).toEqual(args);
+    expect(call.client).toBe('test'); // 2026 envelopes carry clientInfo on every request
     const result = { isError: false, content: [{ type: 'text', text: '{"ok":true,"revision":1,"sewout":{"verdict":"PASS"}}' }] };
     app.send(JSON.stringify({ type: 'result', id: call.id, ...result }));
     const actual: any = await (await pending).json(); expect(actual.result.content).toEqual(result.content);
