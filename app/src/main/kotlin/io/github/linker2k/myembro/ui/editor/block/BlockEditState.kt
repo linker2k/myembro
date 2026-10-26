@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.editor.block
 
-import io.github.linker2k.myembro.engine.edit.BlockStitch
 import io.github.linker2k.myembro.engine.edit.ShapeObject
 import kotlin.math.hypot
 
 /**
- * Block editor state over a ShapeObject's regions. The engine's regions are read-only in this draft, so the
- * chosen settings live here until embro-model's region command exists; nothing here changes stitches yet.
+ * Block editor state over a ShapeObject's regions: outlines for drawing and hit tests, the selection, and the
+ * sheet's choices. Applying goes through the engine's SetBlockStitch (EditorViewModel.applyBlockStitch).
  */
 enum class BlockType { FILL, SATIN, RUNNING }
 
@@ -56,16 +55,11 @@ data class BlockRegion(val id: String, val paths: List<RegionPath>, val color: I
 data class RegionBounds(val minX: Double, val minY: Double, val maxX: Double, val maxY: Double)
 
 /**
- * Regions in sewing order (first = sewn first, drawn below; last = on top), the selection, and an undo
- * history where every apply or reorder is exactly one step.
+ * A ShapeObject's regions in sewing order (first = sewn first, drawn below; last = on top) and the selection.
+ * Settings change only through the engine command, so this state is rebuilt from each committed shape.
  */
-class BlockEditState(regions: List<BlockRegion>) {
-    var regions: List<BlockRegion> = regions; private set
+class BlockEditState(val regions: List<BlockRegion>) {
     var selected: Set<String> = emptySet(); private set
-    private val undo = ArrayDeque<List<BlockRegion>>()
-    private val redo = ArrayDeque<List<BlockRegion>>()
-    val undoSteps get() = undo.size
-    val canRedo get() = redo.isNotEmpty()
     val bounds: RegionBounds? = regions.flatMap { it.paths }.filter { it.xs.isNotEmpty() }.takeIf { it.isNotEmpty() }?.let { ps ->
         RegionBounds(ps.minOf { it.xs.min() }, ps.minOf { it.ys.min() }, ps.maxOf { it.xs.max() }, ps.maxOf { it.ys.max() })
     }
@@ -82,46 +76,17 @@ class BlockEditState(regions: List<BlockRegion>) {
     fun selectAll() { selected = regions.map { it.id }.toSet() }
     fun clearSelection() { selected = emptySet() }
 
+    /** Keeps a selection across a rebuild from the committed shape (ids that still exist). */
+    fun restore(ids: Set<String>) { selected = ids.filterTo(linkedSetOf()) { id -> regions.any { it.id == id } } }
+
     /** The draft the sheet opens with: the first selected region's stitch. */
     fun draft(): BlockStitchDraft = regions.firstOrNull { it.id in selected }?.stitch ?: BlockStitchDraft()
-
-    /** Writes [draft] to every selected region (same angle for all) as one undo step. */
-    fun apply(draft: BlockStitchDraft) {
-        if (selected.isEmpty()) return
-        commit(regions.map { if (it.id in selected) it.copy(stitch = draft) else it })
-    }
-
-    /** Moves the selected regions one place later (front) or earlier (back) in sewing order, as one step. */
-    fun reorder(forward: Boolean) {
-        val list = regions.toMutableList()
-        val indices = list.indices.filter { list[it].id in selected }.let { if (forward) it.reversed() else it }
-        var moved = false
-        for (i in indices) {
-            val j = if (forward) i + 1 else i - 1
-            if (j !in list.indices || list[j].id in selected) continue
-            list[i] = list[j].also { list[j] = list[i] }; moved = true
-        }
-        if (moved) commit(list)
-    }
-
-    fun undo() { undo.removeLastOrNull()?.let { redo.addLast(regions); regions = it } }
-    fun redo() { redo.removeLastOrNull()?.let { undo.addLast(regions); regions = it } }
-
-    private fun commit(next: List<BlockRegion>) {
-        if (next == regions) return
-        undo.addLast(regions); redo.clear(); regions = next
-    }
 
     companion object {
         /** The shape's actually emitted regions, in its sewing order, with their resolved stitch type. */
         fun of(shape: ShapeObject) = BlockEditState(shape.regions.map { r ->
-            val type = when (r.stitch.type) {
-                BlockStitch.Type.FILL -> BlockType.FILL
-                BlockStitch.Type.SATIN -> BlockType.SATIN
-                BlockStitch.Type.RUNNING -> BlockType.RUNNING
-            }
             BlockRegion(r.id, r.paths.map { p -> RegionPath(DoubleArray(p.points.size) { p.points[it].x },
-                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockStitchDraft(type = type))
+                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch))
         })
     }
 }

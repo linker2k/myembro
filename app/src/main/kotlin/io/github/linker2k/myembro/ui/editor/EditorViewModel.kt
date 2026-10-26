@@ -23,6 +23,11 @@ import io.github.linker2k.myembro.library.ImportSkipReason
 import io.github.linker2k.myembro.library.importDesigns
 import io.github.linker2k.myembro.library.ImportDecisions
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runInterruptible
+import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
+import io.github.linker2k.myembro.engine.edit.commands.apply as applyCommand
+import io.github.linker2k.myembro.ui.editor.block.BlockApply
+import io.github.linker2k.myembro.ui.editor.block.BlockStatus
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.ui.machines.MachineHoop
 import io.github.linker2k.myembro.export.ExportChecks
@@ -499,6 +504,45 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         sync()
     }
     private fun edit(command: ProjectCommand) { dispatch(command) }
+
+    /** Block editor generation and its sewing check; one at a time, off the main thread. */
+    var blockStatus by mutableStateOf<BlockStatus>(BlockStatus.Idle)
+        private set
+    private var blockJob: Job? = null
+
+    /**
+     * Runs SetBlockStitch (generation, hoop and SewoutCheck) on a background thread, interruptible: a newer
+     * apply or leaving the block editor cancels it (meander checks the thread's interrupt, as upstream).
+     * Only the reducer's Applied project is committed, as one undo step; a refusal keeps the previous settings.
+     */
+    fun applyBlockStitch(id: String, regionIds: Set<String>, patch: BlockStitchPatch) {
+        blockJob?.cancel()
+        val base = project
+        blockStatus = BlockStatus.Generating
+        blockJob = viewModelScope.launch {
+            val result = withContext(Dispatchers.Default) {
+                runInterruptible { applyCommand(base, ProjectCommand.SetBlockStitch(id, regionIds, patch)) }
+            }
+            blockStatus = when {
+                result is CommandResult.Rejected -> BlockStatus.Blocked("${result.code}: ${result.message}", applyFailed = true)
+                // Something else changed the design meanwhile: never publish a result built on an old project.
+                project !== base -> BlockStatus.Blocked("STALE_PROJECT", applyFailed = true)
+                else -> { edit(result.project); if (project === result.project) BlockStatus.Passed
+                    else BlockStatus.Blocked("EDITOR_BUSY", applyFailed = true) }
+            }
+        }
+    }
+    /** The current design's hoop and sewing check, for the badge when the block editor opens or after undo. */
+    fun checkBlockSewout() {
+        blockJob?.cancel()
+        val current = project
+        blockStatus = BlockStatus.Checking
+        blockJob = viewModelScope.launch {
+            val problem = withContext(Dispatchers.Default) { runInterruptible { BlockApply.check(current) } }
+            blockStatus = if (problem == null) BlockStatus.Passed else BlockStatus.Blocked(problem, applyFailed = false)
+        }
+    }
+    fun cancelBlockWork() { blockJob?.cancel(); blockJob = null; blockStatus = BlockStatus.Idle }
     private fun dispatch(command: ProjectCommand): CommandResult? {
         if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return null
         val result = session.commit(command)

@@ -31,23 +31,9 @@ class BlockEditStateTest {
         s.tap(21.0, 25.0, false); assertEquals(setOf("c"), s.selected)
     }
 
-    @Test fun applyToSeveralRegionsIsOneUndoStep() {
-        val s = state()
-        s.selectAll()
-        val before = s.regions
-        s.apply(BlockStitchDraft(texture = BlockTexture.PATTERN, tile = "hexagon", autoAngle = false, angleDeg = 45))
-        assertEquals(1, s.undoSteps)
-        assertEquals(listOf(45, 45, 45), s.regions.map { it.stitch.angleDeg })
-        s.undo(); assertEquals(before, s.regions); assertEquals(0, s.undoSteps)
-    }
-
-    @Test fun reorderMovesTheSelectionOnePlaceAsOneStep() {
-        val s = state()
-        s.tap(2.0, 2.0, false)
-        s.reorder(forward = true)
-        assertEquals(listOf("b", "a", "c"), s.regions.map { it.id }); assertEquals(1, s.undoSteps)
-        s.reorder(forward = false); s.reorder(forward = false)   // already first: no step
-        assertEquals(2, s.undoSteps); assertEquals("a", s.regions.first().id)
+    @Test fun selectionSurvivesARebuildForIdsThatStillExist() {
+        val s = state(); s.restore(setOf("a", "gone"))
+        assertEquals(setOf("a"), s.selected)
     }
 
     @Test fun angleBoundaries() {

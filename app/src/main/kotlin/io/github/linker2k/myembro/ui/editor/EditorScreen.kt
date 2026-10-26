@@ -270,11 +270,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 }
             }
         }
-        // Region settings stay in the block editor's state until the engine's region command exists.
+        // Region settings go through the engine's SetBlockStitch command (one undo step).
         val blockShape = vm.selected as? ShapeObject
         if (blockEdit && blockShape != null) Surface(Modifier.fillMaxSize()) {
-            val state = remember(blockShape.id) { io.github.linker2k.myembro.ui.editor.block.BlockEditState.of(blockShape) }
-            io.github.linker2k.myembro.ui.editor.block.BlockEditScreen(blockShape.name, state, onClose = { blockEdit = false })
+            io.github.linker2k.myembro.ui.editor.block.BlockEditScreen(vm, blockShape, onClose = { blockEdit = false })
         }
         splitPreview?.let { ready -> EditorSplitDialog(ready, onCancel = { splitPreview = null }, onExport = {
             splitPreview = null

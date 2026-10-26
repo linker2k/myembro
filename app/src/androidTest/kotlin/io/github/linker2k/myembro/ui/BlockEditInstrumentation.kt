@@ -18,12 +18,14 @@ import io.github.linker2k.myembro.engine.edit.ShapeObject
 import io.github.linker2k.myembro.ui.editor.AiWorkspace
 import io.github.linker2k.myembro.ui.editor.block.BlockCanvasFit
 import io.github.linker2k.myembro.ui.editor.block.BlockEditState
+import io.github.linker2k.myembro.ui.editor.block.BlockStatus
 import java.io.File
 
 /**
  * Block editing on a bundled emoji as a ShapeObject (5558, no personal data): editor -> Edit blocks ->
- * tap two real regions with multi-select (screen taps, topmost-wins hit test) -> Pattern with the real
- * meander tiles -> manual direction; one screenshot named by the argument "shot".
+ * tap the largest region (screen tap, topmost-wins hit test) -> manual 135° -> Pattern (meander N3-11a) ->
+ * Apply runs SetBlockStitch in the background; the badge must reach the real sewing-check pass. Before and
+ * after screenshots of the editor's stitches plus the block screen after apply.
  */
 class BlockEditInstrumentation : Instrumentation() {
     private var name = "block-edit.png"
@@ -73,46 +75,74 @@ class BlockEditInstrumentation : Instrumentation() {
                 waitForIdleSync(); Thread.sleep(300)
             }
 
+            val out = File(targetContext.filesDir, "block-edit").apply { mkdirs() }
+            fun shot(file: String) {
+                waitForIdleSync(); uiAutomation.waitForIdle(250, 5000); SystemClock.sleep(1200)
+                checkNotNull(uiAutomation.takeScreenshot()).let { image ->
+                    File(out, file).outputStream().use { check(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }; image.recycle()
+                }
+            }
+            val vm = AiWorkspace.editor(app)
+            await(targetContext.getString(R.string.editor_object_count, 1))
+            shot("04-before-editor.png")
+            val beforeStitches = vm.project.flatten().stitches.size
+            val undoBefore = vm.undoSteps
+
             click(targetContext.getString(R.string.block_edit_open))
+            await(targetContext.getString(R.string.block_edit_sewout_pass))
             val state = BlockEditState.of(shape)
-            /** A screen point where [id] is the topmost region (grid search over the shape bounds). The canvas
-             * shrinks once the settings sheet opens, so its bounds are read again for every tap. */
+            /** A screen point where [id] is the topmost region (grid search over the shape bounds). */
             fun pointOf(id: String): Pair<Float, Float> {
-                // The accessibility cache keeps the old bounds after the resize; refresh the node first.
                 val node = await(targetContext.getString(R.string.block_edit_canvas)).apply { refresh() }
                 val box = Rect().also(node::getBoundsInScreen)
                 val fit = BlockCanvasFit(state.bounds, box.width().toFloat(), box.height().toFloat())
                 val b = checkNotNull(state.bounds)
                 for (i in 1 until 60) for (j in 1 until 60) {
                     val x = b.minX + (b.maxX - b.minX) * i / 60; val y = b.minY + (b.maxY - b.minY) * j / 60
-                    if (state.regions.lastOrNull { it.hit(x, y, 0.0) }?.id == id &&
-                        listOf(-0.8 to 0.0, 0.8 to 0.0, 0.0 to -0.8, 0.0 to 0.8).all { (dx, dy) -> state.regions.lastOrNull { it.hit(x + dx, y + dy, 0.0) }?.id == id })
-                        return (box.left + fit.x(x) to box.top + fit.y(y))
+                    if (listOf(0.0 to 0.0, -0.8 to 0.0, 0.8 to 0.0, 0.0 to -0.8, 0.0 to 0.8).all { (dx, dy) ->
+                            state.regions.lastOrNull { it.hit(x + dx, y + dy, 0.0) }?.id == id })
+                        return box.left + fit.x(x) to box.top + fit.y(y)
                 }
                 error("No tappable point for $id")
             }
-            // The two largest fill regions by bounds area.
-            val targets = state.regions.filter { r -> r.paths.any { it.closed } }.sortedByDescending { r ->
-                r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.take(2).map { it.id }
-            click(targetContext.getString(R.string.block_edit_multi))
-            targets.forEach { id -> pointOf(id).let { (x, y) -> tap(x, y) } }
-            await(targetContext.getString(R.string.block_edit_selected, 2))
-            log += "TAP PASS: ${state.regions.size} regions from ShapeObject($emoji); screen taps selected ${targets.joinToString()}"
+            // The largest fill region by bounds area (a wing on the butterfly).
+            val target = state.regions.filter { r -> r.paths.any { it.closed } }.maxBy { r ->
+                r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
+            pointOf(target).let { (x, y) -> tap(x, y) }
+            await(targetContext.getString(R.string.block_edit_selected, 1))
             click(targetContext.getString(R.string.block_edit_direction_manual))
+            // Slider to 135° through its accessibility progress action.
+            var slider = nodes().firstOrNull { it.rangeInfo != null }
+            repeat(3) {
+                if (slider == null) {   // below the fold of the folded sheet
+                    nodes().filter { it.isScrollable }.forEach { it.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) }
+                    waitForIdleSync(); Thread.sleep(400); slider = nodes().firstOrNull { it.rangeInfo != null }
+                }
+            }
+            checkNotNull(slider) { "No angle slider" }
+            check(slider!!.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.id,
+                Bundle().apply { putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, 135f) }))
+            await(targetContext.getString(R.string.block_edit_angle, 135))
             click(targetContext.getString(R.string.block_edit_texture_pattern))
             await("N3-11a")
-            // On the device itself (Android XML parser): every bundled tile loads through the engine's loader.
-            val tiles = io.github.linker2k.myembro.ui.editor.block.MeanderThumbnails.ids()
-            check(tiles.size == 75 && tiles.all { io.github.linker2k.myembro.ui.editor.block.MeanderThumbnails.lines(it).coords.size >= 4 })
-            log += "TILES PASS: ${tiles.size} engine meander tiles load on Android; grid shown (N3-11a)"
-            val out = File(targetContext.filesDir, "block-edit").apply { mkdirs() }
-            waitForIdleSync(); uiAutomation.waitForIdle(250, 5000); SystemClock.sleep(1200)
-            checkNotNull(uiAutomation.takeScreenshot()).let { image ->
-                File(out, name).outputStream().use { check(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }; image.recycle()
-            }
+            click(targetContext.getString(R.string.block_edit_apply))
+            val end = SystemClock.uptimeMillis() + 120_000
+            while (vm.blockStatus !is BlockStatus.Passed && vm.blockStatus !is BlockStatus.Blocked) {
+                check(SystemClock.uptimeMillis() < end) { "Generation timed out" }; Thread.sleep(200) }
+            check(vm.blockStatus is BlockStatus.Passed) { "Apply refused: ${vm.blockStatus}" }
+            val applied = (vm.project.find(shape.id) as ShapeObject).regions.first { it.id == target }.stitch
+            check(applied.fill.fill_method == "meander_fill" && applied.fill.angle == 135.0 && !applied.automatic_angle)
+            check(vm.undoSteps == undoBefore + 1) { "undo ${vm.undoSteps} vs $undoBefore" }
+            log += "APPLY PASS: $target -> meander_fill N3-11a, angle 135, one undo step; badge ${vm.blockStatus}"
+            shot("05-block-applied.png")
+            sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+            await(targetContext.getString(R.string.editor_object_count, 1))
+            val afterStitches = vm.project.flatten().stitches.size
+            shot("06-after-editor.png")
+            log += "STITCHES: before $beforeStitches, after $afterStitches"
             runOnMainSync { activity.finish(); AiWorkspace.viewModelStore.clear() }
             Thread.sleep(500); File(app.filesDir, "drafts/editor.myembro").delete()
-            finish(0, Bundle().apply { putString("result", log.joinToString("\n") + "\nBLOCK_EDIT_PASS -> $name") })
+            finish(0, Bundle().apply { putString("result", log.joinToString("\n") + "\nBLOCK_APPLY_PASS") })
         } catch (failure: Throwable) {
             runCatching { uiAutomation.takeScreenshot()?.let { image ->
                 File(targetContext.filesDir, "block-edit/failure.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) } } }

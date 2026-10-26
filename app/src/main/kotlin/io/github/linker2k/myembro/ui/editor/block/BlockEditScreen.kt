@@ -31,6 +31,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.ui.editor.EditorHistoryButton
+import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -45,53 +48,52 @@ import kotlin.math.roundToInt
 
 /**
  * Block editing: tap a ShapeObject's regions (topmost wins where they overlap; multi-select adds), then set
- * stitch type, texture, direction, density and order in the sheet. Folded/phone: the sheet sits under the
- * canvas; unfolded or tablet (>= 600dp): it docks on the right. Settings stay in [BlockEditState] until the
- * engine's region command exists.
+ * stitch type, texture, direction and density in the sheet. Apply runs the engine's SetBlockStitch in the
+ * background (one undo step in the editor history); the badge shows the real hoop and sewing check.
+ * Folded/phone: the sheet sits under the canvas; unfolded or tablet (>= 600dp): it docks on the right.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlockEditScreen(objectName: String, state: BlockEditState, onClose: () -> Unit) {
+fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
-    var version by remember { mutableIntStateOf(0) }
+    // Leaving the screen cancels a running generation; the design keeps its last committed settings.
+    DisposableEffect(Unit) { onDispose { vm.cancelBlockWork() } }
+    var selected by remember(shape.id) { mutableStateOf(emptySet<String>()) }
+    val state = remember(shape) { BlockEditState.of(shape).also { it.restore(selected) } }
     var multi by remember { mutableStateOf(false) }
-    var draft by remember { mutableStateOf(BlockStitchDraft()) }
-    fun changed() { version++; draft = state.draft() }
+    var draft by remember(shape.id) { mutableStateOf(BlockStitchDraft()) }
+    fun picked() { selected = state.selected; draft = state.draft() }
+    // Every committed change (apply, undo, redo) gets a fresh check of the whole design.
+    LaunchedEffect(shape) { if (vm.blockStatus !is BlockStatus.Generating) vm.checkBlockSewout() }
     Scaffold(topBar = {
         TopAppBar(title = { Column {
             Text(stringResource(R.string.block_edit_title), style = MaterialTheme.typography.titleMedium)
-            Text(objectName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(shape.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } }, navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.block_edit_done)) } },
-            actions = {
-                key(version) {
-                    IconButton(onClick = { state.undo(); changed() }, enabled = state.undoSteps > 0) {
-                        Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.editor_undo)) }
-                    IconButton(onClick = { state.redo(); changed() }, enabled = state.canRedo) {
-                        Icon(Icons.AutoMirrored.Filled.Redo, stringResource(R.string.editor_redo)) }
-                }
-            })
+            actions = { EditorHistoryButton(vm, redo = false); EditorHistoryButton(vm, redo = true) })
     }) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             val wide = maxWidth >= 600.dp
             val sheetMax = maxHeight * 0.58f
+            val status = vm.blockStatus
             val canvas = @Composable { modifier: Modifier ->
                 Column(modifier) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(multi, onClick = { multi = !multi }, label = { Text(stringResource(R.string.block_edit_multi)) },
                             leadingIcon = { Icon(Icons.Default.Checklist, null, Modifier.size(16.dp)) })
-                        TextButton(onClick = { state.selectAll(); changed() }) { Text(stringResource(R.string.editor_select_all)) }
+                        TextButton(onClick = { state.selectAll(); picked() }) { Text(stringResource(R.string.editor_select_all)) }
                         Spacer(Modifier.weight(1f))
-                        SewoutBadge()
+                        SewoutBadge(status)
                     }
-                    key(version) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y, lineMm ->
-                        state.tap(x, y, multi, lineMm); changed() } }
+                    if (status is BlockStatus.Generating || status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                    key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y, lineMm ->
+                        state.tap(x, y, multi, lineMm); picked() } }
                 }
             }
             val sheet = @Composable { modifier: Modifier ->
-                key(version) { BlockSheet(state.selected.size, draft, { draft = it },
-                    onApply = { state.apply(draft); changed() },
-                    onOrder = { state.reorder(it); changed() }, modifier) }
+                BlockSheet(selected.size, draft, { draft = it }, status,
+                    onApply = { vm.applyBlockStitch(shape.id, selected, BlockApply.patch(draft)) }, modifier)
             }
             if (wide) Row(Modifier.fillMaxSize()) {
                 canvas(Modifier.weight(1f).fillMaxHeight())
@@ -105,11 +107,19 @@ fun BlockEditScreen(objectName: String, state: BlockEditState, onClose: () -> Un
     }
 }
 
-/** Placeholder for the sewing check verdict of the object after an apply; filled when the engine is connected. */
+/** The whole design's real result: placed inside the hoop and SewoutCheck without blockers. */
 @Composable
-private fun SewoutBadge() {
-    AssistChip(onClick = {}, enabled = false, label = { Text(stringResource(R.string.block_edit_sewout_pending)) },
-        leadingIcon = { Icon(Icons.Default.HourglassEmpty, null, Modifier.size(16.dp)) })
+private fun SewoutBadge(status: BlockStatus) {
+    val colors = MaterialTheme.colorScheme
+    val (text, icon, tint) = when (status) {
+        BlockStatus.Idle, BlockStatus.Checking -> Triple(R.string.block_edit_sewout_checking, Icons.Default.HourglassEmpty, colors.onSurfaceVariant)
+        BlockStatus.Generating -> Triple(R.string.block_edit_generating, Icons.Default.HourglassEmpty, colors.onSurfaceVariant)
+        BlockStatus.Passed -> Triple(R.string.block_edit_sewout_pass, Icons.Default.CheckCircle, colors.primary)
+        is BlockStatus.Blocked -> if (status.applyFailed) Triple(R.string.block_edit_apply_failed, Icons.Default.ErrorOutline, colors.error)
+            else Triple(R.string.block_edit_sewout_blocked, Icons.Default.ErrorOutline, colors.error)
+    }
+    AssistChip(onClick = {}, label = { Text(stringResource(text), color = tint) },
+        leadingIcon = { Icon(icon, null, Modifier.size(16.dp), tint = tint) })
 }
 
 /** Object-local mm to canvas pixels: the regions' bounds fitted and centered, y down. */
@@ -171,8 +181,8 @@ private fun regionPaths(r: BlockRegion, fit: BlockCanvasFit): Pair<Path, Path> {
 }
 
 @Composable
-private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, onApply: () -> Unit,
-                       onOrder: (Boolean) -> Unit, modifier: Modifier) {
+private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus,
+                       onApply: () -> Unit, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     Surface(modifier, color = colors.surfaceContainerLow, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), tonalElevation = 2.dp) {
         if (count == 0) {
@@ -185,8 +195,11 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         // Apply stays on screen while the settings below scroll.
         Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.block_edit_selected, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Button(onClick = onApply) { Text(stringResource(R.string.block_edit_apply)) }
+            Button(onClick = onApply, enabled = status !is BlockStatus.Generating) { Text(stringResource(R.string.block_edit_apply)) }
         }
+        // A refused apply keeps the previous settings; say why (engine code and message, never bypassed).
+        if (status is BlockStatus.Blocked) Text(stringResource(if (status.applyFailed) R.string.block_edit_kept else R.string.block_edit_blocked_now, status.reason),
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.bodySmall, color = colors.error, maxLines = 3)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Label(R.string.block_edit_type)
@@ -219,17 +232,15 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                         color = colors.onSurfaceVariant)
                 }
                 Label(R.string.block_edit_density)
+                // Only steps with an Ink/Stitch basis are offered (BlockApply.ROW_SPACING_MM).
                 Segmented(listOf(R.string.block_edit_density_dense, R.string.block_edit_density_normal, R.string.block_edit_density_sparse),
-                    draft.density.ordinal) { onDraft(draft.copy(density = BlockDensity.entries[it])) }
+                    draft.density.ordinal, enabled = { BlockApply.ROW_SPACING_MM[BlockDensity.entries[it]] != null }) {
+                    onDraft(draft.copy(density = BlockDensity.entries[it])) }
                 Text(stringResource(R.string.block_edit_density_unverified), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
+            // Region sewing order needs an engine command that does not exist yet.
             Label(R.string.block_edit_order)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onOrder(false) }) {
-                    Icon(Icons.Default.ArrowDownward, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.block_edit_back)) }
-                OutlinedButton(onClick = { onOrder(true) }) {
-                    Icon(Icons.Default.ArrowUpward, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.block_edit_forward)) }
-            }
+            Text(stringResource(R.string.block_edit_order_pending), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
         }
         }
@@ -244,10 +255,10 @@ private fun Label(text: Int) = Text(stringResource(text), style = MaterialTheme.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Segmented(labels: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
+private fun Segmented(labels: List<Int>, selected: Int, enabled: (Int) -> Boolean = { true }, onSelect: (Int) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         labels.forEachIndexed { i, label ->
-            SegmentedButton(i == selected, { onSelect(i) }, SegmentedButtonDefaults.itemShape(i, labels.size)) { Text(stringResource(label)) }
+            SegmentedButton(i == selected, { onSelect(i) }, SegmentedButtonDefaults.itemShape(i, labels.size), enabled = enabled(i)) { Text(stringResource(label)) }
         }
     }
 }
