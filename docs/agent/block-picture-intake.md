@@ -23,3 +23,13 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk
 ```
 
 `PhotoShapeParityTest` uses only generated in-memory 2-color and 3-color PNG fixtures (white included), including a real hole, comparing pre-conversion ColorDrawingPipeline against direct factory and engine preparation/add placement. It asserts exact stitches/threads/metadata/warnings, composed PES bytes and codec round-trip, plus explicit outline fallback to StitchObject. Verification uses the ordinary build, without source overlays.
+
+Integration verification after merging `3704f13` (ordinary command above, no overlay):
+
+```text
+BUILD SUCCESSFUL in 2m 11s
+engine: tests=914 failures=0 errors=0 skipped=0
+app: tests=405 failures=0 errors=0 skipped=0
+PHOTO_SHAPE_PARITY colors=2 stitches=2278 coordinates=IDENTICAL pes=IDENTICAL codec=IDENTICAL regions=1
+PHOTO_SHAPE_PARITY colors=3 stitches=2650 coordinates=IDENTICAL pes=IDENTICAL codec=IDENTICAL regions=2
+```
