@@ -108,9 +108,10 @@ UI maxima. No parameter was reduced to make a failing tile pass.
 ## Measurements
 
 Final command output: `BUILD SUCCESSFUL`; JUnit **1 test, 0 failures/errors**.
-The matrix completed **160 cases: 157 SewoutCheck PASS, 3 generation ERROR,
-0 SewoutCheck BLOCK**. Primary defaults: **155/158 PASS, 3 ERROR**; supplemental
-2-stop gradients: **2/2 PASS**. Completed cases have peak cell density **≤7**
+After the [search-limit follow-up](meander-search-limit.md), the matrix completed
+**160 cases: 160 SewoutCheck PASS, 0 generation ERROR, 0 SewoutCheck BLOCK**.
+Primary defaults: **158/158 PASS**; supplemental 2-stop gradients: **2/2 PASS**.
+The initial `eae1290` audit had 3 port-only search-budget errors; all 3 now pass. Completed cases have peak cell density **≤7**
 (the existing app limit is 15). This is not an independent oracle/release verdict.
 
 ### Fill methods (default meander tile shown here)
@@ -133,91 +134,91 @@ complete, so no final count or density is claimed.
 
 | Tile | Square stitches | Square peak | Square check | Circle stitches | Circle peak | Circle check | Failure cause |
 |---|---:|---:|---|---:|---:|---|---|
-| N3-11a | 1111 | 3 | PASS | 887 | 3 | PASS |  |
-| N3-12 | 1000 | 3 | PASS | 783 | 3 | PASS |  |
-| N3-16a | 1065 | 3 | PASS | 869 | 3 | PASS |  |
-| N3-17 | 1107 | 3 | PASS | 897 | 3 | PASS |  |
-| N3-18-modified | 1017 | 3 | PASS | 824 | 3 | PASS |  |
-| N3-18 | 1041 | 3 | PASS | 809 | 3 | PASS |  |
-| N3-20 | 1040 | 3 | PASS | 834 | 3 | PASS |  |
-| N3-23b | 1147 | 3 | PASS | 930 | 3 | PASS |  |
-| N3-25c | 1160 | 3 | PASS | 933 | 3 | PASS |  |
-| N3-26b | 1272 | 3 | PASS | 993 | 4 | PASS |  |
-| N3-27 | 1030 | 3 | PASS | 820 | 3 | PASS |  |
-| N3-30a | 1099 | 3 | PASS | 902 | 3 | PASS |  |
-| N3-51b | 1152 | 3 | PASS | 924 | 3 | PASS |  |
-| N3-57f-modified | 1013 | 3 | PASS | 794 | 3 | PASS |  |
-| N3-58b | 1133 | 3 | PASS | 917 | 3 | PASS |  |
-| N3-6 | 962 | 3 | PASS | 777 | 3 | PASS |  |
-| N3-7 | 1130 | 3 | PASS | 907 | 3 | PASS |  |
-| N3-8a-modified | 1024 | 3 | PASS | 817 | 3 | PASS |  |
-| N3-8a | 1102 | 3 | PASS | 882 | 3 | PASS |  |
-| N3-8b | 1094 | 3 | PASS | 879 | 3 | PASS |  |
-| N4-13b | 1215 | 3 | PASS | 961 | 4 | PASS |  |
-| N4-13c | 1171 | 4 | PASS | 937 | 3 | PASS |  |
-| N4-13d | 1144 | 3 | PASS | 916 | 3 | PASS |  |
-| N4-13e | 1040 | 3 | PASS | 831 | 3 | PASS |  |
-| N4-13f | 1020 | 3 | PASS | 837 | 3 | PASS |  |
-| N4-16a | 1133 | 3 | PASS | 913 | 3 | PASS |  |
-| N4-19 | 1235 | 4 | PASS | 983 | 3 | PASS |  |
-| N4-20 | 1267 | 3 | PASS | 1016 | 4 | PASS |  |
-| N4-21c | 1176 | 4 | PASS | 910 | 4 | PASS |  |
-| N4-22 | 1128 | 3 | PASS | 911 | 3 | PASS |  |
-| N4-23a | 1078 | 3 | PASS | 852 | 3 | PASS |  |
-| N4-23c | 1083 | 3 | PASS | 868 | 3 | PASS |  |
-| N4-27 | 1086 | 3 | PASS | 860 | 3 | PASS |  |
-| N4-29e | 1303 | 3 | PASS | 1023 | 3 | PASS |  |
-| N4-29f | 1249 | 3 | PASS | 967 | 3 | PASS |  |
-| N4-31 | 1110 | 3 | PASS | 898 | 3 | PASS |  |
-| N4-38 | 1020 | 3 | PASS | 825 | 3 | PASS |  |
-| N4-42e | 1258 | 3 | PASS | 997 | 3 | PASS |  |
-| N4-44 | 1158 | 3 | PASS | 935 | 4 | PASS |  |
-| N4-52 | 1060 | 3 | PASS | 866 | 3 | PASS |  |
-| N4-54d | 1133 | 3 | PASS | 909 | 3 | PASS |  |
-| N4-5a-2 | 1011 | 3 | PASS | 798 | 3 | PASS |  |
-| N4-5a | 1096 | 3 | PASS | 871 | 3 | PASS |  |
-| N4-82 | 1122 | 3 | PASS | 898 | 3 | PASS |  |
-| N4-85d | 1192 | 3 | PASS | 968 | 3 | PASS |  |
-| N5-1e1 | 1068 | 3 | PASS | 846 | 3 | PASS |  |
-| N5-1q2 | 1056 | 3 | PASS | 879 | 3 | PASS |  |
-| N5-1t | 1048 | 3 | PASS | 844 | 3 | PASS |  |
-| N6-1 | 900 | 3 | PASS | 730 | 3 | PASS |  |
-| N6-2 | 944 | 3 | PASS | 764 | 3 | PASS |  |
-| N6-5b | 978 | 3 | PASS | 794 | 3 | PASS |  |
-| N6-6a | 1021 | 3 | PASS | 832 | 3 | PASS |  |
-| N6-6c | 1028 | 3 | PASS | 844 | 3 | PASS |  |
-| NC5-11a | — | — | ERROR | — | — | ERROR | square: existing 2,000,000 path-search-step guard exceeded; circle: existing 2,000,000 path-search-step guard exceeded |
-| NC5-20a | 1085 | 3 | PASS | 835 | 3 | PASS |  |
-| P3-1 | 884 | 3 | PASS | — | — | ERROR | circle: existing 2,000,000 path-search-step guard exceeded |
-| P3-12 | 955 | 3 | PASS | 749 | 3 | PASS |  |
-| P4-1 | 936 | 3 | PASS | 784 | 3 | PASS |  |
-| P4-10 | 930 | 3 | PASS | 765 | 3 | PASS |  |
-| P4-15 | 843 | 3 | PASS | 690 | 3 | PASS |  |
-| P4-19 | 1099 | 3 | PASS | 883 | 3 | PASS |  |
-| P4-23 | 992 | 3 | PASS | 797 | 3 | PASS |  |
-| P4-24 | 959 | 3 | PASS | 788 | 3 | PASS |  |
-| P4-25 | 1006 | 3 | PASS | 799 | 3 | PASS |  |
-| P4-43-modified | 1127 | 3 | PASS | 886 | 3 | PASS |  |
-| P4-43 | 1189 | 3 | PASS | 945 | 3 | PASS |  |
-| P4-47 | 1075 | 3 | PASS | 872 | 3 | PASS |  |
-| P5-10_11 | 979 | 3 | PASS | 799 | 3 | PASS |  |
-| P5-19 | 1054 | 3 | PASS | 864 | 3 | PASS |  |
-| P5-23_24 | 1079 | 3 | PASS | 872 | 3 | PASS |  |
-| P5-4 | 1009 | 3 | PASS | 813 | 3 | PASS |  |
-| P6-6_11 | 1113 | 3 | PASS | 890 | 3 | PASS |  |
-| diamond-square | 993 | 3 | PASS | 768 | 3 | PASS |  |
-| hexagon | 930 | 3 | PASS | 762 | 3 | PASS |  |
-| weird-one | 1197 | 3 | PASS | 951 | 3 | PASS |  |
+| N3-11a | 1111 | 3 | PASS | 887 | 3 | PASS | |
+| N3-12 | 1000 | 3 | PASS | 783 | 3 | PASS | |
+| N3-16a | 1065 | 3 | PASS | 869 | 3 | PASS | |
+| N3-17 | 1107 | 3 | PASS | 897 | 3 | PASS | |
+| N3-18-modified | 1017 | 3 | PASS | 824 | 3 | PASS | |
+| N3-18 | 1041 | 3 | PASS | 809 | 3 | PASS | |
+| N3-20 | 1040 | 3 | PASS | 834 | 3 | PASS | |
+| N3-23b | 1147 | 3 | PASS | 930 | 3 | PASS | |
+| N3-25c | 1160 | 3 | PASS | 933 | 3 | PASS | |
+| N3-26b | 1272 | 3 | PASS | 993 | 4 | PASS | |
+| N3-27 | 1030 | 3 | PASS | 820 | 3 | PASS | |
+| N3-30a | 1099 | 3 | PASS | 902 | 3 | PASS | |
+| N3-51b | 1152 | 3 | PASS | 924 | 3 | PASS | |
+| N3-57f-modified | 1013 | 3 | PASS | 794 | 3 | PASS | |
+| N3-58b | 1133 | 3 | PASS | 917 | 3 | PASS | |
+| N3-6 | 962 | 3 | PASS | 777 | 3 | PASS | |
+| N3-7 | 1130 | 3 | PASS | 907 | 3 | PASS | |
+| N3-8a-modified | 1024 | 3 | PASS | 817 | 3 | PASS | |
+| N3-8a | 1102 | 3 | PASS | 882 | 3 | PASS | |
+| N3-8b | 1094 | 3 | PASS | 879 | 3 | PASS | |
+| N4-13b | 1215 | 3 | PASS | 961 | 4 | PASS | |
+| N4-13c | 1171 | 4 | PASS | 937 | 3 | PASS | |
+| N4-13d | 1144 | 3 | PASS | 916 | 3 | PASS | |
+| N4-13e | 1040 | 3 | PASS | 831 | 3 | PASS | |
+| N4-13f | 1020 | 3 | PASS | 837 | 3 | PASS | |
+| N4-16a | 1133 | 3 | PASS | 913 | 3 | PASS | |
+| N4-19 | 1235 | 4 | PASS | 983 | 3 | PASS | |
+| N4-20 | 1267 | 3 | PASS | 1016 | 4 | PASS | |
+| N4-21c | 1176 | 4 | PASS | 910 | 4 | PASS | |
+| N4-22 | 1128 | 3 | PASS | 911 | 3 | PASS | |
+| N4-23a | 1078 | 3 | PASS | 852 | 3 | PASS | |
+| N4-23c | 1083 | 3 | PASS | 868 | 3 | PASS | |
+| N4-27 | 1086 | 3 | PASS | 860 | 3 | PASS | |
+| N4-29e | 1303 | 3 | PASS | 1023 | 3 | PASS | |
+| N4-29f | 1249 | 3 | PASS | 967 | 3 | PASS | |
+| N4-31 | 1110 | 3 | PASS | 898 | 3 | PASS | |
+| N4-38 | 1020 | 3 | PASS | 825 | 3 | PASS | |
+| N4-42e | 1258 | 3 | PASS | 997 | 3 | PASS | |
+| N4-44 | 1158 | 3 | PASS | 935 | 4 | PASS | |
+| N4-52 | 1060 | 3 | PASS | 866 | 3 | PASS | |
+| N4-54d | 1133 | 3 | PASS | 909 | 3 | PASS | |
+| N4-5a-2 | 1011 | 3 | PASS | 798 | 3 | PASS | |
+| N4-5a | 1096 | 3 | PASS | 871 | 3 | PASS | |
+| N4-82 | 1122 | 3 | PASS | 898 | 3 | PASS | |
+| N4-85d | 1192 | 3 | PASS | 968 | 3 | PASS | |
+| N5-1e1 | 1068 | 3 | PASS | 846 | 3 | PASS | |
+| N5-1q2 | 1056 | 3 | PASS | 879 | 3 | PASS | |
+| N5-1t | 1048 | 3 | PASS | 844 | 3 | PASS | |
+| N6-1 | 900 | 3 | PASS | 730 | 3 | PASS | |
+| N6-2 | 944 | 3 | PASS | 764 | 3 | PASS | |
+| N6-5b | 978 | 3 | PASS | 794 | 3 | PASS | |
+| N6-6a | 1021 | 3 | PASS | 832 | 3 | PASS | |
+| N6-6c | 1028 | 3 | PASS | 844 | 3 | PASS | |
+| NC5-11a | 1230 | 3 | PASS | 1007 | 3 | PASS | |
+| NC5-20a | 1085 | 3 | PASS | 835 | 3 | PASS | |
+| P3-1 | 884 | 3 | PASS | 725 | 3 | PASS | |
+| P3-12 | 955 | 3 | PASS | 749 | 3 | PASS | |
+| P4-1 | 936 | 3 | PASS | 784 | 3 | PASS | |
+| P4-10 | 930 | 3 | PASS | 765 | 3 | PASS | |
+| P4-15 | 843 | 3 | PASS | 690 | 3 | PASS | |
+| P4-19 | 1099 | 3 | PASS | 883 | 3 | PASS | |
+| P4-23 | 992 | 3 | PASS | 797 | 3 | PASS | |
+| P4-24 | 959 | 3 | PASS | 788 | 3 | PASS | |
+| P4-25 | 1006 | 3 | PASS | 799 | 3 | PASS | |
+| P4-43-modified | 1127 | 3 | PASS | 886 | 3 | PASS | |
+| P4-43 | 1189 | 3 | PASS | 945 | 3 | PASS | |
+| P4-47 | 1075 | 3 | PASS | 872 | 3 | PASS | |
+| P5-10_11 | 979 | 3 | PASS | 799 | 3 | PASS | |
+| P5-19 | 1054 | 3 | PASS | 864 | 3 | PASS | |
+| P5-23_24 | 1079 | 3 | PASS | 872 | 3 | PASS | |
+| P5-4 | 1009 | 3 | PASS | 813 | 3 | PASS | |
+| P6-6_11 | 1113 | 3 | PASS | 890 | 3 | PASS | |
+| diamond-square | 993 | 3 | PASS | 768 | 3 | PASS | |
+| hexagon | 930 | 3 | PASS | 762 | 3 | PASS | |
+| weird-one | 1197 | 3 | PASS | 951 | 3 | PASS | |
 
-### Failure classification and limits
+### Initial errors and follow-up
 
-- **NC5-11a, square and circle:** `IllegalStateException: Meander path search
-  resource limit exceeded` — the existing Kotlin search guard reaches 2,000,000
-  steps (`MeanderFill.kt:52,264`). No PES is exported and peak density is unmeasured.
-- **P3-1, circle:** the same existing path-search guard. Its square case passes.
-- These are port resource-limit failures, not demonstrated upstream algorithm
-  rejection and not a measured sewing-density failure. No Ink/Stitch output was
-  executed to attribute the failure to the original. Defaults/limits are unchanged.
+The initial NC5-11a square/circle and P3-1 circle errors were caused by a port-only
+2,000,000 cumulative DFS-visit guard, absent from Ink/Stitch v3.3.0. The follow-up
+removes that guard, retains upstream 7/10-edge path cutoffs and restores the source
+outer-loop cancellation checks. All three now generate and pass; the prior 157
+completed cases retain exactly the same stitch counts and peak densities.
+See [source-line comparison and tests](meander-search-limit.md).
+
 - Guided is omitted for lack of a guide; cross, legacy and tartan are outside the
   requested scope. Missing-gradient behavior is recorded rather than silently
   presenting it as a two-color gradient.
@@ -235,6 +236,7 @@ complete, so no final count or density is claimed.
   presence; normal engine tests do not acquire the experimental adapter implicitly.
 - [Runner](../../tools/research/texture-catalog.sh) and
   [stdlib summary exporter](../../tools/research/summarize-textures.py).
-- Only research/test code and this document/evidence are changed. Stitch generators,
-  resource inventory, source defaults, exporter, gate, and app UI are unchanged.
+- The initial catalog added research/test code only. The follow-up removes the
+  non-upstream meander search budget and adds cancellation checks. Tile resources,
+  fill parameters, exporter, gate, and app UI remain unchanged.
 - No push or merge. No personal files or upstream runtime code are used.

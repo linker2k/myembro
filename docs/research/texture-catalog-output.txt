@@ -1,4 +1,4 @@
-$ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 tools/research/texture-catalog.sh
+$ tools/research/texture-catalog.sh
 
 
 > Configure project :app
@@ -20,13 +20,16 @@ WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experim
 > Task :engine:testClasses
 > Task :engine:test
 
-BUILD SUCCESSFUL in 45s
+BUILD SUCCESSFUL in 52s
 7 actionable tasks: 7 executed
-JUnit: 1 test; 0 failures/errors; 26.798 seconds
-TEXTURE_CATALOG COMPLETE cases=160 tiles=75 shapes=2 statuses={'PASS': 157, 'ERROR': 3}
+JUnit: 1 test; 0 failures/errors; 32.361 seconds
+TEXTURE_CATALOG COMPLETE cases=160 tiles=75 shapes=2 statuses={'PASS': 160}
 Peak penetrations / 0.5mm cell: 7
 GUIDED: excluded, no guideline input (no silent substitution counted as guided)
-square__meander_fill__NC5-11a: IllegalStateException: Meander path search resource limit exceeded
-circle__meander_fill__NC5-11a: IllegalStateException: Meander path search resource limit exceeded
-circle__meander_fill__P3-1: IllegalStateException: Meander path search resource limit exceeded
 Artifacts: /tmp/myembro-texture
+
+Actual JUnit XML:
+io.github.linker2k.myembro.engine.inkstitch.stitches.MeanderFillTest: 15 tests, 0 failures/errors, 0.677s
+io.github.linker2k.myembro.engine.research.TextureCatalogTest: 1 tests, 0 failures/errors, 32.361s
+
+Comparison: only the original 3 ERROR cases changed status/count/peak; prior 157 stitch counts/peak densities unchanged.

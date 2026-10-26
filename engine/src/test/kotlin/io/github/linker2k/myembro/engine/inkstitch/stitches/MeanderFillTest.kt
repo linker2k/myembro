@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -77,6 +78,19 @@ class MeanderFillTest {
         assertEquals(FillPoint(5.0, 5.0), result.first())
         assertEquals(FillPoint(95.0, 95.0), result.last())
         assertTrue(result.zipWithNext().all { (a, b) -> a.distance(b) == 10.0 })
+    }
+
+    @Test fun pathGenerationHonorsUpstreamStopChecks() {
+        val shape = square()
+        val graph = MeanderFill.tileGraph(shape, grid(), MeanderFillParameters())
+        val (start, end) = MeanderFill.startingAndEndingNodes(graph, shape, null, null)
+        try {
+            Thread.currentThread().interrupt()
+            assertFailsWith<InterruptedException> { MeanderFill.generatePath(graph, start, end) { 0.5 } }
+            assertTrue(Thread.currentThread().isInterrupted)
+        } finally {
+            Thread.interrupted() // Do not leak cancellation to the JUnit worker.
+        }
     }
 
     @Test fun nearestComponentMstAddsOnlyTheNeededBridges() {

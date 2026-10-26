@@ -106,6 +106,10 @@ class TextureCatalogTest {
         })
         for (shapeName in shapes.keys) contactSheet(out,shapeName,rows.filter { it.text("shape")==shapeName })
         println("TEXTURE_CATALOG COMPLETE cases=160 tiles=75 shapes=2 statuses="+rows.groupingBy { it.text("status") }.eachCount())
+        for (id in listOf("square__meander_fill__NC5-11a", "circle__meander_fill__NC5-11a", "circle__meander_fill__P3-1")) {
+            assertEquals("PASS", rows.single { it.text("id") == id }.text("status"),
+                "$id must complete with the original 7/10-edge cutoffs and no cumulative budget")
+        }
     }
 
     private fun JsonObject.text(key: String) = getValue(key).jsonPrimitive.content

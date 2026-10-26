@@ -8,5 +8,5 @@ export TEXTURE_CATALOG_OUTPUT=${TEXTURE_CATALOG_OUTPUT:-/tmp/myembro-texture}
 mkdir -p "$TEXTURE_CATALOG_OUTPUT"
 cd "$repo_root"
 ./gradlew -I tools/inkstitch-fill-preview.gradle :engine:test \
-  --tests '*TextureCatalogTest' --rerun-tasks --console=plain
+  --tests '*TextureCatalogTest' --tests '*MeanderFillTest' --rerun-tasks --console=plain
 python3 tools/research/summarize-textures.py "$TEXTURE_CATALOG_OUTPUT"
