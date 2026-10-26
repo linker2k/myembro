@@ -33,6 +33,8 @@ data class TransformValues(
  * export authorization. As with Project/History, callers must not mutate supplied arrays/lists.
  */
 sealed interface ProjectCommand {
+    data class SetBlockStitch(val id: String, val regionIds: Set<String>,
+        val change: io.github.linker2k.myembro.engine.edit.BlockStitchPatch) : ProjectCommand
     data class Add(val obj: DesignObject) : ProjectCommand
     /** Prepared text content only; target ID, pose, visibility and sewing index are retained. */
     data class ReplaceText(val id: String, val text: TextObject) : ProjectCommand
