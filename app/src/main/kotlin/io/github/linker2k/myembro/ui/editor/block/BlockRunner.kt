@@ -43,6 +43,9 @@ class BlockRunner(
     private val scope: CoroutineScope,
     private val worker: CoroutineContext = Dispatchers.Default,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
+    /** The engine reducer and the badge check; replaceable in tests only. */
+    private val reduce: (Project, ProjectCommand) -> CommandResult = ::apply,
+    private val checker: (Project) -> String? = BlockApply::check,
 ) {
     var status by mutableStateOf<BlockStatus>(BlockStatus.Idle)
         private set
@@ -53,24 +56,32 @@ class BlockRunner(
         job?.cancel()
         status = BlockStatus.Generating(clock())
         job = scope.launch {
-            val result = withContext(worker) { runInterruptible { apply(base, command) } }
-            status = when {
+            val result = withContext(worker) { runInterruptible { guarded { reduce(base, command) } } }
+            status = when (result) {
+                is Guarded.Failed -> BlockStatus.Blocked(result.failure, applyFailed = true)
+                is Guarded.Done -> applied(result.value, base, current, commit)
+            }
+        }
+    }
+
+    private fun applied(result: CommandResult, base: Project, current: () -> Project, commit: (Project) -> Boolean): BlockStatus =
+            when {
                 result is CommandResult.Rejected -> BlockApply.rejectedStatus(result)
                 // Something else changed the design meanwhile: never publish a result built on an old project.
                 current() !== base -> BlockStatus.Blocked(BlockFailure(BlockFailure.Kind.DESIGN_CHANGED, "STALE_PROJECT"), applyFailed = true)
                 commit(result.project) -> BlockStatus.Passed
                 else -> BlockStatus.Blocked(BlockFailure(BlockFailure.Kind.EDITOR_BUSY, "EDITOR_BUSY"), applyFailed = true)
             }
-        }
-    }
 
     /** The whole design's hoop and sewing check, for the badge. */
     fun check(project: Project) {
         job?.cancel()
         status = BlockStatus.Checking
         job = scope.launch {
-            val problem = withContext(worker) { runInterruptible { BlockApply.check(project) } }
-            status = if (problem == null) BlockStatus.Passed else BlockStatus.Blocked(BlockFailure.sewout(problem), applyFailed = false)
+            status = when (val problem = withContext(worker) { runInterruptible { guarded { checker(project) } } }) {
+                is Guarded.Failed -> BlockStatus.Blocked(problem.failure, applyFailed = false)
+                is Guarded.Done -> problem.value?.let { BlockStatus.Blocked(BlockFailure.sewout(it), applyFailed = false) } ?: BlockStatus.Passed
+            }
         }
     }
 
@@ -85,6 +96,25 @@ class BlockRunner(
     fun stop() { job?.cancel(); job = null; status = BlockStatus.Idle }
 
     fun elapsedMs(s: BlockStatus.Generating) = clock() - s.startedAtMs
+
+    private sealed interface Guarded<out T> {
+        data class Done<T>(val value: T) : Guarded<T>
+        data class Failed(val failure: BlockFailure) : Guarded<Nothing>
+    }
+
+    /**
+     * Crash safety net around generation: the reducer turns Exceptions into rejections, but an Error would end
+     * the app. Caught here, on the worker thread that did the work, so the previous settings stay:
+     * - LinkageError (VerifyError, NoClassDefFoundError, ExceptionInInitializerError...): this device's runtime
+     *   cannot run a generation library class (e.g. JTS RelateNG on ART).
+     * - StackOverflowError: the stack is already unwound when it reaches here.
+     * - OutOfMemoryError: everything the generation allocated becomes unreachable once unwound, and it is the
+     *   generation (up to a million meander points) that grows; failing this one apply beats losing the app.
+     * Other VirtualMachineErrors (InternalError, UnknownError) mean the VM itself is broken and are not caught.
+     */
+    private inline fun <T> guarded(block: () -> T): Guarded<T> = try { Guarded.Done(block()) } catch (e: Throwable) {
+        Guarded.Failed(BlockFailure.device(e) ?: throw e)
+    }
 }
 
 /**
@@ -96,12 +126,24 @@ data class BlockFailure(val kind: Kind, val detail: String, val sewoutCodes: Lis
     enum class Kind {
         /** Generation (the settings cannot produce stitches for this region). */
         MEANDER_REGION_TOO_SMALL, MEANDER_FAILED, SATIN_UNSUPPORTED, SATIN_TOO_LONG, NO_STITCHES, UNSUPPORTED_METHOD, GENERATION_FAILED,
+        /** The device's runtime could not run the generation (Error caught by BlockRunner's safety net). */
+        DEVICE_FAILED, OUT_OF_MEMORY,
         /** Stitches were made but the hoop/sewing check blocks them. */
         SEWOUT_BLOCKED,
         SETTINGS_INVALID, DESIGN_CHANGED, EDITOR_BUSY,
     }
 
     companion object {
+        /** The Errors BlockRunner survives; null = rethrow. */
+        fun device(e: Throwable): BlockFailure? {
+            val detail = "${e.javaClass.name}: ${e.message}"
+            return when (e) {
+                is OutOfMemoryError -> BlockFailure(Kind.OUT_OF_MEMORY, detail)
+                is LinkageError, is StackOverflowError -> BlockFailure(Kind.DEVICE_FAILED, detail)
+                else -> null
+            }
+        }
+
         fun of(code: CommandError, message: String, generation: BlockGenerationKind? = null): BlockFailure {
             val detail = listOfNotNull(code.name, generation?.name).joinToString("/") + ": " + message
             return when (code) {

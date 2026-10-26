@@ -104,3 +104,65 @@ class BlockRunnerTest {
         assertSame(true, status.applyFailed)
     }
 }
+
+class BlockRunnerSafetyTest {
+    private val project = Project(hoop = HoopSpec.H100)
+    private fun command() = ProjectCommand.SetBlockOrder("o", setOf("r"), io.github.linker2k.myembro.engine.edit.BlockOrderMove.FIRST)
+    private suspend fun BlockRunner.settle() = withTimeout(10_000) { while (status is BlockStatus.Generating || status is BlockStatus.Checking) yield() }
+
+    @Test fun errorsDuringGenerationKeepThePreviousSettingsInsteadOfCrashing() = runBlocking {
+        for ((error, kind) in listOf(
+            VerifyError("Verifier rejected class org.locationtech.jts.operation.relateng.RelatePointLocator") to BlockFailure.Kind.DEVICE_FAILED,
+            NoClassDefFoundError("x") to BlockFailure.Kind.DEVICE_FAILED,
+            ExceptionInInitializerError("x") to BlockFailure.Kind.DEVICE_FAILED,
+            StackOverflowError() to BlockFailure.Kind.DEVICE_FAILED,
+            OutOfMemoryError("meander") to BlockFailure.Kind.OUT_OF_MEMORY)) {
+            var committed = false
+            val runner = BlockRunner(this, Dispatchers.Default, reduce = { _, _ -> throw error })
+            runner.apply(project, command(), { project }, { committed = true; true })
+            runner.settle()
+            val status = runner.status as BlockStatus.Blocked
+            assertEquals(kind, status.failure.kind); assertTrue(status.applyFailed); assertFalse(committed)
+            assertTrue(status.failure.detail.startsWith(error.javaClass.name))
+        }
+    }
+
+    @Test fun theBadgeCheckSurvivesTheSameErrors() = runBlocking {
+        val runner = BlockRunner(this, Dispatchers.Default, checker = { throw VerifyError("x") })
+        runner.check(project); runner.settle()
+        val status = runner.status as BlockStatus.Blocked
+        assertEquals(BlockFailure.Kind.DEVICE_FAILED, status.failure.kind); assertFalse(status.applyFailed)
+    }
+
+    @Test fun aBrokenVmIsNotSwallowed() {
+        assertEquals(null, BlockFailure.device(InternalError("vm")))
+        assertEquals(null, BlockFailure.device(IllegalStateException("not an Error")))
+    }
+}
+
+class BlockOrderTest {
+    private val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="40" fill="#3366CC"/>""" +
+        """<rect x="0" y="50" width="100" height="20" fill="#FFCC00"/><rect x="0" y="80" width="100" height="20" fill="#CC3366"/></svg>"""
+    private suspend fun BlockRunner.settle() = withTimeout(60_000) { while (status is BlockStatus.Generating || status is BlockStatus.Checking) yield() }
+
+    @Test fun orderMovesAreOneCommittedStepAndMultiSelectMovesTogether() = runBlocking {
+        val base = Project(hoop = HoopSpec.H100).add(ShapeObject.fromSvg("o", "bars", svg, 60.0))
+        val order = (base.find("o") as ShapeObject).regionOrder
+        assertEquals(3, order.size)
+        val runner = BlockRunner(this, Dispatchers.Default)
+        val commits = mutableListOf<Project>()
+        val pick = setOf(order[1], order[2])
+        runner.apply(base, ProjectCommand.SetBlockOrder("o", pick, io.github.linker2k.myembro.engine.edit.BlockOrderMove.FIRST), { base }, { commits += it; true })
+        runner.settle()
+        assertEquals(BlockStatus.Passed, runner.status); assertEquals(1, commits.size)
+        assertEquals(listOf(order[1], order[2], order[0]), (commits.single().find("o") as ShapeObject).regionOrder)
+        val info = BlockOrderInfo.of((commits.single().find("o") as ShapeObject).regionOrder, pick)
+        assertEquals(0, info.first); assertEquals(1, info.last); assertEquals(3, info.total)
+        assertFalse(info.canMove(io.github.linker2k.myembro.engine.edit.BlockOrderMove.FIRST))
+        assertFalse(info.canMove(io.github.linker2k.myembro.engine.edit.BlockOrderMove.FORWARD))
+        assertTrue(info.canMove(io.github.linker2k.myembro.engine.edit.BlockOrderMove.LAST))
+        assertTrue(info.canMove(io.github.linker2k.myembro.engine.edit.BlockOrderMove.BACKWARD))
+        // Gapped selection can still move forward although it includes the first place.
+        assertTrue(BlockOrderInfo.of(listOf("a", "b", "c"), setOf("a", "c")).canMove(io.github.linker2k.myembro.engine.edit.BlockOrderMove.FORWARD))
+    }
+}

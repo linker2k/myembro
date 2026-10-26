@@ -24,6 +24,7 @@ import io.github.linker2k.myembro.library.importDesigns
 import io.github.linker2k.myembro.library.ImportDecisions
 import kotlinx.coroutines.Job
 import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
+import io.github.linker2k.myembro.engine.edit.BlockOrderMove
 import io.github.linker2k.myembro.ui.editor.block.BlockRunner
 import io.github.linker2k.myembro.ui.editor.block.BlockStatus
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
@@ -511,6 +512,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     /** SetBlockStitch in the background; only the reducer's Applied project is committed, as one undo step. */
     fun applyBlockStitch(id: String, regionIds: Set<String>, patch: BlockStitchPatch) =
         blockRunner.apply(project, ProjectCommand.SetBlockStitch(id, regionIds, patch), current = { project },
+            commit = { next -> edit(next); project === next })
+    /** SetBlockOrder (sewing order of regions) the same way: background, checked, one undo step. */
+    fun applyBlockOrder(id: String, regionIds: Set<String>, move: BlockOrderMove) =
+        blockRunner.apply(project, ProjectCommand.SetBlockOrder(id, regionIds, move), current = { project },
             commit = { next -> edit(next); project === next })
     fun checkBlockSewout() = blockRunner.check(project)
     /** Cancel button: the running generation stops and the previous settings stay. */

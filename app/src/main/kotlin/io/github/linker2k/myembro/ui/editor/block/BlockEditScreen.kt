@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.engine.edit.BlockOrderMove
 import io.github.linker2k.myembro.ui.editor.EditorHistoryButton
 import io.github.linker2k.myembro.ui.editor.EditorViewModel
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -101,6 +102,8 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
             }
             val sheet = @Composable { modifier: Modifier ->
                 BlockSheet(selected.size, draft, { draft = it }, status, state.options(byRegion),
+                    order = BlockOrderInfo.of(shape.regionOrder, selected),
+                    onOrder = { move -> vm.applyBlockOrder(shape.id, selected, move) },
                     onApply = { vm.applyBlockStitch(shape.id, selected, BlockApply.patch(draft)) }, modifier)
             }
             if (wide) Row(Modifier.fillMaxSize()) {
@@ -154,6 +157,8 @@ internal fun failureText(f: BlockFailure): String = when (f.kind) {
     BlockFailure.Kind.UNSUPPORTED_METHOD -> stringResource(R.string.block_fail_unsupported)
     BlockFailure.Kind.GENERATION_FAILED -> stringResource(R.string.block_fail_generation)
     BlockFailure.Kind.SETTINGS_INVALID -> stringResource(R.string.block_fail_settings)
+    BlockFailure.Kind.DEVICE_FAILED -> stringResource(R.string.block_fail_device)
+    BlockFailure.Kind.OUT_OF_MEMORY -> stringResource(R.string.block_fail_memory)
     BlockFailure.Kind.DESIGN_CHANGED -> stringResource(R.string.block_fail_changed)
     BlockFailure.Kind.EDITOR_BUSY -> stringResource(R.string.block_fail_busy)
     BlockFailure.Kind.SEWOUT_BLOCKED -> stringResource(R.string.block_fail_sewout,
@@ -249,6 +254,7 @@ private fun regionPaths(r: BlockRegion, fit: BlockCanvasFit): Pair<Path, Path> {
 
 @Composable
 private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus, loaded: BlockOptions?,
+                       order: BlockOrderInfo, onOrder: (BlockOrderMove) -> Unit,
                        onApply: () -> Unit, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     // Until the prechecks arrive nothing is disabled, but Apply waits for them.
@@ -317,9 +323,19 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     onDraft(draft.copy(density = BlockDensity.entries[it])) }
                 Text(stringResource(R.string.block_edit_density_unverified), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
-            // Region sewing order needs an engine command that does not exist yet.
+            // Sewing order (SetBlockOrder): earlier = sewn first; several selected regions move together.
             Label(R.string.block_edit_order)
-            Text(stringResource(R.string.block_edit_order_pending), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            Text(if (count == 1) stringResource(R.string.block_edit_order_position, order.first + 1, order.total)
+                else stringResource(R.string.block_edit_order_range, order.first + 1, order.last + 1, order.total),
+                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            val idle = status !is BlockStatus.Generating
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(BlockOrderMove.FIRST to R.string.block_edit_order_first, BlockOrderMove.FORWARD to R.string.block_edit_order_forward,
+                    BlockOrderMove.BACKWARD to R.string.block_edit_order_backward, BlockOrderMove.LAST to R.string.block_edit_order_last).forEach { (move, label) ->
+                    OutlinedButton(onClick = { onOrder(move) }, enabled = idle && order.canMove(move), modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp)) { Text(stringResource(label), maxLines = 1) }
+                }
+            }
             Spacer(Modifier.height(8.dp))
         }
         }

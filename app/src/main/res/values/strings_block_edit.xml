@@ -35,7 +35,6 @@
     <string name="block_edit_sewout_pass">Sewing check passed · in hoop</string>
     <string name="block_edit_sewout_blocked">Sewing check blocked</string>
     <string name="block_edit_apply_failed">Not applied</string>
-    <string name="block_edit_order_pending">Changing region order needs an engine command (not available yet)</string>
     <string name="block_edit_option_unavailable">Not available for the selected region</string>
     <string name="block_edit_type_unavailable">%1$s: %2$s</string>
     <string name="block_reason_satin_geometry">this shape cannot be satin</string>
@@ -71,4 +70,12 @@
     <string name="block_sewout_other">another check item</string>
     <string name="block_fail_meander_failed">This pattern could not be made in this region. Try a different pattern size.</string>
     <string name="block_fail_satin_long">Satin stitches here would be longer than 12mm. Use a fill for this region.</string>
+    <string name="block_edit_order_position">Sewn %1$d of %2$d (front = sewn first)</string>
+    <string name="block_edit_order_range">Positions %1$d–%2$d of %3$d (front = sewn first)</string>
+    <string name="block_edit_order_first">To front</string>
+    <string name="block_edit_order_forward">Forward</string>
+    <string name="block_edit_order_backward">Back</string>
+    <string name="block_edit_order_last">To back</string>
+    <string name="block_fail_device">Generation failed on this device. The previous settings stay.</string>
+    <string name="block_fail_memory">Not enough memory on this device for these settings. Try a larger pattern or a simpler fill.</string>
 </resources>
