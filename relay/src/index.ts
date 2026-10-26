@@ -2,15 +2,21 @@ import { createHash } from 'node:crypto';
 import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
 import { Broker, clientName, type ConnectionAttachment } from './broker';
 
-import { authorizationFailure, type RelaySecrets } from './auth';
+import { authorizationFailure } from './auth';
+import { oauthFetch, oauthTokenAccepted, oauthChallenge, checkOwnerPin, type OAuthEnv } from './oauth';
 
-interface Env extends RelaySecrets { RELAY: DurableObjectNamespace }
+interface Env extends OAuthEnv {}
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const denied = await authorizationFailure(request, env);
-    if (denied) return denied;
-    return env.RELAY.get(env.RELAY.idFromName('single-relay')).fetch(request);
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (path !== '/app' && path !== '/mcp' && !['/authorize', '/oauth/token', '/oauth/register', '/.well-known/oauth-authorization-server', '/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/mcp'].includes(path)) return new Response('Not found', { status: 404 });
+    if (path === '/app' || path === '/mcp') {
+      const denied = await authorizationFailure(request, env);
+      if (!denied) return env.RELAY.get(env.RELAY.idFromName('single-relay')).fetch(request);
+      if (path === '/app') return denied;
+    }
+    return oauthFetch(request, env, ctx);
   }
 };
 
@@ -49,8 +55,13 @@ export class Relay {
   }
   webSocketError(socket: WebSocket): void { this.broker.close(socket); socket.close(1011, 'WebSocket error'); }
   async fetch(request: Request): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (path === '/_oauth/pin') return checkOwnerPin(request, this.env, this.state.storage);
     const denied = await authorizationFailure(request, this.env);
-    if (denied) return denied;
+    if (denied) {
+      if (path !== '/mcp') return denied;
+      if (!await oauthTokenAccepted(request, this.env)) return oauthChallenge(request);
+    }
     if (new URL(request.url).pathname === '/app') {
       if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
         return new Response('WebSocket upgrade required', { status: 426 });

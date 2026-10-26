@@ -12,3 +12,9 @@ tag = "v1"
 new_sqlite_classes = ["Relay"]
 
 # APP_KEY and MCP_TOKEN are secrets. Supply them outside this file.
+
+# Bind a dedicated namespace ID before deployment; omission permits local development only.
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+# id = "<dedicated-OAuth-KV-namespace-ID>"
+# OWNER_PIN is an additional Worker secret; never set it under [vars].
