@@ -7,6 +7,23 @@ enum class PhotoCorrection { ORIGINAL, CLEAN, CONTRAST, OTSU }
 object PhotoCorrections {
     data class Raster(val pixels: IntArray, val mask: ByteArray? = null, val alphaBypassed: Boolean = false)
 
+    /** Explicit adjustable preprocessing; legacy apply remains available to agent callers. */
+    fun adjust(width: Int, height: Int, argb: IntArray, monochrome: Boolean,
+        medianSize: Int, contrastFactor: Float, otsu: Boolean = false): Raster {
+        require(width > 0 && height > 0 && width.toLong() * height == argb.size.toLong())
+        require(medianSize in listOf(0, 3, 5, 7))
+        require(contrastFactor.isFinite() && contrastFactor >= 0f)
+        if (!monochrome && argb.any { it ushr 24 != 255 })
+            return Raster(argb.copyOf(), alphaBypassed = true)
+        val rgb = IntArray(argb.size) { argb[it] and 0xffffff }
+        val filtered = PillowPhotoFilters.contrast(PillowPhotoFilters.median(width, height, rgb, medianSize), contrastFactor)
+        if (monochrome && otsu) {
+            val mask = OtsuThreshold.darkMask(ByteArray(filtered.size) { Bt709Grayscale.argb(filtered[it]).toByte() })
+            return Raster(IntArray(mask.size) { (mask[it].toInt() and 255) * 0x010101 }, mask)
+        }
+        return Raster(if (monochrome) filtered else IntArray(filtered.size) { filtered[it] or 0xff000000.toInt() })
+    }
+
     fun apply(width: Int, height: Int, argb: IntArray, monochrome: Boolean,
         correction: PhotoCorrection = PhotoCorrection.ORIGINAL): Raster {
         require(width > 0 && height > 0 && width.toLong() * height == argb.size.toLong())

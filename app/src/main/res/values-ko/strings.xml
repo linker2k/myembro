@@ -27,4 +27,5 @@
     <string name="hoop_too_small">도안이 후프보다 큽니다</string>
     <string name="load_failed">파일을 열 수 없습니다: %1$s</string>
     <string name="speed">속도</string>
+    <string name="picture_input_pending">그림 입력 창에서 확인 후 도안에 추가하세요</string>
 </resources>

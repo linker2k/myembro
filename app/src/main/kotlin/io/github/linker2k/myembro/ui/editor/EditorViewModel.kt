@@ -257,6 +257,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } },
             canEdit = { agentExecutor.relayController() === controller },
             announce = { title -> relayChanged(title) },
+            openPicture = { picture,title -> withContext(Dispatchers.Main.immediate) {
+                val inbox=io.github.linker2k.myembro.ui.photo.PictureInbox
+                val id=inbox.requests.reserve()
+                inbox.requests.offer(id,bytes=picture.bytes,title=title,colors=picture.colors)
+                if(!AiWorkspace.uiStarted) io.github.linker2k.myembro.relay.RelayChangeNotification.show(
+                    getApplication(),title,1,action=inbox.ACTION_OPEN,body=getApplication<Application>().getString(R.string.picture_input_pending))
+            } },
             changed = { relayChanged(null) },
             numbered = { getApplication<Application>().getString(R.string.relay_picture_name, it) })
         relayPhotoTools = controller to tools
@@ -672,6 +679,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun reorder(id: String, index: Int, duringGesture: Boolean = false) {
         if (duringGesture) { session.updateGesture(project.reorder(id, index)); sync() }
         else edit(project.reorderCommand(id, index))
+    }
+    fun addPicture(obj:DesignObject) {
+        if(interactionBlocked || gestureInProgress) return
+        edit(project.add(obj));selectedIds=setOf(obj.id)
     }
     fun addDesign(file: File) {
         if (interactionBlocked || gestureInProgress) return

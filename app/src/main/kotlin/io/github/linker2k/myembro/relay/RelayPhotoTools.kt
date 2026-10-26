@@ -20,7 +20,7 @@ import kotlin.math.roundToInt
 /** Session-local, explicit photo capabilities. Never enumerate the gallery, resolve remote IDs as
  * paths/URIs, or reuse Ask AI's old pending photos. Only the trusted picker may grant consent.
  * Pass this SAME AttachmentStore to the editor's existing dispatcher when constructing its kernel. */
-class RelayPhotoAttachments private constructor(
+class RelayPhotoAttachments internal constructor(
     private val rasterize: (String, PhotoRasterRequest) -> PhotoRaster?,
     private val preview: (String, Int) -> JsonObject,
     /** Where pictures an AI sends with import_picture are kept (app cache), null where there is none. */
@@ -39,14 +39,6 @@ class RelayPhotoAttachments private constructor(
         if (!consentGiven) return null
         require(Uri.parse(uri).scheme == "content") { "Use the app photo picker" }
         return UUID.randomUUID().toString().also { sources[it] = uri }
-    }
-    /** A PNG/JPEG the connected AI sent with import_picture: saved in the app cache and listed like a handed-over photo. */
-    @Synchronized internal fun importPicture(bytes: ByteArray, extension: String): String {
-        val folder = checkNotNull(pictures) { "No picture folder" }.apply { mkdirs() }
-        val id = UUID.randomUUID().toString()
-        val file = java.io.File(folder, "$id.$extension").apply { writeBytes(bytes) }
-        sources[id] = Uri.fromFile(file).toString()
-        return id
     }
     @Synchronized fun revoke(id: String) { sources.remove(id)?.let(::deleteImported) }
     @Synchronized fun clear() { sources.values.forEach(::deleteImported); sources.clear() }
@@ -98,6 +90,7 @@ class RelayPhotoTools(
     private val canEdit: () -> Boolean,
     /** Tells the user on screen that an AI picture came in (the editor's snackbar); the object's name. */
     private val announce: (String) -> Unit = {},
+    private val openPicture: (suspend (RelayPicture.Checked.Accepted,String) -> Unit)? = null,
     /** Any other change this group made (add_generated_art). */
     private val changed: () -> Unit = {},
     /** "AI picture n" in the app's language (the editor's string resource). */
@@ -160,47 +153,17 @@ class RelayPhotoTools(
         }
     }
 
-    /**
-     * import_picture: the picture is checked ([RelayPicture]), prepared off the turn like prepare_photo (PNG/JPEG:
-     * saved as an attachment, the photo screen's color mode with N colors at its default width; SVG: the photo
-     * screen's SVG path), then added by add_generated_art as one turn: one undo step, sewout-checked.
-     */
+    /** Memory-only UI handoff; no preparation, editor transaction, export or file write. */
     private suspend fun importPicture(args: JsonObject): RelayResult {
-        if (!canEdit()) return error("OPEN_EDITOR", "Open the editor in myembro to add a picture.")
-        val picture = when (val checked = RelayPicture.check(args)) {
-            is RelayPicture.Checked.Rejected -> return error(checked.code, checked.message)
+        val picture = when(val checked=RelayPicture.check(args)) {
+            is RelayPicture.Checked.Rejected -> return error(checked.code,checked.message)
             is RelayPicture.Checked.Accepted -> checked
         }
-        val title = RelayPicture.name(args["title"]?.jsonPrimitive?.content.orEmpty(),
-            kotlin.coroutines.coroutineContext[RelayCaller]?.name, controller.session.project.objects.map { it.name }, numbered)
-        val prepared = if (picture.format == "svg") controller.prepareSvgPicture(picture.bytes, RelayPicture.SVG_WIDTH_MM, title) else {
-            val id = photos.importPicture(picture.bytes, picture.format)
-            controller.dispatch("prepare_photo", buildJsonObject {
-                put("attachmentId", id); put("mode", "color"); put("colors", picture.colors)
-                put("widthMm", io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMaxWidthMm(controller.session.project.hoop))
-                put("filter", "original")
-            })
-        }
-        if (!prepared.ok) return text(prepared.output, true)
-        val resultId = prepared.output.getValue("resultId").jsonPrimitive.content
-        val result = publish {
-            if (!canEdit()) ToolDispatcher.Result(controller.session.project, buildJsonObject {
-                put("ok", false); put("code", "OPEN_EDITOR"); put("message", "Open the editor in myembro to add a picture.")
-            }) else {
-                val transactionId = "relay-${UUID.randomUUID()}"
-                val objectId = RelayCatalog.newId(controller.session.project, "picture")
-                controller.executeScript(transactionId, controller.session.revision, listOf(ToolTurnController.Call("add_generated_art",
-                    buildJsonObject { put("transactionId", transactionId); put("resultId", resultId); put("objectId", objectId); put("name", title) })),
-                    exportSettings())
-            }
-        }
-        if (result.ok) announce(title)
-        val answer = RelayEdits.result(result, controller.session.revision, controller.session.project)
-        return text(JsonObject(answer + ("picture" to buildJsonObject {
-            put("format", picture.format); put("bytes", picture.bytes.size)
-            if (picture.format != "svg") put("colors", picture.colors)
-            put("widthMm", prepared.output.getValue("widthMm")); put("heightMm", prepared.output.getValue("heightMm"))
-        })), !result.ok)
+        val title=RelayPicture.name(args["title"]?.jsonPrimitive?.content.orEmpty(),
+            kotlin.coroutines.coroutineContext[RelayCaller]?.name,controller.session.project.objects.map { it.name },numbered)
+        val show=openPicture ?: return error("PICTURE_INPUT_UNAVAILABLE","Picture input screen is unavailable.")
+        show(picture,title)
+        return text(RelayPicture.opened(picture.format,title),false)
     }
 
     companion object {
