@@ -763,3 +763,16 @@ SPDX-License-Identifier: Unicode-3.0
   or nondefault options. Kotlin adaptation by myembro contributors, 2026.
 - Full unmodified Pillow/PIL copyright and MIT-CMU terms are packaged at
   `licenses/pillow/LICENSE` in the engine JAR/APK. No Pillow runtime/native code bundled.
+
+## Adjustable photo preprocessing: Pillow median and contrast (MIT-CMU)
+
+- Source: Pillow 11.3.0, commit `89f1f4626a2aaf5f3d5ca6437f41def2998fbe09`.
+  `src/PIL/ImageFilter.py` (RankFilter/MedianFilter), `src/libImaging/RankFilter.c:29–60`,
+  `src/PIL/ImageEnhance.py:63–80`, `src/libImaging/Convert.c:44,230`, and
+  `src/libImaging/Blend.c:21–78`.
+- Copyright (c) Secret Labs AB; Copyright (c) Fredrik Lundh and Pillow contributors.
+- `PillowPhotoFilters.kt` ports the RGB rank selection, replicated padding, rounded
+  RGB-to-L image mean and float blend/clipping. RGB only; caller retains the existing
+  transparent-color bypass. Median size 0 is an app bypass, not a Pillow parameter.
+  Kotlin adaptation by myembro contributors, 2026. Full MIT-CMU terms remain bundled
+  at `licenses/pillow/LICENSE`; no Pillow runtime is bundled.

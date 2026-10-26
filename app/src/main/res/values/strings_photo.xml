@@ -71,4 +71,11 @@
     <string name="photo_correction_otsu">Black-and-white separation</string>
     <string name="photo_correction_alpha_hint">Color images with transparency keep the original processing.</string>
     <string name="photo_correction_failed">No usable outlines remain with this correction. Try Original or a simpler crop.</string>
+    <string name="photo_noise">Noise reduction: %1$s</string>
+    <string name="photo_noise_off">Off</string>
+    <string name="photo_noise_weak">Weak</string>
+    <string name="photo_noise_medium">Medium</string>
+    <string name="photo_noise_strong">Strong</string>
+    <string name="photo_contrast_factor">Contrast: %1$.2f×</string>
+    <string name="photo_contrast_range_unconfirmed">0.5–2.0 range: product choice (unconfirmed).</string>
 </resources>

@@ -128,17 +128,25 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 }
                 if (vm.step == 1) {
                     Text(stringResource(R.string.photo_correction),style=MaterialTheme.typography.titleSmall)
-                    FlowRow(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        PhotoCorrection.entries.filter { vm.style != PhotoMode.COLOR || it != PhotoCorrection.OTSU }.forEach { value ->
-                            FilterChip(selected=vm.correction==value,onClick={vm.changeCorrection(value)},
-                                enabled=!vm.busy && (!vm.correctionAlphaBypassed || value==PhotoCorrection.ORIGINAL),
-                                label={Text(stringResource(when(value) {
-                                    PhotoCorrection.ORIGINAL -> R.string.photo_correction_original
-                                    PhotoCorrection.CLEAN -> R.string.photo_correction_clean
-                                    PhotoCorrection.CONTRAST -> R.string.photo_correction_contrast
-                                    PhotoCorrection.OTSU -> R.string.photo_correction_otsu
-                                }))})
-                        }
+                    val noiseSizes = listOf(0, 3, 5, 7)
+                    val noiseNames = listOf(R.string.photo_noise_off, R.string.photo_noise_weak,
+                        R.string.photo_noise_medium, R.string.photo_noise_strong)
+                    val noiseIndex = noiseSizes.indexOf(vm.effectiveNoiseSize)
+                    val noiseLabel = stringResource(R.string.photo_noise, stringResource(noiseNames[noiseIndex]))
+                    Text(noiseLabel, style=MaterialTheme.typography.labelLarge)
+                    Slider(noiseIndex.toFloat(), { vm.changeNoiseSize(noiseSizes[it.toInt().coerceIn(0, 3)]) },
+                        valueRange=0f..3f, steps=2, enabled=!vm.correctionAlphaBypassed,
+                        modifier=Modifier.semantics { contentDescription=noiseLabel })
+                    val contrastLabel = stringResource(R.string.photo_contrast_factor, vm.contrastFactor)
+                    Text(contrastLabel, style=MaterialTheme.typography.labelLarge)
+                    Slider(vm.contrastFactor, vm::changeContrast, valueRange=0.5f..2f,
+                        enabled=!vm.correctionAlphaBypassed,
+                        modifier=Modifier.semantics { contentDescription=contrastLabel })
+                    Text(stringResource(R.string.photo_contrast_range_unconfirmed), style=MaterialTheme.typography.bodySmall)
+                    if (vm.style != PhotoMode.COLOR) {
+                        FilterChip(selected=vm.correction==PhotoCorrection.OTSU,
+                            onClick={ vm.changeCorrection(if(vm.correction==PhotoCorrection.OTSU) PhotoCorrection.ORIGINAL else PhotoCorrection.OTSU) },
+                            label={ Text(stringResource(R.string.photo_correction_otsu)) })
                     }
                     if(vm.correctionAlphaBypassed) Text(stringResource(R.string.photo_correction_alpha_hint),style=MaterialTheme.typography.bodySmall)
                 }
