@@ -1,0 +1,43 @@
+COMMAND: ./gradlew --offline --max-workers=2 :engine:test --tests '*CircularPredicateParity*' --tests '*CircularBlockProfile*' --tests '*CircularFill*' --tests '*Meander*' --tests '*Shape*' --tests '*NoRelateNg*'
+BUILD SUCCESSFUL in 1m 4s
+
+CIRCULAR_PROFILE shape=circle run=1 total_ms=4993.59901 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=4928.270151 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=4864.097112 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=4928.270151
+CIRCULAR_PROFILE shape=square run=1 total_ms=5086.180351 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=4948.586873 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=4969.516609 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=4969.516609
+
+NO_UNSUPPORTED_RELATION_PACKAGE sources=376 violations=0
+TWO_STAGE_RELATION_ISOLATION pairs=25 forbidden_class_loads=0
+
+CIRCULAR_PREDICATE_PARITY pairs=81 identical=true
+
+io.github.linker2k.myembro.engine.NoRelateNgTest: tests=2 failures=0 errors=0
+io.github.linker2k.myembro.engine.agent.PhotoShapeParityTest: tests=3 failures=0 errors=0
+io.github.linker2k.myembro.engine.agent.ShapeIntakeParityTest: tests=2 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.BlockGenerationErrorsTest: tests=1 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.CircularBlockProfileTest: tests=2 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.CircularPredicateParityTest: tests=1 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.MeanderBlockProfileTest: tests=2 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.ShapeObjectOrderTest: tests=4 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.ShapeObjectOverridesTest: tests=5 failures=0 errors=0
+io.github.linker2k.myembro.engine.edit.ShapeObjectTest: tests=5 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.stitches.CircularFillTest: tests=6 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.stitches.FillCoreTest: tests=1 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.stitches.FillUnderlayTest: tests=3 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.stitches.MeanderFillTest: tests=15 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRuleTest: tests=1 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.svg.VectorArtSvgTest: tests=1 failures=0 errors=0
+io.github.linker2k.myembro.engine.inkstitch.svg.image.CurveFitterOracleTest: tests=2 failures=0 errors=0
+
+FULL ENGINE SUITE
+COMMAND: ./gradlew --offline --max-workers=2 :engine:test
+BUILD SUCCESSFUL in 2m 54s
+{'tests': 940, 'failures': 0, 'errors': 0, 'skipped': 0}
+NO_UNSUPPORTED_RELATION_PACKAGE sources=376 violations=0
+TWO_STAGE_RELATION_ISOLATION pairs=25 forbidden_class_loads=0
+
+CIRCULAR_PREDICATE_PARITY pairs=81 identical=true

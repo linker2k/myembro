@@ -330,9 +330,10 @@ object FillRouting {
             val weightedOutline = GeometryPrecisionReducer.reduce(
                 DouglasPeuckerSimplifier.simplify(polygon.boundary, 0.5*PIXELS_PER_MM), PrecisionModel(1e6))
             val index = STRtree()
-            // Retain each row and STRtree order, but explicitly use the classic relation engine.
-            // Prepared geometry delegates crosses to GeometryRelate; the newer relation engine fails ART verification.
+            // Prepare LINESTRING intersects only: its indexed classic noding path is Android-safe.
+            // crosses implies intersects; survivors still use the exact classic relation predicate.
             val rows = fill.edges.values.filter { it.key == "segment" }.associateWith { FillGeometry.line(it.points!!) }
+            val predicates = rows.mapValues { LegacyCrosses.prepareLine(it.value) }
             for ((edge, geometry) in rows) index.insert(geometry.envelopeInternal, edge)
             index.build()
             for (line in travelEdges) {
@@ -341,7 +342,7 @@ object FillRouting {
                 val edge = graph.add(a, b, "travel", weight = a.point().distance(b.point())/(line.distance(weightedOutline)+0.1))
                 for (candidate in index.query(line.envelopeInternal)) {
                     val row = candidate as Edge
-                    if (LegacyCrosses.test(rows.getValue(row), line)) row.underpathEdges += edge.id
+                    if (predicates.getValue(row).test(line)) row.underpathEdges += edge.id
                 }
             }
         }
