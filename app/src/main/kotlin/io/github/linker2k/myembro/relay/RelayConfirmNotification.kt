@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.relay
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import io.github.linker2k.myembro.R
 
 /**
@@ -31,7 +34,10 @@ object RelayConfirmNotification {
             .setContentText(app.getString(R.string.relay_confirm_notification, names.joinToString(", ")))
             .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(tap).setAutoCancel(true).setTimeoutAfter(90_000).build()
-        runCatching { NotificationManagerCompat.from(app).notify(ID, notification) } // SecurityException without permission
+        // Without the permission (API 33+) the dialog still waits in myembro; there is just no notification.
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) return
+        NotificationManagerCompat.from(app).notify(ID, notification)
     }
 
     fun cancel(context: Context) = NotificationManagerCompat.from(context.applicationContext).cancel(ID)

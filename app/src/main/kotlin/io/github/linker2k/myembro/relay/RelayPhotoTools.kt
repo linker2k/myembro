@@ -129,17 +129,9 @@ class RelayPhotoTools(
                         } else controller.executeScript(args.getValue("transactionId").jsonPrimitive.content,
                             controller.session.revision, listOf(ToolTurnController.Call(tool, args)), exportSettings())
                     }
-                    val check = result.output["sewout"] as? JsonObject
-                    text(buildJsonObject {
-                        result.output.forEach { (k, v) -> put(k, v) }
-                        put("revision", controller.session.revision.toString())
-                        put("project", ToolDispatcher.summary(controller.session.project, controller.session.revision.toString()))
-                        put("sewout", buildJsonObject {
-                            put("verdict", if (check?.get("ok") == JsonPrimitive(true)) "PASS" else "BLOCK")
-                            put("findings", JsonArray(collectFindings(check)))
-                            put("details", check ?: JsonNull)
-                        })
-                    }, !result.ok)
+                    // The same answer as every relay edit (RelayEdits): the full check details
+                    // ran to ~187 KB for one photo, past the chatbot's tool-result limit (5558, 2026-10-26).
+                    text(RelayEdits.result(result, controller.session.revision, controller.session.project), !result.ok)
                 }
             }
         }
@@ -162,12 +154,5 @@ class RelayPhotoTools(
         private fun error(code: String, message: String = code) = text(buildJsonObject {
             put("ok", false); put("code", code); put("message", message)
         }, true)
-        private fun collectFindings(value: JsonElement?): List<JsonElement> = when (value) {
-            is JsonObject -> value.flatMap { (key, child) ->
-                if (key == "findings" && child is JsonArray) child.toList() else collectFindings(child)
-            }.distinct()
-            is JsonArray -> value.flatMap(::collectFindings).distinct()
-            else -> emptyList()
-        }
     }
 }
