@@ -9,21 +9,25 @@ import kotlinx.serialization.json.*
 
 /** Shared headless/relay adapters; the reducer owns parameter ranges, generation and safety gates. */
 object BlockTools {
-    val names = setOf("list_blocks", "set_block_stitch")
+    val names = setOf("list_blocks", "set_block_stitch", "set_block_order")
     private val fields = setOf("type", "fill_method", "automatic_angle", "angle", "row_spacing_mm",
         "meander_pattern", "meander_scale_percent", "zigzag_spacing_mm")
 
     fun validate(name: String, arguments: JsonElement): String? = runCatching {
         val a = arguments.jsonObject
-        val required = if (name == "list_blocks") setOf("objectId") else setOf("objectId", "regionIds", "change", "transactionId")
+        val required = if (name == "list_blocks") setOf("objectId") else if(name == "set_block_order") setOf("objectId", "regionIds", "move", "transactionId") else setOf("objectId", "regionIds", "change", "transactionId")
         require(a.keys == required) { "Missing or unknown fields" }
         fun text(v: JsonElement) { require(v is JsonPrimitive && v.isString && v.content.isNotBlank()) { "Expected nonblank string" } }
         text(a.getValue("objectId"))
-        if (name == "set_block_stitch") {
+        if (name != "list_blocks") {
             text(a.getValue("transactionId"))
             val ids = a.getValue("regionIds").jsonArray
             require(ids.isNotEmpty() && ids.distinct().size == ids.size) { "regionIds must be nonempty and unique" }
             ids.forEach(::text)
+            if(name=="set_block_order") {
+                text(a.getValue("move")); BlockOrderMove.valueOf(a.getValue("move").jsonPrimitive.content)
+                return@runCatching
+            }
             val c = a.getValue("change").jsonObject
             require(c.keys.all { it in fields }) { "Unknown block setting" }
             c.forEach { (k, v) -> when (k) {
@@ -37,6 +41,10 @@ object BlockTools {
             } }
         }
     }.exceptionOrNull()?.let { it.message ?: "Invalid block arguments" }
+
+    fun orderCommand(a: JsonObject) = ProjectCommand.SetBlockOrder(a.getValue("objectId").jsonPrimitive.content,
+        a.getValue("regionIds").jsonArray.map { it.jsonPrimitive.content }.toSet(),
+        BlockOrderMove.valueOf(a.getValue("move").jsonPrimitive.content))
 
     fun command(a: JsonObject): ProjectCommand.SetBlockStitch {
         val c = a.getValue("change").jsonObject
@@ -60,7 +68,8 @@ object BlockTools {
         return buildJsonObject {
             put("ok", true); put("revision", revision); put("objectId", id)
             put("meanderPatterns", JsonArray(MeanderFill.availablePatterns().map(::JsonPrimitive)))
-            put("regions", JsonArray(obj.regions.map { region -> buildJsonObject {
+            put("regions", JsonArray(obj.regionOrder.map { id -> obj.regions.single { it.id==id } }.mapIndexed { order, region -> buildJsonObject {
+                put("order", order)
                 put("id", region.id); put("color", "#%06X".format(java.util.Locale.ROOT, region.color.color and 0xFFFFFF))
                 // Geometry is in local mm; holes subtract, transforms do not change this local area.
                 put("areaMm2", PolygonRegion.fromPaths(region.paths.filter { it.closed }, FillRule.EVEN_ODD).area)

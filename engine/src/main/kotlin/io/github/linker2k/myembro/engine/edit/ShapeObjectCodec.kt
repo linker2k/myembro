@@ -9,6 +9,7 @@ import kotlinx.serialization.json.*
 /** Additive v1 object codec; original import/text formats and codec precedence are unchanged. */
 object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObject::class.java) {
     override fun encodePayload(obj: ShapeObject): JsonObject = buildJsonObject {
+        put("regionOrder",JsonArray(obj.regionOrder.map(::JsonPrimitive)))
         put("shapeVersion",1);put("widthMm",obj.widthMm)
         if (ShapeObjectFactory.isPhoto(obj)) put("photo", PhotoShapeCodec.encode(obj))
         put("viewBox",JsonArray(obj.sourceArt.viewBox.map(::JsonPrimitive)))
@@ -30,11 +31,11 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
                     s.number("strokeWidth"),s.getValue("lineCap").jsonPrimitive.contentOrNull,s.getValue("lineJoin").jsonPrimitive.contentOrNull,
                     Affine2D(m[0],m[1],m[2],m[3],m[4],m[5]),FillRule.valueOf(s.text("fillRule")))
             })
-        val base = data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
-            ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm"))
-        return base
+        val restored = (data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
+            ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm")))
             .withOverrides(data.getValue("blocks").jsonObject.mapValues { decodeBlock(it.value.jsonObject) })
             .withTransform(fields.transform).withVisible(fields.visible)
+        return data["regionOrder"]?.let { restored.withRegionOrder(it.jsonArray.map { v -> v.jsonPrimitive.content }) } ?: restored
     }
     /** Current editable block settings, shared by persistence and tool inspection. */
     fun encodeBlock(b: BlockStitch)=buildJsonObject {

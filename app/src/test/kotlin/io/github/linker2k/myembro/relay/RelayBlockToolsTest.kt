@@ -89,4 +89,30 @@ class RelayBlockToolsTest {
         assertEquals(base,session.project);assertEquals(0,session.history.undoCount)
     }
 
+    @Test fun blockOrderUsesOneCheckedEditorTurnAndInspectionShowsSewingOrder()=runBlocking {
+        val originalNeedles=shape.regionOrder.associateWith { shape.regionPattern(it).stitches.filter { s -> s.command==io.github.linker2k.myembro.engine.model.Command.STITCH } }
+        val (error,result)=call("set_block_order", """{"objectId":"heart","regionIds":["region-0"],"move":"LAST"}""")
+        assertFalse(error,result.toString())
+        assertEquals("1",result.getValue("revision").jsonPrimitive.content)
+        assertEquals("PASS",result.getValue("sewout").jsonObject.getValue("verdict").jsonPrimitive.content)
+        assertEquals(1,session.history.undoCount)
+        val next=session.project.find("heart") as ShapeObject
+        assertEquals(listOf("region-1","region-2","region-3","region-0"),next.regionOrder)
+        assertEquals(next.regionOrder.flatMap { originalNeedles.getValue(it) },next.localPattern().stitches.filter { it.command==io.github.linker2k.myembro.engine.model.Command.STITCH })
+        val (_,blocks)=call("list_blocks", """{"objectId":"heart"}""")
+        val rows=blocks.getValue("regions").jsonArray.map { it.jsonObject }
+        assertEquals(next.regionOrder,rows.map { it.getValue("id").jsonPrimitive.content })
+        assertEquals(listOf(0,1,2,3),rows.map { it.getValue("order").jsonPrimitive.int })
+        val revision=session.history.revision
+        val same=call("set_block_order", """{"objectId":"heart","regionIds":["region-0"],"move":"LAST"}""")
+        assertFalse(same.first);assertEquals(revision,session.history.revision)
+        for(args in listOf(
+            """{"objectId":"heart","regionIds":["missing"],"move":"FIRST"}""",
+            """{"objectId":"heart","regionIds":["region-0"],"move":"INVALID"}""")) {
+            assertTrue(call("set_block_order",args).first)
+            assertEquals(revision,session.history.revision);assertEquals(next,session.project.find("heart"))
+        }
+        assertTrue(session.stepHistory(redo=false));assertEquals(base,session.project)
+    }
+
 }

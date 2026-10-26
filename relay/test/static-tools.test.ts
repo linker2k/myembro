@@ -22,7 +22,7 @@ describe('deployment tool contract drift gate', () => {
     let shared = 0;
     for (const tool of RELAY_TOOLS) {
       const source = catalog.find((t: any) => t.name === tool.name);
-      if (!source) { expect(['list_attachments', 'view_attachment', 'import_picture', 'list_blocks', 'set_block_stitch']).toContain(tool.name); continue; }
+      if (!source) { expect(['list_attachments', 'view_attachment', 'import_picture', 'list_blocks', 'set_block_stitch', 'set_block_order']).toContain(tool.name); continue; }
       const relay: any = tool.inputSchema, strict = source.inputSchema;
       const strictProps = Object.keys(strict.properties).filter(k => k !== 'transactionId');
       const extra = tool.name === 'add_text' ? ['xMm', 'yMm'] : [];
@@ -32,7 +32,7 @@ describe('deployment tool contract drift gate', () => {
       expect(relay.additionalProperties, tool.name).toBe(strict.additionalProperties);
       shared++;
     }
-    expect(shared).toBe(22); expect(RELAY_TOOLS).toHaveLength(27);
+    expect(shared).toBe(22); expect(RELAY_TOOLS).toHaveLength(28);
     expect(byName('render_preview').inputSchema.required).toEqual([]);
     expect(byName('add_text').inputSchema.required).toEqual(['text', 'heightMm']);
   });
@@ -57,7 +57,7 @@ describe('deployment tool contract drift gate', () => {
     expect(byName('list_blocks').annotations?.readOnlyHint).toBe(true);
   });
   it('never exposes separate-screen operations and preserves the approved name set', () => {
-    expect(RELAY_TOOL_NAMES.size).toBe(27);
+    expect(RELAY_TOOL_NAMES.size).toBe(28);
     for (const forbidden of ['save_project','save_pes','share_pes','send_usb','delete_designs','restore_backup','set_settings','undo','prepare_pes']) expect(RELAY_TOOL_NAMES.has(forbidden)).toBe(false);
     expect(RELAY_TOOL_NAMES.has('get_settings')).toBe(true); // read, not a settings mutation
   });

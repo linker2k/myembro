@@ -42,6 +42,24 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
         return if (missing.isEmpty()) null else error(CommandError.MISSING_OBJECT, missing, "Object does not exist")
     }
     val next = when (command) {
+        is ProjectCommand.SetBlockOrder -> {
+            targets(setOf(command.id))?.let { return it }
+            val shape=project.find(command.id) as? ShapeObject
+                ?: return error(CommandError.INVALID_OBJECT_TYPE,setOf(command.id),"Expected ShapeObject")
+            val updated=try { shape.withRegionOrder(moveRegions(shape.regionOrder,command.regionIds,command.move)) }
+                catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid region order") }
+            if(updated==shape) project else {
+                val candidate=project.replace(updated)
+                try {
+                    val pattern=candidate.flatten()
+                    io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,pattern.bounds)
+                    io.github.linker2k.myembro.engine.io.PesExport.requireSafe(
+                        io.github.linker2k.myembro.engine.io.PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=project.hoop)),
+                        project.hoop,io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                } catch(e: Exception) { return error(CommandError.SEWOUT_BLOCKED,setOf(command.id),e.message ?: "Region order blocked") }
+                candidate
+            }
+        }
         is ProjectCommand.SetBlockStitch -> {
             targets(setOf(command.id))?.let { return it }
             val shape = project.find(command.id) as? ShapeObject
