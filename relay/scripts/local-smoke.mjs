@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
-const staticSnapshot = JSON.parse(readFileSync(new URL('../src/tool-definitions.json', import.meta.url), 'utf8'));
+const staticSnapshot = JSON.parse(readFileSync(new URL('../../docs/agent/relay-tools.json', import.meta.url), 'utf8')).tools;
 import WebSocket from 'ws';
 const exec = promisify(execFile);
 const vars = Object.fromEntries(readFileSync(process.env.MYEMBRO_RELAY_VARS ?? new URL('../.dev.vars', import.meta.url), 'utf8').trim().split('\n').map(line => {

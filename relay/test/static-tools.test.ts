@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { isSpecType } from '@modelcontextprotocol/server';
-import { RELAY_TOOLS, RELAY_TOOL_CATALOG, RELAY_TOOL_NAMES } from '../src/tools';
+import { RELAY_TOOLS, RELAY_TOOL_NAMES } from '../src/tools';
 import { Broker, DISCONNECTED, UPDATE_REQUIRED, type AppSocket } from '../src/broker';
 
 const catalog = JSON.parse(readFileSync(new URL('../../docs/agent/tools.json', import.meta.url), 'utf8')).tools;
@@ -13,27 +13,28 @@ function connected(tools: any[]) {
 }
 
 describe('deployment tool contract drift gate', () => {
-  it('keeps every shared snapshot schema identical to docs/agent/tools.json', () => {
+  it('is exactly docs/agent/relay-tools.json, the file the app generates from its hello', () => {
+    const file = JSON.parse(readFileSync(new URL('../../docs/agent/relay-tools.json', import.meta.url), 'utf8')).tools;
+    expect(RELAY_TOOLS).toEqual(file);
+    for (const tool of RELAY_TOOLS) expect(isSpecType.Tool(tool), tool.name).toBe(true);
+  });
+  it('only narrows the strict docs/agent/tools.json schemas (optional arguments, app-owned transactionId)', () => {
     let shared = 0;
-    for (const snapshot of RELAY_TOOL_CATALOG) {
-      const source = catalog.find((t: any) => t.name === snapshot.name);
-      if (!source) { expect(['list_attachments', 'view_attachment']).toContain(snapshot.name); continue; }
-      expect(snapshot.inputSchema, snapshot.name).toEqual(source.inputSchema); shared++;
+    for (const tool of RELAY_TOOLS) {
+      const source = catalog.find((t: any) => t.name === tool.name);
+      if (!source) { expect(['list_attachments', 'view_attachment']).toContain(tool.name); continue; }
+      const relay: any = tool.inputSchema, strict = source.inputSchema;
+      const strictProps = Object.keys(strict.properties).filter(k => k !== 'transactionId');
+      const extra = tool.name === 'add_text' ? ['xMm', 'yMm'] : [];
+      expect(Object.keys(relay.properties).sort(), tool.name).toEqual([...strictProps, ...extra].sort());
+      for (const name of relay.required) expect(strict.required, tool.name).toContain(name);
+      expect(relay.required, tool.name).not.toContain('transactionId');
+      expect(relay.additionalProperties, tool.name).toBe(strict.additionalProperties);
+      shared++;
     }
     expect(shared).toBe(22); expect(RELAY_TOOLS).toHaveLength(24);
-  });
-  it('advertises the exact existing app relay projection, not newly invented schemas', () => {
-    for (const raw of RELAY_TOOL_CATALOG) {
-      const expected: any = structuredClone(raw.inputSchema);
-      if (raw.name !== 'add_generated_art') {
-        delete expected.properties.transactionId;
-        expected.required = expected.required.filter((n: string) => n !== 'transactionId');
-      }
-      expect(byName(raw.name).inputSchema, raw.name).toEqual(expected);
-      expect(isSpecType.Tool(byName(raw.name)), raw.name).toBe(true);
-    }
-    expect(byName('add_generated_art').inputSchema.required).toContain('transactionId');
-    expect(byName('transform_objects').inputSchema.required).not.toContain('transactionId');
+    expect(byName('render_preview').inputSchema.required).toEqual([]);
+    expect(byName('add_text').inputSchema.required).toEqual(['text', 'heightMm']);
   });
   it('pins app-only attachment schemas to RelayPhotoTools.kt', () => {
     const source = readFileSync(new URL('../../app/src/main/kotlin/io/github/linker2k/myembro/relay/RelayPhotoTools.kt', import.meta.url), 'utf8');
@@ -68,6 +69,15 @@ describe('app compatibility never controls advertised definitions', () => {
     const pending = broker.call('render_preview', { widthPx: 512 }); expect(sent).toHaveLength(1);
     broker.receive(socket, JSON.stringify({ type: 'result', id: sent[0].id, isError: false, content: [{ type: 'text', text: 'ok' }] }));
     expect((await pending).isError).toBe(false); broker.close(socket);
+  });
+  it('forwards render_preview without widthPx (the app draws 512) and still refuses bad widths', async () => {
+    const { broker, socket, sent } = connected(RELAY_TOOLS);
+    const pending = broker.call('render_preview', {}); expect(sent[0]).toMatchObject({ tool: 'render_preview', args: {} });
+    broker.receive(socket, JSON.stringify({ type: 'result', id: sent[0].id, isError: false, content: [{ type: 'text', text: 'ok' }] }));
+    expect((await pending).isError).toBe(false);
+    for (const args of [{ widthPx: 255 }, { widthPx: 1025 }, { widthPx: 512.5 }, { widthPx: 512, path: 'x' }])
+      expect((await broker.call('render_preview', args)).isError, JSON.stringify(args)).toBe(true);
+    expect(sent).toHaveLength(1); broker.close(socket);
   });
   it('updated app receives edits unchanged and disconnect restores the existing error', async () => {
     const { broker, socket, sent } = connected(RELAY_TOOLS);

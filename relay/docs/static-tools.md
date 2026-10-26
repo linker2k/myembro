@@ -4,9 +4,13 @@ The Claude connector can retain the tools/list response from the beginning of a
 conversation. A relay that advertises the last app hello can therefore get stuck
 with the two-tool list from an old app, even after the app updates.
 
-`src/tool-definitions.json` is a committed deployment snapshot, not a runtime
-read of the engine catalog. `src/tools.ts` exports the **24 static RELAY_TOOLS**,
-including schemas and MCP annotations. Worker discovery always advertises this
+`docs/agent/relay-tools.json` is the single source: the app generates it from the
+exact definitions its hello sends (RelayClientTest.relayToolsFileMatchesTheHello
+fails when they differ; regenerate with `RELAY_TOOLS_WRITE=1 ./gradlew
+:app:testDebugUnitTest --tests '*RelayClientTest*'`). `src/tools.ts` imports it,
+so esbuild bundles it into the Worker at build time, and exports the **24 static
+RELAY_TOOLS**, including schemas and MCP annotations. Nobody edits a relay copy by
+hand; after the file changes, rebuild and redeploy the relay in the same change. Worker discovery always advertises this
 complete list: before any app connects, after a two-tool hello, after an empty or
 changed hello, after disconnect, and after Durable Object restart. Legacy cached
 hello data is no longer loaded or persisted. The runtime never reads docs/.

@@ -4,12 +4,11 @@ import { Miniflare, Log, LogLevel } from 'miniflare';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { RELAY_TOOLS } from '../src/tools';
 import { Broker, DISCONNECTED, UPDATE_REQUIRED, type AppSocket } from '../src/broker';
 
-const tools = [
-  { name: 'get_project', description: 'Read project', inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false }, annotations: { readOnlyHint: true, needsUserConfirmation: false } },
-  { name: 'render_preview', description: 'Render hoop', inputSchema: { type: 'object', properties: { widthPx: { type: 'integer', minimum: 256, maximum: 1024 } }, required: ['widthPx'], additionalProperties: false }, annotations: { readOnlyHint: true } }
-];
+// The app's own get_project/render_preview definitions (docs/agent/relay-tools.json), as a two-tool app sends them.
+const tools = RELAY_TOOLS.filter(t => t.name === 'get_project' || t.name === 'render_preview');
 const hello = () => JSON.stringify({ type: 'hello', appVersion: 'test', tools });
 
 function next(socket: any, type: string): Promise<any> {
