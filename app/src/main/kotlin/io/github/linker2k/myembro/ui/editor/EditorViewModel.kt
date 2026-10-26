@@ -221,6 +221,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+    /** AI connection (relay): get_project reads this editor's project and revision, as the Ask AI prompt does. */
+    internal fun relayProject() = io.github.linker2k.myembro.relay.RelayProject(session.project, session.history.revision)
     override fun onCleared() { stopObserving(); draftWrites.close() }
 
     private fun queueDraft() {

@@ -95,7 +95,7 @@ class AdversarialMcpSafetyTest {
             assertEquals("INVALID_ARGUMENTS",checked.getValue("code").jsonPrimitive.content,name);assertTrue(store.calls.isEmpty())
             schemaRows+=f.row(name,checked,store.calls.size)
         }
-        assertEquals(69,schemaRows.size);f.report("mcp-extra-fields",schemaRows)
+        assertEquals(70,schemaRows.size);f.report("mcp-extra-fields",schemaRows)
         f.report("mcp-malformed",rows);assertTrue(failures.isEmpty(),failures.joinToString("\n"))
     }
 }

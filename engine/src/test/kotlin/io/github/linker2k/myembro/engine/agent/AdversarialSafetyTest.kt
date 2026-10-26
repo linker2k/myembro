@@ -80,7 +80,7 @@ class AdversarialSafetyTest {
             assertEquals("INVALID_ARGUMENTS",r.code,name);assertTrue(store.calls.isEmpty())
             schemaRows+=f.row(name,r.output,store.calls.size)
         }
-        assertEquals(69,schemaRows.size);f.report("engine-extra-fields",schemaRows)
+        assertEquals(70,schemaRows.size);f.report("engine-extra-fields",schemaRows)
         f.report("engine-malformed",rows);assertTrue(failures.isEmpty(),failures.joinToString("\n"))
     }
     @Test fun blockedPlacementDensityAndViewportNeverReleaseArtifactOrBytes() {

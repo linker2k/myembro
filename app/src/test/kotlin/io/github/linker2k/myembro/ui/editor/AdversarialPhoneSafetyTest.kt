@@ -80,7 +80,7 @@ class AdversarialPhoneSafetyTest {
             assertFalse(r.ok,name);assertTrue(store.calls.isEmpty());assertSame(base,session.project);assertNull(r.pesBytes)
             extraRows+=f.row(name,r.output,store.calls.size)
         }
-        assertEquals(69,extraRows.size);f.report("phone-extra-fields",extraRows)
+        assertEquals(70,extraRows.size);f.report("phone-extra-fields",extraRows)
         f.report("phone-malformed",rows)
     }
 }

@@ -16,6 +16,29 @@
       }
     },
     {
+      "name": "render_preview",
+      "description": "Render the current project in its hoop as an opaque white square PNG with thread colors. Returns base64 image data and image/png MIME type without changing the project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "widthPx": {
+            "type": "integer",
+            "minimum": 256,
+            "maximum": 1024
+          }
+        },
+        "required": [
+          "widthPx"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnly": true,
+        "needsUserConfirmation": false,
+        "mapsTo": "ProjectPreviewRenderer.renderPreview"
+      }
+    },
+    {
       "name": "list_fonts",
       "description": "List fonts, availability, glyph coverage, revisions, and allowed heights.",
       "inputSchema": {

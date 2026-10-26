@@ -469,17 +469,8 @@ private fun PreviewPane(label: String, project: Project?, modifier: Modifier) {
                 else CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
             } else Canvas(Modifier.fillMaxSize()) {
                 drawRect(background)
-                val w = project.hoop.width.toFloat(); val h = project.hoop.height.toFloat()
-                val scale = minOf(size.width / w, size.height / h) * 0.9f
                 drawIntoCanvas { c ->
-                    val canvas = c.nativeCanvas
-                    canvas.save(); canvas.translate(size.width / 2, size.height / 2); canvas.scale(scale, scale)
-                    paint.style = Paint.Style.STROKE; paint.color = hoopColor.toArgb(); paint.strokeWidth = 1.5f / scale
-                    canvas.drawRect(-w / 2, -h / 2, w / 2, h / 2, paint)
-                    paint.strokeWidth = 1.2f / scale
-                    data.forEach { d -> d.runs.forEach { run -> paint.color = run.color
-                        canvas.drawLines(d.stitchLines, run.start * 4, (run.end - run.start) * 4, paint) } }
-                    canvas.restore()
+                    drawProjectPreview(c.nativeCanvas, size.width, size.height, project.hoop, data, hoopColor.toArgb(), paint)
                 }
             }
         }
