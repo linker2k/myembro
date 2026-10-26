@@ -22,3 +22,6 @@ Claude <-> relay (MCP Streamable HTTP):
 
 Spike tool set (readOnly only): get_project, render_preview(widthPx:int[256..1024]) -> image/png of current project with hoop.
 Write tools, needsUserConfirmation tools and attachments are NOT exposed in the spike.
+
+Operations: after any Worker secret change, always rerun deployment; see the
+[secret-update operational note](operations.md) for the observed stale Durable Object environment incident.
