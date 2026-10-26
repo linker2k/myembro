@@ -55,9 +55,10 @@ when a deployment is separately authorized; this unit does not test Claude mobil
   Wrong/malformed headers never downgrade to query authentication. A valid hello
   selects the active app; a new hello closes the previous socket and fails its
   pending requests. Definitions retain their original inputSchema/annotations.
-- Only get_project and render_preview with a positive readOnly/readOnlyHint
-  annotation are retained. A confirmation annotation other than false excludes
-  the definition. Other tool names, writes and attachment tools are not exposed.
+- Only the edit-phase tools in `RELAY_TOOLS` (src/broker.ts) are retained:
+  project reads, Ask AI edits, photo tools; never save, share, USB, file
+  deletion, restore or settings. A confirmation annotation other than false
+  excludes the definition. Other tool names are not exposed.
   render_preview accepts exactly one integer widthPx in 256–1024; get_project
   accepts no arguments. The app remains responsible for rendering the current
   project including its hoop.

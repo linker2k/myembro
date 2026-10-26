@@ -73,7 +73,7 @@ class RelayClient(
                     }
                     Event.Open -> {
                         opened = true; heard = now(); nextPing = heard + pingMs
-                        socket.send(RelayProtocol.hello(appVersion)); onState(State.CONNECTED)
+                        socket.send(RelayProtocol.hello(appVersion, tools.definitions)); onState(State.CONNECTED)
                     }
                     is Event.Text -> {
                         heard = now()

@@ -153,14 +153,16 @@ describe('contract timers on the production broker with fake clock', () => {
       await vi.advanceTimersByTimeAsync(1); expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
     } finally { vi.useRealTimers(); }
   });
-  it('never exposes write, confirmation-required or unknown tool definitions', () => {
+  it('forwards the edit-phase tools only, never separate-screen or unknown tool definitions', () => {
     const { broker, socket } = setup();
+    const edit = { ...tools[0], name: 'remove_objects', annotations: { readOnlyHint: false, destructiveHint: true } };
     const extra = [
-      { ...tools[0], name: 'remove_objects' },
+      { ...tools[0], name: 'send_usb' }, { ...tools[0], name: 'save_project' }, { ...tools[0], name: 'delete_designs' },
+      { ...tools[0], name: 'set_settings' }, { ...tools[0], name: 'restore_backup' }, { ...tools[0], name: 'undo' },
       { ...tools[1], annotations: { readOnlyHint: true, needsUserConfirmation: 'onOverwrite' } }
     ];
-    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], ...extra] }));
-    expect(broker.tools).toEqual([tools[0]]); broker.close(socket);
+    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], edit, ...extra] }));
+    expect(broker.tools).toEqual([tools[0], edit]); broker.close(socket);
   });
   it('routes simultaneous calls by UUID even when results arrive in reverse order', async () => {
     const { broker, socket, sent } = setup();
