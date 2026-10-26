@@ -9,6 +9,7 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.sewout.SewoutMachines
+import io.github.linker2k.myembro.relay.RelayConfirmation
 import io.github.linker2k.myembro.relay.RelayEdits
 import io.github.linker2k.myembro.ui.agent.*
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
@@ -111,6 +112,15 @@ internal class EditorAgentExecutor(
         return kernels.getOrPut(frames) { kernelFactory(frames) }
     }
 
+    /** AI connection: the session's controller on this editor's kernel, where relay photo tools run. */
+    fun relayController(): ToolTurnController = session().let { it.controller(kernel(it.project)) }
+
+    /** The export settings an Apply checks against, or null while no known machine is chosen. */
+    fun relayExport(): JsonObject? {
+        val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } } ?: return null
+        return buildJsonObject { put("machineId", machine); put("frameId", frameId(session().project.hoop)); put("pesVersion", settings().pesVersion.name) }
+    }
+
     /** AI connection: a read tool on this editor's kernel, against the live project and revision. */
     suspend fun relayQuery(tool: String, args: JsonObject): JsonObject = withContext(Dispatchers.Default) {
         val base = session().project
@@ -121,9 +131,9 @@ internal class EditorAgentExecutor(
      * AI connection: one edit tool call is one script of one command on the live revision, through the same
      * runCommandScript and [publish] as Apply, so it is one undo step and passes the sewout check or changes
      * nothing. remove_objects is dry-run first, then runs only with the user's yes from [confirm] (the
-     * on-screen dialog), bound to this call as a ScriptApproval.
+     * on-screen dialog; null = no answer), bound to this call as a ScriptApproval.
      */
-    suspend fun relayEdit(tool: String, args: JsonObject, confirm: suspend (List<String>) -> Boolean): JsonObject {
+    suspend fun relayEdit(tool: String, args: JsonObject, confirm: suspend (List<String>) -> Boolean?): JsonObject {
         val base = session().project
         val revision = session().history.revision
         val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } }
@@ -139,8 +149,13 @@ internal class EditorAgentExecutor(
             val check = withContext(Dispatchers.Default) { session().runCommandScript(kernel, transactionId, revision, run, export, dryRun = true) }
             if (!check.ok) return RelayEdits.result(check, revision, base)
             val names = args.getValue("objectIds").jsonArray.map { id -> base.find(id.jsonPrimitive.content)?.name ?: id.jsonPrimitive.content }
-            if (!confirm(names)) return RelayEdits.failure("USER_DECLINED",
-                "The user did not confirm the removal in myembro, so nothing was removed.", revision, base)
+            when (confirm(names)) {
+                true -> {}
+                false -> return RelayEdits.failure("USER_DECLINED",
+                    "The user chose Keep on the phone, so nothing was removed. ${RelayConfirmation.ON_PHONE}", revision, base)
+                null -> return RelayEdits.failure("NO_ANSWER", "Nobody answered on the phone within 90 seconds, so nothing was removed. " +
+                    "A myembro notification asked the user. ${RelayConfirmation.ON_PHONE}", revision, base)
+            }
             approvals = listOf(ScriptApprovals.request(transactionId, revision, run, 0))
         }
         var result: ToolDispatcher.Result? = null

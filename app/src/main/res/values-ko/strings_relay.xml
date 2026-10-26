@@ -13,4 +13,6 @@
     <string name="relay_remove_body">챗봇이 지우려는 개체: %1$s. 90초 안에 동의하지 않으면 지우지 않습니다.</string>
     <string name="relay_remove_confirm">지우기</string>
     <string name="relay_remove_cancel">남기기</string>
+    <string name="relay_confirm_channel">AI 확인 요청</string>
+    <string name="relay_confirm_notification">탭해서 myembro에서 답해 주세요: %1$s 지우기</string>
 </resources>

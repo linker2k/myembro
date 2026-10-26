@@ -4,11 +4,10 @@ package io.github.linker2k.myembro.relay
 import io.github.linker2k.myembro.engine.agent.ToolSchema
 import kotlinx.serialization.json.*
 import java.net.URI
-import java.net.URLEncoder
 
 /**
  * App side of the relay contract (v0 2026-10-26, edit phase /tmp/myembro-relay-edit-plan.md): the app
- * connects out to `<relay>/app?key=<APP_KEY>`, says hello with its tool definitions, answers each call
+ * connects out to `<relay>/app` with `Authorization: Bearer <APP_KEY>` (contract v1), says hello with its tool definitions, answers each call
  * with one result. Only tools the hello offered are run; every other tool name is refused with isError.
  */
 object RelayProtocol {
@@ -21,6 +20,10 @@ object RelayProtocol {
      * undoable turn; save, share, USB, file deletion, restore and settings are never offered.
      */
     val EDITS = io.github.linker2k.myembro.ui.agent.AgentTools.NAMES.toList() - "add_generated_art"
+    const val REMOVE = "remove_objects"
+    /** Added to remove_objects' description so the chatbot tells the user before it waits. */
+    const val REMOVE_ON_PHONE = "myembro asks the user on the phone before removing anything (up to 90 s); " +
+        "tell the user: ${RelayConfirmation.ON_PHONE}"
     /** Contract: ping/pong every 30 s, the relay drops the app after 90 s of silence. */
     const val PING_MS = 30_000L
     const val SILENCE_MS = 90_000L
@@ -44,7 +47,10 @@ object RelayProtocol {
             val properties = schema["properties"]?.jsonObject?.let { JsonObject(it - "transactionId") }
             val required = schema["required"]?.jsonArray?.let { r -> JsonArray(r.filter { it.jsonPrimitive.content != "transactionId" }) }
             val input = JsonObject(schema + listOfNotNull(properties?.let { "properties" to it }, required?.let { "required" to it }))
-            JsonObject(tool + ("inputSchema" to input) + ("annotations" to mcpAnnotations(tool.getValue("annotations").jsonObject)))
+            val description = tool.getValue("description").jsonPrimitive.content +
+                (if (tool.getValue("name").jsonPrimitive.content == REMOVE) " $REMOVE_ON_PHONE" else "")
+            JsonObject(tool + ("description" to JsonPrimitive(description)) + ("inputSchema" to input) +
+                ("annotations" to mcpAnnotations(tool.getValue("annotations").jsonObject)))
         }
 
     /**
@@ -91,8 +97,10 @@ object RelayProtocol {
     }
 
     /**
-     * The WebSocket URL for a relay address the user typed (`wss://host`, `https://host`, or with `/app`).
-     * Plain ws:// is only for the emulator's host (10.0.2.2) and this device, so the key never travels in clear.
+     * The WebSocket URL for a relay address the user typed (`wss://host`, `https://host`, or with `/app`),
+     * or null when the address or the key cannot be used. The key goes in the Authorization header
+     * ([authorization]), never in the URL. Plain ws:// is only for the emulator's host (10.0.2.2) and this
+     * device, so the key never travels in clear.
      */
     fun appUrl(address: String, key: String): String? {
         if (key.isBlank()) return null
@@ -102,8 +110,9 @@ object RelayProtocol {
         if (scheme == "ws" && host !in CLEARTEXT_HOSTS) return null
         val path = uri.rawPath.orEmpty().trimEnd('/').removeSuffix("/app")
         val port = if (uri.port >= 0) ":${uri.port}" else ""
-        return "$scheme://$host$port$path/app?key=${URLEncoder.encode(key.trim(), Charsets.UTF_8.name())}"
+        return "$scheme://$host$port$path/app"
     }
+    fun authorization(key: String) = "Bearer ${key.trim()}"
     /** Must match res/xml/network_security_config.xml. */
     val CLEARTEXT_HOSTS = setOf("10.0.2.2", "localhost", "127.0.0.1")
 }

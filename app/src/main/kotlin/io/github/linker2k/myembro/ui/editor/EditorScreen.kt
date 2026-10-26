@@ -58,6 +58,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             onDispose { io.github.linker2k.myembro.relay.RelayProjectSource.detach(vm) }
         }
         RelayRemovalDialog(vm.relayConfirmation)
+        // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
+        val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
+        var relayPhotoRequest by remember { mutableIntStateOf(0) }
+        if (relayOn) io.github.linker2k.myembro.relay.RelayPhotoHandoff(vm.relayPhotos, launch = relayPhotoRequest)
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
@@ -143,6 +147,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                         onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
                                         onClick = { projectMenu = false; vm.save() })
+                                    if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
+                                        onClick = { projectMenu = false; relayPhotoRequest++ })
                                 }
                             }
                         })

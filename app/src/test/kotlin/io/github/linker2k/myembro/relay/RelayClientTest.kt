@@ -23,7 +23,7 @@ class RelayClientTest {
     private val server = MockWebServer().apply { start() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val project = AgentScenario.builtin("myembro_logo.pes", "logo", "H100")
-    private val url = server.url("/app?key=k").toString().replaceFirst("http", "ws")
+    private val url = server.url("/app").toString().replaceFirst("http", "ws")
 
     @AfterTest fun stop() { scope.cancel(); server.shutdown() }
 
@@ -40,7 +40,7 @@ class RelayClientTest {
     private fun relay() = Relay().also { server.enqueue(MockResponse().withWebSocketUpgrade(it)) }
     private fun client(tools: RelayTools, backoff: RelayClient.Backoff = RelayClient.Backoff(10, 40), pingMs: Long = 30_000,
         silenceMs: Long = 90_000, states: MutableList<RelayClient.State> = mutableListOf()) =
-        RelayClient(OkHttpClient(), url, "0.3.0-test", tools, scope, backoff, pingMs, silenceMs) { synchronized(states) { states += it } }.start()
+        RelayClient(OkHttpClient(), url, "k", "0.3.0-test", tools, scope, backoff, pingMs, silenceMs) { synchronized(states) { states += it } }.start()
     private val open = object : RelayDocument {
         override suspend fun read() = RelayProject(project, 3)
         override val editor: RelayEditor? = null
@@ -55,18 +55,29 @@ class RelayClientTest {
         val relay = relay(); client(editor)
         relay.socket()
         val hello = relay.next()
-        assertEquals("/app?key=k", server.takeRequest(5, TimeUnit.SECONDS)!!.path)
+        // Contract v1: the key only in the Authorization header, never in the URL.
+        val upgrade = server.takeRequest(5, TimeUnit.SECONDS)!!
+        assertEquals("/app", upgrade.path)
+        assertEquals("Bearer k", upgrade.getHeader("Authorization"))
         assertEquals(setOf("type", "appVersion", "tools"), hello.keys)
         assertEquals("hello", hello.getValue("type").jsonPrimitive.content)
         assertEquals("0.3.0-test", hello.getValue("appVersion").jsonPrimitive.content)
-        val tools = hello.getValue("tools").jsonArray.map { it.jsonObject }
-        assertEquals(listOf("get_project", "render_preview"), tools.take(2).map { it.getValue("name").jsonPrimitive.content })
+        val all = hello.getValue("tools").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("get_project", "render_preview"), all.take(2).map { it.getValue("name").jsonPrimitive.content })
+        // The photo group (RelayPhotoTools, its own definitions) comes last, with MCP annotation names.
+        val photos = all.takeLast(RelayPhotoTools.NAMES.size)
+        assertEquals(RelayPhotoTools.NAMES, photos.map { it.getValue("name").jsonPrimitive.content }.toSet())
+        for (p in photos) assertTrue("readOnlyHint" in p.getValue("annotations").jsonObject && "readOnly" !in p.getValue("annotations").jsonObject)
+        val tools = all.dropLast(RelayPhotoTools.NAMES.size)
         // The checked-in definitions, unchanged except for annotations in MCP's standard names and the app-owned transactionId.
         val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
         for (t in tools) {
             val source = catalog.single { it.getValue("name") == t.getValue("name") }
             assertEquals(setOf("name", "description", "inputSchema", "annotations"), t.keys)
-            assertEquals(source - "annotations" - "inputSchema", t - "annotations" - "inputSchema")
+            assertEquals(source - "annotations" - "inputSchema" - "description", t - "annotations" - "inputSchema" - "description")
+            // remove_objects also says the phone asks first; every other description is the catalog's.
+            val extra = if (t.getValue("name").jsonPrimitive.content == "remove_objects") " ${RelayProtocol.REMOVE_ON_PHONE}" else ""
+            assertEquals(source.getValue("description").jsonPrimitive.content + extra, t.getValue("description").jsonPrimitive.content)
             val schema = source.getValue("inputSchema").jsonObject
             assertEquals(JsonObject(schema + ("properties" to JsonObject(schema.getValue("properties").jsonObject - "transactionId")) +
                 ("required" to JsonArray(schema.getValue("required").jsonArray.filter { it.jsonPrimitive.content != "transactionId" }))),
@@ -135,8 +146,8 @@ class RelayClientTest {
         }
         val relay = relay(); client(counting)
         val socket = relay.socket(); relay.next()
-        // Photo tools come from RelayPhotoTools.kt; save, share, USB, file deletion, restore, settings and history never.
-        val refused = listOf("prepare_photo", "add_generated_art", "prepare_pes", "save_project", "save_pes", "share_pes", "send_usb",
+        // Save, share, USB, file deletion, restore, settings, history and the emoji/sewout tools are never offered.
+        val refused = listOf("prepare_emoji", "list_emoji", "sewout_check", "prepare_pes", "save_project", "save_pes", "share_pes", "send_usb",
             "delete_designs", "restore_backup", "set_settings", "new_project", "undo", "commit_edit_turn", "", "GET_PROJECT")
         refused.forEachIndexed { i, tool -> socket.send(call("x$i", tool)) }
         val results = List(refused.size) { relay.next() }.associateBy { it.getValue("id").jsonPrimitive.content }
@@ -204,10 +215,11 @@ class RelayClientTest {
     }
 
     @Test fun relayAddressBecomesTheAppSocketUrl() {
-        assertEquals("wss://relay.example.workers.dev/app?key=a%2Bb%26c", RelayProtocol.appUrl(" wss://relay.example.workers.dev/ ", "a+b&c"))
-        assertEquals("wss://r.example/app?key=k", RelayProtocol.appUrl("https://r.example", "k"))
-        assertEquals("wss://r.example/base/app?key=k", RelayProtocol.appUrl("wss://r.example/base/app", "k"))
-        assertEquals("ws://10.0.2.2:8787/app?key=k", RelayProtocol.appUrl("ws://10.0.2.2:8787", "k"))
+        assertEquals("wss://relay.example.workers.dev/app", RelayProtocol.appUrl(" wss://relay.example.workers.dev/ ", "a+b&c"))
+        assertEquals("wss://r.example/app", RelayProtocol.appUrl("https://r.example", "k"))
+        assertEquals("wss://r.example/base/app", RelayProtocol.appUrl("wss://r.example/base/app", "k"))
+        assertEquals("ws://10.0.2.2:8787/app", RelayProtocol.appUrl("ws://10.0.2.2:8787", "k"))
+        assertEquals("Bearer a+b&c", RelayProtocol.authorization(" a+b&c "))
         // The key never goes out in clear to another host, and nothing without a key or a host.
         for (bad in listOf("ws://r.example", "http://192.168.0.5:8787", "ftp://r.example", "r.example", "", "wss://"))
             assertNull(RelayProtocol.appUrl(bad, "k"), bad)

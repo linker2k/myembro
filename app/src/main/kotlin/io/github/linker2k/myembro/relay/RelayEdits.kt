@@ -52,9 +52,14 @@ object RelayEdits {
 
 /**
  * The editor's dialog for a relay remove_objects: the tool waits for the user's answer up to [timeoutMs]
- * (plan: 90 s); no answer is a no. One question at a time.
+ * (plan: 90 s). One question at a time. [onAsk] runs when the question appears (the heads-up notification
+ * that brings the user to the dialog) and [onDone] when it is gone, answered or not.
  */
-class RelayConfirmation(private val timeoutMs: Long = 90_000) {
+class RelayConfirmation(
+    private val timeoutMs: Long = 90_000,
+    private val onAsk: (List<String>) -> Unit = {},
+    private val onDone: () -> Unit = {},
+) {
     class Request(val names: List<String>, internal val answer: CompletableDeferred<Boolean> = CompletableDeferred())
 
     private val state = MutableStateFlow<Request?>(null)
@@ -62,11 +67,18 @@ class RelayConfirmation(private val timeoutMs: Long = 90_000) {
     val request: StateFlow<Request?> = state
     private val one = Mutex()
 
-    suspend fun ask(names: List<String>): Boolean = one.withLock {
+    /** The user's yes or no, or null when nobody answered within the wait. */
+    suspend fun ask(names: List<String>): Boolean? = one.withLock {
         val r = Request(names)
         state.value = r
-        try { withTimeoutOrNull(timeoutMs) { r.answer.await() } ?: false } finally { state.value = null }
+        onAsk(names)
+        try { withTimeoutOrNull(timeoutMs) { r.answer.await() } } finally { state.value = null; onDone() }
     }
 
     fun answer(request: Request, yes: Boolean) { request.answer.complete(yes) }
+
+    companion object {
+        /** In every phone-confirmation result, so Claude tells the user where to answer. */
+        const val ON_PHONE = "Please confirm on the phone in myembro (휴대폰 myembro에서 확인해 주세요)."
+    }
 }

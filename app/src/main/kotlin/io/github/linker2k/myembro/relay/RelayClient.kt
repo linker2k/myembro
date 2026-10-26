@@ -16,6 +16,8 @@ import okhttp3.WebSocketListener
 class RelayClient(
     private val http: OkHttpClient,
     private val url: String,
+    /** APP_KEY, sent only as the Authorization header. */
+    private val key: String,
     private val appVersion: String,
     private val tools: RelayTools,
     private val scope: CoroutineScope,
@@ -53,7 +55,7 @@ class RelayClient(
     /** One socket until it closes, fails or goes silent; true when it opened (a reconnect starts over at 1 s). */
     private suspend fun session(): Boolean {
         val events = Channel<Event>(Channel.UNLIMITED)
-        val socket = http.newWebSocket(Request.Builder().url(url).build(), object : WebSocketListener() {
+        val socket = http.newWebSocket(Request.Builder().url(url).header("Authorization", RelayProtocol.authorization(key)).build(), object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) { events.trySend(Event.Open) }
             override fun onMessage(webSocket: WebSocket, text: String) { events.trySend(Event.Text(text)) }
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) { webSocket.close(1000, null); events.trySend(Event.Closed) }

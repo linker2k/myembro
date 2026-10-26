@@ -40,7 +40,7 @@ class RelayService : Service() {
         client?.cancel()
         // The screens read and change their project on the main thread themselves (EditorViewModel, ViewerViewModel).
         val tools = RelayToolbox({ RelayProjectSource.current() })
-        client = RelayClient(OkHttpClient(), url, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
+        client = RelayClient(OkHttpClient(), url, config.key, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
         return START_STICKY
     }
 

@@ -82,6 +82,7 @@ class RelayPhotoTools(
     private val publish: suspend (suspend () -> ToolDispatcher.Result) -> ToolDispatcher.Result,
     private val canEdit: () -> Boolean,
 ) : RelayTools {
+    override val definitions: List<JsonObject> get() = Companion.definitions
     private val mutex = Mutex()
     private val prepared = mutableMapOf<String, String>()
     private val schema = ToolSchema(buildJsonObject { put("tools", JsonArray(definitions)) }.toString())

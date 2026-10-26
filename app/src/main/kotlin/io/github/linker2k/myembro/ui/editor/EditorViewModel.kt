@@ -36,6 +36,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val documents = EditorDocuments()
@@ -50,8 +52,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val agentExecutor = EditorAgentExecutor({ session }, { settings }, { availableHoops }, publish = { block ->
             busy = true
             try { block() } finally { busy = false; sync() }
-        }, kernelFactory = { frames -> androidAgentKernel(app, agentFonts, frames,
-            io.github.linker2k.myembro.ui.photo.AndroidAttachmentStore(app) { id -> agent.source(id) }) }, fontRevision = { agentFonts.revision(it) })
+        }, kernelFactory = { frames -> androidAgentKernel(app, agentFonts, frames, io.github.linker2k.myembro.engine.agent.AttachmentStore { id, request ->
+            // Photos handed to AI over the relay (opaque UUIDs) first, then Ask AI's own attached photos.
+            relayPhotos.raster(id, request) ?: askAiPhotos.raster(id, request)
+        }) }, fontRevision = { agentFonts.revision(it) })
+    private val askAiPhotos by lazy { io.github.linker2k.myembro.ui.photo.AndroidAttachmentStore(app) { id -> agent.source(id) } }
+    /** Photos the user handed to the AI connection in this editor (memory only, one consent per photo). */
+    internal val relayPhotos = io.github.linker2k.myembro.relay.RelayPhotoAttachments(app)
     /** "Ask AI" flow on this editor's session; survives rotation with the rest of the editor. */
     internal val agent: io.github.linker2k.myembro.ui.agent.AgentAssistController = io.github.linker2k.myembro.ui.agent.AgentAssistController(
         agentExecutor, revision = { session.history.revision }, catalog = {
@@ -223,8 +230,27 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+    /** RelayPhotoTools on the session's own controller; a new one when the session or kernel is replaced. */
+    private var relayPhotoTools: Pair<io.github.linker2k.myembro.engine.agent.ToolTurnController, io.github.linker2k.myembro.relay.RelayPhotoTools>? = null
+    private fun relayPhotoTools(): io.github.linker2k.myembro.relay.RelayPhotoTools {
+        val controller = agentExecutor.relayController()
+        relayPhotoTools?.takeIf { it.first === controller }?.let { return it.second }
+        val tools = io.github.linker2k.myembro.relay.RelayPhotoTools(relayPhotos, controller,
+            exportSettings = { agentExecutor.relayExport() ?: buildJsonObject { put("machineId", ""); put("frameId", ""); put("pesVersion", "") } },
+            // The same editing lock and refresh as Ask AI Apply, on the main thread like the UI.
+            publish = { block -> withContext(Dispatchers.Main.immediate) {
+                busy = true
+                try { withContext(Dispatchers.Default) { block() } } finally { session.adoptEngineProject(); busy = false; sync() }
+            } },
+            canEdit = { io.github.linker2k.myembro.relay.RelayProjectSource.current() === relayDocument && agentExecutor.relayController() === controller })
+        relayPhotoTools = controller to tools
+        return tools
+    }
+
     /** AI connection (relay): remove_objects waits for the user's answer in this dialog. */
-    internal val relayConfirmation = io.github.linker2k.myembro.relay.RelayConfirmation()
+    internal val relayConfirmation = io.github.linker2k.myembro.relay.RelayConfirmation(
+        onAsk = { names -> io.github.linker2k.myembro.relay.RelayConfirmNotification.show(app, names) },
+        onDone = { io.github.linker2k.myembro.relay.RelayConfirmNotification.cancel(app) })
     /**
      * AI connection (relay): this editor's project and revision, as the Ask AI prompt reads them, and its
      * Ask AI executor for reads and edits. The session is read and changed on the main thread, like the UI.
@@ -235,6 +261,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             io.github.linker2k.myembro.relay.RelayProject(session.project, session.history.revision)
         }
         override val editor = object : io.github.linker2k.myembro.relay.RelayEditor {
+            override val photos get() = relayPhotoTools()
             override suspend fun query(tool: String, args: JsonObject) = executor.relayQuery(tool, args)
             override suspend fun edit(tool: String, args: JsonObject) = withContext(Dispatchers.Main.immediate) {
                 if (interactionBlocked || gestureInProgress) io.github.linker2k.myembro.relay.RelayEdits.failure("EDITOR_BUSY",

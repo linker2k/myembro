@@ -26,6 +26,8 @@ interface RelayEditor {
     suspend fun query(tool: String, args: JsonObject): JsonObject
     /** One edit tool as one turn: one undo step, sewout-checked; the [RelayEdits.result] shape. */
     suspend fun edit(tool: String, args: JsonObject): JsonObject
+    /** The photo tools on this editor's kernel and session (RelayPhotoTools), null where there are none. */
+    val photos: RelayTools? get() = null
 }
 
 /**
@@ -39,7 +41,7 @@ interface RelayToolGroup {
 }
 
 object RelayToolGroups {
-    fun default(): List<RelayToolGroup> = listOf(ProjectRelayTools())
+    fun default(): List<RelayToolGroup> = listOf(ProjectRelayTools(), PhotoRelayTools())
 }
 
 /** All groups behind one socket: the hello lists their tools and each call goes to the group that offered it. */
@@ -98,6 +100,22 @@ class ProjectRelayTools(
     companion object {
         const val NO_PROJECT = "No design is open in myembro. Open one in the editor and try again."
         const val OPEN_EDITOR = "This design is open in the myembro viewer, which only reads. Open it in the editor to change it."
+    }
+}
+
+/**
+ * RelayPhotoTools (docs/agent/relay-photo.md) on the open editor: only photos the user handed to AI there.
+ * Definitions keep the catalog's arguments; annotations are projected to MCP names like the others.
+ */
+class PhotoRelayTools : RelayToolGroup {
+    override val definitions = RelayPhotoTools.definitions.map {
+        JsonObject(it + ("annotations" to RelayProtocol.mcpAnnotations(it.getValue("annotations").jsonObject)))
+    }
+
+    override suspend fun call(tool: String, args: JsonObject, document: RelayDocument?): RelayResult {
+        document ?: return RelayResult.error(ProjectRelayTools.NO_PROJECT)
+        val photos = document.editor?.photos ?: return RelayResult.error(ProjectRelayTools.OPEN_EDITOR)
+        return photos.call(tool, args)
     }
 }
 

@@ -32,7 +32,7 @@ class RelayEditTest {
     private var published = 0
     private val executor = EditorAgentExecutor({ session }, { EmbroiderySettings(machineModel = "se400") }, { listOf(base.hoop) },
         publish = { block -> published++; block() })
-    private var answer: suspend (List<String>) -> Boolean = { error("no removal expected") }
+    private var answer: suspend (List<String>) -> Boolean? = { error("no removal expected") }
     private val asked = mutableListOf<List<String>>()
 
     /** The editor as EditorViewModel offers it, minus the main-thread hops. */
@@ -62,7 +62,7 @@ class RelayEditTest {
         val hello: JsonObject
         private var n = 0
         init {
-            RelayClient(OkHttpClient(), server.url("/app?key=k").toString().replaceFirst("http", "ws"), "0.3.0-test",
+            RelayClient(OkHttpClient(), server.url("/app").toString().replaceFirst("http", "ws"), "k", "0.3.0-test",
                 RelayToolbox({ document }, listOf(ProjectRelayTools(render = { _, w -> png(w) }))), scope).start()
             socket = relay.socket(); hello = relay.next()
         }
@@ -167,14 +167,18 @@ class RelayEditTest {
         answer = { false }
         val (declinedError, declined) = relay.call("remove_objects", """{"objectIds":["hi"]}""")
         assertTrue(declinedError); assertEquals("USER_DECLINED", declined.str("code"))
+        assertTrue(RelayConfirmation.ON_PHONE in declined.str("message"))
         assertEquals(listOf(listOf("Hi")), asked)
         assertSame(added, session.project); assertEquals(1, session.history.undoCount)
 
-        // No answer within the wait is a no (a 50 ms wait here instead of 90 s).
-        val confirmation = RelayConfirmation(timeoutMs = 50)
+        // No answer within the wait is a no (a 50 ms wait here instead of 90 s); the notification hook comes and goes.
+        val hooks = mutableListOf<String>()
+        val confirmation = RelayConfirmation(timeoutMs = 50, onAsk = { hooks += "ask $it" }, onDone = { hooks += "done" })
         answer = confirmation::ask
         val (timedOutError, timedOut) = relay.call("remove_objects", """{"objectIds":["hi"]}""")
-        assertTrue(timedOutError); assertEquals("USER_DECLINED", timedOut.str("code"))
+        assertTrue(timedOutError); assertEquals("NO_ANSWER", timedOut.str("code"))
+        assertTrue(RelayConfirmation.ON_PHONE in timedOut.str("message"))
+        assertEquals(listOf("ask [Hi]", "done"), hooks)
         assertNull(confirmation.request.value)
         assertSame(added, session.project); assertEquals(1, session.history.undoCount)
 
@@ -199,8 +203,35 @@ class RelayEditTest {
         val shown = withTimeout(5_000) { confirmation.request.first { it != null } }!!
         assertEquals(listOf("Star"), shown.names)
         confirmation.answer(shown, true)
-        assertTrue(answered.await())
+        assertEquals(true, answered.await())
         assertNull(confirmation.request.value)
+    }
+
+    @Test fun photoToolsGoToTheOpenEditorsPhotoToolsOnly() {
+        val calls = mutableListOf<String>()
+        val photoTools = object : RelayTools {
+            override val definitions = RelayPhotoTools.definitions
+            override suspend fun call(tool: String, args: JsonObject): RelayResult { calls += tool; return RelayResult.text("""{"ok":true,"attachments":[]}""") }
+        }
+        val withPhotos = object : RelayDocument by editorDocument {
+            override val editor = object : RelayEditor by editorDocument.editor { override val photos = photoTools }
+        }
+        fun connect(document: RelayDocument?) = Relay().also { server.enqueue(MockResponse().withWebSocketUpgrade(it)) }.also {
+            RelayClient(OkHttpClient(), server.url("/app").toString().replaceFirst("http", "ws"), "k", "t", RelayToolbox({ document }), scope).start()
+        }
+        val relay = connect(withPhotos)
+        val socket = relay.socket()
+        val names = relay.next().getValue("tools").jsonArray.map { it.jsonObject.str("name") }
+        assertEquals(RelayPhotoTools.NAMES, names.takeLast(4).toSet())
+        socket.send("""{"type":"call","id":"p","tool":"list_attachments","args":{}}""")
+        assertFalse(relay.next().getValue("isError").jsonPrimitive.boolean)
+        assertEquals(listOf("list_attachments"), calls)
+        // The viewer has no photo store: the photo tools say to open the editor.
+        val viewer = connect(object : RelayDocument { override suspend fun read() = RelayProject(base, 0); override val editor: RelayEditor? = null })
+        val v = viewer.socket(); viewer.next()
+        v.send("""{"type":"call","id":"v","tool":"view_attachment","args":{"attachmentId":"a","maxEdgePx":512}}""")
+        assertEquals(ProjectRelayTools.OPEN_EDITOR, viewer.next().getValue("content").jsonArray.single().jsonObject.str("text"))
+        assertEquals(listOf("list_attachments"), calls)
     }
 
     @Test fun theViewerOnlyReads() {
