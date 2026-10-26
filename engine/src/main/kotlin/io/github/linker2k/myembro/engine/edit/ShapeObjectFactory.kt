@@ -37,8 +37,8 @@ object ShapeObjectFactory {
     }
     fun renamed(obj: ShapeObject, id: String, name: String): ShapeObject = if(isPhoto(obj))
         retained(id,name,obj.sourceArt,obj.widthMm,obj.regions,obj.localPattern())
-            .withTransform(obj.transform).withVisible(obj.visible)
-        else ShapeObject.fromArt(id,name,obj.sourceArt,obj.widthMm)
+            .withOverrides(obj.overrides).withTransform(obj.transform).withVisible(obj.visible)
+        else ShapeObject.fromArt(id,name,obj.sourceArt,obj.widthMm).withOverrides(obj.overrides)
 
     private fun pathData(paths: List<Polyline>) = paths.joinToString(" ") { path ->
         buildString { path.points.forEachIndexed { i,p -> append(if(i==0) "M " else "L ");append(p.x);append(' ');append(p.y);append(' ') };if(path.closed) append('Z') }

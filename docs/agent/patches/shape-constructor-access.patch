@@ -1,6 +1,0 @@
-diff --git a/engine/src/main/kotlin/io/github/linker2k/myembro/engine/edit/ShapeObject.kt b/engine/src/main/kotlin/io/github/linker2k/myembro/engine/edit/ShapeObject.kt
---- a/engine/src/main/kotlin/io/github/linker2k/myembro/engine/edit/ShapeObject.kt
-+++ b/engine/src/main/kotlin/io/github/linker2k/myembro/engine/edit/ShapeObject.kt
-@@ -43,1 +43,1 @@
--class ShapeObject private constructor(
-+class ShapeObject internal constructor(

@@ -61,7 +61,9 @@ object VectorArt {
         /** Measured region widths (mm) the shared rule decided on. */
         val widths: StitchTypeRule.Widths? = null,
         /** Actual emitted region boundaries, centered object-local millimeters (including holes). */
-        val paths: List<Polyline> = emptyList())
+        val paths: List<Polyline> = emptyList(), val regionId: String = "")
+    data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
+        val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0)
 
     /**
@@ -236,7 +238,8 @@ object VectorArt {
      * it, and slivers narrower than the satin minimum are dropped instead of sewn.
      */
     /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
-    fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true): Result {
+    fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true,
+        regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null): Result {
         require(widthMm.isFinite() && widthMm > 0)
         val footprints = art.shapes.map(::footprint)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
@@ -249,6 +252,7 @@ object VectorArt {
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
         val toMm = org.locationtech.jts.geom.util.AffineTransformation.translationInstance(-cx, -cy).scale(scale, scale)
         var excludedCount = 0
+        var regionOrdinal = 0
         fun boundaryPaths(area: Geometry) = (0 until area.numGeometries).map { area.getGeometryN(it) }.filterIsInstance<Polygon>()
             .flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
                 .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
@@ -260,19 +264,21 @@ object VectorArt {
         /** One region through the shared failure policy (satin → tatami → running → excluded), recorded as a part. */
         fun emit(index: Int, role: String, region: Geometry, thread: EmbThread, w: Double, rgb: Int, preferred: StitchTypeRule.Type,
             satin: () -> List<StitchGroup>, running: () -> List<StitchGroup> = { outlineGroups(region, thread) }) {
-            val resolved = StitchTypeRule.generateRegion(preferred, groups) { attempt -> when (attempt) {
+            val regionId = "region-${regionOrdinal++}"
+            val localPaths = boundaryPaths(toMm.transform(region)).ifEmpty {
+                subpaths(art.shapes[index]).map { line -> Polyline(line.points.map { q ->
+                    MmPoint((q.x - cx) * scale, (q.y - cy) * scale)
+                }, line.closed) }
+            }
+            val resolved = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
+                ?: StitchTypeRule.generateRegion(preferred, groups) { attempt -> when (attempt) {
                 StitchTypeRule.Type.SATIN -> satin()
                 StitchTypeRule.Type.TATAMI -> tatamiGroups(region, thread)
                 StitchTypeRule.Type.RUNNING -> running()
             } }
             if (resolved.excluded) { excludedCount++; return }
             groups += resolved.groups
-            val localPaths = boundaryPaths(toMm.transform(region)).ifEmpty {
-                subpaths(art.shapes[index]).map { line -> Polyline(line.points.map { q ->
-                    MmPoint((q.x - cx) * scale, (q.y - cy) * scale)
-                }, line.closed) }
-            }
-            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths)
+            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths, regionId)
         }
         /**
          * An area after overlap removal (everything drawn later is cut away, JTS difference): each visible
