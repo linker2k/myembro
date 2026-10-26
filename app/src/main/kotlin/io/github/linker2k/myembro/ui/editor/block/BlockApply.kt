@@ -5,6 +5,8 @@ import io.github.linker2k.myembro.engine.edit.BlockStitch
 import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.ShapeRegion
+import io.github.linker2k.myembro.engine.edit.BlockStitchCapabilities
+import io.github.linker2k.myembro.engine.edit.Transform
 import io.github.linker2k.myembro.engine.inkstitch.elements.FillParameters
 import io.github.linker2k.myembro.engine.io.PesExport
 import io.github.linker2k.myembro.engine.io.PesWriteSettings
@@ -30,9 +32,17 @@ object BlockApply {
     val FILL_METHOD = mapOf(BlockTexture.BASIC to "tatami_fill", BlockTexture.PATTERN to "meander_fill",
         BlockTexture.CONTOUR to "contour_fill", BlockTexture.CIRCULAR to "circular_fill")
 
-    /** Engine hook: per-region allowed settings once the engine provides them; for now everything shown. */
-    @Suppress("UNUSED_PARAMETER")
-    fun options(region: ShapeRegion): BlockOptions = BlockOptions()
+    /**
+     * The engine's per-region prechecks (BlockStitchCapabilities, the same data list_blocks reports) at the
+     * object's pose; scale changes satin stitch lengths. May run satin generation: call off the main thread.
+     * These are prerequisites only; Apply still runs the full sewing check.
+     */
+    fun options(region: ShapeRegion, transform: Transform): BlockOptions {
+        val c = BlockStitchCapabilities.forRegion(region, transform)
+        val unavailable = listOf(BlockType.SATIN to c.satin, BlockType.RUNNING to c.running, BlockType.FILL to c.fill)
+            .filter { !it.second.possible }.associate { (type, a) -> type to (a.reason ?: "UNAVAILABLE") }
+        return BlockOptions(unavailable, FILL_METHOD.filterValues { it in BlockStitchCapabilities.fillMethods }.keys)
+    }
 
     /**
      * Row spacing per density step. Only NORMAL has a basis: the upstream default row_spacing_mm 0.25

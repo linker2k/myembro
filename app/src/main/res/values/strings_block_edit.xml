@@ -39,4 +39,10 @@
     <string name="block_edit_blocked_now">The design is blocked now: %1$s</string>
     <string name="block_edit_order_pending">Changing region order needs an engine command (not available yet)</string>
     <string name="block_edit_option_unavailable">Not available for the selected region</string>
+    <string name="block_edit_type_unavailable">%1$s: %2$s</string>
+    <string name="block_reason_satin_geometry">this shape cannot be satin</string>
+    <string name="block_reason_satin_failed">satin generation failed</string>
+    <string name="block_reason_satin_too_long">satin stitches would exceed 12mm</string>
+    <string name="block_reason_no_running">no line to run along</string>
+    <string name="block_reason_empty_fill">no area to fill</string>
 </resources>
