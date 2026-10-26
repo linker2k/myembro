@@ -13,7 +13,7 @@ App <-> relay (WebSocket, app connects outbound):
 
 Claude <-> relay (MCP Streamable HTTP):
 - Endpoint: https://<host>/mcp only. POST uses the official MCP SDK; optional GET/SSE subscriptions return 405 (no unsolicited notifications), so an idle subscription cannot keep the DO awake.
-- Authentication: Authorization: Bearer <MCP_TOKEN> request header only. Configure this in the claude.ai connector request-header field; the connector stores the value securely. OAuth remains deferred.
+- Authentication: existing Authorization: Bearer <MCP_TOKEN> request header, or owner-approved OAuth 2.1 tokens via the official Cloudflare provider; see [OAuth setup](oauth.md). Keep MCP_TOKEN in the existing Claude request-header field for fixed-token access; for OAuth choose DCR/automatic registration and enter OWNER_PIN only on the relay consent page.
 - Compare SHA-256 fixed-size credential digests using the runtime native constant-time comparison. Missing/incorrect credentials return 401 with a generic body containing no credential. Unknown/old /mcp/<x> paths return 404 (no legacy path-secret authentication).
 - MCP query parameters never provide authentication. Do not log authorization values, credential-bearing URLs, or secrets.
 - tools/list always returns the deployment-time static catalog in src/tools.ts, independent of app hello or cache. Missing/schema-mismatched app tools return isError "myembro 앱을 최신으로 업데이트해 주세요" without forwarding; compatible tools still work. If no app is connected, tools/call returns isError text "myembro app is not connected. Open myembro and turn on AI connection."
