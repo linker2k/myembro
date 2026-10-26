@@ -7,32 +7,45 @@ import java.net.URI
 import java.net.URLEncoder
 
 /**
- * App side of the relay spike contract v0 (manager, 2026-10-26): the app connects out to
- * `<relay>/app?key=<APP_KEY>`, says hello with its tool definitions, answers each call with one result.
- * Only the read-only spike tools are offered or run; every other tool name is refused with isError.
+ * App side of the relay contract (v0 2026-10-26, edit phase /tmp/myembro-relay-edit-plan.md): the app
+ * connects out to `<relay>/app?key=<APP_KEY>`, says hello with its tool definitions, answers each call
+ * with one result. Only tools the hello offered are run; every other tool name is refused with isError.
  */
 object RelayProtocol {
     const val GET_PROJECT = "get_project"
     const val RENDER_PREVIEW = "render_preview"
-    /** The contract's spike tool set (read-only only). */
-    val SPIKE_TOOLS = listOf(GET_PROJECT, RENDER_PREVIEW)
+    /** Reads that need the editor's own kernel (its fonts, designs and frames). */
+    val EDITOR_READS = listOf("list_fonts", "list_builtin_designs", "get_settings")
+    /**
+     * Every Ask AI script tool except the photo pair, which RelayPhotoTools.kt registers. Each call is one
+     * undoable turn; save, share, USB, file deletion, restore and settings are never offered.
+     */
+    val EDITS = io.github.linker2k.myembro.ui.agent.AgentTools.NAMES.toList() - "add_generated_art"
     /** Contract: ping/pong every 30 s, the relay drops the app after 90 s of silence. */
     const val PING_MS = 30_000L
     const val SILENCE_MS = 90_000L
     val PING = buildJsonObject { put("type", "ping") }.toString()
     val PONG = buildJsonObject { put("type", "pong") }.toString()
 
-    /**
-     * The spike tools as the bundled docs/agent/tools.json defines them, with annotations in MCP's
-     * standard names ([mcpAnnotations]); name, description and inputSchema are unchanged.
-     */
-    val tools: List<JsonObject> by lazy {
+    private val catalog: List<JsonObject> by lazy {
         val text = requireNotNull(ToolSchema::class.java.getResourceAsStream("/agent/tools.json")) { "Missing bundled tools.json" }
             .bufferedReader().use { it.readText() }
-        val catalog = Json.parseToJsonElement(text).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
-        SPIKE_TOOLS.map { name -> catalog.single { it.getValue("name").jsonPrimitive.content == name } }
-            .map { JsonObject(it + ("annotations" to mcpAnnotations(it.getValue("annotations").jsonObject))) }
+        Json.parseToJsonElement(text).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
     }
+
+    /**
+     * [names] as the bundled docs/agent/tools.json defines them, with annotations in MCP's standard names
+     * ([mcpAnnotations]) and without transactionId, which the app sets for each turn; name and description
+     * are unchanged.
+     */
+    fun definitions(names: List<String>): List<JsonObject> = names.map { name -> catalog.single { it.getValue("name").jsonPrimitive.content == name } }
+        .map { tool ->
+            val schema = tool.getValue("inputSchema").jsonObject
+            val properties = schema["properties"]?.jsonObject?.let { JsonObject(it - "transactionId") }
+            val required = schema["required"]?.jsonArray?.let { r -> JsonArray(r.filter { it.jsonPrimitive.content != "transactionId" }) }
+            val input = JsonObject(schema + listOfNotNull(properties?.let { "properties" to it }, required?.let { "required" to it }))
+            JsonObject(tool + ("inputSchema" to input) + ("annotations" to mcpAnnotations(tool.getValue("annotations").jsonObject)))
+        }
 
     /**
      * MCP ToolAnnotations from the catalog's own: readOnly → readOnlyHint; a write is destructive when it
@@ -49,7 +62,7 @@ object RelayProtocol {
         }
     }
 
-    fun hello(appVersion: String): String = buildJsonObject {
+    fun hello(appVersion: String, tools: List<JsonObject>): String = buildJsonObject {
         put("type", "hello"); put("appVersion", appVersion)
         put("tools", JsonArray(tools))
     }.toString()
@@ -68,7 +81,7 @@ object RelayProtocol {
                 val tool = m["tool"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 val args = m["args"] ?: JsonObject(emptyMap())
                 result(id, when {
-                    tool !in SPIKE_TOOLS -> RelayResult.error("Tool $tool is not available over the myembro AI connection.")
+                    tool !in tools.names -> RelayResult.error("Tool $tool is not available over the myembro AI connection.")
                     args !is JsonObject -> RelayResult.error("Arguments must be a JSON object.")
                     else -> runCatching { tools.call(tool, args) }.getOrElse { RelayResult.error("myembro could not run $tool.") }
                 })
@@ -102,7 +115,9 @@ data class RelayResult(val isError: Boolean, val content: List<JsonObject>) {
     }
 }
 
-/** Runs one allowed spike tool; [RelayProtocol.respond] refuses everything else before it gets here. */
-fun interface RelayTools {
+/** The tools the hello offers and runs; [RelayProtocol.respond] refuses every other name before [call]. */
+interface RelayTools {
+    val definitions: List<JsonObject>
+    val names: Set<String> get() = definitions.mapTo(mutableSetOf()) { it.getValue("name").jsonPrimitive.content }
     suspend fun call(tool: String, args: JsonObject): RelayResult
 }

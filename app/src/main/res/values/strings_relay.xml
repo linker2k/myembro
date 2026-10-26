@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="relay_title">AI connection (experimental)</string>
-    <string name="relay_description">Lets your chatbot read the design open in the editor through your own relay. Read-only: it cannot change the design. The key stays on this device and is not in backups.</string>
+    <string name="relay_description">Lets your chatbot read and change the design open in the editor through your own relay. Each change is one step you can undo, and a design that fails the sewing check is not changed. Removing objects asks you here first. Saving, sharing and sending to USB stay with you. The key stays on this device and is not in backups.</string>
     <string name="relay_address">Relay address</string>
     <string name="relay_key">APP_KEY</string>
     <string name="relay_invalid">Enter a wss:// address and the APP_KEY.</string>
@@ -9,4 +9,8 @@
     <string name="relay_connected">Connected</string>
     <string name="relay_waiting">Disconnected, retrying soon</string>
     <string name="relay_notification">AI connection is on</string>
+    <string name="relay_remove_title">Remove with AI?</string>
+    <string name="relay_remove_body">Your chatbot wants to remove: %1$s. Nothing is removed unless you agree within 90 seconds.</string>
+    <string name="relay_remove_confirm">Remove</string>
+    <string name="relay_remove_cancel">Keep</string>
 </resources>

@@ -38,8 +38,8 @@ class RelayService : Service() {
         ServiceCompat.startForeground(this, NOTIFICATION, notification,
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0)
         client?.cancel()
-        // The editor's project is read on the main thread, where the editor changes it.
-        val tools = SpikeRelayTools({ withContext(Dispatchers.Main) { RelayProjectSource.current() } })
+        // The screens read and change their project on the main thread themselves (EditorViewModel, ViewerViewModel).
+        val tools = RelayToolbox({ RelayProjectSource.current() })
         client = RelayClient(OkHttpClient(), url, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
         return START_STICKY
     }

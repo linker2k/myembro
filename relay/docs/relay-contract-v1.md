@@ -20,7 +20,7 @@ Claude <-> relay (MCP Streamable HTTP):
 - tools/call forwarded to app, 60 s timeout -> isError "timed out".
 - Secrets APP_KEY and MCP_TOKEN are Worker secrets; never committed. MCP_SECRET is retired and is not read. Production routing and application code must not emit credential values in logs.
 
-Spike tool set (readOnly only): get_project, render_preview(widthPx:int[256..1024]) -> image/png of current project with hoop.
+Tool set: v1 spike was get_project and render_preview(widthPx:int[256..1024]); the edit phase forwards `RELAY_TOOLS` in src/broker.ts (reads, Ask AI edits as one undoable turn each, photo tools). Save, share, USB, file deletion, restore and settings are never forwarded.
 Write tools, needsUserConfirmation tools and attachments are NOT exposed in the spike.
 
 Operations: after any Worker secret change, always rerun deployment; see the
