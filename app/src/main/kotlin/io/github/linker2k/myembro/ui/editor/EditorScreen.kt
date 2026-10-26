@@ -25,6 +25,8 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.SewingPosition
+import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.engine.edit.StitchObject
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.ui.fonts.FontLibraryScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
@@ -77,6 +79,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var projectMenu by remember { mutableStateOf(false) }
         var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
+        var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
         var activeTool by rememberSaveable { mutableIntStateOf(0) }
         var inspectorTab by rememberSaveable { mutableIntStateOf(0) }
@@ -173,6 +176,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                     onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
                             }
                         }
+                        // Blocks exist only on vector shapes; an imported PES has stitches only.
+                        val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
+                        val stitchOnly = stringResource(R.string.block_edit_stitch_only)
+                        if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
+                            onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
+                            label = { Text(stringResource(R.string.block_edit_open)) },
+                            leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
@@ -259,6 +269,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     inspector(Modifier.fillMaxWidth().heightIn(max = inspectorHeight))
                 }
             }
+        }
+        // Region settings go through the engine's SetBlockStitch command (one undo step).
+        val blockShape = vm.selected as? ShapeObject
+        if (blockEdit && blockShape != null) Surface(Modifier.fillMaxSize()) {
+            io.github.linker2k.myembro.ui.editor.block.BlockEditScreen(vm, blockShape, onClose = { blockEdit = false })
         }
         splitPreview?.let { ready -> EditorSplitDialog(ready, onCancel = { splitPreview = null }, onExport = {
             splitPreview = null

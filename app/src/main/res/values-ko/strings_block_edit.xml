@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="block_edit_open">블럭 편집</string>
+    <string name="block_edit_title">블럭 편집</string>
+    <string name="block_edit_done">완료</string>
+    <string name="block_edit_multi">다중 선택</string>
+    <string name="block_edit_pick_hint">캔버스에서 영역을 탭하세요. 여러 개는 다중 선택을 켜고 탭합니다.</string>
+    <string name="block_edit_selected">영역 %1$d개 선택</string>
+    <string name="block_edit_apply">적용</string>
+    <string name="block_edit_type">종류</string>
+    <string name="block_edit_type_fill">채움</string>
+    <string name="block_edit_type_satin">새틴</string>
+    <string name="block_edit_type_running">러닝</string>
+    <string name="block_edit_texture">텍스처</string>
+    <string name="block_edit_texture_basic">기본</string>
+    <string name="block_edit_texture_pattern">무늬</string>
+    <string name="block_edit_texture_contour">윤곽</string>
+    <string name="block_edit_texture_circular">원형</string>
+    <string name="block_edit_tiles">미앤더 타일</string>
+    <string name="block_edit_direction">방향</string>
+    <string name="block_edit_direction_auto">자동</string>
+    <string name="block_edit_direction_manual">수동</string>
+    <string name="block_edit_angle">%1$d°</string>
+    <string name="block_edit_same_angle">선택한 영역 %1$d개에 같은 각도가 들어갑니다</string>
+    <string name="block_edit_density">밀도</string>
+    <string name="block_edit_density_dense">촘촘</string>
+    <string name="block_edit_density_normal">보통</string>
+    <string name="block_edit_density_sparse">성김</string>
+    <string name="block_edit_density_unverified">보통 = Ink/Stitch 기본 줄 간격 0.25mm. 촘촘·성김은 원본 근거가 없어 미확인이에요</string>
+    <string name="block_edit_order">순서</string>
+    <string name="block_edit_canvas">블럭 영역, 탭해서 선택</string>
+    <string name="block_edit_stitch_only">스티치만 있는 도안이라 블럭 설정을 할 수 없어요</string>
+    <string name="block_edit_sewout_checking">검사 중</string>
+    <string name="block_edit_generating">생성 중…</string>
+    <string name="block_edit_sewout_pass">봉제 검사 통과 · 후프 안</string>
+    <string name="block_edit_sewout_blocked">봉제 검사 차단</string>
+    <string name="block_edit_apply_failed">적용 안 됨</string>
+    <string name="block_edit_kept">적용하지 않고 이전 설정을 유지했어요: %1$s</string>
+    <string name="block_edit_blocked_now">지금 도안이 차단 상태예요: %1$s</string>
+    <string name="block_edit_order_pending">영역 순서 변경은 엔진 명령이 아직 없어 준비 중이에요</string>
+    <string name="block_edit_option_unavailable">선택한 영역에서는 쓸 수 없는 설정이에요</string>
+</resources>
