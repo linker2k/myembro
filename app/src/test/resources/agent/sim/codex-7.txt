@@ -1,0 +1,3 @@
+```json
+{"myembroScript":1,"promptId":"p-SIM7","summary":"사진의 대비를 높여 실루엣으로 추가합니다.","commands":[{"tool":"prepare_photo","args":{"attachmentId":"a1","mode":"silhouette","colors":2,"widthMm":60,"filter":"contrast"}},{"tool":"add_generated_art","args":{"resultId":"r1","objectId":"new:silhouette","name":"사진 실루엣"}}]}
+```
