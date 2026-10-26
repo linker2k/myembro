@@ -1,0 +1,813 @@
+{
+    "tools": [
+        {
+            "name": "get_project",
+            "description": "Read the open design: hoop, objects, fonts for add_text, free space around objects and the last sewing check. Lengths are mm; the hoop center is (0,0), x grows to the right and y grows downward.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "render_preview",
+            "description": "Picture of the design in its hoop as a PNG (widthPx 256-1024, default 512).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "widthPx": {
+                        "type": "integer",
+                        "minimum": 256,
+                        "maximum": 1024,
+                        "default": 512
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "list_fonts",
+            "description": "Installed fonts that can write a text (all arguments optional), with allowed heights; get_project already lists them.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "filters": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "KOREAN",
+                                "LATIN",
+                                "SCRIPT",
+                                "SINGLE_LINE",
+                                "OUTLINE"
+                            ]
+                        },
+                        "default": []
+                    },
+                    "installedOnly": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "list_builtin_designs",
+            "description": "Built-in designs add_design can place, with their sizes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "get_settings",
+            "description": "The chosen machine and the frames set_project_frame accepts.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "add_design",
+            "description": "Add a built-in design by its assetId from list_builtin_designs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "assetId": {
+                        "type": "string"
+                    },
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "assetId"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "add_text",
+            "description": "Add embroidered text at heightMm; leave out fontId to use the last font used (lastFontKo for Hangul, lastFontEn otherwise). Give xMm/yMm to place its center in the same step.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "fontId": {
+                        "type": "string"
+                    },
+                    "fontRevision": {
+                        "type": "string"
+                    },
+                    "heightMm": {
+                        "type": "number",
+                        "maximum": 60
+                    },
+                    "threadColor": {
+                        "type": "string",
+                        "pattern": "^#[0-9A-Fa-f]{6}$",
+                        "default": "#000000"
+                    },
+                    "singleLineBold": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "xMm": {
+                        "type": "number",
+                        "minimum": -10000,
+                        "maximum": 10000,
+                        "description": "Where the text's center goes, mm from the hoop center (right is positive)."
+                    },
+                    "yMm": {
+                        "type": "number",
+                        "minimum": -10000,
+                        "maximum": 10000,
+                        "description": "Where the text's center goes, mm from the hoop center (down is positive)."
+                    }
+                },
+                "required": [
+                    "text",
+                    "heightMm"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "replace_text",
+            "description": "Change an existing text object's text; font, height and color stay unless given.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "fontId": {
+                        "type": "string"
+                    },
+                    "fontRevision": {
+                        "type": "string"
+                    },
+                    "heightMm": {
+                        "type": "number",
+                        "maximum": 60
+                    },
+                    "threadColor": {
+                        "type": "string",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "singleLineBold": {
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "text"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_object_transforms",
+            "description": "Move objects so their center is at xMm/yMm; rotation and scale stay unless given.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "transforms": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "objectId": {
+                                    "type": "string"
+                                },
+                                "xMm": {
+                                    "type": "number",
+                                    "minimum": -10000,
+                                    "maximum": 10000
+                                },
+                                "yMm": {
+                                    "type": "number",
+                                    "minimum": -10000,
+                                    "maximum": 10000
+                                },
+                                "rotationDeg": {
+                                    "type": "number"
+                                },
+                                "scaleXPercent": {
+                                    "type": "number",
+                                    "minimum": 5,
+                                    "maximum": 2000
+                                },
+                                "scaleYPercent": {
+                                    "type": "number",
+                                    "minimum": 5,
+                                    "maximum": 2000
+                                }
+                            },
+                            "required": [
+                                "objectId",
+                                "xMm",
+                                "yMm"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "transforms"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "transform_objects",
+            "description": "Move, scale or rotate several objects together around their shared center.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "deltaXMm": {
+                        "type": "number",
+                        "default": 0
+                    },
+                    "deltaYMm": {
+                        "type": "number",
+                        "default": 0
+                    },
+                    "scaleFactor": {
+                        "type": "number",
+                        "default": 1
+                    },
+                    "rotationDeg": {
+                        "type": "number",
+                        "default": 0
+                    }
+                },
+                "required": [
+                    "objectIds"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "mirror_objects",
+            "description": "Mirror objects left to right.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "objectIds"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "center_objects",
+            "description": "Center the objects as a group in the hoop.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "objectIds"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "align_objects",
+            "description": "Align objects by their placed bounds.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "alignment": {
+                        "type": "string",
+                        "enum": [
+                            "LEFT",
+                            "CENTER_X",
+                            "RIGHT",
+                            "TOP",
+                            "CENTER_Y",
+                            "BOTTOM"
+                        ]
+                    }
+                },
+                "required": [
+                    "objectIds",
+                    "alignment"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "distribute_objects",
+            "description": "Space three or more objects evenly.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "axis": {
+                        "type": "string",
+                        "enum": [
+                            "HORIZONTAL",
+                            "VERTICAL"
+                        ]
+                    }
+                },
+                "required": [
+                    "objectIds",
+                    "axis"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "duplicate_object",
+            "description": "Copy an object to a new position.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "sourceId": {
+                        "type": "string"
+                    },
+                    "newObjectId": {
+                        "type": "string"
+                    },
+                    "transform": {
+                        "type": "object",
+                        "properties": {
+                            "xMm": {
+                                "type": "number",
+                                "minimum": -10000,
+                                "maximum": 10000
+                            },
+                            "yMm": {
+                                "type": "number",
+                                "minimum": -10000,
+                                "maximum": 10000
+                            },
+                            "rotationDeg": {
+                                "type": "number"
+                            },
+                            "scaleXPercent": {
+                                "type": "number",
+                                "minimum": 5,
+                                "maximum": 2000
+                            },
+                            "scaleYPercent": {
+                                "type": "number",
+                                "minimum": 5,
+                                "maximum": 2000
+                            }
+                        },
+                        "required": [
+                            "xMm",
+                            "yMm"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [
+                    "sourceId",
+                    "transform"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "reorder_object",
+            "description": "Set an object's place in the sewing order (0 = sewn first).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "index": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "index"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_object_visibility",
+            "description": "Show or hide an object.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "visible": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "visible"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "recolor_object",
+            "description": "Change one thread color of an object (threadIndex 0 = first color).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "threadIndex": {
+                        "type": "integer",
+                        "default": 0
+                    },
+                    "threadColor": {
+                        "type": "string",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "threadColor"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "remove_objects",
+            "description": "Remove objects. The phone asks the user first (up to 90 s); tell them: Please confirm on the phone in myembro (휴대폰 myembro에서 확인해 주세요).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "objectIds"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": true,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_project_frame",
+            "description": "Change the hoop to a frame id from get_settings.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "frameId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "frameId"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "list_attachments",
+            "description": "Photos the user handed to AI in myembro.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "view_attachment",
+            "description": "Look at a handed-over photo (at most 768 px).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string"
+                    },
+                    "maxEdgePx": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 768
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "maxEdgePx"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "add_generated_art",
+            "description": "Add a prepared photo result to the design.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "resultId": {
+                        "type": "string"
+                    },
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "resultId",
+                    "objectId",
+                    "name"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "prepare_photo",
+            "description": "Turn a handed-over photo into a stitch design at widthMm; add it with add_generated_art.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "silhouette",
+                            "outline",
+                            "color",
+                            "bw"
+                        ]
+                    },
+                    "colors": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 6
+                    },
+                    "widthMm": {
+                        "type": "number"
+                    },
+                    "filter": {
+                        "type": "string",
+                        "enum": [
+                            "original",
+                            "clean",
+                            "contrast",
+                            "threshold"
+                        ]
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "mode",
+                    "colors",
+                    "widthMm",
+                    "filter"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "import_picture",
+            "description": "Put a picture you drew into the open design as embroidery, in one undoable step; the answer has the sewing check. SVG is preferred (format svg, the SVG text itself in data): flat shapes with solid fills, at most 4788 bytes and 14 elements, no text, gradients or images; it keeps its own fill colors. PNG or JPEG go in data as base64 and must be small (at most 1000000 base64 characters, few flat colors); colors 2-6 (default 4) sets their thread colors. Each picture becomes its own layer, named title (default 'AI picture n') and your app's name. If it is too large, ask the user to share the picture to myembro instead.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "format": {
+                        "type": "string",
+                        "enum": [
+                            "svg",
+                            "png",
+                            "jpeg"
+                        ]
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "colors": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 6,
+                        "default": 4
+                    },
+                    "title": {
+                        "type": "string",
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "format",
+                    "data"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        }
+    ]
+}

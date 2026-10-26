@@ -3,12 +3,11 @@ import { Miniflare, Log, LogLevel } from 'miniflare';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Broker, DISCONNECTED, type AppSocket } from '../src/broker';
+import { RELAY_TOOLS } from '../src/tools';
+import { Broker, DISCONNECTED, UPDATE_REQUIRED, type AppSocket } from '../src/broker';
 
-const tools = [
-  { name: 'get_project', description: 'Read project', inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false }, annotations: { readOnlyHint: true, needsUserConfirmation: false } },
-  { name: 'render_preview', description: 'Render hoop', inputSchema: { type: 'object', properties: { widthPx: { type: 'integer', minimum: 256, maximum: 1024 } }, required: ['widthPx'], additionalProperties: false }, annotations: { readOnlyHint: true } }
-];
+// The app's own get_project/render_preview definitions (docs/agent/relay-tools.json), as a two-tool app sends them.
+const tools = RELAY_TOOLS.filter(t => t.name === 'get_project' || t.name === 'render_preview');
 const hello = () => JSON.stringify({ type: 'hello', appVersion: 'test', tools });
 
 function next(socket: any, type: string): Promise<any> {
@@ -37,15 +36,24 @@ describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket
     expect(response.status).toBe(101); const s = response.webSocket!; s.accept(); sockets.push(s);
     s.send(hello()); const ready = next(s, 'pong'); s.send(JSON.stringify({ type: 'ping' })); await ready; return s;
   }
-  it('initializes with official SDK; disconnected call uses exact contract text', async () => {
+  it('initializes and advertises all static tools before hello; disconnected calls use exact text', async () => {
     const initialized = await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
     expect(initialized.status).toBe(200); expect((await initialized.json() as any).result.serverInfo.name).toBe('myembro-relay');
+    expect((await (await rpc('tools/list')).json() as any).result.tools).toEqual(RELAY_TOOLS);
     const response = await rpc('tools/call', { name: 'get_project', arguments: {} });
     expect((await response.json() as any).result).toEqual({ isError: true, content: [{ type: 'text', text: DISCONNECTED }] });
   });
-  it('hello definitions survive tools/list unchanged', async () => {
+  it('two-tool hello cannot shrink the deployment catalog', async () => {
     await app(); const response = await rpc('tools/list');
-    expect(response.status).toBe(200); expect((await response.json() as any).result.tools).toEqual(tools);
+    expect(response.status).toBe(200); expect((await response.json() as any).result.tools).toEqual(RELAY_TOOLS);
+  });
+  it('returns the update message over MCP for a new tool missing from the two-tool app', async () => {
+    const s = await app(); const sent: any[] = [];
+    s.addEventListener('message', (e: any) => { const m = JSON.parse(e.data); if (m.type === 'call') sent.push(m); });
+    const response = await rpc('tools/call', { name: 'transform_objects', arguments: {} });
+    expect(response.status).toBe(200);
+    expect((await response.json() as any).result).toEqual({ isError: true, content: [{ type: 'text', text: UPDATE_REQUIRED }] });
+    expect(sent).toEqual([]);
   });
   it('forwards UUID/name/args and returns exact text, errors and image content', async () => {
     const s = await app();
@@ -61,7 +69,15 @@ describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket
       expect((await (await pending).json() as any).result).toEqual(result);
     }
   });
-  it('retains cached tools after disconnect, and rejects writes and bad preview arguments', async () => {
+  it('sends the last legacy initialize clientInfo.name with each call, one line and at most 40 characters', async () => {
+    const s = await app();
+    await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: ' Claude\nDesktop ' + 'x'.repeat(60), version: '1' } });
+    const received = next(s, 'call'); const pending = rpc('tools/call', { name: 'get_project', arguments: {} });
+    const call = await received; expect(call.client).toBe(('Claude Desktop ' + 'x'.repeat(60)).slice(0, 40));
+    s.send(JSON.stringify({ type: 'result', id: call.id, isError: false, content: [{ type: 'text', text: '{}' }] })); await pending;
+    await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
+  });
+  it('retains static tools across disconnect/restart and rejects unsupported calls', async () => {
     const s = await app();
     const bad = await rpc('tools/call', { name: 'render_preview', arguments: { widthPx: 99999 } });
     expect((await bad.json() as any).result.isError).toBe(true);
@@ -69,10 +85,10 @@ describe.sequential('official SDK MCP over Miniflare HTTP and real app WebSocket
     expect((await write.json() as any).result.isError).toBe(true);
     s.close();
     await new Promise(r => setTimeout(r, 10));
-    expect((await (await rpc('tools/list')).json() as any).result.tools).toEqual(tools);
+    expect((await (await rpc('tools/list')).json() as any).result.tools).toEqual(RELAY_TOOLS);
     // Persisted cache is independent of the old in-memory broker and its WebSocket.
     await mf.dispose(); mf = create();
-    expect((await (await rpc('tools/list')).json() as any).result.tools).toEqual(tools);
+    expect((await (await rpc('tools/list')).json() as any).result.tools).toEqual(RELAY_TOOLS);
     const disconnected = await rpc('tools/call', { name: 'get_project', arguments: {} });
     expect((await disconnected.json() as any).result).toEqual({ isError: true, content: [{ type: 'text', text: DISCONNECTED }] });
   });
@@ -125,42 +141,62 @@ describe('contract timers on the production broker with fake clock', () => {
     const sent: any[] = []; const socket: AppSocket = { send: raw => sent.push(JSON.parse(raw)), close: vi.fn() };
     const broker = new Broker(); broker.open(socket); broker.receive(socket, hello()); return { broker, socket, sent };
   }
-  it('times out at exactly 60 seconds; ignores late result', async () => {
+  it('times out at exactly 120 seconds; ignores late result', async () => {
     vi.useFakeTimers();
     try {
       const { broker, socket, sent } = setup(); const pending = broker.call('get_project', {}); const id = sent[0].id;
       let done = false; pending.then(() => { done = true; });
+      await vi.advanceTimersByTimeAsync(60_000); broker.receive(socket, '{"type":"pong"}');
       await vi.advanceTimersByTimeAsync(59_999); expect(done).toBe(false);
       await vi.advanceTimersByTimeAsync(1); expect(await pending).toEqual({ isError: true, content: [{ type: 'text', text: 'timed out' }] });
       broker.receive(socket, JSON.stringify({ type: 'result', id, isError: false, content: [] })); broker.close(socket);
     } finally { vi.useRealTimers(); }
   });
-  it('pings at 30 seconds, answers ping, and closes after 90 seconds silence', async () => {
-    vi.useFakeTimers();
-    try {
-      const { socket, sent } = setup(); await vi.advanceTimersByTimeAsync(30_000); expect(sent).toEqual([{ type: 'ping' }]);
-      await vi.advanceTimersByTimeAsync(59_999); expect(socket.close).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1); expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
-    } finally { vi.useRealTimers(); }
-  });
-  it('renews the exact 90-second silence deadline after a pong between ping ticks', async () => {
+  it('keeps idle connections timer-free and expires silence only when a call arrives', async () => {
     vi.useFakeTimers();
     try {
       const { broker, socket, sent } = setup();
-      await vi.advanceTimersByTimeAsync(29_123); broker.receive(socket, '{"type":"ping"}');
-      expect(sent.at(-1)).toEqual({ type: 'pong' });
-      await vi.advanceTimersByTimeAsync(89_999); expect(socket.close).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1); expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(90_000);
+      expect(sent).toEqual([]); expect(socket.close).not.toHaveBeenCalled();
+      expect((await broker.call('get_project', {})).isError).toBe(true);
+      expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
+      expect(vi.getTimerCount()).toBe(0);
     } finally { vi.useRealTimers(); }
   });
-  it('never exposes write, confirmation-required or unknown tool definitions', () => {
+  it('answers noncanonical JSON ping and renews lazy silence deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const { broker, socket, sent } = setup();
+      await vi.advanceTimersByTimeAsync(29_123); broker.receive(socket, '{ "type": "ping" }');
+      expect(sent.at(-1)).toEqual({ type: 'pong' });
+      await vi.advanceTimersByTimeAsync(89_999);
+      expect(socket.close).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1); await broker.call('get_project', {});
+      expect(socket.close).toHaveBeenCalledWith(1000, 'App silent for 90 seconds');
+    } finally { vi.useRealTimers(); }
+  });
+  it('forwards the edit-phase tools only, never separate-screen or unknown tool definitions', () => {
     const { broker, socket } = setup();
+    const edit = { ...tools[0], name: 'remove_objects', annotations: { readOnlyHint: false, destructiveHint: true } };
+    const photo = { ...tools[0], name: 'view_attachment' };
     const extra = [
-      { ...tools[0], name: 'remove_objects' },
+      { ...tools[0], name: 'send_usb' }, { ...tools[0], name: 'save_pes' }, { ...tools[0], name: 'delete_designs' },
+      { ...tools[0], name: 'set_settings' }, { ...tools[0], name: 'restore_backup' }, { ...tools[0], name: 'undo' },
       { ...tools[1], annotations: { readOnlyHint: true, needsUserConfirmation: 'onOverwrite' } }
     ];
-    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], ...extra] }));
-    expect(broker.tools).toEqual([tools[0]]); broker.close(socket);
+    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], edit, photo, ...extra] }));
+    expect(broker.tools).toEqual(RELAY_TOOLS);
+    expect(broker.tools.some(t => t.name === 'send_usb')).toBe(false); broker.close(socket);
+  });
+  it('passes view_attachment JPEG images through unchanged', async () => {
+    const { broker, socket, sent } = setup();
+    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [RELAY_TOOLS.find(t => t.name === 'view_attachment')] }));
+    const pending = broker.call('view_attachment', { attachmentId: 'a1', maxEdgePx: 768 });
+    const image = { type: 'image', data: '/9j/4AAQSkZJRgABAQ==', mimeType: 'image/jpeg' };
+    broker.receive(socket, JSON.stringify({ type: 'result', id: sent.at(-1).id, isError: false, content: [image] }));
+    expect(await pending).toEqual({ isError: false, content: [image] });
+    expect(socket.close).not.toHaveBeenCalled(); broker.close(socket);
   });
   it('routes simultaneous calls by UUID even when results arrive in reverse order', async () => {
     const { broker, socket, sent } = setup();

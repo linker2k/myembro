@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_picture_title">AI로 자수용 그림 만들기</string>
+    <string name="ai_picture_hint">사진 없이도 말이나 글로 설명하세요. AI가 만든 그림을 myembro로 공유하면 자수로 만들 수 있습니다.</string>
+    <string name="ai_picture_request">그림 설명과 넣을 글자</string>
+    <string name="ai_picture_example">웃는 강아지 얼굴, 아래에 코코</string>
+    <string name="ai_picture_voice">말로 설명하기</string>
+    <string name="ai_picture_no_photo">사진 없음</string>
+    <string name="ai_picture_has_photo">참고 사진 선택됨 (아직 전송 안 됨)</string>
+    <string name="ai_picture_pick">사진 선택 (선택 사항)</string>
+    <string name="ai_picture_remove">사진 빼기</string>
+    <string name="ai_picture_error">사진을 읽거나 공유하지 못했습니다. 다시 시도해 주세요.</string>
+    <string name="ai_picture_share">AI 앱 선택…</string>
+    <string name="ai_picture_chooser">AI 앱으로 보내기</string>
+    <string name="ai_picture_disclosure_title">보낼 내용 확인</string>
+    <string name="ai_picture_disclosure_photo">현재 사진의 축소 PNG와 요청문이 선택한 외부 AI 앱(ChatGPT·Gemini 등)으로 전달됩니다.</string>
+    <string name="ai_picture_disclosure_text">요청문만 선택한 외부 AI 앱으로 전달되며 사진은 보내지 않습니다.</string>
+    <string name="ai_picture_send">보내기</string>
+    <string name="ai_picture_text_only">사진 없이 요청문만</string>
+    <string name="ai_picture_colors">그림 색 수: %1$d</string>
+    <string name="svg_picture_unsupported">이 SVG는 쓸 수 없어요, PNG로 보내 주세요</string>
+    <string name="svg_picture_direct">SVG: 이미지 추적 없이 벡터로 직접 변환</string>
+    <string name="ai_picture_retry_png">PNG로 다시 요청</string>
+    <string name="picture_intake_not_picture">그림 파일이 아니에요</string>
+    <string name="picture_intake_choose">열 그림을 골라 주세요</string>
+</resources>

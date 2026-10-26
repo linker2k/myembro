@@ -18,12 +18,12 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 
-/** Relay spike contract v0, app side, against a fake relay (MockWebServer WebSocket). No network, no LLM. */
+/** Relay contract v0 (edit phase), app side, against a fake relay (MockWebServer WebSocket). No network, no LLM. */
 class RelayClientTest {
     private val server = MockWebServer().apply { start() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val project = AgentScenario.builtin("myembro_logo.pes", "logo", "H100")
-    private val url = server.url("/app?key=k").toString().replaceFirst("http", "ws")
+    private val url = server.url("/app").toString().replaceFirst("http", "ws")
 
     @AfterTest fun stop() { scope.cancel(); server.shutdown() }
 
@@ -40,34 +40,76 @@ class RelayClientTest {
     private fun relay() = Relay().also { server.enqueue(MockResponse().withWebSocketUpgrade(it)) }
     private fun client(tools: RelayTools, backoff: RelayClient.Backoff = RelayClient.Backoff(10, 40), pingMs: Long = 30_000,
         silenceMs: Long = 90_000, states: MutableList<RelayClient.State> = mutableListOf()) =
-        RelayClient(OkHttpClient(), url, "0.3.0-test", tools, scope, backoff, pingMs, silenceMs) { synchronized(states) { states += it } }.start()
-    private val editor = SpikeRelayTools({ RelayProject(project, 3) })
+        RelayClient(OkHttpClient(), url, "k", "0.3.0-test", tools, scope, backoff, pingMs, silenceMs) { synchronized(states) { states += it } }.start()
+    private val open = object : RelayDocument {
+        override suspend fun read() = RelayProject(project, 3)
+        override val editor: RelayEditor? = null
+    }
+    private val editor = RelayToolbox({ open })
+    private fun tools(render: (Project, Int) -> JsonObject, document: RelayDocument? = open) =
+        RelayToolbox({ document }, listOf(ProjectRelayTools(render = render)))
     private fun call(id: String, tool: String, args: String = "{}") = """{"type":"call","id":"$id","tool":"$tool","args":$args}"""
     private fun text(result: JsonObject) = result.getValue("content").jsonArray.single().jsonObject.getValue("text").jsonPrimitive.content
 
-    @Test fun helloOffersTheTwoSpikeToolsWithGetProjectFromToolsJson() {
+    @Test fun helloOffersTheRelayToolsAsToolsJsonDefinesThem() {
         val relay = relay(); client(editor)
         relay.socket()
         val hello = relay.next()
-        assertEquals("/app?key=k", server.takeRequest(5, TimeUnit.SECONDS)!!.path)
+        // Contract v1: the key only in the Authorization header, never in the URL.
+        val upgrade = server.takeRequest(5, TimeUnit.SECONDS)!!
+        assertEquals("/app", upgrade.path)
+        assertEquals("Bearer k", upgrade.getHeader("Authorization"))
         assertEquals(setOf("type", "appVersion", "tools"), hello.keys)
         assertEquals("hello", hello.getValue("type").jsonPrimitive.content)
         assertEquals("0.3.0-test", hello.getValue("appVersion").jsonPrimitive.content)
-        val tools = hello.getValue("tools").jsonArray.map { it.jsonObject }
-        assertEquals(listOf("get_project", "render_preview"), tools.map { it.getValue("name").jsonPrimitive.content })
-        // The checked-in definitions, unchanged except for annotations in MCP's standard names.
+        val all = hello.getValue("tools").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("get_project", "render_preview"), all.take(2).map { it.getValue("name").jsonPrimitive.content })
+        // The photo group (RelayPhotoTools, its own definitions) comes last, with MCP annotation names.
+        val photos = all.takeLast(RelayPhotoTools.NAMES.size)
+        assertEquals(RelayPhotoTools.NAMES, photos.map { it.getValue("name").jsonPrimitive.content }.toSet())
+        for (p in photos) assertTrue("readOnlyHint" in p.getValue("annotations").jsonObject && "readOnly" !in p.getValue("annotations").jsonObject)
+        val tools = all.dropLast(RelayPhotoTools.NAMES.size)
+        // The checked-in strict definitions, projected for the relay only (RelayCatalog): short description, no
+        // transactionId, fewer required arguments, add_text's optional position; annotations in MCP's names.
         val catalog = Json.parseToJsonElement(File("../docs/agent/tools.json").readText()).jsonObject.getValue("tools").jsonArray.map { it.jsonObject }
         for (t in tools) {
+            val name = t.getValue("name").jsonPrimitive.content
             val source = catalog.single { it.getValue("name") == t.getValue("name") }
             assertEquals(setOf("name", "description", "inputSchema", "annotations"), t.keys)
-            assertEquals(source - "annotations", t - "annotations")
-            assertTrue(source.getValue("annotations").jsonObject.getValue("readOnly").jsonPrimitive.boolean)
-            assertEquals(buildJsonObject { put("readOnlyHint", true); put("idempotentHint", true); put("openWorldHint", false) },
-                t.getValue("annotations"))
+            val extra = if (name == "remove_objects") " ${RelayProtocol.REMOVE_ON_PHONE}" else ""
+            assertEquals(RelayCatalog.DESCRIPTIONS.getValue(name) + extra, t.getValue("description").jsonPrimitive.content)
+            assertTrue(RelayCatalog.DESCRIPTIONS.getValue(name).length <= 260, name)
+            val strict = source.getValue("inputSchema").jsonObject
+            val relay = t.getValue("inputSchema").jsonObject
+            val strictProps = strict.getValue("properties").jsonObject.keys - "transactionId"
+            assertEquals(strictProps + (if (name == "add_text") setOf("xMm", "yMm") else emptySet()), relay.getValue("properties").jsonObject.keys, name)
+            assertTrue(strict.getValue("required").jsonArray.containsAll(relay.getValue("required").jsonArray), name)
+            assertEquals(strict["additionalProperties"], relay["additionalProperties"], name)
+            assertEquals(RelayProtocol.mcpAnnotations(source.getValue("annotations").jsonObject), t.getValue("annotations"))
         }
+        assertEquals(listOf("text", "heightMm"), tools.single { it.getValue("name").jsonPrimitive.content == "add_text" }
+            .getValue("inputSchema").jsonObject.getValue("required").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(emptyList(), tools.single { it.getValue("name").jsonPrimitive.content == "list_fonts" }
+            .getValue("inputSchema").jsonObject.getValue("required").jsonArray.toList())
+        // Units and coordinates are explained once.
+        assertEquals(1, tools.count { "y grows downward" in it.getValue("description").jsonPrimitive.content })
+        for (t in tools.take(5)) assertEquals(buildJsonObject { put("readOnlyHint", true); put("idempotentHint", true); put("openWorldHint", false) },
+            t.getValue("annotations"))
         val width = tools[1].getValue("inputSchema").jsonObject.getValue("properties").jsonObject.getValue("widthPx").jsonObject
         assertEquals(Triple("integer", 256, 1024), Triple(width.getValue("type").jsonPrimitive.content,
             width.getValue("minimum").jsonPrimitive.int, width.getValue("maximum").jsonPrimitive.int))
+    }
+
+    /**
+     * The relay tool catalog as a file (docs/agent/relay-tools.json), so the relay can import the same
+     * definitions the app's hello sends. Regenerate with RELAY_TOOLS_WRITE=1 after changing them.
+     */
+    @Test fun relayToolsFileMatchesTheHello() {
+        val file = File("../docs/agent/relay-tools.json")
+        val generated = Json { prettyPrint = true }.encodeToString(JsonElement.serializer(),
+            buildJsonObject { put("tools", JsonArray(editor.definitions)) }) + "\n"
+        if (System.getenv("RELAY_TOOLS_WRITE") == "1") file.writeText(generated)
+        assertEquals(generated, file.readText(), "Run RELAY_TOOLS_WRITE=1 ./gradlew :app:testDebugUnitTest --tests '*RelayClientTest*'")
     }
 
     @Test fun catalogAnnotationsMapToMcpHints() {
@@ -81,20 +123,22 @@ class RelayClientTest {
     @Test fun renderPreviewDrawsTheOpenProjectAtTheAskedWidth() = runBlocking {
         val drawn = mutableListOf<Pair<Project, Int>>()
         val image = buildJsonObject { put("type", "image"); put("data", "iVBORw0KGgo="); put("mimeType", "image/png") }
-        val tools = SpikeRelayTools({ RelayProject(project, 3) }, render = { p, w -> drawn += p to w; image })
+        val tools = tools({ p, w -> drawn += p to w; image })
         fun args(s: String) = Json.parseToJsonElement(s).jsonObject
         assertEquals(RelayResult(false, listOf(image)), tools.call("render_preview", args("""{"widthPx":512}""")))
         assertEquals(listOf(project to 512), drawn)
         // tools.json bounds are inclusive 256..1024; outside, or not one integer, nothing is drawn.
-        for (bad in listOf("""{"widthPx":255}""", """{"widthPx":1025}""", """{"widthPx":512.5}""", """{"widthPx":"512"}""", "{}",
+        for (bad in listOf("""{"widthPx":255}""", """{"widthPx":1025}""", """{"widthPx":512.5}""", """{"widthPx":"512"}""",
             """{"widthPx":512,"path":"/sdcard"}"""))
             assertTrue(tools.call("render_preview", args(bad)).isError, bad)
         for (w in listOf(256, 1024)) assertFalse(tools.call("render_preview", args("""{"widthPx":$w}""")).isError)
-        assertEquals(listOf(512, 256, 1024), drawn.map { it.second })
-        assertEquals(RelayResult.error(SpikeRelayTools.NO_PROJECT), SpikeRelayTools({ null }, render = { _, _ -> error("no") })
+        // Over the relay widthPx may be left out: 512.
+        assertFalse(tools.call("render_preview", args("{}")).isError)
+        assertEquals(listOf(512, 256, 1024, 512), drawn.map { it.second })
+        assertEquals(RelayResult.error(ProjectRelayTools.NO_PROJECT), tools({ _, _ -> error("no") }, null)
             .call("render_preview", args("""{"widthPx":512}""")))
         assertEquals(RelayResult.error("myembro could not render the preview."),
-            SpikeRelayTools({ RelayProject(project, 3) }, render = { _, _ -> error("bitmap") }).call("render_preview", args("""{"widthPx":512}""")))
+            tools({ _, _ -> error("bitmap") }).call("render_preview", args("""{"widthPx":512}""")))
     }
 
     @Test fun getProjectRoundTripRunsTheDispatcherOnTheOpenProject() {
@@ -117,12 +161,17 @@ class RelayClientTest {
         assertEquals("INVALID_ARGUMENTS", Json.parseToJsonElement(text(bad)).jsonObject.getValue("code").jsonPrimitive.content)
     }
 
-    @Test fun toolsOutsideTheSpikeSetAreRefusedWithoutRunning() {
+    @Test fun toolsTheHelloDidNotOfferAreRefusedWithoutRunning() {
         val ran = AtomicInteger()
-        val counting = RelayTools { tool, args -> ran.incrementAndGet(); editor.call(tool, args) }
+        val counting = object : RelayTools {
+            override val definitions = editor.definitions
+            override suspend fun call(tool: String, args: JsonObject): RelayResult { ran.incrementAndGet(); return editor.call(tool, args) }
+        }
         val relay = relay(); client(counting)
         val socket = relay.socket(); relay.next()
-        val refused = listOf("remove_objects", "set_object_transforms", "prepare_photo", "prepare_pes", "add_text", "list_fonts", "", "GET_PROJECT")
+        // Save, share, USB, file deletion, restore, settings, history and the emoji/sewout tools are never offered.
+        val refused = listOf("prepare_emoji", "list_emoji", "sewout_check", "prepare_pes", "save_project", "save_pes", "share_pes", "send_usb",
+            "delete_designs", "restore_backup", "set_settings", "new_project", "undo", "commit_edit_turn", "", "GET_PROJECT")
         refused.forEachIndexed { i, tool -> socket.send(call("x$i", tool)) }
         val results = List(refused.size) { relay.next() }.associateBy { it.getValue("id").jsonPrimitive.content }
         refused.indices.forEach { i ->
@@ -141,8 +190,8 @@ class RelayClientTest {
     }
 
     @Test fun withoutAnOpenEditorGetProjectIsAnError() = runBlocking {
-        val r = SpikeRelayTools({ null }).call("get_project", JsonObject(emptyMap()))
-        assertEquals(RelayResult.error(SpikeRelayTools.NO_PROJECT), r)
+        val r = RelayToolbox({ null }).call("get_project", JsonObject(emptyMap()))
+        assertEquals(RelayResult.error(ProjectRelayTools.NO_PROJECT), r)
     }
 
     @Test fun pingIsAnsweredWithPong() {
@@ -189,10 +238,11 @@ class RelayClientTest {
     }
 
     @Test fun relayAddressBecomesTheAppSocketUrl() {
-        assertEquals("wss://relay.example.workers.dev/app?key=a%2Bb%26c", RelayProtocol.appUrl(" wss://relay.example.workers.dev/ ", "a+b&c"))
-        assertEquals("wss://r.example/app?key=k", RelayProtocol.appUrl("https://r.example", "k"))
-        assertEquals("wss://r.example/base/app?key=k", RelayProtocol.appUrl("wss://r.example/base/app", "k"))
-        assertEquals("ws://10.0.2.2:8787/app?key=k", RelayProtocol.appUrl("ws://10.0.2.2:8787", "k"))
+        assertEquals("wss://relay.example.workers.dev/app", RelayProtocol.appUrl(" wss://relay.example.workers.dev/ ", "a+b&c"))
+        assertEquals("wss://r.example/app", RelayProtocol.appUrl("https://r.example", "k"))
+        assertEquals("wss://r.example/base/app", RelayProtocol.appUrl("wss://r.example/base/app", "k"))
+        assertEquals("ws://10.0.2.2:8787/app", RelayProtocol.appUrl("ws://10.0.2.2:8787", "k"))
+        assertEquals("Bearer a+b&c", RelayProtocol.authorization(" a+b&c "))
         // The key never goes out in clear to another host, and nothing without a key or a host.
         for (bad in listOf("ws://r.example", "http://192.168.0.5:8787", "ftp://r.example", "r.example", "", "wss://"))
             assertNull(RelayProtocol.appUrl(bad, "k"), bad)

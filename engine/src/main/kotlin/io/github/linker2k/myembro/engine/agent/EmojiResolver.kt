@@ -62,3 +62,24 @@ internal class EmojiPreparation(private val resolver: EmojiResolver) {
 }
 private fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes)
     .joinToString("") { "%02x".format(it.toInt() and 255) }
+
+/** An AI picture handed over as SVG text: SvgPictureInput's limits and content checks, then the photo
+ * screen's SVG path unchanged (VectorArt defaults, width clamped to pictureWidthRange, 0.1mm) and the
+ * same generated-design gate as emoji. docs/agent/svg-picture.md. */
+internal object SvgPicturePreparation {
+    fun prepare(svg: ByteArray, hoop: HoopSpec, requestedMm: Double, name: String): PreparedEmoji {
+        val art=try { io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.parse(svg).art }
+            catch(e:Exception) { throw EmojiToolRejection("SVG_NOT_SUPPORTED","This SVG cannot be used: ${e.message ?: "unsupported"}. Send a PNG instead.") }
+        val range=pictureWidthRange(hoop,VectorArt.aspectRatio(art))
+        val width=Math.round(requestedMm.coerceIn(range)*10)/10.0
+        val pattern=try { VectorArt.render(art,width,name=name).pattern } catch(e:IllegalArgumentException) {
+            throw EmojiToolRejection("SVG_NOT_SUPPORTED","This SVG cannot be used: ${e.message ?: "unsupported"}. Send a PNG instead.")
+        }
+        val pes=try { PesWriter.writeV1(pattern,hoop) } catch(e:IllegalArgumentException) {
+            throw EmojiToolRejection("SEWOUT_BLOCKED",e.message ?: "Writer blocked the picture")
+        }
+        val report=SewoutCheck.checkPes(pes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
+        if(!report.analysisComplete || report.hasBlockingIssues) throw EmojiToolRejection("SEWOUT_BLOCKED","Picture did not pass the existing generated-design gate")
+        return PreparedEmoji("svg-${java.util.UUID.randomUUID()}",name,pattern,width,range,report.verdict)
+    }
+}

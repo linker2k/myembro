@@ -34,13 +34,17 @@ class RelayService : Service() {
             NotificationChannel(CHANNEL, getString(R.string.relay_title), NotificationManager.IMPORTANCE_LOW))
         val notification = NotificationCompat.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(getString(R.string.relay_title)).setContentText(getString(R.string.relay_notification))
+            .setContentIntent(android.app.PendingIntent.getActivity(this, NOTIFICATION,
+                Intent(this, io.github.linker2k.myembro.MainActivity::class.java).setAction(io.github.linker2k.myembro.ui.editor.AiWorkspace.ACTION_OPEN),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE))
             .setOngoing(true).build()
         ServiceCompat.startForeground(this, NOTIFICATION, notification,
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0)
         client?.cancel()
-        // The editor's project is read on the main thread, where the editor changes it.
-        val tools = SpikeRelayTools({ withContext(Dispatchers.Main) { RelayProjectSource.current() } })
-        client = RelayClient(OkHttpClient(), url, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
+        // The AI work project (AiWorkspace), open on screen or not; it reads and changes itself on the main thread.
+        val app = application
+        val tools = RelayToolbox({ io.github.linker2k.myembro.ui.editor.AiWorkspace.relayDocument(app) })
+        client = RelayClient(OkHttpClient(), url, config.key, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
         return START_STICKY
     }
 

@@ -25,11 +25,15 @@ internal class EditorSession(initial: Project = Project(), limit: Int = 100) {
         if(isGesturing) return ToolDispatcher.Result(project,buildJsonObject {
             put("ok",false);put("code","GESTURE_IN_PROGRESS");put("message","Finish the pointer gesture before running a script")
         })
-        val controller=scriptControllers.getOrPut(kernel) { kernel.bind(engine) }
+        val controller=controller(kernel)
         val result=controller.executeScript(transactionId,expectedRevision,calls,exportSettings,dryRun,approvals)
         if(!dryRun) project=engine.project
         return result
     }
+    /** The controller [runCommandScript] uses for [kernel], for hosts that run its tools directly (relay photos). */
+    fun controller(kernel: ToolDispatcher): ToolTurnController = scriptControllers.getOrPut(kernel) { kernel.bind(engine) }
+    /** After such a host committed through [controller]: show the engine's project, as runCommandScript does. */
+    fun adoptEngineProject() { if (!isGesturing) project = engine.project }
     /** Read-only compatibility view for existing VM/test history counts; never a second History. */
     val history get() = engine.snapshot()
     var project: Project = initial

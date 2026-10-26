@@ -1,15 +1,16 @@
 # myembro relay spike
 
-Implements [manager contract v1](docs/relay-contract-v1.md), including header authentication. One Worker routes
+Implements [manager contract v1](docs/relay-contract-v1.md), including header authentication; [edit-phase extensions](docs/protocol-support.md) supersede the read-only scope. One Worker routes
 both authenticated endpoints to **one Durable Object**, named `single-relay`.
 No cloud account, login, deployment or Android changes are part of this commit.
 
-MCP initialization, request validation, JSON-RPC errors and Streamable HTTP are
-handled by the official **@modelcontextprotocol/sdk 1.26.0** `Server` and
-`WebStandardStreamableHTTPServerTransport`, not a relay-specific MCP dialect.
-A fresh stateless SDK server/transport serves each request with JSON responses.
-The Durable Object owns the app WebSocket, in-flight calls and persisted tool cache.
-No MCP sessions or SSE resumability are promised by this spike.
+The edit-phase extension uses official **@modelcontextprotocol/server 2.4.0**:
+createMcpHandler serves proper 2026-07-28 envelopes and subscriptions/listen;
+the official WebStandardStreamableHTTPServerTransport retains legacy JSON POSTs
+and authenticated GET SSE. The Durable Object owns the app connection, pending
+calls and app capability checks. Discovery uses the deployed static catalog. See [protocol evidence and the
+edit-phase contract](docs/protocol-support.md) for exact formats, version fallback,
+app responsibilities and the allowlist. No MCP protocol is reimplemented.
 
 Official references:
 
@@ -55,12 +56,12 @@ when a deployment is separately authorized; this unit does not test Claude mobil
   Wrong/malformed headers never downgrade to query authentication. A valid hello
   selects the active app; a new hello closes the previous socket and fails its
   pending requests. Definitions retain their original inputSchema/annotations.
-- Only get_project and render_preview with a positive readOnly/readOnlyHint
-  annotation are retained. A confirmation annotation other than false excludes
-  the definition. Other tool names, writes and attachment tools are not exposed.
-  render_preview accepts exactly one integer widthPx in 256–1024; get_project
-  accepts no arguments. The app remains responsible for rendering the current
-  project including its hoop.
+- tools/list always advertises the 24 deployed static definitions, regardless of
+  app hello or connection state. [Static discovery and schema drift gate](docs/static-tools.md)
+  document the snapshot, existing transactionId projection, and per-tool app
+  compatibility checks. Missing/mismatched app tools return the update message;
+  compatible calls keep using the app's existing dispatcher. File/export/settings
+  mutation operations never become available through hello.
 - `/mcp` accepts only `Authorization: Bearer <MCP_TOKEN>`. Configure the URL with
   no secret suffix in the claude.ai connector and add its request header there.
   Missing/incorrect credentials return 401 with the fixed body `Unauthorized`.
@@ -72,16 +73,16 @@ when a deployment is separately authorized; this unit does not test Claude mobil
   [Cloudflare timing-safe guidance](https://developers.cloudflare.com/workers/examples/protect-against-timing-attacks/).
   Missing/empty configured secrets fail closed.
 - UUIDs route concurrent calls to their own results, even out of order. Text,
-  application isError and inline image/png base64 content pass through unchanged.
+  application isError and inline image/png or image/jpeg base64 content pass through unchanged.
   Late results and results from a replaced socket cannot complete a new call.
-- Disconnection returns the exact contract error. Last hello definitions persist
-  in Durable Object storage across both app disconnect and object restart.
+- Disconnection returns the exact contract error. The static catalog survives
+  disconnect/restart without reading any legacy cached hello definitions.
 - Broker timers ping every 30 seconds, drop a silent app at 90 seconds, and resolve
-  each call after 60 seconds with isError and text `timed out`. A ping gets pong;
+  each call after 120 seconds with isError and text `timed out`. A ping gets pong;
   incoming valid messages renew liveness. No pending call is retried automatically.
 
 The regular WebSocket API keeps the object active while the app is connected.
-Hibernation/cost optimization, OAuth, multi-user routing, write consent and mobile
+Hibernation/cost optimization, OAuth, multi-user routing, app UI consent and mobile
 end-to-end testing remain outside this single-app trial contract. Credentials
 belong in request headers; do not log their values. The legacy app query path can
 still expose APP_KEY in access logs until the app migrates. Source code does not
@@ -92,18 +93,16 @@ must stop putting credentials in URLs, including obsolete MCP path forms.
 ## Measured verification
 
 `npm run typecheck`: exit 0.
-`npm test`: **2 test files, 16 tests passed** (Miniflare + Vitest).
+`npm test`: **4 test files, 31 tests passed** (Miniflare + Vitest).
 
-Eight integration tests use the actual bundled Worker, Durable Object storage,
-WebSocket and official SDK HTTP transport: disconnected error; hello/list identity;
-call forwarding/text/error/image preservation; cached tools after app disconnect
-and runtime restart plus forbidden/invalid calls; MCP header success/failure/missing,
-old-path/query rejection, app header/query migration, and credential-free runtime logs.
-Two auth unit tests assert native comparison uses fixed-size digests for different
-lengths, plus fail-closed configuration. Six broker tests
-cover exact 60-second timeout using fake timers, 30/90-second liveness including deadline renewal between ping ticks, excluded
-write/confirmation tools, concurrent UUID routing and replacement/late-result
-isolation. Fake timers target the production broker directly, not workerd's clock.
+Tests cover both protocol eras, static discovery before/after hello and restart,
+per-tool app compatibility and zero-forwarding update errors, schema drift,
+120-second timeout, and prior authentication/liveness/content safety checks.
+Android edit/consent behavior remains separate app work.
+
+The following header-auth smoke output was recorded before the v2 SDK upgrade
+(server 0.1.0). It is historical; current protocol/notification verification is
+in test/v2.test.ts and docs/protocol-support.md.
 
 Current header-auth local smoke (Miniflare HTTP + app WebSocket + real curl,
 using isolated temporary vars rather than changing the existing .dev.vars):

@@ -194,6 +194,19 @@ class ToolDispatcher(
         catch (e: TextToolRejection) { return failure(e.code, e.message ?: e.code) }
         catch (e: IllegalArgumentException) { return failure("INVALID_ARGUMENTS", e.message ?: "Invalid request") }
     }
+    /** Host-only (no tool): an SVG picture the host received, prepared like prepare_photo so add_generated_art
+     * adds it. Same output shape as prepare_photo; failures carry SVG_NOT_SUPPORTED or SEWOUT_BLOCKED. */
+    fun prepareSvgPicture(project: Project, svg: ByteArray, widthMm: Double, name: String): Result = try {
+        val prepared=SvgPicturePreparation.prepare(svg,project.hoop,widthMm,name)
+        preparedArt[prepared.id]=prepared
+        Result(project,buildJsonObject {
+            put("ok",true);put("resultId",prepared.id);put("status","READY");put("downloadRequired",false)
+            put("widthMm",prepared.widthMm);put("heightMm",(prepared.pattern.bounds?.height ?: 0)/10.0)
+            put("minWidthMm",prepared.range.start);put("maxWidthMm",prepared.range.endInclusive);put("verdict",prepared.verdict.name)
+        })
+    } catch(e: EmojiToolRejection) {
+        Result(project,buildJsonObject { put("ok",false);put("code",e.code);put("message",e.message ?: e.code);put("details",e.details) })
+    }
     /** Bind to the same EditSession used by a host's UI/history. Keep this controller for the document lifetime. */
     fun bind(session: EditSession) = ToolTurnController(session, this)
     internal fun validateRequest(name: String, arguments: JsonElement): String? = schema.validate(name, arguments)

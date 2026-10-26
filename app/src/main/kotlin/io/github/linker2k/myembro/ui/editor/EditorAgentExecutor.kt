@@ -9,6 +9,9 @@ import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.commands.EditSession
 import io.github.linker2k.myembro.engine.sewout.SewoutMachines
+import io.github.linker2k.myembro.relay.RelayCatalog
+import io.github.linker2k.myembro.relay.RelayConfirmation
+import io.github.linker2k.myembro.relay.RelayEdits
 import io.github.linker2k.myembro.ui.agent.*
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import kotlinx.coroutines.Dispatchers
@@ -44,14 +47,13 @@ internal class EditorAgentExecutor(
     private fun setup(script: AgentScript, handles: AgentHandles): Pair<Setup?, List<AgentProblem>> {
         val calls = AgentScriptCalls.of(script, handles, "${AgentScriptCalls.NEW_PREFIX}${script.promptId}", fontRevision)
         val base = session().project
-        val frames = (hoops() + base.hoop).associateBy(::frameId)
         val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } }
             ?: return null to listOf(AgentProblem("MACHINE_UNKNOWN", null, null, ""))
         if (calls.problems.isNotEmpty()) return null to calls.problems
         val export = buildJsonObject {
             put("machineId", machine); put("frameId", frameId(base.hoop)); put("pesVersion", settings().pesVersion.name)
         }
-        val kernel = kernels.getOrPut(frames) { kernelFactory(frames) }
+        val kernel = kernel(base)
         // prepare_photo changes nothing: it runs before the turn, and the turn only adds its result.
         val results = calls.prepares.associate { p ->
             p.handle to (prepared[Triple(kernel, calls.transactionId, p.call)] ?: run {
@@ -104,6 +106,88 @@ internal class EditorAgentExecutor(
             if (result.ok) AgentApplyResult.Applied
             else AgentApplyResult.Rejected(listOf(problem(result, setup.calls)))
         }
+    }
+
+    private fun kernel(base: Project): ToolDispatcher {
+        val frames = (hoops() + base.hoop).associateBy(::frameId)
+        return kernels.getOrPut(frames) { kernelFactory(frames) }
+    }
+
+    /** AI connection: the session's controller on this editor's kernel, where relay photo tools run. */
+    fun relayController(): ToolTurnController = session().let { it.controller(kernel(it.project)) }
+
+    /** The export settings an Apply checks against, or null while no known machine is chosen. */
+    fun relayExport(): JsonObject? {
+        val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } } ?: return null
+        return buildJsonObject { put("machineId", machine); put("frameId", frameId(session().project.hoop)); put("pesVersion", settings().pesVersion.name) }
+    }
+
+    private var checked: Pair<Pair<EditorSession, Long>, JsonObject>? = null
+
+    /**
+     * AI connection: the sewing check of the live project, as Apply runs it (sewout_check on the same kernel
+     * and export settings), PASS or BLOCK with findings; remembered per session revision.
+     */
+    suspend fun relaySewout(): JsonObject = withContext(Dispatchers.Default) {
+        val s = session(); val key = s to s.history.revision
+        checked?.takeIf { it.first == key }?.let { return@withContext it.second }
+        val export = relayExport() ?: return@withContext buildJsonObject { put("verdict", "UNKNOWN"); put("message", "Choose the machine in myembro settings.") }
+        val check = kernel(s.project).dispatch(s.project, key.second.toString(), "sewout_check", buildJsonObject {
+            put("projectRevision", key.second.toString()); put("pesAssetId", ""); put("machineId", export.getValue("machineId")); put("frameId", export.getValue("frameId"))
+        }).output
+        val verdict = JsonObject(RelayEdits.sewout(check) + ("revision" to JsonPrimitive(key.second.toString())))
+        checked = key to verdict
+        verdict
+    }
+
+    /** AI connection: a read tool on this editor's kernel, against the live project and revision. */
+    suspend fun relayQuery(tool: String, args: JsonObject): JsonObject = withContext(Dispatchers.Default) {
+        val base = session().project
+        kernel(base).dispatch(base, session().history.revision.toString(), tool, args).output
+    }
+
+    /**
+     * AI connection: one edit tool call is one script of one command on the live revision, through the same
+     * runCommandScript and [publish] as Apply, so it is one undo step and passes the sewout check or changes
+     * nothing. remove_objects is dry-run first, then runs only with the user's yes from [confirm] (the
+     * on-screen dialog; null = no answer), bound to this call as a ScriptApproval.
+     */
+    suspend fun relayEdit(tool: String, args: JsonObject, confirm: suspend (List<String>) -> Boolean?): JsonObject {
+        val base = session().project
+        val revision = session().history.revision
+        val machine = settings().machineProfile?.id?.takeIf { id -> SewoutMachines.all.any { it.id == id } }
+            ?: return RelayEdits.failure("MACHINE_UNKNOWN", "Choose the embroidery machine in myembro settings first.", revision, base)
+        // The app owns the turn; a caller cannot name or reuse one.
+        if ("transactionId" in args) return RelayEdits.failure("INVALID_ARGUMENTS", "transactionId is set by myembro", revision, base)
+        val transactionId = "relay-${java.util.UUID.randomUUID()}"
+        // Left-out relay arguments get their defaults; add_text with a position is two calls in this one turn.
+        val strict = withContext(Dispatchers.Default) { RelayCatalog.complete(tool, args, base, fontRevision) }
+        strict.error?.let { return RelayEdits.failure("INVALID_ARGUMENTS", it, revision, base) }
+        val run = strict.calls.map { ToolTurnController.Call(it.name, JsonObject(it.arguments.jsonObject + ("transactionId" to JsonPrimitive(transactionId)))) }
+        val export = buildJsonObject { put("machineId", machine); put("frameId", frameId(base.hoop)); put("pesVersion", settings().pesVersion.name) }
+        val kernel = withContext(Dispatchers.Default) { kernel(base) }
+        var approvals = emptyList<io.github.linker2k.myembro.engine.agent.ScriptApproval>()
+        if (tool == "remove_objects") {
+            val check = withContext(Dispatchers.Default) { session().runCommandScript(kernel, transactionId, revision, run, export, dryRun = true) }
+            if (!check.ok) return RelayEdits.result(check, revision, base)
+            val names = (args["objectIds"] as? JsonArray ?: return RelayEdits.failure("INVALID_ARGUMENTS", "objectIds is required", revision, base)).map { id -> base.find(id.jsonPrimitive.content)?.name ?: id.jsonPrimitive.content }
+            when (confirm(names)) {
+                true -> {}
+                false -> return RelayEdits.failure("USER_DECLINED",
+                    "The user chose Keep on the phone, so nothing was removed. ${RelayConfirmation.ON_PHONE}", revision, base)
+                null -> return RelayEdits.failure("NO_ANSWER", "Nobody answered on the phone within 90 seconds, so nothing was removed. " +
+                    "A myembro notification asked the user. ${RelayConfirmation.ON_PHONE}", revision, base)
+            }
+            approvals = listOf(ScriptApprovals.request(transactionId, revision, run, 0))
+        }
+        var result: ToolDispatcher.Result? = null
+        publish {
+            val r = withContext(Dispatchers.Default) { session().runCommandScript(kernel, transactionId, revision, run, export, approvals = approvals) }
+            result = r
+            if (r.ok) AgentApplyResult.Applied else AgentApplyResult.Rejected(emptyList())
+        }
+        val s = session()
+        return RelayEdits.result(checkNotNull(result) { "publish did not run the edit" }, s.history.revision, s.project)
     }
 
     /** Per-item approvals for the ticked removals only, bound to the whole script and its base revision. */

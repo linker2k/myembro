@@ -44,6 +44,7 @@ import kotlinx.coroutines.withContext
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     multiPositionPositions: List<SewingPosition> = emptyList(),
     onMultiPositionExport: ((Project, List<SewingPosition>) -> Unit)? = null,
+    onAiPicture: (() -> Unit)? = null,
 ) {
     // Screens drawn inside the editor (lettering, fonts) get no Home of their own: leaving goes
     // through the editor's unsaved-change check, from its own top bar.
@@ -52,11 +53,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
-        // AI connection (relay) reads the project only while the editor is on screen.
-        DisposableEffect(vm) {
-            io.github.linker2k.myembro.relay.RelayProjectSource.attach(vm) { vm.relayProject() }
-            onDispose { io.github.linker2k.myembro.relay.RelayProjectSource.detach(vm) }
-        }
+        // AI connection (relay): it works on this same project (AiWorkspace) whether or not the editor is on
+        // screen, so its edits show here at once; the removal question is asked from MainActivity.
+        // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
+        val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
+        var relayPhotoRequest by remember { mutableIntStateOf(0) }
+        if (relayOn) io.github.linker2k.myembro.relay.RelayPhotoHandoff(vm.relayPhotos, launch = relayPhotoRequest)
+        LaunchedEffect(relayOn) { if (relayOn) vm.prewarmRelayFonts() }
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
@@ -142,6 +145,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                         onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
                                         onClick = { projectMenu = false; vm.save() })
+                                    if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
+                                        onClick = { projectMenu = false; relayPhotoRequest++ })
                                 }
                             }
                         })
@@ -277,6 +282,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.import_title))
             }
+            if (onAiPicture != null) Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+                io.github.linker2k.myembro.ui.home.AiPictureCreationChoice(enabled = !vm.busy) {
+                    showDesigns = false; onAiPicture()
+                }
+            }
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
                 items(vm.designs, key = { it.path }) { file ->
@@ -313,7 +323,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             onAdd = { if (vm.commitLettering(it)) { preview = 1f; activeTool = 0 } },
                             onOpenFonts = { text -> fontsText = text; showFonts = true },
                             modifier = Modifier.fillMaxSize(), hoop = vm.project.hoop,
-                            initialFontId = pickedFontId, backgroundPattern = background, initialObject = original)
+                            // New text starts in the last font used (shared with the AI connection); app text is Korean first.
+                            initialFontId = pickedFontId ?: if (original == null) vm.lastFonts.korean else null,
+                            backgroundPattern = background, initialObject = original)
                         if (showFonts) {
                             BackHandler(onBack = closeFonts)
                             FontLibraryScreen(onBack = closeFonts,

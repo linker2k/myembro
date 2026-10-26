@@ -42,6 +42,19 @@ class HomeNavigationTest {
         assertEquals(5, buttons.size, buttons.toString())
     }
 
+    @Test fun aiPictureBelongsToCreationMenus() {
+        val home = source("ui/home/HomeScreen.kt")
+        val topBar = home.substringAfter("topBar = {").substringBefore("bottomBar =")
+        assertFalse("R.string.ai_picture_title" in topBar)
+        assertTrue("onAiPicture = onAiPicture" in home.substringAfter("if (showNewProject) NewProjectSheet("))
+        val sheet = source("ui/home/NewProjectSheet.kt")
+        assertTrue(sheet.indexOf("if (onFromPhoto != null)") < sheet.indexOf("if (onAiPicture != null)"))
+        assertTrue(sheet.indexOf("if (onAiPicture != null)") < sheet.indexOf("if (onFromEmoji != null)"))
+        val editor = source("ui/editor/EditorScreen.kt")
+        assertFalse("R.string.ai_picture_title" in editor.substringAfter("DropdownMenu(projectMenu").substringBefore("if (showDesigns)"))
+        assertTrue("AiPictureCreationChoice" in editor.substringAfter("if (showDesigns) ModalBottomSheet"))
+    }
+
     @Test fun askSheetKeepsCopyAndShareOutsideTheScroll() {
         val sheet = source("ui/agent/AgentScreens.kt").substringAfter("private fun AskSheet").substringBefore("\n}\n")
         val scroll = sheet.indexOf("Column(Modifier.weight(1f, fill = false).verticalScroll(")

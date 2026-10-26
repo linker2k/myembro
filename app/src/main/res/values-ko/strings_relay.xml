@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="relay_title">AI 연결(실험)</string>
-    <string name="relay_description">내 중계 서버를 거쳐 챗봇이 편집기에 열린 도안을 읽을 수 있게 합니다. 읽기 전용이라 도안을 바꾸지 못합니다. 키는 이 기기에만 저장되고 백업에 들어가지 않습니다.</string>
+    <string name="relay_description">내 중계 서버를 거쳐 챗봇이 편집기에 열린 도안을 읽고 고칠 수 있게 합니다. 고칠 때마다 되돌리기 한 번으로 되돌릴 수 있고, 박음질 검사를 통과하지 못하면 바뀌지 않습니다. 개체를 지울 때는 여기서 먼저 묻습니다. 저장·공유·USB 보내기는 직접 하세요. 키는 이 기기에만 저장되고 백업에 들어가지 않습니다.</string>
     <string name="relay_address">중계 주소</string>
     <string name="relay_key">APP_KEY</string>
     <string name="relay_invalid">wss:// 주소와 APP_KEY를 입력하세요.</string>
     <string name="relay_connecting">연결 중…</string>
     <string name="relay_connected">연결됨</string>
     <string name="relay_waiting">끊김, 곧 다시 연결</string>
-    <string name="relay_notification">AI 연결이 켜져 있습니다</string>
+    <string name="relay_notification">AI 연결이 켜져 있습니다. 탭하면 AI 작업 프로젝트를 엽니다.</string>
+    <string name="relay_remove_title">AI가 지우려고 합니다</string>
+    <string name="relay_remove_body">챗봇이 지우려는 개체: %1$s. 90초 안에 동의하지 않으면 지우지 않습니다.</string>
+    <string name="relay_remove_confirm">지우기</string>
+    <string name="relay_remove_cancel">남기기</string>
+    <string name="relay_confirm_channel">AI 확인 요청</string>
+    <string name="relay_confirm_notification">탭해서 myembro에서 답해 주세요: %1$s 지우기</string>
 </resources>

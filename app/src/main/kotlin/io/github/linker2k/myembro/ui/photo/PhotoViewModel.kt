@@ -63,6 +63,8 @@ enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var step by mutableIntStateOf(0); private set
     var source by mutableStateOf<Bitmap?>(null); private set
+    var isSvg by mutableStateOf(false); private set
+    private var svgArt: io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.Art? = null
     var zoom by mutableFloatStateOf(1f); private set
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
@@ -106,19 +108,38 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     /** Ink ÷ frame width of the latest outline (kept while re-tracing); null until step 2 has traced. */
     var inkRatio by mutableStateOf<Double?>(null); private set
     /** Slider range and value in embroidery (ink) mm. */
-    val inkWidthRange: ClosedFloatingPointRange<Double>? get() = inkRatio?.let { photoInkWidthRange(hoop, it) }
-    val inkWidthMm: Double? get() = inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
+    val inkWidthRange: ClosedFloatingPointRange<Double>? get() = svgArt?.let {
+        pictureWidthRange(hoop, io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(it))
+    } ?: inkRatio?.let { photoInkWidthRange(hoop, it) }
+    val inkWidthMm: Double? get() = if (svgArt != null) widthMm else inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
     val canSend get() = !busy && bytes != null && passed
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
+        isSvg = false; svgArt = null
         correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
-    fun configure(value: EmbroiderySettings) { if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
+    /** Only a returned AI picture carries its requested color count; normal begin retains 4. */
+    fun beginAiPicture(colors: Int) {
+        begin(); changeColorCount(colors); changeStyle(PhotoMode.COLOR)
+    }
+    fun configure(value: EmbroiderySettings) {
+        if (settings != value && svgArt != null) {
+            settings = value
+            val art = requireNotNull(svgArt)
+            widthMm = widthMm.coerceIn(pictureWidthRange(hoop, io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(art)))
+            generateSvg(art); return
+        }
+        if (settings != value) { settings = value; widthMm = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop)); if (step > 0) { step = 1; prepare() } } }
     /** [inkMm]: wanted embroidery width. Converted to the frame width with the size-independent ink ratio. */
     fun changeSize(inkMm: Double) {
+        svgArt?.let { art ->
+            val range = pictureWidthRange(hoop, io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(art))
+            widthMm = Math.round(inkMm.coerceIn(range) * 10) / 10.0
+            generateSvg(art); return
+        }
         val ratio = inkRatio ?: return
         val range = photoInkWidthRange(hoop, ratio)
         val frame = (inkMm.coerceIn(range) / ratio).coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(hoop))
@@ -129,6 +150,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         busy = true; progressStage = 0; error = null
         work = viewModelScope.launch {
             try {
+                val kind = withContext(Dispatchers.IO) { inspectPicture(getApplication<Application>(), uri).kind }
+                if (version != revision) return@launch
+                if (kind == PictureIntake.Kind.SVG) { loadSvg(uri); return@launch }
+                isSvg = false; svgArt = null
+                if (!kind.raster) {
+                    source = null; step = 0; invalidateResult(); error = R.string.picture_intake_not_picture
+                    return@launch
+                }
                 val bitmap = withContext(Dispatchers.IO) {
                     val decodeStart = SystemClock.elapsedRealtime()
                     val resolver = getApplication<Application>().contentResolver
@@ -140,6 +169,51 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { if (version == revision) error = R.string.photo_load_failed
             } finally { if (version == revision) busy = false }
+        }
+    }
+    private fun loadSvg(uri: Uri) {
+        work?.cancel(); val version = ++revision
+        isSvg = true; svgArt = null; source = null; step = 2; busy = true; error = null; invalidateResult()
+        work = viewModelScope.launch {
+            try {
+                val parsed = withContext(Dispatchers.IO) {
+                    val resolver = getApplication<Application>().contentResolver
+                    val bytes = resolver.openInputStream(uri).use { io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.read(requireNotNull(it)) }
+                    io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.parse(bytes)
+                }
+                if (version == revision) {
+                    svgArt = parsed.art; style = PhotoMode.COLOR
+                    val range = pictureWidthRange(hoop, io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(parsed.art))
+                    widthMm = io.github.linker2k.myembro.ui.emoji.EmojiViewModel.WIDTH_MM.coerceIn(range)
+                    generateSvg(parsed.art)
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (version == revision) error = R.string.svg_picture_unsupported }
+            finally { if (version == revision) busy = false }
+        }
+    }
+    private fun generateSvg(art: io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.Art) {
+        work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val width = widthMm
+        busy = true; error = null; step = 2; progressStage = 3; render = null; report = null; bytes = null
+        work = viewModelScope.launch {
+            try {
+                val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
+                    val pattern = io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.render(art, width, name = "SVG").pattern
+                    val pes = PesWriter.write(pattern, snapshot.writeSettings)
+                    val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
+                        SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED))
+                    Triple(RenderData(pattern), pes, check)
+                } }
+                if (version == revision) {
+                    render = output.first; report = output.third
+                    bytes = output.second.takeIf { output.third.analysisComplete && !output.third.hasBlockingIssues }
+                    resultSizeMm = output.first.pattern.bounds?.let { it.width / 10.0 to it.height / 10.0 }
+                    if (bytes == null) error = R.string.svg_picture_unsupported
+                }
+            } catch (_: TimeoutCancellationException) { if (version == revision) error = R.string.svg_picture_unsupported }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (version == revision) error = R.string.svg_picture_unsupported }
+            finally { if (version == revision) busy = false }
         }
     }
     fun transform(scale: Float, dx: Float, dy: Float) {

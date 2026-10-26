@@ -1,17 +1,16 @@
 {
   "name": "myembro-relay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --external:cloudflare:workers --external:node:* --outfile=dist/worker.js",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --external:node:* --outfile=dist/worker.js",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && vitest run",
     "dev": "wrangler dev --local --ip 127.0.0.1 --port 8787"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.26.0",
-    "zod": "3.25.76"
+    "@modelcontextprotocol/server": "2.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261026.1",

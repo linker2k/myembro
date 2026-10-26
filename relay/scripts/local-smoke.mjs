@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
+const staticSnapshot = JSON.parse(readFileSync(new URL('../../docs/agent/relay-tools.json', import.meta.url), 'utf8')).tools;
 import WebSocket from 'ws';
 const exec = promisify(execFile);
 const vars = Object.fromEntries(readFileSync(process.env.MYEMBRO_RELAY_VARS ?? new URL('../.dev.vars', import.meta.url), 'utf8').trim().split('\n').map(line => {
@@ -32,7 +33,10 @@ try {
     const response = JSON.parse(stdout);
     assert.equal(response.error, undefined);
     if (method === 'initialize') assert.equal(response.result.serverInfo.name, 'myembro-relay');
-    else assert.deepEqual(response.result.tools, tools);
+    else {
+      assert.deepEqual(response.result.tools.map(t => t.name), staticSnapshot.map(t => t.name));
+      assert(response.result.tools.length > tools.length, 'Discovery must not shrink to the two-tool app');
+    }
     console.log(`CURL ${method} HTTP 200 ${JSON.stringify(response)}`);
   }
 } finally { app.close(); }

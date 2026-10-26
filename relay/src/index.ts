@@ -1,7 +1,5 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from '@modelcontextprotocol/sdk/types.js';
-import { Broker } from './broker';
+import { Server, createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
+import { Broker, clientName, type ConnectionAttachment } from './broker';
 
 import { authorizationFailure, type RelaySecrets } from './auth';
 
@@ -15,13 +13,41 @@ export default {
   }
 };
 
-/** One object and one active app per deployment. Cached definitions survive reconnects/restarts. */
+/** One object and one active app per deployment. Discovery always uses the bundled static catalog. */
 export class Relay {
   private broker: Broker;
-  constructor(private state: DurableObjectState, private env: Env) {
-    this.broker = new Broker(tools => state.waitUntil(state.storage.put('tools', tools)));
-    state.blockConcurrencyWhile(async () => { this.broker.tools = await state.storage.get<Tool[]>('tools') ?? []; });
+  /** clientInfo.name from the last legacy initialize (memory only: gone after hibernation, then omitted). */
+  private lastClient?: string;
+  private handler = createMcpHandler(() => this.server(), { legacy: 'reject' });
+  private server(): Server {
+    const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
+    server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
+    // The calling AI's name: per request in 2026 envelopes, else the last legacy initialize (one user per relay).
+    server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {},
+      clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? this.lastClient));
+    return server;
   }
+  constructor(private state: DurableObjectState, private env: Env) {
+    // Ignore legacy cached hello definitions: the advertised catalog is a deployment artifact.
+    this.state.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}', '{"type":"pong"}'));
+    this.broker = new Broker(
+      (socket, attachment) => (socket as WebSocket).serializeAttachment(attachment),
+      socket => this.state.getWebSocketAutoResponseTimestamp(socket as WebSocket)?.getTime() ?? 0,
+    );
+    // Runtime-owned sockets and their small attachments survive hibernation; promises do not.
+    for (const socket of this.state.getWebSockets()) {
+      if (socket.readyState === WebSocket.OPEN)
+        this.broker.open(socket, socket.deserializeAttachment() as ConnectionAttachment | undefined);
+    }
+  }
+  webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): void {
+    if (typeof message === 'string') this.broker.receive(socket, message);
+    else { this.broker.close(socket); socket.close(1008, 'JSON text required'); }
+  }
+  webSocketClose(socket: WebSocket, code: number, reason: string): void {
+    this.broker.close(socket); socket.close(code === 1006 ? 1000 : code, reason);
+  }
+  webSocketError(socket: WebSocket): void { this.broker.close(socket); socket.close(1011, 'WebSocket error'); }
   async fetch(request: Request): Promise<Response> {
     const denied = await authorizationFailure(request, this.env);
     if (denied) return denied;
@@ -29,20 +55,19 @@ export class Relay {
       if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
         return new Response('WebSocket upgrade required', { status: 426 });
       const pair = new WebSocketPair(); const [client, app] = Object.values(pair);
-      app.accept(); this.broker.open(app);
-      app.addEventListener('message', event => {
-        if (typeof event.data === 'string') this.broker.receive(app, event.data);
-        else { this.broker.close(app); app.close(1008, 'JSON text required'); }
-      });
-      app.addEventListener('close', () => this.broker.close(app));
-      app.addEventListener('error', () => this.broker.close(app));
+      this.state.acceptWebSocket(app); this.broker.open(app);
       return new Response(null, { status: 101, webSocket: client });
     }
-    // Stateless official Streamable HTTP: each request gets a fresh SDK server/transport.
-    // App connection, cached tools and concurrent-call routing live in the Durable Object.
-    const server = new Server({ name: 'myembro-relay', version: '0.1.0' }, { capabilities: { tools: {} } });
-    server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: this.broker.tools }));
-    server.setRequestHandler(CallToolRequestSchema, async request => this.broker.call(request.params.name, request.params.arguments ?? {}));
+    // Official v2 routes both 2026 per-request envelopes and legacy POST traffic.
+    // No unsolicited notifications: an optional idle GET/SSE would prevent hibernation.
+    // MCP Streamable HTTP explicitly permits 405 when this stream is not offered.
+    if (request.method === 'GET') return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
+    if (!await isLegacyRequest(request)) return this.handler.fetch(request);
+    if (request.method === 'POST') {
+      const body: any = await request.clone().json().catch(() => undefined);
+      if (body?.method === 'initialize') this.lastClient = clientName(body.params?.clientInfo?.name);
+    }
+    const server = this.server();
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
     try { return await transport.handleRequest(request); }
