@@ -33,3 +33,32 @@ app: tests=405 failures=0 errors=0 skipped=0
 PHOTO_SHAPE_PARITY colors=2 stitches=2278 coordinates=IDENTICAL pes=IDENTICAL codec=IDENTICAL regions=1
 PHOTO_SHAPE_PARITY colors=3 stitches=2650 coordinates=IDENTICAL pes=IDENTICAL codec=IDENTICAL regions=2
 ```
+
+## Region-order model constructor compatibility (`077a59e`)
+
+Merged the model branch into this integration branch. Its `Lazy<VectorArt.Result>`
+constructor now receives the immutable existing photo pattern plus matching source-order
+Part IDs, rather than `Lazy<EmbPattern>`. No photo pattern is regenerated through
+VectorArt. The codec retains both the photo payload and the model's optional regionOrder;
+renaming retains the current order. The only ShapeObject.kt difference from the model
+revision remains the previously approved private → internal constructor access.
+
+Scope limitation: retained photo caches still have no native per-region stitch
+fragments. This compatibility fix preserves existing default-order photo output;
+it does not implement photo `regionPattern`/region reordering. Changing photo region
+order would require source provenance and fragment persistence, not guessing from
+stitches or regenerating defaults. VectorArt-backed SVG/emoji region-order support
+continues to use the model implementation.
+
+Verification (ordinary sources, no overlay; no emulator used):
+
+```text
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk \
+  ./gradlew --offline --max-workers=2 :engine:test :app:testDebugUnitTest
+engine: tests=929 failures=0 errors=0 skipped=0
+app: tests=410 failures=0 errors=0 skipped=0
+PhotoShapeParityTest: 2/2 PASS; 2/3-color coordinates/PES/codec IDENTICAL
+ShapeIntakeParityTest: 2/2 PASS; SVG/emoji coordinates/PES/codec IDENTICAL
+CircularBlockProfileTest: 2/2 PASS; 6/6 renders golden=IDENTICAL
+BUILD SUCCESSFUL in 2m 7s
+```
