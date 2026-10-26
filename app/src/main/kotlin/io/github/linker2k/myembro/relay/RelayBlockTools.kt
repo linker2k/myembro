@@ -25,7 +25,7 @@ class BlockRelayTools : RelayToolGroup {
         val LOCAL = Json.parseToJsonElement("""[
   {
     "name": "list_blocks",
-    "description": "List editable regions of a shape object: ids, colors, current block settings and local area in mm² (holes subtracted). Meander tile names only.",
+    "description": "List editable regions: ids, colors, block settings, local area mm², and SATIN/RUNNING/FILL prerequisites (not final sewout). Meander tile names only.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -81,7 +81,6 @@ class BlockRelayTools : RelayToolGroup {
                 "circular_fill",
                 "cross_stitch",
                 "guided_fill",
-                "linear_gradient_fill",
                 "tartan_fill",
                 "legacy_fill"
               ]

@@ -65,6 +65,16 @@ object BlockTools {
                 // Geometry is in local mm; holes subtract, transforms do not change this local area.
                 put("areaMm2", PolygonRegion.fromPaths(region.paths.filter { it.closed }, FillRule.EVEN_ODD).area)
                 put("stitch", ShapeObjectCodec.encodeBlock(region.stitch))
+                val available = BlockStitchCapabilities.forRegion(region, obj.transform)
+                fun option(value: BlockStitchAvailability) = buildJsonObject {
+                    put("possible", value.possible)
+                    value.reason?.let { put("reason", it) }
+                    value.maxStitchLengthMm?.let { put("maxStitchLengthMm", it) }
+                }
+                put("capabilities", buildJsonObject {
+                    put("SATIN", option(available.satin)); put("RUNNING", option(available.running)); put("FILL", option(available.fill))
+                    put("fillMethods", JsonArray(BlockStitchCapabilities.fillMethods.map(::JsonPrimitive)))
+                })
             } }))
         }
     }
