@@ -96,6 +96,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
+    var shapeObject by mutableStateOf<io.github.linker2k.myembro.engine.edit.ShapeObject?>(null); private set
     var report by mutableStateOf<SewoutReport?>(null); private set
     var separatedPreview by mutableStateOf<Bitmap?>(null); private set
     var outline by mutableStateOf<RedworkOutline?>(null); private set
@@ -194,20 +195,21 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     }
     private fun generateSvg(art: io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.Art) {
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val width = widthMm
-        busy = true; error = null; step = 2; progressStage = 3; render = null; report = null; bytes = null
+        busy = true; error = null; step = 2; progressStage = 3; render = null; shapeObject = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
-                    val pattern = io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.render(art, width, name = "SVG").pattern
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", "SVG", art, width)
+                    val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
                         SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(pattern), pes, check)
+                    Triple(shape, pes, check)
                 } }
                 if (version == revision) {
-                    render = output.first; report = output.third
+                    shapeObject = output.first; render = RenderData(output.first.localPattern()); report = output.third
                     bytes = output.second.takeIf { output.third.analysisComplete && !output.third.hasBlockingIssues }
-                    resultSizeMm = output.first.pattern.bounds?.let { it.width / 10.0 to it.height / 10.0 }
+                    resultSizeMm = output.first.localPattern().bounds?.let { it.width / 10.0 to it.height / 10.0 }
                     if (bytes == null) error = R.string.svg_picture_unsupported
                 }
             } catch (_: TimeoutCancellationException) { if (version == revision) error = R.string.svg_picture_unsupported }
@@ -231,7 +233,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
+    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
@@ -318,28 +320,32 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     private fun generateResult() {
         val traced = outline ?: return
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
-        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null; resultSizeMm = null
+        busy = true; progressStage = 3; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
+                    var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR) {
-                        ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
+                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
-                        }.pattern
+                        }
+                        shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
+                            getApplication<Application>().getString(R.string.photo_name),generated,widthMm)
+                        generated.pattern
                     } else RedworkPipeline.generate(traced,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoMode.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
-                    if(generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null)
+                    if(generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null) to shape
                     val pes = PesWriter.write(generatedPattern,snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes,viewerSewoutMachine(snapshot.machineProfile?.id,snapshot.machineModel),
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(generatedPattern),pes,check)
+                    Triple(RenderData(generatedPattern),pes,check) to shape
                 } }
-                if (version == revision) { render=output.first; bytes=output.second; report=output.third
-                    resultSizeMm=output.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
+                if (version == revision) { shapeObject=output.second;render=output.first.first; bytes=output.first.second; report=output.first.third
+                    resultSizeMm=output.first.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed

@@ -129,7 +129,7 @@ class ToolDispatcher(
             val command = when (name) {
                 "add_generated_art" -> {
                     val art=preparedArt[a.string("resultId")] ?: return failure("RESULT_NOT_FOUND","Unknown prepared result ID")
-                    ProjectCommand.Add(StitchObject(a.string("objectId"),a.string("name").ifBlank { art.name },art.pattern))
+                    ProjectCommand.Add(art.objectFor(a.string("objectId"),a.string("name").ifBlank { art.name }))
                 }
                 "add_design" -> {
                     val asset=designResolver.resolve(a.string("assetId"))
