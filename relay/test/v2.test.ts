@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { Broker, type AppSocket } from '../src/broker';
 const auth = { Authorization: 'Bearer v2-test-token' };
-const meta = { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientInfo': { name: 'test', version: '1' }, 'io.modelcontextprotocol/clientCapabilities': {} };
+const meta = { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientInfo': { name: 'modern-client', version: '1' }, 'io.modelcontextprotocol/clientCapabilities': {} };
 const tools = [structuredClone(RELAY_TOOLS.find(t => t.name === 'get_project')!)];
 const hello = (t = tools) => JSON.stringify({ type: 'hello', appVersion: 'v2-test', tools: t });
 function next(socket: any, type: string): Promise<any> { return new Promise(resolve => { const fn = (e: any) => { const m = JSON.parse(e.data); if (m.type === type) { socket.removeEventListener('message', fn); resolve(m); } }; socket.addEventListener('message', fn); }); }
@@ -49,7 +49,7 @@ describe.sequential('v2 actual HTTP protocol and notifications', () => {
     const args = { objectIds: ['logo'], deltaXMm: 1, deltaYMm: 0, rotationDeg: 0, scaleFactor: 1 };
     const received = next(app, 'call'); const pending = rpc('tools/call', { _meta: meta, name: 'transform_objects', arguments: args });
     const call = await received; expect(call.args).toEqual(args);
-    expect(call.client).toBe('test'); // 2026 envelopes carry clientInfo on every request
+    expect(call.client).toBe('modern-client'); // the 2026 envelope's own clientInfo, not the earlier legacy initialize ('test')
     const result = { isError: false, content: [{ type: 'text', text: '{"ok":true,"revision":1,"sewout":{"verdict":"PASS"}}' }] };
     app.send(JSON.stringify({ type: 'result', id: call.id, ...result }));
     const actual: any = await (await pending).json(); expect(actual.result.content).toEqual(result.content);

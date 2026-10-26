@@ -22,9 +22,10 @@ export class Relay {
   private server(): Server {
     const server = new Server({ name: 'myembro-relay', version: '0.2.0' }, { capabilities: { tools: { listChanged: false } } });
     server.setRequestHandler('tools/list', async () => ({ tools: this.broker.tools }));
-    // The calling AI's name: per request in 2026 envelopes, else the last legacy initialize (one user per relay).
+    // The calling AI's name: the 2026 envelope's clientInfo (the SDK takes it out of params._meta and gives it to
+    // this per-request server), else the last legacy initialize (one user per relay).
     server.setRequestHandler('tools/call', async request => this.broker.call(request.params.name, request.params.arguments ?? {},
-      clientName((request.params._meta as any)?.['io.modelcontextprotocol/clientInfo']?.name) ?? this.lastClient));
+      clientName(server.getClientVersion()?.name) ?? this.lastClient));
     return server;
   }
   constructor(private state: DurableObjectState, private env: Env) {

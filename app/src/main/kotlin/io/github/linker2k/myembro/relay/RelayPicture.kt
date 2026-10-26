@@ -49,14 +49,14 @@ object RelayPicture {
          "annotations":{"readOnly":false,"needsUserConfirmation":false}}""").jsonObject
 
     /**
-     * The layer name: [title], or the first "AI picture n" ([numbered]) no layer uses yet, then the calling AI's
-     * name in parentheses when the relay sent one ([client]).
+     * The layer name: [title], or the first "AI picture n" ([numbered]) no layer uses yet, then " · " and the calling AI's
+     * name when the relay sent one ([client]).
      */
     fun name(title: String, client: String?, names: Collection<String>, numbered: (Int) -> String): String {
         val base = title.trim().take(MAX_TITLE).ifEmpty {
-            generateSequence(1) { it + 1 }.map(numbered).first { n -> names.none { it == n || it.startsWith("$n (") } }
+            generateSequence(1) { it + 1 }.map(numbered).first { n -> names.none { it == n || it.startsWith("$n · ") } }
         }
-        return if (client == null) base else "$base ($client)"
+        return if (client == null) base else "$base · $client"
     }
 
     sealed interface Checked {
