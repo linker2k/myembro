@@ -32,7 +32,7 @@ internal data class PreparedEmoji(val id: String, val name: String, val pattern:
     val shape: ShapeObject? = null) {
     fun objectFor(id: String, name: String): DesignObject {
         val editable = shape ?: return StitchObject(id, name, pattern) // Redwork/centerline remain stitches.
-        val obj = if (name == editable.name) editable.withId(id) else ShapeObject.fromArt(id, name, editable.sourceArt, editable.widthMm)
+        val obj = if (name == editable.name) editable.withId(id) else ShapeObjectFactory.renamed(editable, id, name)
         // StitchObject used to re-center actual sewn bounds at import. Preserve that placement exactly.
         val b = obj.localPattern().bounds ?: return obj
         return obj.withTransform(Transform(x = -((b.minX.toLong()+b.maxX)/2).toDouble(), y = -((b.minY.toLong()+b.maxY)/2).toDouble()))

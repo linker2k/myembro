@@ -7,11 +7,28 @@ Base: `83306dc`. ShapeObject.kt is unchanged in this branch.
 - Preserve the previous coordinates: agent additions explicitly apply the center offset formerly supplied by `StitchObject.recenter`; screen-to-editor additions retain the raw preview placement. Renaming an added layer now also updates the generated pattern's `name` metadata, without changing any stitch/thread.
 - Add a default-source project codec so autosave/undo/script summaries can preserve geometry. Its `shapeVersion=1`, `shapes`, `viewBox`, `widthMm`, `blocks` fields match the model worker's in-progress codec envelope. This draft accepts empty block overrides only; integration should retain the model worker's complete settings codec instead of this draft when resolving the parallel additions.
 
-## Remaining dependency: photo fill / raster AI pictures
+## Photo fill integration draft
 
-The photo pipeline cannot safely call `ShapeObject.fromArt` today. `ColorDrawingPipeline` generates tatami via `DefaultTatami` from its resolved geometry and uses raster-derived AutoTrace paths for other regions. `ShapeObject.fromArt` instead calls `VectorArt.render` (FontTatami/RegionSatin, its own scaling, occlusion and finishing). Wrapping the photo contours in SVG would reroute/reclassify the design and does not establish stitch parity.
+`ShapeObjectFactory` now retains the already emitted ColorDrawingPipeline pattern plus the Potrace polygon rings (mm, including holes). ColorDrawingPipeline only exposes those source rings; tracing, classification, routing and finishing are unchanged. The photo screen and PhotoPreparation use this factory for all-tatami area results; the relay PNG/JPEG import_picture uses the latter automatically. Renaming, duplication and project encode/decode retain the cached photo backend/default pattern. The `photo` codec payload stores thread identity, commands, metadata, warnings and region boundaries, avoiding a decode-time switch to VectorArt.
 
-A model-owned factory/source type must retain the already generated photo pattern and its source regions, with serialization support, before the photo color-fill and PNG/JPEG `import_picture` paths can switch to ShapeObject without changing sewing. This branch keeps those as StitchObject and annotates the dependency in AttachmentStore. AutoTrace centerline/outline and redwork are deliberately still StitchObject; no attempt is made to reconstruct an area from their machine stitches.
+AutoTrace satin/running or mixed area/centerline results, outline and redwork deliberately remain StitchObject. Excluded/unsewn regions are not presented as emitted shape blocks. The retained photo payload must be preserved when combining this codec with the model worker's block-override codec; simply dropping `photo` during decode would reroute the source and change stitches. This unit verifies unchanged defaults, not application of the model worker's new override renderer to photo sources.
+
+### Required model-owned diff (not applied)
+
+The private constructor cannot be called from a separate Kotlin file. The only required change to ShapeObject.kt is [this one-line draft](patches/shape-constructor-access.patch):
+
+```diff
+-class ShapeObject private constructor(
++class ShapeObject internal constructor(
+```
+
+ShapeObject.kt remains unmodified. **Until the model worker applies this access change, the ordinary build is blocked by constructor visibility.** The complete draft can be checked with a clearly labeled temporary source overlay:
+
+```sh
+python3 tools/check_photo_shape_draft.py
+```
+
+This script compiles a /tmp copy with just that access change and excludes the tracked original for that invocation. It does not patch tracked sources or change normal Gradle behavior. After applying the model-owned diff, verify with the ordinary command below; do not treat overlay success as an already green unpatched branch.
 
 ## Checks
 
@@ -22,4 +39,4 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk
   ./gradlew --offline :engine:test :app:testDebugUnitTest
 ```
 
-Photo/raster ShapeObject parity is **not claimed** until the factory dependency above is resolved.
+`PhotoShapeParityTest` uses only generated in-memory 2-color and 3-color PNG fixtures (white included), including a real hole, comparing pre-conversion ColorDrawingPipeline against direct factory and engine preparation/add placement. It asserts exact stitches/threads/metadata/warnings, composed PES bytes and codec round-trip, plus explicit outline fallback to StitchObject. The constructor-overlay qualification above applies until the model-owned access diff is installed.

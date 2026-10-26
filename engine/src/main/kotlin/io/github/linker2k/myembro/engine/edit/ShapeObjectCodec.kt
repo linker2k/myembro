@@ -12,6 +12,7 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape", ShapeObj
         put("shapeVersion", 1)
         put("blocks", buildJsonObject {})
         put("widthMm", obj.widthMm)
+        if (ShapeObjectFactory.isPhoto(obj)) put("photo", PhotoShapeCodec.encode(obj))
         put("viewBox", JsonArray(obj.sourceArt.viewBox.map(::JsonPrimitive)))
         put("shapes", JsonArray(obj.sourceArt.shapes.map { s -> buildJsonObject {
             put("d", s.d); put("fill", s.fill?.let(::JsonPrimitive) ?: JsonNull)
@@ -33,6 +34,7 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape", ShapeObj
                     s["lineCap"]?.jsonPrimitive?.contentOrNull, s["lineJoin"]?.jsonPrimitive?.contentOrNull,
                     Affine2D(m[0],m[1],m[2],m[3],m[4],m[5]), FillRule.valueOf(s.getValue("fillRule").jsonPrimitive.content))
             })
+        data["photo"]?.let { return PhotoShapeCodec.decode(fields,art,data.getValue("widthMm").jsonPrimitive.double,it.jsonObject) }
         return ShapeObject.fromArt(fields.id, fields.name, art, data.getValue("widthMm").jsonPrimitive.double)
             .withTransform(fields.transform).withVisible(fields.visible)
     }

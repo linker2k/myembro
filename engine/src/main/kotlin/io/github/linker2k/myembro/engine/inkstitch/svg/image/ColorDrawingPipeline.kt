@@ -35,7 +35,9 @@ object ColorDrawingPipeline {
         internal fun indices()=labels
     }
     data class Region(val thread:io.github.linker2k.myembro.engine.model.EmbThread,
-        val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int,val excluded:Boolean=false)
+        val widths:StitchTypeRule.Widths,val method:StitchTypeRule.Type,val groups:Int,val excluded:Boolean=false,
+        /** Actual Potrace polygon rings, in object-local mm; holes are retained. */
+        val paths:List<Polyline> = emptyList())
     data class Result(val pattern:io.github.linker2k.myembro.engine.model.EmbPattern,val regions:List<Region>) {
         val excludedCount get()=regions.count { it.excluded }
     }
@@ -160,7 +162,10 @@ object ColorDrawingPipeline {
                     if(next.isNotEmpty() && groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
                     groups+=next
 
-                    regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded)
+                    val polygon=shape as org.locationtech.jts.geom.Polygon
+                    val sourcePaths=(listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN))
+                        .map { ring -> Polyline(ring.coordinates.map { Point(it.x/10.0,it.y/10.0) },true) }
+                    regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded,sourcePaths)
                 }
             }
         val finished=if(groups.isEmpty()) io.github.linker2k.myembro.engine.model.EmbPattern(emptyList(),emptyList())
