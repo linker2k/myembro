@@ -15,17 +15,6 @@ import io.github.linker2k.myembro.engine.sewout.DesignOrigin
 import io.github.linker2k.myembro.engine.sewout.SewoutLimits
 import kotlin.math.roundToInt
 
-/** Where the block editor's generation stands; the badge shows it. */
-sealed interface BlockStatus {
-    data object Idle : BlockStatus
-    data object Checking : BlockStatus
-    data object Generating : BlockStatus
-    /** Whole project inside the hoop and SewoutCheck has no blocker. */
-    data object Passed : BlockStatus
-    /** [applyFailed]: an Apply was refused and the previous settings stay; otherwise the current design is blocked. */
-    data class Blocked(val reason: String, val applyFailed: Boolean) : BlockStatus
-}
-
 /** Maps between the sheet's choices and the engine's upstream BlockStitch fields (docs/agent/block-stitch.md). */
 object BlockApply {
     /** Sheet texture -> Ink/Stitch fill_method (fill_stitch.py:166–184 option IDs). */

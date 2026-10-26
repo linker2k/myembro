@@ -156,10 +156,13 @@ class BlockEditInstrumentation : Instrumentation() {
             // 1. The small spot: meander cannot build its graph there. Refused, previous settings kept, reason shown.
             val spotBefore = stitchOf(target)
             val refused = pattern135AndApply()
-            check(refused is BlockStatus.Blocked && refused.applyFailed && refused.reason.startsWith("SEWOUT_BLOCKED")) { "Expected a refusal: $refused" }
+            check(refused is BlockStatus.Blocked && refused.applyFailed &&
+                refused.failure.kind == io.github.linker2k.myembro.ui.editor.block.BlockFailure.Kind.MEANDER_REGION_TOO_SMALL) { "Expected a refusal: $refused" }
             check(stitchOf(target) == spotBefore && vm.undoSteps == undoBefore) { "A refused apply changed the design" }
-            await(targetContext.getString(R.string.block_edit_kept, refused.reason))
-            log += "REFUSED PASS: $target kept its settings, undo unchanged; ${refused.reason}"
+            // Short localized text only; the engine's original text stays behind Details.
+            await(targetContext.getString(R.string.block_edit_kept, targetContext.getString(R.string.block_fail_meander_small)))
+            check(nodes().none { it.text?.toString()?.contains("SEWOUT_BLOCKED") == true }) { "Engine code shown outside details" }
+            log += "REFUSED PASS: $target kept its settings, undo unchanged; ${refused.failure.kind} (${refused.failure.detail})"
             shot("08-refused-kept.png")
 
             // 2. The largest region (a wing): applied.
