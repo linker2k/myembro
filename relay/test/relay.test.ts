@@ -125,11 +125,12 @@ describe('contract timers on the production broker with fake clock', () => {
     const sent: any[] = []; const socket: AppSocket = { send: raw => sent.push(JSON.parse(raw)), close: vi.fn() };
     const broker = new Broker(); broker.open(socket); broker.receive(socket, hello()); return { broker, socket, sent };
   }
-  it('times out at exactly 60 seconds; ignores late result', async () => {
+  it('times out at exactly 120 seconds; ignores late result', async () => {
     vi.useFakeTimers();
     try {
       const { broker, socket, sent } = setup(); const pending = broker.call('get_project', {}); const id = sent[0].id;
       let done = false; pending.then(() => { done = true; });
+      await vi.advanceTimersByTimeAsync(60_000); broker.receive(socket, '{"type":"pong"}');
       await vi.advanceTimersByTimeAsync(59_999); expect(done).toBe(false);
       await vi.advanceTimersByTimeAsync(1); expect(await pending).toEqual({ isError: true, content: [{ type: 'text', text: 'timed out' }] });
       broker.receive(socket, JSON.stringify({ type: 'result', id, isError: false, content: [] })); broker.close(socket);
@@ -156,13 +157,23 @@ describe('contract timers on the production broker with fake clock', () => {
   it('forwards the edit-phase tools only, never separate-screen or unknown tool definitions', () => {
     const { broker, socket } = setup();
     const edit = { ...tools[0], name: 'remove_objects', annotations: { readOnlyHint: false, destructiveHint: true } };
+    const photo = { ...tools[0], name: 'view_attachment' };
     const extra = [
-      { ...tools[0], name: 'send_usb' }, { ...tools[0], name: 'save_project' }, { ...tools[0], name: 'delete_designs' },
+      { ...tools[0], name: 'send_usb' }, { ...tools[0], name: 'save_pes' }, { ...tools[0], name: 'delete_designs' },
       { ...tools[0], name: 'set_settings' }, { ...tools[0], name: 'restore_backup' }, { ...tools[0], name: 'undo' },
       { ...tools[1], annotations: { readOnlyHint: true, needsUserConfirmation: 'onOverwrite' } }
     ];
-    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], edit, ...extra] }));
-    expect(broker.tools).toEqual([tools[0], edit]); broker.close(socket);
+    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [tools[0], edit, photo, ...extra] }));
+    expect(broker.tools).toEqual([tools[0], edit, photo]); broker.close(socket);
+  });
+  it('passes view_attachment JPEG images through unchanged', async () => {
+    const { broker, socket, sent } = setup();
+    broker.receive(socket, JSON.stringify({ type: 'hello', appVersion: 'test', tools: [{ ...tools[0], name: 'view_attachment' }] }));
+    const pending = broker.call('view_attachment', { attachmentId: 'a1' });
+    const image = { type: 'image', data: '/9j/4AAQSkZJRgABAQ==', mimeType: 'image/jpeg' };
+    broker.receive(socket, JSON.stringify({ type: 'result', id: sent.at(-1).id, isError: false, content: [image] }));
+    expect(await pending).toEqual({ isError: false, content: [image] });
+    expect(socket.close).not.toHaveBeenCalled(); broker.close(socket);
   });
   it('routes simultaneous calls by UUID even when results arrive in reverse order', async () => {
     const { broker, socket, sent } = setup();

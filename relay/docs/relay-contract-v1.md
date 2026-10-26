@@ -17,11 +17,11 @@ Claude <-> relay (MCP Streamable HTTP):
 - Compare SHA-256 fixed-size credential digests using the runtime native constant-time comparison. Missing/incorrect credentials return 401 with a generic body containing no credential. Unknown/old /mcp/<x> paths return 404 (no legacy path-secret authentication).
 - MCP query parameters never provide authentication. Do not log authorization values, credential-bearing URLs, or secrets.
 - tools/list = tools from the latest hello; if no app connected, list returns the same tools cached from last hello, and tools/call returns isError text "myembro app is not connected. Open myembro and turn on AI connection."
-- tools/call forwarded to app, 60 s timeout -> isError "timed out".
+- tools/call forwarded to app, 120 s timeout (v2) -> isError "timed out".
 - Secrets APP_KEY and MCP_TOKEN are Worker secrets; never committed. MCP_SECRET is retired and is not read. Production routing and application code must not emit credential values in logs.
 
 Tool set: v1 spike was get_project and render_preview(widthPx:int[256..1024]); the edit phase forwards `RELAY_TOOLS` in src/broker.ts (reads, Ask AI edits as one undoable turn each, photo tools). Save, share, USB, file deletion, restore and settings are never forwarded.
-Write tools, needsUserConfirmation tools and attachments are NOT exposed in the spike.
+Of the needsUserConfirmation tools only remove_objects is forwarded; the app asks the user on the phone before it removes anything. Attachments are only photos the user handed to AI in the app.
 
 Operations: after any Worker secret change, always rerun deployment; see the
 [secret-update operational note](operations.md) for the observed stale Durable Object environment incident.
