@@ -6,7 +6,7 @@ import kotlinx.serialization.json.*
 
 /** Typed values, rather than copying cached SharedPreferences XML across installations. */
 object BackupPreferences {
-    private val names=setOf("myembro_settings","myembro_library","lettering","generated_pes_origins")
+    internal val names=setOf("myembro_settings","myembro_library","lettering","generated_pes_origins")
     fun snapshot(context: Context): JsonObject = buildJsonObject {
         for(name in names) put(name,buildJsonObject {
             context.getSharedPreferences(name,Context.MODE_PRIVATE).all.forEach { (key,value) -> put(key,buildJsonObject {

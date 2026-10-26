@@ -77,6 +77,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Saved Ink/Stitch text objects resolve their installed font by id.
         io.github.linker2k.myembro.fonts.FontRepository.installInkStitchLoader(this)
+        // AI connection (experimental) resumes when it was left on.
+        io.github.linker2k.myembro.relay.RelayService.sync(this)
         enableEdgeToEdge()
         openPath = savedInstanceState?.getString(KEY_OPEN)
         savedInstanceState?.getStringArrayList(KEY_STACK)?.let { names -> stack += names.map(Screen::valueOf) }

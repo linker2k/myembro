@@ -137,6 +137,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                     }
                 }
                 io.github.linker2k.myembro.backup.BackupSection()
+                io.github.linker2k.myembro.relay.RelaySection()
                 SectionHeading(Icons.Default.Straighten, stringResource(R.string.settings_defaults_title))
                 Card(
                     shape = MyembroShapes.Card,

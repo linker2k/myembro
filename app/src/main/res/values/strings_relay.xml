@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="relay_title">AI connection (experimental)</string>
+    <string name="relay_description">Lets your chatbot read the design open in the editor through your own relay. Read-only: it cannot change the design. The key stays on this device and is not in backups.</string>
+    <string name="relay_address">Relay address</string>
+    <string name="relay_key">APP_KEY</string>
+    <string name="relay_invalid">Enter a wss:// address and the APP_KEY.</string>
+    <string name="relay_connecting">Connecting…</string>
+    <string name="relay_connected">Connected</string>
+    <string name="relay_waiting">Disconnected, retrying soon</string>
+    <string name="relay_notification">AI connection is on</string>
+</resources>

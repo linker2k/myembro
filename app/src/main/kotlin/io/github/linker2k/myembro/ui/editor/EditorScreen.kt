@@ -52,6 +52,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
         BackHandler(onBack = { vm.leave(onBack) })
+        // AI connection (relay) reads the project only while the editor is on screen.
+        DisposableEffect(vm) {
+            io.github.linker2k.myembro.relay.RelayProjectSource.attach(vm) { vm.relayProject() }
+            onDispose { io.github.linker2k.myembro.relay.RelayProjectSource.detach(vm) }
+        }
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
