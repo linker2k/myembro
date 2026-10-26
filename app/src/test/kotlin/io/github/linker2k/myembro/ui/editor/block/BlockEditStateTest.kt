@@ -62,17 +62,39 @@ class BlockEditStateTest {
 }
 
 class BlockOptionsTest {
-    private fun region(id: String, options: BlockOptions) = BlockRegion(id,
-        listOf(RegionPath(doubleArrayOf(0.0, 10.0, 10.0, 0.0), doubleArrayOf(0.0, 0.0, 10.0, 10.0), true)), 0, BlockStitchDraft(), options)
+    private fun region(id: String) = BlockRegion(id,
+        listOf(RegionPath(doubleArrayOf(0.0, 10.0, 10.0, 0.0), doubleArrayOf(0.0, 0.0, 10.0, 10.0), true)), 0, BlockStitchDraft())
 
-    @Test fun selectedRegionsShareOnlyCommonOptions() {
-        val noSatin = BlockOptions(types = setOf(BlockType.FILL, BlockType.RUNNING))
-        val s = BlockEditState(listOf(region("a", BlockOptions()), region("b", noSatin)))
+    @Test fun multiSelectEnablesOnlyWhatEveryRegionAllows() {
+        val noSatin = BlockOptions(mapOf(BlockType.SATIN to "SATIN_GEOMETRY_UNSUPPORTED"))
+        val s = BlockEditState(listOf(region("a"), region("b")))
+        assertEquals(null, s.options(null))                       // still loading
+        val map = mapOf("a" to BlockOptions(), "b" to noSatin)
+        s.tap(5.0, 5.0, false)                                     // overlapping: b is on top
+        assertEquals(setOf("b"), s.selected)
+        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), s.options(map)!!.types)
         s.selectAll()
-        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), s.options().types)
-        assertEquals(false, s.options().allows(BlockStitchDraft(type = BlockType.SATIN)))
-        assertEquals(true, s.options().allows(BlockStitchDraft(texture = BlockTexture.PATTERN)))
+        val both = s.options(map)!!
+        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), both.types)
+        assertEquals("SATIN_GEOMETRY_UNSUPPORTED", both.unavailable[BlockType.SATIN])
+        assertEquals(false, both.allows(BlockStitchDraft(type = BlockType.SATIN)))
+        assertEquals(true, both.allows(BlockStitchDraft(texture = BlockTexture.PATTERN)))
         assertEquals(false, BlockOptions(textures = setOf(BlockTexture.BASIC)).allows(BlockStitchDraft(texture = BlockTexture.CONTOUR)))
+    }
+
+    @Test fun engineCapabilitiesReachTheOptions() {
+        // A wide square cannot be satin within 12mm stitches; a thin bar can (engine probe, same as list_blocks).
+        val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="60" fill="#3366CC"/>""" +
+            """<rect x="0" y="80" width="100" height="4" fill="#FFCC00"/></svg>"""
+        val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromSvg("o", "two", svg, 80.0)
+        val options = shape.regions.associate { it.id to BlockApply.options(it, shape.transform) }
+        shape.regions.forEach { r ->
+            val engine = io.github.linker2k.myembro.engine.edit.BlockStitchCapabilities.forRegion(r, shape.transform)
+            assertEquals(engine.satin.possible, BlockType.SATIN in options.getValue(r.id).types)
+            assertEquals(engine.satin.reason, options.getValue(r.id).unavailable[BlockType.SATIN])
+            println("REGION ${r.id} satin=${engine.satin} fill=${engine.fill.possible} running=${engine.running.possible}")
+        }
+        assertEquals(BlockTexture.entries.toSet(), options.values.first().textures)
     }
 
     @Test fun gradientIsNotOfferedThisVersion() {

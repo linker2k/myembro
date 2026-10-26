@@ -17,16 +17,17 @@ enum class BlockType { FILL, SATIN, RUNNING }
 enum class BlockTexture { BASIC, PATTERN, CONTOUR, CIRCULAR }
 
 /**
- * What a region allows. The engine will report this per region (e.g. whether SATIN is possible); until it
- * does, [BlockApply.options] allows everything shown, and the sheet already disables what is not allowed.
+ * What a region allows, from the engine's BlockStitchCapabilities: each unavailable stitch type with the
+ * engine's reason code, and the fill textures the engine implements.
  */
-data class BlockOptions(val types: Set<BlockType> = BlockType.entries.toSet(), val textures: Set<BlockTexture> = BlockTexture.entries.toSet()) {
-    /** Options several selected regions share. */
-    infix fun and(other: BlockOptions) = BlockOptions(types intersect other.types, textures intersect other.textures)
+data class BlockOptions(val unavailable: Map<BlockType, String> = emptyMap(), val textures: Set<BlockTexture> = BlockTexture.entries.toSet()) {
+    val types: Set<BlockType> get() = BlockType.entries.toSet() - unavailable.keys
+    /** Options several selected regions share: a type any of them refuses is refused (first reason kept). */
+    infix fun and(other: BlockOptions) = BlockOptions(other.unavailable + unavailable, textures intersect other.textures)
     fun allows(d: BlockStitchDraft) = d.type in types && (d.type != BlockType.FILL || d.texture in textures)
 }
 
-/** Three steps only; the mm spacing for each is unverified and is set from Ink/Stitch ranges at engine hookup. */
+/** Three steps; only NORMAL has an Ink/Stitch basis so far (see BlockApply.ROW_SPACING_MM). */
 enum class BlockDensity { DENSE, NORMAL, SPARSE }
 
 data class BlockStitchDraft(
@@ -45,8 +46,7 @@ data class BlockStitchDraft(
 class RegionPath(val xs: DoubleArray, val ys: DoubleArray, val closed: Boolean)
 
 /** One region in sewing order: its outline (holes as extra closed rings), thread color and chosen stitch. */
-data class BlockRegion(val id: String, val paths: List<RegionPath>, val color: Int, val stitch: BlockStitchDraft,
-    val options: BlockOptions = BlockOptions()) {
+data class BlockRegion(val id: String, val paths: List<RegionPath>, val color: Int, val stitch: BlockStitchDraft) {
     /** Even-odd inside test over all closed rings (holes excluded); lines and satin edges hit within [lineMm]. */
     fun hit(x: Double, y: Double, lineMm: Double): Boolean {
         var inside = false
@@ -93,8 +93,9 @@ class BlockEditState(val regions: List<BlockRegion>) {
     /** Keeps a selection across a rebuild from the committed shape (ids that still exist). */
     fun restore(ids: Set<String>) { selected = ids.filterTo(linkedSetOf()) { id -> regions.any { it.id == id } } }
 
-    /** What every selected region allows. */
-    fun options(): BlockOptions = regions.filter { it.id in selected }.map { it.options }.reduceOrNull(BlockOptions::and) ?: BlockOptions()
+    /** What every selected region allows; null while [byRegion] is still loading. */
+    fun options(byRegion: Map<String, BlockOptions>?): BlockOptions? = byRegion?.let { map ->
+        regions.filter { it.id in selected }.map { map[it.id] ?: BlockOptions() }.reduceOrNull(BlockOptions::and) ?: BlockOptions() }
 
     /** The draft the sheet opens with: the first selected region's stitch. */
     fun draft(): BlockStitchDraft = regions.firstOrNull { it.id in selected }?.stitch ?: BlockStitchDraft()
@@ -103,7 +104,7 @@ class BlockEditState(val regions: List<BlockRegion>) {
         /** The shape's actually emitted regions, in its sewing order, with their resolved stitch type. */
         fun of(shape: ShapeObject) = BlockEditState(shape.regions.map { r ->
             BlockRegion(r.id, r.paths.map { p -> RegionPath(DoubleArray(p.points.size) { p.points[it].x },
-                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch), BlockApply.options(r))
+                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch))
         })
     }
 }

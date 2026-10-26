@@ -63,6 +63,10 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
     val state = remember(shape) { BlockEditState.of(shape).also { it.restore(selected) } }
     var multi by remember { mutableStateOf(false) }
     var draft by remember(shape.id) { mutableStateOf(BlockStitchDraft()) }
+    // Engine prechecks per region, off the main thread (satin probing generates stitches).
+    val byRegion by produceState<Map<String, BlockOptions>?>(null, shape) {
+        value = withContext(Dispatchers.Default) { shape.regions.associate { it.id to BlockApply.options(it, shape.transform) } }
+    }
     fun picked() { selected = state.selected; draft = state.draft() }
     // Every committed change (apply, undo, redo) gets a fresh check of the whole design.
     LaunchedEffect(shape) { if (vm.blockStatus !is BlockStatus.Generating) vm.checkBlockSewout() }
@@ -93,7 +97,7 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                 }
             }
             val sheet = @Composable { modifier: Modifier ->
-                BlockSheet(selected.size, draft, { draft = it }, status, state.options(),
+                BlockSheet(selected.size, draft, { draft = it }, status, state.options(byRegion),
                     onApply = { vm.applyBlockStitch(shape.id, selected, BlockApply.patch(draft)) }, modifier)
             }
             if (wide) Row(Modifier.fillMaxSize()) {
@@ -182,9 +186,11 @@ private fun regionPaths(r: BlockRegion, fit: BlockCanvasFit): Pair<Path, Path> {
 }
 
 @Composable
-private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus, options: BlockOptions,
+private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitchDraft) -> Unit, status: BlockStatus, loaded: BlockOptions?,
                        onApply: () -> Unit, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
+    // Until the prechecks arrive nothing is disabled, but Apply waits for them.
+    val options = loaded ?: BlockOptions()
     Surface(modifier, color = colors.surfaceContainerLow, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), tonalElevation = 2.dp) {
         if (count == 0) {
             Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -196,7 +202,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         // Apply stays on screen while the settings below scroll.
         Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.block_edit_selected, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Button(onClick = onApply, enabled = status !is BlockStatus.Generating && options.allows(draft)) { Text(stringResource(R.string.block_edit_apply)) }
+            Button(onClick = onApply, enabled = status !is BlockStatus.Generating && loaded != null && options.allows(draft)) { Text(stringResource(R.string.block_edit_apply)) }
         }
         // A refused apply keeps the previous settings; say why (engine code and message, never bypassed).
         if (status is BlockStatus.Blocked) Text(stringResource(if (status.applyFailed) R.string.block_edit_kept else R.string.block_edit_blocked_now, status.reason),
@@ -206,6 +212,11 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
             Label(R.string.block_edit_type)
             // Options a selected region does not allow stay visible but disabled.
             if (!options.allows(draft)) Text(stringResource(R.string.block_edit_option_unavailable), style = MaterialTheme.typography.labelSmall, color = colors.error)
+            // Short reasons for what the selected regions cannot take, e.g. "Satin: this shape cannot be satin".
+            options.unavailable.forEach { (type, code) ->
+                Text(stringResource(R.string.block_edit_type_unavailable, stringResource(TYPE_NAMES[type.ordinal]), reasonText(code)),
+                    style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            }
             Segmented(listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running),
                 draft.type.ordinal, enabled = { BlockType.entries[it] in options.types }) { onDraft(draft.copy(type = BlockType.entries[it])) }
             if (draft.type == BlockType.FILL) {
@@ -249,6 +260,19 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         }
         }
     }
+}
+
+private val TYPE_NAMES = listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running)
+
+/** Engine reason codes in a few words; an unknown code is shown as is. */
+@Composable
+private fun reasonText(code: String): String = when (code) {
+    "SATIN_GEOMETRY_UNSUPPORTED" -> stringResource(R.string.block_reason_satin_geometry)
+    "SATIN_GENERATION_FAILED" -> stringResource(R.string.block_reason_satin_failed)
+    "SATIN_STITCH_TOO_LONG" -> stringResource(R.string.block_reason_satin_too_long)
+    "NO_RUNNING_PATH" -> stringResource(R.string.block_reason_no_running)
+    "EMPTY_FILL_REGION" -> stringResource(R.string.block_reason_empty_fill)
+    else -> code
 }
 
 private val TEXTURE_NAMES = listOf(R.string.block_edit_texture_basic, R.string.block_edit_texture_pattern, R.string.block_edit_texture_contour,

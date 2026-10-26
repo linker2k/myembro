@@ -39,4 +39,10 @@
     <string name="block_edit_blocked_now">지금 도안이 차단 상태예요: %1$s</string>
     <string name="block_edit_order_pending">영역 순서 변경은 엔진 명령이 아직 없어 준비 중이에요</string>
     <string name="block_edit_option_unavailable">선택한 영역에서는 쓸 수 없는 설정이에요</string>
+    <string name="block_edit_type_unavailable">%1$s: %2$s</string>
+    <string name="block_reason_satin_geometry">이 모양은 새틴 불가</string>
+    <string name="block_reason_satin_failed">새틴 생성 실패</string>
+    <string name="block_reason_satin_too_long">새틴 땀이 12mm를 넘음</string>
+    <string name="block_reason_no_running">따라갈 선이 없음</string>
+    <string name="block_reason_empty_fill">채울 면적이 없음</string>
 </resources>
