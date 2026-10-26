@@ -1,0 +1,32 @@
+$ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 tools/research/texture-catalog.sh
+
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.8.2' is experimental.
+
+> Task :engine:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :engine:processResources
+> Task :engine:processOracleResources NO-SOURCE
+> Task :engine:processTestResources
+> Task :engine:compileKotlin
+> Task :engine:compileJava NO-SOURCE
+> Task :engine:classes
+> Task :engine:jar
+> Task :engine:compileOracleKotlin
+> Task :engine:compileOracleJava NO-SOURCE
+> Task :engine:oracleClasses UP-TO-DATE
+> Task :engine:compileTestKotlin
+> Task :engine:compileTestJava NO-SOURCE
+> Task :engine:testClasses
+> Task :engine:test
+
+BUILD SUCCESSFUL in 45s
+7 actionable tasks: 7 executed
+JUnit: 1 test; 0 failures/errors; 26.798 seconds
+TEXTURE_CATALOG COMPLETE cases=160 tiles=75 shapes=2 statuses={'PASS': 157, 'ERROR': 3}
+Peak penetrations / 0.5mm cell: 7
+GUIDED: excluded, no guideline input (no silent substitution counted as guided)
+square__meander_fill__NC5-11a: IllegalStateException: Meander path search resource limit exceeded
+circle__meander_fill__NC5-11a: IllegalStateException: Meander path search resource limit exceeded
+circle__meander_fill__P3-1: IllegalStateException: Meander path search resource limit exceeded
+Artifacts: /tmp/myembro-texture
