@@ -29,6 +29,8 @@ object RelayProtocol {
     /** Contract: ping/pong every 30 s, the relay drops the app after 90 s of silence. */
     const val PING_MS = 30_000L
     const val SILENCE_MS = 90_000L
+    /** The relay answers ping with pong at once; no answer in 10 s (the reconnect target) means a dead socket. */
+    const val PONG_TIMEOUT_MS = 10_000L
     val PING = buildJsonObject { put("type", "ping") }.toString()
     val PONG = buildJsonObject { put("type", "pong") }.toString()
 

@@ -22,6 +22,15 @@ import okhttp3.OkHttpClient
 class RelayService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var client: Job? = null
+    private var relay: RelayClient? = null
+    /** Network back or screen on: reconnect (or check the socket) now rather than after the backoff wait. */
+    private val network = object : android.net.ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: android.net.Network) { relay?.kick() }
+    }
+    private val screen = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) { relay?.kick() }
+    }
+    private var watching = false
 
     override fun onBind(intent: Intent?) = null
 
@@ -44,11 +53,26 @@ class RelayService : Service() {
         // The AI work project (AiWorkspace), open on screen or not; it reads and changes itself on the main thread.
         val app = application
         val tools = RelayToolbox({ io.github.linker2k.myembro.ui.editor.AiWorkspace.relayDocument(app) })
-        client = RelayClient(OkHttpClient(), url, config.key, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it }).start()
+        relay = RelayClient(OkHttpClient(), url, config.key, BuildConfig.VERSION_NAME, tools, scope, onState = { state.value = it })
+        client = relay?.start()
+        if (!watching) {
+            watching = true
+            getSystemService(android.net.ConnectivityManager::class.java).registerDefaultNetworkCallback(network)
+            // Screen on and unlock are system broadcasts; registered at run time, not exported.
+            ContextCompat.registerReceiver(this, screen, android.content.IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
+            }, ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
         return START_STICKY
     }
 
-    override fun onDestroy() { scope.cancel(); state.value = null; super.onDestroy() }
+    override fun onDestroy() {
+        if (watching) {
+            runCatching { getSystemService(android.net.ConnectivityManager::class.java).unregisterNetworkCallback(network) }
+            runCatching { unregisterReceiver(screen) }
+        }
+        scope.cancel(); state.value = null; super.onDestroy()
+    }
 
     companion object {
         private const val CHANNEL = "relay"

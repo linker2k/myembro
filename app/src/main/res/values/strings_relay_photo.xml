@@ -5,4 +5,12 @@
     <string name="relay_photo_confirm">Share this photo</string>
     <string name="relay_picture_imported">AI picture added: %1$s (Undo removes it)</string>
     <string name="relay_picture_name">AI picture %1$d</string>
+    <string name="relay_change_channel">AI changes</string>
+    <string name="relay_change_picture">“%1$s” came in</string>
+    <string name="relay_change_edit">The AI changed your design</string>
+    <string name="relay_change_tap">Tap to see it</string>
+    <string name="relay_change_tap_count">Tap to see · %1$d changes</string>
+    <string name="relay_change_snackbar">The AI changed your design (Undo reverts it)</string>
+    <string name="ai_project_open">Open the design the AI is working on</string>
+    <string name="ai_project_open_hint">%1$d objects · the AI connection works on this design</string>
 </resources>

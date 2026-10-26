@@ -159,6 +159,8 @@ class MainActivity : ComponentActivity() {
                 }
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
+                        aiProjectObjects = editor.project.objects.size,
+                        onOpenAiProject = { stack += Screen.EDITOR },
                         onNewProject = { hoop -> newProject(hoop.spec()) },
                         onOpenRecent = ::openDesign,
                         onImport = openDocument,
