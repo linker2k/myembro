@@ -219,7 +219,7 @@ class MainActivity : ComponentActivity() {
                     )
                     Screen.PHOTO -> PhotoScreen(photo, settings.settings, onBack = back,
                         onEdit = {
-                            photo.render?.pattern?.let { pattern ->
+                            photo.render?.pattern?.takeIf { photo.canEdit }?.let { pattern ->
                                 val b = pattern.bounds
                                 val transform = if (b == null) Transform() else Transform(
                                     x = ((b.minX.toLong() + b.maxX) / 2).toDouble(),
@@ -227,9 +227,9 @@ class MainActivity : ComponentActivity() {
                                 val id=UUID.randomUUID().toString()
                                 val obj=photo.shapeObject?.let { shape ->
                                     incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id)
-                                } ?: StitchObject(id,incomingPictureTitle ?: context.getString(io.github.linker2k.myembro.ui.photo.photoObjectName(photo.style)),pattern,transform=transform)
+                                } ?: StitchObject(id,if(photo.textureActive) photo.resultName else incomingPictureTitle ?: context.getString(io.github.linker2k.myembro.ui.photo.photoObjectName(photo.style)),pattern,transform=transform)
                                 if(photo.shapeObject == null && photo.style == io.github.linker2k.myembro.ui.photo.PhotoMode.COLOR) {
-                                    android.widget.Toast.makeText(context,R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()
+                                    android.widget.Toast.makeText(context,if(photo.textureActive) R.string.photo_texture_editor_hint else R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()
                                 }
                                 editor.addPicture(obj)
                                 incomingPictureTitle=null

@@ -78,4 +78,17 @@
     <string name="photo_noise_strong">강</string>
     <string name="photo_contrast_factor">대비: %1$.2f×</string>
     <string name="photo_color_name">컬러 그림</string>
+    <string name="photo_texture">텍스처 표현</string>
+    <string name="photo_texture_experimental">실험</string>
+    <string name="photo_texture_detail">디테일</string>
+    <string name="photo_texture_coarse">거침</string>
+    <string name="photo_texture_normal">보통</string>
+    <string name="photo_texture_fine">세밀</string>
+    <string name="photo_texture_editor_hint">텍스처 자수는 편집기에서 땀 도안으로 열립니다. 색 블럭별로 편집할 수 없습니다.</string>
+    <string name="photo_texture_name">실 그림 텍스처</string>
+    <string name="photo_texture_file_stem">thread_texture</string>
+    <string name="photo_texture_dense">너무 빽빽해요: 디테일을 거침으로 바꿔 보세요</string>
+    <string name="photo_texture_blocked">봉제 점검에서 차단됐어요. 크기나 디테일을 바꾼 뒤 편집하거나 보내 주세요.</string>
+    <string name="photo_texture_progress">실 그림 텍스처 만드는 중 · %1$d%%</string>
+    <string name="photo_texture_stitch_limit">땀 수가 너무 많아요: 크기를 줄이거나 디테일을 거침으로 바꿔 보세요</string>
 </resources>
