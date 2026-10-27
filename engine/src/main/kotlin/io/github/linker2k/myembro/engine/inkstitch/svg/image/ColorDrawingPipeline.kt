@@ -22,7 +22,10 @@ object ColorDrawingPipeline {
     const val MINIMUM_REGION_AREA_MM2 = 3.0
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
-        val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline) {
+        val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray) {
+        internal val foregroundRegion:PolygonRegion by lazy {
+            PictureForegroundMask.polygonize(width,height,foregroundPixels,canvasWidthMm*10/width)
+        }
         /** Show the resolved sewing threads, including an active owned-thread restriction. */
         fun previewPixels(): IntArray {
             val colors=layers.associate { it.paletteIndex to (it.thread.color or 0xff000000.toInt()) }
@@ -83,7 +86,9 @@ object ColorDrawingPipeline {
         val paths=layers.flatMap { it.outline.paths }
         val ink=RedworkOutline("",layers.sumOf { it.outline.contourCount },widthMm,widthMm*height/width,paths,
             layers.sumOf { it.outline.foregroundAreaMm2 })
-        return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink)
+        val foregroundPixels=BooleanArray(w*h)
+        for(index in foreground) foregroundPixels[(index/width+1)*w+index%width+1]=true
+        return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink,foregroundPixels)
     }
 
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result =
@@ -115,7 +120,8 @@ object ColorDrawingPipeline {
                     val method=StitchTypeRule.Type.TATAMI
                     checkpoint("stitches")
                     val resolved=StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
-                        if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm)
+                        if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm,
+                            clipRegion=preview.foregroundRegion)
                         else {
                             val polygon=shape as org.locationtech.jts.geom.Polygon
                             val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)

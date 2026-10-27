@@ -27,4 +27,25 @@ per-region generation fallback. Inspect those counts before any later default de
 Expansion reuses `FillGeometry.shrinkOrGrow`, as in `FontTatami`: mm → SVG pixels, top fill
 only, original underlay. Source: Ink/Stitch v3.3.0 `lib/elements/fill_stitch.py` at
 `b0edd96311ece82ee48816dc93466274b12c2a9c`, `expand_mm` (upstream default 0).
-At 0 the original geometry reaches the original routing path without buffer/normalization.
+Unmasked callers retain the original geometry at 0. Color pictures now intersect every top fill
+(including 0) with the original non-background pixel-cell mask. The mask is taken before
+mergeSmall and per-color Potrace; JTS unions row-cell rectangles, never color outlines.
+Underlay and optional outlines remain unexpanded. The amount default remains 0.
+
+## Raw-foreground-clipped sweep
+
+Compile `MaskedSweep.kt` against engine.jar with `-Xfriend-paths=engine/build/libs/engine.jar`
+to access measurement geometry, then run `MaskedSweepKt REPOSITORY OUTPUT LOCAL_PROXY_IMAGE`.
+It uses face/robot at 30 mm and the caller-supplied proxy at 99.8 mm, outlines ON, amounts
+0/0.1/0.2/0.3 mm. All personal outputs stay in the specified external output directory.
+Run the independent gate as above, then:
+
+```sh
+python tools/fill-expand/report_masked.py "$OUTPUT" --audit /tmp/myembro-overlap/audit.py
+```
+
+The predicates compare decoded integer extent with 0, original-background-hole open area
+within 1 cell on the fixed 0.1 mm raster, and no increase in excluded/RUNNING counts, plus
+both gates PASS. Hole area is planned polygon coverage, not the independent thread-footprint
+audit. Generation timings are single sequential desktop calls with the mask prebuilt; mask
+construction is separately recorded. No value is automatically installed as a default.
