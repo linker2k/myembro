@@ -776,3 +776,27 @@ SPDX-License-Identifier: Unicode-3.0
   transparent-color bypass. Median size 0 is an app bypass, not a Pillow parameter.
   Kotlin adaptation by myembro contributors, 2026. Full MIT-CMU terms remain bundled
   at `licenses/pillow/LICENSE`; no Pillow runtime is bundled.
+
+## DrawingBotV3 Free sketch-line core (GPL-3.0)
+
+- Source: https://github.com/SonarSonic/DrawingBotV3, Free tag `v1.6.25-stable-free`,
+  commit `0e7c900638def19b9a8d16445099f3f1129aee52`.
+- Copyright DrawingBotV3 contributors; the upstream build identifies Ollie Lansdell.
+- Kotlin port in `engine/.../texture/` of PFMSketchLinesBasic, AbstractSketchPFM,
+  PixelTargetDarkestArea, ARGBY/raw luminance bookkeeping, SimpleLineSampler,
+  LuminanceTestLine and Bresenham rendering/color sampling. Source files and
+  `docs/research/thread-texture-port.md` identify exact scope and departures.
+- Only the constant-radius 1 / rendered-pen-width 1F ARGBY/Bresenham backend is included.
+  No DrawingBot runtime, JavaFX, AWT, Premium color separation, or executable is bundled.
+- GPL version 3 license text: `engine/src/main/resources/licenses/thread-texture/GPL-3.0.txt`.
+
+### Zingl Bresenham primitives (MIT)
+
+- DrawingBotV3 `pfm/helpers/BresenhamHelper.java:182` credits
+  https://github.com/zingl/Bresenham (Alois Zingl).
+- Helper repository LICENSE inspected online on 2026-10-27:
+  https://github.com/zingl/Bresenham/blob/master/LICENSE.
+- Copyright (c) 2020 zingl. MIT permits reuse with the copyright/permission notice retained.
+- Line/circle traversal adapted via the pinned DrawingBot helper, with MIT attribution
+  in `SketchLineSampler.kt`; full permission and warranty notice retained in
+  `engine/src/main/resources/licenses/thread-texture/ZINGL-MIT.txt`.
