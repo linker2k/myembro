@@ -117,3 +117,5 @@ Ten repo-owned synthetic cases were run with registered defaults and seed 0: whi
 Limits remain: these results do not establish parity for clipping geometry, alternate seed/settings combinations, raster preprocessing, composite/variable-width rendering, full-app optimization, multicolor embroidery mapping, PES safety or actual sew-out quality. The next embroidery adapter remains a separate unit.
 
 Full regression for the authorized oracle unit: `./gradlew :engine:test` — 976/976, 0 failures/errors, `BUILD SUCCESSFUL in 1m 26s`.
+
+The separate application embroidery adapter is now implemented and measured: [thread-texture-adapter.md](thread-texture-adapter.md). It does not change the original plotting oracle.
