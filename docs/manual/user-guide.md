@@ -2,7 +2,7 @@
 
 **English** | [한국어](user-guide.ko.md)
 
-This guide covers myembro v0.2.8.
+This guide covers myembro v0.3.7.
 
 1. [Getting started](#1-getting-started)
 2. [Starting a new project](#2-starting-a-new-project)
@@ -13,9 +13,10 @@ This guide covers myembro v0.2.8.
 7. [Viewer: playback and statistics](#7-viewer-playback-and-statistics)
 8. [Sew-out check](#8-sew-out-check)
 9. [Sending to the machine](#9-sending-to-the-machine)
-10. [Backup and restore](#10-backup-and-restore)
+10. [Backup, restore and my threads](#10-backup-restore-and-my-threads)
 11. [About and known limitations](#11-about-and-known-limitations)
 12. [Ask AI](#12-ask-ai)
+13. [AI connection (experimental)](#13-ai-connection-experimental)
 
 ## 1. Getting started
 
@@ -46,12 +47,33 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 
 ![Editor with the myembro logo](../images/manual/en/03-editor-logo.png)
 
-- Top: back, undo/redo, menu. Below it the hoop chip (for example **Hoop 100×100mm**), the object count and the **Save** button.
+- Top: back, home, **Ask AI** (sparkle, chapter 12), undo/redo, menu. Below it the hoop chip (for example **Hoop 100×100mm**), **Edit blocks**, the object count and the **Save** button.
 - Left tools: select, pan (hand), fit to view, grid.
 - **Layers** panel: each design or lettering object is a layer; the eye icon shows or hides it, **+** adds one.
 - Tap an object to select it. Drag the corner handles to resize; the size labels show mm and inches.
 - Bottom sheet tabs **Transform**, **Stitches**, **Colors**. In Transform, type **Width (mm)** / **Height (mm)** (the lock keeps the aspect ratio), set rotation, flip, then tap **Apply**.
 - Bottom bar: **Select**, **Designs** (add a design), **Transform**, **Text**, **Layers**.
+
+### Block editing
+
+Designs made from a photo, an emoji or an SVG keep their color areas as blocks. Tap **Edit blocks** to change how each block is sewn.
+
+![Block editing: one region selected](../images/manual/en/03b-block-edit.png)
+
+1. Tap a region on the canvas. Turn on **Multi-select** to pick several, or tap **Select all**.
+2. Choose the **Stitch type**: **Fill**, **Satin** or **Running**. A type the region cannot use is greyed out, with the reason above it (for example *Satin: this shape cannot be satin*).
+3. For Fill, choose the **Texture**: **Basic**, **Pattern** (an Ink/Stitch meander tile), **Contour** or **Circular**.
+4. **Direction**: **Auto**, or **Manual** with a stitch angle.
+5. **Density**: only **Normal** for now. Dense and sparse come in a later version.
+6. Tap **Apply**. The stitches are made in the background and checked with the real sewing check. A **Cancel** button and the elapsed time show while it works. If the check fails, nothing changes and the previous settings stay.
+
+![Block editing: sewing order](../images/manual/en/03c-block-order.png)
+
+**Sewing order** shows where the selected region is sewn (front = sewn first). Use **To front**, **Forward**, **Back** and **To back** to move it. Every change is one undo step. The badge at the top shows **Sewing check passed · in hoop** for the whole design.
+
+Designs that are only stitches (such as an opened PES file) have no blocks, so block editing is not available for them.
+
+### Hoop size
 
 The hoop is 100×100mm by default. Designs must stay inside it: coordinates run 0–999 in 0.1mm units, so the maximum design size is 99.9mm. The app enforces this automatically.
 
@@ -79,26 +101,51 @@ Single-line fonts (for example Hershey Script 1-stroke) offer **Normal** (runnin
 
 Choose **From a photo / drawing** on the new project sheet. The screen has three steps: crop, choose a mode, then the result.
 
-**Step 2 — mode.** Choose **Silhouette**, **Outline** or **Color drawing**.
+You can also share a picture to myembro from another app (gallery, browser, files). It opens on this same screen. An SVG drawing is used as it is: only the size slider is shown.
+
+**Step 2 — mode.** Choose **Silhouette**, **Outline** or **Color drawing**. Color drawing with 4 colors is selected first.
+
+![Color drawing mode](../images/manual/en/09-photo-color.png)
+
+**Correction** (all modes):
+- **Noise reduction**: Off, Weak, Medium or Strong. It removes small specks.
+- **Contrast**: 0.5× to 2.0×. 1.00× keeps the picture as it is.
+- **Black-and-white separation** (silhouette and outline only): splits the picture into dark and light automatically.
+- For color pictures with a transparent background, noise reduction and contrast are turned off.
+
+**Color drawing** (2–6 colors):
+- Set **Colors** with the slider, or turn on **Black & white**.
+- The preview shows the picture in the actual thread colors.
+- Transparent background is not sewn. The most common color at the edge is treated as background.
+- Colors are matched to Brother threads automatically. If you set **My threads** (chapter 10), only your threads are used.
+- Each color area is filled. Next to each other, colors overlap by 0.2mm so no gaps show. The outer edge of the design does not grow.
+- Each filled area gets a triple outline in the same color. If an outline would fail the sewing check, that outline is left out.
 
 ![Silhouette mode](../images/manual/en/07-photo-silhouette.png)
 
 - **Silhouette**: one color, filled. The **Detail** slider keeps smaller contours the higher it is.
-- **Embroidery size · width** slider: the aspect ratio is kept. The range is computed for the picture (20mm–77.1mm in this example), and the design is recalculated when you release the slider.
 
 ![Outline mode](../images/manual/en/08-photo-outline.png)
 
 - **Outline**: one color, traced outline of the same picture.
 
-![Color drawing mode](../images/manual/en/09-photo-color.png)
+**Embroidery size · width** slider (all modes): the aspect ratio is kept. The range is computed for the picture, and the design is recalculated when you release the slider. The largest size is 99.9mm.
 
-- **Color drawing** (2–6 colors): set **Colors** with the slider, or turn on **Black & white**. Transparent background is not stitched; the most common color at the edge is removed as background; colors are matched to the Brother 64-color threads automatically.
+**Thread texture (experimental).** In Color drawing, turn on **Thread texture** to sew the picture as layered thread lines, like a sketch.
+
+![Thread texture on](../images/manual/en/09c-photo-texture.png)
+
+- **Detail**: **Coarse**, **Normal** or **Fine**. Fine makes more stitches.
+- Texture embroidery opens in the editor as stitches. Its color blocks cannot be edited.
+- If there are too many stitches, the app says so. Make the picture smaller or choose Coarse.
+
+![Thread texture result](../images/manual/en/09d-photo-texture-result.png)
 
 **Step 3 — result.**
 
 ![Result with sew-out check passed](../images/manual/en/09b-photo-result.png)
 
-The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). The time is an estimate. Tap **Edit** to keep editing or **Send to USB** to send it to the machine.
+The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. Making the stitches stops after 1 minute; then try lower detail or a smaller crop. Tap **Edit** to keep editing (including block editing, chapter 3) or **Send to USB** to send it to the machine.
 
 ## 6. Emoji
 
@@ -148,11 +195,15 @@ The clock icon in selection mode opens the recent USB transfer history (the scre
 
 **SE600/SE700:** machine profiles (100×100mm, USB memory) based on the manuals; transfer has not been tested on real machines yet.
 
-## 10. Backup and restore
+## 10. Backup, restore and my threads
 
 ![Settings: backup](../images/manual/en/15-settings-backup.png)
 
-At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it, **Machine model** shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes.
+At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes.
+
+![My threads](../images/manual/en/15b-my-threads.png)
+
+**My threads** (under **Threads**): turn it on and tap **Choose threads** to tick the Brother threads you own. Search by name or number. Color drawings then use only your threads. An empty list uses all colors. My threads is kept in the backup.
 
 **Take a backup now.** The current APK is signed with a development key. When releases switch to the official signing key, the new version cannot be installed over the old one: you must uninstall once and reinstall, which deletes app data. Restore your ZIP afterwards.
 
@@ -160,7 +211,7 @@ At the top of **Settings**, **Backup** stores designs, projects, downloaded font
 
 ![Settings: theme and about](../images/manual/en/16-about.png)
 
-At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL-3.0-or-later, **Open-source licenses**) and the version (0.2.8 with the build commit). myembro is GPL-3.0-or-later.
+At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL-3.0-or-later, **Open-source licenses**) and the version (0.3.7 with the build commit). myembro is GPL-3.0-or-later.
 
 ![Home in dark theme](../images/manual/en/17-home-dark.png)
 
@@ -208,3 +259,18 @@ myembro sends **no stitches, pictures or files**, and the chatbot cannot reach y
 - It cannot download fonts.
 - It can add text only in fonts already on your phone (the prompt lists them with their height ranges).
 - Sizes and stitch types still follow the app's automatic rules and the sew-out check.
+
+## 13. AI connection (experimental)
+
+AI connection lets a chatbot work on your design directly, without copy and paste. It needs your own relay server (a Cloudflare Worker, see [relay/README.md](../../relay/README.md)) and a chatbot that supports MCP connectors, such as Claude. myembro still has no AI built in and stores no API key.
+
+1. In **Settings**, turn on **AI connection (experimental)**.
+2. Enter the **Relay address** (wss://…) and the **APP_KEY** of your relay. The key stays on this phone and is not in backups.
+3. Add the relay as a connector in your chatbot. A notification shows while the connection is on.
+
+What the chatbot can do:
+- Read the design open in the editor and change it. Each change is one undo step. A change that fails the sewing check is not made.
+- Add a picture it drew (SVG, PNG or JPEG). It opens in the photo window first, so you check it before it is added.
+- Look at a photo you choose: in the editor menu tap **Send a photo to AI** and confirm. The chatbot sees a reduced copy only.
+
+What stays with you: removing objects asks you on the phone first (you have 90 seconds), and saving, sharing and sending to USB are always done by you in the app.
