@@ -71,7 +71,6 @@ class MainActivity : ComponentActivity() {
     /** The AI work project (AiWorkspace): outlives this Activity so the AI connection keeps working. */
     private val editor: EditorViewModel by lazy { io.github.linker2k.myembro.ui.editor.AiWorkspace.editor(application) }
     private val photo: PhotoViewModel by viewModels()
-    private val aiPictureDraft: io.github.linker2k.myembro.ui.photo.AiPictureDraft by viewModels()
     private val emoji: io.github.linker2k.myembro.ui.emoji.EmojiViewModel by viewModels()
     private val settings: SettingsViewModel by viewModels()
 
@@ -156,14 +155,13 @@ class MainActivity : ComponentActivity() {
                 ?: io.github.linker2k.myembro.ui.lettering.LastLetteringFonts.DEFAULT) }
             // Settings opened from the home version label scroll to the version information.
             var settingsAtVersion by rememberSaveable { mutableStateOf(false) }
-            var showAiPicture by remember { mutableStateOf(false) }
             var homeSheet by remember { mutableStateOf(false) }
             var aiBanner by remember { mutableStateOf<String?>(null) }
             // An AI change while myembro is on screen but its editor is not: switch to the editor from a resting
             // screen (home or the library with nothing open); otherwise do not interrupt, offer a banner.
             val removalAsked = editor.relayConfirmation.request.collectAsState().value != null
             val resting by androidx.compose.runtime.rememberUpdatedState((stack.isEmpty() && !homeSheet || stack.lastOrNull() == Screen.LIBRARY) &&
-                preflight == null && !showAiPicture && library.preflightWarnings == null &&
+                preflight == null && library.preflightWarnings == null &&
                 editor.recoveryProject == null && !removalAsked)
             LaunchedEffect(Unit) {
                 io.github.linker2k.myembro.ui.editor.AiWorkspace.changes.collect { headline ->
@@ -182,12 +180,6 @@ class MainActivity : ComponentActivity() {
                 // One back already reaches Home from the first level; deeper screens get a Home button.
                 CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 },
                     io.github.linker2k.myembro.ui.LocalPictureImport provides { uris,other -> routeIncoming(uris,otherHandler=other) }) {
-                if (showAiPicture) {
-                    val hoop = if (stack.lastOrNull() == Screen.EDITOR) editor.project.hoop else settings.settings.defaultFrame.spec
-                    io.github.linker2k.myembro.ui.photo.AiPictureDialog(hoop,
-                        io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMaxWidthMm(hoop),
-                        settings.settings.myThreads, draft = aiPictureDraft, onDismiss = { showAiPicture = false })
-                }
                 when (stack.lastOrNull()) {
                     null -> HomeScreen(
                         onSheetChange = { homeSheet = it },
@@ -204,8 +196,7 @@ class MainActivity : ComponentActivity() {
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
-                        onPhoto = { incomingPictureTitle=null; aiPictureDraft.cancelExpectedImage(); photo.begin(); stack += Screen.PHOTO },
-                        onAiPicture = { showAiPicture = true },
+                        onPhoto = { incomingPictureTitle=null; photo.begin(); stack += Screen.PHOTO },
                         onEmoji = { emoji.close(); stack += Screen.EMOJI },
                     )
                     Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
@@ -246,7 +237,7 @@ class MainActivity : ComponentActivity() {
                         }
                     })
                     Screen.SETTINGS -> SettingsScreen(settings, onBack = back, showVersion = settingsAtVersion)
-                    Screen.EDITOR -> EditorScreen(editor, onBack = back, onAiPicture = { showAiPicture = true })
+                    Screen.EDITOR -> EditorScreen(editor, onBack = back)
                     Screen.LETTERING -> {
                         // Exact selected frame, including custom sizes (not just the integer-mm presets).
                         val hoop = settings.settings.defaultFrame.spec
@@ -386,7 +377,7 @@ class MainActivity : ComponentActivity() {
             val rows=withContext(Dispatchers.IO) { uris.map { io.github.linker2k.myembro.ui.photo.inspectPicture(this@MainActivity,it) } }
             val route=io.github.linker2k.myembro.ui.photo.routePictureSources(rows) { it.kind }
             route.picture?.let { picture ->
-                inbox.offer(ticket,uri=picture.uri.toString(),colors=aiPictureDraft.consumeExpectedColors())
+                inbox.offer(ticket,uri=picture.uri.toString())
             }
             if(route.imports.isNotEmpty()) {
                 val remaining=route.imports.map { it.uri }

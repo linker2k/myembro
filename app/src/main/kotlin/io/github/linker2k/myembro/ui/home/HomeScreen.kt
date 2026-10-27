@@ -112,7 +112,6 @@ fun HomeScreen(
     onPhoto: (() -> Unit)? = null,
     onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
-    onAiPicture: (() -> Unit)? = null,
     aiProjectObjects: Int = 0,
     onOpenAiProject: (() -> Unit)? = null,
     /** Whether the Create sheet is open (MainActivity does not switch screens under it). */
@@ -124,7 +123,7 @@ fun HomeScreen(
         HomeContent(vm.recent, vm.samples, vm.loading, vm.failed, vm::refresh,
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
-            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji, onAiPicture,
+            onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji,
             aiProjectObjects, onOpenAiProject, onSheetChange)
     }
 }
@@ -143,7 +142,6 @@ private fun HomeContent(
     onPhoto: (() -> Unit)? = null,
     version: String? = null, onVersion: () -> Unit = onSettings,
     onEmoji: (() -> Unit)? = null,
-    onAiPicture: (() -> Unit)? = null,
     aiProjectObjects: Int = 0,
     onOpenAiProject: (() -> Unit)? = null,
     onSheetChange: (Boolean) -> Unit = {},
@@ -245,7 +243,7 @@ private fun HomeContent(
     if (showNewProject) NewProjectSheet(
         onDismissRequest = { showNewProject = false }, onBlank = onNewProject,
         onFromDesign = onCreateFromDesign, onFromText = onLettering,
-        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji, onAiPicture = onAiPicture,
+        hoops = supportedHoops, letteringAvailable = letteringAvailable, onBlankFrame = onNewProjectFrame, onFromPhoto = onPhoto, onFromEmoji = onEmoji,
         aiProjectObjects = aiProjectObjects, onOpenAiProject = onOpenAiProject,
     )
 }
