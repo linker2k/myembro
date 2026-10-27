@@ -27,12 +27,13 @@ per-region generation fallback. Inspect those counts before any later default de
 Expansion reuses `FillGeometry.shrinkOrGrow`, as in `FontTatami`: mm → SVG pixels, top fill
 only, original underlay. Source: Ink/Stitch v3.3.0 `lib/elements/fill_stitch.py` at
 `b0edd96311ece82ee48816dc93466274b12c2a9c`, `expand_mm` (upstream default 0).
-Unmasked callers retain the original geometry at 0. Color pictures now intersect every top fill
-(including 0) with the original non-background pixel-cell mask. The mask is taken before
-mergeSmall and per-color Potrace; JTS unions row-cell rectangles, never color outlines.
-Underlay and optional outlines remain unexpanded. The amount default remains 0.
+Unmasked callers and color pictures retain the original geometry at 0. For nonzero
+color-picture amounts, the clip is the JTS closing of all original Potrace color polygons:
+`union.buffer(+expandMm*10).buffer(-expandMm*10)` in native 0.1 mm units.
+The raw foreground pixel mask is only a background-hole measurement reference. Underlay and
+optional outlines remain unexpanded. The amount default remains 0.
 
-## Raw-foreground-clipped sweep
+## Closing-clipped sweep
 
 Compile `MaskedSweep.kt` against engine.jar with `-Xfriend-paths=engine/build/libs/engine.jar`
 to access measurement geometry, then run `MaskedSweepKt REPOSITORY OUTPUT LOCAL_PROXY_IMAGE`.
@@ -41,11 +42,12 @@ It uses face/robot at 30 mm and the caller-supplied proxy at 99.8 mm, outlines O
 Run the independent gate as above, then:
 
 ```sh
-python tools/fill-expand/report_masked.py "$OUTPUT" --audit /tmp/myembro-overlap/audit.py
+python tools/fill-expand/report_masked.py "$OUTPUT" --audit /tmp/myembro-overlap/audit.py --baseline "$MAIN_2007A4F_OUTPUT"
 ```
 
 The predicates compare decoded integer extent with 0, original-background-hole open area
 within 1 cell on the fixed 0.1 mm raster, and no increase in excluded/RUNNING counts, plus
-both gates PASS. Hole area is planned polygon coverage, not the independent thread-footprint
-audit. Generation timings are single sequential desktop calls with the mask prebuilt; mask
-construction is separately recorded. No value is automatically installed as a default.
+both gates PASS and baseline 0 byte parity. Existing overlap targets (≥0.45 mm, ≤3.32%)
+are evaluated separately and combined, without installing a selected value. Hole area is planned polygon coverage, not the independent thread-footprint
+audit. Generation timings are single sequential desktop calls with the raw background reference prebuilt; reference
+construction is separately recorded. Closing is timed; the union is cached after the baseline measurement. No value is automatically installed as a default.

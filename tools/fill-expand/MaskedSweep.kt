@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Args: repository root, output directory, optional-user-proxy image path (never copied to repo).
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorDrawingPipeline
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PictureFillMask
 import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
 import io.github.linker2k.myembro.engine.inkstitch.stitches.FillGeometry
 import io.github.linker2k.myembro.engine.geometry.*
@@ -19,14 +20,15 @@ import java.io.File
 import javax.imageio.ImageIO
 import kotlin.math.*
 fun holes(preview:ColorDrawingPipeline.Preview,result:ColorDrawingPipeline.Result,e:Double):Pair<Int,Int> {
- val mask=preview.foregroundRegion
+ val mask=preview.backgroundReferenceRegion
  val holes=FillGeometry.polygons(mask.geometry).flatMap { p -> (0 until p.numInteriorRing).map { p.factory.createPolygon(p.getInteriorRingN(it).coordinates) } }
  if(holes.isEmpty()) return 0 to 0
  val scale=PIXELS_PER_MM/10
- val clip=PolygonRegion(AffineTransformation.scaleInstance(scale,scale).transform(mask.geometry))
+ val closing=PictureFillMask.closing(preview.colorRegionUnion,e)
+ val clip=PolygonRegion(AffineTransformation.scaleInstance(scale,scale).transform(closing.geometry))
  val shapes=result.regions.filter { !it.excluded && it.method==StitchTypeRule.Type.TATAMI }.map { r ->
   val native=PolygonRegion.fromPaths(r.paths.map { line -> Polyline(line.points.map { Point(it.x*10,it.y*10) },true) },FillRule.EVEN_ODD)
-  run {
+  if(e==0.0) native.geometry else {
    val svg=AffineTransformation.scaleInstance(scale,scale).transform(native.geometry)
    val expanded=PolygonRegion(FillGeometry.shrinkOrGrow(svg,e*PIXELS_PER_MM)).intersection(clip)
    AffineTransformation.scaleInstance(1/scale,1/scale).transform(expanded.geometry)
@@ -55,7 +57,7 @@ fun main(args:Array<String>) {
   if(name!="proxy")for(y in 105..108)for(x in 92..95)image.setRGB(x,y,0xfffefefe.toInt())
   val preview=ColorDrawingPipeline.trace(192,h,image.getRGB(0,0,192,h,null,0,192),width,4)
   // Construct mask once, outside generation timing; measured separately for transparency.
-  val maskStart=System.nanoTime();preview.foregroundRegion
+  val maskStart=System.nanoTime();preview.backgroundReferenceRegion
   println("MASK_MS\t$name\t${(System.nanoTime()-maskStart)/1e6}")
   for(e in listOf(0.0,0.1,0.2,0.3)) {
    val start=System.nanoTime();val result=ColorDrawingPipeline.generate(preview,expandMm=e);val ms=(System.nanoTime()-start)/1e6

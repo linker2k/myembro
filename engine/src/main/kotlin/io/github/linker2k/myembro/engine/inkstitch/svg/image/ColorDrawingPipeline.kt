@@ -23,8 +23,12 @@ object ColorDrawingPipeline {
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
         val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray) {
-        internal val foregroundRegion:PolygonRegion by lazy {
+        // Raw pixels are retained only as an independent background-hole measurement reference.
+        internal val backgroundReferenceRegion:PolygonRegion by lazy {
             PictureForegroundMask.polygonize(width,height,foregroundPixels,canvasWidthMm*10/width)
+        }
+        internal val colorRegionUnion:PolygonRegion by lazy {
+            PictureFillMask.union(layers.map { it.outline })
         }
         /** Show the resolved sewing threads, including an active owned-thread restriction. */
         fun previewPixels(): IntArray {
@@ -100,6 +104,8 @@ object ColorDrawingPipeline {
     }
     internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={},includeFillOutlines:Boolean=true,expandMm:Double=0.0):Result {
         require(expandMm.isFinite())
+        // 0 must retain the original, unbuffered/unclipped route byte-for-byte.
+        val clipRegion=if(expandMm==0.0) null else PictureFillMask.closing(preview.colorRegionUnion,expandMm)
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
         val outlines=mutableListOf<ColorFillOutline.Outline>()
         for(layer in preview.layers) {
@@ -121,7 +127,7 @@ object ColorDrawingPipeline {
                     checkpoint("stitches")
                     val resolved=StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
                         if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm,
-                            clipRegion=preview.foregroundRegion)
+                            clipRegion=clipRegion)
                         else {
                             val polygon=shape as org.locationtech.jts.geom.Polygon
                             val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
