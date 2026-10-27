@@ -47,7 +47,6 @@ import kotlinx.coroutines.withContext
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     multiPositionPositions: List<SewingPosition> = emptyList(),
     onMultiPositionExport: ((Project, List<SewingPosition>) -> Unit)? = null,
-    onAiPicture: (() -> Unit)? = null,
 ) {
     // Screens drawn inside the editor (lettering, fonts) get no Home of their own: leaving goes
     // through the editor's unsaved-change check, from its own top bar.
@@ -319,11 +318,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             TextButton(onClick = { showDesigns = false; importDesign() }, modifier = Modifier.padding(horizontal = 12.dp)) {
                 Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.import_title))
-            }
-            if (onAiPicture != null) Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-                io.github.linker2k.myembro.ui.home.AiPictureCreationChoice(enabled = !vm.busy) {
-                    showDesigns = false; onAiPicture()
-                }
             }
             if (vm.designs.isEmpty()) Text(stringResource(R.string.editor_library_empty), Modifier.padding(20.dp))
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp)) {

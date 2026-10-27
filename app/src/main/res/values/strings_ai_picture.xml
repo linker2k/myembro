@@ -1,26 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="ai_picture_title">Create embroidery artwork with AI</string>
-    <string name="ai_picture_hint">Describe your picture, with or without a reference photo. Share the generated image back to myembro to make embroidery.</string>
-    <string name="ai_picture_request">Describe the picture and any exact lettering</string>
-    <string name="ai_picture_example">A smiling puppy face, with 코코 below</string>
-    <string name="ai_picture_voice">Speak your request</string>
-    <string name="ai_picture_no_photo">No photo attached</string>
-    <string name="ai_picture_has_photo">Reference photo selected (not yet shared)</string>
-    <string name="ai_picture_pick">Choose an optional photo</string>
-    <string name="ai_picture_remove">Remove photo</string>
-    <string name="ai_picture_error">Could not read or share this picture. Try again.</string>
-    <string name="ai_picture_share">Choose AI app…</string>
-    <string name="ai_picture_chooser">Send to an AI app</string>
-    <string name="ai_picture_disclosure_title">Choose what to send</string>
-    <string name="ai_picture_disclosure_photo">A reduced PNG copy of this photo and your request will go to the external AI app you choose (such as ChatGPT or Gemini).</string>
-    <string name="ai_picture_disclosure_text">Only your request will go to the external AI app you choose; no photo will be sent.</string>
-    <string name="ai_picture_send">Send</string>
-    <string name="ai_picture_text_only">Request only, without photo</string>
-    <string name="ai_picture_colors">Foreground colors: %1$d</string>
     <string name="svg_picture_unsupported">This SVG cannot be used. Please send a PNG instead.</string>
     <string name="svg_picture_direct">SVG artwork. Adjust the embroidery size below.</string>
-    <string name="ai_picture_retry_png">Request PNG again</string>
     <string name="picture_intake_not_picture">This is not a picture file.</string>
     <string name="picture_intake_choose">Choose a picture to open</string>
 </resources>

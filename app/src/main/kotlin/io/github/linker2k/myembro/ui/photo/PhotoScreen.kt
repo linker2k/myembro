@@ -67,10 +67,6 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
         while (vm.busy) { delay(1000); elapsed++ }
     }
     var showCheck by remember { mutableStateOf(false) }
-    var aiPicture by remember { mutableStateOf(false) }
-    val aiDraft: AiPictureDraft = androidx.lifecycle.viewmodel.compose.viewModel()
-    if (aiPicture) AiPictureDialog(vm.hoop, vm.inkWidthMm ?: vm.widthMm,
-        settings.myThreads, draft = aiDraft, onDismiss = { aiPicture = false })
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.photo_title)) }, navigationIcon = {
         Row {
             IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.photo_back)) }
@@ -103,12 +99,6 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 Text(stringResource(R.string.photo_slow_hint))
                 TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
             }
-            if (vm.step < 2) OutlinedButton(onClick = { aiDraft.photo.value = vm.source; aiPicture = true }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.ai_picture_title))
-            }
-            if (vm.isSvg || aiDraft.request.value.isNotBlank()) TextButton(onClick = {
-                aiDraft.retryPng(); aiPicture = true
-            }, enabled = !vm.busy) { Text(stringResource(R.string.ai_picture_retry_png)) }
             if (vm.isSvg) {
                 Text(stringResource(R.string.svg_picture_direct))
                 val range = vm.inkWidthRange
