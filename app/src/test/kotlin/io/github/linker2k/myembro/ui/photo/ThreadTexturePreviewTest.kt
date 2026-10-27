@@ -12,6 +12,23 @@ import io.github.linker2k.myembro.engine.texture.TextureRasterPolicy
 import kotlin.test.*
 
 class ThreadTexturePreviewTest {
+    @Test fun blockerMessagesUseCodesWithStitchLimitPriority() {
+        val dense=FindingCode.DENSITY_HOTSPOT
+        val limit=FindingCode.STITCH_LIMIT_EXCEEDED
+        val blocker=Severity.BLOCKER
+        val warning=Severity.WARNING
+        val densityText=io.github.linker2k.myembro.R.string.photo_texture_dense
+        val limitText=io.github.linker2k.myembro.R.string.photo_texture_stitch_limit
+        val generic=io.github.linker2k.myembro.R.string.photo_texture_blocked
+        assertEquals(densityText,ThreadTextureOutputGate.blockerMessage(mapOf(dense to blocker)))
+        assertEquals(limitText,ThreadTextureOutputGate.blockerMessage(mapOf(limit to blocker)))
+        assertEquals(limitText,ThreadTextureOutputGate.blockerMessage(mapOf(dense to blocker,limit to blocker)))
+        assertEquals(limitText,ThreadTextureOutputGate.blockerMessage(mapOf(limit to blocker,dense to blocker)))
+        assertEquals(densityText,ThreadTextureOutputGate.blockerMessage(mapOf(limit to warning,dense to blocker)))
+        assertEquals(generic,ThreadTextureOutputGate.blockerMessage(mapOf(dense to warning,limit to warning)))
+        assertEquals(generic,ThreadTextureOutputGate.blockerMessage(emptyMap()))
+    }
+
     private val source = IntArray(32*32) { i -> when {
         i%32 in 5..14 && i/32 in 6..25 -> 0xffd03030.toInt()
         i%32 in 18..26 && i/32 in 8..23 -> 0xff3060c0.toInt()

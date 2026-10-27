@@ -43,8 +43,10 @@ interrupts the worker, and discards partial output. The UI shows progress and Ca
 `ThreadTextureOutputGate` checks the candidate against the selected machine/hoop
 before invoking the PES writer, then checks the resulting PES bytes again. Any
 blocker or incomplete analysis returns no bytes. The candidate remains visible
-with a blocked sewing-check badge. `DENSITY_HOTSPOT` shows “Too dense: increase the
-size or choose Coarse detail”; other blockers show sewing-check guidance. Sending
+with a blocked sewing-check badge. `DENSITY_HOTSPOT` shows “Too dense: try Coarse detail.”
+`STITCH_LIMIT_EXCEEDED` shows “Too many stitches: reduce the size or try Coarse
+detail.” When both block, stitch-count guidance takes precedence. Selection uses
+finding codes/severity, never engine message text. Other blockers show sewing-check guidance. Sending
 and editing are disabled. MainActivity guards the edit callback too, so a disabled
 button cannot be bypassed by calling its callback.
 
@@ -68,3 +70,10 @@ The 6 UI adapter tests include real 40mm synthetic-ramp runs:
 Coarse 1,833 stitches, Normal 1,923 stitches, Fine 2,209 stitches; all 3 written PES
 checks have no blockers. These measurements are synthetic regression evidence,
 not a guarantee for arbitrary photos or an actual sew-out verdict.
+
+Device-review guidance correction: density blockers recommend Coarse detail only;
+stitch-count blockers recommend a smaller size or Coarse detail and take precedence
+when both occur. `blockerMessagesUseCodesWithStitchLimitPriority` tests both codes,
+both insertion orders, warning-only codes and generic fallback. Validation:
+`./gradlew :app:testDebugUnitTest --console=plain` → `BUILD SUCCESSFUL in 58s`;
+454 tests, 0 failures, 0 errors.

@@ -68,6 +68,13 @@ class ThreadTexturePreview private constructor(pixels: IntArray, val width: Int,
 
 /** Fail closed before writing, and check actual PES bytes again before export or editing. */
 object ThreadTextureOutputGate {
+    /** Use codes/severity, never engine-localized messages. Count limit wins over density. */
+    fun blockerMessage(severities: Map<FindingCode, Severity>): Int = when {
+        severities[FindingCode.STITCH_LIMIT_EXCEEDED] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.photo_texture_stitch_limit
+        severities[FindingCode.DENSITY_HOTSPOT] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.photo_texture_dense
+        else -> io.github.linker2k.myembro.R.string.photo_texture_blocked
+    }
+
     data class Result(val report: SewoutReport, val bytes: ByteArray?) {
         val canUse get() = report.analysisComplete && !report.hasBlockingIssues && bytes != null
         val densityBlocked get() = report.findingSeverities[FindingCode.DENSITY_HOTSPOT] == Severity.BLOCKER

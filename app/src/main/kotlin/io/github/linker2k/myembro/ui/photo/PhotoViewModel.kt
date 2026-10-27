@@ -429,8 +429,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                 } }
                 if (version == revision) { shapeObject=output.second;render=output.first.first; bytes=output.first.second; report=output.first.third
                     resultSizeMm=output.first.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 }
-                    if(selectedTexture.enabled && !passed) error = if(report?.findingSeverities?.get(FindingCode.DENSITY_HOTSPOT)==Severity.BLOCKER)
-                        R.string.photo_texture_dense else R.string.photo_texture_blocked
+                    if(selectedTexture.enabled && !passed) error = ThreadTextureOutputGate.blockerMessage(report?.findingSeverities.orEmpty())
                 }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
