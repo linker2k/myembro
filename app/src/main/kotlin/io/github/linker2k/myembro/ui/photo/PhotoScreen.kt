@@ -85,7 +85,10 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 style = MaterialTheme.typography.headlineSmall)
             Text(Dimensions.size(vm.hoop.width / 10.0, vm.hoop.height / 10.0), style = MaterialTheme.typography.bodySmall)
             if (vm.busy) {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
+                if(vm.textureActive && vm.step==2) {
+                    LinearProgressIndicator(progress={vm.textureProgress},modifier=Modifier.fillMaxWidth())
+                    Text(stringResource(R.string.photo_texture_progress,(vm.textureProgress*100).toInt()))
+                } else LinearProgressIndicator(Modifier.fillMaxWidth())
                 Text(stringResource(when (vm.progressStage) {
                     0 -> R.string.photo_progress_decode
                     1 -> R.string.photo_progress_quantize
@@ -178,6 +181,9 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                             onValueChangeFinished={ vm.changeColorCount(colorDraft.toInt()) },enabled=!vm.busy,
                             modifier=Modifier.semantics { contentDescription=colorLabel })
                         Text(stringResource(R.string.photo_color_hint),style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                        ThreadTextureControls(vm.textureOptions, !vm.busy, vm::changeTextureEnabled,
+                            vm::changeTextureDetail)
+
                     } else {
                     Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
                     val detailLabel = stringResource(R.string.photo_detail)
@@ -209,15 +215,17 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Text(stringResource(R.string.photo_time_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
             }
+            if(vm.step==2 && vm.textureActive) Text(stringResource(R.string.photo_texture_editor_hint),
+                style=MaterialTheme.typography.bodySmall, color=colors.onSurfaceVariant)
             if(vm.step==2 && vm.excludedCount>0) Text(stringResource(R.string.photo_excluded_regions,vm.excludedCount),color=colors.onSurfaceVariant)
             vm.error?.let { Text(stringResource(it), color = colors.error) }
             if (vm.step < 2) Button(onClick = vm::next,
-                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.outline != null), modifier = Modifier.fillMaxWidth()) {
+                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.previewReady), modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.photo_next))
             } else {
                 if (!vm.isSvg && !vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onEdit, enabled = !vm.busy && (vm.render?.pattern?.stitchCount ?: 0)>0, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
+                OutlinedButton(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
                 Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
                 }
             }
@@ -271,5 +279,39 @@ private fun OutlinePreview(outline: RedworkOutline,style: PhotoMode) {
                 style=androidx.compose.ui.graphics.drawscope.Stroke(Units.mmToPixels(0.3).toFloat()))
             else drawPath(shape, ink)
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolean,
+    onEnabled: (Boolean) -> Unit, onDetail: (TextureDetail) -> Unit,
+) {
+    val label = stringResource(R.string.photo_texture)
+    Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Text(label, style=MaterialTheme.typography.titleSmall, modifier=Modifier.weight(1f))
+        Surface(color=MaterialTheme.colorScheme.secondaryContainer, shape=MaterialTheme.shapes.small) {
+            Text(stringResource(R.string.photo_texture_experimental), modifier=Modifier.padding(horizontal=8.dp, vertical=4.dp),
+                style=MaterialTheme.typography.labelSmall, color=MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+        Switch(checked=options.enabled, onCheckedChange=onEnabled, enabled=enabled,
+            modifier=Modifier.semantics { contentDescription=label })
+    }
+    if (options.enabled) {
+        Text(stringResource(R.string.photo_texture_detail), style=MaterialTheme.typography.labelLarge)
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            TextureDetail.entries.forEachIndexed { i, value ->
+                SegmentedButton(selected=options.detail==value, onClick={onDetail(value)}, enabled=enabled,
+                    shape=SegmentedButtonDefaults.itemShape(i, TextureDetail.entries.size)) {
+                    Text(stringResource(when(value) {
+                        TextureDetail.COARSE -> R.string.photo_texture_coarse
+                        TextureDetail.NORMAL -> R.string.photo_texture_normal
+                        TextureDetail.FINE -> R.string.photo_texture_fine
+                    }))
+                }
+            }
+        }
+        Text(stringResource(R.string.photo_texture_editor_hint), style=MaterialTheme.typography.bodySmall)
     }
 }

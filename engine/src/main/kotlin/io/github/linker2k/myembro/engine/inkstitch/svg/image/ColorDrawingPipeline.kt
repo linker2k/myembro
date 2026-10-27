@@ -53,13 +53,9 @@ object ColorDrawingPipeline {
         require(widthMm.isFinite() && widthMm>0 && colorCount in 2..6)
         checkpoint("quantization")
         val pixels=if(grayscale) IntArray(argb.size) { Bt709Grayscale.argb(argb[it]) } else argb
-        val opaque=pixels.indices.filter { pixels[it] ushr 24 != 0 }
-        require(opaque.isNotEmpty()) { "No visible pixels" }
-        val preliminary=ImageQuantizer.quantize(opaque.map { pixels[it] and 0xffffff }.toIntArray(),colorCount+1)
-        val first=IntArray(argb.size) { -1 };val firstIndices=preliminary.copyIndices()
-        opaque.forEachIndexed { i,p -> first[p]=firstIndices[i] }
-        val background=if(opaque.size<argb.size) -1 else ColorRegionCleanup.borderMode(width,height,first)
-        val foreground=opaque.filter { background<0 || first[it]!=background }
+        val selection=ColorRegionCleanup.selectBackground(width,height,pixels,colorCount)
+        require(selection.visible.isNotEmpty()) { "No visible pixels" }
+        val foreground=selection.foreground
         require(foreground.isNotEmpty()) { "No foreground after border background removal" }
         val quantized=ImageQuantizer.quantize(foreground.map { pixels[it] and 0xffffff }.toIntArray(),colorCount)
         val original=IntArray(argb.size) { -1 };val q=quantized.copyIndices()

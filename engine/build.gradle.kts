@@ -255,3 +255,13 @@ tasks.register<JavaExec>("runAgentRegression") {
 
 // Shared adversarial fixtures compile in tests only, never the engine/application artifacts.
 sourceSets.test { kotlin.srcDir(rootProject.file("tools/safety-tests/kotlin")) }
+
+// Explicit local 108-case texture raster measurement; never executes DrawingBot or modifies goldens.
+tasks.register<JavaExec>("sweepThreadTextureRaster") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.texture.TextureRasterSweep")
+    maxHeapSize = "1g"
+    args(providers.gradleProperty("texturePitchOutput").orElse("/tmp/myembro-texture-pitch").get())
+}

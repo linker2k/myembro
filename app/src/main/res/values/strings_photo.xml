@@ -78,4 +78,17 @@
     <string name="photo_noise_strong">Strong</string>
     <string name="photo_contrast_factor">Contrast: %1$.2f×</string>
     <string name="photo_color_name">Color drawing</string>
+    <string name="photo_texture">Thread texture</string>
+    <string name="photo_texture_experimental">Experimental</string>
+    <string name="photo_texture_detail">Detail</string>
+    <string name="photo_texture_coarse">Coarse</string>
+    <string name="photo_texture_normal">Normal</string>
+    <string name="photo_texture_fine">Fine</string>
+    <string name="photo_texture_editor_hint">Texture embroidery opens as stitches in the editor. Individual color blocks cannot be edited.</string>
+    <string name="photo_texture_name">Thread picture texture</string>
+    <string name="photo_texture_file_stem">thread_texture</string>
+    <string name="photo_texture_dense">Too dense: try Coarse detail.</string>
+    <string name="photo_texture_blocked">The sewing check blocked this texture. Adjust the size or detail before editing or sending.</string>
+    <string name="photo_texture_progress">Drawing thread texture · %1$d%%</string>
+    <string name="photo_texture_stitch_limit">Too many stitches: reduce the size or try Coarse detail.</string>
 </resources>
