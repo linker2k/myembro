@@ -1,12 +1,12 @@
 # Thread texture: DrawingBotV3 Free source review
 
-Research date: 2026-10-27. Status: source-reading design only; no implementation or measured equivalence claim.
+Research date: 2026-10-27. Status: source review plus the first restricted Kotlin core; no upstream execution or measured equivalence claim.
 
 ## Source, scope, and exclusions
 
 Candidate: DrawingBotV3 **Free v1.6.25**, tag [`v1.6.25-stable-free`](https://github.com/SonarSonic/DrawingBotV3/releases/tag/v1.6.25-stable-free), commit **`0e7c900638def19b9a8d16445099f3f1129aee52`**. All source links below refer to that commit. GitHub's cached `master` responses were insufficient for version verification; the pinned files were subsequently read directly in Chrome, including their numbered file-content text. No repository archive, executable, dependency, or source file was downloaded to the workspace; no upstream code was compiled or run.
 
-The repository [LICENSE:1–6](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/LICENSE#L1-L6) contains GPL version 3. The packaging declaration uses `GPLv3+` ([build.gradle:103–105](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/build.gradle#L103-L105)). A future source port must retain authorship/license notices and add exact port attribution and third-party notices. No code is copied in this research change.
+The repository [LICENSE:1–6](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/LICENSE#L1-L6) contains GPL version 3. The packaging declaration uses `GPLv3+` ([build.gradle:103–105](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/build.gradle#L103-L105)). A future source port must retain authorship/license notices and add exact port attribution and third-party notices. The initial research commit `ce8b5a1` copied no code; the first implementation unit below adds the attributed Kotlin adaptation.
 
 The requested toggle keeps the current color block pipeline when off. When on, the candidate supplies **luminance-guided plotter lines**, not a verified replacement for PE-Design Photo Stitch. Brother US7996103B2 is excluded by project decision and is not an implementation source. No claim about patent clearance is made by this source review.
 
@@ -78,4 +78,27 @@ No oracle was executed in this research unit. The following is a future plan req
 4. Test the embroidery adapter separately: pixel→mm scaling, palette mapping, short-run handling, locks/trims and travel; round-trip PES through PesReader; assert all existing gates including density and viewport. Preserve the raw plotting trace so a sewing adaptation does not masquerade as upstream mismatch. Toggle-off has exact existing pattern/PES regression tests.
 5. Only after code comparison and safety assertions, provide a small physical sew-out sample to judge texture, thread accumulation and color layering. Visual similarity to PE-Design and acceptable fabric behavior remain unconfirmed; upstream is a plotting source, not a sewing-quality oracle.
 
-Open decisions before implementation: approve the restricted default raster backend; choose and verify a multicolor adapter; authorize an upstream oracle source/execution route; select processing resolution and running-stitch settings from existing policy and measured sew-out results. This memo introduces no new stitch limits or UI settings.
+Decisions recorded at initial review: approve the restricted default raster backend; choose and verify a multicolor adapter; authorize an upstream oracle source/execution route; select processing resolution and running-stitch settings from existing policy and measured sew-out results. Subsequent approvals and pending items are recorded below. This memo introduces no new stitch limits or UI settings.
+
+## First implementation unit (2026-10-27)
+
+`engine/.../texture/{SketchLines,SketchRaster,SketchLineSampler}.kt` now implements the approved restricted core. Public entry point: `SketchLines.render(width, height, argb, clipMask, settings, isCancelled, onProgress)`. It copies input data and returns ordered plotting lines with sampled original ARGB, squiggle indices, typed termination and raw progress. Coordinates are integer processing pixels; output is deliberately not an EmbPattern or PES. `SketchSettings` uses registered defaults; erase bounds and line/squiggle bounds normalize like upstream setup. Constant radius/pen width 1 are fixed by scope, not exposed settings.
+
+The sampler preserves the active integer trigonometric offsets, prefix scoring and axis bias. The raster preserves RGB addition/clamping, truncated perceived luminance and incremental tile averages. Java `Random` bounded methods are delegated directly, including equal/reversed-bound wrappers; no replacement PRNG or OpenJDK implementation is copied. These bounded methods require JVM 17 in this first pure-JVM unit. Android runtime/desugaring support remains unconfirmed and must be resolved before any app integration; no app code calls this API yet.
+
+| Deliberate scope/difference | Reason / verification status |
+|---|---|
+| Pixel mask instead of AWT Shape; no application transforms or hard clipping geometry | Caller supplies the already sampled integer soft-clip mask. No JavaFX/AWT dependency. Geometric mask construction is outside this unit. |
+| Fully clipped raster returns `NO_DRAWABLE_PIXELS` before averaging or selecting a tile | Prevents division-by-zero/invalid-coordinate traversal; regression test requires no lines. |
+| Cache initialized once per render instead of lazily on first search | Same x-major tile arithmetic; no shared state. |
+| Typed cancellation and progress observer instead of desktop PFMTask callbacks | No application/task dependency. Raw default progress formula preserved, including its zero-density/zero-limit NaN behavior; callers must not interpret NaN as completion. |
+| No additive/composite raster, width/radius variation, pen optimization, palette mapping or embroidery conversion | Approved first backend only; no claim of equivalence outside that scope. |
+| No official execution comparison | User permission pending. Local contract tests are not an upstream oracle. |
+
+Zingl license review completed: the linked helper LICENSE is MIT, copyright `(c) 2020 zingl`; full permission/warranty text is retained under `engine/src/main/resources/licenses/thread-texture/`. DrawingBot GPL and source attributions are recorded in `THIRD_PARTY_NOTICES.md` and each ported source header.
+
+Next adapter decision is approved but **not implemented** here: preserve each line's sampled ARGB; assign it to the nearest thread in the N-color palette produced by the existing Wu quantizer and Brother thread matcher; group sewing from light to dark. The light→dark order is a user-directed design choice based on the cited Auto Punch video, **unconfirmed** as a universally correct texture sewing order. Per-color luminance masks are excluded. The existing toggle-off block generation remains untouched.
+
+Local tests: `./gradlew :engine:test --tests '*SketchLinesTest'` checks white/fully-clipped/isolated inputs, same-seed repeatability, reference color sampling, axis penalty/prefix tie handling, default sampled RNG ranges, Java bounded sequence (including power-of-two/overflow ranges), normalization, progress formula/line limit, cancellation, tile selection/remainder/cache updates and pixel traversal. No private image or external program is used. Official equivalence and physical sewing quality are still unconfirmed.
+
+Verification for this unit: `:engine:test --tests '*SketchLinesTest'` — 19 tests, 0 failures/errors, `BUILD SUCCESSFUL in 18s`. Subsequent full `:engine:test` — 966 tests in 173 suites, 0 failures/errors, `BUILD SUCCESSFUL in 1m 27s`. Logs: `/tmp/myembro-texture-core-test.log`, `/tmp/myembro-texture-engine-test.log`. These counts are local contract/regression results, not upstream-oracle or sew-out approval.
