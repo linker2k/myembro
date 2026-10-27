@@ -24,6 +24,7 @@ import io.github.linker2k.myembro.library.importDesigns
 import io.github.linker2k.myembro.library.ImportDecisions
 import kotlinx.coroutines.Job
 import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
+import io.github.linker2k.myembro.engine.edit.BlockOrderMove
 import io.github.linker2k.myembro.ui.editor.block.BlockRunner
 import io.github.linker2k.myembro.ui.editor.block.BlockStatus
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
@@ -108,6 +109,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 onReady(EditorSplitPreview(snapshot, positions, result))
             } catch (e: CancellationException) { throw e
             } catch (e: EditorExportBlocked) { exportProblems = e.problems
+            } catch (e: LinkageError) { message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) { report(R.string.editor_save_failed, e)
             } finally { busy = false }
         }
@@ -519,6 +521,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun applyBlockStitch(id: String, regionIds: Set<String>, patch: BlockStitchPatch) =
         blockRunner.apply(project, ProjectCommand.SetBlockStitch(id, regionIds, patch), current = { project },
             commit = { next -> edit(next); project === next })
+    /** SetBlockOrder (sewing order of regions) the same way: background, checked, one undo step. */
+    fun applyBlockOrder(id: String, regionIds: Set<String>, move: BlockOrderMove) =
+        blockRunner.apply(project, ProjectCommand.SetBlockOrder(id, regionIds, move), current = { project },
+            commit = { next -> edit(next); project === next })
     fun checkBlockSewout() = blockRunner.check(project)
     /** Cancel button: the running generation stops and the previous settings stay. */
     fun cancelBlockApply() = blockRunner.cancelApply()
@@ -832,6 +838,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     resource?.let { getApplication<Application>().getString(it) } ?: problem
                 }
+            } catch (e: LinkageError) {
+                // A shape this device cannot generate: nothing is written; the canvas fallback is never exported.
+                message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) {
                 message = getApplication<Application>().getString(R.string.editor_save_failed, e.localizedMessage.orEmpty())
             } finally { busy = false }

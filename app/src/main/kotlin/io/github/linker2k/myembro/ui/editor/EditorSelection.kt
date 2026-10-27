@@ -113,7 +113,7 @@ internal fun parseEditorTransform(x: String, y: String, rotation: String, sx: St
 
 /** Conservative transformed local rectangle for pointer previews; no placement/S1 work. */
 internal fun DesignObject.previewBounds(): Bounds? {
-    val b=localPattern().bounds ?: return null
+    val b=ShapeStitchGuard.local(this).pattern.bounds ?: return null
     val points=listOf(b.minX to b.minY,b.maxX to b.minY,b.maxX to b.maxY,b.minX to b.maxY)
         .map { (x,y) -> transform.apply(x.toDouble(),y.toDouble()) }
     return Bounds(kotlin.math.floor(points.minOf { it.first }).toInt(),kotlin.math.floor(points.minOf { it.second }).toInt(),

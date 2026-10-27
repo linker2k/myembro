@@ -36,7 +36,7 @@ object DesignFormats {
     fun preparePes(file: File, settings: PesWriteSettings, sewingOptions: SewingOptions? = null): PesExport.Result =
         if (extension(file.name) == "myembro") {
             val project = ProjectJson.decode(file.readText().removePrefix("\uFEFF"), sourceResolver = sourceResolver(file))
-            val flattened = project.flatten(sewingOptions)
+            val flattened = io.github.linker2k.myembro.deviceGeneration { project.flatten(sewingOptions) }
             io.github.linker2k.myembro.engine.sewout.SewoutLimits.requirePlaced(project.hoop,flattened.bounds)
             val origin = io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(flattened)
             PesExport.Result(PesExport.requireSafe(PesWriter.write(flattened, settings.copy(hoop = project.hoop)), project.hoop, origin),
@@ -54,7 +54,8 @@ object DesignFormats {
             else -> false
         }
         require(valid) { "Unsupported file or mismatched signature: $name" }
-        return if (extension(name) == "myembro") ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), sourceResolver = sourceResolver).flatten(sewingOptions)
+        return if (extension(name) == "myembro") io.github.linker2k.myembro.deviceGeneration {
+            ProjectJson.decode(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), sourceResolver = sourceResolver).flatten(sewingOptions) }
         else PatternReader.read(bytes, name)
     }
 }

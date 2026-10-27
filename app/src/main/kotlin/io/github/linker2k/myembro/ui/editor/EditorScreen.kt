@@ -231,6 +231,17 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 val canvas: @Composable (Modifier, Boolean) -> Unit = { modifier, floatingTools ->
                     Box(modifier) {
                         EditorCanvas(vm, fitRequest, Modifier.fillMaxSize(), navigationOnly, showJumps, preview)
+                        // Shapes this device could not generate are drawn from their last good stitches: say so.
+                        val fallbackCount = if (vm.rendering) 0 else ShapeStitchGuard.failedIds().count { id -> vm.project.find(id)?.visible == true }
+                        if (fallbackCount > 0) Surface(color = colors.errorContainer, shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp, start = 64.dp, end = 64.dp)) {
+                            Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.WarningAmber, null, tint = colors.onErrorContainer, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.editor_shape_fallback, fallbackCount), style = MaterialTheme.typography.labelSmall,
+                                    color = colors.onErrorContainer)
+                            }
+                        }
                         if (floatingTools) EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                             onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                             onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
@@ -330,7 +341,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             var background by remember { mutableStateOf<io.github.linker2k.myembro.engine.model.EmbPattern?>(null) }
             LaunchedEffect(projectSnapshot, letteringTarget, sewingOptions) {
                 background = withContext(Dispatchers.Default) {
-                    projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget }).flatten(sewingOptions)
+                    ShapeStitchGuard.displayFlatten(projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget })) { it.flatten(sewingOptions) }
                 }
             }
             key(vm.letteringTargetId) {

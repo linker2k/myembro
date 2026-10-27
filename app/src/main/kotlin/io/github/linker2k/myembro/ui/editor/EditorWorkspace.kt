@@ -127,7 +127,7 @@ internal fun MiniLayerPanel(vm: EditorViewModel, enabled: Boolean, onAdd: () -> 
 
 @Composable
 private fun LayerThumbnail(obj: DesignObject, modifier: Modifier) {
-    val data = remember(obj.withTransform(Transform())) { RenderData(obj.localPattern()) }
+    val data = remember(obj.withTransform(Transform())) { RenderData(ShapeStitchGuard.local(obj).pattern) }
     val background = MaterialTheme.colorScheme.surfaceContainerLow
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
     Canvas(modifier) {
@@ -201,7 +201,7 @@ internal fun EditorInspector(vm: EditorViewModel, tab: Int, onTab: (Int) -> Unit
 @Composable
 private fun TransformInspector(vm: EditorViewModel, obj: DesignObject, expanded: Boolean, enabled: Boolean, onProperties: () -> Unit) {
     val t = obj.transform
-    val b = remember(obj) { obj.localPattern().bounds }
+    val b = remember(obj) { ShapeStitchGuard.local(obj).pattern.bounds }
     val widthMm = (b?.width ?: 0) / 10.0 * abs(t.scaleX)
     val heightMm = (b?.height ?: 0) / 10.0 * abs(t.scaleY)
     fun format(v: Double) = String.format(Locale.ROOT, "%.2f", v)
@@ -285,8 +285,8 @@ private fun StitchInspector(vm: EditorViewModel, showJumps: Boolean, onJumps: (B
     var pattern by remember { mutableStateOf<EmbPattern>(EmbPattern(emptyList(), emptyList())) }
     LaunchedEffect(project, selected, sewingOptions) {
         pattern = withContext(Dispatchers.Default) {
-            val result = if (selected.isEmpty()) project.flatten(sewingOptions)
-                else project.copy(objects = project.objects.filter { it.id in selected }).flatten(sewingOptions)
+            val shown = if (selected.isEmpty()) project else project.copy(objects = project.objects.filter { it.id in selected })
+            val result = ShapeStitchGuard.displayFlatten(shown) { it.flatten(sewingOptions) }
             result.apply { stitchCount; colorBlocks; trimCount }
         }
     }
@@ -321,7 +321,7 @@ private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
     var threads by remember { mutableStateOf<List<EmbThread>>(emptyList()) }
     LaunchedEffect(obj, project) {
         threads = withContext(Dispatchers.Default) {
-            val p = obj?.localPattern() ?: project.flatten()
+            val p = obj?.let { ShapeStitchGuard.local(it).pattern } ?: ShapeStitchGuard.displayFlatten(project) { it.flatten() }
             p.threads.ifEmpty { p.colorBlocks.map { it.thread } }
         }
     }

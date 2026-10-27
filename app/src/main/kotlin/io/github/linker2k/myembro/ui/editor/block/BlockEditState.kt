@@ -115,3 +115,26 @@ private fun segmentDistance(px: Double, py: Double, ax: Double, ay: Double, bx: 
     val t = if (len == 0.0) 0.0 else (((px - ax) * dx + (py - ay) * dy) / len).coerceIn(0.0, 1.0)
     return hypot(px - (ax + t * dx), py - (ay + t * dy))
 }
+
+/**
+ * Where the selected regions sit in the sewing order (0-based [first]..[last] of [total]) and which
+ * moves would change it (the engine's moveRegions semantics: FORWARD = one place earlier).
+ */
+data class BlockOrderInfo(val first: Int, val last: Int, val total: Int, private val positions: List<Int>) {
+    fun canMove(move: io.github.linker2k.myembro.engine.edit.BlockOrderMove): Boolean {
+        if (positions.isEmpty()) return false
+        val packedFront = positions == positions.indices.toList()
+        val packedBack = positions == (total - positions.size until total).toList()
+        return when (move) {
+            io.github.linker2k.myembro.engine.edit.BlockOrderMove.FIRST, io.github.linker2k.myembro.engine.edit.BlockOrderMove.FORWARD -> !packedFront
+            io.github.linker2k.myembro.engine.edit.BlockOrderMove.LAST, io.github.linker2k.myembro.engine.edit.BlockOrderMove.BACKWARD -> !packedBack
+        }
+    }
+
+    companion object {
+        fun of(order: List<String>, selected: Set<String>): BlockOrderInfo {
+            val positions = order.indices.filter { order[it] in selected }
+            return BlockOrderInfo(positions.firstOrNull() ?: 0, positions.lastOrNull() ?: 0, order.size, positions)
+        }
+    }
+}

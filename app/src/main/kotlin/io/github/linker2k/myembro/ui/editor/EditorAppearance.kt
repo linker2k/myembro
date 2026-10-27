@@ -8,7 +8,7 @@ import kotlin.math.abs
 
 internal fun inspectorTransform(obj: DesignObject, width: String, height: String,
     x: String, y: String, rotation: String): Transform? {
-    val b = obj.localPattern().bounds ?: return null
+    val b = ShapeStitchGuard.local(obj).pattern.bounds ?: return null
     fun percent(input: String, units: Int, current: Double): String? {
         if (units == 0) return (abs(current) * 100).toString()
         val mm = input.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 } ?: return null

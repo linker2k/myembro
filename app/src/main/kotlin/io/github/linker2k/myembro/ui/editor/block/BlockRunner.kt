@@ -43,6 +43,9 @@ class BlockRunner(
     private val scope: CoroutineScope,
     private val worker: CoroutineContext = Dispatchers.Default,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
+    /** The engine reducer and the badge check; replaceable in tests only. */
+    private val reduce: (Project, ProjectCommand) -> CommandResult = ::apply,
+    private val checker: (Project) -> String? = BlockApply::check,
 ) {
     var status by mutableStateOf<BlockStatus>(BlockStatus.Idle)
         private set
@@ -53,24 +56,32 @@ class BlockRunner(
         job?.cancel()
         status = BlockStatus.Generating(clock())
         job = scope.launch {
-            val result = withContext(worker) { runInterruptible { apply(base, command) } }
-            status = when {
+            val result = withContext(worker) { runInterruptible { guarded { reduce(base, command) } } }
+            status = when (result) {
+                is Guarded.Failed -> BlockStatus.Blocked(result.failure, applyFailed = true)
+                is Guarded.Done -> applied(result.value, base, current, commit)
+            }
+        }
+    }
+
+    private fun applied(result: CommandResult, base: Project, current: () -> Project, commit: (Project) -> Boolean): BlockStatus =
+            when {
                 result is CommandResult.Rejected -> BlockApply.rejectedStatus(result)
                 // Something else changed the design meanwhile: never publish a result built on an old project.
                 current() !== base -> BlockStatus.Blocked(BlockFailure(BlockFailure.Kind.DESIGN_CHANGED, "STALE_PROJECT"), applyFailed = true)
                 commit(result.project) -> BlockStatus.Passed
                 else -> BlockStatus.Blocked(BlockFailure(BlockFailure.Kind.EDITOR_BUSY, "EDITOR_BUSY"), applyFailed = true)
             }
-        }
-    }
 
     /** The whole design's hoop and sewing check, for the badge. */
     fun check(project: Project) {
         job?.cancel()
         status = BlockStatus.Checking
         job = scope.launch {
-            val problem = withContext(worker) { runInterruptible { BlockApply.check(project) } }
-            status = if (problem == null) BlockStatus.Passed else BlockStatus.Blocked(BlockFailure.sewout(problem), applyFailed = false)
+            status = when (val problem = withContext(worker) { runInterruptible { guarded { checker(project) } } }) {
+                is Guarded.Failed -> BlockStatus.Blocked(problem.failure, applyFailed = false)
+                is Guarded.Done -> problem.value?.let { BlockStatus.Blocked(BlockFailure.sewout(it), applyFailed = false) } ?: BlockStatus.Passed
+            }
         }
     }
 
@@ -85,60 +96,82 @@ class BlockRunner(
     fun stop() { job?.cancel(); job = null; status = BlockStatus.Idle }
 
     fun elapsedMs(s: BlockStatus.Generating) = clock() - s.startedAtMs
+
+    private sealed interface Guarded<out T> {
+        data class Done<T>(val value: T) : Guarded<T>
+        data class Failed(val failure: BlockFailure) : Guarded<Nothing>
+    }
+
+    /**
+     * Crash safety net around generation: the reducer turns Exceptions into rejections, but an Error would end
+     * the app. Caught here, on the worker thread that did the work, so the previous settings stay:
+     * - LinkageError (VerifyError, NoClassDefFoundError, ExceptionInInitializerError...): this device's runtime
+     *   cannot run a generation library class (e.g. JTS RelateNG on ART).
+     * - StackOverflowError: the stack is already unwound when it reaches here.
+     * - OutOfMemoryError: everything the generation allocated becomes unreachable once unwound, and it is the
+     *   generation (up to a million meander points) that grows; failing this one apply beats losing the app.
+     * Other VirtualMachineErrors (InternalError, UnknownError) mean the VM itself is broken and are not caught.
+     */
+    private inline fun <T> guarded(block: () -> T): Guarded<T> = try { Guarded.Done(block()) } catch (e: Throwable) {
+        Guarded.Failed(BlockFailure.device(e) ?: throw e)
+    }
 }
 
 /**
- * Why an apply or check did not pass, classified for a short localized message; [detail] keeps the engine's
- * code and original text for the details view only.
+ * Why an apply or check did not pass, classified for a short localized message from the engine's typed
+ * result (CommandError + BlockGenerationKind), never from its message; [detail] keeps the engine's code and
+ * original text for the details view only.
  */
 data class BlockFailure(val kind: Kind, val detail: String, val sewoutCodes: List<String> = emptyList()) {
     enum class Kind {
         /** Generation (the settings cannot produce stitches for this region). */
-        MEANDER_REGION_TOO_SMALL, MEANDER_TOO_MANY_REPEATS, SATIN_UNSUPPORTED, NO_STITCHES, UNSUPPORTED_METHOD, GENERATION_FAILED,
+        MEANDER_REGION_TOO_SMALL, MEANDER_FAILED, SATIN_UNSUPPORTED, SATIN_TOO_LONG, NO_STITCHES, UNSUPPORTED_METHOD, GENERATION_FAILED,
+        /** The device's runtime could not run the generation (Error caught by BlockRunner's safety net). */
+        DEVICE_FAILED, OUT_OF_MEMORY,
         /** Stitches were made but the hoop/sewing check blocks them. */
         SEWOUT_BLOCKED,
         SETTINGS_INVALID, DESIGN_CHANGED, EDITOR_BUSY,
     }
 
     companion object {
-        /**
-         * The engine reports generation failures and sewing-check blocks under the same SEWOUT_BLOCKED code, so
-         * the message decides: generation messages (MeanderFill, ShapeBlockRenderer, ShapeObject) are matched
-         * first; everything else is a sewing-check block whose finding codes are kept.
-         */
-        fun of(code: CommandError, message: String, generation: BlockGenerationKind? = null): BlockFailure {
-            val detail = "$code: $message"
-            if (code == CommandError.INVALID_BLOCK_SETTINGS) return BlockFailure(Kind.SETTINGS_INVALID, detail)
-            // Typed generation failures (GENERATION_FAILED + kind) map without reading the message.
-            when (generation) {
-                BlockGenerationKind.MEANDER_GRAPH -> return BlockFailure(Kind.MEANDER_REGION_TOO_SMALL, detail)
-                BlockGenerationKind.SATIN_GEOMETRY_UNSUPPORTED -> return BlockFailure(Kind.SATIN_UNSUPPORTED, detail)
-                BlockGenerationKind.EMPTY_REGION, BlockGenerationKind.REGION_SET_CHANGED -> return BlockFailure(Kind.NO_STITCHES, detail)
-                BlockGenerationKind.UNSUPPORTED_FILL_BACKEND -> return BlockFailure(Kind.UNSUPPORTED_METHOD, detail)
-                else -> {}
+        /** The Errors BlockRunner survives; null = rethrow. */
+        fun device(e: Throwable): BlockFailure? {
+            val detail = "${e.javaClass.name}: ${e.message}"
+            return when (e) {
+                is OutOfMemoryError -> BlockFailure(Kind.OUT_OF_MEMORY, detail)
+                is LinkageError, is StackOverflowError -> BlockFailure(Kind.DEVICE_FAILED, detail)
+                else -> null
             }
-            if (code != CommandError.SEWOUT_BLOCKED && code != CommandError.GENERATION_FAILED) return BlockFailure(Kind.GENERATION_FAILED, detail)
-            val kind = when {
-                "Could not build graph for meander" in message || "Meander graph is disconnected" in message -> Kind.MEANDER_REGION_TOO_SMALL
-                "Meander tile repetition resource limit" in message || "Meander node resource limit" in message ||
-                    "Meander clipping resource limit" in message -> Kind.MEANDER_TOO_MANY_REPEATS
-                "SATIN_GEOMETRY_UNSUPPORTED" in message -> Kind.SATIN_UNSUPPORTED
-                "EMPTY_REGION" in message || "REGION_SET_CHANGED" in message -> Kind.NO_STITCHES
-                "UNSUPPORTED_FILL_BACKEND" in message || "LINEAR_GRADIENT_REQUIRES_COLOR_STOPS" in message -> Kind.UNSUPPORTED_METHOD
-                "Meander" in message || "meander" in message -> Kind.GENERATION_FAILED
-                else -> return if (code == CommandError.GENERATION_FAILED) BlockFailure(Kind.GENERATION_FAILED, detail) else sewout(message, detail)
-            }
-            return BlockFailure(kind, detail)
         }
 
-        /** A sewing-check block from SewoutLimits / PecViewportCheck / PesExport text ("CODE: message; ..."). */
+        fun of(code: CommandError, message: String, generation: BlockGenerationKind? = null): BlockFailure {
+            val detail = listOfNotNull(code.name, generation?.name).joinToString("/") + ": " + message
+            return when (code) {
+                CommandError.INVALID_BLOCK_SETTINGS -> BlockFailure(Kind.SETTINGS_INVALID, detail)
+                CommandError.SEWOUT_BLOCKED -> sewout(message, detail)
+                CommandError.GENERATION_FAILED -> BlockFailure(when (generation) {
+                    BlockGenerationKind.MEANDER_GRAPH -> Kind.MEANDER_REGION_TOO_SMALL
+                    BlockGenerationKind.MEANDER_GENERATION -> Kind.MEANDER_FAILED
+                    BlockGenerationKind.SATIN_GEOMETRY_UNSUPPORTED, BlockGenerationKind.SATIN_GENERATION_FAILED -> Kind.SATIN_UNSUPPORTED
+                    BlockGenerationKind.SATIN_STITCH_TOO_LONG -> Kind.SATIN_TOO_LONG
+                    BlockGenerationKind.EMPTY_REGION, BlockGenerationKind.REGION_SET_CHANGED -> Kind.NO_STITCHES
+                    BlockGenerationKind.UNSUPPORTED_FILL_BACKEND -> Kind.UNSUPPORTED_METHOD
+                    BlockGenerationKind.REGION_GENERATION, BlockGenerationKind.REGION_ORDER, BlockGenerationKind.OUTPUT_ENCODING, null -> Kind.GENERATION_FAILED
+                }, detail)
+                else -> BlockFailure(Kind.GENERATION_FAILED, detail)
+            }
+        }
+
+        /**
+         * A sewing-check block. The engine joins its BLOCKER findings as "FindingCode: message; ..." (BlockCommandCheck,
+         * PesExport, SewoutLimits); only the leading code of each entry is read, and only known codes are kept.
+         */
         fun sewout(message: String, detail: String = message) = BlockFailure(Kind.SEWOUT_BLOCKED, detail,
-            CODE.findAll(message).map { it.groupValues[1] }.filter { it in SEWOUT_CODES }.distinct().toList())
+            message.split("; ").map { it.substringBefore(':').trim() }.filter { it in SEWOUT_CODES }.distinct())
 
         /** Finding codes the summary knows; others fall under "other check". */
         val SEWOUT_CODES = setOf("HOOP_SAFETY_MARGIN", "HOOP_EXCEEDED", "MACHINE_AREA_EXCEEDED", "DENSITY_HOTSPOT",
             "LONG_STITCH", "MACHINE_STITCH_LENGTH_EXCEEDED", "PEC_DELTA_EXCEEDED", "REPEATED_PENETRATION", "ZERO_LENGTH_MOTION",
             "MISSING_LOCK_STITCH", "EMPTY_DESIGN", "ANALYSIS_LIMIT", "ANALYSIS_INCOMPLETE", "INVALID_PES", "PEC_ORIGIN")
-        private val CODE = Regex("\\b([A-Z][A-Z0-9_]{3,})\\b")
     }
 }

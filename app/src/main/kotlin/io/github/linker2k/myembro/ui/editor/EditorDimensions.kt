@@ -14,5 +14,8 @@ internal fun Project.selectionOutputBounds(ids: Set<String>, sewing: SewingOptio
     } catch (_: IllegalArgumentException) {
         // A composition beyond PEC's representable limits remains editable, without a false size.
         null
+    } catch (_: LinkageError) {
+        // A shape this device cannot generate (ShapeStitchGuard shows a fallback): no exported size to show.
+        null
     }
 }
