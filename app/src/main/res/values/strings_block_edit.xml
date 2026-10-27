@@ -5,7 +5,10 @@
     <string name="block_edit_done">Done</string>
     <string name="block_edit_multi">Multi-select</string>
     <string name="block_edit_pick_hint">Tap a region on the canvas. Turn on multi-select to pick several.</string>
-    <string name="block_edit_selected">%1$d regions selected</string>
+    <plurals name="block_edit_selected">
+        <item quantity="one">%1$d region selected</item>
+        <item quantity="other">%1$d regions selected</item>
+    </plurals>
     <string name="block_edit_apply">Apply</string>
     <string name="block_edit_type">Stitch type</string>
     <string name="block_edit_type_fill">Fill</string>
@@ -26,7 +29,7 @@
     <string name="block_edit_density_dense">Dense</string>
     <string name="block_edit_density_normal">Normal</string>
     <string name="block_edit_density_sparse">Sparse</string>
-    <string name="block_edit_density_unverified">Normal = Ink/Stitch default row spacing 0.25mm. Dense and sparse have no upstream basis yet (unverified)</string>
+    <string name="block_edit_density_later">Dense and sparse are coming in a later version.</string>
     <string name="block_edit_order">Sewing order</string>
     <string name="block_edit_canvas">Block regions; tap to select</string>
     <string name="block_edit_stitch_only">This design has stitches only, so block settings are not available</string>
@@ -78,7 +81,10 @@
     <string name="block_edit_order_last">To back</string>
     <string name="block_fail_device">Generation failed on this device. The previous settings stay.</string>
     <string name="block_fail_memory">Not enough memory on this device for these settings. Try a larger pattern or a simpler fill.</string>
-    <string name="editor_shape_fallback">%1$d shape(s) could not be generated on this device; showing the last good stitches. Saving and sending are blocked until they generate.</string>
+    <plurals name="editor_shape_fallback">
+        <item quantity="one">%1$d shape could not be generated on this device; showing its last good stitches. Saving and sending are blocked until it generates.</item>
+        <item quantity="other">%1$d shapes could not be generated on this device; showing their last good stitches. Saving and sending are blocked until they generate.</item>
+    </plurals>
     <string name="editor_generation_failed_device">A shape could not be generated on this device, so nothing was saved or sent.</string>
     <string name="device_generation_failed">Stitches could not be made on this device, so nothing was saved or sent.</string>
 </resources>

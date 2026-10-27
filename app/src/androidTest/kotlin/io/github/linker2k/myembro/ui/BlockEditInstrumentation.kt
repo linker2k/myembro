@@ -62,7 +62,7 @@ class BlockEditInstrumentation : Instrumentation() {
                     ?.let { n -> generateSequence(n) { it.parent }.firstOrNull { it.isClickable } }
                 // The folded sheet scrolls (off-screen controls are not in the tree): try as is, then scrolled
                 // down, then scrolled back up; each position gets a few seconds to appear.
-                for (action in listOf(0, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
+                for (action in listOf(0) + List(4) { AccessibilityNodeInfo.ACTION_SCROLL_FORWARD } + List(5) { AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD }) {
                     if (action != 0) { nodes().filter { it.isScrollable }.forEach { it.performAction(action) }; waitForIdleSync(); Thread.sleep(400) }
                     val end = SystemClock.uptimeMillis() + (if (action == 0) 8_000 else 2_000)
                     while (SystemClock.uptimeMillis() < end) {
@@ -117,7 +117,7 @@ class BlockEditInstrumentation : Instrumentation() {
                 .maxBy { r -> r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
             log += "TARGET $target satin=${engineOptions.getValue(target).unavailable[BlockType.SATIN]}"
             pointOf(target).let { (x, y) -> tap(x, y) }
-            await(targetContext.getString(R.string.block_edit_selected, 1))
+            await(targetContext.resources.getQuantityString(R.plurals.block_edit_selected, 1, 1))
             // Engine prechecks for this region: an unavailable type is disabled with a short reason.
             val satinLabel = targetContext.getString(R.string.block_edit_type_satin)
             val reasonEnd = SystemClock.uptimeMillis() + 60_000
@@ -176,6 +176,20 @@ class BlockEditInstrumentation : Instrumentation() {
             check(vm.undoSteps == undoBefore + 1) { "undo ${vm.undoSteps} vs $undoBefore" }
             log += "APPLY PASS: $wing -> meander_fill N3-11a, angle 135, one undo step; badge ${vm.blockStatus}"
             shot("05-block-applied.png")
+            // Sewing order: the wing moves to the back (or front if it is already last), one checked undo step.
+            val orderBefore = (vm.project.find(shape.id) as ShapeObject).regionOrder
+            val undoOrder = vm.undoSteps
+            val toBack = orderBefore.last() != wing
+            click(targetContext.getString(if (toBack) R.string.block_edit_order_last else R.string.block_edit_order_first))
+            val orderEnd = SystemClock.uptimeMillis() + 120_000
+            while ((vm.project.find(shape.id) as ShapeObject).regionOrder == orderBefore && vm.blockStatus !is BlockStatus.Blocked) {
+                check(SystemClock.uptimeMillis() < orderEnd) { "Order timed out" }; Thread.sleep(200) }
+            while (vm.blockStatus is BlockStatus.Generating) Thread.sleep(100)
+            val orderAfter = (vm.project.find(shape.id) as ShapeObject).regionOrder
+            check(vm.blockStatus is BlockStatus.Passed && (if (toBack) orderAfter.last() else orderAfter.first()) == wing && vm.undoSteps == undoOrder + 1) {
+                "Order: ${vm.blockStatus} ${orderAfter.indexOf(wing)} undo ${vm.undoSteps}" }
+            log += "ORDER PASS: $wing ${orderBefore.indexOf(wing) + 1} -> ${orderAfter.indexOf(wing) + 1} of ${orderAfter.size}, one undo step; badge ${vm.blockStatus}"
+            shot("09-block-order.png")
             sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
             await(targetContext.getString(R.string.editor_object_count, 1))
             val afterStitches = vm.project.flatten().stitches.size

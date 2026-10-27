@@ -5,7 +5,9 @@
     <string name="block_edit_done">완료</string>
     <string name="block_edit_multi">다중 선택</string>
     <string name="block_edit_pick_hint">캔버스에서 영역을 탭하세요. 여러 개는 다중 선택을 켜고 탭합니다.</string>
-    <string name="block_edit_selected">영역 %1$d개 선택</string>
+    <plurals name="block_edit_selected">
+        <item quantity="other">영역 %1$d개 선택</item>
+    </plurals>
     <string name="block_edit_apply">적용</string>
     <string name="block_edit_type">종류</string>
     <string name="block_edit_type_fill">채움</string>
@@ -26,7 +28,7 @@
     <string name="block_edit_density_dense">촘촘</string>
     <string name="block_edit_density_normal">보통</string>
     <string name="block_edit_density_sparse">성김</string>
-    <string name="block_edit_density_unverified">보통 = Ink/Stitch 기본 줄 간격 0.25mm. 촘촘·성김은 원본 근거가 없어 미확인이에요</string>
+    <string name="block_edit_density_later">촘촘·성김은 다음 버전에서 쓸 수 있어요.</string>
     <string name="block_edit_order">순서</string>
     <string name="block_edit_canvas">블럭 영역, 탭해서 선택</string>
     <string name="block_edit_stitch_only">스티치만 있는 도안이라 블럭 설정을 할 수 없어요</string>
@@ -78,7 +80,9 @@
     <string name="block_edit_order_last">맨 뒤</string>
     <string name="block_fail_device">이 기기에서 생성에 실패했어요. 이전 설정을 유지해요.</string>
     <string name="block_fail_memory">이 기기 메모리로는 이 설정을 만들 수 없어요. 무늬를 키우거나 더 단순한 채움을 고르세요.</string>
-    <string name="editor_shape_fallback">이 기기에서 생성하지 못한 도형 %1$d개를 마지막 결과로 표시 중이에요. 생성될 때까지 저장·전송은 막혀요.</string>
+    <plurals name="editor_shape_fallback">
+        <item quantity="other">이 기기에서 생성하지 못한 도형 %1$d개를 마지막 결과로 표시 중이에요. 생성될 때까지 저장·전송은 막혀요.</item>
+    </plurals>
     <string name="editor_generation_failed_device">이 기기에서 도형을 생성하지 못해 저장·전송하지 않았어요.</string>
     <string name="device_generation_failed">이 기기에서 바늘땀을 만들지 못해 저장·전송하지 않았어요.</string>
 </resources>
