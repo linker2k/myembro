@@ -45,7 +45,7 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
         put("meander_pattern",b.meander_pattern);put("meander_scale_percent",JsonArray(b.meander_scale_percent.map(::JsonPrimitive)))
         put("zigzag_spacing_mm",b.satin?.zigzag_spacing_mm?.let(::JsonPrimitive) ?: JsonNull)
     }
-    private fun decodeBlock(b: JsonObject): BlockStitch {
+    internal fun decodeBlock(b: JsonObject): BlockStitch {
         require(b.keys==setOf("type","automatic_angle","fill_method","angle","row_spacing_mm","meander_pattern","meander_scale_percent","zigzag_spacing_mm"))
         val satin=b.getValue("zigzag_spacing_mm").jsonPrimitive.doubleOrNull?.let { SatinParameters(zigzag_spacing_mm=it) }
         return BlockStitch(BlockStitch.Type.valueOf(b.text("type")),

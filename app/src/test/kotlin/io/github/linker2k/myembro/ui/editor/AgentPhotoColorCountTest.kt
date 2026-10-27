@@ -55,7 +55,7 @@ class AgentPhotoColorCountTest {
         val pes = kernel.dispatch(added.project, "0", "prepare_pes",
             Json.parseToJsonElement("""{"projectRevision":"0","machineId":"se400","frameId":"H100","pesVersion":"V6"}""").jsonObject)
         assertTrue(pes.ok, pes.output.toString())
-        val agentPattern = (added.project.objects.single() as io.github.linker2k.myembro.engine.edit.StitchObject).source
+        val agentPattern = assertIs<io.github.linker2k.myembro.engine.edit.ShapeObject>(added.project.objects.single()).localPattern()
         val agent = count(agentPattern, pes.pesBytes!!)
 
         // Photo screen, color mode, 2 colors, 40mm picture, default detail 1 (PhotoViewModel.prepare/generateResult).

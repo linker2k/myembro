@@ -28,4 +28,5 @@
     <string name="load_failed">파일을 열 수 없습니다: %1$s</string>
     <string name="speed">속도</string>
     <string name="picture_input_pending">그림 입력 창에서 확인 후 도안에 추가하세요</string>
+    <string name="photo_partial_blocks_unsupported">이 사진의 일부 조각은 블럭 편집을 지원하지 않아요</string>
 </resources>

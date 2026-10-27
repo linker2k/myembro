@@ -112,7 +112,9 @@ class AgentPhotoAttachTest {
         // Preview and apply add the same prepared result: the photo is read once.
         assertEquals(1, reads)
         assertEquals(1, session.history.undoCount)
-        assertIs<StitchObject>(session.project.find("agent-agent-p-T-photo"))
+        val added=session.project.find("agent-agent-p-T-photo")
+        if(mode=="color") assertIs<io.github.linker2k.myembro.engine.edit.ShapeObject>(added)
+        else assertIs<StitchObject>(added)
         assertTrue(session.stepHistory(redo = false))
         assertSame(empty, session.project)
         println("AGENT_PHOTO $mode PASS: preview before/after, sewout ok, apply = 1 undo step, undo restores")

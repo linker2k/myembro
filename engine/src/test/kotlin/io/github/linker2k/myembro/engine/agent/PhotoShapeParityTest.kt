@@ -132,6 +132,59 @@ class PhotoShapeParityTest {
         assertPatternEquals(originalPattern,restored.localPattern())
         assertFailsWith<IllegalArgumentException> { restored.withRegionOrder(restored.regionOrder.reversed()) }
     }
+    @Test fun thinPhotoRegionsPreserveAutomaticTypesAndAllowTypeOverride() {
+        // Synthetic three-color PNG: a sub-mm line, a satin band and a wide fill block.
+        val im=BufferedImage(64,64,BufferedImage.TYPE_INT_RGB)
+        for(y in 0..63) for(x in 0..63) im.setRGB(x,y,when {
+            y in 8..55 && x==8 -> 0x224488
+            y in 8..55 && x in 20..22 -> 0xcc4422
+            y in 8..55 && x in 36..49 -> 0x224488
+            else -> 0xffffff
+        })
+        val png=ByteArrayOutputStream().also { assertTrue(ImageIO.write(im,"png",it)) }.toByteArray()
+        val image=ImageIO.read(ByteArrayInputStream(png))
+        val edge=PhotoPreparationPolicy.photoRasterSize(1,50.0,50.0)
+        val pixels=IntArray(edge*edge) { p -> image.getRGB(p%edge*64/edge,p/edge*64/edge) }
+        fun generate(capture:Boolean)=ColorDrawingPipeline.generate(
+            ColorDrawingPipeline.trace(edge,edge,pixels,50.0,3),HoopSpec.H100,capture)
+        val source=generate(true)
+        assertPatternEquals(generate(false).pattern,source.pattern)
+        assertNull(ShapeObjectFactory.photoUnsupportedReason(source))
+        val empty=source.copy(regions=emptyList())
+        assertEquals("NO_SEWN_REGIONS",ShapeObjectFactory.photoUnsupportedReason(empty))
+        assertNull(ShapeObjectFactory.fromPhoto("empty","Empty",empty,50.0))
+        val missing=source.copy(regions=source.regions.map { it.copy(paths=emptyList()) })
+        assertEquals("MISSING_REGION_PATHS",ShapeObjectFactory.photoUnsupportedReason(missing))
+        assertNull(ShapeObjectFactory.fromPhoto("missing","Missing",missing,50.0))
+        val obj=assertNotNull(ShapeObjectFactory.fromPhoto("thin","Thin photo",source,50.0))
+        val expected=source.regions.filter { !it.excluded && it.groups>0 }.map { when(it.method) {
+            io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule.Type.TATAMI -> BlockStitch.Type.FILL
+            io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule.Type.SATIN -> BlockStitch.Type.SATIN
+            io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule.Type.RUNNING -> BlockStitch.Type.RUNNING
+        } }
+        println("THIN_PHOTO types=$expected")
+        assertTrue(expected.containsAll(listOf(BlockStitch.Type.SATIN,BlockStitch.Type.RUNNING)))
+        assertEquals(expected,obj.regions.map { it.stitch.type })
+        assertPatternEquals(source.pattern,obj.localPattern())
+        val original=Project(objects=listOf(obj))
+        assertContentEquals(PesWriter.writeV1(Project(objects=listOf(StitchObject("thin","Thin photo",source.pattern))).flatten()),
+            PesWriter.writeV1(original.flatten()))
+        val restored=ProjectJson.decode(ProjectJson.encode(original)).objects.single() as ShapeObject
+        assertEquals(obj.regions.map { it.defaultStitch },restored.regions.map { it.defaultStitch })
+        assertSafeRoundTrip(original)
+        val target=obj.regions.first { it.stitch.type==BlockStitch.Type.SATIN }
+        val applied=assertIs<io.github.linker2k.myembro.engine.edit.commands.CommandResult.Applied>(
+            io.github.linker2k.myembro.engine.edit.commands.apply(original,
+                io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("thin",setOf(target.id),
+                    BlockStitchPatch(type=BlockStitch.Type.RUNNING))))
+        val changed=applied.project.objects.single() as ShapeObject
+        assertEquals(BlockStitch.Type.RUNNING,changed.regions.first { it.id==target.id }.stitch.type)
+        assertSafeRoundTrip(applied.project)
+        assertPatternEquals(source.pattern,changed.withOverrides(emptyMap()).localPattern())
+        val reloaded=ProjectJson.decode(ProjectJson.encode(applied.project)).objects.single() as ShapeObject
+        assertPatternEquals(source.pattern,reloaded.withOverrides(emptyMap()).localPattern())
+        println("THIN_PHOTO shape=true native_PES=IDENTICAL codec=IDENTICAL override=RUNNING sewout=PASS")
+    }
     private fun assertPatternEquals(expected:io.github.linker2k.myembro.engine.model.EmbPattern,actual:io.github.linker2k.myembro.engine.model.EmbPattern) {
         assertEquals(expected.stitches,actual.stitches)
         assertEquals(expected.threads,actual.threads)
