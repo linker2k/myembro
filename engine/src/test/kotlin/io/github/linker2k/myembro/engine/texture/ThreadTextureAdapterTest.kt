@@ -91,7 +91,10 @@ class ThreadTextureAdapterTest {
             val lumas=result.runs.map { Bt709Grayscale.argb(it.thread.color) and 255 }
             assertEquals(lumas.sortedDescending(),lumas)
             val sewnIndices=result.runs.flatMap { it.sourceLineIndices }.sorted()
-            assertEquals(result.sketch.lines.indices.toList(),sewnIndices)
+            val kept = result.sketch.lines.indices.filter { i ->
+                result.backgroundThread?.sameColor(ThreadTextureAdapter.threadFor(result.sketch.lines[i].sampledArgb,palette)) != true
+            }
+            assertEquals(kept,sewnIndices)
             var pec="NOT_EMITTED";var roundtrip="NOT_EMITTED"
             if(result.sewout.hasBlockingIssues) {
                 assertFailsWith<IllegalArgumentException> { result.pes() }

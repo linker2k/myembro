@@ -5,6 +5,24 @@ import kotlin.math.ceil
 
 /** Standard border-label mode and four-connected small-region merging. No stitch heuristics. */
 internal object ColorRegionCleanup {
+    data class BackgroundSelection(val visible: List<Int>, val labels: IntArray,
+        val backgroundIndex: Int, val backgroundRgb: Int?) {
+        val foreground: List<Int> get() = visible.filter { backgroundIndex < 0 || labels[it] != backgroundIndex }
+    }
+
+    /** Shared ColorDrawing rule: N+1 Wu labels, opaque border mode; any transparency disables border removal. */
+    fun selectBackground(width: Int, height: Int, pixels: IntArray, colorCount: Int): BackgroundSelection {
+        require(width > 0 && height > 0 && width.toLong() * height == pixels.size.toLong())
+        val visible = pixels.indices.filter { pixels[it] ushr 24 != 0 }
+        val labels = IntArray(pixels.size) { -1 }
+        if (visible.isEmpty()) return BackgroundSelection(visible, labels, -1, null)
+        val preliminary = ImageQuantizer.quantize(visible.map { pixels[it] and 0xffffff }.toIntArray(), colorCount + 1)
+        val indices = preliminary.copyIndices()
+        visible.forEachIndexed { i, p -> labels[p] = indices[i] }
+        val background = if (visible.size < pixels.size) -1 else borderMode(width, height, labels)
+        return BackgroundSelection(visible, labels, background, preliminary.palette.getOrNull(background))
+    }
+
     fun borderMode(width:Int,height:Int,labels:IntArray):Int {
         val counts=linkedMapOf<Int,Int>()
         for(y in 0 until height) for(x in 0 until width)

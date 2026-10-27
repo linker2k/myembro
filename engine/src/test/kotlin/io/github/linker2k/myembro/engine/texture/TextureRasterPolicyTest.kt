@@ -15,6 +15,15 @@ class TextureRasterPolicyTest {
         assertEquals(passing.first(),TextureRasterPolicy.fineMinimumMmPerPixel)
         assertTrue(rows.any { it[8]=="BLOCK" && "STITCH_LIMIT_EXCEEDED" in it[9] })
     }
+    @Test fun pixelBudgetIsStableAtDecimalAndNativeBoundaries() {
+        for (mm in listOf(99.8,99.9,100.0,90.0)) {
+            val expected=TextureRasterPolicy.edge(mm)
+            assertEquals(expected,TextureRasterPolicy.edge(Math.nextDown(mm)))
+            assertEquals(expected,TextureRasterPolicy.edge(Math.nextUp(mm)))
+        }
+        assertEquals(200,TextureRasterPolicy.edge(90.0,.45))
+        assertEquals(222,TextureRasterPolicy.edge(99.9*222/222,.45))
+    }
     @Test fun normalAndFineNeverExceedMeasuredPixelDensity() {
         for (mm in listOf(20.0,30.0,40.0,60.0,90.0,99.9)) for (pitch in TextureRasterPolicy.allPassingPitchesMmPerPixel) {
             val edge=TextureRasterPolicy.edge(mm,pitch)

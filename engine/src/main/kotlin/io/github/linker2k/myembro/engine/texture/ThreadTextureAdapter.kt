@@ -10,6 +10,7 @@ import io.github.linker2k.myembro.engine.inkstitch.elements.StrokeParameters
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorRegionCleanup
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.Bt709Grayscale
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.ImageQuantizer
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy
@@ -28,7 +29,8 @@ import java.util.concurrent.CancellationException
 object ThreadTextureAdapter {
     data class Run(val thread: EmbThread, val squiggle: Int, val pixels: List<PixelPoint>, val sourceLineIndices: List<Int>)
     data class Result(val pattern: EmbPattern, val sketch: SketchResult, val runs: List<Run>,
-                      val mmPerPixel: Double, val hoop: HoopSpec, val sewout: SewoutReport) {
+                      val mmPerPixel: Double, val hoop: HoopSpec, val sewout: SewoutReport,
+                      val backgroundThread: EmbThread? = null) {
         /** Candidates with blockers never produce bytes; the normal writer validates again. */
         fun pes(): ByteArray {
             require(!sewout.hasBlockingIssues && sewout.analysisComplete) {
@@ -54,7 +56,7 @@ object ThreadTextureAdapter {
     }
 
     /** Preserve only consecutive same-thread pieces of one squiggle; never bridge a removed color. */
-    fun runs(sketch: SketchResult, palette: List<EmbThread>): List<Run> {
+    fun runs(sketch: SketchResult, palette: List<EmbThread>, backgroundThread: EmbThread? = null): List<Run> {
         require(palette.isNotEmpty())
         val runs = mutableListOf<Run>()
         var points = mutableListOf<PixelPoint>()
@@ -67,6 +69,7 @@ object ThreadTextureAdapter {
         }
         for ((index, line) in sketch.lines.withIndex()) {
             val next = threadFor(line.sampledArgb, palette)
+            if (backgroundThread?.sameColor(next) == true) { flush(); continue }
             if (points.isNotEmpty() && (squiggle != line.squiggle || thread != next || points.last() != line.start || line.linking)) flush()
             if (points.isEmpty()) { thread = next; squiggle = line.squiggle; points += line.start }
             points += line.end; indices += index
@@ -82,10 +85,10 @@ object ThreadTextureAdapter {
                  pitchMmPerPixel: Double = TextureRasterPolicy.pitchForDetail(detail),
                  isCancelled: () -> Boolean = { false }, onProgress: (SketchProgress) -> Unit = {}): Result {
         require(width > 0 && height > 0 && width.toLong() * height == correctedArgb.size.toLong())
-        require(widthMm.isFinite() && widthMm in PICTURE_MIN_WIDTH_MM..PhotoPreparationPolicy.photoMaxWidthMm(hoop)) { "Width outside existing photo policy" }
-        val heightMm = widthMm * height / width
-        require(heightMm * 10 <= SewoutLimits.hoopMaxYUnits0p1mm(hoop)) { "Photo raster aspect exceeds selected hoop" }
-        require(width <= TextureRasterPolicy.edge(widthMm, pitchMmPerPixel) && height <= TextureRasterPolicy.edge(heightMm, pitchMmPerPixel)) { "Texture raster is finer than the measured physical-pitch policy" }
+        val frame = frameUnits(widthMm, width, height, hoop)
+        val canonicalWidthMm = frame.first / 10.0
+        val heightMm = frame.second / 10.0
+        require(width <= TextureRasterPolicy.edge(canonicalWidthMm, pitchMmPerPixel) && height <= TextureRasterPolicy.edge(heightMm, pitchMmPerPixel)) { "Texture raster is finer than the measured physical-pitch policy" }
         require(palette.isNotEmpty() && palette.size <= 6 && palette.all { thread -> PecThreads.SET.filterNotNull().any { it.sameColor(thread) } }) { "Expected an existing N-color Brother palette" }
         val mask = BooleanArray(correctedArgb.size) { correctedArgb[it] ushr 24 != 0 }
         // Existing photo policy: fully transparent pixels consume no thread. No per-color masks.
@@ -93,15 +96,29 @@ object ThreadTextureAdapter {
         val sketch = SketchLines.render(width, height, plotting, mask, isCancelled = isCancelled, onProgress = onProgress)
         if (sketch.termination == SketchTermination.CANCELLED) throw CancellationException("Texture generation cancelled")
         require(sketch.termination != SketchTermination.FAILED_SEARCH) { "GENERATION_FAILED: plotting search exhausted" }
-        return fromSketch(sketch, width, height, widthMm, palette, hoop, isCancelled)
+        val backgroundRgb = ColorRegionCleanup.selectBackground(width, height, correctedArgb, palette.size).backgroundRgb
+        val background = backgroundRgb?.let { threadFor(it, palette) }
+        return fromSketch(sketch, width, height, canonicalWidthMm, palette, hoop, isCancelled, background)
+    }
+
+    /** P2 compares canonical 0.1mm integers, with the same Math.round rule as Units.pixelsToNative. */
+    internal fun frameUnits(widthMm: Double, width: Int, height: Int, hoop: HoopSpec): Pair<Int, Int> {
+        require(widthMm.isFinite() && width > 0 && height > 0)
+        val w = Units.pixelsToNative(Units.mmToPixels(widthMm))
+        val minimum = Units.pixelsToNative(Units.mmToPixels(PICTURE_MIN_WIDTH_MM))
+        val maximum = Units.pixelsToNative(Units.mmToPixels(PhotoPreparationPolicy.photoMaxWidthMm(hoop)))
+        require(w in minimum..maximum) { "Width outside existing photo policy" }
+        val h = Math.round(w.toDouble() * height / width)
+        require(h in 1..SewoutLimits.hoopMaxYUnits0p1mm(hoop).toLong()) { "Photo raster aspect exceeds selected hoop" }
+        return w to h.toInt()
     }
 
     /** Independent adapter boundary; [SketchResult] remains in original processing pixels. */
     internal fun fromSketch(sketch: SketchResult, width: Int, height: Int, widthMm: Double,
                             palette: List<EmbThread>, hoop: HoopSpec,
-                            isCancelled: () -> Boolean = { false }): Result {
+                            isCancelled: () -> Boolean = { false }, backgroundThread: EmbThread? = null): Result {
         val scale = widthMm / width
-        val ordered = runs(sketch, palette)
+        val ordered = runs(sketch, palette, backgroundThread)
         val parameters = StrokeParameters(trim_after = true)
         val groups = ordered.flatMap { run ->
             if (isCancelled() || Thread.currentThread().isInterrupted) throw CancellationException()
@@ -117,6 +134,6 @@ object ThreadTextureAdapter {
             "myembro.texture.color_order" to "light-to-dark-unconfirmed",
         ), raw.warnings)
         val report = SewoutCheck.check(pattern, options = SewoutOptions(hoop = hoop, origin = DesignOrigin.APP_GENERATED))
-        return Result(pattern, sketch, ordered, scale, hoop, report)
+        return Result(pattern, sketch, ordered, scale, hoop, report, backgroundThread)
     }
 }
