@@ -132,7 +132,7 @@ class PhotoShapeParityTest {
         assertPatternEquals(originalPattern,restored.localPattern())
         assertFailsWith<IllegalArgumentException> { restored.withRegionOrder(restored.regionOrder.reversed()) }
     }
-    @Test fun thinPhotoRegionsPreserveAutomaticTypesAndAllowTypeOverride() {
+    @Test fun thinPhotoRegionsDefaultToFillAndAllowTypeOverride() {
         // Synthetic three-color PNG: a sub-mm line, a satin band and a wide fill block.
         val im=BufferedImage(64,64,BufferedImage.TYPE_INT_RGB)
         for(y in 0..63) for(x in 0..63) im.setRGB(x,y,when {
@@ -163,7 +163,8 @@ class PhotoShapeParityTest {
             io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule.Type.RUNNING -> BlockStitch.Type.RUNNING
         } }
         println("THIN_PHOTO types=$expected")
-        assertTrue(expected.containsAll(listOf(BlockStitch.Type.SATIN,BlockStitch.Type.RUNNING)))
+        assertFalse(expected.contains(BlockStitch.Type.SATIN),"Photo defaults must not auto-convert polygons to constant-width satin")
+        assertTrue(expected.contains(BlockStitch.Type.FILL))
         assertEquals(expected,obj.regions.map { it.stitch.type })
         assertPatternEquals(source.pattern,obj.localPattern())
         val original=Project(objects=listOf(obj))
@@ -172,11 +173,17 @@ class PhotoShapeParityTest {
         val restored=ProjectJson.decode(ProjectJson.encode(original)).objects.single() as ShapeObject
         assertEquals(obj.regions.map { it.defaultStitch },restored.regions.map { it.defaultStitch })
         assertSafeRoundTrip(original)
-        val target=obj.regions.first { it.stitch.type==BlockStitch.Type.SATIN }
+        val sewn=source.regions.filter { !it.excluded && it.groups>0 }
+        val target=obj.regions[sewn.indexOfFirst { it.widths.maxMm in 1.0..6.0 }]
         val applied=assertIs<io.github.linker2k.myembro.engine.edit.commands.CommandResult.Applied>(
             io.github.linker2k.myembro.engine.edit.commands.apply(original,
                 io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("thin",setOf(target.id),
                     BlockStitchPatch(type=BlockStitch.Type.RUNNING))))
+        val satin=assertIs<io.github.linker2k.myembro.engine.edit.commands.CommandResult.Applied>(
+            io.github.linker2k.myembro.engine.edit.commands.apply(original,
+                io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("thin",setOf(target.id),
+                    BlockStitchPatch(type=BlockStitch.Type.SATIN))))
+        assertSafeRoundTrip(satin.project)
         val changed=applied.project.objects.single() as ShapeObject
         assertEquals(BlockStitch.Type.RUNNING,changed.regions.first { it.id==target.id }.stitch.type)
         assertSafeRoundTrip(applied.project)

@@ -27,5 +27,12 @@ class MyThreadsTest {
         assertTrue(owned.layers.isNotEmpty())
         assertTrue(owned.layers.all { it.thread==PecThreads.forIndex(2) })
         assertNotEquals(original.layers.map { it.thread },owned.layers.map { it.thread })
+        for(preview in listOf(original,disabled,owned)) {
+            val labels=preview.indices()
+            val expectedColors=preview.layers.associate { it.paletteIndex to it.thread.color }
+            assertContentEquals(IntArray(labels.size) { expectedColors[labels[it]] ?: 0 },preview.previewPixels())
+        }
+        assertEquals(setOf(PecThreads.forIndex(2).color),owned.previewPixels().filter { it!=0 }.toSet())
+        assertTrue(owned.previewPixels().any { it==0 },"Background must remain transparent")
     }
 }

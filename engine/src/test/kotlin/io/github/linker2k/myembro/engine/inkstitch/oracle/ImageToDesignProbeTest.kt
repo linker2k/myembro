@@ -27,8 +27,8 @@ class ImageToDesignProbeTest {
             }
             val styles=rows.flatMap { it.jsonObject.getValue("regions").jsonArray }
                 .map { it.jsonObject.getValue("style").jsonPrimitive.content }.toSet()
-            assertEquals(setOf("FILL","SATIN","RUNNING"),styles)
-            // Regression: narrow median does not override the broad body maximum.
+            assertEquals(setOf("FILL"),styles)
+            // Width diagnostics are retained even though painted regions now default to fill.
             val robot=rows.single { it.jsonObject.getValue("input").jsonPrimitive.content=="robot.png" }.jsonObject
             val blue=robot.getValue("regions").jsonArray.single { it.jsonObject.getValue("thread").jsonPrimitive.content=="#2584bb" }.jsonObject
             assertTrue(blue.getValue("median_width_mm").jsonPrimitive.double<6.0)
