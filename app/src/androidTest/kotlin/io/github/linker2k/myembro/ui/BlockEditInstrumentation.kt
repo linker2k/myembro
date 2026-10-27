@@ -117,7 +117,7 @@ class BlockEditInstrumentation : Instrumentation() {
                 .maxBy { r -> r.paths.sumOf { (it.xs.max() - it.xs.min()) * (it.ys.max() - it.ys.min()) } }.id
             log += "TARGET $target satin=${engineOptions.getValue(target).unavailable[BlockType.SATIN]}"
             pointOf(target).let { (x, y) -> tap(x, y) }
-            await(targetContext.getString(R.string.block_edit_selected, 1))
+            await(targetContext.resources.getQuantityString(R.plurals.block_edit_selected, 1, 1))
             // Engine prechecks for this region: an unavailable type is disabled with a short reason.
             val satinLabel = targetContext.getString(R.string.block_edit_type_satin)
             val reasonEnd = SystemClock.uptimeMillis() + 60_000

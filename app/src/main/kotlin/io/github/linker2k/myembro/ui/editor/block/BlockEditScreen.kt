@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -269,7 +270,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
         Column {
         // Apply stays on screen while the settings below scroll.
         Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.block_edit_selected, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(pluralStringResource(R.plurals.block_edit_selected, count, count), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Button(onClick = onApply, enabled = status !is BlockStatus.Generating && loaded != null && options.allows(draft)) { Text(stringResource(R.string.block_edit_apply)) }
         }
         // A refused apply keeps the previous settings: a short localized reason; the engine text only in details.
@@ -321,7 +322,9 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                 Segmented(listOf(R.string.block_edit_density_dense, R.string.block_edit_density_normal, R.string.block_edit_density_sparse),
                     draft.density.ordinal, enabled = { BlockApply.ROW_SPACING_MM[BlockDensity.entries[it]] != null }) {
                     onDraft(draft.copy(density = BlockDensity.entries[it])) }
-                Text(stringResource(R.string.block_edit_density_unverified), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                // Normal = Ink/Stitch default row_spacing_mm 0.25 (fill_stitch.py:364–380, BlockApply.ROW_SPACING_MM);
+                // Dense/Sparse have no upstream preset and stay disabled until measured (docs/agent/block-stitch.md).
+                Text(stringResource(R.string.block_edit_density_later), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
             // Sewing order (SetBlockOrder): earlier = sewn first; several selected regions move together.
             Label(R.string.block_edit_order)

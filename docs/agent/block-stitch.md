@@ -298,3 +298,10 @@ deferred generation during reorder, Batch paths, stable error receipts and
 unchanged project/history. Separate actual hoop blockers must remain
 SEWOUT_BLOCKED with no generation kind; app tests cover both typed status mapping
 and the relay result envelope.
+
+### App density steps (block editor sheet)
+
+Normal maps to the upstream default `row_spacing_mm` 0.25 (fill_stitch.py:364–380,
+`BlockApply.ROW_SPACING_MM`). Upstream defines only a 0.1mm minimum and no dense or
+sparse presets, so Dense and Sparse stay disabled (shown as "coming in a later
+version") until their spacing is measured and given a basis.

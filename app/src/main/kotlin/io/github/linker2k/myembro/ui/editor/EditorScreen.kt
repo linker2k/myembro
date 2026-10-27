@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -238,7 +239,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.WarningAmber, null, tint = colors.onErrorContainer, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.editor_shape_fallback, fallbackCount), style = MaterialTheme.typography.labelSmall,
+                                Text(pluralStringResource(R.plurals.editor_shape_fallback, fallbackCount, fallbackCount), style = MaterialTheme.typography.labelSmall,
                                     color = colors.onErrorContainer)
                             }
                         }
