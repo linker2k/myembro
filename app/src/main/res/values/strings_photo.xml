@@ -77,4 +77,5 @@
     <string name="photo_noise_medium">Medium</string>
     <string name="photo_noise_strong">Strong</string>
     <string name="photo_contrast_factor">Contrast: %1$.2f×</string>
+    <string name="photo_color_name">Color drawing</string>
 </resources>
