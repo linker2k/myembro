@@ -46,7 +46,7 @@
     <string name="photo_separated_preview">2색 분리 미리보기</string>
     <string name="photo_stitches_failed">윤곽은 찾았지만 땀을 만들지 못했습니다. 디테일을 낮추거나 단순한 부분을 잘라 주세요.</string>
     <string name="photo_timed_out">땀 생성 시간이 초과됐습니다. 디테일을 낮추거나 더 작은 부분을 잘라 주세요.</string>
-    <string name="photo_estimate_result">생성 예상 약 10초. 이미지에 따라 달라지며 30초 초과 시 디테일을 낮춰 주세요.</string>
+    <string name="photo_estimate_result">생성 예상 약 10초. 이미지에 따라 달라지며 1분 초과 시 디테일을 낮춰 주세요.</string>
     <string name="photo_style_silhouette">실루엣</string>
     <string name="photo_style_outline">외곽선</string>
     <string name="photo_outline_title">한 색 외곽선</string>

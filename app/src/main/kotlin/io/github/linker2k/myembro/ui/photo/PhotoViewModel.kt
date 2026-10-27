@@ -63,6 +63,11 @@ internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
 
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
+/** Photo window generation limit (texture and color stages), user decision 2026-10-27: 1 minute. */
+internal const val PHOTO_GENERATION_TIMEOUT_MS = 60_000L
+/** The same boundary withTimeout applies: a run lasting the full limit or longer has timed out. */
+internal fun photoGenerationTimedOut(startMs: Long, nowMs: Long) = nowMs - startMs >= PHOTO_GENERATION_TIMEOUT_MS
+
 class PhotoViewModel @JvmOverloads constructor(app: Application,
     private val textureGenerator: ThreadTextureGenerator? = null,
 ) : AndroidViewModel(app) {
@@ -247,7 +252,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; error = null; step = 2; progressStage = 3; render = null; shapeObject = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
+                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
                     val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art, width)
                     val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
@@ -393,7 +398,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; progressStage = 3; textureProgress=0f; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
+                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR && selectedTexture.enabled) {

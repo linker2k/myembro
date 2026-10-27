@@ -46,7 +46,7 @@
     <string name="photo_separated_preview">Two-color separation preview</string>
     <string name="photo_stitches_failed">Outlines were found, but stitches could not be generated. Lower detail or try a simpler crop.</string>
     <string name="photo_timed_out">Stitch generation took too long. Lower detail or crop a smaller area.</string>
-    <string name="photo_estimate_result">Generation estimate: about 10 seconds. Time varies; after 30 seconds, try lower detail.</string>
+    <string name="photo_estimate_result">Generation estimate: about 10 seconds. Time varies; after 1 minute, try lower detail.</string>
     <string name="photo_style_silhouette">Silhouette</string>
     <string name="photo_style_outline">Outline</string>
     <string name="photo_outline_title">Single-color outline</string>
