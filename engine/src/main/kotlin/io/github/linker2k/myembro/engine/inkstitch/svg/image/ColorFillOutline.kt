@@ -25,23 +25,101 @@ internal object ColorFillOutline {
         } },thread,parameters).toStitchGroups(null)
     }
 
-    /** Validate the final integer/PEC representation, including cumulative overlap with later fills.
-     * Keep the existing strict writer checks as well as P4/P5/P7/P8; never relax a gate.
+    data class Outline(val afterGroup:Int,val region:Int,val groups:List<StitchGroup>)
+    data class Selection(val groups:List<StitchGroup>,val skipped:Set<Int>,val checks:Int)
+
+    /** One complete candidate per iteration, removing only owners implicated by blocking highlights.
+     * All fills remain present. An unlocated/non-outline blocker falls back to the original fills.
      */
-    fun safe(groups:List<StitchGroup>,hoop:HoopSpec):Boolean = try {
-        val pattern=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,
-            lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
-        val options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED)
-        // The editor/agent centers actual stitched bounds on import. Grid buckets can change
-        // under that integer translation, so preserve that existing path's safety too.
-        for(placed in listOf(pattern,io.github.linker2k.myembro.engine.edit.StitchObject.recenter(pattern))) {
-            val placement=SewoutCheck.check(placed,options=options)
-            require(placement.analysisComplete && !placement.hasBlockingIssues) { "Optional outline blocks placement" }
+    fun select(base:List<StitchGroup>,outlines:List<Outline>,hoop:HoopSpec,
+        checkpoint:()->Unit={}):Selection {
+        if(outlines.isEmpty()) return Selection(base,emptySet(),0)
+        val active=outlines.map { it.region }.toMutableSet()
+        val marked=outlines.associate { it.region to mark(it.groups,it.region) }
+        fun assemble(validation:Boolean):List<StitchGroup> {
+            val byIndex=outlines.filter { it.region in active }.associateBy { it.afterGroup }
+            return buildList {
+                base.forEachIndexed { index,fill ->
+                    val outline=byIndex[index+1]
+                    if(outline==null) add(fill) else {
+                        add(fill.copy(trimAfter=false))
+                        val next=if(validation) marked.getValue(outline.region) else outline.groups
+                        addAll(next.dropLast(1));add(next.last().copy(trimAfter=fill.trimAfter))
+                    }
+                }
+            }
         }
-        val bytes=PesWriter.write(pattern)
-        val report=SewoutCheck.checkPes(bytes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
-        report.analysisComplete && !report.hasBlockingIssues
-    } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled
-    } catch(interrupted:InterruptedException) { throw interrupted
-    } catch(_:IllegalArgumentException) { false }
+        var checks=0
+        while(active.isNotEmpty()) {
+            checkpoint();checks++
+            val candidate=assemble(true)
+            val failed=failures(candidate,hoop)
+            if(failed==null) return Selection(assemble(false),outlines.map { it.region }.toSet()-active,checks)
+            val remove=failed.intersect(active)
+            if(remove.isEmpty()) break
+            active.removeAll(remove)
+        }
+        return Selection(base,outlines.map { it.region }.toSet(),checks)
+    }
+
+    private fun mark(groups:List<StitchGroup>,region:Int):List<StitchGroup> {
+        val tag="myembro.region:outline:$region"
+        fun marked(s:Stitch)=s.copy(tags=s.tags.filterNot { it.startsWith("myembro.region:") }.toSet()+tag)
+        fun lock(source:LockStitch?)=source?.let { LockStitch { stitches,position -> it.stitches(stitches,position).map(::marked) } }
+        return groups.map { it.copy(stitches=it.stitches.map(::marked),lockStart=lock(it.lockStart),lockEnd=lock(it.lockEnd)) }
+    }
+
+    /** Null means all original checks passed; empty means no attributable outline (use baseline). */
+    private fun failures(groups:List<StitchGroup>,hoop:HoopSpec):Set<Int>? {
+        val owners=mutableListOf<String?>()
+        val pattern=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,
+            lockAtThreadBoundaries=true,omitZeroLengthMotions=true,stitchOwners=owners)
+        val options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED)
+        fun implicated(report:SewoutReport,points:List<io.github.linker2k.myembro.engine.model.Stitch>,exactIndices:Boolean):Set<Int>? {
+            if(!report.analysisComplete) return emptySet()
+            if(!report.hasBlockingIssues) return null
+            val result=mutableSetOf<Int>()
+            for(finding in report.findings.filter { it.severity==Severity.BLOCKER }) {
+                val h=finding.highlight ?: return emptySet()
+                val located=mutableSetOf<Int>()
+                fun owner(index:Int) { owners.getOrNull(index)?.takeIf { it.startsWith("outline:") }
+                    ?.removePrefix("outline:")?.toIntOrNull()?.let(located::add) }
+                if(h.area!=null) {
+                    // Density highlights point at the FIRST penetration (often a fill stitch).
+                    // Resolve every outline needle in that reported cell, not the first owner alone.
+                    points.forEachIndexed { index,p -> if(p.command==io.github.linker2k.myembro.engine.model.Command.STITCH &&
+                        p.x>=h.area.minX && p.x<h.area.maxX && p.y>=h.area.minY && p.y<h.area.maxY) owner(index) }
+                } else if(exactIndices && h.commandIndex!=null) {
+                    for(index in h.commandIndex..(h.endCommandIndex ?: h.commandIndex)) owner(index)
+                    // A long/repeated transition can start at the preceding optional outline.
+                    owner(h.commandIndex-1)
+                } else {
+                    // PEC normalization may prune/expand commands: use the reported destinations,
+                    // never treat a PEC command index as a pre-encoding source index.
+                    points.forEachIndexed { index,p -> if(listOfNotNull(h.from,h.to).any { it.x==p.x.toDouble() && it.y==p.y.toDouble() }) owner(index) }
+                }
+                if(located.isEmpty()) return emptySet()
+                result+=located
+            }
+            return result
+        }
+        for(placed in listOf(pattern,io.github.linker2k.myembro.engine.edit.StitchObject.recenter(pattern))) {
+            implicated(SewoutCheck.check(placed,options=options),placed.stitches,true)?.let { return it }
+        }
+        val minX=pattern.stitches.minOfOrNull { it.x } ?: 0
+        val minY=pattern.stitches.minOfOrNull { it.y } ?: 0
+        val encodedPoints=pattern.stitches.map { it.copy(x=it.x-minX,y=it.y-minY) }
+        return try {
+            // Writer includes strict PEC viewport and encoded sewout checks. No gate bypass.
+            val bytes=PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=hoop))
+            implicated(SewoutCheck.checkPes(bytes,options=options),encodedPoints,false)
+        } catch(rejected:PesOutputSafety.Rejected) {
+            implicated(rejected.report,encodedPoints,false) ?: emptySet()
+        } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled
+        } catch(interrupted:InterruptedException) { throw interrupted
+        } catch(_:IllegalArgumentException) { emptySet() }
+    }
+
+    /** Kept for the existing direct safety regressions. */
+    fun safe(groups:List<StitchGroup>,hoop:HoopSpec):Boolean = failures(groups,hoop)==null
 }
