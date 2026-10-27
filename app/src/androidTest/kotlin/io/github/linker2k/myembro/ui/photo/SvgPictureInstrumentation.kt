@@ -98,8 +98,8 @@ class SvgPictureInstrumentation : Instrumentation() {
                 shot("0${n}-${n}-color-pass.png")
             }
             runOnMainSync { vm.begin() }
-            check(vm.colorCount == 4 && vm.style == PhotoMode.SILHOUETTE)
-            log += "NORMAL_PHOTO PASS: begin() retains 4-color default"
+            check(vm.colorCount == 4 && vm.style == PhotoMode.COLOR) { "begin() ${vm.colorCount} ${vm.style}" }
+            log += "NORMAL_PHOTO PASS: begin() retains the 4-color color-drawing default"
             val bad = File(dir, "unsupported.svg").apply { writeText(valid.replace("<rect width=", "<text>unsupported</text><rect width=")) }
             runOnMainSync { activity.startActivity(intent(bad, "image/svg+xml")) }
             Thread.sleep(150); await("unsupported SVG") { !vm.busy && vm.error != null }
