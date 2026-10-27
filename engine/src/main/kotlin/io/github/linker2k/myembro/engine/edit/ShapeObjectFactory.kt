@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.engine.edit
 
 import io.github.linker2k.myembro.engine.geometry.*
+import io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters
 import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
 import io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorDrawingPipeline
@@ -13,11 +14,28 @@ object ShapeObjectFactory {
     const val PHOTO_FILL = "photo-fill"
     fun isPhoto(obj: ShapeObject) = obj.regions.isNotEmpty() && obj.regions.all { it.role == PHOTO_FILL }
 
-    /** Mixed AutoTrace centerline/satin/running results remain StitchObject in this integration unit. */
+    /** Preserve native photo stitches and the automatic type for every retained painted region. */
+    fun photoUnsupportedReason(result: ColorDrawingPipeline.Result): String? {
+        val sewn = result.regions.filter { !it.excluded && it.groups > 0 }
+        return when {
+            sewn.isEmpty() -> "NO_SEWN_REGIONS"
+            sewn.any { it.paths.isEmpty() } -> "MISSING_REGION_PATHS"
+            else -> null
+        }
+    }
     fun fromPhoto(id: String, name: String, result: ColorDrawingPipeline.Result, widthMm: Double): ShapeObject? {
         val sewn = result.regions.filter { !it.excluded && it.groups > 0 }
-        if (sewn.isEmpty() || sewn.any { it.method != StitchTypeRule.Type.TATAMI || it.paths.isEmpty() }) return null
-        val regions = sewn.mapIndexed { i, r -> ShapeRegion("region-$i", i, PHOTO_FILL, r.paths, r.thread, BlockStitch()) }
+        if (photoUnsupportedReason(result) != null) return null
+        val regions = sewn.mapIndexed { i, r ->
+            val type = when (r.method) {
+                StitchTypeRule.Type.TATAMI -> BlockStitch.Type.FILL
+                StitchTypeRule.Type.SATIN -> BlockStitch.Type.SATIN
+                StitchTypeRule.Type.RUNNING -> BlockStitch.Type.RUNNING
+            }
+            ShapeRegion("region-$i", i, PHOTO_FILL, r.paths, r.thread,
+                BlockStitch(type, satin = if (type == BlockStitch.Type.SATIN)
+                    SatinParameters() else null))
+        }
         val points = regions.flatMap { it.paths }.flatMap { it.points }
         val x = points.minOf { it.x }; val y = points.minOf { it.y }
         val art = VectorArt.Art(frozen(listOf(x,y,points.maxOf { it.x }-x,points.maxOf { it.y }-y)),

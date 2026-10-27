@@ -9,8 +9,9 @@ import kotlinx.serialization.json.*
 /** Cached photo defaults are part of the source payload: decoding must never route them through VectorArt. */
 internal object PhotoShapeCodec {
     fun encode(obj: ShapeObject) = buildJsonObject {
-        put("version",2)
+        put("version",3)
         put("regions",JsonArray(obj.regions.map { r -> buildJsonObject {
+            put("defaultStitch",ShapeObjectCodec.encodeBlock(r.defaultStitch))
             put("id",r.id);put("sourceShape",r.sourceShape);put("thread",ProjectJson.encodeThread(r.color))
             put("paths",JsonArray(r.paths.map { p -> buildJsonObject {
                 put("closed",p.closed);put("points",JsonArray(p.points.map { q -> buildJsonArray { add(q.x);add(q.y) } }))
@@ -33,7 +34,7 @@ internal object PhotoShapeCodec {
 
     fun decode(fields: ProjectObjectFields, art: VectorArt.Art, widthMm: Double, data: JsonObject): ShapeObject {
         val version=data.getValue("version").jsonPrimitive.int
-        require(version in 1..2)
+        require(version in 1..3)
         val regions=data.getValue("regions").jsonArray.map { value ->
             val r=value.jsonObject
             val paths=r.getValue("paths").jsonArray.map { path ->
@@ -42,10 +43,11 @@ internal object PhotoShapeCodec {
                     p.getValue("closed").jsonPrimitive.boolean)
             }
             ShapeRegion(r.getValue("id").jsonPrimitive.content,r.getValue("sourceShape").jsonPrimitive.int,
-                ShapeObjectFactory.PHOTO_FILL,paths,ProjectJson.decodeThread(r.getValue("thread").jsonObject),BlockStitch())
+                ShapeObjectFactory.PHOTO_FILL,paths,ProjectJson.decodeThread(r.getValue("thread").jsonObject),
+                if(version>=3) ShapeObjectCodec.decodeBlock(r.getValue("defaultStitch").jsonObject) else BlockStitch())
         }
         val pattern=decodePattern(data.getValue("pattern").jsonObject)
-        val fragments=if(version==2) data.getValue("fragments").jsonObject.mapValues { decodePattern(it.value.jsonObject) } else emptyMap()
+        val fragments=if(version>=2) data.getValue("fragments").jsonObject.mapValues { decodePattern(it.value.jsonObject) } else emptyMap()
         require(fragments.isEmpty() || fragments.keys==regions.map { it.id }.toSet()) { "INVALID_PHOTO_PROVENANCE" }
         return ShapeObjectFactory.retained(fields.id,fields.name,art,widthMm,regions,pattern,fragments)
             .withTransform(fields.transform).withVisible(fields.visible)

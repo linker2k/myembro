@@ -367,6 +367,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
                             getApplication<Application>().getString(R.string.photo_name),generated,widthMm)
+                        if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(traced,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoMode.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {

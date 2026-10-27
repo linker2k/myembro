@@ -10,7 +10,11 @@ internal class PhotoShapeSource(val pattern: EmbPattern, val fragments: Map<Stri
 
 internal object PhotoShapeRenderer {
     fun render(source: PhotoShapeSource, regions: List<ShapeRegion>, overrides: Map<String,BlockStitch>, widthMm: Double): VectorArt.Result {
-        val parts=regions.map { r -> VectorArt.Part(r.sourceShape,r.role,StitchTypeRule.Type.TATAMI,r.color,
+        val parts=regions.map { r -> VectorArt.Part(r.sourceShape,r.role,when(r.stitch.type) {
+            BlockStitch.Type.FILL -> StitchTypeRule.Type.TATAMI
+            BlockStitch.Type.SATIN -> StitchTypeRule.Type.SATIN
+            BlockStitch.Type.RUNNING -> StitchTypeRule.Type.RUNNING
+        },r.color,
             widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id) }
         if(overrides.isEmpty()) return VectorArt.Result(source.pattern,parts,1.0,regionPatterns=source.fragments)
         val fragments=regions.associate { r ->
