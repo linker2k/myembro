@@ -48,6 +48,7 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
+    var shapeObject by mutableStateOf<io.github.linker2k.myembro.engine.edit.ShapeObject?>(null); private set
     var report by mutableStateOf<SewoutReport?>(null); private set
     var sizeMm by mutableStateOf<Pair<Double, Double>?>(null); private set
     /** Chosen embroidery width; the slider range follows the picture's aspect and the hoop. */
@@ -98,7 +99,7 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun generate(e: CatalogEmoji) {
         work?.cancel()
-        selected = e; busy = true; error = null; render = null; report = null
+        selected = e; busy = true; error = null; render = null; shapeObject = null; report = null
         val snapshot = settings
         work = viewModelScope.launch {
             try {
@@ -106,21 +107,23 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
                 val frame = snapshot.defaultFrame.spec
                 val width = minOf(widthMm, (minOf(frame.width, frame.height) - 1) / 10.0)
                 val result = runInterruptible(Dispatchers.Default) {
-                    val pattern = VectorArt.render(picture, width, name = e.name).pattern
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", e.name, picture, width)
+                    val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
-                    Triple(pattern, SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
+                    Triple(shape, SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
                         SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED)), pattern.bounds)
                 }
-                render = RenderData(result.first); report = result.second
+                shapeObject = result.first; render = RenderData(result.first.localPattern()); report = result.second
                 sizeMm = result.third?.let { (it.maxX - it.minX) / 10.0 to (it.maxY - it.minY) / 10.0 }
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: java.io.IOException) { error = R.string.emoji_download_failed
+            } catch (_: LinkageError) { error = R.string.device_generation_failed   // e.g. VerifyError: nothing produced, nothing saved
             } catch (_: Exception) { error = R.string.emoji_stitch_failed
             } finally { busy = false }
         }
     }
 
-    fun close() { work?.cancel(); selected = null; busy = false; render = null; report = null; error = null }
+    fun close() { work?.cancel(); selected = null; busy = false; render = null; shapeObject = null; report = null; error = null }
 
     companion object { const val WIDTH_MM = 50.0 }
 }

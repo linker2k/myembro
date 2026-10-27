@@ -22,6 +22,7 @@ object RelayEdits {
         val output = result.output
         put("ok", result.ok)
         if (!result.ok) { put("code", result.code ?: "REJECTED"); put("message", output["message"] ?: JsonPrimitive("")) }
+        output["kind"]?.let { put("kind",it) }
         put("revision", revision.toString())
         put("changed", result.ok && output["changed"]?.jsonPrimitive?.booleanOrNull == true)
         put("changedIds", if (result.ok) output["changedIds"] ?: JsonArray(emptyList()) else JsonArray(emptyList()))

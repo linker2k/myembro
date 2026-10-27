@@ -8,7 +8,7 @@ import kotlin.math.abs
 
 internal fun inspectorTransform(obj: DesignObject, width: String, height: String,
     x: String, y: String, rotation: String): Transform? {
-    val b = obj.localPattern().bounds ?: return null
+    val b = ShapeStitchGuard.local(obj).pattern.bounds ?: return null
     fun percent(input: String, units: Int, current: Double): String? {
         if (units == 0) return (abs(current) * 100).toString()
         val mm = input.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 } ?: return null
@@ -20,6 +20,7 @@ internal fun inspectorTransform(obj: DesignObject, width: String, height: String
 
 /** Changing a thread retains editable geometry; the imported byte copy is no longer current. */
 internal fun DesignObject.recolored(index: Int, thread: EmbThread): DesignObject = when (this) {
+    is ShapeObject -> this // Region-aware editing is not exposed by the model draft.
     is TextObject -> if (index == 0 && this.thread != thread) copy(thread = thread) else this
     is StitchObject -> {
         val count = maxOf(source.threads.size, source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)

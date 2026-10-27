@@ -9,6 +9,7 @@ import org.locationtech.jts.operation.overlayng.OverlayNG
 import org.locationtech.jts.operation.overlayng.OverlayNGRobust
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper
 import org.locationtech.jts.index.strtree.STRtree
+import io.github.linker2k.myembro.engine.geometry.LegacyCrosses
 import org.locationtech.jts.precision.GeometryPrecisionReducer
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier
 import java.util.PriorityQueue
@@ -329,7 +330,11 @@ object FillRouting {
             val weightedOutline = GeometryPrecisionReducer.reduce(
                 DouglasPeuckerSimplifier.simplify(polygon.boundary, 0.5*PIXELS_PER_MM), PrecisionModel(1e6))
             val index = STRtree()
-            for (edge in fill.edges.values.filter { it.key == "segment" }) index.insert(FillGeometry.line(edge.points!!).envelopeInternal, edge)
+            // Index row segments once. Exact robust intersections implement the line/line DE-9IM rule;
+            // no full row noding, newer relation classes or coordinate simplification.
+            val rows = fill.edges.values.filter { it.key == "segment" }.associateWith { FillGeometry.line(it.points!!) }
+            val predicates = rows.mapValues { LegacyCrosses.prepareLine(it.value) }
+            for ((edge, geometry) in rows) index.insert(geometry.envelopeInternal, edge)
             index.build()
             for (line in travelEdges) {
                 val points = FillGeometry.points(line)
@@ -337,7 +342,7 @@ object FillRouting {
                 val edge = graph.add(a, b, "travel", weight = a.point().distance(b.point())/(line.distance(weightedOutline)+0.1))
                 for (candidate in index.query(line.envelopeInternal)) {
                     val row = candidate as Edge
-                    if (FillGeometry.line(row.points!!).crosses(line)) row.underpathEdges += edge.id
+                    if (predicates.getValue(row).test(line)) row.underpathEdges += edge.id
                 }
             }
         }

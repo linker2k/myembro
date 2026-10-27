@@ -45,11 +45,13 @@ data class MeanderTile(val id: String, val segments: List<Pair<FillPoint, FillPo
     init { require(segments.isNotEmpty() && shift0.length() > 0 && shift1.length() > 0) }
 }
 
+/** No graph can be routed; callers must not classify this using the human-readable message. */
+class MeanderGraphException(message: String) : IllegalArgumentException(message)
+
 /** Seeded tile graph expansion, using source edge/edge-pair detours rather than a random walk. */
 object MeanderFill {
     private const val PX_PER_MM = 96.0 / 25.4
     private const val MAX_NODES = 20_000
-    private const val MAX_SEARCH_STEPS = 2_000_000
     private val tiles = ConcurrentHashMap<String, MeanderTile>()
     private data class Edge(val start: FillPoint, val end: FillPoint)
 
@@ -74,7 +76,7 @@ object MeanderFill {
         require(shape.isValid && originalShape.isValid) { "Meander expects a make_valid polygon component" }
         if (shape.isEmpty) return emptyList()
         val graph = tileGraph(shape, tile ?: loadTile(parameters.meander_pattern), parameters)
-        require(graph.size >= 2) { "Could not build graph for meander stitching; enlarge the shape or reduce pattern scale" }
+        if(graph.size < 2) throw MeanderGraphException("Could not build graph for meander stitching; enlarge the shape or reduce pattern scale")
         ensureConnected(graph)
         val (start, end) = startingAndEndingNodes(graph, shape, startingPoint, endingPoint)
         val rng = MeanderPrng(parameters.random_seed, shapeIndex)
@@ -85,15 +87,24 @@ object MeanderFill {
     /** Source tile SVGs are data only. DTDs and external entities are disabled. */
     fun tileFromSvg(id: String, svg: ByteArray): MeanderTile {
         require(svg.size <= 1_000_000) { "Meander tile is too large" }
+        // Same layers as SvgPictureInput: a lexical declaration ban that does not depend on JAXP feature
+        // support (Android's factory rejects the Xerces features below), then features where available,
+        // then a resolver that refuses any external entity.
+        val text = svg.decodeToString()
+        require('\u0000' !in text && !Regex("<!\\s*(DOCTYPE|ENTITY)", RegexOption.IGNORE_CASE).containsMatchIn(text)) { "Tile declarations forbidden" }
         val builder = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = true
-            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-            setFeature("http://xml.org/sax/features/external-general-entities", false)
-            setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-            setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-            isXIncludeAware = false
+            for ((feature, enabled) in listOf(
+                "http://apache.org/xml/features/disallow-doctype-decl" to true,
+                "http://xml.org/sax/features/external-general-entities" to false,
+                "http://xml.org/sax/features/external-parameter-entities" to false,
+                "http://apache.org/xml/features/nonvalidating/load-external-dtd" to false)) {
+                try { setFeature(feature, enabled) } catch (_: javax.xml.parsers.ParserConfigurationException) { }
+            }
             isExpandEntityReferences = false
-        }.newDocumentBuilder()
+        }.newDocumentBuilder().apply {
+            setEntityResolver { _, _ -> throw IllegalArgumentException("External tile entity forbidden") }
+        }
         val root = builder.parse(ByteArrayInputStream(svg)).documentElement
         val segments = mutableListOf<Pair<FillPoint, FillPoint>>()
         var parallelogram: List<FillPoint>? = null
@@ -238,7 +249,7 @@ object MeanderFill {
             }
             if (isForward) forward = next else backward = next
         }
-        val meet = meeting ?: error("Meander graph is disconnected")
+        val meet = meeting ?: throw MeanderGraphException("Meander graph is disconnected")
         val left = mutableListOf<FillPoint>()
         var node: FillPoint? = meet
         while (node != null) { left += node; node = pred[node] }
@@ -248,32 +259,45 @@ object MeanderFill {
         return left
     }
 
+    // Ink/Stitch meander_fill.py:116,123 + utils/threading.py:19-23.
+    // Upstream has path-length cutoffs (7/10), not a cumulative search-step budget.
+    private fun checkStopFlag() {
+        if (Thread.currentThread().isInterrupted) throw InterruptedException("Meander generation cancelled")
+    }
+
     internal fun generatePath(graph: LinkedHashMap<FillPoint, LinkedHashSet<FillPoint>>, start: FillPoint,
         end: FillPoint, rng: () -> Double): List<FillPoint> {
         val initial = shortestPath(graph, start, end)
         val path = initial.zipWithNext { a, b -> Edge(a, b) }.toMutableList()
         path.forEach { removeEdge(graph, it) }
-        val unused = (graph.keys - initial.toSet()).toMutableSet()
+        // Stable IDs preserve graph/adjacency order while avoiding coordinate hashing in deep DFS.
+        val nodes = graph.keys.toList()
+        val ids = nodes.withIndex().associate { it.value to it.index }
+        val initialNodes = initial.toSet()
+        val unused = BooleanArray(nodes.size) { nodes[it] !in initialNodes }
+        val adjacency = Array(nodes.size) { i -> graph.getValue(nodes[i]).map { ids.getValue(it) }.toMutableList() }
+        val visited = BooleanArray(nodes.size)
         val edges = path.toMutableList()
-        var steps = 0
         fun alternative(a: FillPoint, b: FillPoint, cutoff: Int, minimum: Int): List<Edge>? {
-            val allowed = unused + setOf(a, b)
-            val visited = mutableSetOf(a)
-            val candidate = mutableListOf<Edge>()
-            fun dfs(node: FillPoint): List<Edge>? {
-                if (++steps > MAX_SEARCH_STEPS) error("Meander path search resource limit exceeded")
-                if (node == b) return if (candidate.size > minimum) candidate.toList() else null
-                if (candidate.size >= cutoff) return null
-                for (neighbor in graph.getValue(node)) {
-                    if (neighbor !in allowed || !visited.add(neighbor)) continue
-                    candidate += Edge(node, neighbor)
-                    val result = dfs(neighbor)
+            val startId = ids.getValue(a); val endId = ids.getValue(b)
+            val candidate = IntArray(cutoff + 1)
+            candidate[0] = startId
+            fun dfs(node: Int, depth: Int): List<Edge>? {
+                if (node == endId) return if (depth > minimum)
+                    List(depth) { Edge(nodes[candidate[it]], nodes[candidate[it + 1]]) } else null
+                if (depth >= cutoff) return null
+                for (neighbor in adjacency[node]) {
+                    if ((!unused[neighbor] && neighbor != startId && neighbor != endId) || visited[neighbor]) continue
+                    visited[neighbor] = true
+                    candidate[depth + 1] = neighbor
+                    val result = dfs(neighbor, depth + 1)
+                    visited[neighbor] = false
                     if (result != null) return result
-                    candidate.removeAt(candidate.lastIndex); visited.remove(neighbor)
                 }
                 return null
             }
-            return dfs(a)
+            visited[startId] = true
+            return try { dfs(startId, 0) } finally { visited[startId] = false }
         }
         fun <T> popRandom(list: MutableList<T>): T {
             val index = Math.rint(rng() * (list.size - 1)).toInt()
@@ -285,17 +309,24 @@ object MeanderFill {
         fun apply(index: Int, removeCount: Int, replacement: List<Edge>) {
             repeat(removeCount) { path.removeAt(index) }
             path.addAll(index, replacement)
-            replacement.forEach { removeEdge(graph, it); unused.remove(it.start) }
+            replacement.forEach {
+                removeEdge(graph, it)
+                val a = ids.getValue(it.start); val b = ids.getValue(it.end)
+                adjacency[a].remove(b); adjacency[b].remove(a)
+                unused[a] = false
+            }
             edges += replacement
         }
         while (edges.isNotEmpty()) {
             while (edges.isNotEmpty()) {
+                checkStopFlag()
                 val edge = popRandom(edges)
                 val replacement = alternative(edge.start, edge.end, 7, 1) ?: continue
                 apply(path.indexOf(edge), 1, replacement)
             }
             val pairs = path.zipWithNext().toMutableList()
             while (pairs.isNotEmpty()) {
+                checkStopFlag()
                 val (first, second) = popRandom(pairs)
                 val replacement = alternative(first.start, second.end, 10, 2) ?: continue
                 apply(path.indexOf(first), 2, replacement)

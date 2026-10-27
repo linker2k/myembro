@@ -48,25 +48,34 @@ class AiWorkspaceInstrumentation : Instrumentation() {
                 """<path d="M30 62 Q50 82 70 62 L66 60 Q50 74 34 60 Z" fill="#000000"/></svg>"""
             val picture = call("import_picture", buildJsonObject { put("format", "svg"); put("data", smile); put("title", "Smile") }.toString())
             check(!picture.isError) { output(picture).toString() }
-            check(output(picture).getValue("sewout").jsonObject["verdict"] == JsonPrimitive("PASS"))
+            check(output(picture)["added"] == JsonPrimitive(false))
             val text = call("add_text", """{"text":"안녕","heightMm":10,"xMm":0,"yMm":35}""")
             check(!text.isError) { output(text).toString() }
             check(output(text).getValue("sewout").jsonObject["verdict"] == JsonPrimitive("PASS"))
             val vm = editor()
-            check(vm.project.objects.size == 2 && vm.undoSteps == 2) { "objects=${vm.project.objects.size} undo=${vm.undoSteps}" }
-            log += "CLOSED PASS: no Activity; import_picture + add_text ok, sewout PASS; 2 objects, 2 undo steps"
+            check(vm.project.objects.size == 1 && vm.undoSteps == 1) { "objects=${vm.project.objects.size} undo=${vm.undoSteps}" }
+            log += "CLOSED PASS: picture pending in memory, no picture layer; add_text alone made 1 object/undo"
             // Editor not on screen: one notification, updated by the second change, that opens the AI project.
             val notifications = targetContext.getSystemService(android.app.NotificationManager::class.java)
             fun change() = notifications.activeNotifications.firstOrNull { it.id == 7103 }
-            await("change notification") { change()?.notification?.number == 2 }
+            await("change notification") { change()?.notification?.number == 1 }
             val posted = checkNotNull(change()).notification
             check(posted.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString() ==
-                targetContext.getString(R.string.relay_change_tap_count, 2))
-            log += "NOTIFY PASS: editor away -> one notification updated to 2 changes (tap checked on the device run)"
+                targetContext.getString(R.string.relay_change_tap))
+            log += "NOTIFY PASS: editor away -> one notification updated to 1 design change (tap checked on the device run)"
 
             // Open the app: the editor shows the same project and history; leaving the Activity keeps them.
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
                 .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
+            fun pictureButton(): AccessibilityNodeInfo? {
+                fun all(n:AccessibilityNodeInfo):List<AccessibilityNodeInfo> = listOf(n)+(0 until n.childCount).flatMap { n.getChild(it)?.let(::all).orEmpty() }
+                return uiAutomation.rootInActiveWindow?.let(::all)?.firstOrNull { it.text?.toString()==targetContext.getString(R.string.photo_edit) }
+            }
+            await("picture input loaded") { pictureButton()!=null }
+            check(vm.project.objects.size==1)
+            var confirm=checkNotNull(pictureButton());while(!confirm.isClickable) confirm=checkNotNull(confirm.parent)
+            check(confirm.isEnabled && confirm.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            await("user confirmed picture layer") { vm.project.objects.size==2 }
             lateinit var shown: EditorViewModel
             runOnMainSync {
                 shown = MainActivity::class.java.getDeclaredMethod("getEditor").apply { isAccessible = true }.invoke(activity) as EditorViewModel

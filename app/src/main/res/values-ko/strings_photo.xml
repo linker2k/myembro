@@ -29,7 +29,7 @@
     <string name="photo_crop_accessibility">후프 틀의 사진. 두 손가락 확대와 드래그로 자르기</string>
     <string name="photo_name">사진실루엣</string>
     <string name="photo_load_failed">사진을 열 수 없습니다. 다른 사진을 골라 주세요.</string>
-    <string name="photo_generate_failed">대비 보정 후 한 번 더 시도했지만 사용할 윤곽이 없습니다. 2색 분리 미리보기를 확인해 주세요. 그림·로고·손글씨처럼 선이 뚜렷한 이미지에 적합합니다.</string>
+    <string name="photo_generate_failed">사용할 윤곽을 찾지 못했습니다. 2색 분리 미리보기를 확인해 주세요. 그림·로고·손글씨처럼 선이 뚜렷한 이미지에 적합합니다.</string>
     <string name="photo_save_failed">전송할 파일을 준비하지 못했습니다. 다시 시도해 주세요.</string>
     <string name="photo_file_stem">photo_silhouette</string>
     <string name="photo_progress_decode">사진 여는 중</string>
@@ -69,6 +69,12 @@
     <string name="photo_correction_clean">깨끗하게</string>
     <string name="photo_correction_contrast">대비</string>
     <string name="photo_correction_otsu">흑백 분리</string>
-    <string name="photo_correction_alpha_hint">투명도가 있는 컬러 그림은 기존 처리 방식을 유지합니다.</string>
-    <string name="photo_correction_failed">이 보정으로 사용할 수 있는 윤곽을 찾지 못했습니다. 원본이나 더 단순한 자르기를 시도하세요.</string>
+    <string name="photo_correction_alpha_hint">투명도가 있는 컬러 그림에는 노이즈 감쇄와 대비 보정을 적용할 수 없습니다.</string>
+    <string name="photo_correction_failed">이 보정으로 사용할 수 있는 윤곽을 찾지 못했습니다. 노이즈 감쇄를 낮추거나 대비를 1.0으로 되돌리거나 더 단순한 부분을 잘라 보세요.</string>
+    <string name="photo_noise">노이즈 감쇄: %1$s</string>
+    <string name="photo_noise_off">끔</string>
+    <string name="photo_noise_weak">약</string>
+    <string name="photo_noise_medium">중</string>
+    <string name="photo_noise_strong">강</string>
+    <string name="photo_contrast_factor">대비: %1$.2f×</string>
 </resources>

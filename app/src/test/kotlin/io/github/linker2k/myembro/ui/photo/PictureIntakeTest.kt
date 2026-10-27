@@ -12,6 +12,10 @@ class PictureIntakeTest {
     @Test fun mimeContentMatrixIsIndependentOfMimeAndAction() {
         val cases = listOf("SVG" to (svg to PictureIntake.Kind.SVG), "PNG" to (png to PictureIntake.Kind.PNG),
             "JPEG" to (jpeg to PictureIntake.Kind.JPEG), "WEBP" to (webp to PictureIntake.Kind.WEBP),
+            "BMP" to (("BM".toByteArray()+ByteArray(12)) to PictureIntake.Kind.BMP),
+            "GIF" to ("GIF89a".toByteArray() to PictureIntake.Kind.GIF),
+            "HEIF" to ((byteArrayOf(0,0,0,24)+"ftypheic".toByteArray()) to PictureIntake.Kind.HEIF),
+            "AVIF" to ((byteArrayOf(0,0,0,24)+"ftypavif".toByteArray()) to PictureIntake.Kind.AVIF),
             "PES" to (pes to PictureIntake.Kind.DESIGN), "PEC" to ("#PEC0001".toByteArray() to PictureIntake.Kind.DESIGN),
             "DST" to ("LA:Synthetic".toByteArray() to PictureIntake.Kind.DESIGN),
             "ZIP" to (byteArrayOf(80,75,3,4) to PictureIntake.Kind.DESIGN),
@@ -28,7 +32,7 @@ class PictureIntakeTest {
                 }
             }
         }
-        assertEquals(162, count)
+        assertEquals(234, count)
         println("PICTURE_MATRIX PASS rows=$count; MIME is not evidence of content")
     }
     @Test fun svgSuffixIsCandidateOnlyAndDesignMagicWins() {

@@ -24,19 +24,24 @@ import androidx.compose.ui.text.font.FontWeight
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.library.*
 
+val LocalPictureImport = compositionLocalOf<((List<Uri>,(List<Uri>)->Unit)->Unit)?> { null }
+
 /** Common entry point: multiple files or a recursively imported folder, with identical filters. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberDesignImporter(onFiles: (List<Uri>) -> Unit, onFolder: (Uri) -> Unit): () -> Unit {
     var show by remember { mutableStateOf(false) }
-    val files = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments(), onFiles)
+    val pictureImport=LocalPictureImport.current
+    val files = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if(pictureImport!=null) pictureImport(uris,onFiles) else onFiles(uris)
+    }
     // SAF tree grants include descendants: https://developer.android.com/training/data-storage/shared/documents-files
     val folder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { it?.let(onFolder) }
     if (show) ModalBottomSheet(onDismissRequest = { show = false }) {
         Text(stringResource(R.string.import_title), Modifier.padding(horizontal = 24.dp), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.import_supported), Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
         ListItem(headlineContent = { Text(stringResource(R.string.import_files)) },
-            modifier = Modifier.clickable { show = false; files.launch(DesignFormats.mimeTypes) },
+            modifier = Modifier.clickable { show = false; files.launch((DesignFormats.mimeTypes.toList()+io.github.linker2k.myembro.ui.photo.PictureIntake.pickerMimes).distinct().toTypedArray()) },
             leadingContent = { Icon(Icons.Default.FileOpen, null) })
         ListItem(headlineContent = { Text(stringResource(R.string.import_folder)) },
             supportingContent = { Text(stringResource(R.string.import_folder_hint)) },

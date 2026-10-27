@@ -9,7 +9,8 @@ import io.github.linker2k.myembro.engine.model.EmbThread
  * Pure structural reducer. Wraps existing model operations without changing their compatibility
  * behavior. In particular, this entry rejects bad targets/indices instead of silently no-oping
  * or clamping them. A valid edit may still be outside the hoop: export checks remain separate.
- * No localPattern/placedPattern call, random ID, file access, history mutation or registry lookup.
+ * Structural commands do not render. Block commands generate/check a private candidate before publication.
+ * No random ID allocation, history mutation or external registry lookup.
  */
 fun apply(project: Project, command: ProjectCommand): CommandResult {
     val blank = project.objects.filter { it.id.isBlank() }.mapTo(linkedSetOf()) { it.id }
@@ -22,8 +23,8 @@ fun apply(project: Project, command: ProjectCommand): CommandResult {
     }
 }
 
-private fun reject(project: Project, code: CommandError, ids: Set<String>, path: List<Int>, message: String) =
-    CommandResult.Rejected(project, code, ids, path, message)
+private fun reject(project: Project, code: CommandError, ids: Set<String>, path: List<Int>, message: String, kind: BlockGenerationKind? = null) =
+    CommandResult.Rejected(project, code, ids, path, message, kind)
 
 private fun applied(before: Project, candidate: Project): CommandResult.Applied {
     if (candidate == before) return CommandResult.Applied(before, false, emptySet())
@@ -35,6 +36,10 @@ private fun applied(before: Project, candidate: Project): CommandResult.Applied 
 
 private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): CommandResult {
     fun error(code: CommandError, ids: Set<String>, message: String) = reject(project, code, ids, path, message)
+    fun checked(candidate: Project, id: String, precheckSatin: Set<String> = emptySet()): CommandResult.Rejected? {
+        val failure=BlockCommandCheck.check(candidate,id,precheckSatin) ?: return null
+        return reject(project,failure.code,setOf(id),path,failure.message,failure.kind)
+    }
     fun targets(ids: Set<String>): CommandResult.Rejected? {
         val blank = ids.filterTo(linkedSetOf()) { it.isBlank() }
         if (blank.isNotEmpty()) return error(CommandError.INVALID_ID, blank, "Object id must not be blank")
@@ -42,6 +47,38 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
         return if (missing.isEmpty()) null else error(CommandError.MISSING_OBJECT, missing, "Object does not exist")
     }
     val next = when (command) {
+        is ProjectCommand.SetBlockOrder -> {
+            targets(setOf(command.id))?.let { return it }
+            val shape=project.find(command.id) as? ShapeObject
+                ?: return error(CommandError.INVALID_OBJECT_TYPE,setOf(command.id),"Expected ShapeObject")
+            val updated=try { shape.withRegionOrder(moveRegions(shape.regionOrder,command.regionIds,command.move)) }
+                catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid region order") }
+            if(updated==shape) project else {
+                val candidate=project.replace(updated)
+                checked(candidate,command.id)?.let { return it }
+                candidate
+            }
+        }
+        is ProjectCommand.SetBlockStitch -> {
+            targets(setOf(command.id))?.let { return it }
+            val shape = project.find(command.id) as? ShapeObject
+                ?: return error(CommandError.INVALID_OBJECT_TYPE,setOf(command.id),"Expected ShapeObject")
+            if(command.regionIds.isEmpty() || !command.regionIds.all { key -> shape.regions.any { it.id==key } })
+                return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),"UNKNOWN_REGION")
+            val updated = try {
+                val values = shape.overrides.toMutableMap()
+                for(region in shape.regions.filter { it.id in command.regionIds }) {
+                    val value = command.change.applyTo(region.stitch)
+                    if(value != region.stitch) values[region.id]=value
+                }
+                shape.withOverrides(values)
+            } catch(e: Exception) { return error(CommandError.INVALID_BLOCK_SETTINGS,setOf(command.id),e.message ?: "Invalid block settings") }
+            if(updated == shape) project else {
+                val candidate = project.replace(updated)
+                checked(candidate,command.id,command.regionIds)?.let { return it }
+                candidate
+            }
+        }
         is ProjectCommand.Add -> {
             val obj = command.obj
             if (obj.id.isBlank()) return error(CommandError.INVALID_ID, setOf(obj.id), "Object id must not be blank")
@@ -91,6 +128,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
             targets(setOf(command.id))?.let { return it }
             val obj = project.find(command.id)!!
             val count = when (obj) {
+                is ShapeObject -> return error(CommandError.INVALID_OBJECT_TYPE, setOf(command.id), "Shape recoloring is not implemented in this draft")
                 is TextObject -> 1 // Existing editor recolor changes only the base thread, not character overrides.
                 is StitchObject -> maxOf(obj.source.threads.size, obj.source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)
             }
@@ -114,6 +152,7 @@ private fun reduce(project: Project, command: ProjectCommand, path: List<Int>): 
 
 /** Same value operation as the existing app EditorAppearance.recolored; no app dependency. */
 private fun recolor(obj: DesignObject, index: Int, thread: EmbThread): DesignObject = when (obj) {
+    is ShapeObject -> error("Shape recoloring requires a region-aware command")
     is TextObject -> if (obj.thread == thread) obj else obj.copy(thread = thread)
     is StitchObject -> if (obj.source.threadAt(index) == thread) obj else {
         val count = maxOf(obj.source.threads.size, obj.source.colorBlocks.maxOfOrNull { it.threadIndex + 1 } ?: 0)

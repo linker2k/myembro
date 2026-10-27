@@ -25,13 +25,13 @@ object RelayChangeNotification {
     private const val CHANNEL = "relay_changes"
     private const val ID = 7103
 
-    fun show(context: Context, headline: String, changes: Int) {
+    fun show(context: Context, headline: String, changes: Int, action:String=AiWorkspace.ACTION_OPEN, body:String?=null) {
         val app = context.applicationContext
         if (Build.VERSION.SDK_INT >= 26) app.getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL, app.getString(R.string.relay_change_channel), NotificationManager.IMPORTANCE_DEFAULT))
-        val open = Intent(app, MainActivity::class.java).setAction(AiWorkspace.ACTION_OPEN)
+        val open = Intent(app, MainActivity::class.java).setAction(action)
         val tap = PendingIntent.getActivity(app, ID, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val text = if (changes > 1) app.getString(R.string.relay_change_tap_count, changes) else app.getString(R.string.relay_change_tap)
+        val text = body ?: if (changes > 1) app.getString(R.string.relay_change_tap_count, changes) else app.getString(R.string.relay_change_tap)
         val notification = NotificationCompat.Builder(app, CHANNEL).setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(headline).setContentText(text).setNumber(changes)
             .setOnlyAlertOnce(false).setCategory(NotificationCompat.CATEGORY_STATUS)

@@ -17,6 +17,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -82,7 +83,7 @@ class MainActivity : ComponentActivity() {
 
     /** Library path of the design in the viewer, or null for a file read without importing. */
     private var openPath by mutableStateOf<String?>(null)
-    private var incomingPictures by mutableStateOf<List<io.github.linker2k.myembro.ui.photo.PictureSource>>(emptyList())
+    private var incomingPictureTitle: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installMyembroSplashScreen()
@@ -95,9 +96,23 @@ class MainActivity : ComponentActivity() {
         openPath = savedInstanceState?.getString(KEY_OPEN)
         savedInstanceState?.getStringArrayList(KEY_STACK)?.let { names -> stack += names.map(Screen::valueOf) }
         handleIntent(intent, dispatchCurrent = savedInstanceState == null)
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                io.github.linker2k.myembro.ui.photo.PictureInbox.requests.pending.collect { request ->
+                    request ?: return@collect
+                    val latest=io.github.linker2k.myembro.ui.photo.PictureInbox.requests.take(request.id) ?: return@collect
+                    incomingPictureTitle=latest.title
+                    photo.beginAiPicture(latest.colors ?: io.github.linker2k.myembro.relay.RelayPicture.DEFAULT_COLORS)
+                    photo.configure(settings.settings)
+                    if(latest.bytes!=null) photo.loadBytes(latest.bytes) else photo.load(Uri.parse(requireNotNull(latest.uri)))
+                    if(stack.lastOrNull()!=Screen.PHOTO) stack+=Screen.PHOTO
+                    io.github.linker2k.myembro.relay.RelayChangeNotification.cancel(this@MainActivity)
+                }
+            }
+        }
         setContent {
             val context = LocalContext.current
-            val openDocument = rememberDesignImporter(onFiles = ::importUris,
+            val openDocument = rememberDesignImporter(onFiles = { routeIncoming(it) },
                 onFolder = { library.import(emptyList(), tree = it, onComplete = ::afterImport) })
             val saveDocument = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -148,7 +163,7 @@ class MainActivity : ComponentActivity() {
             // screen (home or the library with nothing open); otherwise do not interrupt, offer a banner.
             val removalAsked = editor.relayConfirmation.request.collectAsState().value != null
             val resting by androidx.compose.runtime.rememberUpdatedState((stack.isEmpty() && !homeSheet || stack.lastOrNull() == Screen.LIBRARY) &&
-                preflight == null && !showAiPicture && incomingPictures.isEmpty() && library.preflightWarnings == null &&
+                preflight == null && !showAiPicture && library.preflightWarnings == null &&
                 editor.recoveryProject == null && !removalAsked)
             LaunchedEffect(Unit) {
                 io.github.linker2k.myembro.ui.editor.AiWorkspace.changes.collect { headline ->
@@ -165,12 +180,8 @@ class MainActivity : ComponentActivity() {
                 }
                 BackHandler(enabled = stack.isNotEmpty(), onBack = back)
                 // One back already reaches Home from the first level; deeper screens get a Home button.
-                CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 }) {
-                if (incomingPictures.isNotEmpty()) AlertDialog(onDismissRequest = { incomingPictures = emptyList() },
-                    title = { Text(stringResource(R.string.picture_intake_choose)) },
-                    text = { Column { incomingPictures.forEach { picture ->
-                        TextButton(onClick = { incomingPictures = emptyList(); openPicture(picture.uri) }) { Text(picture.name) }
-                    } } }, confirmButton = { TextButton(onClick = { incomingPictures = emptyList() }) { Text(stringResource(android.R.string.cancel)) } })
+                CompositionLocalProvider(LocalGoHome provides goHome.takeIf { stack.size >= 2 },
+                    io.github.linker2k.myembro.ui.LocalPictureImport provides { uris,other -> routeIncoming(uris,otherHandler=other) }) {
                 if (showAiPicture) {
                     val hoop = if (stack.lastOrNull() == Screen.EDITOR) editor.project.hoop else settings.settings.defaultFrame.spec
                     io.github.linker2k.myembro.ui.photo.AiPictureDialog(hoop,
@@ -193,7 +204,7 @@ class MainActivity : ComponentActivity() {
                         letteringAvailable = true,
                         onFreeDesigns = { stack += Screen.FREE_DESIGNS },
                         onNewProjectFrame = { spec -> newProject(spec) },
-                        onPhoto = { aiPictureDraft.cancelExpectedImage(); photo.begin(); stack += Screen.PHOTO },
+                        onPhoto = { incomingPictureTitle=null; aiPictureDraft.cancelExpectedImage(); photo.begin(); stack += Screen.PHOTO },
                         onAiPicture = { showAiPicture = true },
                         onEmoji = { emoji.close(); stack += Screen.EMOJI },
                     )
@@ -213,8 +224,12 @@ class MainActivity : ComponentActivity() {
                                 val transform = if (b == null) Transform() else Transform(
                                     x = ((b.minX.toLong() + b.maxX) / 2).toDouble(),
                                     y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
-                                editor.startWith(StitchObject(UUID.randomUUID().toString(), context.getString(R.string.photo_name), pattern,
-                                    transform = transform), photo.hoop)
+                                val id=UUID.randomUUID().toString()
+                                val obj=photo.shapeObject?.let { shape ->
+                                    incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id)
+                                } ?: StitchObject(id,incomingPictureTitle ?: context.getString(R.string.photo_name),pattern,transform=transform)
+                                editor.addPicture(obj)
+                                incomingPictureTitle=null
                                 stack += Screen.EDITOR
                             }
                         }, onSend = { file ->
@@ -222,12 +237,8 @@ class MainActivity : ComponentActivity() {
                             stack += Screen.LIBRARY; library.exportToUsb()
                         })
                     Screen.EMOJI -> io.github.linker2k.myembro.ui.emoji.EmojiScreen(emoji, settings.settings, onBack = back, onEdit = {
-                        emoji.render?.pattern?.let { pattern ->
-                            val b = pattern.bounds
-                            val transform = if (b == null) Transform() else Transform(
-                                x = ((b.minX.toLong() + b.maxX) / 2).toDouble(), y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
-                            editor.startWith(StitchObject(UUID.randomUUID().toString(), emoji.selected?.name ?: "emoji", pattern,
-                                transform = transform), emoji.hoop)
+                        emoji.shapeObject?.let { shape ->
+                            editor.startWith(shape.withId(UUID.randomUUID().toString()), emoji.hoop)
                             stack += Screen.EDITOR
                         }
                     })
@@ -343,6 +354,7 @@ class MainActivity : ComponentActivity() {
                 onCurrentLaunch = {
                     when (intent?.action) {
                         // The AI connection notification: the editor on the AI work project, never replacing it.
+                        io.github.linker2k.myembro.ui.photo.PictureInbox.ACTION_OPEN -> Unit // STARTED collector opens latest memory request.
                         io.github.linker2k.myembro.ui.editor.AiWorkspace.ACTION_OPEN -> if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
                         Intent.ACTION_VIEW -> intent.data?.let { uri -> routeIncoming(listOf(uri), view = true) }
                         Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
@@ -362,29 +374,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openPicture(uri: Uri) {
-        val requestedColors = aiPictureDraft.consumeExpectedColors()
-        if (requestedColors == null) photo.begin() else photo.beginAiPicture(requestedColors)
-        photo.configure(settings.settings); photo.load(uri)
-        if (stack.lastOrNull() != Screen.PHOTO) stack += Screen.PHOTO
-    }
-
-    /** All external streams use the same content test. Existing design importer is untouched. */
-    private fun routeIncoming(uris: List<Uri>, view: Boolean = false) {
+    /** All pickers and external streams share content sniffing; only the final picture survives. */
+    private fun routeIncoming(uris: List<Uri>, view: Boolean = false, otherHandler:((List<Uri>)->Unit)?=null) {
+        if(uris.isEmpty()) return
+        val inbox=io.github.linker2k.myembro.ui.photo.PictureInbox.requests
+        val ticket=inbox.reserve()
         lifecycleScope.launch {
-            val rows = withContext(Dispatchers.IO) { uris.map { io.github.linker2k.myembro.ui.photo.inspectPicture(this@MainActivity, it) } }
-            val (pictures, other) = io.github.linker2k.myembro.ui.photo.PictureIntake.partition(rows.map { it.kind })
-            fun showPictures() {
-                val selected = pictures.map { rows[it] }
-                if (selected.size == 1) openPicture(selected.single().uri)
-                else incomingPictures = selected
+            val rows=withContext(Dispatchers.IO) { uris.map { io.github.linker2k.myembro.ui.photo.inspectPicture(this@MainActivity,it) } }
+            val (pictures,other)=io.github.linker2k.myembro.ui.photo.PictureIntake.partition(rows.map { it.kind })
+            pictures.lastOrNull()?.let { index ->
+                inbox.offer(ticket,uri=rows[index].uri.toString(),colors=aiPictureDraft.consumeExpectedColors())
             }
-            if (pictures.isEmpty()) {
-                if (view && uris.size == 1 && uris.single().scheme != "content") {
-                    openPath = null; viewer.open(uris.single()); showViewer()
-                } else importUris(uris)
-            } else if (other.isEmpty()) showPictures()
-            else library.import(other.map { uris[it] }, onComplete = { report -> afterImport(report); showPictures() })
+            if(other.isNotEmpty()) {
+                val remaining=other.map { uris[it] }
+                if(otherHandler!=null) otherHandler(remaining)
+                else if(view && pictures.isEmpty() && uris.size==1 && uris.single().scheme!="content") {
+                    openPath=null;viewer.open(uris.single());showViewer()
+                } else importUris(remaining)
+            }
         }
     }
 

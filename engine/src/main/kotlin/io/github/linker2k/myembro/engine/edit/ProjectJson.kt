@@ -34,7 +34,7 @@ object ProjectJson {
     const val VERSION = 1
     const val EXTENSION = "myembro"
     private val json = Json { prettyPrint = true }
-    private val builtInCodecs: List<ProjectObjectCodec> = listOf(TextObjectCodec)
+    private val builtInCodecs: List<ProjectObjectCodec> = listOf(TextObjectCodec, ShapeObjectCodec)
     @Volatile private var registeredCodecs: List<ProjectObjectCodec> = emptyList()
 
     /** Register once at application startup. Re-registering the same instance is harmless. */

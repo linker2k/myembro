@@ -22,7 +22,7 @@ class EmojiToolTest {
         val kernel=ToolDispatcher();val result=ready(kernel)
         val added=kernel.dispatch(Project(),"0","add_generated_art",add(result.output.string("resultId")))
         assertTrue(added.ok,added.output.toString())
-        val obj=assertIs<StitchObject>(added.project.find("heart"));assertNull(obj.sourceBytes)
+        val obj=assertIs<ShapeObject>(added.project.find("heart"));assertTrue(obj.regions.isNotEmpty())
         assertEquals(DesignOrigin.APP_GENERATED,SewoutCheck.originOf(added.project.flatten()))
         val checked=kernel.dispatch(added.project,"0","prepare_pes",args("""{"projectRevision":"0","machineId":"se700","frameId":"H100","pesVersion":"V6"}"""))
         assertTrue(checked.ok,checked.output.toString());assertNotNull(checked.pesBytes)
@@ -88,8 +88,10 @@ class EmojiToolTest {
         assertTrue(controller.dispatch("commit_edit_turn",args("""{"transactionId":"t","expectedRevision":"0"}""")).ok)
         val e=resolver.catalog.emoji.single {it.id=="red-heart"}
         val expected=VectorArt.render(VectorArt.parseSvg(resolver.localSvg(e)!!.toString(Charsets.UTF_8)),20.0,name=e.name).pattern
-        val actual=(session.project.find("heart") as StitchObject).source
-        assertEquals(expected.stitches,actual.stitches);assertEquals(expected.threads,actual.threads);assertEquals(expected.metadata,actual.metadata)
+        val actual=(session.project.find("heart") as ShapeObject).localPattern()
+        assertEquals(expected.stitches,actual.stitches);assertEquals(expected.threads,actual.threads)
+        // A ShapeObject rerenders with its chosen layer name; sewing geometry stays unchanged.
+        assertEquals(expected.metadata + ("name" to "Heart"),actual.metadata)
         assertEquals(1,session.snapshot().undoCount);session.undo(session.revision);assertEquals(before.project,session.project)
         // Opaque results belong to one dispatcher/document lifetime, never supplied as arbitrary geometry.
         assertEquals("RESULT_NOT_FOUND",ToolDispatcher().dispatch(Project(),"0","add_generated_art",add(id)).code)

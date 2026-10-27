@@ -41,8 +41,12 @@ class PhotoFilterSmokeInstrumentation: Instrumentation() {
             ready();check(vm.source!=null);check(vm.correction==PhotoCorrection.ORIGINAL)
             runOnMainSync { vm.next() };ready()
             for(filter in PhotoCorrection.entries) {
-                runOnMainSync { vm.changeCorrection(filter) };ready()
-                check(vm.correction==filter && vm.separatedPreview!=null && vm.error==null && vm.outline!=null && vm.render==null && vm.report==null) { "$filter preview missing: ${vm.error}" }
+                runOnMainSync {
+                    vm.changeNoiseSize(if(filter==PhotoCorrection.CLEAN) 5 else 3)
+                    vm.changeContrast(if(filter==PhotoCorrection.CONTRAST) 2f else 1f)
+                    vm.changeCorrection(if(filter==PhotoCorrection.OTSU) filter else PhotoCorrection.ORIGINAL)
+                };ready()
+                check((vm.correction==PhotoCorrection.OTSU)==(filter==PhotoCorrection.OTSU) && vm.separatedPreview!=null && vm.error==null && vm.outline!=null && vm.render==null && vm.report==null) { "$filter preview missing: ${vm.error}" }
                 out.resolve("${filter.name.lowercase()}.png").outputStream().use { uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG,100,it) }
             }
             runOnMainSync { vm.changeStyle(PhotoMode.COLOR) };ready()

@@ -37,8 +37,11 @@ import kotlin.math.abs
 
 /** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
 internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: Uri): Bitmap {
+    return decodeUprightPhoto { requireNotNull(resolver.openInputStream(uri)) }
+}
+internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
+    open().use { BitmapFactory.decodeStream(it, null, bounds) }
     require(bounds.outWidth > 0 && bounds.outHeight > 0)
     val options = BitmapFactory.Options().apply {
         inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -46,8 +49,8 @@ internal fun decodeUprightPhoto(resolver: android.content.ContentResolver, uri: 
             inSampleSize = inSampleSize.coerceAtLeast(1) * 2
         }
     }
-    val decoded = requireNotNull(resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) })
-    val orientation = runCatching { resolver.openInputStream(uri).use { stream ->
+    val decoded = requireNotNull(open().use { BitmapFactory.decodeStream(it, null, options) })
+    val orientation = runCatching { open().use { stream ->
         ExifInterface(requireNotNull(stream)).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
     } }.getOrDefault(1)
     val matrix = Matrix().apply { when (orientation) {
@@ -68,12 +71,24 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var zoom by mutableFloatStateOf(1f); private set
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
-    var style by mutableStateOf(PhotoMode.SILHOUETTE); private set
+    var style by mutableStateOf(PhotoMode.COLOR); private set
     var detail by mutableIntStateOf(1); private set
     var colorCount by mutableIntStateOf(4); private set
     var grayscale by mutableStateOf(false); private set
     fun changeGrayscale(value:Boolean) {
         if(value!=grayscale) { grayscale=value;step=1;prepare() }
+    }
+    // Null preserves the existing per-mode default: one median3 for mono, none for color.
+    var noiseSize by mutableStateOf<Int?>(null); private set
+    val effectiveNoiseSize get() = noiseSize ?: if (style == PhotoMode.COLOR) 0 else 3
+    var contrastFactor by mutableFloatStateOf(1f); private set
+    fun changeNoiseSize(value: Int) {
+        require(value in listOf(0, 3, 5, 7))
+        if (value != effectiveNoiseSize) { noiseSize = value; step = 1; prepare() }
+    }
+    fun changeContrast(value: Float) {
+        val factor = value.coerceIn(0.5f, 2f)
+        if (factor != contrastFactor) { contrastFactor = factor; step = 1; prepare() }
     }
     var correction by mutableStateOf(PhotoCorrection.ORIGINAL); private set
     var correctionAlphaBypassed by mutableStateOf(false); private set
@@ -96,6 +111,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<Int?>(null); private set
     var render by mutableStateOf<RenderData?>(null); private set
+    var shapeObject by mutableStateOf<io.github.linker2k.myembro.engine.edit.ShapeObject?>(null); private set
     var report by mutableStateOf<SewoutReport?>(null); private set
     var separatedPreview by mutableStateOf<Bitmap?>(null); private set
     var outline by mutableStateOf<RedworkOutline?>(null); private set
@@ -118,8 +134,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
         isSvg = false; svgArt = null
-        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.SILHOUETTE; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
+        correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false; noiseSize = null; contrastFactor = 1f
+        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.COLOR; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     /** Only a returned AI picture carries its requested color count; normal begin retains 4. */
     fun beginAiPicture(colors: Int) {
@@ -171,14 +187,32 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
             } finally { if (version == revision) busy = false }
         }
     }
-    private fun loadSvg(uri: Uri) {
+    fun loadBytes(data:ByteArray) {
+        val kind=PictureIntake.sniff(data)
+        if(kind==PictureIntake.Kind.SVG) { loadSvg { data };return }
+        work?.cancel();val version=++revision;busy=true;error=null
+        work=viewModelScope.launch {
+            try {
+                require(kind.raster)
+                val bitmap=withContext(Dispatchers.IO) { decodeUprightPhoto { data.inputStream() } }
+                if(version==revision) { source=bitmap;isSvg=false;svgArt=null;step=0;invalidateResult() }
+            } catch(e:CancellationException) { throw e }
+            catch(_:Exception) { if(version==revision) error=R.string.picture_intake_not_picture }
+            finally { if(version==revision) busy=false }
+        }
+    }
+    private fun loadSvg(uri: Uri) = loadSvg {
+        getApplication<Application>().contentResolver.openInputStream(uri).use {
+            io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.read(requireNotNull(it))
+        }
+    }
+    private fun loadSvg(read: () -> ByteArray) {
         work?.cancel(); val version = ++revision
         isSvg = true; svgArt = null; source = null; step = 2; busy = true; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
                 val parsed = withContext(Dispatchers.IO) {
-                    val resolver = getApplication<Application>().contentResolver
-                    val bytes = resolver.openInputStream(uri).use { io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.read(requireNotNull(it)) }
+                    val bytes = read()
                     io.github.linker2k.myembro.engine.inkstitch.svg.SvgPictureInput.parse(bytes)
                 }
                 if (version == revision) {
@@ -194,24 +228,26 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     }
     private fun generateSvg(art: io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.Art) {
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val width = widthMm
-        busy = true; error = null; step = 2; progressStage = 3; render = null; report = null; bytes = null
+        busy = true; error = null; step = 2; progressStage = 3; render = null; shapeObject = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
-                    val pattern = io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.render(art, width, name = "SVG").pattern
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", "SVG", art, width)
+                    val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
                         SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(pattern), pes, check)
+                    Triple(shape, pes, check)
                 } }
                 if (version == revision) {
-                    render = output.first; report = output.third
+                    shapeObject = output.first; render = RenderData(output.first.localPattern()); report = output.third
                     bytes = output.second.takeIf { output.third.analysisComplete && !output.third.hasBlockingIssues }
-                    resultSizeMm = output.first.pattern.bounds?.let { it.width / 10.0 to it.height / 10.0 }
+                    resultSizeMm = output.first.localPattern().bounds?.let { it.width / 10.0 to it.height / 10.0 }
                     if (bytes == null) error = R.string.svg_picture_unsupported
                 }
             } catch (_: TimeoutCancellationException) { if (version == revision) error = R.string.svg_picture_unsupported }
             catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: LinkageError) { if (version == revision) error = R.string.device_generation_failed }
             catch (_: Exception) { if (version == revision) error = R.string.svg_picture_unsupported }
             finally { if (version == revision) busy = false }
         }
@@ -231,13 +267,14 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; report = null; bytes = null; resultSizeMm = null }
+    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
         val snapshot = settings; val frame = snapshot.defaultFrame.spec
         val crop = photoCrop(bitmap.width, bitmap.height, frame.width.toDouble() / frame.height, zoom, panX, panY)
         val selectedMode = style; val selectedColors=colorCount; val selectedGrayscale=grayscale; val selectedCorrection=correction
+        val selectedNoise = effectiveNoiseSize; val selectedContrast = contrastFactor
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val edge = photoRasterSize(detail, pictureWidth, pictureWidth * frame.height / frame.width)
         busy = true; progressStage = 1; error = null; invalidateResult()
@@ -256,7 +293,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
                     }
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
-                    val corrected = PhotoCorrections.apply(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedCorrection)
+                    val corrected = PhotoCorrections.adjust(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedNoise,selectedContrast,selectedCorrection == PhotoCorrection.OTSU)
                     if (version == revision) {
                         correctionAlphaBypassed = corrected.alphaBypassed
                         if(corrected.alphaBypassed) correction = PhotoCorrection.ORIGINAL
@@ -302,7 +339,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     val denoised=corrected.pixels
                     (try { trace(denoised) } catch (failure: IllegalArgumentException) {
-                        if (selectedCorrection == PhotoCorrection.CONTRAST) throw failure
+                        if (selectedContrast != 1f) throw failure
                         if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) throw failure
                         Log.i("PhotoTiming", "contrast_retry=1")
                         trace(photoContrastStretch(denoised))
@@ -311,37 +348,42 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 if (version == revision) { outline = output.first; inkRatio = output.second ?: inkRatio }
 
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedCorrection!=PhotoCorrection.ORIGINAL && selectedCorrection!=PhotoCorrection.CLEAN) R.string.photo_correction_failed else R.string.photo_generate_failed
+            } catch (failure: Exception) { if (version == revision) error = if (failure.message?.contains("PHOTO_TOO_COMPLEX") == true) R.string.photo_too_complex else if(selectedMode==PhotoMode.COLOR) R.string.photo_color_failed else if(selectedContrast != 1f || selectedCorrection == PhotoCorrection.OTSU) R.string.photo_correction_failed else R.string.photo_generate_failed
             } finally { if (version == revision) busy = false }
         }
     }
     private fun generateResult() {
         val traced = outline ?: return
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
-        busy = true; progressStage = 3; error = null; render = null; report = null; bytes = null; resultSizeMm = null
+        busy = true; progressStage = 3; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
+                    var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR) {
-                        ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
+                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
-                        }.pattern
+                        }
+                        shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
+                            getApplication<Application>().getString(R.string.photo_name),generated,widthMm)
+                        generated.pattern
                     } else RedworkPipeline.generate(traced,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoMode.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")
-                    if(generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null)
+                    if(generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null) to shape
                     val pes = PesWriter.write(generatedPattern,snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes,viewerSewoutMachine(snapshot.machineProfile?.id,snapshot.machineModel),
                         SewoutOptions(hoop=frame, origin=DesignOrigin.APP_GENERATED))
-                    Triple(RenderData(generatedPattern),pes,check)
+                    Triple(RenderData(generatedPattern),pes,check) to shape
                 } }
-                if (version == revision) { render=output.first; bytes=output.second; report=output.third
-                    resultSizeMm=output.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
+                if (version == revision) { shapeObject=output.second;render=output.first.first; bytes=output.first.second; report=output.first.third
+                    resultSizeMm=output.first.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 } }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: LinkageError) { if(version==revision) error=R.string.device_generation_failed
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
             } finally { if(version==revision) busy=false }
         }

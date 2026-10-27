@@ -23,6 +23,10 @@ import io.github.linker2k.myembro.library.ImportSkipReason
 import io.github.linker2k.myembro.library.importDesigns
 import io.github.linker2k.myembro.library.ImportDecisions
 import kotlinx.coroutines.Job
+import io.github.linker2k.myembro.engine.edit.BlockStitchPatch
+import io.github.linker2k.myembro.engine.edit.BlockOrderMove
+import io.github.linker2k.myembro.ui.editor.block.BlockRunner
+import io.github.linker2k.myembro.ui.editor.block.BlockStatus
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import io.github.linker2k.myembro.ui.machines.MachineHoop
 import io.github.linker2k.myembro.export.ExportChecks
@@ -105,6 +109,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 onReady(EditorSplitPreview(snapshot, positions, result))
             } catch (e: CancellationException) { throw e
             } catch (e: EditorExportBlocked) { exportProblems = e.problems
+            } catch (e: LinkageError) { message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) { report(R.string.editor_save_failed, e)
             } finally { busy = false }
         }
@@ -252,6 +257,13 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } },
             canEdit = { agentExecutor.relayController() === controller },
             announce = { title -> relayChanged(title) },
+            openPicture = { picture,title -> withContext(Dispatchers.Main.immediate) {
+                val inbox=io.github.linker2k.myembro.ui.photo.PictureInbox
+                val id=inbox.requests.reserve()
+                inbox.requests.offer(id,bytes=picture.bytes,title=title,colors=picture.colors)
+                if(!AiWorkspace.uiStarted) io.github.linker2k.myembro.relay.RelayChangeNotification.show(
+                    getApplication(),title,1,action=inbox.ACTION_OPEN,body=getApplication<Application>().getString(R.string.picture_input_pending))
+            } },
             changed = { relayChanged(null) },
             numbered = { getApplication<Application>().getString(R.string.relay_picture_name, it) })
         relayPhotoTools = controller to tools
@@ -499,6 +511,24 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         sync()
     }
     private fun edit(command: ProjectCommand) { dispatch(command) }
+
+    /** Block editor generation and its sewing check (BlockRunner): one at a time, off the main thread. */
+    private val blockRunner = BlockRunner(viewModelScope)
+    val blockStatus: BlockStatus get() = blockRunner.status
+    fun blockElapsedMs(s: BlockStatus.Generating) = blockRunner.elapsedMs(s)
+
+    /** SetBlockStitch in the background; only the reducer's Applied project is committed, as one undo step. */
+    fun applyBlockStitch(id: String, regionIds: Set<String>, patch: BlockStitchPatch) =
+        blockRunner.apply(project, ProjectCommand.SetBlockStitch(id, regionIds, patch), current = { project },
+            commit = { next -> edit(next); project === next })
+    /** SetBlockOrder (sewing order of regions) the same way: background, checked, one undo step. */
+    fun applyBlockOrder(id: String, regionIds: Set<String>, move: BlockOrderMove) =
+        blockRunner.apply(project, ProjectCommand.SetBlockOrder(id, regionIds, move), current = { project },
+            commit = { next -> edit(next); project === next })
+    fun checkBlockSewout() = blockRunner.check(project)
+    /** Cancel button: the running generation stops and the previous settings stay. */
+    fun cancelBlockApply() = blockRunner.cancelApply()
+    fun cancelBlockWork() = blockRunner.stop()
     private fun dispatch(command: ProjectCommand): CommandResult? {
         if (gestureInProgress || draftLoading || replacementRequested || recoveryProject != null) return null
         val result = session.commit(command)
@@ -649,6 +679,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     fun reorder(id: String, index: Int, duringGesture: Boolean = false) {
         if (duringGesture) { session.updateGesture(project.reorder(id, index)); sync() }
         else edit(project.reorderCommand(id, index))
+    }
+    fun addPicture(obj:DesignObject) {
+        if(interactionBlocked || gestureInProgress) return
+        edit(project.add(obj));selectedIds=setOf(obj.id)
     }
     fun addDesign(file: File) {
         if (interactionBlocked || gestureInProgress) return
@@ -804,6 +838,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     resource?.let { getApplication<Application>().getString(it) } ?: problem
                 }
+            } catch (e: LinkageError) {
+                // A shape this device cannot generate: nothing is written; the canvas fallback is never exported.
+                message = getApplication<Application>().getString(R.string.editor_generation_failed_device)
             } catch (e: Exception) {
                 message = getApplication<Application>().getString(R.string.editor_save_failed, e.localizedMessage.orEmpty())
             } finally { busy = false }

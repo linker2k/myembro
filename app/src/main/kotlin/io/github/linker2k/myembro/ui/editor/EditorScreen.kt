@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,8 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.edit.Project
 import io.github.linker2k.myembro.engine.edit.SewingPosition
+import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.engine.edit.StitchObject
 import io.github.linker2k.myembro.engine.edit.exceedsHoop
 import io.github.linker2k.myembro.ui.fonts.FontLibraryScreen
 import io.github.linker2k.myembro.ui.lettering.LetteringScreen
@@ -77,6 +80,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var projectMenu by remember { mutableStateOf(false) }
         var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
+        var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
         var activeTool by rememberSaveable { mutableIntStateOf(0) }
         var inspectorTab by rememberSaveable { mutableIntStateOf(0) }
@@ -161,9 +165,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box {
+                        // The hoop chip gives way (ellipsis) so Edit blocks, the object count and Save stay on screen.
+                        Box(Modifier.weight(1f, fill = false)) {
                             SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0))) },
+                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
                                 vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
@@ -173,6 +179,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                     onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
                             }
                         }
+                        // Blocks exist only on vector shapes; an imported PES has stitches only.
+                        val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
+                        val stitchOnly = stringResource(R.string.block_edit_stitch_only)
+                        if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
+                            onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
+                            label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
+                            leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
@@ -219,6 +232,17 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 val canvas: @Composable (Modifier, Boolean) -> Unit = { modifier, floatingTools ->
                     Box(modifier) {
                         EditorCanvas(vm, fitRequest, Modifier.fillMaxSize(), navigationOnly, showJumps, preview)
+                        // Shapes this device could not generate are drawn from their last good stitches: say so.
+                        val fallbackCount = if (vm.rendering) 0 else ShapeStitchGuard.failedIds().count { id -> vm.project.find(id)?.visible == true }
+                        if (fallbackCount > 0) Surface(color = colors.errorContainer, shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp, start = 64.dp, end = 64.dp)) {
+                            Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.WarningAmber, null, tint = colors.onErrorContainer, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(pluralStringResource(R.plurals.editor_shape_fallback, fallbackCount, fallbackCount), style = MaterialTheme.typography.labelSmall,
+                                    color = colors.onErrorContainer)
+                            }
+                        }
                         if (floatingTools) EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                             onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                             onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
@@ -259,6 +283,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     inspector(Modifier.fillMaxWidth().heightIn(max = inspectorHeight))
                 }
             }
+        }
+        // Region settings go through the engine's SetBlockStitch command (one undo step).
+        val blockShape = vm.selected as? ShapeObject
+        if (blockEdit && blockShape != null) Surface(Modifier.fillMaxSize()) {
+            io.github.linker2k.myembro.ui.editor.block.BlockEditScreen(vm, blockShape, onClose = { blockEdit = false })
         }
         splitPreview?.let { ready -> EditorSplitDialog(ready, onCancel = { splitPreview = null }, onExport = {
             splitPreview = null
@@ -313,7 +342,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             var background by remember { mutableStateOf<io.github.linker2k.myembro.engine.model.EmbPattern?>(null) }
             LaunchedEffect(projectSnapshot, letteringTarget, sewingOptions) {
                 background = withContext(Dispatchers.Default) {
-                    projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget }).flatten(sewingOptions)
+                    ShapeStitchGuard.displayFlatten(projectSnapshot.copy(objects = projectSnapshot.objects.filterNot { it.id == letteringTarget })) { it.flatten(sewingOptions) }
                 }
             }
             key(vm.letteringTargetId) {

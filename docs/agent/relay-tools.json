@@ -645,6 +645,154 @@
             }
         },
         {
+            "name": "list_blocks",
+            "description": "List editable regions: ids, colors, block settings, local area mm², and SATIN/RUNNING/FILL prerequisites (not final sewout). Meander tile names only.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "objectId"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": true,
+                "idempotentHint": true,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_block_stitch",
+            "description": "Change selected shape regions in one undo step. Omitted settings stay unchanged; automatic_angle uses the app default. Returns revision and sewing check. GENERATION_FAILED includes kind; SEWOUT_BLOCKED means sewing-check rejection. Errors change nothing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "regionIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                    },
+                    "change": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "FILL",
+                                    "SATIN",
+                                    "RUNNING"
+                                ]
+                            },
+                            "fill_method": {
+                                "type": "string",
+                                "enum": [
+                                    "tatami_fill",
+                                    "meander_fill",
+                                    "contour_fill",
+                                    "circular_fill",
+                                    "cross_stitch",
+                                    "guided_fill",
+                                    "tartan_fill",
+                                    "legacy_fill"
+                                ]
+                            },
+                            "automatic_angle": {
+                                "type": "boolean"
+                            },
+                            "angle": {
+                                "type": "number"
+                            },
+                            "row_spacing_mm": {
+                                "type": "number",
+                                "minimum": 0.1
+                            },
+                            "meander_pattern": {
+                                "type": "string"
+                            },
+                            "meander_scale_percent": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number",
+                                    "minimum": 1
+                                },
+                                "minItems": 1,
+                                "maxItems": 2
+                            },
+                            "zigzag_spacing_mm": {
+                                "type": "number",
+                                "minimum": 0.002645833333333333
+                            }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "regionIds",
+                    "change"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
+            "name": "set_block_order",
+            "description": "Move selected shape regions FORWARD (one earlier), BACKWARD (one later), FIRST or LAST in sewing order. Relative selection order and region needles stay unchanged. One undo step; returns revision and sewing check. GENERATION_FAILED includes kind; SEWOUT_BLOCKED means sewing-check rejection.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "objectId": {
+                        "type": "string"
+                    },
+                    "regionIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                    },
+                    "move": {
+                        "type": "string",
+                        "enum": [
+                            "FORWARD",
+                            "BACKWARD",
+                            "FIRST",
+                            "LAST"
+                        ]
+                    }
+                },
+                "required": [
+                    "objectId",
+                    "regionIds",
+                    "move"
+                ],
+                "additionalProperties": false
+            },
+            "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            }
+        },
+        {
             "name": "list_attachments",
             "description": "Photos the user handed to AI in myembro.",
             "inputSchema": {
@@ -770,7 +918,7 @@
         },
         {
             "name": "import_picture",
-            "description": "Put a picture you drew into the open design as embroidery, in one undoable step; the answer has the sewing check. SVG is preferred (format svg, the SVG text itself in data): flat shapes with solid fills, at most 4788 bytes and 14 elements, no text, gradients or images; it keeps its own fill colors. PNG or JPEG go in data as base64 and must be small (at most 1000000 base64 characters, few flat colors); colors 2-6 (default 4) sets their thread colors. Each picture becomes its own layer, named title (default 'AI picture n') and your app's name. If it is too large, ask the user to share the picture to myembro instead.",
+            "description": "Open an AI-made picture in myembro's picture input screen. The user must confirm there before a ShapeObject layer is added; this call never changes the design. SVG is preferred: send SVG text in data (flat solid fills, no embedded text/images). Raster PNG, JPEG, BMP, WebP, GIF, HEIF or AVIF must be small base64 (at most 1000000 characters). colors 2-6 (default 4) is the initial color-mode choice. Only the latest pending picture is kept in memory. If too large, ask the user to share the picture to myembro.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -779,7 +927,12 @@
                         "enum": [
                             "svg",
                             "png",
-                            "jpeg"
+                            "jpeg",
+                            "bmp",
+                            "webp",
+                            "gif",
+                            "heif",
+                            "avif"
                         ]
                     },
                     "data": {

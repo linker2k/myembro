@@ -1,0 +1,13 @@
+shape,method,elapsed1_ms,elapsed2_ms,elapsed3_ms,successful_generation_median_ms,stitches,exception_count,status
+square,tatami_fill,1614.186,1391.375,1346.762,1391.375,2580/2580/2580,0,COMPLETE_3_RUNS
+square,contour_fill,638.824,618.801,606.501,618.801,2462/2462/2462,0,COMPLETE_3_RUNS
+square,circular_fill,32739.594,27731.893,29085.536,29085.536,3500/3500/3500,0,COMPLETE_3_RUNS
+square,meander_fill/NC5-11a,477.392,477.612,468.977,,-1/-1/-1,3,EXCEPTION
+square,meander_fill/P3-1,469.909,464.742,468.100,,-1/-1/-1,3,EXCEPTION
+square,meander_fill/N3-11a,459.558,456.175,479.925,,-1/-1/-1,3,EXCEPTION
+circle,tatami_fill,1114.845,1116.525,1102.113,1114.845,2137/2137/2137,0,COMPLETE_3_RUNS
+circle,contour_fill,672.095,672.513,653.014,672.095,1940/1940/1940,0,COMPLETE_3_RUNS
+circle,circular_fill,23715.458,29862.936,27801.817,27801.817,unavailable,0,3_COMPLETED_SAMPLES_ACROSS_2_INTERRUPTED_RUNS
+circle,meander_fill/NC5-11a,376.154,381.096,377.385,,-1/-1/-1,3,EXCEPTION
+circle,meander_fill/P3-1,377.662,377.959,384.816,,-1/-1/-1,3,EXCEPTION
+circle,meander_fill/N3-11a,382.236,371.106,382.451,,-1/-1/-1,3,EXCEPTION
