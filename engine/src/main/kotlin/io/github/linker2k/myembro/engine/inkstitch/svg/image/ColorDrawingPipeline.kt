@@ -86,10 +86,15 @@ object ColorDrawingPipeline {
         return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink)
     }
 
-    fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result {
-        return generate(preview,hoop,true,checkpoint)
+    fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result =
+        generate(preview,hoop,expandMm=0.0,checkpoint=checkpoint)
+
+    /** Optional Ink/Stitch fill expansion; no application default is changed here. */
+    fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,expandMm:Double,checkpoint:(String)->Unit={}):Result {
+        return generate(preview,hoop,true,checkpoint,expandMm=expandMm)
     }
-    internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={}, includeFillOutlines:Boolean=true):Result {
+    internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={},includeFillOutlines:Boolean=true,expandMm:Double=0.0):Result {
+        require(expandMm.isFinite())
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
         val outlines=mutableListOf<ColorFillOutline.Outline>()
         for(layer in preview.layers) {
@@ -110,7 +115,7 @@ object ColorDrawingPipeline {
                     val method=StitchTypeRule.Type.TATAMI
                     checkpoint("stitches")
                     val resolved=StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
-                        if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread)
+                        if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm)
                         else {
                             val polygon=shape as org.locationtech.jts.geom.Polygon
                             val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
