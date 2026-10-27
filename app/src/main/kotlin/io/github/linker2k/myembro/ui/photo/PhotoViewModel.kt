@@ -232,7 +232,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
-                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", "SVG", art, width)
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art, width)
                     val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
@@ -366,11 +366,11 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                         }
                         shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
-                            getApplication<Application>().getString(R.string.photo_name),generated,widthMm)
+                            getApplication<Application>().getString(photoObjectName(selectedStyle)),generated,widthMm)
                         if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(traced,
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(if(selectedStyle==PhotoMode.OUTLINE) R.string.photo_outline_name else R.string.photo_name)),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced.contourCount}")

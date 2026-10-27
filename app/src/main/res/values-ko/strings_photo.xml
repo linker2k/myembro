@@ -77,4 +77,5 @@
     <string name="photo_noise_medium">중</string>
     <string name="photo_noise_strong">강</string>
     <string name="photo_contrast_factor">대비: %1$.2f×</string>
+    <string name="photo_color_name">컬러 그림</string>
 </resources>

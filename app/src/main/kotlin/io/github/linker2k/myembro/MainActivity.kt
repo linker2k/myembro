@@ -227,7 +227,7 @@ class MainActivity : ComponentActivity() {
                                 val id=UUID.randomUUID().toString()
                                 val obj=photo.shapeObject?.let { shape ->
                                     incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id)
-                                } ?: StitchObject(id,incomingPictureTitle ?: context.getString(R.string.photo_name),pattern,transform=transform)
+                                } ?: StitchObject(id,incomingPictureTitle ?: context.getString(io.github.linker2k.myembro.ui.photo.photoObjectName(photo.style)),pattern,transform=transform)
                                 if(photo.shapeObject == null && photo.style == io.github.linker2k.myembro.ui.photo.PhotoMode.COLOR) {
                                     android.widget.Toast.makeText(context,R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()
                                 }
@@ -359,9 +359,9 @@ class MainActivity : ComponentActivity() {
                         // The AI connection notification: the editor on the AI work project, never replacing it.
                         io.github.linker2k.myembro.ui.photo.PictureInbox.ACTION_OPEN -> Unit // STARTED collector opens latest memory request.
                         io.github.linker2k.myembro.ui.editor.AiWorkspace.ACTION_OPEN -> if (stack.lastOrNull() != Screen.EDITOR) stack += Screen.EDITOR
-                        Intent.ACTION_VIEW -> intent.data?.let { uri -> routeIncoming(listOf(uri), view = true) }
+                        Intent.ACTION_VIEW -> routeIncoming(externalUris(intent), view = true)
                         Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
-                            val uris = sharedUris(intent)
+                            val uris = externalUris(intent)
                             if (uris.isNotEmpty()) routeIncoming(uris)
                             else agentReply(intent)?.let { text ->
                                 editor.agent.openReply(text)
@@ -384,14 +384,14 @@ class MainActivity : ComponentActivity() {
         val ticket=inbox.reserve()
         lifecycleScope.launch {
             val rows=withContext(Dispatchers.IO) { uris.map { io.github.linker2k.myembro.ui.photo.inspectPicture(this@MainActivity,it) } }
-            val (pictures,other)=io.github.linker2k.myembro.ui.photo.PictureIntake.partition(rows.map { it.kind })
-            pictures.lastOrNull()?.let { index ->
-                inbox.offer(ticket,uri=rows[index].uri.toString(),colors=aiPictureDraft.consumeExpectedColors())
+            val route=io.github.linker2k.myembro.ui.photo.routePictureSources(rows) { it.kind }
+            route.picture?.let { picture ->
+                inbox.offer(ticket,uri=picture.uri.toString(),colors=aiPictureDraft.consumeExpectedColors())
             }
-            if(other.isNotEmpty()) {
-                val remaining=other.map { uris[it] }
+            if(route.imports.isNotEmpty()) {
+                val remaining=route.imports.map { it.uri }
                 if(otherHandler!=null) otherHandler(remaining)
-                else if(view && pictures.isEmpty() && uris.size==1 && uris.single().scheme!="content") {
+                else if(view && route.picture==null && uris.size==1 && uris.single().scheme!="content") {
                     openPath=null;viewer.open(uris.single());showViewer()
                 } else importUris(remaining)
             }
@@ -406,15 +406,13 @@ class MainActivity : ComponentActivity() {
         else null
 
     /** Streams from a share, plus clip data some apps use instead; links in text are never fetched. */
-    private fun sharedUris(intent: Intent): List<Uri> {
-        val uris = mutableListOf<Uri>()
-        if (intent.action == Intent.ACTION_SEND) {
-            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(uris::add)
-        } else {
-            IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(uris::addAll)
-        }
-        intent.clipData?.let { clip -> for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let(uris::add) }
-        return uris.filter { it.scheme == "content" }.distinct()
+    private fun externalUris(intent: Intent): List<Uri> {
+        // Some senders use ClipData/data, or a list for SEND. Read each representation independently.
+        val single=runCatching { IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) }.getOrNull()
+        val multiple=runCatching { IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) }.getOrNull().orEmpty()
+        val clips=intent.clipData?.let { clip -> (0 until clip.itemCount).mapNotNull { clip.getItemAt(it).uri } }.orEmpty()
+        return io.github.linker2k.myembro.ui.photo.externalInputUris(intent.action,intent.data,
+            listOfNotNull(single)+multiple,clips) { it.scheme=="content" || it.scheme=="file" }
     }
 
     private fun Hoop.spec() = HoopSpec(label, widthMm * 10, heightMm * 10)

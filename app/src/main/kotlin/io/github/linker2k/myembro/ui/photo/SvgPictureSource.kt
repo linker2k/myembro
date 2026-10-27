@@ -16,16 +16,24 @@ internal fun inspectPicture(context: Context, uri: Uri): PictureSource {
     }.getOrNull() ?: uri.lastPathSegment.orEmpty()
     val bytes = try {
         context.contentResolver.openInputStream(uri)?.use { input ->
-            // Same bounded prefix as the SVG limit, plus its overflow sentinel. Raster magic needs 12 bytes.
-            val buffer = ByteArray(SvgPictureInput.MAX_BYTES + 1); var size = 0
-            while (size < buffer.size) {
-                val count = input.read(buffer, size, buffer.size - size)
-                if (count <= 0) break
-                size += count
-            }
-            buffer.copyOf(size)
+            readPicturePrefix(input, name)
         } ?: byteArrayOf()
     } catch (_: java.io.IOException) { byteArrayOf() }
       catch (_: SecurityException) { byteArrayOf() }
     return PictureSource(uri, name, PictureIntake.sniff(bytes, name))
+}
+
+/** Do not drain a shared provider's large/streamed image just to recognize its header. */
+internal fun readPicturePrefix(input: java.io.InputStream, name: String?): ByteArray {
+    val output=java.io.ByteArrayOutputStream()
+    val buffer=ByteArray(8192)
+    val limit=SvgPictureInput.MAX_BYTES+1
+    while(output.size()<limit) {
+        val count=input.read(buffer,0,minOf(buffer.size,limit-output.size()))
+        if(count<=0) break
+        output.write(buffer,0,count)
+        val prefix=output.toByteArray()
+        if(PictureIntake.sniff(prefix,name)!=PictureIntake.Kind.UNKNOWN) return prefix
+    }
+    return output.toByteArray()
 }
