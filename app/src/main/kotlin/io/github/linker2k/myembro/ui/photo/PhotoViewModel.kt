@@ -63,7 +63,9 @@ internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
 
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
-class PhotoViewModel(app: Application) : AndroidViewModel(app) {
+class PhotoViewModel @JvmOverloads constructor(app: Application,
+    private val textureGenerator: ThreadTextureGenerator? = null,
+) : AndroidViewModel(app) {
     var step by mutableIntStateOf(0); private set
     var source by mutableStateOf<Bitmap?>(null); private set
     var isSvg by mutableStateOf(false); private set
@@ -95,6 +97,18 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun changeCorrection(value: PhotoCorrection) {
         if (value == correction || (style == PhotoMode.COLOR && value == PhotoCorrection.OTSU)) return
         correction = value; step = 1; prepare()
+    }
+    var textureOptions by mutableStateOf(ThreadTextureOptions()); private set
+    val textureActive get() = style == PhotoMode.COLOR && textureOptions.enabled
+    val textureAvailable get() = textureGenerator != null
+    private var texturePreview: ThreadTexturePreview? = null
+    fun changeTextureEnabled(enabled: Boolean) = changeTextureOptions(textureOptions.copy(enabled = enabled))
+    fun changeTextureDetail(detail: TextureDetail) = changeTextureOptions(textureOptions.copy(detail = detail))
+    fun changeTextureRunLength(length: TextureRunLength) = changeTextureOptions(textureOptions.copy(runLength = length))
+    private fun changeTextureOptions(value: ThreadTextureOptions) {
+        if (value == textureOptions) return
+        textureOptions = value
+        if (style == PhotoMode.COLOR) { step = 1; prepare() }
     }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
@@ -133,7 +147,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun begin() {
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
-        isSvg = false; svgArt = null
+        isSvg = false; svgArt = null; textureOptions = ThreadTextureOptions()
         correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false; noiseSize = null; contrastFactor = 1f
         zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.COLOR; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
@@ -266,8 +280,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     fun cancel() { work?.cancel(); revision++; busy = false; error = null; if (step == 1) step = 0 }
     fun lowerDetail() { if (detail > 0) changeDetail(detail - 1) else { back() } }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
-    fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy) { step = 2; generateResult() } }
-    private fun invalidateResult() { colorPreview = null; outline = null; separatedPreview = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null }
+    fun next() { if (step == 0) { step = 1; prepare() } else if (outline != null && !busy && (!textureActive || textureAvailable)) { step = 2; generateResult() } }
+    private fun invalidateResult() { texturePreview = null; colorPreview = null; outline = null; separatedPreview = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null }
     private fun prepare() {
         val bitmap = source ?: return
         work?.cancel(); val version = ++revision
@@ -305,6 +319,7 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                             progressStage=if(phase=="quantization") 1 else 2
                         }
                         if(version==revision) {
+                            texturePreview = ThreadTexturePreview.from(preview, corrected.pixels, w, h, selectedGrayscale)
                             colorPreview=preview
                             separatedPreview=Bitmap.createBitmap(preview.previewPixels(),preview.width,preview.height,Bitmap.Config.ARGB_8888)
                         }
@@ -354,6 +369,8 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
     }
     private fun generateResult() {
         val traced = outline ?: return
+        val selectedTexture = textureOptions.copy(enabled = textureActive)
+        val selectedTexturePreview = texturePreview
         work?.cancel(); val version = ++revision; val snapshot = settings; val frame = hoop; val selectedStyle = style
         busy = true; progressStage = 3; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
@@ -361,7 +378,11 @@ class PhotoViewModel(app: Application) : AndroidViewModel(app) {
                 val output = withTimeout(30_000) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
-                    val generatedPattern = if(selectedStyle==PhotoMode.COLOR) {
+                    val generatedPattern = if(selectedStyle==PhotoMode.COLOR && selectedTexture.enabled) {
+                        requireNotNull(selectedTexturePreview).generate(selectedTexture, textureGenerator) {
+                            error("Texture generation must not fall back to ordinary fill")
+                        }
+                    } else if(selectedStyle==PhotoMode.COLOR) {
                         val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
                         }

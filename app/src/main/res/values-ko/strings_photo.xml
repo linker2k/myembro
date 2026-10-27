@@ -77,4 +77,15 @@
     <string name="photo_noise_medium">중</string>
     <string name="photo_noise_strong">강</string>
     <string name="photo_contrast_factor">대비: %1$.2f×</string>
+    <string name="photo_texture">텍스처 표현</string>
+    <string name="photo_texture_experimental">실험</string>
+    <string name="photo_texture_detail">디테일</string>
+    <string name="photo_texture_coarse">거침</string>
+    <string name="photo_texture_normal">보통</string>
+    <string name="photo_texture_fine">세밀</string>
+    <string name="photo_texture_run_length">땀 길이</string>
+    <string name="photo_texture_short">짧게</string>
+    <string name="photo_texture_long">길게</string>
+    <string name="photo_texture_editor_hint">텍스처 자수는 편집기에서 땀 도안으로 열립니다. 색 블럭별로 편집할 수 없습니다.</string>
+    <string name="photo_texture_unavailable">텍스처 표현을 준비하고 있어요. 지금은 끄고 컬러 그림으로 계속할 수 있습니다.</string>
 </resources>

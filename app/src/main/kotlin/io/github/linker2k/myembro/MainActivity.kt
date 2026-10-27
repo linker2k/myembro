@@ -229,7 +229,7 @@ class MainActivity : ComponentActivity() {
                                     incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id)
                                 } ?: StitchObject(id,incomingPictureTitle ?: context.getString(R.string.photo_name),pattern,transform=transform)
                                 if(photo.shapeObject == null && photo.style == io.github.linker2k.myembro.ui.photo.PhotoMode.COLOR) {
-                                    android.widget.Toast.makeText(context,R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()
+                                    android.widget.Toast.makeText(context,if(photo.textureActive) R.string.photo_texture_editor_hint else R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()
                                 }
                                 editor.addPicture(obj)
                                 incomingPictureTitle=null

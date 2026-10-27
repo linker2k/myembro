@@ -77,4 +77,15 @@
     <string name="photo_noise_medium">Medium</string>
     <string name="photo_noise_strong">Strong</string>
     <string name="photo_contrast_factor">Contrast: %1$.2f×</string>
+    <string name="photo_texture">Thread texture</string>
+    <string name="photo_texture_experimental">Experimental</string>
+    <string name="photo_texture_detail">Detail</string>
+    <string name="photo_texture_coarse">Coarse</string>
+    <string name="photo_texture_normal">Normal</string>
+    <string name="photo_texture_fine">Fine</string>
+    <string name="photo_texture_run_length">Stitch length</string>
+    <string name="photo_texture_short">Short</string>
+    <string name="photo_texture_long">Long</string>
+    <string name="photo_texture_editor_hint">Texture embroidery opens as stitches in the editor. Individual color blocks cannot be edited.</string>
+    <string name="photo_texture_unavailable">Thread texture is coming soon. Turn it off to continue with color drawing.</string>
 </resources>
