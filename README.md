@@ -9,7 +9,7 @@ Free and open source.
 
 Current version: **v0.4.0-beta.1 (beta)**
 
-![myembro in one minute](docs/images/intro-en.gif)
+![myembro at a glance](docs/images/intro-en.gif)
 
 ## What you can do
 
@@ -65,13 +65,13 @@ Before you save or send, the app checks every design it makes for five problems 
 4. Stitches longer than 12mm
 5. A broken file, or stitches outside the hoop
 
-If any one is found, saving and sending are blocked. PES files you import are kept exactly as they are.
+If any one is found, saving and sending are blocked. PES files you import are not changed; they are only blocked for severe needle crowding (more than 30 needles in one 0.5mm spot).
 
 ## Known limitations
 
 - The SE400 has no automatic thread cutter. Trim the threads between colors by hand after sewing; the app shows guidance.
 - SE600/SE700 transfer has not been tested on real machines yet.
-- In color drawing, very small pieces (under 3mm²) are removed, and gaps narrower than 0.4mm between colors are filled.
+- In color drawing, very small pieces (under 3mm²) are removed, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
 - Photo stitch generation stops after 1 minute. Pictures with about 100 color areas can hit this; use lower detail or a smaller crop.
 
 ## For developers
