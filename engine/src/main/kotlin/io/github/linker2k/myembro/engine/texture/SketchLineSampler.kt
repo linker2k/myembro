@@ -44,7 +44,7 @@ internal object SketchBresenham {
 }
 
 internal data class LineSearchResult(val destination: PixelPoint, val average: Float)
-internal class SketchLineSampler(private val raster: SketchRaster, private val checkpoint: () -> Unit = {}) {
+internal class SketchLineSampler(private val raster: SketchRaster, private val checkpoint: () -> Unit = {}, private val trace: ((String) -> Unit)? = null) {
     /** One shared winner across all prefixes/directions. Strict '<' preserves upstream tie order. */
     fun find(start: PixelPoint, minLength: Int, maxLength: Int, tests: Int,
              startAngle: Float, deltaAngle: Float, shading: Boolean): LineSearchResult? {
@@ -52,6 +52,7 @@ internal class SketchLineSampler(private val raster: SketchRaster, private val c
         var destination = PixelPoint(0, 0)
         fun candidate(x: Int, y: Int) {
             checkpoint()
+            trace?.invoke("CANDIDATE $x $y")
             var sum = axisPenalty(start, PixelPoint(x, y))
             var count = 0
             var last = PixelPoint(-1, -1)
@@ -61,6 +62,7 @@ internal class SketchLineSampler(private val raster: SketchRaster, private val c
                 } else {
                     sum += raster.luminance(px, py); count++; last = PixelPoint(px, py)
                     val sample = sum.toFloat() / count
+                    trace?.invoke("SAMPLE $px $py $count ${java.lang.Float.floatToIntBits(sample)}")
                     if ((best == -1f || sample < best) && count > minLength) {
                         destination = last; best = sample
                     }
@@ -76,6 +78,7 @@ internal class SketchLineSampler(private val raster: SketchRaster, private val c
                 candidate((cos(angle) * maxLength).toInt() + start.x, (sin(angle) * maxLength).toInt() + start.y)
             }
         }
+        trace?.invoke("WIN ${destination.x} ${destination.y} ${java.lang.Float.floatToIntBits(best)}")
         return if (best == -1f) null else LineSearchResult(destination, best)
     }
     companion object {

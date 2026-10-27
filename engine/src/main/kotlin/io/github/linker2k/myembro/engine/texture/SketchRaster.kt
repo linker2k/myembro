@@ -4,7 +4,7 @@
 package io.github.linker2k.myembro.engine.texture
 
 /** Processing pixels, NOT embroidery coordinates. Inputs are copied; a mask is sampled at integer pixels. */
-class SketchRaster(val width: Int, val height: Int, argb: IntArray, clipMask: BooleanArray? = null) {
+class SketchRaster(val width: Int, val height: Int, argb: IntArray, clipMask: BooleanArray? = null, private val trace: ((String) -> Unit)? = null) {
     private val reference = argb.copyOf()
     private val pixels = argb.copyOf()
     private val mask = clipMask?.copyOf()
@@ -29,12 +29,14 @@ class SketchRaster(val width: Int, val height: Int, argb: IntArray, clipMask: Bo
 
     internal fun setArgb(x: Int, y: Int, argb: Int) {
         val i = y * width + x
+        val oldArgb = pixels[i]
         val old = luminance[i]
         pixels[i] = argb
         val next = perceivedLuminance(argb)
         luminance[i] = next
         if (drawable(x, y)) { sum -= old; sum += next }
         onChange?.invoke(x, y, old, next)
+        trace?.invoke("PIXEL $x $y $oldArgb $argb")
     }
     internal fun whiten(x: Int, y: Int) {
         val alpha = pixels[y * width + x] and -0x1000000
@@ -53,7 +55,7 @@ class SketchRaster(val width: Int, val height: Int, argb: IntArray, clipMask: Bo
 }
 
 /** Same tile traversal, integer-cast selection and incremental average updates as the active cache. */
-internal class DarkestAreaCache(private val raster: SketchRaster) {
+internal class DarkestAreaCache(private val raster: SketchRaster, private val trace: ((String) -> Unit)? = null) {
     private val nominalWidth = maxOf(10, raster.width / 200)
     private val nominalHeight = maxOf(10, raster.height / 200)
     private val sampleWidth = minOf(raster.width, nominalWidth)
@@ -86,7 +88,9 @@ internal class DarkestAreaCache(private val raster: SketchRaster) {
         cached?.let { return it }
         var best = Double.MAX_VALUE
         var bx = -1; var by = -1
-        for (x in 0 until nx) for (y in 0 until ny) if (counts[x][y] != 0) {
+        for (x in 0 until nx) for (y in 0 until ny) {
+            trace?.invoke("TILE $x $y ${counts[x][y]} ${java.lang.Double.doubleToLongBits(samples[x][y])}")
+            if (counts[x][y] == 0) continue
             val sample = samples[x][y].toInt()
             if (bx == -1 || sample < best) { best = sample.toDouble(); bx = x; by = y }
         }

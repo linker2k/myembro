@@ -1,10 +1,10 @@
 # Thread texture: DrawingBotV3 Free source review
 
-Research date: 2026-10-27. Status: source review plus the first restricted Kotlin core; no upstream execution or measured equivalence claim.
+Research date: 2026-10-27. Status: restricted Kotlin core plus the authorized original-source trace comparison below; equivalence is limited to the tested default raster cases.
 
 ## Source, scope, and exclusions
 
-Candidate: DrawingBotV3 **Free v1.6.25**, tag [`v1.6.25-stable-free`](https://github.com/SonarSonic/DrawingBotV3/releases/tag/v1.6.25-stable-free), commit **`0e7c900638def19b9a8d16445099f3f1129aee52`**. All source links below refer to that commit. GitHub's cached `master` responses were insufficient for version verification; the pinned files were subsequently read directly in Chrome, including their numbered file-content text. No repository archive, executable, dependency, or source file was downloaded to the workspace; no upstream code was compiled or run.
+Candidate: DrawingBotV3 **Free v1.6.25**, tag [`v1.6.25-stable-free`](https://github.com/SonarSonic/DrawingBotV3/releases/tag/v1.6.25-stable-free), commit **`0e7c900638def19b9a8d16445099f3f1129aee52`**. All source links below refer to that commit. GitHub's cached `master` responses were insufficient for version verification; the pinned files were subsequently read directly in Chrome, including their numbered file-content text. During the initial source review, no repository archive, executable, dependency, or source file was downloaded to the workspace and no upstream code was compiled or run. The later authorized `/tmp` oracle execution is recorded below.
 
 The repository [LICENSE:1–6](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/LICENSE#L1-L6) contains GPL version 3. The packaging declaration uses `GPLv3+` ([build.gradle:103–105](https://github.com/SonarSonic/DrawingBotV3/blob/0e7c900638def19b9a8d16445099f3f1129aee52/build.gradle#L103-L105)). A future source port must retain authorship/license notices and add exact port attribution and third-party notices. The initial research commit `ce8b5a1` copied no code; the first implementation unit below adds the attributed Kotlin adaptation.
 
@@ -70,7 +70,7 @@ The final generated pattern must pass existing SewoutCheck, PecViewportCheck, an
 
 ## Proposed comparison and acceptance procedure
 
-No oracle was executed in this research unit. The following is a future plan requiring authorization for any upstream download/build/run.
+No oracle was executed in the initial research unit. The following was its proposed plan; execution was subsequently authorized on 2026-10-27, with results below.
 
 1. Request upstream traces at the pinned commit, or later run an explicitly authorized reference harness. Use repository-owned/generated small raster fixtures: white/black, gray ramp, isolated dark dot, horizontal/vertical/diagonal strokes, equal-tone tiles, transparency, edge clipping, and a small multicolor drawing. Include dimensions below 10 and nonmultiples of tile size. Save effective settings, raster/reference hashes, seed, pen width, backend and clipping with every trace.
 2. Compare intermediate stages **exactly**: RNG draw sequence; tile sums/selected pixel; ordered candidate endpoints; prefix counts/scores/winner; per-line erase amount; changed pixels; sampled ARGB; squiggle boundaries; termination reason. Report first mismatch index and values. Default whole-image output must match ordered coordinates/count/hash before any stitch resampling or pen optimization; screenshots alone are insufficient.
@@ -102,3 +102,18 @@ Next adapter decision is approved but **not implemented** here: preserve each li
 Local tests: `./gradlew :engine:test --tests '*SketchLinesTest'` checks white/fully-clipped/isolated inputs, same-seed repeatability, reference color sampling, axis penalty/prefix tie handling, default sampled RNG ranges, Java bounded sequence (including power-of-two/overflow ranges), normalization, progress formula/line limit, cancellation, tile selection/remainder/cache updates and pixel traversal. No private image or external program is used. Official equivalence and physical sewing quality are still unconfirmed.
 
 Verification for this unit: `:engine:test --tests '*SketchLinesTest'` — 19 tests, 0 failures/errors, `BUILD SUCCESSFUL in 18s`. Subsequent full `:engine:test` — 966 tests in 173 suites, 0 failures/errors, `BUILD SUCCESSFUL in 1m 27s`. Logs: `/tmp/myembro-texture-core-test.log`, `/tmp/myembro-texture-engine-test.log`. These counts are local contract/regression results, not upstream-oracle or sew-out approval.
+
+
+## Authorized original-source comparison (2026-10-27)
+
+User authorization explicitly permitted receiving the pinned sources only under `/tmp/myembro-dbv3-oracle/` and compiling/executing a minimal line harness, excluding JavaFX/application execution, installation scripts and additional network dependencies. That scope was followed. Original source files, compile-unit adaptations, harness and classes remain in `/tmp`; no original Java source or JAR is committed.
+
+The harness executes the original full PFMSketchLinesBasic/AbstractSketchPFM, active sampler/scorers, ARGBY/RawData and darkest-area cache with observation-only trace insertions. It selects the original Bresenham/luminance/color/erase helper bodies and replaces desktop task/canvas/geometry boundaries with restricted glue. This is an original algorithm oracle **after raster preprocessing**, not the full desktop application. Exact source hashes, adapter/stub boundaries, commands and event format are recorded in [the fixture provenance](../../engine/src/test/resources/drawingbot-oracle/README.md).
+
+Ten repo-owned synthetic cases were run with registered defaults and seed 0: white, black, gray ramp, one dark dot, horizontal/vertical/diagonal lines, equal-tone tiles, a 7×6 raster and a 23×13 remainder raster. Traces include input hash; RNG order; tile average bits; selected pixels; candidate coordinates; prefix counts/score bits; final winner; erase amount; every pixel write; sampled original ARGB; squiggle boundaries; progress bits and termination reason.
+
+`./gradlew :engine:test --tests '*SketchOracleTest' --tests '*SketchLinesTest'` passed 29/29. `python3 tools/check_thread_texture_oracle.py /tmp/myembro-dbv3-oracle/out engine/build/texture-oracle-port` reported **10/10 PASS, 46,043 events and 318 lines byte-for-byte equal, first difference: none**. No line-generation fix was required. Optional trace hooks are the only production changes in this unit; the persisted goldens are text traces only. Normal CI compares the Kotlin port with frozen text and never downloads or executes upstream.
+
+Limits remain: these results do not establish parity for clipping geometry, alternate seed/settings combinations, raster preprocessing, composite/variable-width rendering, full-app optimization, multicolor embroidery mapping, PES safety or actual sew-out quality. The next embroidery adapter remains a separate unit.
+
+Full regression for the authorized oracle unit: `./gradlew :engine:test` — 976/976, 0 failures/errors, `BUILD SUCCESSFUL in 1m 26s`.

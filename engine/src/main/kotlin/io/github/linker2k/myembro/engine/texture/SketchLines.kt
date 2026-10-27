@@ -75,32 +75,37 @@ object SketchLines {
     }
 
     fun render(width: Int, height: Int, argb: IntArray, clipMask: BooleanArray? = null,
-               settings: SketchSettings = SketchSettings(), isCancelled: () -> Boolean = { false },
+               settings: SketchSettings = SketchSettings(), trace: ((String) -> Unit)? = null, isCancelled: () -> Boolean = { false },
                onProgress: (SketchProgress) -> Unit = {}): SketchResult {
         val s = settings.normalized()
-        val raster = SketchRaster(width, height, argb, clipMask)
+        val raster = SketchRaster(width, height, argb, clipMask, trace)
         val lines = mutableListOf<SketchLine>()
         var p = SketchProgress(0.0, 0.0, 0.0)
         if (raster.pixelCount == 0) return SketchResult(emptyList(), SketchTermination.NO_DRAWABLE_PIXELS, p)
         val initial = raster.averageLuminance()
         val random = SketchRandom(s.seed)
         fun checkpoint() { if (isCancelled() || Thread.currentThread().isInterrupted) throw CancellationException() }
-        val sampler = SketchLineSampler(raster, ::checkpoint)
-        val cache = DarkestAreaCache(raster)
+        val sampler = SketchLineSampler(raster, ::checkpoint, trace)
+        val cache = DarkestAreaCache(raster, trace)
         var current = PixelPoint(0, 0)
         var squiggle = 0
         var fails = 0
         fun update(): Boolean {
             p = progress(initial, raster.averageLuminance(), lines.size, s)
+            trace?.invoke("PROGRESS ${java.lang.Double.doubleToLongBits(p.lineProgress)} ${java.lang.Double.doubleToLongBits(p.luminanceProgress)} ${java.lang.Double.doubleToLongBits(p.actual)}")
             onProgress(p)
             return p.actual >= 1
         }
-        fun finished() = SketchResult(lines.toList(),
-            if (p.lineProgress >= 1) SketchTermination.LINE_LIMIT else SketchTermination.LUMINANCE, p)
+        fun finished(): SketchResult {
+            val reason = if (p.lineProgress >= 1) SketchTermination.LINE_LIMIT else SketchTermination.LUMINANCE
+            trace?.invoke("END $reason ${lines.size}")
+            return SketchResult(lines.toList(), reason, p)
+        }
         fun emit(start: PixelPoint, end: PixelPoint, linking: Boolean = false) {
             val x = raster.luminance(current.x, current.y) / 255.0
             val y = (x * x * x * s.tone) + (x * (1 - s.tone))
             val erase = (s.eraseMin + y * (s.eraseMax - s.eraseMin)).toInt()
+            trace?.invoke("ERASE $erase ${java.lang.Float.floatToIntBits(1f)}")
             val sums = IntArray(4)
             var count = 0
             SketchBresenham.line(start, end) { px, py ->
@@ -114,6 +119,7 @@ object SketchLines {
             var sampled = 0
             if (count != 0) for (c in 0..3) sampled = sampled or ((sums[c] / count) shl (24 - c * 8))
             lines += SketchLine(start, end, sampled, squiggle, linking)
+            trace?.invoke("LINE ${start.x} ${start.y} ${end.x} ${end.y} $sampled")
         }
         try {
             checkpoint()
@@ -122,8 +128,10 @@ object SketchLines {
                 checkpoint()
                 val last = current
                 current = cache.next() ?: return SketchResult(lines.toList(), SketchTermination.NO_DRAWABLE_PIXELS, p)
+                trace?.invoke("SELECT ${current.x} ${current.y}")
                 // Preserve the source's AND test for links, rather than silently changing it to OR.
                 if (!s.shouldLiftPen && squiggle > 0 && last.x != current.x && last.y != current.y) emit(last, current, true)
+                trace?.invoke("SQUIGGLE_BEGIN $squiggle")
                 val darkness = raster.luminance(current.x, current.y).toFloat()
                 val allowable = if (!s.shouldLiftPen) DESIRED_LUMINANCE else darkness + maxOf(1f, DESIRED_LUMINANCE * s.squiggleMaxDeviation)
                 var failed = false
@@ -132,7 +140,9 @@ object SketchLines {
                     checkpoint()
                     val shading = s.enableShading && s.shadingThreshold < p.luminanceProgress
                     val angle = random.float(s.startAngleMin.toFloat(), s.startAngleMax.toFloat())
+                    trace?.invoke("RNG_F ${java.lang.Float.floatToIntBits(angle)}")
                     val length = random.int(s.minLineLength, s.maxLineLength)
+                    trace?.invoke("RNG_I $length")
                     val found = sampler.find(current, s.minLineLength, length, if (s.unlimitedTests) -1 else s.lineTests,
                         angle, if (shading) s.shadingDeltaAngle else s.drawingDeltaAngle, shading)
                     if (found == null) { failed = true; break }
@@ -141,12 +151,16 @@ object SketchLines {
                     if (!s.shouldLiftPen && found.average > allowable) { failed = true; break }
                     emit(current, found.destination)
                     current = found.destination
-                    if (update()) return finished()
+                    if (update()) { trace?.invoke("SQUIGGLE_END $squiggle"); return finished() }
                     segment++
                 }
+                trace?.invoke("SQUIGGLE_END $squiggle")
                 squiggle++
                 if (failed) { raster.whiten(current.x, current.y); fails++ } else fails = 0
-                if (fails >= 1000) return SketchResult(lines.toList(), SketchTermination.FAILED_SEARCH, p)
+                if (fails >= 1000) {
+                    trace?.invoke("END FAILED_SEARCH ${lines.size}")
+                    return SketchResult(lines.toList(), SketchTermination.FAILED_SEARCH, p)
+                }
             }
         } catch (_: CancellationException) {
             return SketchResult(lines.toList(), SketchTermination.CANCELLED, p)
