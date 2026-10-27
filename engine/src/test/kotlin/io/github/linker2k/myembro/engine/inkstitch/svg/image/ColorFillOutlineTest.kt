@@ -38,6 +38,29 @@ class ColorFillOutlineTest {
         assertTrue(ColorFillOutline.safe(groups,HoopSpec.H100))
         assertFalse(ColorFillOutline.safe(List(10) { groups }.flatten(),HoopSpec.H100))
     }
+    @Test fun batchChecksOnceWhenAllOutlinesPassAndResolvesDensityOwners() {
+        val thread=PecThreads.SET.filterNotNull().first()
+        fun outline(x:Int)=ColorFillOutline.stitchGroups(WKTReader().read(
+            "POLYGON (($x 0,${x+200} 0,${x+200} 200,$x 200,$x 0))") as Polygon,thread)
+        val first=outline(0);val second=outline(300)
+        // The baseline deliberately has no needle in the proposed outlines' cells.
+        val base=listOf(StitchGroup(thread,listOf(Stitch(SP(-100.0,-100.0)),Stitch(SP(-90.0,-100.0)))))
+        val all=ColorFillOutline.select(base,listOf(ColorFillOutline.Outline(1,0,first)),HoopSpec.H100)
+        assertEquals(1,all.checks);assertTrue(all.skipped.isEmpty())
+        val base2=base+base.first().copy(stitches=base.first().stitches.map { it.copy(x=it.x+20) })
+        val resolved=ColorFillOutline.select(base2,listOf(
+            ColorFillOutline.Outline(1,0,List(10) { first }.flatten()),
+            ColorFillOutline.Outline(2,1,second)),HoopSpec.H100)
+        assertEquals(setOf(0),resolved.skipped)
+        assertEquals(2,resolved.checks)
+        assertTrue(ColorFillOutline.safe(resolved.groups,HoopSpec.H100))
+        val invalidBaseline=List(10) { first }.flatten()
+        val fallback=ColorFillOutline.select(invalidBaseline,listOf(
+            ColorFillOutline.Outline(invalidBaseline.size,7,second)),HoopSpec.H100)
+        assertEquals(invalidBaseline,fallback.groups)
+        assertEquals(setOf(7),fallback.skipped)
+        assertEquals(1,fallback.checks)
+    }
     @Test fun facePreservesRegionsColorsAndFragmentsAndPassesEncodedGate() {
         val image=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
         val preview=ColorDrawingPipeline.trace(image.width,image.height,image.getRGB(0,0,image.width,image.height,null,0,image.width),40.0,4)

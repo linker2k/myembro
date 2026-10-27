@@ -91,7 +91,7 @@ object ColorDrawingPipeline {
     }
     internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={}, includeFillOutlines:Boolean=true):Result {
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
-        val outlines=mutableListOf<Triple<Int,Int,List<StitchGroup>>>()
+        val outlines=mutableListOf<ColorFillOutline.Outline>()
         for(layer in preview.layers) {
             checkpoint("stitches")
             val outline=layer.outline;val thread=layer.thread
@@ -128,7 +128,7 @@ object ColorDrawingPipeline {
                         lockStart=tagged(group.lockStart),lockEnd=tagged(group.lockEnd)) } else input
                     groups+=tagGroups(next)
                     if(includeFillOutlines && resolved.type==StitchTypeRule.Type.TATAMI)
-                        outlines+=Triple(groups.size,regions.size,tagGroups(ColorFillOutline.stitchGroups(shape as org.locationtech.jts.geom.Polygon,thread)))
+                        outlines+=ColorFillOutline.Outline(groups.size,regions.size,tagGroups(ColorFillOutline.stitchGroups(shape as org.locationtech.jts.geom.Polygon,thread)))
 
                     val polygon=shape as org.locationtech.jts.geom.Polygon
                     val sourcePaths=(listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN))
@@ -136,25 +136,17 @@ object ColorDrawingPipeline {
                     regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded,sourcePaths)
                 }
             }
-        // All fills are present before testing outlines: a later fill must never disappear because
-        // an earlier optional outline consumed its density budget.
-        var offset=0
-        for((index,regionIndex,outlineGroups) in outlines) {
-            checkpoint("outline validation")
-            val insertion=index+offset
-            val joinedOutline=outlineGroups.dropLast(1)+outlineGroups.last().copy(trimAfter=groups[insertion-1].trimAfter)
-            val candidate=groups.take(insertion-1)+groups[insertion-1].copy(trimAfter=false)+joinedOutline+groups.drop(insertion)
-            if(ColorFillOutline.safe(candidate,hoop)) {
-                groups[insertion-1]=groups[insertion-1].copy(trimAfter=false)
-                groups.addAll(insertion,joinedOutline);offset+=joinedOutline.size
-            } else regions[regionIndex]=regions[regionIndex].copy(outlineSkipped=true)
-        }
+        val selection=ColorFillOutline.select(groups,outlines,hoop) { checkpoint("outline validation") }
+        val selectedGroups=selection.groups.toList()
+        groups.clear();groups.addAll(selectedGroups)
+        for(regionIndex in selection.skipped) regions[regionIndex]=regions[regionIndex].copy(outlineSkipped=true)
         val owners=mutableListOf<String?>()
         val finished=if(groups.isEmpty()) io.github.linker2k.myembro.engine.model.EmbPattern(emptyList(),emptyList())
             else GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true,stitchOwners=owners)
         val pattern=io.github.linker2k.myembro.engine.model.EmbPattern(finished.stitches,finished.threads,
             finished.metadata+mapOf("myembro.excluded_regions" to regions.count { it.excluded }.toString(),
-                "myembro.skipped_fill_outlines" to regions.count { it.outlineSkipped }.toString()),finished.warnings)
+                "myembro.skipped_fill_outlines" to regions.count { it.outlineSkipped }.toString(),
+                "myembro.fill_outline_checks" to selection.checks.toString()),finished.warnings)
         val threads=regions.filter { !it.excluded && it.groups>0 }.mapIndexed { i,r -> "region-$i" to r.thread }.toMap()
         val fragments=if(captureRegions && groups.isNotEmpty()) io.github.linker2k.myembro.engine.inkstitch.svg.RegionOrderPatterns.split(finished,owners,threads) else emptyMap()
         return Result(pattern,regions,fragments)
