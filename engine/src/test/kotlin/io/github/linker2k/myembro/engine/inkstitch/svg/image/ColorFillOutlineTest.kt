@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.linker2k.myembro.engine.inkstitch.svg.image
+
+import io.github.linker2k.myembro.engine.geometry.*
+import io.github.linker2k.myembro.engine.inkstitch.elements.*
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
+import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
+import io.github.linker2k.myembro.engine.inkstitch.utils.Point as SP
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.io.*
+import io.github.linker2k.myembro.engine.sewout.*
+import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.geom.Polygon
+import javax.imageio.ImageIO
+import kotlin.test.*
+
+class ColorFillOutlineTest {
+    @Test fun exteriorAndHoleAreExactlyTheExistingBeanStrokePort() {
+        val polygon=WKTReader().read("POLYGON ((0 0,200 0,200 200,0 200,0 0),(50 50,50 150,150 150,150 50,50 50))") as Polygon
+        val thread=PecThreads.SET.filterNotNull().first()
+        val actual=ColorFillOutline.stitchGroups(polygon,thread)
+        val rings=listOf(polygon.exteriorRing,polygon.getInteriorRingN(0))
+        val expected=Stroke(rings.map { ring -> ring.coordinates.map { SP(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread,
+            StrokeParameters(repeats=1,bean_stitch_repeats=listOf(1),running_stitch_length_mm=listOf(1.655))).toStitchGroups(null)
+        assertEquals(2,actual.size)
+        assertEquals(expected.map { it.stitches },actual.map { it.stitches })
+        actual.forEach { group ->
+            assertEquals(thread,group.color)
+            for(i in 1 until group.stitches.size-2 step 3) {
+                assertEquals(group.stitches[i],group.stitches[i+2])
+                assertEquals(group.stitches[i-1],group.stitches[i+1])
+            }
+        }
+    }
+    @Test fun cumulativeDensityRejectsOnlyOptionalOutline() {
+        val polygon=WKTReader().read("POLYGON ((0 0,200 0,200 200,0 200,0 0))") as Polygon
+        val groups=ColorFillOutline.stitchGroups(polygon,PecThreads.SET.filterNotNull().first())
+        assertTrue(ColorFillOutline.safe(groups,HoopSpec.H100))
+        assertFalse(ColorFillOutline.safe(List(10) { groups }.flatten(),HoopSpec.H100))
+    }
+    @Test fun facePreservesRegionsColorsAndFragmentsAndPassesEncodedGate() {
+        val image=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
+        val preview=ColorDrawingPipeline.trace(image.width,image.height,image.getRGB(0,0,image.width,image.height,null,0,image.width),40.0,4)
+        val before=ColorDrawingPipeline.generate(preview,HoopSpec.H100,true,{},false)
+        val after=ColorDrawingPipeline.generate(preview)
+        assertEquals(before.excludedCount,after.excludedCount)
+        assertEquals(before.regions.map { it.paths },after.regions.map { it.paths })
+        assertEquals(before.pattern.threads,after.pattern.threads)
+        assertTrue(after.pattern.stitchCount>before.pattern.stitchCount)
+        assertTrue(after.skippedOutlineCount>0,"Fixture exercises automatic outline omission")
+        assertEquals(after.skippedOutlineCount.toString(),after.pattern.metadata["myembro.skipped_fill_outlines"])
+        assertEquals(before.regionPatterns.keys,after.regionPatterns.keys)
+        val bytes=PesWriter.write(after.pattern)
+        assertTrue(PecViewportCheck.check(bytes,HoopSpec.H100).valid)
+        assertFalse(SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
+        println("FILL_OUTLINE before=${before.pattern.stitchCount} after=${after.pattern.stitchCount} skipped=${after.skippedOutlineCount} regions=${after.regions.size}")
+    }
+}
