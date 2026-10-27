@@ -1,0 +1,4 @@
+background	frame_mm	plot_lines	before_stitches	after_stitches	excluded_lines	after_peak	sewout
+lavender	40	1876	3594	2997	154	6	PASS
+white	40	1486	2505	2505	0	6	PASS
+transparent	40	1486	2447	2447	0	6	PASS
