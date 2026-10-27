@@ -142,10 +142,10 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         modifier=Modifier.semantics { contentDescription=noiseLabel })
                     val contrastLabel = stringResource(R.string.photo_contrast_factor, vm.contrastFactor)
                     Text(contrastLabel, style=MaterialTheme.typography.labelLarge)
+                    // 0.5–2.0 is a product choice (unconfirmed), not an upstream default; see docs/photo-filters.md.
                     Slider(vm.contrastFactor, vm::changeContrast, valueRange=0.5f..2f,
                         enabled=!vm.correctionAlphaBypassed,
                         modifier=Modifier.semantics { contentDescription=contrastLabel })
-                    Text(stringResource(R.string.photo_contrast_range_unconfirmed), style=MaterialTheme.typography.bodySmall)
                     if (vm.style != PhotoMode.COLOR) {
                         FilterChip(selected=vm.correction==PhotoCorrection.OTSU,
                             onClick={ vm.changeCorrection(if(vm.correction==PhotoCorrection.OTSU) PhotoCorrection.ORIGINAL else PhotoCorrection.OTSU) },

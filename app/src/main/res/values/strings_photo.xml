@@ -29,7 +29,7 @@
     <string name="photo_crop_accessibility">Photo in hoop frame. Pinch and drag to crop</string>
     <string name="photo_name">Photo silhouette</string>
     <string name="photo_load_failed">Unable to open the photo. Choose another image.</string>
-    <string name="photo_generate_failed">Contrast was retried once, but no usable outlines remain. The two-color preview shows the separation. Try clear drawings, logos or handwriting.</string>
+    <string name="photo_generate_failed">No usable outlines remain. Check the two-color preview. Try clear drawings, logos or handwriting.</string>
     <string name="photo_save_failed">Unable to prepare the file for transfer. Try again.</string>
     <string name="photo_file_stem">photo_silhouette</string>
     <string name="photo_progress_decode">Opening photo</string>
@@ -69,13 +69,12 @@
     <string name="photo_correction_clean">Clean</string>
     <string name="photo_correction_contrast">Contrast</string>
     <string name="photo_correction_otsu">Black-and-white separation</string>
-    <string name="photo_correction_alpha_hint">Color images with transparency keep the original processing.</string>
-    <string name="photo_correction_failed">No usable outlines remain with this correction. Try Original or a simpler crop.</string>
+    <string name="photo_correction_alpha_hint">Noise reduction and contrast are unavailable for color images with transparency.</string>
+    <string name="photo_correction_failed">No usable outlines remain with this correction. Reduce noise reduction, set contrast to 1.0 or try a simpler crop.</string>
     <string name="photo_noise">Noise reduction: %1$s</string>
     <string name="photo_noise_off">Off</string>
     <string name="photo_noise_weak">Weak</string>
     <string name="photo_noise_medium">Medium</string>
     <string name="photo_noise_strong">Strong</string>
     <string name="photo_contrast_factor">Contrast: %1$.2f×</string>
-    <string name="photo_contrast_range_unconfirmed">0.5–2.0 range: product choice (unconfirmed).</string>
 </resources>
