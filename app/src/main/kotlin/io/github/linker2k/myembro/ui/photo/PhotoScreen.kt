@@ -85,7 +85,10 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 style = MaterialTheme.typography.headlineSmall)
             Text(Dimensions.size(vm.hoop.width / 10.0, vm.hoop.height / 10.0), style = MaterialTheme.typography.bodySmall)
             if (vm.busy) {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
+                if(vm.textureActive && vm.step==2) {
+                    LinearProgressIndicator(progress={vm.textureProgress},modifier=Modifier.fillMaxWidth())
+                    Text(stringResource(R.string.photo_texture_progress,(vm.textureProgress*100).toInt()))
+                } else LinearProgressIndicator(Modifier.fillMaxWidth())
                 Text(stringResource(when (vm.progressStage) {
                     0 -> R.string.photo_progress_decode
                     1 -> R.string.photo_progress_quantize
@@ -179,9 +182,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                             modifier=Modifier.semantics { contentDescription=colorLabel })
                         Text(stringResource(R.string.photo_color_hint),style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                         ThreadTextureControls(vm.textureOptions, !vm.busy, vm::changeTextureEnabled,
-                            vm::changeTextureDetail, vm::changeTextureRunLength)
-                        if (vm.textureActive && !vm.textureAvailable) Text(stringResource(R.string.photo_texture_unavailable),
-                            style=MaterialTheme.typography.bodySmall, color=colors.onSurfaceVariant)
+                            vm::changeTextureDetail)
 
                     } else {
                     Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
@@ -219,12 +220,12 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             if(vm.step==2 && vm.excludedCount>0) Text(stringResource(R.string.photo_excluded_regions,vm.excludedCount),color=colors.onSurfaceVariant)
             vm.error?.let { Text(stringResource(it), color = colors.error) }
             if (vm.step < 2) Button(onClick = vm::next,
-                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.outline != null && (!vm.textureActive || vm.textureAvailable)), modifier = Modifier.fillMaxWidth()) {
+                enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.previewReady), modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.photo_next))
             } else {
                 if (!vm.isSvg && !vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onEdit, enabled = !vm.busy && (vm.render?.pattern?.stitchCount ?: 0)>0, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
+                OutlinedButton(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
                 Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
                 }
             }
@@ -284,7 +285,7 @@ private fun OutlinePreview(outline: RedworkOutline,style: PhotoMode) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolean,
-    onEnabled: (Boolean) -> Unit, onDetail: (TextureDetail) -> Unit, onLength: (TextureRunLength) -> Unit,
+    onEnabled: (Boolean) -> Unit, onDetail: (TextureDetail) -> Unit,
 ) {
     val label = stringResource(R.string.photo_texture)
     Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically,
@@ -307,19 +308,6 @@ private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolea
                         TextureDetail.COARSE -> R.string.photo_texture_coarse
                         TextureDetail.NORMAL -> R.string.photo_texture_normal
                         TextureDetail.FINE -> R.string.photo_texture_fine
-                    }))
-                }
-            }
-        }
-        Text(stringResource(R.string.photo_texture_run_length), style=MaterialTheme.typography.labelLarge)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            TextureRunLength.entries.forEachIndexed { i, value ->
-                SegmentedButton(selected=options.runLength==value, onClick={onLength(value)}, enabled=enabled,
-                    shape=SegmentedButtonDefaults.itemShape(i, TextureRunLength.entries.size)) {
-                    Text(stringResource(when(value) {
-                        TextureRunLength.SHORT -> R.string.photo_texture_short
-                        TextureRunLength.NORMAL -> R.string.photo_texture_normal
-                        TextureRunLength.LONG -> R.string.photo_texture_long
                     }))
                 }
             }

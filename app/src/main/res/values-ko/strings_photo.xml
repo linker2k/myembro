@@ -83,9 +83,10 @@
     <string name="photo_texture_coarse">거침</string>
     <string name="photo_texture_normal">보통</string>
     <string name="photo_texture_fine">세밀</string>
-    <string name="photo_texture_run_length">땀 길이</string>
-    <string name="photo_texture_short">짧게</string>
-    <string name="photo_texture_long">길게</string>
     <string name="photo_texture_editor_hint">텍스처 자수는 편집기에서 땀 도안으로 열립니다. 색 블럭별로 편집할 수 없습니다.</string>
-    <string name="photo_texture_unavailable">텍스처 표현을 준비하고 있어요. 지금은 끄고 컬러 그림으로 계속할 수 있습니다.</string>
+    <string name="photo_texture_name">실 그림 텍스처</string>
+    <string name="photo_texture_file_stem">thread_texture</string>
+    <string name="photo_texture_dense">너무 빽빽해요: 크기를 키우거나 디테일을 거침으로 바꿔 주세요.</string>
+    <string name="photo_texture_blocked">봉제 점검에서 차단됐어요. 크기나 디테일을 바꾼 뒤 편집하거나 보내 주세요.</string>
+    <string name="photo_texture_progress">실 그림 텍스처 만드는 중 · %1$d%%</string>
 </resources>

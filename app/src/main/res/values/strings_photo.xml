@@ -83,9 +83,10 @@
     <string name="photo_texture_coarse">Coarse</string>
     <string name="photo_texture_normal">Normal</string>
     <string name="photo_texture_fine">Fine</string>
-    <string name="photo_texture_run_length">Stitch length</string>
-    <string name="photo_texture_short">Short</string>
-    <string name="photo_texture_long">Long</string>
     <string name="photo_texture_editor_hint">Texture embroidery opens as stitches in the editor. Individual color blocks cannot be edited.</string>
-    <string name="photo_texture_unavailable">Thread texture is coming soon. Turn it off to continue with color drawing.</string>
+    <string name="photo_texture_name">Thread picture texture</string>
+    <string name="photo_texture_file_stem">thread_texture</string>
+    <string name="photo_texture_dense">Too dense: increase the size or choose Coarse detail.</string>
+    <string name="photo_texture_blocked">The sewing check blocked this texture. Adjust the size or detail before editing or sending.</string>
+    <string name="photo_texture_progress">Drawing thread texture · %1$d%%</string>
 </resources>

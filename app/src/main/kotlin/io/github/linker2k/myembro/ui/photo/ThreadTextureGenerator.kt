@@ -1,33 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.ui.photo
 
-import io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorDrawingPipeline
-import io.github.linker2k.myembro.engine.inkstitch.svg.image.Bt709Grayscale
-import io.github.linker2k.myembro.engine.model.EmbPattern
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.*
+import io.github.linker2k.myembro.engine.model.*
+import io.github.linker2k.myembro.engine.texture.*
+import io.github.linker2k.myembro.engine.io.*
+import io.github.linker2k.myembro.engine.sewout.*
 
-/** UI choices only. Numerical parameters must be supplied by the verified engine adapter. */
-enum class TextureDetail { COARSE, NORMAL, FINE }
-enum class TextureRunLength { SHORT, NORMAL, LONG }
-data class ThreadTextureOptions(
-    val enabled: Boolean = false,
-    val detail: TextureDetail = TextureDetail.NORMAL,
-    val runLength: TextureRunLength = TextureRunLength.NORMAL,
-)
+/** UI mapping approved against the 108-case engine raster-pitch sweep. */
+enum class TextureDetail {
+    COARSE, NORMAL, FINE;
+    val pitchMmPerPixel: Double get() = when (this) {
+        FINE -> TextureRasterPolicy.fineMinimumMmPerPixel
+        NORMAL -> TextureRasterPolicy.coarseMmPerPixel.first()
+        COARSE -> TextureRasterPolicy.coarseMmPerPixel.last()
+    }
+}
+data class ThreadTextureOptions(val enabled: Boolean = false, val detail: TextureDetail = TextureDetail.FINE)
 
-/**
- * App-side seam, not a stitch algorithm. Input is the corrected (and optionally grayscale) ARGB
- * raster before quantization and the shared RGB Wu palette. Output uses engine 0.1mm
- * coordinates. The future adapter must bind current physical size/hoop/thread settings and
- * deliver a finished pattern; the existing PES writer and SewoutCheck still gate transfer.
- * There is deliberately no production fake or fallback to ordinary fill.
- */
+/** Corrected pre-quantization ARGB and matched Brother threads; native output units are 0.1mm. */
 fun interface ThreadTextureGenerator {
-    fun generate(pixels: IntArray, w: Int, h: Int, palette: List<Int>,
-        detail: TextureDetail, runLength: TextureRunLength): EmbPattern
+    fun generate(pixels: IntArray, w: Int, h: Int, palette: List<EmbThread>, detail: TextureDetail): EmbPattern
 }
 
-/** Prepared in step 2; does no stitching. Generation is explicit in step 3 only. */
-class ThreadTexturePreview private constructor(pixels: IntArray, val width: Int, val height: Int, palette: List<Int>, displayPixels: IntArray) {
+/** Only the engine supplies plotting, running stitches, locks and finalization. */
+class EngineThreadTextureGenerator(private val widthMm: Double, private val hoop: HoopSpec,
+    private val isCancelled: () -> Boolean = { false }, private val onProgress: (Double) -> Unit = {},
+) : ThreadTextureGenerator {
+    override fun generate(pixels: IntArray, w: Int, h: Int, palette: List<EmbThread>, detail: TextureDetail): EmbPattern =
+        ThreadTextureAdapter.generate(w,h,pixels,widthMm,palette,hoop,
+            pitchMmPerPixel=detail.pitchMmPerPixel,
+            isCancelled={ Thread.currentThread().isInterrupted || isCancelled() },
+            onProgress={ onProgress(it.actual.coerceIn(0.0,1.0)) }).pattern
+}
+
+/** Prepared in step 2 without contour tracing/stitching. Original pixels retain tonal variation. */
+class ThreadTexturePreview private constructor(pixels: IntArray, val width: Int, val height: Int,
+    palette: List<EmbThread>, displayPixels: IntArray,
+) {
     private val pixels = pixels.copyOf()
     private val palette = palette.toList()
     private val displayPixels = displayPixels.copyOf()
@@ -38,12 +49,37 @@ class ThreadTexturePreview private constructor(pixels: IntArray, val width: Int,
     fun previewPixels() = displayPixels.copyOf()
     fun generate(options: ThreadTextureOptions, generator: ThreadTextureGenerator?, ordinary: () -> EmbPattern): EmbPattern {
         if (!options.enabled) return ordinary()
-        return requireNotNull(generator) { "Thread texture generator is not connected" }
-            .generate(pixels.copyOf(), width, height, palette.toList(), options.detail, options.runLength)
+        return requireNotNull(generator).generate(pixels.copyOf(),width,height,palette.toList(),options.detail)
     }
     companion object {
+        fun prepare(correctedPixels: IntArray, width: Int, height: Int, colors: Int, grayscale: Boolean): ThreadTexturePreview {
+            val input = if(grayscale) IntArray(correctedPixels.size) { Bt709Grayscale.argb(correctedPixels[it]) } else correctedPixels
+            val palette = ThreadTextureAdapter.brotherPalette(input,colors).let { threads ->
+                if(grayscale) threads.map { Bt709Grayscale.nearestThread(it.color) }.distinctBy { it.color } else threads
+            }
+            return ThreadTexturePreview(input,width,height,palette,input)
+        }
+        // Legacy shared-color preview adapter retained for the default-off regression tests.
         fun from(preview: ColorDrawingPipeline.Preview, correctedPixels: IntArray, width: Int, height: Int, grayscale: Boolean) =
-            ThreadTexturePreview(if (grayscale) IntArray(correctedPixels.size) { Bt709Grayscale.argb(correctedPixels[it]) }
-                else correctedPixels, width, height, preview.palette, preview.previewPixels())
+            ThreadTexturePreview(if(grayscale) IntArray(correctedPixels.size) { Bt709Grayscale.argb(correctedPixels[it]) }
+                else correctedPixels,width,height,preview.layers.map { it.thread },preview.previewPixels())
     }
+}
+
+/** Fail closed before writing, and check actual PES bytes again before export or editing. */
+object ThreadTextureOutputGate {
+    data class Result(val report: SewoutReport, val bytes: ByteArray?) {
+        val canUse get() = report.analysisComplete && !report.hasBlockingIssues && bytes != null
+        val densityBlocked get() = report.findingSeverities[FindingCode.DENSITY_HOTSPOT] == Severity.BLOCKER
+    }
+    fun check(pattern: EmbPattern, settings: PesWriteSettings, machine: SewoutMachine): Result {
+        val options = SewoutOptions(hoop=settings.hoop,origin=DesignOrigin.APP_GENERATED)
+        val preflight = SewoutCheck.check(pattern,machine,options)
+        if(!preflight.analysisComplete || preflight.hasBlockingIssues) return Result(preflight,null)
+        val bytes = PesWriter.write(pattern,settings)
+        val report = SewoutCheck.checkPes(bytes,machine,options)
+        return Result(report,bytes.takeIf { report.analysisComplete && !report.hasBlockingIssues })
+    }
+    fun canEdit(texture: Boolean, hasStitches: Boolean, busy: Boolean, report: SewoutReport?, hasBytes: Boolean): Boolean =
+        !busy && hasStitches && (!texture || (hasBytes && report?.let { it.analysisComplete && !it.hasBlockingIssues } == true))
 }

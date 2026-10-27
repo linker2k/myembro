@@ -1,39 +1,70 @@
-# Thread texture UI seam
+# Thread texture UI and engine hookup
 
-UI-only unit based on main `80ff526`. No texture stitching algorithm, numeric
-stitch parameters, fake production output, or PE-Design equivalence is introduced.
+The UI seam (`5da15b6`) now connects to `agent/thread-texture` at `328bcf8`.
+The default remains off: ordinary color drawing uses its unchanged contour/fill
+path. The experimental texture switch appears only in Color drawing.
 
-In step 2, Color drawing shows **Thread texture** (off by default) and an
-**Experimental** badge. When enabled, Detail offers Coarse/Normal/Fine and Stitch
-length offers Short/Normal/Long. These are enums only: the model engine owner must
-supply verified parameter mappings before production hookup. Existing color count,
-noise, contrast, black-and-white, crop and physical size controls remain shared.
+## Presets and input
 
-`ThreadTextureGenerator.generate(pixels,w,h,palette,detail,runLength)` is the app
-interface. `ThreadTexturePreview.from` captures the
-existing quantized display preview plus the corrected pre-quantization ARGB raster
-(optionally converted by the existing grayscale helper) and shared Wu RGB palette.
-The generator receives the unpadded source raster so tonal variation is retained.
-Step 2 never calls the generator. Step 3 passes copies into the injected generator;
-returned EmbPattern goes through the existing PES writer/SewoutCheck and send gate.
-The adapter must bind current physical width, hoop, selected thread inventory and
-finalization rules; these are not inferred from pixel dimensions or enum ordinals.
-Engine owner must review the input contract before hookup.
+Detail defaults to Fine. The approved mapping uses engine constants, without
+changing engine thresholds or its 108-case sweep:
 
-`PhotoViewModel(Application)` stays compatible with the Android default factory;
-a second optional generator argument permits integration. Production currently has
-no generator: preview/options work, but Next is disabled while texture is on with
-a user-facing availability message. Disabling it restores ordinary Color drawing.
-Fake implementations exist only in tests, and failures never fall back to fill.
+| UI detail | Engine constant | Requested raster pitch |
+|---|---|---|
+| Fine (default) | `TextureRasterPolicy.fineMinimumMmPerPixel` | 0.45mm/px |
+| Normal | `TextureRasterPolicy.coarseMmPerPixel.first()` | 0.50mm/px |
+| Coarse | `TextureRasterPolicy.coarseMmPerPixel.last()` | 0.55mm/px |
 
-Texture generation leaves `shapeObject` null, so the existing MainActivity path
-creates a StitchObject. Both the photo result and editor-entry message explain
-that individual color blocks cannot be edited; ordinary color block behavior stays
-unchanged. Validation is JVM-only; no emulator execution is claimed.
+Raster width is `TextureRasterPolicy.edge(pictureWidthMm, pitch)`; height follows
+the existing hoop crop aspect, rounded down. Thus actual physical pitch is never
+finer than requested. This texture-only sampling leaves the ordinary photo raster
+policy untouched. See [engine pitch evidence](research/thread-texture-raster-pitch.md).
 
-Validation: `./gradlew :app:testDebugUnitTest --console=plain` →
-`BUILD SUCCESSFUL in 52s`. App XML totals: 451 tests, 0 failures, 0 errors;
-`ThreadTexturePreviewTest`: 4 tests, 0 failures, covering all 9 enum combinations,
-shared correction/grayscale input, immutable preview copies, off-path PES byte
-identity, and absent/failing-generator behavior. No texture sewing-quality claim
-is made: the fake returns a fixed test pattern, not a texture algorithm.
+The previous stitch-length choices are removed from UI, state and interface.
+The engine's unchanged Ink/Stitch running default is 2.5mm; no unmeasured length
+presets are introduced.
+
+Step 2 applies the existing noise/contrast correction and optional BT.709 grayscale
+at the texture working size, then the engine's Wu/Brother palette helper with the
+selected color count (2–6). Grayscale selects the existing neutral Brother family.
+The preview retains corrected pre-quantization pixels and alpha, so tonal variation
+is available to DrawingBot. It performs no contour tracing or stitching. Transparent
+color input retains the existing correction bypass. No fake is used in production.
+
+`ThreadTextureGenerator.generate(pixels,w,h,palette,detail)` takes copied ARGB pixels
+and matched Brother threads. `EngineThreadTextureGenerator` binds physical width
+and hoop, delegates unchanged plotting/running/locking to `ThreadTextureAdapter`,
+and forwards cancellation/progress. Step 3 runs on `Dispatchers.Default` through
+`runInterruptible` with the existing timeout. Cancellation invalidates the revision,
+interrupts the worker, and discards partial output. The UI shows progress and Cancel.
+
+## Blocking and editing
+
+`ThreadTextureOutputGate` checks the candidate against the selected machine/hoop
+before invoking the PES writer, then checks the resulting PES bytes again. Any
+blocker or incomplete analysis returns no bytes. The candidate remains visible
+with a blocked sewing-check badge. `DENSITY_HOTSPOT` shows “Too dense: increase the
+size or choose Coarse detail”; other blockers show sewing-check guidance. Sending
+and editing are disabled. MainActivity guards the edit callback too, so a disabled
+button cannot be bypassed by calling its callback.
+
+Texture results leave `shapeObject` null and enter the editor as `StitchObject`,
+named “Thread picture texture” / “실 그림 텍스처”. The existing message explains
+that individual color blocks cannot be edited. Incoming AI titles do not replace
+this texture name. Ordinary color block conversion is unchanged.
+
+## Tests
+
+`ThreadTexturePreviewTest` covers default-off pattern/PES byte identity, shared
+correction/grayscale input, all 3 preset mappings, real engine generation plus PES
+checks at each preset, cancellation, and density/hoop blockers with no output bytes
+or edit permission. Synthetic images only. No emulator execution in this unit.
+
+Validation command: `./gradlew :app:testDebugUnitTest :engine:test --console=plain`.
+The initial full run returned `BUILD SUCCESSFUL in 2m 32s`; final verification after
+empty-result/edit-callback hardening returned `BUILD SUCCESSFUL in 50s`.
+XML totals: app 453 tests, engine 986 tests, 0 failures and 0 errors in both.
+The 6 UI adapter tests include real 40mm synthetic-ramp runs:
+Coarse 1,833 stitches, Normal 1,923 stitches, Fine 2,209 stitches; all 3 written PES
+checks have no blockers. These measurements are synthetic regression evidence,
+not a guarantee for arbitrary photos or an actual sew-out verdict.
