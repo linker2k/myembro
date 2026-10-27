@@ -40,4 +40,21 @@ class DefaultTatamiTest {
         assertEquals(listOf("underlay","top","underlay","top"),stages)
         assertTrue(DefaultTatami.stitchGroups(PolygonRegion.empty(),thread).isEmpty())
     }
+    @Test fun expansionGrowsTopOnlyAndZeroRetainsCoordinates() {
+        val polygon=region("M0 0 H200 V120 H0 Z")
+        val original=DefaultTatami.stitchGroups(polygon,thread)
+        val zero=DefaultTatami.stitchGroups(polygon,thread,expandMm=0.0)
+        val expanded=DefaultTatami.stitchGroups(polygon,thread,expandMm=0.3)
+        fun coordinates(groups:List<StitchGroup>,tag:String)=groups.flatMap { it.stitches }
+            .filter { tag in it.tags }.map { it.x to it.y }
+        for(tag in listOf("fill_top","fill_underlay"))
+            assertEquals(coordinates(original,tag),coordinates(zero,tag))
+        assertEquals(coordinates(original,"fill_underlay"),coordinates(expanded,"fill_underlay"))
+        val top=coordinates(expanded,"fill_top")
+        val scale=io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
+        assertTrue(top.minOf { it.first } < -0.29*scale)
+        assertTrue(top.maxOf { it.first } > 20.29*scale)
+        assertFailsWith<IllegalArgumentException> { DefaultTatami.stitchGroups(polygon,thread,Double.NaN) }
+    }
+
 }

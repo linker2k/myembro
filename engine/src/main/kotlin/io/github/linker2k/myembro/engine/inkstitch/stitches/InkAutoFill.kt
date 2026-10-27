@@ -19,12 +19,19 @@ object InkAutoFill {
     }
 
     fun paths(region: PolygonRegion, settings: Settings = Settings(),
-        startingPoint: Point? = null, endingPoint: Point? = null): List<List<Point>> {
+        startingPoint: Point? = null, endingPoint: Point? = null, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null): List<List<Point>> {
+        require(expandMm.isFinite())
         if (region.isEmpty) return emptyList()
         val scale=PIXELS_PER_MM/10
         val shape=AffineTransformation.scaleInstance(scale,scale).transform(region.geometry)
         fun px(point:Point?)=point?.let { FillPoint(it.x*scale,it.y*scale) }
-        val points=TatamiFill.fill(shape,Math.toRadians(settings.angleDegrees),settings.rowSpacing*scale,null,
+        // fill_stitch.py expand_mm is in mm; routing geometry is in SVG pixels.
+        // Unmasked callers retain the exact source-default path; picture callers clip at every amount.
+        val expanded=if(expandMm==0.0) shape else FillGeometry.shrinkOrGrow(shape,expandMm*PIXELS_PER_MM)
+        val clipped=if(clipRegion==null) expanded else
+            PolygonRegion(expanded).intersection(PolygonRegion(AffineTransformation.scaleInstance(scale,scale).transform(clipRegion.geometry))).geometry
+        if(clipped.isEmpty) return emptyList()
+        val points=TatamiFill.fill(clipped,Math.toRadians(settings.angleDegrees),settings.rowSpacing*scale,null,
             settings.stitchLength*scale,settings.travelLength*scale,
             // fill_stitch.py running_stitch_tolerance getter defaults to 0.2mm.
             0.2*PIXELS_PER_MM,settings.staggers.toDouble(),false,px(startingPoint),px(endingPoint),settings.underpath)
