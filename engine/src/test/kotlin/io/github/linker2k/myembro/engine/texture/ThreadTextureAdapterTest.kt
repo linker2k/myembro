@@ -64,25 +64,28 @@ class ThreadTextureAdapterTest {
     @Test fun cancelledPlotNeverProducesPartialEmbroidery() {
         assertFailsWith<CancellationException> { ThreadTextureAdapter.generate(20,20,IntArray(400) { black.color },40.0,listOf(black),isCancelled={true}) }
     }
+    @Test fun oldDenseRasterRemainsBlockedWithoutThresholdRelaxation() {
+        val pixels=TextureSyntheticFixtures.pixels("ramp",192)
+        val palette=ThreadTextureAdapter.brotherPalette(pixels,4)
+        assertFailsWith<IllegalArgumentException> { ThreadTextureAdapter.generate(192,192,pixels,40.0,palette) }
+        val plot=SketchLines.render(192,192,pixels)
+        val result=ThreadTextureAdapter.fromSketch(plot,192,192,40.0,palette,HoopSpec.H100)
+        assertTrue(result.sewout.hasBlockingIssues)
+        assertEquals(19,result.sewout.statistics.peakCellPenetrations)
+        assertFailsWith<IllegalArgumentException> { result.pes() }
+    }
     @Test fun threeSyntheticImagesAtThreePhysicalSizes() {
         val directory=File("build/thread-texture-adapter").apply { mkdirs() }
         val rows=mutableListOf("image\twidth_mm\traster\tplot_lines\truns\tstitches\tpeak_0.5mm\tsewout\tblockers\tPEC\troundtrip\tgeneration_ms")
         for (image in listOf("ramp","circle","two-color")) for (mm in listOf(40.0,60.0,90.0)) {
-            val edge=PhotoPreparationPolicy.photoRasterSize(1,mm,mm)
-            val pixels=IntArray(edge*edge) { i ->
-                val x=i%edge;val y=i/edge
-                when(image) {
-                    "ramp" -> { val gray=x*255/(edge-1); 0xff000000.toInt() or (gray shl 16) or (gray shl 8) or gray }
-                    "circle" -> { val dx=2*x-(edge-1);val dy=2*y-(edge-1);if(dx*dx+dy*dy<=(edge*3/4)*(edge*3/4)) black.color else -1 }
-                    else -> if(x<edge/2) red.color else PecThreads.forIndex(1).color
-                }
-            }
+            val edge=TextureRasterPolicy.edge(mm)
+            val pixels=TextureSyntheticFixtures.pixels(image,edge)
             val started=System.nanoTime()
             val palette=ThreadTextureAdapter.brotherPalette(pixels,if(image=="ramp")4 else 2)
             val result=ThreadTextureAdapter.generate(edge,edge,pixels,mm,palette)
             val elapsed=(System.nanoTime()-started)/1_000_000.0
             val blockers=result.sewout.findingSeverities.filterValues { it==Severity.BLOCKER }.keys.sortedBy { it.name }
-            val expectedBlocked = (image == "ramp" && mm == 40.0) || (image == "two-color" && mm in listOf(40.0,60.0))
+            val expectedBlocked = false // Default pitch is selected only from all-passing measured rows.
             assertEquals(expectedBlocked,result.sewout.hasBlockingIssues,"$image $mm blocker regression")
             assertEquals(if(expectedBlocked)listOf(FindingCode.DENSITY_HOTSPOT) else emptyList(),blockers)
             val lumas=result.runs.map { Bt709Grayscale.argb(it.thread.color) and 255 }

@@ -1,0 +1,28 @@
+{
+    "schemaVersion": 1,
+    "sourceCommit": "cebdc60",
+    "seed": 0,
+    "rounding": "floor(frameMm / pitchMm), so actual pitch is never finer than requested",
+    "matrixCases": 108,
+    "testedFrameWidthsMm": [
+        30,
+        40,
+        60,
+        90
+    ],
+    "normalMmPerPixel": 0.45,
+    "coarseMmPerPixel": [
+        0.5,
+        0.55
+    ],
+    "fineMinimumMmPerPixel": 0.45,
+    "allPassingPitchesMmPerPixel": [
+        0.45,
+        0.5,
+        0.55,
+        0.6
+    ],
+    "ready": true,
+    "scope": "3 synthetic images x 4 frame sizes; not a guarantee for arbitrary photographs",
+    "onBlock": "너무 빽빽해요: 크기를 키우거나 디테일을 낮추세요"
+}

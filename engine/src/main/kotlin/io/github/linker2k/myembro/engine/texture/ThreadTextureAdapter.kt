@@ -23,7 +23,7 @@ import io.github.linker2k.myembro.engine.sewout.*
 import java.util.concurrent.CancellationException
 
 /** Post-correction raster -> original plot lines -> independent embroidery adaptation.
- * No resampling/filtering is performed here. The caller supplies the photo-policy raster.
+ * No resampling/filtering is performed here. The caller supplies the texture physical-pitch raster; correction/hoop policy stays shared.
  */
 object ThreadTextureAdapter {
     data class Run(val thread: EmbThread, val squiggle: Int, val pixels: List<PixelPoint>, val sourceLineIndices: List<Int>)
@@ -79,12 +79,13 @@ object ThreadTextureAdapter {
 
     fun generate(width: Int, height: Int, correctedArgb: IntArray, widthMm: Double,
                  palette: List<EmbThread>, hoop: HoopSpec = HoopSpec.H100, detail: Int = 1,
+                 pitchMmPerPixel: Double = TextureRasterPolicy.pitchForDetail(detail),
                  isCancelled: () -> Boolean = { false }, onProgress: (SketchProgress) -> Unit = {}): Result {
         require(width > 0 && height > 0 && width.toLong() * height == correctedArgb.size.toLong())
         require(widthMm.isFinite() && widthMm in PICTURE_MIN_WIDTH_MM..PhotoPreparationPolicy.photoMaxWidthMm(hoop)) { "Width outside existing photo policy" }
         val heightMm = widthMm * height / width
         require(heightMm * 10 <= SewoutLimits.hoopMaxYUnits0p1mm(hoop)) { "Photo raster aspect exceeds selected hoop" }
-        require(maxOf(width, height) <= PhotoPreparationPolicy.photoRasterSize(detail, widthMm, heightMm)) { "Raster exceeds existing photo resolution policy" }
+        require(width <= TextureRasterPolicy.edge(widthMm, pitchMmPerPixel) && height <= TextureRasterPolicy.edge(heightMm, pitchMmPerPixel)) { "Texture raster is finer than the measured physical-pitch policy" }
         require(palette.isNotEmpty() && palette.size <= 6 && palette.all { thread -> PecThreads.SET.filterNotNull().any { it.sameColor(thread) } }) { "Expected an existing N-color Brother palette" }
         val mask = BooleanArray(correctedArgb.size) { correctedArgb[it] ushr 24 != 0 }
         // Existing photo policy: fully transparent pixels consume no thread. No per-color masks.

@@ -60,3 +60,7 @@ All 3 blockers are `DENSITY_HOTSPOT`: ramp 40mm peaks at 19, two-color 40/60mm a
 Regression expectations freeze these three blocked combinations and their code. Additional tests cover Wu/Brother assignment, original-line coverage, discontinuity/color/pen-lift splitting, same-squiggle continuity, exact physical scale, a simple safe-run PES round-trip, photo width/resolution rejection and cancellation. Original DrawingBot oracle tests remain unchanged and passing.
 
 Full `./gradlew :engine:test`: 983 tests, 0 failures/errors, `BUILD SUCCESSFUL in 1m 26s`. Targeted first run: 36 tests (7 adapter + 10 original-oracle + 19 core), 0 failures/errors, `BUILD SUCCESSFUL in 5s`. Logs: `/tmp/myembro-texture-adapter-test.log`, `/tmp/myembro-texture-adapter-engine-test.log`. Machine-readable snapshot: [thread-texture-adapter-results.tsv](thread-texture-adapter-results.tsv).
+
+## Physical-pitch follow-up
+
+The 192px results above are the historical `cebdc60` experiment. Texture raster sizing now uses the measured [physical-pitch policy](thread-texture-raster-pitch.md); ordinary photo/block-fill resolution policy stays unchanged. The public adapter validates the selected texture pitch, and the historical failing ramp is retained as a separate rejection regression.
