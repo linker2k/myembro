@@ -20,7 +20,7 @@ Keep personal inputs and ALL their derived output outside the repository.
 
 The fixed candidate values are 0/0.1/0.2/0.3/0.4 mm. The selection code requires both gates
 PASS, penetration p50 ≥0.45 mm, and gap proxy ≤3.32% for every input; absent metrics fail.
-It never changes production defaults. Table columns also expose fallback methods and excluded
+The sweep tools never change production defaults. Table columns also expose fallback methods and excluded
 regions: a passing final PES can still have lost/replaced an unsafe fill through the existing
 per-region generation fallback. Inspect those counts before any later default decision.
 
@@ -31,7 +31,7 @@ Unmasked callers and color pictures retain the original geometry at 0. For nonze
 color-picture amounts, the clip is the JTS closing of all original Potrace color polygons:
 `union.buffer(+expandMm*10).buffer(-expandMm*10)` in native 0.1 mm units.
 The raw foreground pixel mask is only a background-hole measurement reference. Underlay and
-optional outlines remain unexpanded. The amount default remains 0.
+optional outlines remain unexpanded. The color-picture amount default is 0.2 mm (user approval, 2026-10-27; see `/tmp/myembro-expand2/table-closing.md`), defined only by `ColorDrawingPipeline.DEFAULT_EXPAND_MM`.
 
 ## Closing-clipped sweep
 
@@ -50,4 +50,4 @@ within 1 cell on the fixed 0.1 mm raster, and no increase in excluded/RUNNING co
 both gates PASS and baseline 0 byte parity. Existing overlap targets (≥0.45 mm, ≤3.32%)
 are evaluated separately and combined, without installing a selected value. Hole area is planned polygon coverage, not the independent thread-footprint
 audit. Generation timings are single sequential desktop calls with the raw background reference prebuilt; reference
-construction is separately recorded. Closing is timed; the union is cached after the baseline measurement. No value is automatically installed as a default.
+construction is separately recorded. Closing is timed; the union is cached after the baseline measurement. Sweep scripts do not install defaults; the 0.2 mm production value was explicitly approved by the user.

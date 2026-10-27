@@ -20,6 +20,11 @@ object ColorDrawingPipeline {
     /** Smallest tested threshold preserving original colors and removing AA/specks in the
      * 2 original 30mm drawings × 5 area candidates (ColorCleanupSweep). Not a universal guarantee. */
     const val MINIMUM_REGION_AREA_MM2 = 3.0
+    /** User approved 2026-10-27: /tmp/myembro-expand2/table-closing.md, proxy p50 0.55mm,
+     * gap 8.96→5.78%, unchanged extent and PASS gates; 0.20mm² background-hole loss accepted.
+     * Applies only to color-picture fill, with the existing Potrace-union closing clip.
+     */
+    const val DEFAULT_EXPAND_MM = 0.2
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
         val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray) {
@@ -96,13 +101,13 @@ object ColorDrawingPipeline {
     }
 
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result =
-        generate(preview,hoop,expandMm=0.0,checkpoint=checkpoint)
+        generate(preview,hoop,expandMm=DEFAULT_EXPAND_MM,checkpoint=checkpoint)
 
-    /** Optional Ink/Stitch fill expansion; no application default is changed here. */
+    /** Explicit amount override, including 0 for the original main 2007a4f route. */
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,expandMm:Double,checkpoint:(String)->Unit={}):Result {
         return generate(preview,hoop,true,checkpoint,expandMm=expandMm)
     }
-    internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={},includeFillOutlines:Boolean=true,expandMm:Double=0.0):Result {
+    internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={},includeFillOutlines:Boolean=true,expandMm:Double=DEFAULT_EXPAND_MM):Result {
         require(expandMm.isFinite())
         // 0 must retain the original, unbuffered/unclipped route byte-for-byte.
         val clipRegion=if(expandMm==0.0) null else PictureFillMask.closing(preview.colorRegionUnion,expandMm)
