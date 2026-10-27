@@ -330,8 +330,8 @@ object FillRouting {
             val weightedOutline = GeometryPrecisionReducer.reduce(
                 DouglasPeuckerSimplifier.simplify(polygon.boundary, 0.5*PIXELS_PER_MM), PrecisionModel(1e6))
             val index = STRtree()
-            // Prepare LINESTRING intersects only: its indexed classic noding path is Android-safe.
-            // crosses implies intersects; survivors still use the exact classic relation predicate.
+            // Index row segments once. Exact robust intersections implement the line/line DE-9IM rule;
+            // no full row noding, newer relation classes or coordinate simplification.
             val rows = fill.edges.values.filter { it.key == "segment" }.associateWith { FillGeometry.line(it.points!!) }
             val predicates = rows.mapValues { LegacyCrosses.prepareLine(it.value) }
             for ((edge, geometry) in rows) index.insert(geometry.envelopeInternal, edge)

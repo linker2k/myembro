@@ -1,0 +1,39 @@
+BEFORE DISTRIBUTION (unchanged daff7bb predicate)
+ACTUAL_CROSSES method=circular_fill shape=circle pairs=3338 mismatches=0 row_vertices={2=57, 2031=1} candidate_vertices={2=3338}
+ACTUAL_CROSSES method=circular_fill shape=square pairs=14184 mismatches=0 row_vertices={2=71, 3=20, 4=16, 5=16, 6=14, 7=12, 8=12, 9=8, 10=6, 11=4, 12=4, 2059=1} candidate_vertices={2=14184}
+ACTUAL_CROSSES method=meander_fill shape=circle pairs=2354 mismatches=0 row_vertices={2=53} candidate_vertices={2=2354}
+ACTUAL_CROSSES method=meander_fill shape=square pairs=3038 mismatches=0 row_vertices={2=53} candidate_vertices={2=3038}
+
+FULL VALIDATION
+COMMAND: ./gradlew --offline --max-workers=2 :engine:test
+BUILD SUCCESSFUL in 1m 27s
+{'tests': 943, 'failures': 0, 'errors': 0, 'skipped': 0}
+io.github.linker2k.myembro.engine.NoRelateNgTest
+NO_UNSUPPORTED_RELATION_PACKAGE sources=380 violations=0
+TWO_STAGE_RELATION_ISOLATION pairs=25 forbidden_class_loads=0
+
+io.github.linker2k.myembro.engine.edit.CircularPredicateParityTest
+CIRCULAR_PREDICATE_PARITY pairs=81 identical=true
+
+io.github.linker2k.myembro.engine.edit.LineCrossesActualInputsTest
+ACTUAL_CROSSES method=circular_fill shape=circle pairs=3338 mismatches=0 row_vertices={2=57, 2031=1} candidate_vertices={2=3338} paths={segments=3338}
+ACTUAL_CROSSES method=circular_fill shape=square pairs=14184 mismatches=0 row_vertices={2=71, 3=20, 4=16, 5=16, 6=14, 7=12, 8=12, 9=8, 10=6, 11=4, 12=4, 2059=1} candidate_vertices={2=14184} paths={segments=14184}
+ACTUAL_CROSSES method=meander_fill shape=circle pairs=2354 mismatches=0 row_vertices={2=53} candidate_vertices={2=2354} paths={segments=2354}
+ACTUAL_CROSSES method=meander_fill shape=square pairs=3038 mismatches=0 row_vertices={2=53} candidate_vertices={2=3038} paths={segments=3038}
+
+io.github.linker2k.myembro.engine.geometry.IndexedLineCrossesTest
+SEGMENT_CROSSES_PATHS {classic:collapsed=34390, classic:complex=154379, classic:overlap=11145, classic:vertex=35543, segments=64543}
+SEGMENT_CROSSES_RANDOM seed=794709 pairs=150000 reversed=true comparisons=300000 mismatches=0
+SEGMENT_CROSSES_DEGENERATE pairs=169 reversed=true mismatches=0
+
+FRESH JVM PROFILE
+COMMAND: ./gradlew --offline --max-workers=2 :engine:test --tests '*CircularBlockProfileTest'
+BUILD SUCCESSFUL in 3s
+CIRCULAR_PROFILE shape=circle run=1 total_ms=278.744958 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=2 total_ms=207.538906 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=circle run=3 total_ms=188.3458 stitches=2625 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=circle ms=207.538906
+CIRCULAR_PROFILE shape=square run=1 total_ms=284.893721 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=2 total_ms=255.525298 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_PROFILE shape=square run=3 total_ms=201.702412 stitches=3500 stages_ms=unprofiled golden=IDENTICAL
+CIRCULAR_MEDIAN shape=square ms=255.525298
