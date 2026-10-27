@@ -2,7 +2,7 @@
 
 **English** | [한국어](user-guide.ko.md)
 
-This guide covers myembro v0.3.7.
+This guide covers myembro v0.4.0-beta.1 (same features as v0.3.7; some screenshots show 0.3.7).
 
 1. [Getting started](#1-getting-started)
 2. [Starting a new project](#2-starting-a-new-project)
