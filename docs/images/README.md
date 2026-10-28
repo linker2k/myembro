@@ -14,6 +14,10 @@ preserving alpha channels in transparent images.
 | [launcher-icon-preview.png](launcher-icon-preview.png) | 960×360, RGB PNG | Circular, rounded-square, monochrome, and 48px previews rendered from the XML vector. A resource-review image, not a generated image. |
 | [example-logo-flat.png](example-logo-flat.png) | 1024×1024, RGB PNG | The launcher icon (`ic_launcher_foreground.xml` on `ic_launcher_background`) rendered flat with Rsvg: the visible 72dp area (18–90dp), no mask. Input picture for the user guide examples and the intro video. |
 
+## SE400 direct USB guide
+
+`usb-direct-en/ko.gif` and `.mp4` (1280×720, about 1 minute, no audio) and `manual/{en,ko}/usb-direct-01…09.jpg` were made from photos, phone screenshots and a short SE400 screen video taken by the user on 2026-10-28 (Galaxy Fold7, English UI). Phone screenshots are cropped to the dialogs and buttons; the home screen and other designs are cut out. Red marks and captions were added with Pillow and ffmpeg.
+
 ## Launcher resources
 
 - `app/src/main/res/drawable/ic_launcher_foreground.xml`: 108×108dp vector simplifying the original hoop and stitch curves.

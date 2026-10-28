@@ -184,23 +184,48 @@ There are two ways. Use **9.1** if your machine connects to a computer with a US
 
 No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The SE425 and Innovis 900 / 900D use the same kind of connection in their manuals, but they have not been tested on real machines yet.
 
-**What you need:** one cable that connects your phone's port (USB-C on most phones) to the square **USB-B** port on the machine. If you only have a printer-style USB-A to USB-B cable, add a USB-C OTG adapter on the phone side.
+**Watch it first:** [one-minute step-by-step video](../images/usb-direct-en.mp4) (filmed on an SE400 with a phone set to English).
 
-1. **Turn on the machine.**
-   Success: the machine's screen is on.
-2. **Plug the cable into the machine and into the phone.**
-   Success: nothing more is needed on the phone yet. Some phones show a USB notification; you can ignore it.
-3. **Open myembro and go to Designs.**
-   Success: the banner at the top reads **USB: SE400 direct connection · …** (the part after the dot is the name the machine reports).
-4. **Touch and hold a design, then tap any others you want to send.**
-   Success: the top bar shows how many are selected, for example **2 selected**.
-5. **Tap Export 2 to USB at the bottom.** The number follows your selection.
-6. **The phone asks whether myembro may use the USB device. Tap Allow (OK).**
-   Success: the app starts sending.
-7. **Wait for the result.**
-   Success: **✔ … sent** appears, with the file name and the remaining space. The app has read every file back from the machine to check it.
-8. **On the machine, open the design from its USB / computer memory.** For the exact buttons, see your machine's manual.
-   Success: the design appears on the machine's screen.
+**What you need:** a cable that connects your phone's port (USB-C on most phones) to the square **USB-B** port on the machine. A printer-style USB-A to USB-B cable works with a USB-C OTG adapter on the phone end. A single USB-C to USB-B cable works too.
+
+![USB-A to USB-B cable with a USB-C OTG adapter](../images/manual/en/usb-direct-01.jpg)
+
+1. **Turn on the machine and plug the square USB-B end into the port on the right side of the machine. Plug the other end into the phone.**
+   Success: the machine's screen is on and the cable is in both ports.
+
+   ![USB-B plugged into the SE400, OTG adapter on the phone end](../images/manual/en/usb-direct-02.jpg)
+
+2. **If the phone asks "Choose an app for the USB device", tap myembro, then Just once.** Some phones do not ask; then open myembro yourself.
+   Success: myembro opens.
+
+   ![Choosing myembro for the USB device](../images/manual/en/usb-direct-03.jpg)
+
+3. **Open the design and tap Send to USB.** To send several designs at once, go to **Designs**, touch and hold a design, tap the others, then tap **Export 2 to USB** at the bottom (the number follows your selection).
+
+   ![Send to USB in the design screen](../images/manual/en/usb-direct-04.jpg)
+
+4. **Android asks "Allow myembro to access Sewing machine?". Tap OK.**
+   Success: the banner at the top reads **USB: SE400 direct connection · Sewing machine** ("Sewing machine" is the name the SE400 reports; a long banner may be cut off with "…") and the app starts sending.
+
+   ![USB access request and the SE400 direct connection banner](../images/manual/en/usb-direct-05.jpg)
+
+5. **Wait for the result.**
+   Success: **✔ MYEMBRO_.PES sent** appears with the file size and the remaining space. The app has read the file back from the machine to check it. The file name is changed to an uppercase 8.3 name the machine can read, so "myembro 로고" becomes MYEMBRO_.PES.
+
+   ![USB transfer result](../images/manual/en/usb-direct-06.jpg)
+
+6. **On the machine, tap the USB / computer key.** It is in the bottom row of the first screen, with a USB symbol and a monitor.
+
+   ![The USB / computer key on the SE400](../images/manual/en/usb-direct-07.jpg)
+
+7. **Tap the design (1), then the arrow key at the top (2).** The top left shows the memory in use, for example 8/476KB.
+
+   ![Choosing the design and loading it on the SE400](../images/manual/en/usb-direct-08.jpg)
+
+8. **The design opens with its first thread color.** Embroider as usual.
+   Success: the design is on the machine's screen.
+
+   ![Design loaded on the SE400](../images/manual/en/usb-direct-09.jpg)
 
 **If the machine is full:** the machine's USB memory holds up to 12 designs (Brother SE400 USB manual). If there is not enough space or not enough slots, nothing is written and the app shows **Not enough space — choose PES files to delete** with the PES files already on the machine. Nothing is checked at first. Check the files you no longer need and tap **Delete selected files and export**. The app never deletes anything on its own.
 

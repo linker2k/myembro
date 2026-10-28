@@ -29,6 +29,10 @@ Current version: **v0.4.0-beta.2 (beta)**
 
 Fix a design on your phone and send it straight to the machine with a USB cable. No computer, no USB stick.
 
+![Phone to SE400 over a USB cable, step by step](docs/images/usb-direct-en.gif)
+
+Cable + OTG adapter → choose myembro → Send to USB → OK → ✔ sent → open it on the machine. [Watch the video (MP4, 1 min)](docs/images/usb-direct-en.mp4)
+
 - **Brother SE400:** tested on a real machine with a Galaxy Fold7 (v0.1.0-alpha26). The design opened normally on the machine.
 - **SE425, Innovis 900 / 900D:** their manuals describe the same "USB cable → PC" connection, so they should work the same way. Not tested on real machines yet.
 
