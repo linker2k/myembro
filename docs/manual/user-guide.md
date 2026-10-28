@@ -180,7 +180,7 @@ If any check fails, saving and sending are blocked. Imported PES files are kept 
 
 ![Selecting a design for USB export](../images/manual/en/13-transfer-usb.png)
 
-1. Connect the phone to the Brother SE400 with a USB cable (USB-B on the machine side).
+1. Connect the phone to the machine. For the Brother SE400, use a USB cable (USB-B on the machine side). For other models, connect a USB flash drive to the phone (OTG), export, then plug the drive into the machine.
 2. In **Designs**, enter selection mode and check the designs to send. Filters: **All**, **Fits 100×100**, **PES**, **Recent**, favorites.
 3. Tap **Export 1 to USB** (the count follows your selection). If no USB drive is connected, a banner says **No USB drive connected**; tap it for USB export instructions.
 
@@ -194,13 +194,13 @@ The clock icon in selection mode opens the recent USB transfer history (the scre
 
 **Important:** a file sent to the machine over USB is erased when the machine is turned off, unless you save it to the machine's internal memory.
 
-**SE600/SE700:** machine profiles (100×100mm, USB memory) based on the manuals; transfer has not been tested on real machines yet.
+**Other machines:** the machine list has 58 Brother embroidery models sold in the United States and Korea (chapter 10). Only the SE400 is tested on a real machine; the others follow Brother's manuals and product pages.
 
 ## 10. Backup, restore and my threads
 
 ![Settings: backup](../images/manual/en/15-settings-backup.png)
 
-At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes. The list shows Brother machines sold in the United States and Korea; models not yet tried on a real machine are marked **Not verified on a physical machine**.
+At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes. The list has 58 Brother embroidery models, grouped by region: 30 sold in the United States (SE, PE, NS, NQ, XE, XJ, XP, EV, PR) and 28 sold in Korea (M, LB, Innovis, F, PR). Each shows its maximum embroidery area. Models larger than 100×100mm are marked **Not verified on a physical machine**. The full list with sources is in [machines.md](../machines.md).
 
 ![My threads](../images/manual/en/15b-my-threads.png)
 
@@ -218,7 +218,7 @@ At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL
 
 Known limitations:
 - Moving from an alpha to the beta needs one uninstall/reinstall; back up first.
-- SE600/SE700: transfer not yet tested on real machines.
+- Only the SE400 is tested on a real machine. Other models follow Brother's published specifications.
 
 ## 12. Ask AI
 

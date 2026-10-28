@@ -7,7 +7,7 @@
 **Make embroidery designs on your Android phone and send them to your Brother machine.**
 Free and open source.
 
-Current version: **v0.4.0-beta.1 (beta)**
+Current version: **v0.4.0-beta.2 (beta)**
 
 ![myembro at a glance](docs/images/intro-en.gif)
 
@@ -18,7 +18,7 @@ Current version: **v0.4.0-beta.1 (beta)**
 - 😀 **Emoji → embroidery.** Search emoji (Korean words work too) and turn one into a design.
 - ✂️ **Edit.** Place, resize and rotate designs and text on the hoop.
 - 👀 **View.** Open PES, PEC and DST files. See thread colors, play the stitches and check stitch count, size and time.
-- 🔌 **Send to the machine.** Send designs to a Brother SE400 over a USB cable.
+- 🔌 **Send to the machine.** 58 Brother embroidery models from the US and Korea. Send PES over a USB cable (SE400) or a USB flash drive.
 - 💾 **Back up.** Save designs, projects, fonts and settings in one ZIP and restore them later.
 
 | Color drawing | Lettering | Sew-out check |
@@ -50,10 +50,19 @@ The [user guide](docs/manual/user-guide.md) walks through every screen with pict
 
 ## Machines
 
-| Machine | Hoop | File | Status |
+Pick your machine in **Settings → Machine model**. The list has 58 Brother embroidery models sold in the United States (30) and Korea (28). Each model has its maximum embroidery area, and the app keeps every design inside it.
+
+| Hoop class | United States | Korea | Max area |
 |---|---|---|---|
-| Brother SE400 | 100×100mm | PES | Direct USB transfer, tested on a real machine |
-| Brother SE600 / SE700 | 100×100mm | PES | Profiles from the manuals; transfer not tested on real machines yet |
+| 4×4in | SE400, SE425, SE600, SE625, SE630, SE700, SE725, PE535, PE545, PE550D, NS1750D | M370, M380D, LB6950, LB7950, LB8950, Innovis 180 / 180D / 180K, 900 / 900D, 950, 980D / 980K | 100×100mm |
+| 5×7in | PE770, PE800, SE1900, SE2000, PE900, NS2750D | F580, Innovis NS2750D, Innovis 1250 | 130×180mm |
+| 6×10in | NQ1400E, NQ1600E, NQ1700E, NQ3550W | Innovis 2600, Innovis 2700 | 160×260mm |
+| Larger | XE1, XJ1, XP1, XP2, XP3, EV1, PRS100, PR680W, PR1050X | Innovis 4000D, V3, V3LE, V5, V5LE, XJ1, PR680W, PR1050X, PR1060W, PR1X | up to 297×465mm |
+
+- The SE400 is tested on a real machine, including direct transfer over a USB cable.
+- The other models use profiles from Brother manuals and product pages. Models larger than 100×100mm are marked **Not verified on a physical machine** in the app.
+- Every model gets PES files. Send them over a USB cable (SE400) or a USB flash drive connected to the phone (OTG).
+- Full list with sources: [docs/machines.md](docs/machines.md).
 
 ## Safety checks
 
@@ -69,7 +78,7 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Known limitations
 
-- SE600/SE700 transfer has not been tested on real machines yet.
+- Only the SE400 is tested on a real machine. Other models follow Brother's published specifications.
 - In color drawing, very small pieces (under 3mm²) are removed, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
 - Photo stitch generation stops after 1 minute. Pictures with about 100 color areas can hit this; use lower detail or a smaller crop.
 
