@@ -19,7 +19,7 @@ class ViewerReviewFlowTest {
         assertEquals(200, opened.pattern.bounds!!.width)
         assertEquals(1, opened.pattern.colorBlocks.size)
         assertEquals("lemon.pes", opened.sourceName)
-        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(opened.pattern).stitchCount, PatternReader.read(opened.source, opened.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(opened.pattern).stitchCount, PatternReader.read(opened.source!!, opened.sourceName).stitchCount)
         assertTrue(viewerFits(opened.pattern, p.hoop, true))
     }
     @Test fun `off-centre design too far outside hoop cannot pass by dimensions alone`() {
@@ -31,7 +31,7 @@ class ViewerReviewFlowTest {
     @Test fun `ordinary PES preview remains centred and preserves bytes for export`() {
         val p = project()
         val projectOpened = readViewerDesign(ProjectJson.encode(p).toByteArray(), "lemon.myembro")
-        val opened = readViewerDesign(projectOpened.source, "lemon.pes")
+        val opened = readViewerDesign(projectOpened.source!!, "lemon.pes")
         assertNull(opened.hoop)
         assertSame(projectOpened.source, opened.source)
         val b = viewerBounds(opened.pattern, false)!!

@@ -48,7 +48,11 @@ class SewingProcessingFlowTest {
         val bytes = ProjectJson.encode(project).toByteArray()
         val before = bytes.copyOf()
         val disabled = project.flatten(withoutLocks)
-        assertFailsWith<IllegalArgumentException> { readViewerDesign(bytes,"old.myembro",sewingOptions=withoutLocks) }
+        // Opening still works; only export is refused, with the output-safety reason.
+        val unsafe = readViewerDesign(bytes,"old.myembro",sewingOptions=withoutLocks)
+        assertNull(unsafe.source)
+        assertNotNull(unsafe.exportError)
+        assertEquals(disabled.stitches, unsafe.pattern.stitches)
         val enabled = readViewerDesign(bytes, "old.myembro", sewingOptions = custom)
         assertEquals(0, ProcessingSummary.fromPattern(disabled)!!.lockLocations)
         assertTrue(ProcessingSummary.fromPattern(enabled.pattern)!!.lockLocations > 0)
@@ -56,12 +60,14 @@ class SewingProcessingFlowTest {
         assertContentEquals(before, bytes)
         assertEquals(custom, enabled.sewingOptions)
         assertEquals(project.flatten(custom).stitches, enabled.pattern.stitches)
-        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(enabled.pattern).stitchCount, PatternReader.read(enabled.source, enabled.sourceName).stitchCount)
+        assertEquals(io.github.linker2k.myembro.engine.io.PesWriter.prepareForOutput(enabled.pattern).stitchCount, PatternReader.read(enabled.source!!, enabled.sourceName).stitchCount)
     }
 
     @Test fun `mixed generated project with unsafe raw boundaries is blocked before export`() {
         val project=Project(objects=listOf(TextObject("text",text="I"),StitchObject("raw","raw",imported,transform=Transform(x=200.0))))
-        assertFailsWith<IllegalArgumentException> { readViewerDesign(ProjectJson.encode(project).toByteArray(),"mixed.myembro") }
+        val opened=readViewerDesign(ProjectJson.encode(project).toByteArray(),"mixed.myembro")
+        assertNull(opened.source)
+        assertNotNull(opened.exportError)
     }
 
     @Test fun `USB project preparation uses the same defaults as the viewer and raw PES passes through`() {
