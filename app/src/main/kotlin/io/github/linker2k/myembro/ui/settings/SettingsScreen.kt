@@ -80,6 +80,7 @@ import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
+import io.github.linker2k.myembro.ui.machines.machineDisplayName
 import io.github.linker2k.myembro.ui.machines.TransferMethod
 import io.github.linker2k.myembro.engine.sewout.MachineRegion
 import kotlinx.coroutines.CancellationException
@@ -148,7 +149,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 ) {
                     SettingRow(
                         Icons.Default.Settings, stringResource(R.string.settings_machine),
-                        if (settings.machineProfile?.id == "free") stringResource(R.string.settings_machine_free) else (settings.machineProfile?.displayName ?: settings.machineModel).ifBlank { stringResource(R.string.settings_machine_unset) },
+                        machineDisplayName(settings.machineProfile?.id, settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) }),
                     ) { machineDialog = true }
                     MachineDetails(settings.machineProfile)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -357,7 +358,7 @@ private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (St
                         MachineRegion.OTHER -> R.string.machine_region_other
                     }), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleSmall)
                     MachineProfiles.all.filter { it.region == region }.forEach { profile ->
-                        val label = if (profile.id == "free") stringResource(R.string.settings_machine_free) else profile.displayName
+                        val label = machineDisplayName(profile.id, profile.displayName)
                         RadioOption(label + if(profile.requiresPhysicalVerification) "\n" + stringResource(R.string.machine_physical_unconfirmed) else "",
                             !custom && selected == profile.displayName) { selected = profile.displayName; custom = false }
                     }

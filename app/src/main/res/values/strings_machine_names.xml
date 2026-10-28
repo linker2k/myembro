@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="machine_name_kr_m370">M370</string>
+    <string name="machine_name_kr_m380d">M380D</string>
+    <string name="machine_name_kr_lb7950">LB7950</string>
+    <string name="machine_name_kr_lb8950">LB8950</string>
+    <string name="machine_name_kr_lb6950">LB6950</string>
+    <string name="machine_name_kr_nv180">Innovis 180 (NV180)</string>
+    <string name="machine_name_kr_nv180d">Innovis 180D (NV180D)</string>
+    <string name="machine_name_kr_nv180k">Innovis 180K (NV180K)</string>
+    <string name="machine_name_kr_nv900">Innovis 900 (NV900)</string>
+    <string name="machine_name_kr_nv900d">Innovis 900D (NV900D)</string>
+    <string name="machine_name_kr_nv950">Innovis 950 (NV950)</string>
+    <string name="machine_name_kr_nv980d">Innovis 980D (NV980D)</string>
+    <string name="machine_name_kr_nv980k">Innovis 980K (NV980K)</string>
+    <string name="machine_name_kr_f580">F580</string>
+    <string name="machine_name_kr_ns2750d">Innovis NS2750D</string>
+    <string name="machine_name_kr_nv1250">Innovis 1250 (NV1250)</string>
+    <string name="machine_name_kr_nv2600">Innovis 2600 (NV2600)</string>
+    <string name="machine_name_kr_nv2700">Innovis 2700 (NV2700)</string>
+    <string name="machine_name_kr_nv4000d">Innovis 4000D (NV4000D)</string>
+    <string name="machine_name_kr_v3">Innovis V3</string>
+    <string name="machine_name_kr_v3le">Innovis V3LE</string>
+    <string name="machine_name_kr_v5">Innovis V5</string>
+    <string name="machine_name_kr_v5le">Innovis V5LE</string>
+    <string name="machine_name_kr_xj1">Innovis XJ1</string>
+    <string name="machine_name_kr_pr680w">PR680W (Korea)</string>
+    <string name="machine_name_kr_pr1050x">PR1050X (Korea)</string>
+    <string name="machine_name_kr_pr1060w">PR1060W (Korea)</string>
+    <string name="machine_name_kr_pr1x">PR1X (Korea)</string>
+</resources>
