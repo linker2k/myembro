@@ -31,7 +31,7 @@
 
 ![휴대폰에서 SE400으로 USB 케이블 직접 전송 따라하기](docs/images/usb-direct-ko.gif)
 
-케이블 + OTG 어댑터 → myembro 고르기 → USB로 전송 → 확인 → ✔ 전송 완료 → 자수기에서 열기. [영상으로 보기(MP4, 1분)](docs/images/usb-direct-ko.mp4)
+케이블 + OTG 어댑터 → myembro 고르기 → USB로 전송 → ✔ 전송 완료 → 자수기에서 열기. [영상으로 보기(MP4, 1분)](docs/images/usb-direct-ko.mp4)
 
 - **Brother SE400:** 실제 기계와 갤럭시 폴드7로 확인했습니다(v0.1.0-alpha26). 보낸 도안이 자수기에서 정상으로 열렸습니다.
 - **SE425, 이노비스 900 / 900D:** 설명서상 같은 "USB 케이블 → PC" 연결 방식이라 같은 방식으로 동작할 것으로 보지만, 실제 기계에서는 아직 확인하지 않았습니다.

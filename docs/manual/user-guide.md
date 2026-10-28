@@ -196,16 +196,17 @@ No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The S
    ![USB-B plugged into the SE400, OTG adapter on the phone end](../images/manual/en/usb-direct-02.jpg)
 
 2. **If the phone asks "Choose an app for the USB device", tap myembro, then Just once.** Some phones do not ask; then open myembro yourself.
-   Success: myembro opens.
+   Success: myembro opens. Choosing myembro here also gives it access to the machine, so step 4 is skipped.
 
    ![Choosing myembro for the USB device](../images/manual/en/usb-direct-03.jpg)
 
 3. **Open the design and tap Send to USB.** To send several designs at once, go to **Designs**, touch and hold a design, tap the others, then tap **Export 2 to USB** at the bottom (the number follows your selection).
+   Success: the banner at the top reads **USB: SE400 direct connection · Sewing machine** ("Sewing machine" is the name the SE400 reports; a long banner may be cut off with "…"). If you chose myembro in step 2, sending starts right away; go to step 5.
 
    ![Send to USB in the design screen](../images/manual/en/usb-direct-04.jpg)
 
-4. **Android asks "Allow myembro to access Sewing machine?". Tap OK.**
-   Success: the banner at the top reads **USB: SE400 direct connection · Sewing machine** ("Sewing machine" is the name the SE400 reports; a long banner may be cut off with "…") and the app starts sending.
+4. **Only if you missed the app choice in step 2:** Android now asks **Allow myembro to access Sewing machine?**. Tap **OK**.
+   Success: the app starts sending.
 
    ![USB access request and the SE400 direct connection banner](../images/manual/en/usb-direct-05.jpg)
 
@@ -233,7 +234,7 @@ No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The S
 
 **If you get stuck**
 
-- **You missed the Allow window, or tapped Deny:** the app shows **USB access was not granted. Allow access to export directly.** Tap **Export to USB** again; the window appears again.
+- **You missed the app choice, or tapped Cancel in the access window:** tap **Send to USB** (or **Export to USB**) again. Android asks **Allow myembro to access Sewing machine?**; tap **OK**.
 - **The banner still says No USB drive connected:** many cables only charge and carry no data. Try a different cable, preferably one that has carried files before. Check that the machine is on.
 - **The drive does not appear after plugging in:** tap the banner, then **Refresh USB status**. If it still does not appear, unplug both ends, wait a few seconds, and plug them in again with the machine on.
 
