@@ -204,8 +204,7 @@ data class StitchObject(
 
         fun recenter(p: EmbPattern): EmbPattern {
             val b = p.bounds ?: return p
-            val cx = ((b.minX.toLong() + b.maxX) / 2).toInt()
-            val cy = ((b.minY.toLong() + b.maxY) / 2).toInt()
+            val (cx, cy) = integerHoopCenter(b)
             return GeneratedPatternProcessor.mapCoordinates(p) { x, y -> x - cx to y - cy }
         }
     }

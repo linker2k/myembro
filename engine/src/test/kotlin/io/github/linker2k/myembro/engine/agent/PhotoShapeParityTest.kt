@@ -27,6 +27,22 @@ class PhotoShapeParityTest {
         }
         return ByteArrayOutputStream().also { assertTrue(ImageIO.write(im,"png",it)) }.toByteArray()
     }
+    @Test fun silhouetteAttachmentUsesCallerFrameThroughGenerationAndFinalGate() {
+        val hoop=HoopSpec("large",2000,2000)
+        val store=AttachmentStore { _,request ->
+            assertEquals(hoop,request.hoop)
+            PhotoRaster(request.width,request.height,IntArray(request.width*request.height) { p ->
+                val x=p%request.width;val y=p/request.width
+                if(x in request.width/16..request.width*15/16 && y in request.height/3..request.height*2/3)
+                    0xff000000.toInt() else -1
+            })
+        }
+        val prepared=PhotoPreparation(store).prepare("synthetic","silhouette",2,149.9,hoop)
+        assertTrue(prepared.pattern.bounds!!.width>999)
+        assertEquals("0",prepared.pattern.metadata["myembro.skipped_fill_outlines"])
+        assertTrue(io.github.linker2k.myembro.engine.sewout.PecViewportCheck.check(
+            PesWriter.writeV1(prepared.pattern,hoop),hoop).valid)
+    }
     private fun parity(colors: Int) {
         val bytes=png(colors);val image=ImageIO.read(ByteArrayInputStream(bytes))
         assertEquals(colors,image.getRGB(0,0,64,64,null,0,64).toSet().size)

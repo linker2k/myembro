@@ -267,7 +267,7 @@ object SewoutCheck {
             cells + shiftedPeak else cells
         for (cell in densityChecks) {
             val location = Highlight(cell.firstCommandIndex, area = cell.area)
-            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, if (generated || cell.penetrations > SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL) Severity.BLOCKER else Severity.WARNING,
+            if (cell.penetrations >= o.hotspotPenetrations) findings.add(FindingCode.DENSITY_HOTSPOT, if (cell.penetrations > SewoutLimits.MAX_PENETRATIONS_PER_CELL) Severity.BLOCKER else Severity.WARNING,
                 "${o.gridMm}mm 격자에 ${cell.penetrations}회 바늘 진입이 누적됩니다. 원단 손상·바늘 부담 위험을 확인하세요.",
                 location, cell.penetrations.toDouble(), o.hotspotPenetrations.toDouble())
             if (cell.segmentPasses >= o.overlapPassThreshold && cell.stageIndices.size > 1) findings.add(FindingCode.OVERLAP_ACCUMULATION,

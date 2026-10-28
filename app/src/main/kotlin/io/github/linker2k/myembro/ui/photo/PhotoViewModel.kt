@@ -266,6 +266,11 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                     resultSizeMm = output.first.localPattern().bounds?.let { it.width / 10.0 to it.height / 10.0 }
                     if (bytes == null) error = R.string.svg_picture_unsupported
                 }
+            } catch (rejected: io.github.linker2k.myembro.engine.sewout.PesOutputSafety.Rejected) {
+                if(version==revision) {
+                    report=rejected.report;bytes=null
+                    error=ThreadTextureOutputGate.blockerMessage(rejected.report.findingSeverities)
+                }
             } catch (_: TimeoutCancellationException) { if (version == revision) error = R.string.svg_picture_unsupported }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: LinkageError) { if (version == revision) error = R.string.device_generation_failed }
@@ -417,7 +422,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                         if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(requireNotNull(traced),
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced?.contourCount ?: 0}")
@@ -435,6 +440,11 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                 if (version == revision) { shapeObject=output.second;render=output.first.first; bytes=output.first.second; report=output.first.third
                     resultSizeMm=output.first.first.pattern.bounds?.let { (it.maxX-it.minX)/10.0 to (it.maxY-it.minY)/10.0 }
                     if(selectedTexture.enabled && !passed) error = ThreadTextureOutputGate.blockerMessage(report?.findingSeverities.orEmpty())
+                }
+            } catch (rejected: io.github.linker2k.myembro.engine.sewout.PesOutputSafety.Rejected) {
+                if(version==revision) {
+                    report=rejected.report;bytes=null
+                    error=ThreadTextureOutputGate.blockerMessage(rejected.report.findingSeverities)
                 }
             } catch (_: TimeoutCancellationException) { if(version==revision) error=R.string.photo_timed_out
             } catch (cancelled: CancellationException) { throw cancelled

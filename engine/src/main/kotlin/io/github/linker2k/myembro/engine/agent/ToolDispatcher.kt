@@ -122,7 +122,7 @@ class ToolDispatcher(
                 val report = SewoutCheck.checkPes(bytes, machine, options)
                 val viewport = PecViewportCheck.check(bytes, frame)
                 val details = buildJsonObject { put("report", reportJson(report)); put("viewport", viewportJson(viewport)); put("placement", reportJson(placement)) }
-                if (!report.analysisComplete || report.verdict != SewoutVerdict.PASS || !viewport.valid) return failure("SEWOUT_BLOCKED", "Only complete PASS output may be released", details)
+                if (!report.analysisComplete || report.hasBlockingIssues || !viewport.valid) return failure("SEWOUT_BLOCKED", "Only complete output without blockers may be released (warnings are allowed)", details)
                 return Result(project, buildJsonObject { put("ok", true); put("checks", details); put("byteCount", bytes.size) }, if (name == "prepare_pes") bytes.copyOf() else null, generatedPes=origin==DesignOrigin.APP_GENERATED)
             }
             require(a.string("transactionId").isNotBlank()) { "transactionId must not be blank" }

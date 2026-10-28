@@ -2,6 +2,9 @@
 // Original integration of the separately attributed Wu, Potrace and Ink/Stitch ports.
 package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup
+import org.locationtech.jts.geom.Polygon
 import io.github.linker2k.myembro.engine.geometry.SvgPath
 import io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami
 import io.github.linker2k.myembro.engine.geometry.PolygonRegion
@@ -11,6 +14,7 @@ import io.github.linker2k.myembro.engine.geometry.Point as RegionPoint
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.engine.io.PesVersion
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -34,14 +38,14 @@ object RedworkPipeline {
     /**
      * Caller supplies a known background pixel; no unvalidated automatic polarity heuristic.
      * Traces boundaries into filled regions with holes, then source-default tatami/underlay.
-     * No running outline or centerline approximation is generated.
+     * Filled silhouettes include the same optional single-pass outline as color drawings.
      * widthMm is the full bitmap width; aspect ratio and placement about the hoop center are preserved.
      */
     fun generate(
         width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
-        thread: EmbThread,
+        thread: EmbThread, hoop: HoopSpec = HoopSpec.H100,
     ): RedworkResult {
-        return generate(trace(width,height,rgb,widthMm,backgroundPixelIndex,thread),thread)
+        return generate(trace(width,height,rgb,widthMm,backgroundPixelIndex,thread),thread,hoop=hoop)
     }
 
     /** Photo preview stops here: no JTS fill graph, stitches, locks, PES or sewout analysis. */
@@ -114,10 +118,11 @@ object RedworkPipeline {
             contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width))
     }
 
-    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, checkpoint: (String) -> Unit = {}): RedworkResult {
+    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, hoop: HoopSpec = HoopSpec.H100, checkpoint: (String) -> Unit = {}): RedworkResult {
         checkpoint("stitches")
         val paths = outline.paths
         var route: PhotoOutline.Route? = null
+        var fillOutlines: ColorFillOutline.Selection? = null
         val groups = if(style==PhotoStyle.OUTLINE) {
             route=PhotoOutline.route(PhotoOutline.paths(outline))
             PhotoOutline.groups(route,thread)
@@ -132,11 +137,25 @@ object RedworkPipeline {
                         it.y * 10 / Units.mmToPixels(1.0)) }, true)
                 }
             }, FillRule.EVEN_ODD)
-            DefaultTatami.stitchGroups(region, thread)
+            silhouetteGroups(region, thread, hoop, fit={ fitPhotoPattern(it,outline,photoMode) }) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
         }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
-        // Fit *finished* coordinates, including locks/travel, to the supplied exclusive hoop span.
+        val fitted=fitPhotoPattern(finished,outline,photoMode)
+        val pattern = EmbPattern(fitted.stitches, fitted.threads,
+            fitted.metadata + mapOf(
+                "myembro.fill.backend" to if(style==PhotoStyle.OUTLINE) "inkstitch-bean-outline" else "inkstitch-default-tatami-underlay",
+                "myembro.photo.style" to style.name,
+            ) + (fillOutlines?.let { mapOf("myembro.skipped_fill_outlines" to it.skipped.size.toString(),
+                "myembro.fill_outline_checks" to it.checks.toString()) } ?: emptyMap()) + (route?.let { mapOf("myembro.photo.jump_before_mm" to Units.pixelsToMm(it.before).toString(),
+                "myembro.photo.jump_after_mm" to Units.pixelsToMm(it.after).toString()) } ?: emptyMap()), finished.warnings)
+        checkpoint("stitches_ready=${pattern.stitchCount}")
+        checkpoint("pes")
+        return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesWriteSettings(version=PesVersion.V6,hoop=hoop)))
+    }
+
+    /** The existing photo fit, shared by optional-outline validation and final output. */
+    internal fun fitPhotoPattern(finished:EmbPattern,outline:RedworkOutline,photoMode:Boolean):EmbPattern {
         val bounds=finished.stitches
         val minX=bounds.minOf { it.x }; val maxX=bounds.maxOf { it.x }
         val minY=bounds.minOf { it.y }; val maxY=bounds.maxOf { it.y }
@@ -146,14 +165,33 @@ object RedworkPipeline {
             x=kotlin.math.round((it.x-minX)*factor).toInt()-kotlin.math.floor((maxX-minX)*factor/2).toInt(),
             y=kotlin.math.round((it.y-minY)*factor).toInt()-kotlin.math.floor((maxY-minY)*factor/2).toInt()) }
             else bounds
-        val pattern = EmbPattern(stitches, finished.threads,
-            finished.metadata + mapOf(
-                "myembro.fill.backend" to if(style==PhotoStyle.OUTLINE) "inkstitch-bean-outline" else "inkstitch-default-tatami-underlay",
-                "myembro.photo.style" to style.name,
-            ) + (route?.let { mapOf("myembro.photo.jump_before_mm" to Units.pixelsToMm(it.before).toString(),
-                "myembro.photo.jump_after_mm" to Units.pixelsToMm(it.after).toString()) } ?: emptyMap()), finished.warnings)
-        checkpoint("stitches_ready=${pattern.stitchCount}")
-        checkpoint("pes")
-        return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesVersion.V6))
+        return EmbPattern(stitches,finished.threads,finished.metadata,finished.warnings)
     }
+
+    /** Preserve whole-region tatami routing, then append unexpanded exterior/hole rings.
+     * Only the existing PhotoOutline.route decides their order; no additional coordinate sort.
+     * Reuse the color path's optional-outline selection; mandatory fills are never removed.
+     */
+    internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread, hoop: HoopSpec,
+        fit:(EmbPattern)->EmbPattern={ it }, checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
+        // Pre-fit-fix 90-case order audit (2026-10-28), jump mm: A/B 16387.254,
+        // C 16248.893, D (no outline) 7460.580, E 14271.611.
+        // E is closest to D among outlined variants; /tmp/myembro-p7-freq/jump-variants.
+        checkpoint()
+        val fills=DefaultTatami.stitchGroups(region,thread)
+        val outlines=(0 until region.geometry.numGeometries).map { index ->
+            val polygon=region.geometry.getGeometryN(index) as Polygon
+            ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
+        }
+        val anchors=outlines.map { item -> item.groups.first().stitches.map {
+            io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
+        } }
+        val ordered=PhotoOutline.route(anchors).paths.map { outlines[anchors.indexOf(it)] }
+        // Match final generation exactly; fitting maps coordinates without changing owner indices.
+        return ColorFillOutline.select(fills,ordered,hoop,prepareOutput={ candidate,owners ->
+            ColorFillOutline.PreparedOutput(fit(GeneratedPatternProcessor.fromGroups(candidate,stitchOwners=owners)),
+                PesWriteSettings(version=PesVersion.V6,hoop=hoop))
+        },checkpoint=checkpoint)
+    }
+
 }

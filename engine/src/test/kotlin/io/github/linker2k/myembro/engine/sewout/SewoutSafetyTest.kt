@@ -15,10 +15,10 @@ class SewoutSafetyTest {
     private fun SewoutReport.of(code: FindingCode) = findings.filter { it.code == code }
     private fun dense(count: Int) = p(*Array(count) { s(it % 5, it / 5 % 5) })
 
-    @Test fun density15IsNotBlocked16IsGeneratedBlockAndImportedCaution() {
+    @Test fun density15IsUnflagged16IsWarningForBothOrigins() {
         assertTrue(check(dense(15),true).of(FindingCode.DENSITY_HOTSPOT).isEmpty())
         val generated = check(dense(16),true).of(FindingCode.DENSITY_HOTSPOT).single()
-        assertEquals(Severity.BLOCKER,generated.severity)
+        assertEquals(Severity.WARNING,generated.severity)
         assertEquals(16.0,generated.measured)
         assertEquals(CheckArea(0.0,0.0,5.0,5.0),generated.highlight!!.area)
         assertEquals(Severity.WARNING,check(dense(16)).of(FindingCode.DENSITY_HOTSPOT).single().severity)
@@ -82,7 +82,7 @@ class SewoutSafetyTest {
         val raw=p(*Array(16) { s(0) })
         val generated=EmbPattern(raw.stitches,raw.threads,mapOf("myembro.inkstitch.finished" to "v1"))
         assertEquals(DesignOrigin.APP_GENERATED,SewoutCheck.originOf(generated))
-        assertEquals(Severity.BLOCKER,SewoutCheck.check(generated).of(FindingCode.DENSITY_HOTSPOT).single().severity)
+        assertEquals(Severity.WARNING,SewoutCheck.check(generated).of(FindingCode.DENSITY_HOTSPOT).single().severity)
         val imported=Project(objects=listOf(StitchObject("raw","text.pes",raw)))
         assertEquals(Severity.WARNING,SewoutCheck.check(imported).of(FindingCode.DENSITY_HOTSPOT).single().severity)
     }

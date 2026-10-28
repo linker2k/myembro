@@ -31,7 +31,7 @@ class GatePolicyParityTest {
             "invalid_length" to valid.copyOf().also { for (i in 0..2) it[pointer+514+i]=0x7f },
         )
     }
-    @Test fun tenCasesMatchPythonV6AndOriginPolicy() {
+    @Test fun tenFrozenCasesKeepMetricsWithP7V8Amendment() {
         val cases=cases()
         System.getenv("SEWOUT_PARITY_EXPORT")?.let { directory ->
             File(directory).mkdirs()

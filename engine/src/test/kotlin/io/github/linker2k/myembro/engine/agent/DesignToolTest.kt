@@ -87,7 +87,7 @@ class DesignToolTest {
             assertEquals(count>30,report.hasBlockingIssues)
         }
     }
-    @Test fun `imported density between generated and imported limits stays imported`() {
+    @Test fun `density warnings remain usable for both origins and imported provenance stays imported`() {
         val points=(0..4).flatMap { x -> (0..4).map { y -> x to y } }.filter {it!=(0 to 0)}.take(20)
         val p=EmbPattern(points.map { Stitch(it.first,it.second,Command.STITCH) },listOf(EmbThread(0xff000000.toInt())))
         val header=ByteArray(22).also { "#PES0001".toByteArray().copyInto(it);it[8]=22 }
@@ -99,11 +99,11 @@ class DesignToolTest {
         assertTrue(added.ok);assertEquals(DesignOrigin.IMPORTED,SewoutCheck.originOf(added.project.flatten()))
         val imported=SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.IMPORTED))
         assertFalse(imported.hasBlockingIssues)
-        assertTrue(SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
+        assertFalse(SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
         val check=kernel.dispatch(added.project,"0","sewout_check",JsonObject(export-"pesVersion"+("pesAssetId" to JsonPrimitive(""))))
-        assertEquals("SEWOUT_BLOCKED",check.code)
-        assertEquals("WARNING",check.output["details"]!!.jsonObject["report"]!!.jsonObject["findingSeverities"]!!.jsonObject["DENSITY_HOTSPOT"]!!.jsonPrimitive.content)
-        // Existing dispatcher policy releases only PASS: CAUTION still returns no PES.
-        assertEquals("SEWOUT_BLOCKED",kernel.dispatch(added.project,"0","prepare_pes",export).code)
+        assertTrue(check.ok,check.output.toString())
+        assertEquals("WARNING",check.output["checks"]!!.jsonObject["report"]!!.jsonObject["findingSeverities"]!!.jsonObject["DENSITY_HOTSPOT"]!!.jsonPrimitive.content)
+        // User-approved warnings permit saving; the imported origin is retained.
+        assertTrue(kernel.dispatch(added.project,"0","prepare_pes",export).ok)
     }
 }

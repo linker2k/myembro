@@ -56,11 +56,26 @@ object PesWriter {
 
     fun write(pattern: EmbPattern, version: PesVersion): ByteArray = write(pattern, PesWriteSettings(version))
 
-    fun writeV1(pattern: EmbPattern, hoop: HoopSpec = HoopSpec.H100): ByteArray {
+    /** Encode and validate actual wire coordinates once, retaining the report for UI warnings. */
+    fun writeChecked(pattern:EmbPattern,settings:PesWriteSettings=PesWriteSettings(),
+        machine:io.github.linker2k.myembro.engine.sewout.SewoutMachine?=null,
+        origin:io.github.linker2k.myembro.engine.sewout.DesignOrigin=io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern)):PesOutputSafety.Checked {
+        val bytes=when(settings.version) {
+            PesVersion.V1 -> if(settings.inkstitchCommands) writeV1Inkstitch(pattern) else encodeV1(pattern)
+            PesVersion.V6 -> if(settings.inkstitchCommands) PesV6Writer.write(pattern,true) else PesV6Writer.write(prepareForOutput(pattern))
+        }
+        return if(machine==null) PesOutputSafety.check(bytes,settings.hoop,pattern,origin=origin)
+            else PesOutputSafety.check(bytes,settings.hoop,pattern,machine,origin)
+    }
+
+    fun writeV1(pattern: EmbPattern, hoop: HoopSpec = HoopSpec.H100): ByteArray =
+        PesOutputSafety.requireValid(encodeV1(pattern),hoop,pattern)
+
+    private fun encodeV1(pattern: EmbPattern):ByteArray {
         val header = ByteArray(22)
         "#PES0001".toByteArray(Charsets.US_ASCII).copyInto(header)
         header[8] = 22
-        return PesOutputSafety.requireValid(header + PecWriter.writePayload(prepareForOutput(pattern), topLeftViewport = true),hoop,pattern)
+        return header + PecWriter.writePayload(prepareForOutput(pattern), topLeftViewport = true)
     }
 
     fun writeV6(pattern: EmbPattern, hoop: HoopSpec = HoopSpec.H100): ByteArray = PesOutputSafety.requireValid(PesV6Writer.write(prepareForOutput(pattern)),hoop,pattern)

@@ -91,4 +91,5 @@
     <string name="photo_texture_blocked">The sewing check blocked this texture. Adjust the size or detail before editing or sending.</string>
     <string name="photo_texture_progress">Drawing thread texture · %1$d%%</string>
     <string name="photo_texture_stitch_limit">Too many stitches: reduce the size or try Coarse detail.</string>
+    <string name="photo_density_location">Density warning: %5$d needle drops · x %1$s–%2$s · y %3$s–%4$s (from top left). Saving and sending are allowed.</string>
 </resources>

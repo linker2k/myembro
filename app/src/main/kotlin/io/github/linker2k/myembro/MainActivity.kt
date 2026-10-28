@@ -217,7 +217,8 @@ class MainActivity : ComponentActivity() {
                                     y = ((b.minY.toLong() + b.maxY) / 2).toDouble())
                                 val id=UUID.randomUUID().toString()
                                 val obj=photo.shapeObject?.let { shape ->
-                                    incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id)
+                                    io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.centeredForImport(
+                                        incomingPictureTitle?.let { io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.renamed(shape,id,it) } ?: shape.withId(id))
                                 } ?: StitchObject(id,if(photo.textureActive) photo.resultName else incomingPictureTitle ?: context.getString(io.github.linker2k.myembro.ui.photo.photoObjectName(photo.style)),pattern,transform=transform)
                                 if(photo.shapeObject == null && photo.style == io.github.linker2k.myembro.ui.photo.PhotoMode.COLOR) {
                                     android.widget.Toast.makeText(context,if(photo.textureActive) R.string.photo_texture_editor_hint else R.string.photo_partial_blocks_unsupported,android.widget.Toast.LENGTH_LONG).show()

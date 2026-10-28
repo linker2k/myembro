@@ -66,12 +66,18 @@ class ThreadTexturePreview private constructor(pixels: IntArray, val width: Int,
     }
 }
 
-/** Fail closed before writing, and check actual PES bytes again before export or editing. */
+/** Check normalized actual PES once; preserve warning highlights and typed rejection reports. */
 object ThreadTextureOutputGate {
     /** Use codes/severity, never engine-localized messages. Count limit wins over density. */
     fun blockerMessage(severities: Map<FindingCode, Severity>): Int = when {
         severities[FindingCode.STITCH_LIMIT_EXCEEDED] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.photo_texture_stitch_limit
         severities[FindingCode.DENSITY_HOTSPOT] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.photo_texture_dense
+        severities.any { (code,severity) -> severity==Severity.BLOCKER && code in setOf(FindingCode.HOOP_EXCEEDED,FindingCode.MACHINE_AREA_EXCEEDED) } -> io.github.linker2k.myembro.R.string.block_sewout_hoop
+        severities.any { (code,severity) -> severity==Severity.BLOCKER && code in setOf(FindingCode.ZERO_LENGTH_MOTION,FindingCode.REPEATED_PENETRATION) } -> io.github.linker2k.myembro.R.string.block_sewout_repeated
+        severities[FindingCode.MISSING_LOCK_STITCH] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.block_sewout_lock
+        severities[FindingCode.LONG_STITCH] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.block_sewout_long
+        severities[FindingCode.INVALID_PES] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.block_sewout_file
+        severities[FindingCode.ANALYSIS_LIMIT] == Severity.BLOCKER -> io.github.linker2k.myembro.R.string.block_sewout_incomplete
         else -> io.github.linker2k.myembro.R.string.photo_texture_blocked
     }
 
@@ -80,12 +86,12 @@ object ThreadTextureOutputGate {
         val densityBlocked get() = report.findingSeverities[FindingCode.DENSITY_HOTSPOT] == Severity.BLOCKER
     }
     fun check(pattern: EmbPattern, settings: PesWriteSettings, machine: SewoutMachine): Result {
-        val options = SewoutOptions(hoop=settings.hoop,origin=DesignOrigin.APP_GENERATED)
-        val preflight = SewoutCheck.check(pattern,machine,options)
-        if(!preflight.analysisComplete || preflight.hasBlockingIssues) return Result(preflight,null)
-        val bytes = PesWriter.write(pattern,settings)
-        val report = SewoutCheck.checkPes(bytes,machine,options)
-        return Result(report,bytes.takeIf { report.analysisComplete && !report.hasBlockingIssues })
+        return try {
+            val checked=PesWriter.writeChecked(pattern,settings,machine,DesignOrigin.APP_GENERATED)
+            Result(checked.report,checked.bytes)
+        } catch(rejected:PesOutputSafety.Rejected) {
+            Result(rejected.report,null)
+        }
     }
     fun canEdit(texture: Boolean, hasStitches: Boolean, busy: Boolean, report: SewoutReport?, hasBytes: Boolean): Boolean =
         !busy && hasStitches && (!texture || (hasBytes && report?.let { it.analysisComplete && !it.hasBlockingIssues } == true))

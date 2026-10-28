@@ -130,7 +130,7 @@ class ToolDispatcherTest {
             // End locks are functional short return moves, not generated fake metadata.
             val xs=listOf(0,5,0)+points.drop(1)+listOf(max-5,max)
             val p=EmbPattern(xs.map { Stitch(it,0,Command.STITCH) },listOf(PecThreads.forIndex(5)))
-            return Project(HoopSpec.H100,listOf(StitchObject("edge","edge",p,Transform(x=-500.0+max/2))))
+            return Project(HoopSpec.H100,listOf(StitchObject("edge","edge",p,Transform(x=-500.0+integerHoopCenter(checkNotNull(p.bounds)).first))))
         }
         val good=dispatcher.dispatch(project(999),"0","prepare_pes",cases().getValue("prepare_pes"))
         assertTrue(good.ok,good.output.toString());assertEquals(999,PecViewportCheck.check(good.pesBytes!!,HoopSpec.H100).maxX)

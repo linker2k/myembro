@@ -15,11 +15,13 @@ import kotlin.test.*
 class ColorDefaultExpansionTest {
     @Test fun approvedDefaultMatchesPointTwoAndKeepsExtentAndExplicitZeroGolden() {
         assertEquals(0.2,ColorDrawingPipeline.DEFAULT_EXPAND_MM)
-        // Synthetic-only goldens independently generated from original main 2007a4f sources.
+        // Synthetic-only goldens: baseline 46505dc with only the approved outline repeats 1 -> 0.
+        // Independently rebuilt baseline + single-parameter overlay; /tmp/myembro-p7-freq/one-pass.
+        // Expansion 0 still bypasses buffer/clip; the outline policy intentionally changes PES bytes.
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "2fbf9caa99e1abdc3955e17e0071e340d61bd2bbacf2f3c31bcac6b0d90658b7",
-            "robot" to "a7ab157713e753d2d29b644b4220af99745595b55dae12a32123434b66cd62f4")
+            "face" to "826ead35421936ddd7688a0a4840f3364c4889f550ed2b6e6704bfbf356bdc66",
+            "robot" to "77bd7e3116c23835c92861fdd69cac233cd01fe1e1ea8c84560b0d846f45832a")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {
             val source=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/$name.png"))
@@ -38,7 +40,7 @@ class ColorDefaultExpansionTest {
             assertContentEquals(explicit,internal,"$name internal default")
             assertEquals(PesReader.read(zero).bounds,PesReader.read(actual).bounds,"$name integer extent")
             val hash=MessageDigest.getInstance("SHA-256").digest(zero).joinToString("") { "%02x".format(it) }
-            assertEquals(golden,hash,"$name explicit zero matches main 2007a4f bytes")
+            assertEquals(golden,hash,"$name explicit zero matches approved one-pass baseline bytes")
             assertFalse(SewoutCheck.checkPes(actual,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
             output?.resolve("$name-default.pes")?.writeBytes(actual)
             output?.resolve("$name-zero.pes")?.writeBytes(zero)

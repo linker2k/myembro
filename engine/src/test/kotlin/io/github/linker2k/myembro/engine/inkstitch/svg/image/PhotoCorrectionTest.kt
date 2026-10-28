@@ -9,7 +9,7 @@ class PhotoCorrectionTest {
         val v=if(i%32 in 8..23 && i/32 in 7..24) 40 else 220
         0xff000000.toInt() or (v*0x010101)
     }
-    @Test fun originalAndCleanMatchOneLegacyMedianAndOriginalPesBytes() {
+    @Test fun originalAndCleanKeepLegacyMedianAndOutlineBytesWithNewSilhouetteBorder() {
         val old=PhotoRasterFilters.median3(32,32,source.map { it and 0xffffff }.toIntArray())
         val original=PhotoCorrections.apply(32,32,source,true)
         assertContentEquals(old,original.pixels)
@@ -18,9 +18,19 @@ class PhotoCorrectionTest {
         val reference=LegacyPhotoPipelineV029.trace(32,32,old,20.0,0,thread)
         val actual=RedworkPipeline.trace(32,32,original.pixels,20.0,0,thread)
         assertEquals(reference.outlineSvg,actual.outlineSvg)
-        for(style in PhotoStyle.entries) assertContentEquals(
-            LegacyPhotoPipelineV029.generate(reference,thread,photoMode=true,style=style).copyPesBytes(),
-            RedworkPipeline.generate(actual,thread,photoMode=true,style=style).copyPesBytes(),"v0.2.9 $style PES bytes")
+        for(style in PhotoStyle.entries) {
+            val legacy=LegacyPhotoPipelineV029.generate(reference,thread,photoMode=true,style=style)
+            val current=RedworkPipeline.generate(actual,thread,photoMode=true,style=style)
+            if(style==PhotoStyle.OUTLINE) assertContentEquals(legacy.copyPesBytes(),current.copyPesBytes(),
+                "OUTLINE mode retains v0.2.9 bytes")
+            else {
+                assertTrue(current.pattern.stitchCount>legacy.pattern.stitchCount)
+                assertEquals("0",current.pattern.metadata["myembro.skipped_fill_outlines"])
+                assertFalse(io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(current.copyPesBytes(),
+                    options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(
+                        origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)).hasBlockingIssues)
+            }
+        }
     }
     @Test fun cleanNeverRunsASecondMedianOnNonIdempotentNoise() {
         val random=java.util.Random(9)

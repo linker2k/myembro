@@ -12,6 +12,95 @@ import kotlin.test.*
 
 /** Two original synthetic masks, no private designs or photographs. */
 class RedworkPipelineTest {
+    @Test fun silhouetteKeepsWholeRegionFillThenExistingOutlineRouteAndHoles() {
+        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
+            org.locationtech.jts.io.WKTReader().read("MULTIPOLYGON (((0 0,200 0,200 200,0 200,0 0),(60 60,60 140,140 140,140 60,60 60)),((600 0,700 0,700 100,600 100,600 0)),((300 0,400 0,400 100,300 100,300 0)))"))
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val selected=RedworkPipeline.silhouetteGroups(region,thread,HoopSpec.H100)
+        assertTrue(selected.skipped.isEmpty())
+        assertEquals(1,selected.checks)
+        val fill=io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami.stitchGroups(region,thread)
+        assertEquals(fill.map { it.stitches },selected.groups.take(fill.size).map { it.stitches },
+            "whole-region routing and propagated fill start must stay unchanged")
+        val outlines=(0 until region.geometry.numGeometries).map { index ->
+            ColorFillOutline.stitchGroups(region.geometry.getGeometryN(index) as org.locationtech.jts.geom.Polygon,thread)
+        }
+        assertEquals(2,outlines.first().size,"exterior and hole")
+        val anchors=outlines.map { groups -> groups.first().stitches.map {
+            io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
+        } }
+        val route=PhotoOutline.route(anchors)
+        assertTrue(route.after<route.before)
+        val expected=route.paths.flatMap { outlines[anchors.indexOf(it)] }
+        assertEquals(expected.map { it.stitches },selected.groups.drop(fill.size).map { it.stitches })
+        assertTrue(selected.groups.all { it.color==thread })
+        assertTrue(ColorFillOutline.safe(selected.groups,HoopSpec.H100))
+    }
+
+    @Test fun largerFrameRetainsOutlineAndWritesPesBeyondOneHundredMm() {
+        val hoop=HoopSpec("large",2000,2000)
+        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
+            org.locationtech.jts.io.WKTReader().read("POLYGON ((0 0,1200 0,1200 200,0 200,0 0))"))
+        val thread=EmbThread(0xFFB5492A.toInt())
+        assertTrue(RedworkPipeline.silhouetteGroups(region,thread,hoop).skipped.isEmpty())
+        assertEquals(setOf(0),RedworkPipeline.silhouetteGroups(region,thread,HoopSpec.H100).skipped)
+        val rgb=IntArray(64*64) { if(it%64 in 3..60 && it/64 in 24..39) 0 else 0xffffff }
+        val traced=RedworkPipeline.trace(64,64,rgb,149.9,0,thread)
+        val result=RedworkPipeline.generate(traced,thread,photoMode=true,hoop=hoop)
+        assertEquals("0",result.pattern.metadata["myembro.skipped_fill_outlines"])
+        val bytes=result.copyPesBytes()
+        assertTrue(PecViewportCheck.check(bytes,hoop).valid)
+        assertTrue(PesReader.read(bytes).bounds!!.width>999)
+    }
+
+    @Test fun silhouetteOutlineAndHolePassP1ThroughP8AtMaximumPhotoWidth() {
+        val rgb=IntArray(64*64) { i ->
+            val x=i%64;val y=i/64
+            if(x in 1..62 && y in 1..62 && !(x in 22..41 && y in 22..41)) 0 else 0xffffff
+        }
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val traced=RedworkPipeline.trace(64,64,rgb,99.9,0,thread)
+        val result=RedworkPipeline.generate(traced,thread,photoMode=true)
+        assertEquals("0",result.pattern.metadata["myembro.skipped_fill_outlines"])
+        assertEquals("1",result.pattern.metadata["myembro.fill_outline_checks"])
+        val bytes=result.copyPesBytes()
+        assertTrue(io.github.linker2k.myembro.engine.sewout.PesInvariants.violations(bytes,HoopSpec.H100).isEmpty())
+        val report=SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
+        assertTrue(report.analysisComplete)
+        assertFalse(report.hasBlockingIssues,report.findings.toString())
+        assertEquals(0,report.statistics.missingStartLocks)
+        assertEquals(0,report.statistics.missingEndLocks)
+        val decoded=PesReader.read(bytes)
+        assertTrue(decoded.stitches.filter { it.command==Command.STITCH }.none { it.x in 440..500 && it.y in 440..500 })
+    }
+
+    @Test fun photoSelectionUsesFinalFitAt998_999_1000WithoutRelaxingHoopLimit() {
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val px=io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
+        val path="M ${-50*px} ${-10*px} L ${50*px} ${-10*px} L ${50*px} ${10*px} L ${-50*px} ${10*px} Z"
+        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
+            org.locationtech.jts.io.WKTReader().read("POLYGON ((-500 -100,500 -100,500 100,-500 100,-500 -100))"))
+        for(units in listOf(998,999,1000)) {
+            val outline=RedworkOutline("",1,units/10.0,20.0,listOf(path),2000.0)
+            val selected=RedworkPipeline.silhouetteGroups(region,thread,HoopSpec.H100,
+                fit={ RedworkPipeline.fitPhotoPattern(it,outline,true) })
+            if(units<=999) {
+                assertTrue(selected.skipped.isEmpty(),"fit $units must retain the outline")
+                val result=RedworkPipeline.generate(outline,thread,photoMode=true)
+                val actual=PesReader.read(result.copyPesBytes())
+                assertEquals(units,actual.bounds!!.width)
+                assertEquals(0,actual.bounds!!.minX)
+                assertEquals("0",result.pattern.metadata["myembro.skipped_fill_outlines"])
+                assertTrue(PecViewportCheck.check(result.copyPesBytes(),HoopSpec.H100).valid)
+            } else {
+                assertEquals(setOf(0),selected.skipped)
+                val rejected=assertFailsWith<PesOutputSafety.Rejected> {
+                    RedworkPipeline.generate(outline,thread,photoMode=true)
+                }
+                assertTrue(rejected.report.findingSeverities[FindingCode.HOOP_EXCEEDED]==Severity.BLOCKER)
+            }
+        }
+    }
     @Test fun outlineBeanRepeatsEachSourceRunningSegmentThreeTimesAndKeepsLocks() {
         val thread=EmbThread(0xFF000000.toInt())
         val points=listOf(io.github.linker2k.myembro.engine.inkstitch.utils.Point(0.0,0.0),

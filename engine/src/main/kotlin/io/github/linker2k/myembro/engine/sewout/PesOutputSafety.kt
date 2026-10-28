@@ -11,7 +11,9 @@ object PesOutputSafety {
     /** Carries the actual report so callers distinguish sewing blockers from encoding failures. */
     class Rejected(val report: SewoutReport, val outputErrors: List<String>) :
         IllegalArgumentException(outputErrors.joinToString("; "))
-    private fun analyze(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern): Pair<List<String>,SewoutReport> {
+    data class Checked(val bytes:ByteArray,val report:SewoutReport)
+    private val outputMachine=SewoutMachine("output","Selected hoop",Specification(),Specification(),knownHoopsMm=emptySet())
+    private fun analyze(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern,machine:SewoutMachine=outputMachine,origin:DesignOrigin=SewoutCheck.originOf(source)): Pair<List<String>,SewoutReport> {
         val errors=PecViewportCheck.check(bytes,hoop).errors.toMutableList()
         var x=0;var y=0
         for((index,s)in boundedPecStitches(bytes).withIndex()) {
@@ -20,15 +22,19 @@ object PesOutputSafety {
                 x=s.x;y=s.y
             }
         }
-        val report=SewoutCheck.checkPes(bytes,machine=SewoutMachine("output","Selected hoop",Specification(),Specification(),knownHoopsMm=emptySet()),options=SewoutOptions(hoop=hoop,origin=SewoutCheck.originOf(source)))
+        val report=SewoutCheck.checkPes(bytes,machine=machine,options=SewoutOptions(hoop=hoop,origin=origin))
         errors+=report.findings.filter { it.severity==Severity.BLOCKER }.map { "${it.code}: ${it.message}" }
         if(!report.analysisComplete)errors+="ANALYSIS_INCOMPLETE"
         return errors.distinct() to report
     }
     fun errors(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern):List<String> = analyze(bytes,hoop,source).first
     fun requireValid(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern):ByteArray {
-        val (errors,report)=analyze(bytes,hoop,source)
+        return check(bytes,hoop,source).bytes
+    }
+    /** One actual-PES analysis, reusable by callers that need both bytes and warning locations. */
+    fun check(bytes:ByteArray,hoop:HoopSpec,source:EmbPattern,machine:SewoutMachine=outputMachine,origin:DesignOrigin=SewoutCheck.originOf(source)):Checked {
+        val (errors,report)=analyze(bytes,hoop,source,machine,origin)
         if(errors.isNotEmpty()) throw Rejected(report,errors)
-        return bytes
+        return Checked(bytes,report)
     }
 }
