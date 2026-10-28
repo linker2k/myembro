@@ -4,11 +4,11 @@
 
 1. [Why do shadows or light reflections in a photo become separate color blocks?](#1-why-do-shadows-or-light-reflections-in-a-photo-become-separate-color-blocks)
 2. [Will there be gaps between colors?](#2-will-there-be-gaps-between-colors)
-3. [Why is each color outlined again, and why do some areas have no outline?](#3-why-is-each-color-outlined-again-and-why-do-some-areas-have-no-outline)
+3. [Why is each area outlined again, and why do some areas have no outline?](#3-why-is-each-area-outlined-again-and-why-do-some-areas-have-no-outline)
 4. [Why is the largest size 99.9mm and not 100mm?](#4-why-is-the-largest-size-999mm-and-not-100mm)
 5. [What if photo embroidery does not finish within 1 minute?](#5-what-if-photo-embroidery-does-not-finish-within-1-minute)
 6. [Why do I have to reinstall to move to the beta?](#6-why-do-i-have-to-reinstall-to-move-to-the-beta)
-7. [Why do I cut the thread by hand on the SE400 when the color changes?](#7-why-do-i-cut-the-thread-by-hand-on-the-se400-when-the-color-changes)
+7. [Why do I cut the thread by hand on 4×4-inch machines?](#7-why-do-i-cut-the-thread-by-hand-on-44-inch-machines)
 8. [Why can't I freely change the stitch type and density?](#8-why-cant-i-freely-change-the-stitch-type-and-density)
 9. [Why are PES files from other programs sometimes blocked and sometimes not?](#9-why-are-pes-files-from-other-programs-sometimes-blocked-and-sometimes-not)
 
@@ -20,13 +20,13 @@ Color drawing splits the picture into a few colors. A shadow or a shiny spot is 
 
 Where two colors meet, they overlap by 0.2mm to reduce gaps between them. The outer size of the design does not change.
 
-## 3. Why is each color outlined again, and why do some areas have no outline?
+## 3. Why is each area outlined again, and why do some areas have no outline?
 
-After each color area is filled, the app sews a triple running outline in the same color. This makes the edges look clean. If the outline of a narrow area would fail the sewing check, the app leaves that outline out automatically.
+In color drawings and silhouettes, after each area is filled, the app sews one running outline in the same color along its edge. This makes the edges look clean. If an outline would fail the sewing check, the app leaves that outline out automatically.
 
 ## 4. Why is the largest size 99.9mm and not 100mm?
 
-The SE400 hoop is 100×100mm. Stitch positions are counted in 0.1mm steps starting at 0, so a 100mm hoop has positions 0 to 999. The app keeps every stitch within these positions, so the largest size it makes is 99.9mm.
+4×4-inch machines such as the SE400 have a 100×100mm hoop. Stitch positions are counted in 0.1mm steps starting at 0, so a 100mm hoop has positions 0 to 999. The app keeps every stitch within these positions, so the largest size it makes is 99.9mm. The same rule applies to every hoop: the largest size is always 0.1mm less than the hoop.
 
 ## 5. What if photo embroidery does not finish within 1 minute?
 
@@ -43,9 +43,9 @@ From the beta on, the app is signed with a new key. Android does not allow insta
 
 After that, allow USB folder access again.
 
-## 7. Why do I cut the thread by hand on the SE400 when the color changes?
+## 7. Why do I cut the thread by hand on 4×4-inch machines?
 
-The SE400 has no automatic thread cutter. Threads between colors and positions stay connected, so trim them by hand after sewing. The app shows guidance for this.
+Machines with a 100×100mm (4×4-inch) hoop do not cut jump threads automatically. This includes the SE400, SE600, SE700, SE425, SE625, SE630, SE725, PE535, PE545, PE550D and NS1750D, and in Korea the M370, M380D, LB6950, LB7950, LB8950 and Innovis 180, 900, 950 and 980. Threads that jump between positions stay connected, so trim them by hand after sewing. For these machines the app shows guidance for this.
 
 ## 8. Why can't I freely change the stitch type and density?
 
