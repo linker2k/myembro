@@ -491,8 +491,9 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun importObject(file: File) = importDesignObject(file)
 
-    /** Viewer entry point: its initial object is the baseline, not an undoable import. */
-    fun editDesign(file: File) = requestReplacement {
+    /** Viewer entry point: its initial object is the baseline, not an undoable import.
+     * A saved project opens as a project, so its block shapes and layers stay editable. */
+    fun editDesign(file: File) = if (file.extension.equals(ProjectJson.EXTENSION, ignoreCase = true)) openProject(file) else requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
