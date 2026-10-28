@@ -377,7 +377,7 @@ private fun LetteringContent(
                 } else if (ranges.isEmpty() && (automatic?.style == StitchStyle.RUNNING || automatic?.centerlineSatin==true)) {
                     Text(stringResource(if(automatic?.centerlineSatin==true) R.string.lettering_component_satin_note else R.string.lettering_satin_unconfirmed_running),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    OutlinedTextField(heightDraft, onValueChange = { value ->
+                    OutlinedTextField(letteringHeightDisplayText(heightDraft, height), onValueChange = { value ->
                         heightDraft = value
                         value.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }?.let {
                             height = it.coerceAtMost(minOf(LetteringHeightLimits.MAX_MM,hoopHeightLimit))
@@ -588,6 +588,12 @@ private fun HoopPreview(pattern: EmbPattern?, background: EmbPattern?, hoop: Hoo
 
     }
 }
+
+/** Format model-generated drafts without rounding the value used by validation or saving.
+ * The backing draft and parser stay untouched; incomplete input remains visible as entered.
+ */
+internal fun letteringHeightDisplayText(draft: String, heightMm: Double): String =
+    if (draft == heightMm.toString()) decimal(heightMm) else draft
 
 private fun decimal(value: Double): String = String.format(Locale.getDefault(), "%.1f", value)
 
