@@ -40,7 +40,16 @@ object ShapeObjectFactory {
         val x = points.minOf { it.x }; val y = points.minOf { it.y }
         val art = VectorArt.Art(frozen(listOf(x,y,points.maxOf { it.x }-x,points.maxOf { it.y }-y)),
             frozen(regions.map { region -> VectorArt.Shape(pathData(region.paths), region.color.color and 0xffffff, null, fillRule=FillRule.EVEN_ODD) }))
-        return retained(id,name,art,widthMm,regions,result.pattern,result.regionPatterns)
+        return centeredForImport(retained(id,name,art,widthMm,regions,result.pattern,result.regionPatterns))
+    }
+    /** Fresh picture insertion only. Keep original paths, cached needles and fragments untouched;
+     * an integer pose translates every command together without rerendering or adding needles.
+     * Set the pose from local bounds, rather than adding it, so factory + UI calls are idempotent.
+     */
+    fun centeredForImport(obj: ShapeObject): ShapeObject {
+        val bounds = obj.localPattern().bounds ?: return obj
+        val (cx, cy) = integerHoopCenter(bounds)
+        return obj.withTransform(Transform(x = -cx.toDouble(), y = -cy.toDouble()))
     }
     /** Codec and rename retain the same backend/default pattern, including thread identity and metadata. */
     internal fun retained(id: String, name: String, art: VectorArt.Art, widthMm: Double,
