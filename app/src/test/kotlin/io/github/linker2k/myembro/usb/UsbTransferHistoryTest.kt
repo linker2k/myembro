@@ -38,7 +38,7 @@ class UsbTransferHistoryTest {
             assertEquals(record, restored)
             assertEquals(false, restored.files.single().automaticJumpTrim)
             assertEquals("Brother SE400", restored.files.single().machineName)
-            assertEquals(3, restored.manualJumpThreadCount)
+            assertEquals(3, restored.files.single().manualJumpThreadCount)
             assertEquals(16384L, restored.allocatedBytes)
             assertEquals(4096, restored.allocationUnitBytes)
             assertContains(restored.diagnostics(), "allocated=16384 bytes; cluster=4096 bytes; source=Embroidery Lemon.pes")
@@ -62,7 +62,7 @@ class UsbTransferHistoryTest {
             assertNull(record.allocatedBytes)
             assertNull(record.allocationUnitBytes)
             assertNull(record.files.single().sourceName)
-            assertNull(record.manualJumpThreadCount)
+            assertNull(record.files.single().manualJumpThreadCount)
             assertNull(record.files.single().automaticJumpTrim)
             assertNull(record.files.single().machineName)
         } finally { dir.deleteRecursively() }

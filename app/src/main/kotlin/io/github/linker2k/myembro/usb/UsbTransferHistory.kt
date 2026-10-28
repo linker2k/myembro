@@ -9,7 +9,9 @@ import java.util.UUID
 
 /** File bytes and verified FAT data-cluster allocation are separate; SAF/old logs may not know allocation. */
 data class UsbTransferredFile(val name: String, val size: Long,
-    val allocatedBytes: Long? = null, val allocationUnitBytes: Int? = null, val sourceName: String? = null, val manualJumpThreadCount: Int? = null,
+    val allocatedBytes: Long? = null, val allocationUnitBytes: Int? = null, val sourceName: String? = null,
+    /** Legacy cleanup metadata: retained for JSON/backup compatibility; new exports omit it. */
+    val manualJumpThreadCount: Int? = null,
     /** Transfer-time profile snapshot; old records stay unknown, even if settings change. */
     val automaticJumpTrim: Boolean? = null, val machineName: String? = null)
 
@@ -28,9 +30,6 @@ data class UsbTransferRecord(
     val technical: String = "",
     val problemHint: UsbTransferProblem? = null,
 ) {
-    /** null for old records/unconfirmed machines, never silently converted to zero. */
-    val manualJumpThreadCount: Int? get() = files.takeIf { it.isNotEmpty() && it.all { f -> f.manualJumpThreadCount != null } }
-        ?.sumOf { it.manualJumpThreadCount!! }
     val allocatedBytes: Long? get() = files.takeIf { it.isNotEmpty() && it.all { f -> f.allocatedBytes != null } }
         ?.sumOf { it.allocatedBytes!! }
     val allocationUnitBytes: Int? get() = files.map { it.allocationUnitBytes }.distinct().singleOrNull()

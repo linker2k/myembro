@@ -104,7 +104,7 @@ class UsbExporter(private val context: Context) {
                 val actualName = doc.name ?: name
                 existing += actualName
                 exported += actualName
-                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong(), sourceName = design.name, manualJumpThreadCount = machine?.let { io.github.linker2k.myembro.engine.sewout.JumpThreadCleanup.assessPes(prepared.bytes,it).manualCutCount },
+                written += UsbTransferredFile(actualName, prepared.bytes.size.toLong(), sourceName = design.name,
                     automaticJumpTrim = machine?.automaticJumpTrim?.value, machineName = machine?.name)
                 if (name != prepared.fileName) notices += UsbTransferNotice.NAME_COLLISION
                 if (prepared.converted) converted++

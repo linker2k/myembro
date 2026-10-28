@@ -27,35 +27,28 @@ data class BrotherMachineFacts(
 object BrotherMachineCatalog {
     private fun area(widthMm: Int, heightMm: Int) = HoopSpec("${widthMm}×${heightMm}", widthMm*10, heightMm*10)
     val all: List<BrotherMachineFacts> = listOf(
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("se425", "Brother SE425", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.PC_USB_CABLE), false,
             listOf("https://download.brother.com/welcome/doch000184/885v31_v32_v33_om04en.pdf", "https://www.brother-usa.com/p/sewing-embroidery/SE425"), setOf("SE425")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("se625", "Brother SE625", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE), false,
             listOf("https://download.brother.com/welcome/doch101011/888m20_om02en.pdf", "https://www.brother-usa.com/p/sewing-embroidery/SE625"), setOf("SE625")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("se630", "Brother SE630", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE), false,
             listOf("https://download.brother.com/welcome/doch101011/888m20_om02en.pdf", "https://www.brother-usa.com/p/sewing-embroidery-combo/SE630"), setOf("SE630")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("se725", "Brother SE725", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE, MachineTransfer.BROTHER_WIRELESS), false,
             listOf("https://download.brother.com/welcome/doch102582/888p10_om01en.pdf", "https://www.brother-usa.com/p/sewing-embroidery-combo/SE725"), setOf("SE725")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("pe535", "Brother PE535", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE), false,
             listOf("https://download.brother.com/welcome/doch101288/888m36_m37_om01en.pdf", "https://www.brother-usa.com/p/sewing-embroidery/PE535"), setOf("PE535")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("pe550d", "Brother PE550D", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE), false,
             listOf("https://download.brother.com/welcome/doch101288/888m36_m37_om01en.pdf", "https://www.brother-usa.com/p/sewing-embroidery/PE550D"), setOf("PE550D")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
         BrotherMachineFacts("pe545", "Brother PE545", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE, MachineTransfer.BROTHER_WIRELESS), false,
             listOf("https://download.brother.com/welcome/doch102611/888p30_om01en.pdf", "https://www.brother-usa.com/p/sewing-embroidery/PE545"), setOf("PE545")),
-        // Research model-specific platform manual; wireless on NS1750D left unconfirmed due to conflicting product/manual claims.
+        // NS1750D wireless remains unconfirmed: product-page and operation-manual claims conflict.
         BrotherMachineFacts("ns1750d", "Brother NS1750D", MachineRegion.US,
             area(100, 100), listOf(area(100, 100)), setOf(MachineTransfer.USB_FLASH_DRIVE), false,
             listOf("https://download.brother.com/welcome/doch101020/888_m00_m02_m03_m04_om02en.pdf", "https://www.brother-usa.com/p/sewing-embroidery-combo/NS1750D"), setOf("NS1750D")),

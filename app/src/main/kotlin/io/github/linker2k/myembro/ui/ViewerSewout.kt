@@ -74,3 +74,9 @@ internal fun sewoutVerdictResource(report: SewoutReport): Int = when (report.ver
     SewoutVerdict.CAUTION -> io.github.linker2k.myembro.R.string.sewout_badge_caution
     SewoutVerdict.BLOCK -> io.github.linker2k.myembro.R.string.sewout_badge_block
 }
+
+/** User decision 2026-10-28: no thread-cut/cleanup instructions in the UI.
+ * Engine tasks, requirements and timing remain untouched for analysis and stored data.
+ */
+internal fun sewoutDisplayTasks(tasks: List<OperatorTask>): List<OperatorTask> =
+    tasks.filter { it.kind !in setOf(TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM) }

@@ -380,9 +380,6 @@ private fun StatsRow(pattern: EmbPattern, hoop: FrameOption, machine: io.github.
                 Stat(stringResource(R.string.stat_time), "%d:%02d".format(seconds / 60, seconds % 60), Modifier.weight(1f))
             }
             if (!compact) Stat(stringResource(R.string.stat_size), b?.let { Dimensions.size(it.width / 10.0, it.height / 10.0) } ?: "-", Modifier.fillMaxWidth())
-            Text(if (sewout == null) stringResource(R.string.viewer_trims_size_note, pattern.trimCount)
-                else stringResource(R.string.sewout_cuts, sewout.statistics.requiredManualCuts, sewout.statistics.possibleManualCuts),
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             for (warning in pattern.warnings) {
                 Text(warning, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
             }
