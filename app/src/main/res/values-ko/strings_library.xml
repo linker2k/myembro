@@ -56,4 +56,15 @@
     <string name="viewer_finish">완성 도안 보기</string>
     <string name="library_shared_imported">도안 %1$d개를 가져왔습니다</string>
     <string name="library_shared_failed">%1$s 가져오기 실패: %2$s</string>
+    <string name="library_file_export">파일로 내보내기</string>
+    <string name="library_file_export_folder">폴더에 내보내기</string>
+    <string name="library_file_export_single">파일 하나 저장…</string>
+    <string name="library_file_export_failed">내보내지 못한 파일</string>
+    <string name="library_file_export_folder_failed">저장 폴더에 접근하거나 쓸 수 없습니다.</string>
+    <string name="library_file_export_read_failed">원본 파일을 읽을 수 없습니다.</string>
+    <string name="library_file_export_create_failed">저장할 파일을 만들 수 없습니다.</string>
+    <string name="library_file_export_copy_failed">파일 복사를 완료하지 못했습니다.</string>
+    <string name="library_file_export_partial_remains">불완전한 파일을 지우지 못했습니다. 저장 폴더에서 해당 파일을 지워 주세요.</string>
+    <plurals name="library_files_exported"><item quantity="other">%1$d개 내보냄</item></plurals>
+    <string name="library_file_export_progress">원본 파일 복사 중…</string>
 </resources>

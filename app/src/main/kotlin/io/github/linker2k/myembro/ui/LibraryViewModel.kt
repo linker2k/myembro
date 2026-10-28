@@ -24,6 +24,10 @@ import io.github.linker2k.myembro.library.ImportSkip
 import io.github.linker2k.myembro.library.ImportSkipReason
 import io.github.linker2k.myembro.library.importDesigns
 import io.github.linker2k.myembro.library.ImportDecisions
+import io.github.linker2k.myembro.library.OriginalFileExporter
+import io.github.linker2k.myembro.library.originalExportFolder
+import io.github.linker2k.myembro.library.originalExportDocument
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Job
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.usb.UsbExporter
@@ -104,6 +108,48 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     /** One-shot message for a snackbar; the screen clears it after showing. */
     var message by mutableStateOf<String?>(null)
+
+    var fileExportRunning by mutableStateOf(false)
+        private set
+    var fileExportFailures by mutableStateOf<List<OriginalFileExporter.Failure>>(emptyList())
+        private set
+    private var pendingFileExport: List<File>? = null
+    private var fileExportCompletionMessage: String? = null
+    fun dismissFileExportFailures() {
+        fileExportFailures=emptyList()
+        fileExportCompletionMessage?.let { message=it };fileExportCompletionMessage=null
+    }
+    /** Snapshot before the system picker opens; a later selection change cannot export other files.
+     * Samples/default logo are normal installed files, already selectable for USB export;
+     * archive copying follows that existing allow policy too.
+     */
+    fun requestFileExport(single: Boolean = false): List<File> {
+        if(busy || pendingFileExport!=null || selection.isEmpty() || (single && selection.size!=1)) return emptyList()
+        return selection.toList().also { pendingFileExport=it }
+    }
+    fun fileExportResult(uri: Uri?, single: Boolean = false) {
+        val files=pendingFileExport ?: return
+        pendingFileExport=null
+        if(uri==null) return // Picker cancellation leaves selection and sources untouched.
+        busy=true;fileExportRunning=true
+        viewModelScope.launch {
+            try {
+                val report=withContext(Dispatchers.IO) {
+                    val scope=kotlin.coroutines.coroutineContext
+                    try {
+                        if(single) OriginalFileExporter.single(files.single(),originalExportDocument(getApplication(),uri,files.single().name)) { scope.ensureActive() }
+                        else OriginalFileExporter.export(files,originalExportFolder(getApplication(),uri)) { scope.ensureActive() }
+                    } catch(e: CancellationException) { throw e }
+                    catch(e: Exception) { OriginalFileExporter.folderFailure(files,e) }
+                }
+                fileExportFailures=report.failures
+                selection.removeAll(report.copied.map { it.source }.toSet())
+                val completed=getApplication<Application>().resources.getQuantityString(R.plurals.library_files_exported,report.copied.size,report.copied.size)
+                // Do not hide the completion snackbar behind the failure dialog.
+                if(report.failures.isEmpty()) message=completed else fileExportCompletionMessage=completed
+            } finally { fileExportRunning=false;busy=false }
+        }
+    }
 
     /** Set when the user must grant a folder on this drive; the screen launches the picker. */
     var accessRequest by mutableStateOf<UsbExporter.Drive?>(null)
