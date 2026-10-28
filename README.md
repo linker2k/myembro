@@ -46,7 +46,7 @@ After reinstalling, allow USB folder access again.
 
 Open the app and tap **Start a new project**. You can start from a blank hoop, your own design, a photo or drawing, an emoji, or lettering.
 
-The [user guide](docs/manual/user-guide.md) walks through every screen with pictures.
+The [user guide](docs/manual/user-guide.md) walks through every screen with pictures. Common questions are in the [FAQ](docs/faq.md).
 
 ## Machines
 
