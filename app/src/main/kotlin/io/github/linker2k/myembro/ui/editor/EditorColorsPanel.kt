@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.ui.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -63,7 +64,7 @@ internal fun EditorColorsPanel(initial: Project, owned: MyThreads, sewing: Sewin
         catch(_: Exception) { value=emptyList() }
     }
     Column(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(horizontal=16.dp)) {
-        Text(stringResource(R.string.editor_colors),style=MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.editor_colors),style=MaterialTheme.typography.titleLarge,modifier=Modifier.testTag("colors-title"))
         data?.let { render ->
             val shownFabric=render.pattern.fabricColorArgb?.let { "#%06X".format(it and 0xffffff) }
                 ?: stringResource(R.string.editor_fabric_default)
@@ -121,6 +122,7 @@ internal fun EditorColorsPanel(initial: Project, owned: MyThreads, sewing: Sewin
 }
 
 @Composable
-private fun ColorSwatch(argb: Int) {
-    Box(Modifier.size(22.dp).background(Color(argb),MaterialTheme.shapes.small))
+internal fun ColorSwatch(argb: Int, modifier: Modifier = Modifier) {
+    Box(modifier.size(22.dp).background(Color(argb),MaterialTheme.shapes.small)
+        .border(1.dp,MaterialTheme.colorScheme.outline,MaterialTheme.shapes.small))
 }

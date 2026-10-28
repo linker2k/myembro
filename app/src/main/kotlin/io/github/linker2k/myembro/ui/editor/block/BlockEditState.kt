@@ -2,6 +2,8 @@
 package io.github.linker2k.myembro.ui.editor.block
 
 import io.github.linker2k.myembro.engine.edit.ShapeObject
+import io.github.linker2k.myembro.engine.edit.Project
+import io.github.linker2k.myembro.engine.edit.threadColor
 import kotlin.math.hypot
 
 /**
@@ -102,9 +104,9 @@ class BlockEditState(val regions: List<BlockRegion>) {
 
     companion object {
         /** The shape's actually emitted regions, in its sewing order, with their resolved stitch type. */
-        fun of(shape: ShapeObject) = BlockEditState(shape.regions.map { r ->
+        fun of(shape: ShapeObject, project: Project? = null) = BlockEditState(shape.regions.map { r ->
             BlockRegion(r.id, r.paths.map { p -> RegionPath(DoubleArray(p.points.size) { p.points[it].x },
-                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, r.color.color, BlockApply.draft(r.stitch))
+                DoubleArray(p.points.size) { p.points[it].y }, p.closed) }, (project?.threadColor(r.color) ?: r.color).color, BlockApply.draft(r.stitch))
         })
     }
 }

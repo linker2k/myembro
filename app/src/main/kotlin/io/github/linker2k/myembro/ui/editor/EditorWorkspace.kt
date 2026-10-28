@@ -104,7 +104,7 @@ internal fun MiniLayerPanel(vm: EditorViewModel, enabled: Boolean, onAdd: () -> 
                         if (obj is TextObject && obj.visible && !vm.selectionMode) vm.openLettering(obj.id)
                     }.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(28.dp)) {
-                        LayerThumbnail(obj, Modifier.fillMaxSize())
+                        LayerThumbnail(obj,vm.project, Modifier.fillMaxSize())
                         Text("${index + 1}", Modifier.align(Alignment.BottomStart).background(colors.surface.copy(alpha = 0.9f)),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
@@ -125,10 +125,12 @@ internal fun MiniLayerPanel(vm: EditorViewModel, enabled: Boolean, onAdd: () -> 
     }
 }
 
+internal fun layerThumbnailPattern(project: Project, obj: DesignObject) = project.applyThreadColors(ShapeStitchGuard.local(obj).pattern)
+
 @Composable
-private fun LayerThumbnail(obj: DesignObject, modifier: Modifier) {
-    val data = remember(obj.withTransform(Transform())) { RenderData(ShapeStitchGuard.local(obj).pattern) }
-    val background = MaterialTheme.colorScheme.surfaceContainerLow
+internal fun LayerThumbnail(obj: DesignObject, project: Project, modifier: Modifier) {
+    val data = remember(obj.withTransform(Transform()),project.threadColors) { RenderData(layerThumbnailPattern(project,obj)) }
+    val background = project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceContainerLow
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND } }
     Canvas(modifier) {
         drawRect(background)

@@ -137,4 +137,5 @@
     <string name="fabric_denim">Denim</string>
     <string name="editor_colors_hint">Preview fabric and thread colors together.</string>
     <string name="editor_colors_preview_failed">Unable to preview this design. Your changes can still be canceled.</string>
+    <string name="editor_title_compact">Editor</string>
 </resources>

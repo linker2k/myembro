@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.semantics.contentDescription
@@ -64,7 +65,7 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
     // Leaving the screen cancels a running generation; the design keeps its last committed settings.
     DisposableEffect(Unit) { onDispose { vm.cancelBlockWork() } }
     var selected by remember(shape.id) { mutableStateOf(emptySet<String>()) }
-    val state = remember(shape) { BlockEditState.of(shape).also { it.restore(selected) } }
+    val state = remember(shape,vm.project.threadColors) { BlockEditState.of(shape,vm.project).also { it.restore(selected) } }
     var multi by remember { mutableStateOf(false) }
     var draft by remember(shape.id) { mutableStateOf(BlockStitchDraft()) }
     // Engine prechecks per region, off the main thread (satin probing generates stitches).
@@ -97,7 +98,8 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                     }
                     if (status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
-                    key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp)) { x, y, lineMm ->
+                    key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
+                        vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
                 }
             }
@@ -208,18 +210,19 @@ internal class BlockCanvasFit(bounds: RegionBounds?, width: Float, height: Float
 }
 
 @Composable
-private fun RegionCanvas(state: BlockEditState, modifier: Modifier, onTap: (Double, Double, Double) -> Unit) {
+internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor: Color, onTap: (Double, Double, Double) -> Unit) {
     val outline = MaterialTheme.colorScheme.primary
     val description = stringResource(R.string.block_edit_canvas)
     val touchPx = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.toPx() }
     // The tap handler outlives recompositions; read the latest one (multi-select may have changed).
     val latestTap by rememberUpdatedState(onTap)
-    Canvas(modifier.semantics { contentDescription = description }.pointerInput(state) {
+    Canvas(modifier.clipToBounds().semantics { contentDescription = description }.pointerInput(state) {
         detectTapGestures { p ->
             val fit = BlockCanvasFit(state.bounds, size.width.toFloat(), size.height.toFloat())
             latestTap(fit.mmX(p.x), fit.mmY(p.y), maxOf(0.5, (touchPx / fit.scale).toDouble()))
         }
     }) {
+        drawRect(fabricColor)
         val fit = BlockCanvasFit(state.bounds, size.width, size.height)
         val dim = state.selected.isNotEmpty()
         state.regions.forEach { r ->
