@@ -191,7 +191,7 @@ If the transfer fails, the result screen explains how to connect (OTG) and offer
 
 The clock icon in selection mode opens the recent USB transfer history (the screenshot was taken on an emulator, so only failed attempts are listed).
 
-**Important for the SE400:** it has no automatic thread cutter. Travel threads between colors and positions are not cut, so trim them by hand after sewing. The app shows guidance for this. Files written to the SE400 over USB are erased when the machine is turned off.
+**Important for the SE400:** files written to the SE400 over USB are erased when the machine is turned off.
 
 **SE600/SE700:** machine profiles (100×100mm, USB memory) based on the manuals; transfer has not been tested on real machines yet.
 
@@ -216,7 +216,6 @@ At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL
 ![Home in dark theme](../images/manual/en/17-home-dark.png)
 
 Known limitations:
-- SE400: no automatic thread cutting; trim travel threads by hand.
 - Signing key change: uninstall/reinstall will be needed once; back up first.
 - SE600/SE700: transfer not yet tested on real machines.
 

@@ -8,9 +8,8 @@
 4. [Why is the largest size 99.9mm and not 100mm?](#4-why-is-the-largest-size-999mm-and-not-100mm)
 5. [What if photo embroidery does not finish within 1 minute?](#5-what-if-photo-embroidery-does-not-finish-within-1-minute)
 6. [Why do I have to reinstall to move to the beta?](#6-why-do-i-have-to-reinstall-to-move-to-the-beta)
-7. [Why do I cut the thread by hand on 4×4-inch machines?](#7-why-do-i-cut-the-thread-by-hand-on-44-inch-machines)
-8. [Why can't I freely change the stitch type and density?](#8-why-cant-i-freely-change-the-stitch-type-and-density)
-9. [Why are PES files from other programs sometimes blocked and sometimes not?](#9-why-are-pes-files-from-other-programs-sometimes-blocked-and-sometimes-not)
+7. [Why can't I freely change the stitch type and density?](#7-why-cant-i-freely-change-the-stitch-type-and-density)
+8. [Why are PES files from other programs sometimes blocked and sometimes not?](#8-why-are-pes-files-from-other-programs-sometimes-blocked-and-sometimes-not)
 
 ## 1. Why do shadows or light reflections in a photo become separate color blocks?
 
@@ -43,14 +42,10 @@ From the beta on, the app is signed with a new key. Android does not allow insta
 
 After that, allow USB folder access again.
 
-## 7. Why do I cut the thread by hand on 4×4-inch machines?
-
-Machines with a 100×100mm (4×4-inch) hoop do not cut jump threads automatically. This includes the SE400, SE600, SE700, SE425, SE625, SE630, SE725, PE535, PE545, PE550D and NS1750D, and in Korea the M370, M380D, LB6950, LB7950, LB8950 and Innovis 180, 900, 950 and 980. Threads that jump between positions stay connected, so trim them by hand after sewing. For these machines the app shows guidance for this.
-
-## 8. Why can't I freely change the stitch type and density?
+## 7. Why can't I freely change the stitch type and density?
 
 To make designs that sew without failures, the app chooses the stitch type and settings automatically. In **Edit blocks** you can change only what is safe: **Stitch type**, **Texture**, **Direction** and **Sewing order**. **Density** is Normal for now; dense and sparse are coming in a later version.
 
-## 9. Why are PES files from other programs sometimes blocked and sometimes not?
+## 8. Why are PES files from other programs sometimes blocked and sometimes not?
 
 The app does not change PES files you import; they are kept exactly as they are. It only blocks a severe case: more than 30 needle stitches packed into one 0.5mm spot. Designs the app makes itself are checked more strictly.
