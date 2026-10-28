@@ -18,7 +18,7 @@ Color drawing splits the picture into a few colors. A shadow or a shiny spot is 
 
 ## 2. Will there be gaps between colors?
 
-No. Where two colors meet, they overlap by 0.2mm so no fabric shows between them. The outer size of the design does not change.
+Where two colors meet, they overlap by 0.2mm to reduce gaps between them. The outer size of the design does not change.
 
 ## 3. Why is each color outlined again, and why do some areas have no outline?
 
