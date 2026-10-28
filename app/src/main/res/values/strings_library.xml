@@ -56,4 +56,15 @@
     <string name="viewer_finish">Show completed design</string>
     <string name="library_shared_imported">Imported %1$d designs</string>
     <string name="library_shared_failed">Could not import %1$s: %2$s</string>
+    <string name="library_file_export">Export files</string>
+    <string name="library_file_export_folder">Export to a folder</string>
+    <string name="library_file_export_single">Save this file as…</string>
+    <string name="library_file_export_failed">Some files could not be exported</string>
+    <string name="library_file_export_folder_failed">The destination folder is unavailable or not writable.</string>
+    <string name="library_file_export_read_failed">The original file could not be read.</string>
+    <string name="library_file_export_create_failed">A destination file could not be created.</string>
+    <string name="library_file_export_copy_failed">The file could not be copied completely.</string>
+    <string name="library_file_export_partial_remains">A partial file could not be removed. Please remove it from the destination folder.</string>
+    <plurals name="library_files_exported"><item quantity="one">%1$d file exported</item><item quantity="other">%1$d files exported</item></plurals>
+    <string name="library_file_export_progress">Copying original files…</string>
 </resources>

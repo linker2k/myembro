@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +35,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SelectAll
@@ -113,6 +116,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (
 private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
+    var fileExportMenu by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<Set<File>>(emptySet()) }
     val visible = vm.visibleItems
     val snackbar = remember { SnackbarHostState() }
@@ -123,6 +127,11 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
         vm.onAccessResult(it.data?.data)
     }
 
+    val originalFolderPicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { vm.fileExportResult(it) }
+    val originalFilePicker=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { vm.fileExportResult(it,single=true) }
+    fun exportOriginalFolder() { if(vm.requestFileExport().isNotEmpty()) originalFolderPicker.launch(null) }
+    fun exportOriginalSingle() { vm.requestFileExport(single=true).singleOrNull()?.let { originalFilePicker.launch(it.name) } }
+
     LaunchedEffect(vm) { vm.refresh() }
     LaunchedEffect(vm.accessRequest) {
         vm.accessRequest?.let { folderPicker.launch(vm.accessIntent(it)) }
@@ -130,6 +139,25 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
     LaunchedEffect(vm.message) {
         vm.message?.let { snackbar.showSnackbar(it); vm.message = null }
     }
+    if(vm.fileExportFailures.isNotEmpty()) AlertDialog(onDismissRequest=vm::dismissFileExportFailures,
+        title={Text(stringResource(R.string.library_file_export_failed))},text={
+            Column(Modifier.heightIn(max=360.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                vm.fileExportFailures.forEach { failure ->
+                    val reason=stringResource(when(failure.reason) {
+                        io.github.linker2k.myembro.library.OriginalFileExporter.FailureReason.FOLDER_ACCESS -> R.string.library_file_export_folder_failed
+                        io.github.linker2k.myembro.library.OriginalFileExporter.FailureReason.SOURCE_READ -> R.string.library_file_export_read_failed
+                        io.github.linker2k.myembro.library.OriginalFileExporter.FailureReason.DESTINATION_CREATE -> R.string.library_file_export_create_failed
+                        io.github.linker2k.myembro.library.OriginalFileExporter.FailureReason.COPY -> R.string.library_file_export_copy_failed
+                    })
+                    Column {
+                        Text(failure.source.name,style=MaterialTheme.typography.titleSmall)
+                        Text(reason)
+                        failure.detail?.let { Text(it,style=MaterialTheme.typography.bodySmall) }
+                        if(failure.partialFileRemains) Text(stringResource(R.string.library_file_export_partial_remains))
+                    }
+                }
+            }
+        },confirmButton={TextButton(onClick=vm::dismissFileExportFailures) {Text(stringResource(R.string.library_got_it))}})
     BackHandler(enabled = selecting) { vm.clearSelection() }
 
     Scaffold(
@@ -152,6 +180,17 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                         Icon(Icons.Default.History, stringResource(R.string.usb_history_title))
                     }
                     if (selecting) {
+                        Box {
+                            IconButton(onClick={if(vm.selection.size==1) fileExportMenu=true else exportOriginalFolder()},enabled=!vm.busy) {
+                                Icon(Icons.Default.SaveAlt,stringResource(R.string.library_file_export))
+                            }
+                            DropdownMenu(fileExportMenu,onDismissRequest={fileExportMenu=false}) {
+                                DropdownMenuItem(text={Text(stringResource(R.string.library_file_export_folder))},
+                                    onClick={fileExportMenu=false;exportOriginalFolder()})
+                                DropdownMenuItem(text={Text(stringResource(R.string.library_file_export_single))},
+                                    onClick={fileExportMenu=false;exportOriginalSingle()})
+                            }
+                        }
                         IconButton(onClick = vm::selectAll) {
                             Icon(Icons.Default.SelectAll, stringResource(R.string.library_select_all))
                         }
@@ -186,7 +225,8 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                         if (vm.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                         else Icon(Icons.Default.Usb, null)
                         Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.usb_export_n, vm.selection.size))
+                        if(vm.fileExportRunning) Text(stringResource(R.string.library_file_export_progress))
+                        else Text(stringResource(R.string.usb_export_n, vm.selection.size))
                     }
                 }
             }
