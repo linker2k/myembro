@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.sewout.Highlight
 import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.edit.fabricColorArgb
 import io.github.linker2k.myembro.engine.model.Bounds
 
 /** Rendered thread width in 0.1 mm; real 40wt thread is about 0.4 mm. */
@@ -56,7 +57,7 @@ fun StitchCanvas(
     blockerHighlights: List<Highlight> = emptyList(),
     onBlockerTap: ((Highlight) -> Unit)? = null,
 ) {
-    val fabricColor = MaterialTheme.colorScheme.surface.toArgb()
+    val fabricColor = data.pattern.fabricColorArgb ?: MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
     val needleColor = MaterialTheme.colorScheme.primary.toArgb()
     val blockingColor = MaterialTheme.colorScheme.error.toArgb()

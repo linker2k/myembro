@@ -117,4 +117,24 @@
     <string name="editor_split_instructions">Mount the frame at each numbered position in order. Each file is checked against the selected machine before export.</string>
     <string name="editor_safe_size_hint">Safe design area: %1$s (safety margin on every edge)</string>
     <string name="editor_rebuilding_stitches">Preparing stitches…</string>
+    <string name="editor_colors">Colors</string>
+    <string name="editor_fabric_color">Fabric color</string>
+    <string name="editor_threads">Embroidery threads</string>
+    <string name="editor_fabric_default">Theme default</string>
+    <string name="editor_fabric_hex">Custom color · #RRGGBB</string>
+    <string name="editor_fabric_custom">Use color</string>
+    <string name="editor_choose_thread">Choose a Brother thread</string>
+    <string name="editor_owned_threads_first">Your threads are listed first.</string>
+    <string name="editor_colors_apply">Apply</string>
+    <string name="editor_colors_cancel">Cancel</string>
+    <string name="editor_colors_conflict">The project changed. Close this panel and try again.</string>
+    <string name="fabric_white">White</string>
+    <string name="fabric_ivory">Ivory</string>
+    <string name="fabric_black">Black</string>
+    <string name="fabric_gray">Gray</string>
+    <string name="fabric_navy">Navy</string>
+    <string name="fabric_red">Red</string>
+    <string name="fabric_denim">Denim</string>
+    <string name="editor_colors_hint">Preview fabric and thread colors together.</string>
+    <string name="editor_colors_preview_failed">Unable to preview this design. Your changes can still be canceled.</string>
 </resources>

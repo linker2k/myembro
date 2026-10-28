@@ -68,6 +68,10 @@ object ProjectJson {
         return buildJsonObject {
             put("format", "myembro")
             put("version", VERSION)
+            project.fabricColorArgb?.let { put("fabricColorArgb",it) }
+            if(project.threadColors.isNotEmpty()) put("threadColors",JsonArray(project.threadColors.map { entry ->
+                buildJsonObject { put("source",encodeThread(entry.source));put("replacement",encodeThread(entry.replacement)) }
+            }))
             put("hoop", buildJsonObject {
                 put("name", project.hoop.name); put("width", project.hoop.width); put("height", project.hoop.height)
             })
@@ -97,7 +101,12 @@ object ProjectJson {
             }
         }
         require(objects.map { it.id }.distinct().size == objects.size) { "Duplicate object ids" }
-        return Project(HoopSpec(hoop.string("name"), hoop.int("width"), hoop.int("height")), objects)
+        return Project(HoopSpec(hoop.string("name"), hoop.int("width"), hoop.int("height")), objects,
+            fabricColorArgb=root["fabricColorArgb"]?.jsonPrimitive?.intOrNull,
+            threadColors=root["threadColors"]?.jsonArray?.map { element ->
+                val entry=element.jsonObject
+                ProjectThreadColor(decodeThread(entry.getValue("source").jsonObject),decodeThread(entry.getValue("replacement").jsonObject))
+            }.orEmpty())
     }
 
     private fun encodeStitch(obj: StitchObject): JsonObject = buildJsonObject {

@@ -117,4 +117,24 @@
     <string name="editor_split_instructions">프레임을 번호 순서대로 고정해 봉제하세요. 각 파일은 선택한 기종의 제한을 확인한 후 내보냅니다.</string>
     <string name="editor_safe_size_hint">안전 도안 영역: %1$s (모든 가장자리에 안전 여유 적용)</string>
     <string name="editor_rebuilding_stitches">땀 다시 준비하는 중…</string>
+    <string name="editor_colors">색</string>
+    <string name="editor_fabric_color">배경천 색</string>
+    <string name="editor_threads">자수실 색</string>
+    <string name="editor_fabric_default">기본 배경</string>
+    <string name="editor_fabric_hex">직접 고르기 · #RRGGBB</string>
+    <string name="editor_fabric_custom">색 선택</string>
+    <string name="editor_choose_thread">Brother 실 고르기</string>
+    <string name="editor_owned_threads_first">내 실을 먼저 보여 줍니다.</string>
+    <string name="editor_colors_apply">적용</string>
+    <string name="editor_colors_cancel">취소</string>
+    <string name="editor_colors_conflict">프로젝트가 변경됐습니다. 색 패널을 닫고 다시 열어 주세요.</string>
+    <string name="fabric_white">흰색</string>
+    <string name="fabric_ivory">아이보리</string>
+    <string name="fabric_black">검정</string>
+    <string name="fabric_gray">회색</string>
+    <string name="fabric_navy">네이비</string>
+    <string name="fabric_red">빨강</string>
+    <string name="fabric_denim">데님</string>
+    <string name="editor_colors_hint">배경천과 자수실 색을 미리보기로 함께 맞춰 보세요.</string>
+    <string name="editor_colors_preview_failed">이 도안을 미리 볼 수 없습니다. 취소하면 변경 내용을 버릴 수 있습니다.</string>
 </resources>

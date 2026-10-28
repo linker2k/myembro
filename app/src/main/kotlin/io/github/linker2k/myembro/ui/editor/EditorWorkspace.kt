@@ -149,7 +149,7 @@ private fun LayerThumbnail(obj: DesignObject, modifier: Modifier) {
 @Composable
 internal fun EditorInspector(vm: EditorViewModel, tab: Int, onTab: (Int) -> Unit, expanded: Boolean,
     onExpand: () -> Unit, showJumps: Boolean, onJumps: (Boolean) -> Unit, preview: Float, onPreview: (Float) -> Unit,
-    onProperties: () -> Unit, modifier: Modifier, docked: Boolean = false) {
+    onProperties: () -> Unit, modifier: Modifier, docked: Boolean = false, onColors: () -> Unit = {}) {
     val colors = MaterialTheme.colorScheme
     val enabled = !vm.busy && !vm.gestureInProgress
     val obj = vm.selected?.takeIf { vm.selectedIds.size == 1 }
@@ -191,7 +191,7 @@ internal fun EditorInspector(vm: EditorViewModel, tab: Int, onTab: (Int) -> Unit
                         } else Text(stringResource(R.string.editor_inspector_empty), style = MaterialTheme.typography.bodySmall,
                             color = colors.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
                     1 -> StitchInspector(vm, showJumps, onJumps, preview, onPreview, enabled)
-                    2 -> ColorInspector(vm, enabled)
+                    2 -> ColorInspector(enabled, onColors)
                 }
             }
         }
@@ -315,50 +315,13 @@ private fun StitchStat(label: Int, value: Int) {
 }
 
 @Composable
-private fun ColorInspector(vm: EditorViewModel, enabled: Boolean) {
-    val obj = vm.selected?.takeIf { vm.selectedIds.size == 1 }
-    val project = vm.project
-    var threads by remember { mutableStateOf<List<EmbThread>>(emptyList()) }
-    LaunchedEffect(obj, project) {
-        threads = withContext(Dispatchers.Default) {
-            val p = obj?.let { ShapeStitchGuard.local(it).pattern } ?: ShapeStitchGuard.displayFlatten(project) { it.flatten() }
-            p.threads.ifEmpty { p.colorBlocks.map { it.thread } }
-        }
+private fun ColorInspector(enabled: Boolean, onColors: () -> Unit) {
+    Text(stringResource(R.string.editor_colors_hint),style=MaterialTheme.typography.bodySmall)
+    FilledTonalButton(onClick=onColors,enabled=enabled,modifier=Modifier.fillMaxWidth()) {
+        Icon(Icons.Default.Palette,null)
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.editor_colors))
     }
-    var selectedIndex by remember(obj?.id) { mutableIntStateOf(0) }
-    if (threads.isEmpty()) { Text(stringResource(R.string.editor_inspector_empty), style = MaterialTheme.typography.bodySmall); return }
-    val index = selectedIndex.coerceIn(0, threads.lastIndex)
-    val current = threads[index]
-    var hex by remember(obj, index) { mutableStateOf(current.hex.removePrefix("#")) }
-    val parsed = parseThreadHex(hex)
-    Text(stringResource(R.string.editor_thread_count, threads.size), style = MaterialTheme.typography.labelMedium)
-    Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        threads.forEachIndexed { i, thread -> ThreadSwatch(thread, i == index, enabled) { selectedIndex = i } }
-    }
-    Text(current.displayDetails,
-        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    if (obj != null) {
-        Text(stringResource(R.string.my_threads_match), style = MaterialTheme.typography.labelMedium)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            vm.settings.myThreads.ranked(parsed ?: current.color, 5).forEach { (candidate, _) ->
-                ThreadSwatch(candidate, candidate.sameColor(current), enabled) { vm.changeThread(index, candidate) }
-            }
-        }
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            vm.settings.myThreads.candidates(listOf(EmbThread(ThreadTerracotta.toArgb(), stringResource(R.string.editor_thread_terracotta))) + EmbPattern.DEFAULT_PALETTE).forEach { thread -> ThreadSwatch(thread, thread.sameColor(current), enabled) {
-                vm.changeThread(index, thread)
-            } }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(hex, { hex = it }, Modifier.weight(1f), singleLine = true, enabled = enabled,
-                isError = parsed == null, label = { Text(stringResource(R.string.editor_thread_hex)) },
-                prefix = { Text("#") }, textStyle = MaterialTheme.typography.bodyMedium,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii))
-            IconButton(onClick = { parsed?.let { vm.changeThread(index, if(vm.settings.myThreads.active) vm.settings.myThreads.nearest(it) else EmbThread(it)) } }, enabled = enabled && parsed != null && parsed != current.color) {
-                Icon(Icons.Default.Check, stringResource(R.string.editor_apply))
-            }
-        }
-    } else Text(stringResource(R.string.editor_color_select_one), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
