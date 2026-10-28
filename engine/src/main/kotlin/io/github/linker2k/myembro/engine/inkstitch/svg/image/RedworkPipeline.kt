@@ -168,25 +168,20 @@ object RedworkPipeline {
         return EmbPattern(stitches,finished.threads,finished.metadata,finished.warnings)
     }
 
-    /** Preserve whole-region tatami routing, then append unexpanded exterior/hole rings.
-     * Only the existing PhotoOutline.route decides their order; no additional coordinate sort.
-     * Reuse the color path's optional-outline selection; mandatory fills are never removed.
-     */
+    /** Keep each island's original tatami and immediately following unexpanded outline. */
     internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread, hoop: HoopSpec,
         fit:(EmbPattern)->EmbPattern={ it }, checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
-        // Pre-fit-fix 90-case order audit (2026-10-28), jump mm: A/B 16387.254,
-        // C 16248.893, D (no outline) 7460.580, E 14271.611.
-        // E is closest to D among outlined variants; /tmp/myembro-p7-freq/jump-variants.
         checkpoint()
-        val fills=DefaultTatami.stitchGroups(region,thread)
-        val outlines=(0 until region.geometry.numGeometries).map { index ->
-            val polygon=region.geometry.getGeometryN(index) as Polygon
-            ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
+        val fills=mutableListOf<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>()
+        val ordered=PhotoIslandOrder.polygons(region).mapIndexedNotNull { index,polygon ->
+            checkpoint()
+            val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread)
+            if(next.isEmpty()) null else {
+                if(fills.isNotEmpty()) fills[fills.lastIndex]=fills.last().copy(trimAfter=true)
+                fills+=next
+                ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
+            }
         }
-        val anchors=outlines.map { item -> item.groups.first().stitches.map {
-            io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
-        } }
-        val ordered=PhotoOutline.route(anchors).paths.map { outlines[anchors.indexOf(it)] }
         // Match final generation exactly; fitting maps coordinates without changing owner indices.
         return ColorFillOutline.select(fills,ordered,hoop,prepareOutput={ candidate,owners ->
             ColorFillOutline.PreparedOutput(fit(GeneratedPatternProcessor.fromGroups(candidate,stitchOwners=owners)),

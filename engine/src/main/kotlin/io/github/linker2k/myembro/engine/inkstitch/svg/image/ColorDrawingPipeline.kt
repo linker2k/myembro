@@ -122,8 +122,7 @@ object ColorDrawingPipeline {
                     }
                 },FillRule.EVEN_ODD)
 
-                for(i in 0 until region.geometry.numGeometries) {
-                    val shape=region.geometry.getGeometryN(i)
+                for(shape in PhotoIslandOrder.polygons(region)) {
                     checkpoint("widths")
                     val widths=StitchTypeRule.widths(shape,10.0)
                     // Painted areas retain their polygon shape through the same default fill as
