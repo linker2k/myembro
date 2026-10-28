@@ -46,7 +46,7 @@ After reinstalling, allow USB folder access again.
 
 Open the app and tap **Start a new project**. You can start from a blank hoop, your own design, a photo or drawing, an emoji, or lettering.
 
-The [user guide](docs/manual/user-guide.md) walks through every screen with pictures.
+The [user guide](docs/manual/user-guide.md) walks through every screen with pictures. Common questions are in the [FAQ](docs/faq.md).
 
 ## Machines
 
@@ -69,7 +69,6 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Known limitations
 
-- The SE400 has no automatic thread cutter. Trim the threads between colors by hand after sewing; the app shows guidance.
 - SE600/SE700 transfer has not been tested on real machines yet.
 - In color drawing, very small pieces (under 3mm²) are removed, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
 - Photo stitch generation stops after 1 minute. Pictures with about 100 color areas can hit this; use lower detail or a smaller crop.
