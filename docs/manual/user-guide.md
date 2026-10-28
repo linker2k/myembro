@@ -192,6 +192,8 @@ If the transfer fails, the result screen explains how to connect (OTG) and offer
 
 The clock icon in selection mode opens the recent USB transfer history (the screenshot was taken on an emulator, so only failed attempts are listed).
 
+**Copy files out of the app:** in selection mode, **Export files** saves the selected files unchanged to a folder you pick (for one file you can also choose **Save this file as…**). Use it to keep copies on the phone or in cloud storage; it does not check or convert the design.
+
 **Important:** a file sent to the machine over USB is erased when the machine is turned off, unless you save it to the machine's internal memory.
 
 **Other machines:** the machine list has 58 Brother embroidery models sold in the United States and Korea (chapter 10). Only the SE400 is tested on a real machine; the others follow Brother's manuals and product pages.

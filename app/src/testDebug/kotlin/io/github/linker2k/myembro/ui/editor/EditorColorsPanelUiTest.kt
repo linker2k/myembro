@@ -10,11 +10,6 @@ import io.github.linker2k.myembro.engine.model.*
 import io.github.linker2k.myembro.library.Thumbnails
 import io.github.linker2k.myembro.ui.RenderData
 import io.github.linker2k.myembro.ui.theme.MyembroTheme
-import android.content.ComponentName
-import androidx.activity.ComponentActivity
-import org.junit.rules.ExternalResource
-import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,14 +23,7 @@ import kotlin.test.*
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],qualifiers="en-rUS-w480dp-h1000dp")
 class EditorColorsPanelUiTest {
-    // ui-test-manifest is debug-only. Register the host in Robolectric for both test variants.
-    @get:Rule(order = 0) val activityHost = object : ExternalResource() {
-        override fun before() {
-            val application = RuntimeEnvironment.getApplication()
-            shadowOf(application.packageManager).addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
-        }
-    }
-    @get:Rule(order = 1) val compose=createComposeRule()
+    @get:Rule val compose=createComposeRule()
     private val initial=Project(objects=listOf(StitchObject("s","Synthetic",EmbPattern(listOf(
         Stitch(0,0,Command.STITCH),Stitch(30,20,Command.STITCH),Stitch(30,20,Command.END)),listOf(EmbThread(0xffff0000.toInt()))))))
 
