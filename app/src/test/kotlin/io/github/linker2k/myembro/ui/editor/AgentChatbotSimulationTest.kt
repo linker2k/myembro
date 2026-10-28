@@ -26,7 +26,11 @@ import kotlin.test.*
  */
 class AgentChatbotSimulationTest {
     private val dir = File("src/test/resources/agent/sim")
-    private val logo = AgentScenario.builtin("myembro_logo.pes", "logo", "H100")
+    // Preserve the recorded prompt corpus's physical logo placement (old +0.5-unit Y center).
+    // The new import convention shifts that odd-extent local midpoint down by 1 unit.
+    private val logo = AgentScenario.builtin("myembro_logo.pes", "logo", "H100").let { p ->
+        p.copy(objects = p.objects.map { it.withTransform(it.transform.copy(y = it.transform.y + 1.0)) })
+    }
     private val project = logo.copy(objects = logo.objects.map { it.withId("logo-uuid") }.let { objs ->
         objs + TextObject("text-uuid", "myembro", text = "myembro", fontId = HersheyFont.DEFAULT_ID, heightMm = 8.0,
             thread = EmbThread(0xFF1E5AA8.toInt()), transform = Transform(y = 420.0)) })

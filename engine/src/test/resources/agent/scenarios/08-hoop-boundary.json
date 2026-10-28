@@ -19,7 +19,7 @@
               "id": "edge",
               "name": "edge",
               "transform": {
-                "x": -1,
+                "x": 0,
                 "y": 0,
                 "rotationDeg": 0,
                 "scaleX": 1,
