@@ -25,6 +25,15 @@ Current version: **v0.4.0-beta.2 (beta)**
 |---|---|---|
 | ![Color drawing mode](docs/images/manual/en/09-photo-color.png) | ![Korean lettering](docs/images/manual/en/05b-lettering-hangul-satin.png) | ![Sew-out check](docs/images/manual/en/12-sewout-check.png) |
 
+## No PC needed: phone → machine over a USB cable
+
+Fix a design on your phone and send it straight to the machine with a USB cable. No computer, no USB stick.
+
+- **Brother SE400:** tested on a real machine with a Galaxy Fold7 (v0.1.0-alpha26). The design opened normally on the machine.
+- **SE425, Innovis 900 / 900D:** their manuals describe the same "USB cable → PC" connection, so they should work the same way. Not tested on real machines yet.
+
+When connected, the machine looks to the phone like a small USB disk. myembro writes the design onto it itself and then reads every file back to check it arrived intact. Steps: [user guide, chapter 9.1](docs/manual/user-guide.md#91-sending-directly-over-a-usb-cable-se400-and-similar).
+
 ## Install
 
 1. Open the [latest release](https://github.com/linker2k/myembro/releases/latest).

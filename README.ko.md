@@ -25,6 +25,15 @@
 |---|---|---|
 | ![컬러 그림 모드](docs/images/manual/ko/09-photo-color.png) | ![한글 레터링](docs/images/manual/ko/05b-lettering-hangul-satin.png) | ![봉제 점검](docs/images/manual/ko/12-sewout-check.png) |
 
+## PC 없이 휴대폰 → 자수기 직접 전송
+
+휴대폰에서 도안을 고치고, USB 케이블 하나로 자수기에 바로 보냅니다. 컴퓨터도 USB 메모리도 필요 없습니다.
+
+- **Brother SE400:** 실제 기계와 갤럭시 폴드7로 확인했습니다(v0.1.0-alpha26). 보낸 도안이 자수기에서 정상으로 열렸습니다.
+- **SE425, 이노비스 900 / 900D:** 설명서상 같은 "USB 케이블 → PC" 연결 방식이라 같은 방식으로 동작할 것으로 보지만, 실제 기계에서는 아직 확인하지 않았습니다.
+
+연결하면 휴대폰에는 자수기가 작은 USB 디스크처럼 보입니다. myembro가 여기에 도안을 직접 쓰고, 쓴 파일을 매번 다시 읽어 제대로 들어갔는지 확인합니다. 따라하기: [사용 설명서 9.1](docs/manual/user-guide.ko.md#91-usb-케이블로-직접-보내기se400-등).
+
 ## 설치
 
 1. [최신 릴리스](https://github.com/linker2k/myembro/releases/latest)를 엽니다.

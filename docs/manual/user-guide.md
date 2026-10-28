@@ -178,23 +178,60 @@ If any check fails, saving and sending are blocked. Imported PES files are kept 
 
 ## 9. Sending to the machine
 
+There are two ways. Use **9.1** if your machine connects to a computer with a USB cable (SE400 and similar). Use **9.2** for other machines.
+
+### 9.1 Sending directly over a USB cable (SE400 and similar)
+
+No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The SE425 and Innovis 900 / 900D use the same kind of connection in their manuals, but they have not been tested on real machines yet.
+
+**What you need:** one cable that connects your phone's port (USB-C on most phones) to the square **USB-B** port on the machine. If you only have a printer-style USB-A to USB-B cable, add a USB-C OTG adapter on the phone side.
+
+1. **Turn on the machine.**
+   Success: the machine's screen is on.
+2. **Plug the cable into the machine and into the phone.**
+   Success: nothing more is needed on the phone yet. Some phones show a USB notification; you can ignore it.
+3. **Open myembro and go to Designs.**
+   Success: the banner at the top reads **USB: SE400 direct connection · …** (the part after the dot is the name the machine reports).
+4. **Touch and hold a design, then tap any others you want to send.**
+   Success: the top bar shows how many are selected, for example **2 selected**.
+5. **Tap Export 2 to USB at the bottom.** The number follows your selection.
+6. **The phone asks whether myembro may use the USB device. Tap Allow (OK).**
+   Success: the app starts sending.
+7. **Wait for the result.**
+   Success: **✔ … sent** appears, with the file name and the remaining space. The app has read every file back from the machine to check it.
+8. **On the machine, open the design from its USB / computer memory.** For the exact buttons, see your machine's manual.
+   Success: the design appears on the machine's screen.
+
+**If the machine is full:** the machine's USB memory holds up to 12 designs (Brother SE400 USB manual). If there is not enough space or not enough slots, nothing is written and the app shows **Not enough space — choose PES files to delete** with the PES files already on the machine. Nothing is checked at first. Check the files you no longer need and tap **Delete selected files and export**. The app never deletes anything on its own.
+
+**Files disappear when the machine is turned off.** Save the design to the machine's internal memory if you want to keep it there.
+
+**If you get stuck**
+
+- **You missed the Allow window, or tapped Deny:** the app shows **USB access was not granted. Allow access to export directly.** Tap **Export to USB** again; the window appears again.
+- **The banner still says No USB drive connected:** many cables only charge and carry no data. Try a different cable, preferably one that has carried files before. Check that the machine is on.
+- **The drive does not appear after plugging in:** tap the banner, then **Refresh USB status**. If it still does not appear, unplug both ends, wait a few seconds, and plug them in again with the machine on.
+
+### 9.2 Sending with a USB flash drive (other machines)
+
 ![Selecting a design for USB export](../images/manual/en/13-transfer-usb.png)
 
-1. Connect the phone to the machine. For the Brother SE400, use a USB cable (USB-B on the machine side). For other models, connect a USB flash drive to the phone (OTG), export, then plug the drive into the machine.
-2. In **Designs**, enter selection mode and check the designs to send. Filters: **All**, **Fits 100×100**, **PES**, **Recent**, favorites.
-3. Tap **Export 1 to USB** (the count follows your selection). If no USB drive is connected, a banner says **No USB drive connected**; tap it for USB export instructions.
+1. Connect a USB flash drive to the phone (OTG).
+2. In **Designs**, touch and hold a design and check the designs to send. Filters: **All**, **Fits 100×100**, **PES**, **Recent**, favorites.
+3. Tap **Export 1 to USB** (the count follows your selection) and allow access to a folder on the drive. If no USB drive is connected, a banner says **No USB drive connected**; tap it for USB export instructions.
+4. Eject the drive, then plug it into the machine.
 
 ![Transfer failed without USB](../images/manual/en/13b-transfer-usb-fail.png)
 
-If the transfer fails, the result screen explains how to connect (OTG) and offers **Copy diagnostic info**.
+If the transfer fails, the result screen explains how to connect (OTG) and offers **Copy diagnostics**.
+
+### Transfer history and copies
 
 ![Transfer history](../images/manual/en/14-transfer-history.png)
 
 The clock icon in selection mode opens the recent USB transfer history (the screenshot was taken on an emulator, so only failed attempts are listed).
 
 **Copy files out of the app:** in selection mode, **Export files** saves the selected files unchanged to a folder you pick (for one file you can also choose **Save this file as…**). Use it to keep copies on the phone or in cloud storage; it does not check or convert the design.
-
-**Important:** a file sent to the machine over USB is erased when the machine is turned off, unless you save it to the machine's internal memory.
 
 **Other machines:** the machine list has 58 Brother embroidery models sold in the United States and Korea (chapter 10). Only the SE400 is tested on a real machine; the others follow Brother's manuals and product pages.
 
