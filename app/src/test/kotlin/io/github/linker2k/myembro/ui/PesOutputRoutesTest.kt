@@ -26,8 +26,8 @@ class PesOutputRoutesTest {
                 val viewer=readViewerDesign(file.readBytes(),file.name,writeSettings=settings)
                 // Both SAF save and cache-file share call ViewerViewModel's common export(),
                 // which runs PesExport.prepare on this viewer source.
-                val save=PesExport.prepare(viewer.source,viewer.sourceName,settings).bytes
-                val share=PesExport.prepare(viewer.source,viewer.sourceName,settings).bytes
+                val save=PesExport.prepare(viewer.source!!,viewer.sourceName,settings).bytes
+                val share=PesExport.prepare(viewer.source!!,viewer.sourceName,settings).bytes
                 for(payload in listOf(editor,usb,save,share)) {
                     assertContentEquals(editor,payload)
                     val back=PesReader.read(payload)
@@ -46,7 +46,7 @@ class PesOutputRoutesTest {
         val original=PesWriter.writeV6(pattern)
         val opened=readViewerDesign(original,"external.pes")
         assertSame(original,opened.source)
-        for(v in PesVersion.entries)assertSame(original,PesExport.prepare(opened.source,opened.sourceName,PesWriteSettings(v)).bytes)
+        for(v in PesVersion.entries)assertSame(original,PesExport.prepare(opened.source!!,opened.sourceName,PesWriteSettings(v)).bytes)
     }
     @Test fun everyCatalogMachineAndCustomHoopUsesItsOwnIntegerBoundary() {
         val custom=io.github.linker2k.myembro.ui.machines.CustomFrame("test","custom",731,1247)

@@ -23,7 +23,19 @@ import kotlin.test.*
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],qualifiers="en-rUS-w480dp-h1000dp")
 class EditorColorsPanelUiTest {
-    @get:Rule val compose=createComposeRule()
+    val compose=createComposeRule()
+    // ui-test-manifest is debugImplementation only; register its host activity so release unit tests run too.
+    private val hostActivity=object:org.junit.rules.ExternalResource() {
+        override fun before() {
+            val app=org.robolectric.RuntimeEnvironment.getApplication()
+            val component=android.content.ComponentName(app,androidx.activity.ComponentActivity::class.java)
+            val packages=org.robolectric.Shadows.shadowOf(app.packageManager)
+            packages.addActivityIfNotPresent(component)
+            packages.addIntentFilterForActivity(component,android.content.IntentFilter(android.content.Intent.ACTION_MAIN)
+                .apply { addCategory(android.content.Intent.CATEGORY_LAUNCHER) })
+        }
+    }
+    @get:Rule val rules: org.junit.rules.RuleChain=org.junit.rules.RuleChain.outerRule(hostActivity).around(compose)
     private val initial=Project(objects=listOf(StitchObject("s","Synthetic",EmbPattern(listOf(
         Stitch(0,0,Command.STITCH),Stitch(30,20,Command.STITCH),Stitch(30,20,Command.END)),listOf(EmbThread(0xffff0000.toInt()))))))
 

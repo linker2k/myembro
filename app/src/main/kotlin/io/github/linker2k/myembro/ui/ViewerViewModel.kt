@@ -49,6 +49,8 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String, val generated: Boolean)
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
+    /** Why an opened project cannot be saved or shared as PES (e.g. outside the hoop); it still opens. */
+    private var exportBlocked: String? = null
     private var sourceName: String = ""
     private var openedFile: File? = null
     private var openedFileStamp: Pair<Long, Long>? = null
@@ -189,6 +191,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Keep the selected design across the document picker and configuration changes. */
     fun prepareSave(): String? {
+        if (refuseBlockedExport()) return null
         val request = exportRequest(suggestCopy = true) ?: return null
         pendingSave = request
         exporting = true
@@ -224,6 +227,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun share() {
+        if (refuseBlockedExport()) return
         val request = exportRequest() ?: return
         export(request, write = { bytes ->
             val app = getApplication<Application>()
@@ -247,6 +251,15 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissExportMessage(message: String) {
         if (exportMessage == message) exportMessage = null
+    }
+
+    /** The same placement/output checks as the editor and USB paths, applied when exporting, not when opening. */
+    private fun refuseBlockedExport(): Boolean {
+        val reason = exportBlocked?.takeIf { render != null && !loading } ?: return false
+        val app = getApplication<Application>()
+        reportExportFailure(IllegalArgumentException(
+            if (reason.startsWith("HOOP_SAFETY_MARGIN")) app.getString(R.string.editor_outside) else reason))
+        return true
     }
 
     fun reportExportFailure(error: Exception) {
@@ -333,6 +346,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 projectSource = opened.projectSource?.let { name to it }
                 fileName = name
                 sourceBytes = opened.source
+                exportBlocked = opened.exportError
                 sourceName = opened.sourceName
                 projectHoop = opened.hoop
                 preservePlacement = opened.hoop != null
@@ -346,6 +360,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 if (version != loadVersion) return@onFailure
                 render = null
                 sourceBytes = null
+                exportBlocked = null
                 fileName = null
                 projectHoop = null
                 preservePlacement = false
