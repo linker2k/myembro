@@ -54,6 +54,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
     androidx.compose.runtime.CompositionLocalProvider(io.github.linker2k.myembro.ui.LocalGoHome provides null) {
     MyembroTheme {
         val colors = MaterialTheme.colorScheme
+        val expandedHeader=editorLayout(androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.toFloat()).expanded
         BackHandler(onBack = { vm.leave(onBack) })
         // AI connection (relay): it works on this same project (AiWorkspace) whether or not the editor is on
         // screen, so its edits show here at once; the removal question is asked from MainActivity.
@@ -133,7 +134,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     }
                     TopAppBar(title = {
                         Column {
-                            Text(stringResource(R.string.editor_title), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            Text(stringResource(if(expandedHeader) R.string.editor_title else R.string.editor_title_compact), maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleMedium)
                             Text((if (vm.dirty) "• " else "") + (vm.selected?.name ?: stringResource(R.string.editor_composition)), maxLines = 1,
                                 overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
@@ -147,14 +148,14 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             io.github.linker2k.myembro.ui.HomeButton(enabled, home) { goHome -> vm.leave(goHome) }
                         } }, actions = {
                             AgentAskButton(vm.agent, vm.project, enabled)
-                            IconButton(onClick={showColors=true},enabled=enabled && !vm.gestureInProgress) {
-                                Icon(Icons.Default.Palette,stringResource(R.string.editor_colors))
-                            }
                             EditorHistoryButton(vm, redo = false)
                             EditorHistoryButton(vm, redo = true)
                             Box {
                                 IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
                                 DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
+                                    DropdownMenuItem(text={Text(stringResource(R.string.editor_colors))},
+                                        leadingIcon={Icon(Icons.Default.Palette,null)},enabled=!vm.gestureInProgress,
+                                        onClick={projectMenu=false;showColors=true})
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
                                         onClick = { projectMenu = false; vm.requestProjectSave() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },

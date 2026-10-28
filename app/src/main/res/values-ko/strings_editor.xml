@@ -137,4 +137,5 @@
     <string name="fabric_denim">데님</string>
     <string name="editor_colors_hint">배경천과 자수실 색을 미리보기로 함께 맞춰 보세요.</string>
     <string name="editor_colors_preview_failed">이 도안을 미리 볼 수 없습니다. 취소하면 변경 내용을 버릴 수 있습니다.</string>
+    <string name="editor_title_compact">편집기</string>
 </resources>

@@ -1,6 +1,6 @@
 # Fabric and thread colors in the editor
 
-Based on main `d8d025f`. Open the Colors sheet from the palette action or the
+Based on main `d8d025f`. Open the Colors sheet from the project menu or the
 existing Color inspector tab. The sheet has a fixed, live hoop preview at the top;
 Undo/Redo below it; a scrollable fabric and thread section; and Apply/Cancel at the
 bottom. Fabric choices are white, ivory, black, gray, navy, red and denim, a custom
@@ -56,3 +56,52 @@ screenshots are not claimed; no emulator/device was used.
 
 Robolectric and Compose UI test dependencies are test-only, except the standard
 Compose debug test-activity manifest, which is excluded from release builds.
+
+## Device-review rendering fixes (2026-10-28)
+
+Based on main `e1cb4fb`, branch `agent/colors-fixes`:
+
+- StitchCanvas clips native-canvas drawing to its own bounds. Its background
+  `drawColor()` can no longer overwrite the sheet title or neighboring controls,
+  including in dark mode.
+- BlockEditState resolves region threads through Project.threadColor; its cache
+  also keys on threadColors. RegionCanvas paints the project's fabric, while
+  default projects keep their previous theme background. Region geometry, hit
+  testing, selection and stitch settings are unchanged.
+- Layer thumbnails resolve the project palette and key their render cache on it;
+  their backdrop uses the project fabric. Undo and redo redraw the same object
+  instance correctly.
+- Colors is in the project overflow menu and remains reachable from the Color
+  inspector tab. The extra top-bar palette icon is removed. Compact windows use
+  the short localized Editor title, while expanded windows keep the full title.
+- Fabric/thread swatches use the theme outline so black remains distinguishable
+  on a similarly dark surface.
+
+Validation command:
+`./gradlew :engine:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain`.
+Final output: `BUILD SUCCESSFUL in 1m 34s`. Engine: 1,021 tests; app: 470 tests;
+0 failures/errors/skips. Lint: 0 errors, 174 warnings. APK:
+`app/build/outputs/apk/debug/app-debug.apk`. No emulator/device was used.
+
+New tests: ColorAppearanceRenderTest (2) checks real project-to-region color
+mapping with unchanged paths/settings, and layer palette application with unchanged
+needle commands. ColorRenderingUiTest (5) uses Robolectric native graphics to
+verify light/dark title-area clipping, layer thread/fabric pixels and restoration,
+block fabric/thread pixels, and a black swatch's outline on a matching background.
+The existing 2 Colors-sheet interaction tests also pass. Pixel checks draw the
+activity's content view into an in-memory bitmap, avoiding unsupported Window
+PixelCopy capture in this JVM environment. No personal images are test fixtures.
+
+## Variant-scoped Compose UI tests
+
+`EditorColorsPanelUiTest` and `ColorRenderingUiTest` live in
+`app/src/testDebug/kotlin`: their Compose Activity is supplied by the existing
+`debugImplementation("androidx.compose.ui:ui-test-manifest")`. They must not run
+as release unit tests, whose manifest intentionally has no Compose test Activity.
+The common state/model/render-data tests remain in `src/test` and run for both
+variants. No test Activity is added to the release app.
+
+Variant validation: `./gradlew :app:test :app:lint :app:assembleDebug --console=plain`
+returned `BUILD SUCCESSFUL in 2m 52s`. Debug: 470 tests; release: 463 tests;
+0 failures/errors/skips in both. Both Activity-based test classes (7 tests) are
+present only in debug XML results. Lint has 0 errors; assembleDebug succeeds.

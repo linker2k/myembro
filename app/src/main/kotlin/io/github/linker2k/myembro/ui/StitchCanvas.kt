@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -110,7 +111,7 @@ fun StitchCanvas(
     val needlePaint = remember(needleColor) { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = needleColor } }
 
     Canvas(
-        modifier.onSizeChanged { canvasSize = it }.semantics {
+        modifier.clipToBounds().onSizeChanged { canvasSize = it }.semantics {
             if (blockerAreas.isNotEmpty()) contentDescription = blockerDescription
             else if (highlightArea != null) contentDescription = highlightDescription
         }
