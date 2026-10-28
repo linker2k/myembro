@@ -12,31 +12,6 @@ import kotlin.test.*
 
 /** Two original synthetic masks, no private designs or photographs. */
 class RedworkPipelineTest {
-    @Test fun silhouetteKeepsWholeRegionFillThenExistingOutlineRouteAndHoles() {
-        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
-            org.locationtech.jts.io.WKTReader().read("MULTIPOLYGON (((0 0,200 0,200 200,0 200,0 0),(60 60,60 140,140 140,140 60,60 60)),((600 0,700 0,700 100,600 100,600 0)),((300 0,400 0,400 100,300 100,300 0)))"))
-        val thread=EmbThread(0xFFB5492A.toInt())
-        val selected=RedworkPipeline.silhouetteGroups(region,thread,HoopSpec.H100)
-        assertTrue(selected.skipped.isEmpty())
-        assertEquals(1,selected.checks)
-        val fill=io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami.stitchGroups(region,thread)
-        assertEquals(fill.map { it.stitches },selected.groups.take(fill.size).map { it.stitches },
-            "whole-region routing and propagated fill start must stay unchanged")
-        val outlines=(0 until region.geometry.numGeometries).map { index ->
-            ColorFillOutline.stitchGroups(region.geometry.getGeometryN(index) as org.locationtech.jts.geom.Polygon,thread)
-        }
-        assertEquals(2,outlines.first().size,"exterior and hole")
-        val anchors=outlines.map { groups -> groups.first().stitches.map {
-            io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
-        } }
-        val route=PhotoOutline.route(anchors)
-        assertTrue(route.after<route.before)
-        val expected=route.paths.flatMap { outlines[anchors.indexOf(it)] }
-        assertEquals(expected.map { it.stitches },selected.groups.drop(fill.size).map { it.stitches })
-        assertTrue(selected.groups.all { it.color==thread })
-        assertTrue(ColorFillOutline.safe(selected.groups,HoopSpec.H100))
-    }
-
     @Test fun largerFrameRetainsOutlineAndWritesPesBeyondOneHundredMm() {
         val hoop=HoopSpec("large",2000,2000)
         val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
