@@ -14,6 +14,7 @@ import io.github.linker2k.myembro.engine.geometry.Point as RegionPoint
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
 import io.github.linker2k.myembro.engine.io.PesWriter
+import io.github.linker2k.myembro.engine.io.PesWriteSettings
 import io.github.linker2k.myembro.engine.io.PesVersion
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
@@ -42,9 +43,9 @@ object RedworkPipeline {
      */
     fun generate(
         width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
-        thread: EmbThread,
+        thread: EmbThread, hoop: HoopSpec = HoopSpec.H100,
     ): RedworkResult {
-        return generate(trace(width,height,rgb,widthMm,backgroundPixelIndex,thread),thread)
+        return generate(trace(width,height,rgb,widthMm,backgroundPixelIndex,thread),thread,hoop=hoop)
     }
 
     /** Photo preview stops here: no JTS fill graph, stitches, locks, PES or sewout analysis. */
@@ -117,7 +118,7 @@ object RedworkPipeline {
             contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width))
     }
 
-    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, checkpoint: (String) -> Unit = {}): RedworkResult {
+    fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, hoop: HoopSpec = HoopSpec.H100, checkpoint: (String) -> Unit = {}): RedworkResult {
         checkpoint("stitches")
         val paths = outline.paths
         var route: PhotoOutline.Route? = null
@@ -136,7 +137,7 @@ object RedworkPipeline {
                         it.y * 10 / Units.mmToPixels(1.0)) }, true)
                 }
             }, FillRule.EVEN_ODD)
-            silhouetteGroups(region, thread) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
+            silhouetteGroups(region, thread, hoop) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
         }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
@@ -159,26 +160,29 @@ object RedworkPipeline {
                 "myembro.photo.jump_after_mm" to Units.pixelsToMm(it.after).toString()) } ?: emptyMap()), finished.warnings)
         checkpoint("stitches_ready=${pattern.stitchCount}")
         checkpoint("pes")
-        return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesVersion.V6))
+        return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesWriteSettings(version=PesVersion.V6,hoop=hoop)))
     }
 
-    /** Each original polygon's underlay/top fill precedes its unexpanded exterior and hole rings.
+    /** Preserve whole-region tatami routing, then append unexpanded exterior/hole rings.
+     * Only the existing PhotoOutline.route decides their order; no additional coordinate sort.
      * Reuse the color path's optional-outline selection; mandatory fills are never removed.
      */
-    internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread,
+    internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread, hoop: HoopSpec,
         checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
-        val fills=mutableListOf<StitchGroup>()
-        val outlines=mutableListOf<ColorFillOutline.Outline>()
-        val parts=(0 until region.geometry.numGeometries).map { region.geometry.getGeometryN(it) as Polygon }
-            .sortedBy { it.envelopeInternal.minX }
-        for((index,polygon) in parts.withIndex()) {
-            checkpoint()
-            val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread)
-            if(next.isEmpty()) continue
-            fills+=next
-            outlines+=ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
+        // 90-case gate.decode audit (2026-10-28), jump mm: A/B 16387.254,
+        // C 16248.893, D (no outline) 7460.580, E 14271.611.
+        // E is closest to D among outlined variants; /tmp/myembro-p7-freq/jump-variants.
+        checkpoint()
+        val fills=DefaultTatami.stitchGroups(region,thread)
+        val outlines=(0 until region.geometry.numGeometries).map { index ->
+            val polygon=region.geometry.getGeometryN(index) as Polygon
+            ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
         }
-        return ColorFillOutline.select(fills,outlines,HoopSpec.H100,checkpoint)
+        val anchors=outlines.map { item -> item.groups.first().stitches.map {
+            io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
+        } }
+        val ordered=PhotoOutline.route(anchors).paths.map { outlines[anchors.indexOf(it)] }
+        return ColorFillOutline.select(fills,ordered,hoop,checkpoint)
     }
 
 }

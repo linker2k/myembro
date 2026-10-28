@@ -10,7 +10,7 @@ in `Stroke.kt` and `StrokeParameters.kt` (upstream commit
 `bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.655]`; other defaults are unchanged.
 The same color and region ownership tags are retained, without an added color block.
 
-User decision 2026-10-28: use one running pass (Ink/Stitch default), not three bean passes. Manager measurements in `/tmp/myembro-p7-freq` found peaks >=16 in 2–3% with fill alone (max 16–19), 17% with one pass (max 19), and 66% with three passes (max 29). Silhouettes reuse `ColorFillOutline.stitchGroups` and `select`, immediately after each polygon fill, including holes; no expansion is applied to their outlines. Existing photo extent fitting and final PES checks remain.
+User decision 2026-10-28: use one running pass (Ink/Stitch default), not three bean passes. Manager measurements in `/tmp/myembro-p7-freq` found peaks >=16 in 2–3% with fill alone (max 16–19), 17% with one pass (max 19), and 66% with three passes (max 29). Silhouettes reuse `ColorFillOutline.stitchGroups` and `select` with whole-region fill followed by the existing `PhotoOutline.route` order, including holes; no expansion is applied to their outlines. Existing photo extent fitting and final PES checks remain.
 The original region-to-region trim is transferred to the end of its outline.
 
 The 1.655mm length is the running-outline corpus median, approved by the user on
@@ -99,7 +99,7 @@ one-cycle success, selective density-owner omission, and no-outline baseline fal
 
 ## Approved one-pass policy and silhouette integration (2026-10-28)
 
-A matched local replay of 90 color and 90 silhouette inputs per revision used
+The initial `24bc62b` replay (superseded for silhouette ordering below) of 90 color and 90 silhouette inputs per revision used
 `46505dc` as the baseline. Each set covers ten images at 60/85/99.9mm and three
 detail levels. The same P7 four-phase 0.5mm-cell measurement is applied to actual
 PES coordinates. Two color inputs exceed the existing contour-complexity limit
@@ -126,8 +126,8 @@ bound; native coordinate 999 (99.9mm) remains allowed, 1000 remains forbidden.
 The explicit-zero color PES goldens are rebuilt from baseline `46505dc` with only
 `bean_stitch_repeats=[0]` overlaid. This intentionally supersedes the three-pass
 byte hashes; zero expansion still bypasses buffer and clipping. OUTLINE-mode
-legacy byte parity remains asserted separately. The new silhouette tests verify
-per-polygon fill/outline order, same-color exterior/hole rings and final P1–P8
+legacy byte parity remains asserted separately. The silhouette tests verify
+whole-region fill/outline order, same-color exterior/hole rings and final P1–P8
 invariants; existing selection tests retain only the safe optional outlines.
 
 
@@ -141,3 +141,60 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk
 Result: `BUILD SUCCESSFUL in 3m 7s`; engine 1009 tests and app 456 tests,
 zero failures/errors/skips. Lint completed with zero errors (145 warnings and
 one informational issue). Log: `/tmp/myembro-p7-freq/one-pass/tests-lint.log`.
+
+
+## Silhouette jump-distance correction (2026-10-28)
+
+Measured 90 matched silhouette cases with the independent `gate.decode` reader.
+Jump count includes the first JUMP; distance sums only jumps with a known previous
+command position, excluding the implicit origin-to-first-landing movement.
+
+| Variant | Jumps | Jump distance mm | Needles | Peak | Omitted regions | Trims |
+|---|---:|---:|---:|---:|---:|---:|
+| A: 24bc62b per-polygon/minX | 658 | 16387.254 | 496466 | 11 | 80 | 0 |
+| B: per-polygon/JTS order | 658 | 16387.254 | 496466 | 11 | 80 | 0 |
+| C: whole-region fill, JTS outlines | 799 | 16248.893 | 497051 | 15 | 80 | 0 |
+| D: 46505dc fill only | 400 | 7460.580 | 465981 | 12 | 0 | 0 |
+| E: whole-region fill, existing PhotoOutline.route | 796 | 14271.611 | 497030 | 15 | 80 | 0 |
+
+E minimizes absolute aggregate jump-distance difference from D among A/B/C/E and
+is the selected implementation. It reduces A's distance by 12.91%, but remains
+91.29% above D; this does not claim baseline-level travel or eliminate manual
+jump-thread cleanup. The explicit minX sort is removed. DefaultTatami is called
+once on the entire region, retaining its existing fill routing/start propagation.
+Only the existing JGraphT-backed PhotoOutline.route orders optional exterior-ring
+anchors; interior rings stay with their original polygon owner. No new tour,
+stitching or locking algorithm is introduced. `select` retains multiple outline
+owners at the same fill boundary and removes only the implicated optional owners.
+
+A was regenerated to collect omitted-region metadata; all 90 PES hashes match the
+original A files. The earlier harness did not record silhouette omissions.
+Color comparison on the same 88 produced outputs (two complexity rejections):
+3-pass/1-pass both have 1747 JUMPs, 48073.308mm jump travel and 1659 encoded TRIMs.
+Needles decrease 762642→658230, peak 29→19. Color output geometry/order is unchanged
+by the silhouette routing correction.
+
+All generation/selection/intermediate V6 export paths receive the caller's hoop,
+including PhotoViewModel and AttachmentStore. The optional-outline checks use the
+same selected-frame profile as PesOutputSafety, rather than a hidden SE400 limit.
+AttachmentStore reuses the selected-frame writer report. Real machine-profile
+checks remain in the app's final validation; P1–P8 limits are unchanged. Synthetic
+regressions cover >100mm outlines and photo attachments in a 200×200mm frame,
+whole-region fill parity, existing route order, holes, and selective omission when
+several owners share one insertion point.
+
+Local matrix, exact sources, per-case decoded metrics and reproduction commands:
+`/tmp/myembro-p7-freq/jump-variants/report.md`. Private assets/PES stay in `/tmp`.
+
+
+Correction validation:
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk \
+  ./gradlew --offline --max-workers=2 --continue :engine:test :app:testDebugUnitTest lint :engine:jar
+```
+
+`BUILD SUCCESSFUL in 3m 30s`; engine 1012 and app 456 tests, zero failures/errors/skips.
+The final production engine replayed all 180 cases: silhouette E 90/90 and color
+one-pass 88/88 PES are byte-identical to their measured targets. The same two color
+complexity rejections remain. Local proof: `jump-variants/final-verification.log`.

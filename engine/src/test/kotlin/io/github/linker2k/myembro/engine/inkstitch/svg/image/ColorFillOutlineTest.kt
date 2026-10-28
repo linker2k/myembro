@@ -64,6 +64,22 @@ class ColorFillOutlineTest {
         assertEquals(setOf(7),fallback.skipped)
         assertEquals(1,fallback.checks)
     }
+    @Test fun outlinesSharingTheSameFillBoundaryRetainEveryOwnerAndOnlyRemoveBlockedOnes() {
+        val thread=PecThreads.SET.filterNotNull().first()
+        fun outline(x:Int)=ColorFillOutline.stitchGroups(WKTReader().read(
+            "POLYGON (($x 0,${x+200} 0,${x+200} 200,$x 200,$x 0))") as Polygon,thread)
+        val first=outline(0);val second=outline(300)
+        val base=listOf(StitchGroup(thread,listOf(Stitch(SP(-100.0,-100.0)),Stitch(SP(-90.0,-100.0)))))
+        val kept=ColorFillOutline.select(base,listOf(ColorFillOutline.Outline(1,0,first),
+            ColorFillOutline.Outline(1,1,second)),HoopSpec.H100)
+        assertTrue(kept.skipped.isEmpty())
+        assertEquals((base+first+second).map { it.stitches },kept.groups.map { it.stitches })
+        val filtered=ColorFillOutline.select(base,listOf(ColorFillOutline.Outline(1,0,List(40) { first }.flatten()),
+            ColorFillOutline.Outline(1,1,second)),HoopSpec.H100)
+        assertEquals(setOf(0),filtered.skipped)
+        assertEquals((base+second).map { it.stitches },filtered.groups.map { it.stitches })
+        assertTrue(ColorFillOutline.safe(filtered.groups,HoopSpec.H100))
+    }
     @Test fun facePreservesRegionsColorsAndFragmentsAndPassesEncodedGate() {
         val image=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
         val preview=ColorDrawingPipeline.trace(image.width,image.height,image.getRGB(0,0,image.width,image.height,null,0,image.width),40.0,4)

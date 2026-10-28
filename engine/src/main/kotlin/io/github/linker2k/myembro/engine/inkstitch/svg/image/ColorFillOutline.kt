@@ -40,13 +40,13 @@ internal object ColorFillOutline {
         val active=outlines.map { it.region }.toMutableSet()
         val marked=outlines.associate { it.region to mark(it.groups,it.region) }
         fun assemble(validation:Boolean):List<StitchGroup> {
-            val byIndex=outlines.filter { it.region in active }.associateBy { it.afterGroup }
+            val byIndex=outlines.filter { it.region in active }.groupBy { it.afterGroup }
             return buildList {
                 base.forEachIndexed { index,fill ->
                     val outline=byIndex[index+1]
                     if(outline==null) add(fill) else {
                         add(fill.copy(trimAfter=false))
-                        val next=if(validation) marked.getValue(outline.region) else outline.groups
+                        val next=outline.flatMap { item -> if(validation) marked.getValue(item.region) else item.groups }
                         addAll(next.dropLast(1));add(next.last().copy(trimAfter=fill.trimAfter))
                     }
                 }
@@ -73,6 +73,9 @@ internal object ColorFillOutline {
     }
 
     /** Null means all original checks passed; empty means no attributable outline (use baseline). */
+    // As in PesOutputSafety: validate the selected frame, not an implicit SE400 machine limit.
+    private val outputMachine=SewoutMachine("output","Selected hoop",Specification(),Specification(),knownHoopsMm=emptySet())
+
     private fun failures(groups:List<StitchGroup>,hoop:HoopSpec):Set<Int>? {
         val owners=mutableListOf<String?>()
         val pattern=GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,
@@ -107,7 +110,7 @@ internal object ColorFillOutline {
             return result
         }
         for(placed in listOf(pattern,io.github.linker2k.myembro.engine.edit.StitchObject.recenter(pattern))) {
-            implicated(SewoutCheck.check(placed,options=options),placed.stitches,true)?.let { return it }
+            implicated(SewoutCheck.check(placed,machine=outputMachine,options=options),placed.stitches,true)?.let { return it }
         }
         val minX=pattern.stitches.minOfOrNull { it.x } ?: 0
         val minY=pattern.stitches.minOfOrNull { it.y } ?: 0
@@ -115,7 +118,7 @@ internal object ColorFillOutline {
         return try {
             // Writer includes strict PEC viewport and encoded sewout checks. No gate bypass.
             val bytes=PesWriter.write(pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=hoop))
-            implicated(SewoutCheck.checkPes(bytes,options=options),encodedPoints,false)
+            implicated(SewoutCheck.checkPes(bytes,machine=outputMachine,options=options),encodedPoints,false)
         } catch(rejected:PesOutputSafety.Rejected) {
             implicated(rejected.report,encodedPoints,false) ?: emptySet()
         } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled

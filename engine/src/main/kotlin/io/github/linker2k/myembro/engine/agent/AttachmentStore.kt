@@ -84,14 +84,16 @@ internal class PhotoPreparation(private val attachments: AttachmentStore) {
                 if(correction == PhotoCorrection.CONTRAST || e.message?.contains("PHOTO_TOO_COMPLEX")==true) throw e
                 trace(PhotoPreparationPolicy.photoContrastStretch(pixels))
             }
-            RedworkPipeline.generate(outline,thread,photoMode=true,
+            RedworkPipeline.generate(outline,thread,photoMode=true,hoop=hoop,
                 style=if(mode=="outline") PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE).pattern
         }
-        val pes = try { PesWriter.writeV1(pattern,hoop) } catch (_: IllegalArgumentException) {
+        // Same selected-frame validation as export; no implicit SE400 profile for larger hoops.
+        val checked = try { PesWriter.writeChecked(pattern,
+            io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=hoop),origin=DesignOrigin.APP_GENERATED) }
+        catch (_: IllegalArgumentException) {
             throw EmojiToolRejection("SEWOUT_BLOCKED", "Photo did not pass the existing output gate")
         }
-        val report = SewoutCheck.checkPes(pes,options=SewoutOptions(hoop=hoop,origin=DesignOrigin.APP_GENERATED))
-        if(!report.analysisComplete || report.hasBlockingIssues) throw EmojiToolRejection("SEWOUT_BLOCKED","Photo did not pass the existing sewout gate")
+        val report=checked.report
         // Opaque local result capability, not a hash of private pixels/bytes or a path.
         return PreparedEmoji("photo-${UUID.randomUUID()}","Photo",pattern,widthMm,range,report.verdict,shape)
     }

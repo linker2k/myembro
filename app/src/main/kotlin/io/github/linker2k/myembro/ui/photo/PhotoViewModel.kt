@@ -422,7 +422,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                         if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(requireNotNull(traced),
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
                         if (Thread.currentThread().isInterrupted) throw InterruptedException()
                     }.pattern
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced?.contourCount ?: 0}")
