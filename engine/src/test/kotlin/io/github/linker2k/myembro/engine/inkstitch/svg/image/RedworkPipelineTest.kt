@@ -74,6 +74,33 @@ class RedworkPipelineTest {
         assertTrue(decoded.stitches.filter { it.command==Command.STITCH }.none { it.x in 440..500 && it.y in 440..500 })
     }
 
+    @Test fun photoSelectionUsesFinalFitAt998_999_1000WithoutRelaxingHoopLimit() {
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val px=io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
+        val path="M ${-50*px} ${-10*px} L ${50*px} ${-10*px} L ${50*px} ${10*px} L ${-50*px} ${10*px} Z"
+        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
+            org.locationtech.jts.io.WKTReader().read("POLYGON ((-500 -100,500 -100,500 100,-500 100,-500 -100))"))
+        for(units in listOf(998,999,1000)) {
+            val outline=RedworkOutline("",1,units/10.0,20.0,listOf(path),2000.0)
+            val selected=RedworkPipeline.silhouetteGroups(region,thread,HoopSpec.H100,
+                fit={ RedworkPipeline.fitPhotoPattern(it,outline,true) })
+            if(units<=999) {
+                assertTrue(selected.skipped.isEmpty(),"fit $units must retain the outline")
+                val result=RedworkPipeline.generate(outline,thread,photoMode=true)
+                val actual=PesReader.read(result.copyPesBytes())
+                assertEquals(units,actual.bounds!!.width)
+                assertEquals(0,actual.bounds!!.minX)
+                assertEquals("0",result.pattern.metadata["myembro.skipped_fill_outlines"])
+                assertTrue(PecViewportCheck.check(result.copyPesBytes(),HoopSpec.H100).valid)
+            } else {
+                assertEquals(setOf(0),selected.skipped)
+                val rejected=assertFailsWith<PesOutputSafety.Rejected> {
+                    RedworkPipeline.generate(outline,thread,photoMode=true)
+                }
+                assertTrue(rejected.report.findingSeverities[FindingCode.HOOP_EXCEEDED]==Severity.BLOCKER)
+            }
+        }
+    }
     @Test fun outlineBeanRepeatsEachSourceRunningSegmentThreeTimesAndKeepsLocks() {
         val thread=EmbThread(0xFF000000.toInt())
         val points=listOf(io.github.linker2k.myembro.engine.inkstitch.utils.Point(0.0,0.0),

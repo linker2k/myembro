@@ -80,6 +80,16 @@ class ColorFillOutlineTest {
         assertEquals((base+second).map { it.stitches },filtered.groups.map { it.stitches })
         assertTrue(ColorFillOutline.safe(filtered.groups,HoopSpec.H100))
     }
+    @Test fun unscaledColorSelectionStillUsesExact998_999_1000Boundary() {
+        val thread=PecThreads.forIndex(5)
+        for(units in listOf(998,999,1000)) {
+            val polygon=WKTReader().read("POLYGON ((0 0,$units 0,$units 100,0 100,0 0))") as Polygon
+            val base=listOf(StitchGroup(thread,listOf(Stitch(SP(0.0,0.0)),Stitch(SP(10.0,0.0)))))
+            val outline=ColorFillOutline.stitchGroups(polygon,thread)
+            val selected=ColorFillOutline.select(base,listOf(ColorFillOutline.Outline(1,0,outline)),HoopSpec.H100)
+            assertEquals(if(units<=999) emptySet() else setOf(0),selected.skipped,"color boundary $units")
+        }
+    }
     @Test fun facePreservesRegionsColorsAndFragmentsAndPassesEncodedGate() {
         val image=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
         val preview=ColorDrawingPipeline.trace(image.width,image.height,image.getRGB(0,0,image.width,image.height,null,0,image.width),40.0,4)

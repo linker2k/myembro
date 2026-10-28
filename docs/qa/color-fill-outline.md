@@ -198,3 +198,39 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk
 The final production engine replayed all 180 cases: silhouette E 90/90 and color
 one-pass 88/88 PES are byte-identical to their measured targets. The same two color
 complexity rejections remain. Local proof: `jump-variants/final-verification.log`.
+
+
+## Final-coordinate outline validation (2026-10-28)
+
+The preceding E measurements were before the photo-fit selection correction.
+Three 99.9mm local proxy cases had raw width 1000 native units before fitting.
+The selector checked those raw coordinates and could not attribute the hoop
+blocker to an optional owner, dropping all 23/28/29 outlines. Final output already
+fit the same coordinates to width 999, so the omission was a pre-fit false block.
+
+The existing photoMode fit/centering formula is now shared by final output and
+silhouette candidate preparation (`fitPhotoPattern`). Candidate groups use the
+same GeneratedPatternProcessor defaults and V6 PES writer as final generation.
+Only the prepared actual-PES report decides silhouette selection; pre-fit raw
+and recentered checks are not applied to that prepared path. Owner indices are
+preserved by the coordinate map. No tolerance, extra margin, routing rule or
+P1–P8 threshold changes. Explicit boundary tests retain outlines at 998/999 units
+and reject 1000 units; the unscaled color selector has matching boundary tests.
+
+| Silhouette, matched 90 cases | Jump count | Jump distance mm | Peak | Omitted regions | Trims |
+|---|---:|---:|---:|---:|---:|
+| Before (afb9b7f) | 796 | 14271.611 | 15 | 80 | 0 |
+| After final-coordinate validation | 891 | 16204.931 | 15 | 0 | 0 |
+
+All 90 final silhouette PES pass the normal writer. Only the three affected proxy
+outputs change; the other 87 are byte-identical. Restoring the previously omitted
+outlines increases jump travel as shown; no additional path optimization was made.
+Color has no post-selection photoMode fit, so its existing validation path remains.
+The same 90 color attempts produce 88 byte-identical PES and two unchanged
+complexity rejections, with zero omitted outlines before/after. Independent
+`gate.decode` measurements and Kotlin four-phase cell peaks agree in every output.
+
+`./gradlew --offline --max-workers=2 --continue :engine:test :app:testDebugUnitTest lint :engine:jar`
+completed `BUILD SUCCESSFUL in 3m 13s`: engine 1014 and app 456 tests, zero failures,
+errors or skips. Exact reproduction/metrics: `/tmp/myembro-p7-freq/fit-output/report.md`;
+private inputs and outputs remain local only.

@@ -137,22 +137,13 @@ object RedworkPipeline {
                         it.y * 10 / Units.mmToPixels(1.0)) }, true)
                 }
             }, FillRule.EVEN_ODD)
-            silhouetteGroups(region, thread, hoop) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
+            silhouetteGroups(region, thread, hoop, fit={ fitPhotoPattern(it,outline,photoMode) }) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
         }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
-        // Fit *finished* coordinates, including locks/travel, to the supplied exclusive hoop span.
-        val bounds=finished.stitches
-        val minX=bounds.minOf { it.x }; val maxX=bounds.maxOf { it.x }
-        val minY=bounds.minOf { it.y }; val maxY=bounds.maxOf { it.y }
-        val factor=if(photoMode) minOf(1.0,outline.widthMm*10/(maxX-minX).coerceAtLeast(1),
-            outline.heightMm*10/(maxY-minY).coerceAtLeast(1)) else 1.0
-        val stitches=if(photoMode) bounds.map { it.copy(
-            x=kotlin.math.round((it.x-minX)*factor).toInt()-kotlin.math.floor((maxX-minX)*factor/2).toInt(),
-            y=kotlin.math.round((it.y-minY)*factor).toInt()-kotlin.math.floor((maxY-minY)*factor/2).toInt()) }
-            else bounds
-        val pattern = EmbPattern(stitches, finished.threads,
-            finished.metadata + mapOf(
+        val fitted=fitPhotoPattern(finished,outline,photoMode)
+        val pattern = EmbPattern(fitted.stitches, fitted.threads,
+            fitted.metadata + mapOf(
                 "myembro.fill.backend" to if(style==PhotoStyle.OUTLINE) "inkstitch-bean-outline" else "inkstitch-default-tatami-underlay",
                 "myembro.photo.style" to style.name,
             ) + (fillOutlines?.let { mapOf("myembro.skipped_fill_outlines" to it.skipped.size.toString(),
@@ -163,13 +154,27 @@ object RedworkPipeline {
         return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesWriteSettings(version=PesVersion.V6,hoop=hoop)))
     }
 
+    /** The existing photo fit, shared by optional-outline validation and final output. */
+    internal fun fitPhotoPattern(finished:EmbPattern,outline:RedworkOutline,photoMode:Boolean):EmbPattern {
+        val bounds=finished.stitches
+        val minX=bounds.minOf { it.x }; val maxX=bounds.maxOf { it.x }
+        val minY=bounds.minOf { it.y }; val maxY=bounds.maxOf { it.y }
+        val factor=if(photoMode) minOf(1.0,outline.widthMm*10/(maxX-minX).coerceAtLeast(1),
+            outline.heightMm*10/(maxY-minY).coerceAtLeast(1)) else 1.0
+        val stitches=if(photoMode) bounds.map { it.copy(
+            x=kotlin.math.round((it.x-minX)*factor).toInt()-kotlin.math.floor((maxX-minX)*factor/2).toInt(),
+            y=kotlin.math.round((it.y-minY)*factor).toInt()-kotlin.math.floor((maxY-minY)*factor/2).toInt()) }
+            else bounds
+        return EmbPattern(stitches,finished.threads,finished.metadata,finished.warnings)
+    }
+
     /** Preserve whole-region tatami routing, then append unexpanded exterior/hole rings.
      * Only the existing PhotoOutline.route decides their order; no additional coordinate sort.
      * Reuse the color path's optional-outline selection; mandatory fills are never removed.
      */
     internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread, hoop: HoopSpec,
-        checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
-        // 90-case gate.decode audit (2026-10-28), jump mm: A/B 16387.254,
+        fit:(EmbPattern)->EmbPattern={ it }, checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
+        // Pre-fit-fix 90-case order audit (2026-10-28), jump mm: A/B 16387.254,
         // C 16248.893, D (no outline) 7460.580, E 14271.611.
         // E is closest to D among outlined variants; /tmp/myembro-p7-freq/jump-variants.
         checkpoint()
@@ -182,7 +187,11 @@ object RedworkPipeline {
             io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y)
         } }
         val ordered=PhotoOutline.route(anchors).paths.map { outlines[anchors.indexOf(it)] }
-        return ColorFillOutline.select(fills,ordered,hoop,checkpoint)
+        // Match final generation exactly; fitting maps coordinates without changing owner indices.
+        return ColorFillOutline.select(fills,ordered,hoop,prepareOutput={ candidate,owners ->
+            ColorFillOutline.PreparedOutput(fit(GeneratedPatternProcessor.fromGroups(candidate,stitchOwners=owners)),
+                PesWriteSettings(version=PesVersion.V6,hoop=hoop))
+        },checkpoint=checkpoint)
     }
 
 }
