@@ -192,6 +192,30 @@ class PhotoShapeParityTest {
         assertPatternEquals(source.pattern,reloaded.withOverrides(emptyMap()).localPattern())
         println("THIN_PHOTO shape=true native_PES=IDENTICAL codec=IDENTICAL override=RUNNING sewout=PASS")
     }
+    /** Saved, reopened and then edited must equal the same edit on the never-saved project. */
+    @Test fun reopenedPhotoProjectKeepsBlocksAndEditsLikeTheUnsavedOne() {
+        val image=ImageIO.read(ByteArrayInputStream(png(3)))
+        val store=AttachmentStore { _,req -> PhotoRaster(req.width,req.height,
+            IntArray(req.width*req.height) { p -> image.getRGB((p%req.width)*64/req.width,(p/req.width)*64/req.height) }) }
+        val original=assertIs<ShapeObject>(PhotoPreparation(store).prepare("synthetic","color",3,50.0,HoopSpec.H100).objectFor("photo","Photo"))
+        val target=original.regionOrder.first();val other=original.regionOrder.last()
+        fun applied(p: Project,c: io.github.linker2k.myembro.engine.edit.commands.ProjectCommand)=assertIs<io.github.linker2k.myembro.engine.edit.commands.CommandResult.Applied>(io.github.linker2k.myembro.engine.edit.commands.apply(p,c)).project
+        val edited=applied(applied(Project(objects=listOf(original)),
+            io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("photo",setOf(target),BlockStitchPatch(angle=135.0))),
+            io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockOrder("photo",setOf(target),BlockOrderMove.LAST))
+        val reopened=ProjectJson.decode(ProjectJson.encode(edited))
+        val before=edited.find("photo") as ShapeObject
+        val shape=assertIs<ShapeObject>(reopened.find("photo"))
+        assertTrue(ShapeObjectFactory.isPhoto(shape))
+        assertEquals(before.overrides,shape.overrides);assertEquals(before.regionOrder,shape.regionOrder)
+        assertEquals(before.regions.map { Triple(it.id,it.stitch,it.defaultStitch) },shape.regions.map { Triple(it.id,it.stitch,it.defaultStitch) })
+        val next=io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("photo",setOf(other),BlockStitchPatch(row_spacing_mm=0.4))
+        val live=applied(edited,next);val again=applied(reopened,next)
+        assertEquals(live.flatten().stitches,again.flatten().stitches)
+        assertContentEquals(PesWriter.writeV1(live.flatten()),PesWriter.writeV1(again.flatten()))
+        assertSafeRoundTrip(again)
+        println("PHOTO_REOPEN_EDIT overrides=${shape.overrides.size} order=${shape.regionOrder} next_edit_PES=IDENTICAL sewout=PASS")
+    }
     private fun assertPatternEquals(expected:io.github.linker2k.myembro.engine.model.EmbPattern,actual:io.github.linker2k.myembro.engine.model.EmbPattern) {
         assertEquals(expected.stitches,actual.stitches)
         assertEquals(expected.threads,actual.threads)
