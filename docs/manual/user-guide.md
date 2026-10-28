@@ -2,7 +2,7 @@
 
 **English** | [한국어](user-guide.ko.md)
 
-This guide covers myembro v0.4.0-beta.1 (same features as v0.3.7; some screenshots show 0.3.7).
+This guide covers myembro v0.4.0-beta.2 (some screenshots show older versions).
 
 1. [Getting started](#1-getting-started)
 2. [Starting a new project](#2-starting-a-new-project)
@@ -53,6 +53,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 - Tap an object to select it. Drag the corner handles to resize; the size labels show mm and inches.
 - Bottom sheet tabs **Transform**, **Stitches**, **Colors**. In Transform, type **Width (mm)** / **Height (mm)** (the lock keeps the aspect ratio), set rotation, flip, then tap **Apply**.
 - Bottom bar: **Select**, **Designs** (add a design), **Transform**, **Text**, **Layers**.
+- **Colors** sheet (palette icon): pick a **Fabric color** to preview the design on your fabric, and change each **Embroidery threads** color to another Brother thread (your threads are listed first). Tap **Apply** to keep the changes.
 
 ### Block editing
 
@@ -199,7 +200,7 @@ The clock icon in selection mode opens the recent USB transfer history (the scre
 
 ![Settings: backup](../images/manual/en/15-settings-backup.png)
 
-At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes.
+At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes. The list shows Brother machines sold in the United States and Korea; models not yet tried on a real machine are marked **Not verified on a physical machine**.
 
 ![My threads](../images/manual/en/15b-my-threads.png)
 
