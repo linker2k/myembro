@@ -119,11 +119,11 @@ You can also share a picture to myembro from another app (gallery, browser, file
 - Transparent background is not sewn. The most common color at the edge is treated as background.
 - Colors are matched to Brother threads automatically. If you set **My threads** (chapter 10), only your threads are used.
 - Each color area is filled. Next to each other, colors overlap by 0.2mm so no gaps show. The outer edge of the design does not grow.
-- Each filled area gets a triple outline in the same color. If an outline would fail the sewing check, that outline is left out.
+- Each filled area gets a single-pass running outline in the same color. If an outline would fail the sewing check, that outline is left out.
 
 ![Silhouette mode](../images/manual/en/07-photo-silhouette.png)
 
-- **Silhouette**: one color, filled. The **Detail** slider keeps smaller contours the higher it is.
+- **Silhouette**: one color, filled, with a same-color single-pass running outline around each filled area and its holes. Outlines that fail the sewing check are omitted. The **Detail** slider keeps smaller contours the higher it is.
 
 ![Outline mode](../images/manual/en/08-photo-outline.png)
 

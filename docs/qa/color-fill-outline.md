@@ -1,14 +1,16 @@
-# Same-color running outline after color fill
+# Single-pass same-color outline after color and silhouette fill
 
-Base: main `51f0441`. Scope: `ColorDrawingPipeline`, not vector/emoji or texture defaults.
+Base: main `51f0441`. Initial scope: `ColorDrawingPipeline`. Updated 2026-10-28 to include filled `RedworkPipeline` silhouettes; vector/emoji, texture and the separate OUTLINE mode are unchanged.
 
 Each retained TATAMI region is followed immediately by its original polygon exterior and
 interior rings. The existing `Stroke` port generates the stitches; there is no new boundary,
 routing, running-stitch or lock algorithm. Its Ink/Stitch v3.3.0 source attribution remains
 in `Stroke.kt` and `StrokeParameters.kt` (upstream commit
 `b0edd96311ece82ee48816dc93466274b12c2a9c`). Parameters are `repeats=1`,
-`bean_stitch_repeats=[1]`, `running_stitch_length_mm=[1.655]`; other defaults are unchanged.
+`bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.655]`; other defaults are unchanged.
 The same color and region ownership tags are retained, without an added color block.
+
+User decision 2026-10-28: use one running pass (Ink/Stitch default), not three bean passes. Manager measurements in `/tmp/myembro-p7-freq` found peaks >=16 in 2–3% with fill alone (max 16–19), 17% with one pass (max 19), and 66% with three passes (max 29). Silhouettes reuse `ColorFillOutline.stitchGroups` and `select`, immediately after each polygon fill, including holes; no expansion is applied to their outlines. Existing photo extent fitting and final PES checks remain.
 The original region-to-region trim is transferred to the end of its outline.
 
 The 1.655mm length is the running-outline corpus median, approved by the user on
@@ -24,7 +26,7 @@ optional outline owners. Density Highlight indices point at the first needle, wh
 a fill needle: every owned outline needle inside the reported cell is therefore resolved.
 All implicated outlines are removed together, and the complete candidate is checked again.
 If a blocker cannot be attributed to any active outline, the original no-outline fill plan
-is retained. No threshold or generator default is changed. Every accepted outlined plan
+is retained. Selection does not relax any threshold or alter the fill generator defaults. Every accepted outlined plan
 has passed the complete original checks, not only a local or partial check.
 
 Temporary validation ownership never changes the returned region tags, locks, sewing order
@@ -50,7 +52,7 @@ java -Djava.awt.headless=true -Xmx2g -cp "$(cat /tmp/myembro-outline-classpath.t
   io.github.linker2k.myembro.engine.inkstitch.svg.image.ColorFillOutlineProbe \
   /tmp/myembro-outline-out engine/src/test/resources/image-to-design/face.png
 /tmp/myembro-quality-gate/quality-gate check /tmp/myembro-outline-out/repository.pes \
-  --hoop-bounds-mm 0 0 99.9 99.9
+  --hoop-bounds-mm 0 0 100 100
 ```
 
 The probe optionally accepts additional local image paths. It downsizes to 192px wide,
@@ -93,3 +95,49 @@ INPUT_PNG` (empty suffix = current). Local historical-source extraction, command
 PES and the full table are under `/tmp/myembro-outline-perf/`; private input/output is not
 committed. Tests retain the original port/encoded-output regressions and add assertions for
 one-cycle success, selective density-owner omission, and no-outline baseline fallback.
+
+
+## Approved one-pass policy and silhouette integration (2026-10-28)
+
+A matched local replay of 90 color and 90 silhouette inputs per revision used
+`46505dc` as the baseline. Each set covers ten images at 60/85/99.9mm and three
+detail levels. The same P7 four-phase 0.5mm-cell measurement is applied to actual
+PES coordinates. Two color inputs exceed the existing contour-complexity limit
+in both revisions, so color percentages use 88 final outputs, not 90 attempts.
+
+| Output after change | Measured | <=15 | 16–20 | 21–25 | 26–30 | >=31 | Maximum |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Color, one outline pass | 88 | 73 (83.0%) | 15 (17.0%) | 0 | 0 | 0 | 19 |
+| Silhouette, one outline pass | 90 | 90 (100%) | 0 | 0 | 0 | 0 | 11 |
+
+Color peaks >=16 fell from 58/88 (65.9%, maximum 29) to 15/88 (17.0%, maximum 19).
+Silhouette had no peaks >=16 before or after; its maximum changed from 12 to 11.
+All 178 produced designs pass the normal writer and encoded safety checks.
+Silhouette JVM generation p50/p95 changed from 0.308/0.938s to 0.369/0.930s;
+these are one sequential local replay per version, not device timings.
+Generation timing excludes trace and the harness's additional export/checks.
+
+Raw metrics, the fixed matrix and reproduction commands are in
+`/tmp/myembro-p7-freq/one-pass/report.md`; private inputs/results remain local.
+External Python gate samples: 6/6 accepted (five PASS, one density WARNING).
+The explicit gate bounds above describe a 100mm hoop with an **exclusive** upper
+bound; native coordinate 999 (99.9mm) remains allowed, 1000 remains forbidden.
+
+The explicit-zero color PES goldens are rebuilt from baseline `46505dc` with only
+`bean_stitch_repeats=[0]` overlaid. This intentionally supersedes the three-pass
+byte hashes; zero expansion still bypasses buffer and clipping. OUTLINE-mode
+legacy byte parity remains asserted separately. The new silhouette tests verify
+per-polygon fill/outline order, same-color exterior/hole rings and final P1–P8
+invariants; existing selection tests retain only the safe optional outlines.
+
+
+Validation command for this update:
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk \
+  ./gradlew --offline --max-workers=2 --continue :engine:test :app:testDebugUnitTest lint
+```
+
+Result: `BUILD SUCCESSFUL in 3m 7s`; engine 1009 tests and app 456 tests,
+zero failures/errors/skips. Lint completed with zero errors (145 warnings and
+one informational issue). Log: `/tmp/myembro-p7-freq/one-pass/tests-lint.log`.

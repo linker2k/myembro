@@ -12,6 +12,51 @@ import kotlin.test.*
 
 /** Two original synthetic masks, no private designs or photographs. */
 class RedworkPipelineTest {
+    @Test fun silhouetteHasSinglePassExteriorAndHoleAfterEachFill() {
+        val region=io.github.linker2k.myembro.engine.geometry.PolygonRegion(
+            org.locationtech.jts.io.WKTReader().read("MULTIPOLYGON (((0 0,200 0,200 200,0 200,0 0),(60 60,60 140,140 140,140 60,60 60)),((300 0,400 0,400 100,300 100,300 0)))"))
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val selected=RedworkPipeline.silhouetteGroups(region,thread)
+        assertTrue(selected.skipped.isEmpty())
+        assertEquals(1,selected.checks)
+        var cursor=0
+        for(index in 0 until region.geometry.numGeometries) {
+            val polygon=region.geometry.getGeometryN(index) as org.locationtech.jts.geom.Polygon
+            val fill=io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami.stitchGroups(
+                io.github.linker2k.myembro.engine.geometry.PolygonRegion(polygon),thread)
+            val outline=ColorFillOutline.stitchGroups(polygon,thread)
+            assertEquals(1+polygon.numInteriorRing,outline.size)
+            assertEquals(fill.map { it.stitches },selected.groups.subList(cursor,cursor+fill.size).map { it.stitches })
+            cursor+=fill.size
+            assertEquals(outline.map { it.stitches },selected.groups.subList(cursor,cursor+outline.size).map { it.stitches })
+            cursor+=outline.size
+        }
+        assertEquals(selected.groups.size,cursor)
+        assertTrue(selected.groups.all { it.color==thread })
+        assertTrue(ColorFillOutline.safe(selected.groups,HoopSpec.H100))
+    }
+
+    @Test fun silhouetteOutlineAndHolePassP1ThroughP8AtMaximumPhotoWidth() {
+        val rgb=IntArray(64*64) { i ->
+            val x=i%64;val y=i/64
+            if(x in 1..62 && y in 1..62 && !(x in 22..41 && y in 22..41)) 0 else 0xffffff
+        }
+        val thread=EmbThread(0xFFB5492A.toInt())
+        val traced=RedworkPipeline.trace(64,64,rgb,99.9,0,thread)
+        val result=RedworkPipeline.generate(traced,thread,photoMode=true)
+        assertEquals("0",result.pattern.metadata["myembro.skipped_fill_outlines"])
+        assertEquals("1",result.pattern.metadata["myembro.fill_outline_checks"])
+        val bytes=result.copyPesBytes()
+        assertTrue(io.github.linker2k.myembro.engine.sewout.PesInvariants.violations(bytes,HoopSpec.H100).isEmpty())
+        val report=SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
+        assertTrue(report.analysisComplete)
+        assertFalse(report.hasBlockingIssues,report.findings.toString())
+        assertEquals(0,report.statistics.missingStartLocks)
+        assertEquals(0,report.statistics.missingEndLocks)
+        val decoded=PesReader.read(bytes)
+        assertTrue(decoded.stitches.filter { it.command==Command.STITCH }.none { it.x in 440..500 && it.y in 440..500 })
+    }
+
     @Test fun outlineBeanRepeatsEachSourceRunningSegmentThreeTimesAndKeepsLocks() {
         val thread=EmbThread(0xFF000000.toInt())
         val points=listOf(io.github.linker2k.myembro.engine.inkstitch.utils.Point(0.0,0.0),

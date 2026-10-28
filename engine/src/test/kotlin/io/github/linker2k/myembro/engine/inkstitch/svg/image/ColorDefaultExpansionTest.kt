@@ -15,12 +15,13 @@ import kotlin.test.*
 class ColorDefaultExpansionTest {
     @Test fun approvedDefaultMatchesPointTwoAndKeepsExtentAndExplicitZeroGolden() {
         assertEquals(0.2,ColorDrawingPipeline.DEFAULT_EXPAND_MM)
-        // Synthetic-only goldens from original main 2007a4f algorithms under approved P7 (2026-10-28).
-        // P7 can now retain optional outlines previously rejected at 16–30 penetrations.
+        // Synthetic-only goldens: baseline 46505dc with only the approved outline repeats 1 -> 0.
+        // Independently rebuilt baseline + single-parameter overlay; /tmp/myembro-p7-freq/one-pass.
+        // Expansion 0 still bypasses buffer/clip; the outline policy intentionally changes PES bytes.
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "0c365deb402a3085b656569ed9798dcfbb1937b473cf5bb5fee5aa4d4c3687aa",
-            "robot" to "85178d50200dc3dcb4a374f322a290deda5ef50dabf104f6004aeea3ec8dc00d")
+            "face" to "826ead35421936ddd7688a0a4840f3364c4889f550ed2b6e6704bfbf356bdc66",
+            "robot" to "77bd7e3116c23835c92861fdd69cac233cd01fe1e1ea8c84560b0d846f45832a")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {
             val source=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/$name.png"))
@@ -39,7 +40,7 @@ class ColorDefaultExpansionTest {
             assertContentEquals(explicit,internal,"$name internal default")
             assertEquals(PesReader.read(zero).bounds,PesReader.read(actual).bounds,"$name integer extent")
             val hash=MessageDigest.getInstance("SHA-256").digest(zero).joinToString("") { "%02x".format(it) }
-            assertEquals(golden,hash,"$name explicit zero matches main 2007a4f bytes")
+            assertEquals(golden,hash,"$name explicit zero matches approved one-pass baseline bytes")
             assertFalse(SewoutCheck.checkPes(actual,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
             output?.resolve("$name-default.pes")?.writeBytes(actual)
             output?.resolve("$name-zero.pes")?.writeBytes(zero)

@@ -40,7 +40,9 @@ writer versions, including non-null warning highlights and 31+ rejection.
 Policy-dependent output goldens were regenerated from main 2007a4f algorithms
 with the new P7 guard: optional outlines at 16–30 may now remain, so former byte
 hashes under the old density guard are intentionally obsolete. Synthetic inputs
-and all other invariants remain fixed.
+and all other invariants remain fixed. The later approved one-pass outline policy
+intentionally supersedes these three-pass byte goldens; see [color and silhouette
+outline validation](color-fill-outline.md#approved-one-pass-policy-and-silhouette-integration-2026-10-28).
 
 ## Independent gate v8
 

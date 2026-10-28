@@ -2,6 +2,9 @@
 // Original integration of the separately attributed Wu, Potrace and Ink/Stitch ports.
 package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
+import io.github.linker2k.myembro.engine.edit.HoopSpec
+import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup
+import org.locationtech.jts.geom.Polygon
 import io.github.linker2k.myembro.engine.geometry.SvgPath
 import io.github.linker2k.myembro.engine.inkstitch.elements.DefaultTatami
 import io.github.linker2k.myembro.engine.geometry.PolygonRegion
@@ -34,7 +37,7 @@ object RedworkPipeline {
     /**
      * Caller supplies a known background pixel; no unvalidated automatic polarity heuristic.
      * Traces boundaries into filled regions with holes, then source-default tatami/underlay.
-     * No running outline or centerline approximation is generated.
+     * Filled silhouettes include the same optional single-pass outline as color drawings.
      * widthMm is the full bitmap width; aspect ratio and placement about the hoop center are preserved.
      */
     fun generate(
@@ -118,6 +121,7 @@ object RedworkPipeline {
         checkpoint("stitches")
         val paths = outline.paths
         var route: PhotoOutline.Route? = null
+        var fillOutlines: ColorFillOutline.Selection? = null
         val groups = if(style==PhotoStyle.OUTLINE) {
             route=PhotoOutline.route(PhotoOutline.paths(outline))
             PhotoOutline.groups(route,thread)
@@ -132,7 +136,7 @@ object RedworkPipeline {
                         it.y * 10 / Units.mmToPixels(1.0)) }, true)
                 }
             }, FillRule.EVEN_ODD)
-            DefaultTatami.stitchGroups(region, thread)
+            silhouetteGroups(region, thread) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
         }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
@@ -150,10 +154,31 @@ object RedworkPipeline {
             finished.metadata + mapOf(
                 "myembro.fill.backend" to if(style==PhotoStyle.OUTLINE) "inkstitch-bean-outline" else "inkstitch-default-tatami-underlay",
                 "myembro.photo.style" to style.name,
-            ) + (route?.let { mapOf("myembro.photo.jump_before_mm" to Units.pixelsToMm(it.before).toString(),
+            ) + (fillOutlines?.let { mapOf("myembro.skipped_fill_outlines" to it.skipped.size.toString(),
+                "myembro.fill_outline_checks" to it.checks.toString()) } ?: emptyMap()) + (route?.let { mapOf("myembro.photo.jump_before_mm" to Units.pixelsToMm(it.before).toString(),
                 "myembro.photo.jump_after_mm" to Units.pixelsToMm(it.after).toString()) } ?: emptyMap()), finished.warnings)
         checkpoint("stitches_ready=${pattern.stitchCount}")
         checkpoint("pes")
         return RedworkResult(pattern, outline.outlineSvg, outline.contourCount, PesWriter.write(pattern, PesVersion.V6))
     }
+
+    /** Each original polygon's underlay/top fill precedes its unexpanded exterior and hole rings.
+     * Reuse the color path's optional-outline selection; mandatory fills are never removed.
+     */
+    internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread,
+        checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
+        val fills=mutableListOf<StitchGroup>()
+        val outlines=mutableListOf<ColorFillOutline.Outline>()
+        val parts=(0 until region.geometry.numGeometries).map { region.geometry.getGeometryN(it) as Polygon }
+            .sortedBy { it.envelopeInternal.minX }
+        for((index,polygon) in parts.withIndex()) {
+            checkpoint()
+            val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread)
+            if(next.isEmpty()) continue
+            fills+=next
+            outlines+=ColorFillOutline.Outline(fills.size,index,ColorFillOutline.stitchGroups(polygon,thread))
+        }
+        return ColorFillOutline.select(fills,outlines,HoopSpec.H100,checkpoint)
+    }
+
 }
