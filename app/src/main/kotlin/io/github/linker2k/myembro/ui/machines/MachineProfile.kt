@@ -115,7 +115,8 @@ object MachineProfiles {
         if (facts.id in setOf("kr-lb6950", "kr-nv180", "kr-nv180d", "kr-nv180k")) hoops += repositionable
         MachineProfile(facts.id, facts.displayName, facts.maximumArea, hoops,
             facts.transferMethods?.map { TransferMethod.valueOf(it.name) }?.toSet(),
-            sourceUrls = facts.sourceUrls, region = facts.region, aliases = facts.aliases)
+            sourceUrls = facts.sourceUrls, region = facts.region, aliases = facts.aliases + setOf(facts.displayName,
+                facts.displayName.replace("이노비스", "Innovis").replace("한국", "Korea")))
     }
     val all = listOf(SE400, SE600, SE700) + additional + FREE
     val default: MachineProfile get() = SE400

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="machine_name_kr_m370">M370</string>
+    <string name="machine_name_kr_m380d">M380D</string>
+    <string name="machine_name_kr_lb7950">LB7950</string>
+    <string name="machine_name_kr_lb8950">LB8950</string>
+    <string name="machine_name_kr_lb6950">LB6950</string>
+    <string name="machine_name_kr_nv180">이노비스 180 (NV180)</string>
+    <string name="machine_name_kr_nv180d">이노비스 180D (NV180D)</string>
+    <string name="machine_name_kr_nv180k">이노비스 180K (NV180K)</string>
+    <string name="machine_name_kr_nv900">이노비스 900 (NV900)</string>
+    <string name="machine_name_kr_nv900d">이노비스 900D (NV900D)</string>
+    <string name="machine_name_kr_nv950">이노비스 950 (NV950)</string>
+    <string name="machine_name_kr_nv980d">이노비스 980D (NV980D)</string>
+    <string name="machine_name_kr_nv980k">이노비스 980K (NV980K)</string>
+    <string name="machine_name_kr_f580">F580</string>
+    <string name="machine_name_kr_ns2750d">이노비스 NS2750D</string>
+    <string name="machine_name_kr_nv1250">이노비스 1250 (NV1250)</string>
+    <string name="machine_name_kr_nv2600">이노비스 2600 (NV2600)</string>
+    <string name="machine_name_kr_nv2700">이노비스 2700 (NV2700)</string>
+    <string name="machine_name_kr_nv4000d">이노비스 4000D (NV4000D)</string>
+    <string name="machine_name_kr_v3">이노비스 V3</string>
+    <string name="machine_name_kr_v3le">이노비스 V3LE</string>
+    <string name="machine_name_kr_v5">이노비스 V5</string>
+    <string name="machine_name_kr_v5le">이노비스 V5LE</string>
+    <string name="machine_name_kr_xj1">이노비스 XJ1</string>
+    <string name="machine_name_kr_pr680w">PR680W (한국)</string>
+    <string name="machine_name_kr_pr1050x">PR1050X (한국)</string>
+    <string name="machine_name_kr_pr1060w">PR1060W (한국)</string>
+    <string name="machine_name_kr_pr1x">PR1X (한국)</string>
+</resources>

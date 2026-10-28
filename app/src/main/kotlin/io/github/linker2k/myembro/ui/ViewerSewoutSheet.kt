@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import io.github.linker2k.myembro.ui.machines.machineDisplayName
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -88,7 +89,7 @@ internal fun ViewerSewoutSheet(vm: ViewerViewModel) {
                 }
             } else {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(report.machine.name, style = MaterialTheme.typography.titleSmall)
+                    Text(machineDisplayName(report.machine.id, report.machine.name), style = MaterialTheme.typography.titleSmall)
                     Text(sewoutSummary(report), style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(if (report.analysisComplete) R.string.sewout_complete else R.string.sewout_incomplete),
                         style = MaterialTheme.typography.labelSmall,
@@ -230,7 +231,7 @@ internal fun SewoutTransferConfirmation(report: SewoutReport, onCancel: () -> Un
     AlertDialog(onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.sewout_confirm_title)) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.sewout_confirm_body, report.machine.name, report.severityCounts[Severity.BLOCKER] ?: 0))
+            Text(stringResource(R.string.sewout_confirm_body, machineDisplayName(report.machine.id, report.machine.name), report.severityCounts[Severity.BLOCKER] ?: 0))
             if (!report.analysisComplete) Text(stringResource(R.string.sewout_confirm_incomplete))
         } },
         confirmButton = { TextButton(onClick = onContinue, enabled = !report.hasBlockingIssues) { Text(stringResource(R.string.sewout_transfer_anyway)) } },
