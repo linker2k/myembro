@@ -122,6 +122,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     /** Completes with the draft read; snapshotFlow on [draftLoading] needs a composition, which a closed editor lacks. */
     private val draftLoaded = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var deferredEntry: (() -> Unit)? = null
+    /** A photo result that arrived while the draft was read or the recovery dialog was open; added after the answer. */
+    private var pendingPicture: DesignObject? = null
     private var lastDraft: Project? = null
     private var draftQueued = false
     var recoveryProject by mutableStateOf<Project?>(null)
@@ -239,7 +241,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             finally {
                 draftLoading = false
                 draftLoaded.complete(Unit)
-                if (recoveryProject == null) resumeDeferredEntry()
+                if (recoveryProject == null) { resumeDeferredEntry(); addPendingPicture() }
             }
         }
     }
@@ -441,12 +443,14 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         deferredEntry = null // Recovery takes precedence over an incoming empty/new design request.
         recoveryProject = null
         replaceSession(recovered, savedOnDisk = false, restoredDraft = true)
+        addPendingPicture()
     }
     fun discardDraft() {
         recoveryProject = null
         draftQueued = false
         queueDraft()
         resumeDeferredEntry()
+        addPendingPicture()
     }
     fun dismissExportProblems() { exportProblems = null }
     private fun replaceSession(loaded: Project, savedOnDisk: Boolean, selection: Set<String> = emptySet(), restoredDraft: Boolean = false) {
@@ -690,9 +694,11 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         else edit(project.reorderCommand(id, index))
     }
     fun addPicture(obj:DesignObject) {
+        if(draftLoading || recoveryProject != null) { pendingPicture=obj; return }
         if(interactionBlocked || gestureInProgress) return
         edit(project.add(obj));selectedIds=setOf(obj.id)
     }
+    private fun addPendingPicture() { pendingPicture?.let { pendingPicture=null; addPicture(it) } }
     fun addDesign(file: File) {
         if (interactionBlocked || gestureInProgress) return
         busy = true
