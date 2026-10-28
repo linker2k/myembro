@@ -12,6 +12,7 @@ preserving alpha channels in transparent images.
 | [play-feature-graphic.png](play-feature-graphic.png) | 1024×500, RGB PNG | Hoop on the left, app name/PES viewer introduction on the right. Opaque feature graphic for Play Store listing. |
 | [empty-state.png](empty-state.png) | 1024×1024, RGBA PNG | Empty linen hoop without a design and a spool of thread. Original empty-state illustration with no lettering and a transparent outer background. The app uses the WebP derivative below. |
 | [launcher-icon-preview.png](launcher-icon-preview.png) | 960×360, RGB PNG | Circular, rounded-square, monochrome, and 48px previews rendered from the XML vector. A resource-review image, not a generated image. |
+| [example-logo-flat.png](example-logo-flat.png) | 1024×1024, RGB PNG | The launcher icon (`ic_launcher_foreground.xml` on `ic_launcher_background`) rendered flat with Rsvg: the visible 72dp area (18–90dp), no mask. Input picture for the user guide examples and the intro video. |
 
 ## Launcher resources
 
