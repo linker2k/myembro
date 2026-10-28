@@ -40,7 +40,15 @@ data class FrameOption(val id: String, val spec: HoopSpec, val preset: Hoop? = n
 
 object FrameCatalog {
     val presets: List<FrameOption> get() = Hoop.entries.map { FrameOption(it.name, HoopSpec(it.label, it.widthMm * 10, it.heightMm * 10), it) }
-    fun options(custom: List<CustomFrame>): List<FrameOption> = presets + custom.map { FrameOption(it.id, it.spec) }
+    /** Select an explicitly supported frame for a newly chosen machine; old stored IDs stay valid. */
+    fun defaultFor(profile: MachineProfile, custom: List<CustomFrame> = emptyList()): FrameOption? =
+        options(custom, profile).firstOrNull { it.spec.width == profile.defaultHoop.width && it.spec.height == profile.defaultHoop.height }
+
+    fun options(custom: List<CustomFrame>, profile: MachineProfile? = null): List<FrameOption> {
+        val extra = profile?.projectHoops.orEmpty().filter { hoop -> presets.none { it.spec.width == hoop.width && it.spec.height == hoop.height } }
+            .map { FrameOption("machine:${profile?.id}:${it.width}x${it.height}", it) }
+        return presets + extra + custom.map { FrameOption(it.id, it.spec) }
+    }
 }
 
 /** JSON is version tolerant: one corrupt entry must not discard other saved frames. */

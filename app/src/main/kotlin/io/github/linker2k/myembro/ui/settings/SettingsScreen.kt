@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,12 +80,13 @@ import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.Hoop
 import io.github.linker2k.myembro.ui.machines.MachineProfile
 import io.github.linker2k.myembro.ui.machines.MachineProfiles
+import io.github.linker2k.myembro.ui.machines.TransferMethod
+import io.github.linker2k.myembro.engine.sewout.MachineRegion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.linker2k.myembro.engine.io.PesVersion
 
-private val machinePresets = MachineProfiles.all.map { it.displayName }
 
 /** Standalone settings destination; the host supplies navigation and owns its ViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,7 +148,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                 ) {
                     SettingRow(
                         Icons.Default.Settings, stringResource(R.string.settings_machine),
-                        if (settings.machineProfile?.id == "free") stringResource(R.string.settings_machine_free) else settings.machineModel.ifBlank { stringResource(R.string.settings_machine_unset) },
+                        if (settings.machineProfile?.id == "free") stringResource(R.string.settings_machine_free) else (settings.machineProfile?.displayName ?: settings.machineModel).ifBlank { stringResource(R.string.settings_machine_unset) },
                     ) { machineDialog = true }
                     MachineDetails(settings.machineProfile)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -182,6 +184,11 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
                             }
                         }
                     }
+                }
+                settings.frames.filter { it.id.startsWith("machine:") }.forEach { frame ->
+                    FilterChip(selected = settings.defaultFrame.id == frame.id,
+                        onClick = { vm.setDefaultFrame(frame.id) },
+                        label = { Text(frame.dimensions) })
                 }
                 CustomFramesSection(vm)
                 SectionHeading(Icons.Default.Palette, stringResource(R.string.settings_threads_title))
@@ -262,6 +269,11 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: (() -> Unit)? = null, modifier
 
 @Composable
 private fun MachineDetails(profile: MachineProfile?) {
+    val transferLabels = mapOf(
+        TransferMethod.PC_USB_CABLE to stringResource(R.string.machine_transfer_pc_label),
+        TransferMethod.USB_FLASH_DRIVE to stringResource(R.string.machine_transfer_flash_label),
+        TransferMethod.BROTHER_WIRELESS to stringResource(R.string.machine_transfer_wireless_label),
+    )
     Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (profile == null || profile.id == "free") {
@@ -270,17 +282,28 @@ private fun MachineDetails(profile: MachineProfile?) {
         } else {
             Text(stringResource(R.string.machine_area_format, Dimensions.hoopSize(profile.maximumArea.width / 10, profile.maximumArea.height / 10), profile.exportFormats.joinToString()),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text(stringResource(when (profile.id) {
-                "se400" -> R.string.machine_transfer_se400
-                "se600" -> R.string.machine_transfer_se600
-                else -> R.string.machine_transfer_se700
-            }), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.machine_optional_hoops_repositionable),
+            if (profile.requiresPhysicalVerification) Text(stringResource(R.string.machine_physical_unconfirmed),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+            Text(when (profile.id) {
+                "se400" -> stringResource(R.string.machine_transfer_se400)
+                "se600" -> stringResource(R.string.machine_transfer_se600)
+                "se700" -> stringResource(R.string.machine_transfer_se700)
+                else -> profile.transferMethods?.takeIf { it.isNotEmpty() }?.joinToString(" · ") { transferLabels.getValue(it) }
+                    ?: stringResource(R.string.machine_fact_unconfirmed)
+            }, style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.machine_confirmed_hoops, profile.projectHoops.joinToString { Dimensions.hoopSize(it.width / 10, it.height / 10) }),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (profile.hoops.any { it.requiresRepositioning }) Text(stringResource(R.string.machine_positions_unverified),
+                style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.machine_jump_trim_format, when(profile.automaticJumpTrim?.value) {
+                true -> stringResource(R.string.machine_fact_yes)
+                false -> stringResource(R.string.machine_fact_no)
+                null -> stringResource(R.string.machine_fact_unconfirmed)
+            }), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(when (profile.id) {
                 "se400" -> R.string.machine_limits_se400
-                "se600" -> R.string.machine_limits_se600
-                else -> R.string.machine_limits_se700
+                "se700" -> R.string.machine_limits_se700
+                else -> R.string.machine_limits_se600
             }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(stringResource(R.string.machine_filename_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -318,8 +341,8 @@ private fun SettingRow(icon: ImageVector, title: String, value: String, onClick:
 
 @Composable
 private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var selected by rememberSaveable { mutableStateOf(current.takeIf { it in machinePresets }) }
-    var custom by rememberSaveable { mutableStateOf(current.isNotBlank() && current !in machinePresets) }
+    var selected by rememberSaveable { mutableStateOf(MachineProfiles.find(current)?.displayName) }
+    var custom by rememberSaveable { mutableStateOf(current.isNotBlank() && MachineProfiles.find(current) == null) }
     var text by rememberSaveable { mutableStateOf(if (custom) current else "") }
     val value = if (custom) text.trim() else selected.orEmpty()
     AlertDialog(
@@ -327,8 +350,17 @@ private fun MachineDialog(current: String, onDismiss: () -> Unit, onConfirm: (St
         title = { Text(stringResource(R.string.settings_machine)) },
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
-                machinePresets.forEach { model ->
-                    RadioOption(if (model == MachineProfiles.FREE.displayName) stringResource(R.string.settings_machine_free) else model, !custom && selected == model) { selected = model; custom = false }
+                MachineRegion.entries.forEach { region ->
+                    Text(stringResource(when(region) {
+                        MachineRegion.US -> R.string.machine_region_us
+                        MachineRegion.KOREA -> R.string.machine_region_korea
+                        MachineRegion.OTHER -> R.string.machine_region_other
+                    }), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleSmall)
+                    MachineProfiles.all.filter { it.region == region }.forEach { profile ->
+                        val label = if (profile.id == "free") stringResource(R.string.settings_machine_free) else profile.displayName
+                        RadioOption(label + if(profile.requiresPhysicalVerification) "\n" + stringResource(R.string.machine_physical_unconfirmed) else "",
+                            !custom && selected == profile.displayName) { selected = profile.displayName; custom = false }
+                    }
                 }
                 RadioOption(stringResource(R.string.settings_machine_custom), custom) { custom = true; selected = null }
                 if (custom) OutlinedTextField(

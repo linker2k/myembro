@@ -16,7 +16,8 @@ class ManualJumpAdviceTest {
     @Test fun viewerUsesTheReportProfileAndNeverPartialCounts() {
         val p=EmbPattern(listOf(Stitch(0,0,Command.STITCH),Stitch(10,0,Command.JUMP),Stitch(20,0,Command.STITCH)),listOf(EmbPattern.DEFAULT_PALETTE[0]))
         assertEquals(ManualJumpAdvice(1,"SE400"),manualJumpAdvice(SewoutCheck.check(p,SewoutMachines.SE400)))
-        assertNull(manualJumpAdvice(SewoutCheck.check(p,SewoutMachines.SE600)))
+        assertEquals(ManualJumpAdvice(1,"SE600"),manualJumpAdvice(SewoutCheck.check(p,SewoutMachines.SE600)))
+        assertEquals(ManualJumpAdvice(1,"SE700"),manualJumpAdvice(SewoutCheck.check(p,SewoutMachines.SE700)))
         assertNull(manualJumpAdvice(SewoutCheck.check(p,SewoutMachines.SE400,SewoutOptions(maxCommands=1))))
     }
     @Test fun usbUsesPersistedTransferProfileAndRequiresKnownCountsForEverySuccessfulFile() {

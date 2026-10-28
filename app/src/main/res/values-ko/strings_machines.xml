@@ -1,0 +1,14 @@
+<resources>
+    <string name="machine_region_us">미국</string>
+    <string name="machine_region_korea">한국</string>
+    <string name="machine_region_other">기타</string>
+    <string name="machine_physical_unconfirmed">실제 기계 미확인</string>
+    <string name="machine_transfer_pc_label">USB 케이블 → PC</string>
+    <string name="machine_transfer_flash_label">USB 메모리</string>
+    <string name="machine_transfer_wireless_label">Brother 무선 전송 (myembro 직접 전송 미지원)</string>
+    <string name="machine_fact_unconfirmed">미확인</string>
+    <string name="machine_fact_yes">지원</string>
+    <string name="machine_fact_no">미지원</string>
+    <string name="machine_confirmed_hoops">확인된 후프 범위: %1$s</string>
+    <string name="machine_jump_trim_format">이동 실 자동 자르기: %1$s</string>
+</resources>

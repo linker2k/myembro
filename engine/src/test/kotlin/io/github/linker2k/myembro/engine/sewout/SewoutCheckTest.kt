@@ -149,7 +149,9 @@ class SewoutCheckTest {
         assertEquals(400.0,speed.effectiveSpm)
         assertEquals(SpeedBasis.USER_SETTING,speed.basis)
         assertEquals(320.0,SewoutCheck.check(source,SewoutMachines.SE700).speed.effectiveSpm)
-        assertEquals("미확인",SewoutMachines.SE600.automaticJumpTrim.statusLabel)
+        assertEquals(false,SewoutMachines.SE600.automaticJumpTrim.value)
+        assertEquals("확인",SewoutMachines.SE600.automaticJumpTrim.statusLabel)
+        assertEquals("미확인",Specification<Boolean>().statusLabel)
     }
 
     @Test fun actualPesVersionsCountsSizeAndThumbnailsAreCheckedWithoutChangingBytes() {

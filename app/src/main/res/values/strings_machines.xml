@@ -1,0 +1,14 @@
+<resources>
+    <string name="machine_region_us">United States</string>
+    <string name="machine_region_korea">Korea</string>
+    <string name="machine_region_other">Other</string>
+    <string name="machine_physical_unconfirmed">Not verified on a physical machine</string>
+    <string name="machine_transfer_pc_label">USB cable to PC</string>
+    <string name="machine_transfer_flash_label">USB flash drive</string>
+    <string name="machine_transfer_wireless_label">Brother wireless transfer (myembro direct transfer unavailable)</string>
+    <string name="machine_fact_unconfirmed">Unconfirmed</string>
+    <string name="machine_fact_yes">Yes</string>
+    <string name="machine_fact_no">No</string>
+    <string name="machine_confirmed_hoops">Confirmed hoop coverage: %1$s</string>
+    <string name="machine_jump_trim_format">Automatic jump thread trimming: %1$s</string>
+</resources>
