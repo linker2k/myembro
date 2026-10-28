@@ -4,6 +4,9 @@ package io.github.linker2k.myembro.ui.machines
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.ui.Hoop
+import io.github.linker2k.myembro.engine.sewout.BrotherMachineCatalog
+import io.github.linker2k.myembro.engine.sewout.MachineRegion
+import io.github.linker2k.myembro.engine.sewout.SewoutLimits
 
 enum class TransferMethod { PC_USB_CABLE, USB_FLASH_DRIVE, BROTHER_WIRELESS }
 enum class StorageScope { TEMPORARY_USB_DISK, INTERNAL_MEMORY }
@@ -25,14 +28,17 @@ data class MachineProfile(
     val displayName: String,
     val maximumArea: HoopSpec,
     val hoops: List<MachineHoop>,
-    val transferMethods: Set<TransferMethod>,
+    val transferMethods: Set<TransferMethod>?,
     val storageLimits: List<StorageLimit> = emptyList(),
     val sourceUrls: List<String>,
     val exportFormats: Set<String> = setOf("PES"),
     // No numeric PES filename limit or Android USB cable compatibility was verified.
     val maxFilenameCharacters: Int? = null,
     val androidOtgCableVerified: Boolean? = null,
+    val region: MachineRegion = MachineRegion.US,
+    val aliases: Set<String> = emptySet(),
 ) {
+    val requiresPhysicalVerification get() = id != "free" && (maximumArea.width > HoopSpec.H100.width || maximumArea.height > HoopSpec.H100.height)
     /** Capability source stays in the engine profile, including user-observed SE400 jump cleanup. */
     val automaticJumpTrim get() = io.github.linker2k.myembro.engine.sewout.SewoutMachines.all.firstOrNull { it.id == id }?.automaticJumpTrim
     val manualJumpCleanup get() = io.github.linker2k.myembro.engine.sewout.SewoutMachines.all.firstOrNull { it.id == id }?.manualJumpCleanup
@@ -46,8 +52,8 @@ data class MachineProfile(
 
     /** Dimension check for a centered imported design. Editor placement uses engine Bounds.outside. */
     fun fits(bounds: Bounds): Boolean =
-        bounds.maxX.toLong() - bounds.minX in 0L..maximumArea.width.toLong() &&
-            bounds.maxY.toLong() - bounds.minY in 0L..maximumArea.height.toLong()
+        bounds.maxX.toLong() - bounds.minX in 0L..SewoutLimits.maxDesignWidthUnits0p1mm(maximumArea).toLong() &&
+            bounds.maxY.toLong() - bounds.minY in 0L..SewoutLimits.maxDesignHeightUnits0p1mm(maximumArea).toLong()
 }
 
 /** Official US manuals, verified 2026-10-22. Unverified specifications remain null. */
@@ -102,13 +108,23 @@ object MachineProfiles {
         listOf(SE700_MANUAL, SE700_WIRELESS, SE700_PRODUCT, SE700_ACCESSORIES),
     )
     val FREE = MachineProfile("free", "Other (free)", HoopSpec("Unrestricted", Int.MAX_VALUE, Int.MAX_VALUE),
-        emptyList(), emptySet(), sourceUrls = emptyList())
-    val all = listOf(SE400, SE600, SE700, FREE)
+        emptyList(), emptySet(), sourceUrls = listOf("https://github.com/linker2k/myembro/blob/main/docs/machines.md#user-defined-machine"), region = MachineRegion.OTHER)
+    private val additional = BrotherMachineCatalog.all.map { facts ->
+        val hoops = facts.hoops.map { MachineHoop(it) }.toMutableList()
+        // This accessory is explicitly documented for these Korean 4x4 platform manuals only.
+        if (facts.id in setOf("kr-lb6950", "kr-nv180", "kr-nv180d", "kr-nv180k")) hoops += repositionable
+        MachineProfile(facts.id, facts.displayName, facts.maximumArea, hoops,
+            facts.transferMethods?.map { TransferMethod.valueOf(it.name) }?.toSet(),
+            sourceUrls = facts.sourceUrls, region = facts.region, aliases = facts.aliases)
+    }
+    val all = listOf(SE400, SE600, SE700) + additional + FREE
     val default: MachineProfile get() = SE400
 
     /** Exact model aliases only; an arbitrary custom machine never inherits SE400 capabilities. */
     fun find(model: String): MachineProfile? {
         val key = model.trim().replace(Regex("(?i)^Brother\\s+"), "").replace("-", "")
-        return all.firstOrNull { it.id.equals(key, ignoreCase = true) || it.displayName.equals(model.trim(), ignoreCase = true) }
+        // Stable IDs/display names win before shared regional aliases (e.g. NS2750D).
+        return all.firstOrNull { it.id.replace("-", "").equals(key, ignoreCase = true) || it.displayName.equals(model.trim(), ignoreCase = true) }
+            ?: all.firstOrNull { it.aliases.any { alias -> alias.equals(key, ignoreCase = true) } }
     }
 }

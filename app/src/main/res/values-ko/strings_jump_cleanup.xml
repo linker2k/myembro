@@ -1,5 +1,0 @@
-<resources>
-    <plurals name="manual_jump_cleanup">
-        <item quantity="other">이동 실 %1$d개 · %2$s은 자동으로 자르지 않아요. 수놓은 뒤 가위로 잘라 주세요.</item>
-    </plurals>
-</resources>

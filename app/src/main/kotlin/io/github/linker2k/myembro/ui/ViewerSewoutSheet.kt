@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -64,7 +65,7 @@ internal fun ViewerCheckBadge(vm: ViewerViewModel, modifier: Modifier = Modifier
 @Composable
 private fun sewoutSummary(report: SewoutReport): String = stringResource(R.string.sewout_summary,
     report.severityCounts[Severity.BLOCKER] ?: 0, report.severityCounts[Severity.WARNING] ?: 0,
-    report.statistics.requiredManualCuts + report.statistics.possibleManualCuts, sewoutMinutes(report.time.totalSeconds))
+    sewoutMinutes(report.time.totalSeconds))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +90,6 @@ internal fun ViewerSewoutSheet(vm: ViewerViewModel) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(report.machine.name, style = MaterialTheme.typography.titleSmall)
                     Text(sewoutSummary(report), style = MaterialTheme.typography.bodySmall)
-                    ManualJumpAdviceText(manualJumpAdvice(report))
                     Text(stringResource(if (report.analysisComplete) R.string.sewout_complete else R.string.sewout_incomplete),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (report.analysisComplete) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
@@ -112,15 +112,15 @@ internal fun ViewerSewoutSheet(vm: ViewerViewModel) {
                             }
                         }
                         1 -> {
-                            item { Text(stringResource(R.string.sewout_cuts, report.statistics.requiredManualCuts, report.statistics.possibleManualCuts), style = MaterialTheme.typography.bodySmall) }
-                            if (report.tasks.isEmpty()) item { Text(stringResource(R.string.sewout_no_tasks)) }
-                            items(report.tasks) { task ->
+                            val tasks = sewoutDisplayTasks(report.tasks)
+                            if (tasks.isEmpty()) item { Text(stringResource(R.string.sewout_no_tasks)) }
+                            itemsIndexed(tasks) { index, task ->
                                 val highlight = Highlight(task.commandIndex, task.endCommandIndex, task.from, task.to)
                                 CheckRow(onClick = { vm.focusSewout(highlight) }) {
-                                    Text(stringResource(R.string.sewout_task_row, task.ordinal, stringResource(task.kind.labelRes()),
+                                    Text(stringResource(R.string.sewout_task_row, index + 1, stringResource(task.kind.labelRes()),
                                         task.stageIndex + 1, sewoutClock(task.atEstimatedSeconds)), style = MaterialTheme.typography.titleSmall)
-                                    val stop = stringResource(if (task.machineStops) R.string.sewout_machine_stops else if (task.operatorMustPause) R.string.sewout_pause_manually else R.string.sewout_no_pause)
-                                    Text(task.cutRequirement?.let { stringResource(R.string.sewout_task_detail, stop, stringResource(it.labelRes())) } ?: stop,
+                                    val stop = stringResource(if (task.machineStops) R.string.sewout_machine_stops else R.string.sewout_no_pause)
+                                    Text(stop,
                                         style = MaterialTheme.typography.bodySmall)
                                     Text(stringResource(R.string.sewout_show_location), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 }
@@ -129,7 +129,7 @@ internal fun ViewerSewoutSheet(vm: ViewerViewModel) {
                         2 -> {
                             item {
                                 Text(stringResource(R.string.sewout_estimate_note), style = MaterialTheme.typography.bodySmall)
-                                Text(stringResource(R.string.sewout_time_range, sewoutMinutes(report.time.withoutConditionalCutsSeconds), sewoutMinutes(report.time.totalSeconds)), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.sewout_time_estimate, sewoutMinutes(report.time.totalSeconds)), style = MaterialTheme.typography.bodySmall)
                                 Text(stringResource(R.string.sewout_thread_usage, report.threadUsage.upperMeters, report.threadUsage.bobbinMeters), style = MaterialTheme.typography.bodySmall)
                             }
                             if (report.stages.isEmpty()) item { Text(stringResource(R.string.sewout_no_colors)) }
@@ -219,16 +219,10 @@ private fun SewoutReport.acceptanceRes() = when (compatibility.acceptance) {
     Acceptance.WITHIN_CONFIRMED_LIMITS -> R.string.sewout_acceptance_confirmed
 }
 private fun TaskKind.labelRes() = when (this) {
-    TaskKind.JUMP_THREAD_CUT -> R.string.sewout_task_jump_thread_cut
-    TaskKind.TRIM -> R.string.sewout_task_trim
+    TaskKind.JUMP_THREAD_CUT, TaskKind.TRIM -> error("Thread-cut tasks are not displayed")
     TaskKind.COLOR_CHANGE -> R.string.sewout_task_color_change
     TaskKind.PROGRAM_STOP -> R.string.sewout_task_program_stop
     TaskKind.FINISH -> R.string.sewout_task_finish
-}
-private fun CutRequirement.labelRes() = when (this) {
-    CutRequirement.REQUIRED -> R.string.sewout_cut_required
-    CutRequirement.POSSIBLE -> R.string.sewout_cut_possible
-    CutRequirement.AUTOMATIC -> R.string.sewout_cut_automatic
 }
 
 @Composable

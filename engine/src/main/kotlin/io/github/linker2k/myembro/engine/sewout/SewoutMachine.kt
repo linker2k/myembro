@@ -17,7 +17,7 @@ data class SewoutMachine(
     val colorEndCutter: Specification<Boolean> = Specification(),
     val pecThumbnailRequired: Specification<Boolean> = Specification(),
     val fullBobbinMeters: Specification<Double> = Specification(),
-    val knownHoopsMm: Set<Pair<Double, Double>> = setOf(100.0 to 100.0, 60.0 to 20.0),
+    val knownHoopsMm: Set<Pair<Double, Double>> = emptySet(),
 ) {
     init {
         require(listOfNotNull(maxWidthMm.value, maxHeightMm.value, maximumStitchMm.value, fullBobbinMeters.value).all { it.isFinite() && it > 0 })
@@ -37,16 +37,21 @@ object SewoutMachines {
         maxStitches = Specification(30_000, SE400_LIMIT),
         automaticJumpTrim = Specification(false, SE400_JUMP_TRIM_OBSERVATION),
         manualJumpCleanup = Specification(true, SE400_JUMP_TRIM_OBSERVATION),
-        colorEndCutter = Specification(true, "$SE400_MANUAL p.140 (when enabled)"))
+        colorEndCutter = Specification(true, "$SE400_MANUAL p.140 (when enabled)"),
+        knownHoopsMm = setOf(100.0 to 100.0, 60.0 to 20.0))
     val SE600 = SewoutMachine("se600", "Brother SE600",
         Specification(100.0, "$SE600_MANUAL p.60"), Specification(100.0, "$SE600_MANUAL p.60"),
+        automaticJumpTrim = Specification(false, "$SE600_MANUAL p.66: cut thread jumps within the color by hand"),
         manualJumpCleanup = Specification(true, "$SE600_MANUAL p.66"),
-        colorEndCutter = Specification(true, "$SE600_MANUAL p.66 (when enabled)"))
+        colorEndCutter = Specification(true, "$SE600_MANUAL p.66 (when enabled)"),
+        knownHoopsMm = setOf(100.0 to 100.0, 60.0 to 20.0))
     val SE700 = SewoutMachine("se700", "Brother SE700",
         Specification(100.0, "$SE700_MANUAL p.96"), Specification(100.0, "$SE700_MANUAL p.96"),
         internalMemoryStitches = Specification(100_000, "$SE700_MANUAL p.96 (internal memory only)"),
         maximumEmbroiderySpm = Specification(400, "$SE700_MANUAL p.96"),
+        automaticJumpTrim = Specification(false, "$SE700_MANUAL p.71: cut thread jumps within the color by hand"),
         manualJumpCleanup = Specification(true, "$SE700_MANUAL p.71"),
-        colorEndCutter = Specification(true, "$SE700_MANUAL p.70 (when enabled)"))
-    val all: List<SewoutMachine> = listOf(SE400, SE600, SE700)
+        colorEndCutter = Specification(true, "$SE700_MANUAL p.70 (when enabled)"),
+        knownHoopsMm = setOf(100.0 to 100.0, 60.0 to 20.0))
+    val all: List<SewoutMachine> = listOf(SE400, SE600, SE700) + BrotherMachineCatalog.all.map { it.sewoutMachine() }
 }

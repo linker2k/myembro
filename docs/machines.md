@@ -1,6 +1,6 @@
 # Machine profiles
 
-Verified: 2026-10-22. Based on official Brother sources (United States and Canada); the default model is **Brother SE400**.
+Verified: 2026-10-28. Based on official Brother sources (United States, Korea and Canada); the default model is **Brother SE400**.
 Official specification checks and physical Android testing are distinguished. The app exports PES.
 
 | Model | Maximum single embroidery area | Confirmed hoops (width×height) | Transfer |
@@ -398,3 +398,107 @@ Data regression validation: `:engine:test --tests '*JumpThreadCleanupTest' --tes
 17 cases, `:app:testDebugUnitTest --tests '*UsbTransfer*Test'` 12 cases, 0 failures. APK build succeeded.
 Checks cover a split JUMP counted 1 time; exclusion of initial/0-length/final movements; STOP/color boundaries; TRIM requests;
 unconfirmed values; and compatibility with older records. Local log: `/tmp/myembro-manual-jump-final.log`.
+
+## United States and Korea catalog (verified 2026-10-28)
+
+58 manufacturer entries are selectable: 30 United States and 28 Korea. Regional versions and platform siblings remain distinct IDs. The default and existing stored strings `Brother SE400`, `Brother SE600`, `Brother SE700` are unchanged. All values below use **width×height in mm**, not the frequently used manual **H×W** ordering. The maximum is a **single continuous sewing field**, not repositionable fabric coverage. Nominal inch labels are not multiplied by 25.4 to derive these metric fields.
+
+Only confirmed facts are stored. A blank capability is `null`/unconfirmed, not SE400 inheritance, unlimited capacity, or proof of lack of support. Listed transfer methods are the confirmed subset, not a claim that no other route exists. Automatic **jump** trimming is separate from a color-end/thread-cutter button and from whether trimming is currently enabled.
+
+All >100×100 profiles display **Not verified on a physical machine / 실제 기계 미확인**. Larger HoopSpec values feed the same existing P1–P8 writer/sewout checks; app dimension checks allow at most `widthUnits−1`, `heightUnits−1` (999 for 100mm, 1299/1799 for 130×180mm). These are specification-based profiles, not physical transfer/sewing certifications.
+
+### United States
+
+| Model (stable ID) | Maximum W×H mm | Confirmed continuous hoops W×H mm | Confirmed transfer | Automatic jump trim | Sources |
+|---|---|---|---|---|---|
+| Brother SE400 (`se400`) | 100×100 | 100×100, 60×20; coverage 100×170 (repositioning) | USB cable → PC | No | [source 1](https://download.brother.com/welcome/doch000184/885v31_v32_v33_om04en.pdf), [source 2](https://download.brother.com/welcome/doch000186/885v31_v32_usb02_usenes.pdf) |
+| Brother SE600 (`se600`) | 100×100 | 100×100, 60×20; coverage 100×170 (repositioning) | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101011/888m20_om02en.pdf) |
+| Brother SE700 (`se700`) | 100×100 | 100×100, 60×20; coverage 100×170 (repositioning) | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102582/888p10_om01en.pdf) |
+| Brother SE425 (`se425`) | 100×100 | 100×100 | USB cable → PC | No | [source 1](https://download.brother.com/welcome/doch000184/885v31_v32_v33_om04en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/SE425) |
+| Brother SE625 (`se625`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101011/888m20_om02en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/SE625) |
+| Brother SE630 (`se630`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101011/888m20_om02en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery-combo/SE630) |
+| Brother SE725 (`se725`) | 100×100 | 100×100 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102582/888p10_om01en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery-combo/SE725) |
+| Brother PE535 (`pe535`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101288/888m36_m37_om01en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/PE535) |
+| Brother PE550D (`pe550d`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101288/888m36_m37_om01en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/PE550D) |
+| Brother PE545 (`pe545`) | 100×100 | 100×100 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102611/888p30_om01en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/PE545) |
+| Brother NS1750D (`ns1750d`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101020/888_m00_m02_m03_m04_om02en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery-combo/NS1750D) |
+| Brother PE770 (`pe770`) | 130×180 | 130×180 | USB flash drive | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/PE770) |
+| Brother PE800 (`pe800`) | 130×180 | 130×180, 100×100, 60×20 | USB flash drive | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch100741/888l90_l91_l93_k90_k92_om03en.pdf), [source 2](https://www.brother-usa.com/p/embroidery/PE800) |
+| Brother SE1900 (`se1900`) | 130×180 | 130×180 | USB flash drive / Brother wireless | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery/SE1900) |
+| Brother SE2000 (`se2000`) | 130×180 | 130×180 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery/SE2000) |
+| Brother PE900 (`pe900`) | 130×180 | 130×180 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery/PE900) |
+| Brother NS2750D (`ns2750d`) | 130×180 | 130×180, 100×100, 60×20 | **unconfirmed** | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch100730/888l01_l03_k00_02_om03en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery-combo/NS2750D) |
+| Brother NQ1400E (`nq1400e`) | 160×260 | 160×260 | USB flash drive | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery/NQ1400E) |
+| Brother NQ1600E (`nq1600e`) | 160×260 | 160×260 | USB flash drive | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery/NQ1600E) |
+| Brother NQ1700E (`nq1700e`) | 160×260 | 160×260 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery/NQ1700E) |
+| Brother NQ3550W (`nq3550w`) | 160×260 | 160×260 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/NQ3550W) |
+| Brother XE1 (`xe1`) | 240×360 | 240×360 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/XE1) |
+| Brother XJ1 (`xj1`) | 240×360 | 240×360, 130×180, 100×100 | USB flash drive / Brother wireless | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch102121/882w70_om02ko.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery-combo/XJ1) |
+| Brother XP1 (`xp1`) | 272×408 | 272×408, 240×240, 130×180, 100×100 | USB flash drive | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/XP1), [source 2](https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=hf_inovxp3eus&faqid=faqh00101388_000) |
+| Brother XP2 (`xp2`) | 272×408 | 272×408, 240×240, 130×180, 100×100 | Brother wireless | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/XP2), [source 2](https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=hf_inovxp3eus&faqid=faqh00101388_000) |
+| Brother XP3 (`xp3`) | 272×408 | 272×408, 240×240, 130×180, 100×100 | USB flash drive / Brother wireless | **unconfirmed** | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/XP3), [source 2](https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=hf_inovxp3eus&faqid=faqh00101388_000) |
+| Brother EV1 (`ev1`) | 297×465 | 297×465, 272×272, 130×180, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery-combo/EV1) |
+| Brother PR680W (`pr680w`) | 300×200 | 300×200, 180×130, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch102285/884t23_om01en.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/PR680W) |
+| Brother PR1050X (`pr1050x`) | 360×200 | 360×200, 180×130, 100×100 | USB flash drive | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch100893/pr1050x_om01ko.pdf), [source 2](https://www.brother-usa.com/p/sewing-embroidery/PR1050X) |
+| Brother PRS100 (`prs100`) | 200×200 | 200×200 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://www.brother-usa.com/p/sewing-embroidery/PRS100) |
+
+### Korea
+
+| Model (stable ID) | Maximum W×H mm | Confirmed continuous hoops W×H mm | Confirmed transfer | Automatic jump trim | Sources |
+|---|---|---|---|---|---|
+| M370 (`kr-m370`) | 100×100 | 100×100, 60×20 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102712/888_p00_p02_p03_om01ko.pdf) |
+| M380D (`kr-m380d`) | 100×100 | 100×100, 60×20 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102712/888_p00_p02_p03_om01ko.pdf) |
+| LB7950 (`kr-lb7950`) | 100×100 | 100×100 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102717/888p10_om01ko.pdf) |
+| LB8950 (`kr-lb8950`) | 100×100 | 100×100 | USB flash drive / Brother wireless | No | [source 1](https://download.brother.com/welcome/doch102717/888p10_om01ko.pdf) |
+| LB6950 (`kr-lb6950`) | 100×100 | 100×100; coverage 100×170 (repositioning) | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101678/888m20_om01ko.pdf) |
+| 이노비스 180 (NV180) (`kr-nv180`) | 100×100 | 100×100; coverage 100×170 (repositioning) | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101131/888_m00_m02_m03_m04_om02ko.pdf) |
+| 이노비스 180D (NV180D) (`kr-nv180d`) | 100×100 | 100×100; coverage 100×170 (repositioning) | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101131/888_m00_m02_m03_m04_om02ko.pdf) |
+| 이노비스 180K (NV180K) (`kr-nv180k`) | 100×100 | 100×100; coverage 100×170 (repositioning) | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch101131/888_m00_m02_m03_m04_om02ko.pdf) |
+| 이노비스 900 (NV900) (`kr-nv900`) | 100×100 | 100×100 | USB cable → PC | No | [source 1](https://download.brother.com/welcome/doch000555/inov900dug03en.pdf) |
+| 이노비스 900D (NV900D) (`kr-nv900d`) | 100×100 | 100×100 | USB cable → PC | No | [source 1](https://download.brother.com/welcome/doch000555/inov900dug03en.pdf) |
+| 이노비스 950 (NV950) (`kr-nv950`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch100602/nv950_980om02ko.pdf) |
+| 이노비스 980D (NV980D) (`kr-nv980d`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch100602/nv950_980om02ko.pdf) |
+| 이노비스 980K (NV980K) (`kr-nv980k`) | 100×100 | 100×100 | USB flash drive | No | [source 1](https://download.brother.com/welcome/doch100602/nv950_980om02ko.pdf) |
+| F580 (`kr-f580`) | 130×180 | 130×180, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch102702/888_k10_l11_l12_om01ko.pdf) |
+| 이노비스 NS2750D (`kr-ns2750d`) | 130×180 | 130×180, 100×100, 60×20 | USB flash drive | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch100730/888l01_l03_k00_02_om03en.pdf) |
+| 이노비스 1250 (NV1250) (`kr-nv1250`) | 130×180 | 130×180, 100×100 | USB flash drive | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch000589/nv1250ug02en.pdf) |
+| 이노비스 2600 (NV2600) (`kr-nv2600`) | 160×260 | 160×260, 130×180, 100×100, 60×20 | USB flash drive | **unconfirmed** | [source 1](https://download.brother.com/welcome/doch100373/NV2600_om01ko.pdf) |
+| 이노비스 2700 (NV2700) (`kr-nv2700`) | 160×260 | 160×260, 130×180, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch102458/888g30_g32_g34_om01ko.pdf) |
+| 이노비스 4000D (NV4000D) (`kr-nv4000d`) | 180×300 | 180×300, 130×180, 100×100, 60×20 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch000013/nv4000ug04en.pdf) |
+| 이노비스 V3 (`kr-v3`) | 180×300 | 180×300, 130×180, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch100272/v3om01ko.pdf) |
+| 이노비스 V3LE (`kr-v3le`) | 200×300 | 200×300, 200×200, 130×180, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch101849/882d82_om01ko.pdf) |
+| 이노비스 V5 (`kr-v5`) | 180×300 | 180×300, 130×180, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch100271/v5om01ko.pdf) |
+| 이노비스 V5LE (`kr-v5le`) | 200×300 | 200×300, 200×200, 130×180, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch101707/882c53_om01en.pdf) |
+| 이노비스 XJ1 (`kr-xj1`) | 240×360 | 240×360, 130×180, 200×300, 240×240, 200×200, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch102121/882w70_om02ko.pdf) |
+| PR680W (한국) (`kr-pr680w`) | 300×200 | 300×200, 180×130, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch102285/884t23_om01en.pdf) |
+| PR1050X (한국) (`kr-pr1050x`) | 360×200 | 360×200, 180×130, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch100893/pr1050x_om01ko.pdf) |
+| PR1060W (한국) (`kr-pr1060w`) | 360×200 | 360×200, 180×130, 100×100 | USB flash drive / Brother wireless | Yes (capability) | [source 1](https://download.brother.com/welcome/doch101931/884t15-16_om03_en.pdf) |
+| PR1X (한국) (`kr-pr1x`) | 300×200 | 300×200, 180×130, 100×100 | USB flash drive | Yes (capability) | [source 1](https://download.brother.com/welcome/doch103024/882t52_om01ko.pdf) |
+
+### Verification details and excluded models
+
+- Selecting a new machine chooses its first confirmed hoop, including a model-specific frame absent from the legacy enum. SE400/SE600/SE700 continue to choose 100×100. Existing saved preset/custom IDs and machine strings are still read unchanged; no preference migration is required.
+- SE600/SE700 automatic jump trimming is now explicitly `false`, based on the manual instruction to cut excess thread jumps within each color (printed pp.66 and 71). Their existing manual-cleanup capability is unchanged. User decision 2026-10-28 removes hand-cut/cleanup advice from app screens; these remain engine facts only. Other SE400/600/700 numerical, storage, transfer, and default values are retained.
+
+- Source bundle: coordinator research dated 2026-10-28 and its official Korean/US manuals. Korean operation-manual accessory tables explicitly label H and W: NV1250 PDF pp.13–14, NV4000D p.16, V3 p.14, V3LE p.14, V5 pp.16–17, V5LE pp.16–18, XJ1 pp.19–20. PR manuals instead explicitly label W×H: PR680W/PR1060W p.15, PR1050X p.23, PR1X pp.54–55. PDF page numbers here count physical PDF pages, not printed page labels.
+- F580: PDF pp.87,98,101; NV2700 pp.98,103: field lists are H×W, matching their small-frame H/W labels. NV2600 frame table includes 26×16, 18×13, 10×10, 2×6cm in H×W order. PE800 operation manual product code 888-L90/L91/L93/K90/K92 and its individual product page establish its field. NQ 6×10 models use their individual product pages plus the supplied operation-manual frame tables.
+- XP1/XP2/XP3: [official FAQ](https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=hf_inovxp3eus&faqid=faqh00101388_000) explicitly lists all three and specifies H408×W272mm. EV1 individual product page carton contents explicitly lists H465×W297mm. PR long-side orientation is not rotated to match the domestic-machine convention.
+- NV1250 optional H300×W130 frame is **not** a 130×300 continuous field: its manual limits one design to H180×W130 (PDF p.180). Position counts/offsets and continuous large-frame behavior are unconfirmed, so that optional frame is not added as a supported continuous hoop.
+- NV900/NV900D and NV950/NV980D/NV980K: the manuals limit individual designs to 10×10cm. Optional EF71 H170×W100 coverage is not treated as an increased field; its exact repositioning behavior remains unconfirmed and is not added to these profiles.
+- NS1750D wireless claims conflict between product page and manual; wireless remains unconfirmed. SE400 card-slot capabilities are not presented as USB flash-drive support. Generic numeric stitch/file/name limits are not inferred for any new sibling.
+- **Not added (large models still lacking sufficiently verified individual maximum-field/orientation evidence in this pass): NV800E, Stellaire XE2, Stellaire XJ2.** NV800E research linked an embroidery design guide rather than its maximum-field operating specification; XE2/XJ2 individual product pages give nominal inches but their exact metric W×H operating-manual evidence was not verified. Generic unnamed Innov-is NS variants are not profiles; specifically confirmed NS2750D is included.
+- Other unverified research candidates omitted: 이노비스 170, NQ3500D, NQ575PRW, NS1850L, Quattro 3, unspecified Disney editions and Dream Machine 2. NV1800Q, F410 and F420 are sewing-only and deliberately omitted.
+
+### User-defined machine
+
+Other (free) is an app-defined user option, not a Brother specification. Its source URL points to this policy section; it claims no manufacturer limits or capabilities. A selected physical hoop and the existing P1–P8 file/writer constraints still apply. Unknown custom machine names never resolve to SE400.
+
+### Automated validation
+
+```sh
+JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:lintDebug
+```
+
+`MachineCatalogTest`: unique IDs/nonempty source URLs, app/engine dimensions, stable existing stored model names/default, distinct platform sibling profiles, 998/999/1000 boundaries for every 100×100 model, and PE800 W1298/1299/1300 × H1798/1799/1800. `MachineCatalogBoundaryTest`: all catalog maximum hoops run the same PES writer, viewport and SewoutCheck boundaries. Non-area findings are not suppressed or treated as test failures in the boundary-only assertions.
+
+Latest run (2026-10-28): `BUILD SUCCESSFUL in 2m 39s`; engine 1,003 tests and app 459 tests, 0 failures/errors/skips; `:app:lintDebug` passed. Local full output: `/tmp/myembro-machines/check.log`.

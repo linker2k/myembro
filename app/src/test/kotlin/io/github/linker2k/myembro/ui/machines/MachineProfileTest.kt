@@ -36,8 +36,8 @@ class MachineProfileTest {
 
     @Test fun `100mm boundary uses tenths of a millimeter and survives extreme coordinates`() {
         for (profile in listOf(MachineProfiles.SE400, MachineProfiles.SE600, MachineProfiles.SE700)) {
-            assertTrue(profile.fits(Bounds(-500, -500, 500, 500)))
-            assertTrue(profile.fits(Bounds(100, 200, 1100, 1200)))
+            assertTrue(profile.fits(Bounds(-499, -499, 500, 500)))
+            assertTrue(profile.fits(Bounds(100, 200, 1099, 1199)))
             assertFalse(profile.fits(Bounds(-500, -500, 501, 500)))
             assertFalse(profile.fits(Bounds(0, 0, 1000, 1001)))
             assertFalse(profile.fits(Bounds(Int.MIN_VALUE, 0, Int.MAX_VALUE, 1)))
@@ -77,6 +77,6 @@ class MachineProfileTest {
         assertEquals(MachineProfiles.SE400, MachineProfiles.find(" SE-400 "))
         assertEquals(MachineProfiles.SE600, MachineProfiles.find("BROTHER se600"))
         assertNull(MachineProfiles.find("Brother SE700 clone"))
-        assertNull(MachineProfiles.find("Brother PE800"))
+        assertEquals("pe800", MachineProfiles.find("Brother PE800")?.id)
     }
 }

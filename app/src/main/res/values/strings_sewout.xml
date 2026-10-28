@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="sewout_title">Sew-out check</string>
-    <string name="sewout_summary">Check · blockers %1$d · warnings %2$d · cuts %3$d · ~%4$d min</string>
+    <string name="sewout_summary">Check · blockers %1$d · warnings %2$d · ~%3$d min</string>
     <string name="sewout_loading">Checking sew-out…</string>
     <string name="sewout_failed">The sew-out check failed. Please try again.</string>
     <string name="sewout_retry">Retry check</string>
@@ -21,7 +21,6 @@
     <string name="sewout_measurement">Measured %1$s · threshold %2$s</string>
     <string name="sewout_global">Whole design</string>
     <string name="sewout_show_location">Show location</string>
-    <string name="sewout_cuts">%1$d required manual cuts · %2$d possible cuts</string>
     <string name="sewout_confirm_title">Review blockers before transferring</string>
     <string name="sewout_confirm_body">%1$s · %2$d blocking findings. The design may still contain issues. Review the check before continuing.</string>
     <string name="sewout_confirm_incomplete">Analysis did not finish. Parts of the design remain unchecked.</string>
@@ -29,18 +28,11 @@
     <string name="sewout_review">Review findings</string>
     <string name="sewout_cancel">Cancel</string>
     <string name="sewout_task_row">%1$d. %2$s · color stage %3$d · at %4$s</string>
-    <string name="sewout_task_detail">%1$s · %2$s</string>
-    <string name="sewout_cut_required">Manual thread cutting required</string>
-    <string name="sewout_cut_possible">Automatic cutting unconfirmed · inspect and cut if needed</string>
-    <string name="sewout_cut_automatic">Automatic cutting per supplied settings</string>
     <string name="sewout_machine_stops">Machine stops</string>
-    <string name="sewout_pause_manually">Pause manually to handle this now</string>
     <string name="sewout_no_pause">Review this operation</string>
-    <string name="sewout_task_jump_thread_cut">Jump thread cleanup</string>
-    <string name="sewout_task_trim">Trim request</string>
     <string name="sewout_task_color_change">Color change</string>
     <string name="sewout_task_program_stop">Program stop</string>
-    <string name="sewout_task_finish">Finish and clean up thread tails</string>
+    <string name="sewout_task_finish">Sewing complete</string>
     <string name="sewout_no_tasks">No operator steps to show.</string>
     <string name="sewout_stage">%1$d. %2$s</string>
     <string name="sewout_stage_time">%1$d stitches · ~%2$d min</string>
@@ -67,8 +59,8 @@
     <string name="sewout_bobbin_capacity">Bobbin capacity</string>
     <string name="sewout_bobbin_remaining">Measured bobbin remaining</string>
     <string name="sewout_meters">%1$.2f m</string>
-    <string name="sewout_estimate_note">Time and thread use are estimates based on assumed speed and operator timings. Unconfirmed cutting tasks may be included.</string>
-    <string name="sewout_time_range">~%1$d min excluding conditional cuts · ~%2$d min including them</string>
+    <string name="sewout_estimate_note">Time and thread use are estimates based on assumed speed and operator timings.</string>
+    <string name="sewout_time_estimate">Estimated ~%1$d min</string>
     <string name="sewout_finding_hoop_exceeded">A needle or travel position lies outside the selected hoop.</string>
     <string name="sewout_finding_machine_area_exceeded">The design or hoop exceeds the machine’s single sewing area. Review splitting.</string>
     <string name="sewout_finding_hoop_compatibility_unknown">Mounting compatibility for this hoop is unconfirmed.</string>
@@ -95,7 +87,7 @@
     <string name="sewout_finding_file_size_unconfirmed">The machine file-size limit or actual file size is unconfirmed.</string>
     <string name="sewout_finding_thumbnail_requirement_unconfirmed">The machine thumbnail requirement and hardware acceptance are unconfirmed.</string>
     <string name="sewout_finding_machine_speed_unconfirmed">Maximum embroidery speed is unconfirmed. Timing uses an assumed speed.</string>
-    <string name="sewout_finding_jump_trim_unconfirmed">Automatic jump trimming is unconfirmed. Review jump-thread cleanup steps.</string>
+    <string name="sewout_finding_jump_trim_unconfirmed">Automatic jump trimming is unconfirmed.</string>
     <string name="sewout_finding_machine_stitch_length_unconfirmed">The machine’s physical maximum stitch length is unconfirmed.</string>
     <string name="sewout_finding_estimate_assumptions">Time and thread use are estimates based on settings and assumptions and may differ in practice.</string>
     <string name="sewout_finding_speed_above_maximum">Planned speed exceeds the confirmed maximum embroidery speed.</string>

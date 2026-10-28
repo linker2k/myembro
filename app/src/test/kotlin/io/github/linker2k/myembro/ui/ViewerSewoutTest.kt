@@ -86,6 +86,12 @@ class ViewerSewoutTest {
         assertTrue(r.tasks.any { it.kind == TaskKind.JUMP_THREAD_CUT && it.cutRequirement == CutRequirement.REQUIRED && it.operatorMustPause })
         assertTrue(r.tasks.any { it.kind == TaskKind.COLOR_CHANGE })
         assertTrue(r.tasks.any { it.kind == TaskKind.PROGRAM_STOP && it.machineStops })
+        val originalTasks = r.tasks.toList()
+        val displayed = sewoutDisplayTasks(r.tasks)
+        assertTrue(displayed.none { it.kind == TaskKind.JUMP_THREAD_CUT || it.kind == TaskKind.TRIM })
+        assertEquals(r.tasks.filter { it.kind in setOf(TaskKind.COLOR_CHANGE, TaskKind.PROGRAM_STOP, TaskKind.FINISH) }, displayed)
+        assertEquals(originalTasks, r.tasks) // Engine requirements and timing are not altered by presentation.
+
         assertEquals(r.time.totalSeconds, r.stages.sumOf { it.time.totalSeconds }, 0.000001)
         assertEquals(r.threadUsage.upperMeters, r.stages.sumOf { it.threadUsage.upperMeters }, 0.000001)
         assertEquals(r.threadUsage.bobbinMeters, r.stages.sumOf { it.threadUsage.bobbinMeters }, 0.000001)

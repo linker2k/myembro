@@ -44,7 +44,7 @@ data class EmbroiderySettings(
     val sewing: SewingOptions get() = SewingOptions()
     val writeSettings: PesWriteSettings get() = PesWriteSettings(pesVersion, hoop = defaultFrame.spec)
     val machineProfile: MachineProfile? = MachineProfiles.find(machineModel)
-    val frames: List<FrameOption> get() = FrameCatalog.options(customFrames)
+    val frames: List<FrameOption> get() = FrameCatalog.options(customFrames, machineProfile)
     val defaultFrame: FrameOption get() = frames.firstOrNull { it.id == defaultFrameId }
         ?: frames.first { it.id == defaultHoop.name }
     val availableViewerHoops: List<Hoop> get() =
@@ -90,7 +90,12 @@ class SettingsPreferences(context: Context) {
     fun setMachineModel(model: String) {
         val name = model.trim().take(120).ifBlank { MachineProfiles.default.displayName }
         val edit = preferences.edit().putString("machine_model", name).remove("default_frame_id")
-        if (MachineProfiles.find(name) != null) edit.putString("default_hoop", Hoop.H100.name)
+        MachineProfiles.find(name)?.takeUnless { it.id == "free" }?.let { profile ->
+            FrameCatalog.defaultFor(profile, read().customFrames)?.let { frame ->
+                edit.putString("default_frame_id", frame.id)
+                edit.putString("default_hoop", (frame.preset ?: Hoop.H100).name)
+            }
+        }
         edit.apply()
     }
 
