@@ -58,3 +58,13 @@ Text geometry is shared across `withTransform/withId/withVisible`; content/style
 without regenerating stitches. Gesture Canvas draws cached arrays through relative matrices; scale
 render work is deferred 300ms after pointer-up. No serialized field/signature changed. Details and
 exact-output tests: [editor transform performance](qa/editor-transform-performance.md).
+
+## Project appearance (2026-10-28)
+
+`Project` has additive defaulted fields `fabricColorArgb: Int? = null` and
+`threadColors: List<ProjectThreadColor> = emptyList()`. JSON v1 accepts missing fields
+and writes nondefault appearance only. `recolorThread` changes the final table after
+flattening, preserving all coordinates/commands and editable object caches. Fabric
+passes to display consumers through `myembro.fabric_argb`; it has no sewing effect.
+The Colors sheet owns local History until Apply (one session undo step); Cancel
+commits nothing. Details and validation: [editor colors](editor-colors.md).

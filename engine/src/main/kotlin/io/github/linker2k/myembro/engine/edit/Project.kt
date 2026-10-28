@@ -22,6 +22,10 @@ import kotlin.math.sin
 data class Project(
     val hoop: HoopSpec = HoopSpec.H100,
     val objects: List<DesignObject> = emptyList(),
+    /** Null preserves each preview's legacy theme background. Display only, never sewing geometry. */
+    val fabricColorArgb: Int? = null,
+    /** Final palette substitutions; geometry and color-change commands remain untouched. */
+    val threadColors: List<ProjectThreadColor> = emptyList(),
 ) {
     fun find(id: String): DesignObject? = objects.firstOrNull { it.id == id }
 
@@ -109,7 +113,8 @@ data class Project(
         val end = stitches.lastOrNull()
         stitches += Stitch(end?.x ?: 0, end?.y ?: 0, Command.END)
         val metadata = summary?.let { it.metadata() + (ProcessingSummary.COMPOSITE_KEY to "v1") }.orEmpty()
-        return EmbPattern(stitches, threads, metadata)
+        val appearanceMetadata = fabricColorArgb?.let { mapOf(FABRIC_COLOR_KEY to it.toString()) }.orEmpty()
+        return applyThreadColors(EmbPattern(stitches, threads, metadata + appearanceMetadata))
     }
 }
 

@@ -621,6 +621,14 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         session.updateGesture(snapped.project)
         sync()
     }
+    /** Optimistic commit: external/AI edits cannot be overwritten by an open sheet. */
+    internal fun applyColors(initial: Project, draft: Project): Boolean {
+        if(interactionBlocked || gestureInProgress || project != initial) return false
+        // Only presentation fields may be committed by this panel.
+        edit(project.copy(fabricColorArgb=draft.fabricColorArgb,threadColors=draft.threadColors))
+        return true
+    }
+
     fun changeThread(index: Int, thread: io.github.linker2k.myembro.engine.model.EmbThread) {
         if (busy || gestureInProgress || selectedIds.size != 1) return
         val obj = selected ?: return

@@ -2,6 +2,7 @@
 package io.github.linker2k.myembro.ui.editor
 
 import android.graphics.Paint
+import io.github.linker2k.myembro.engine.edit.applyThreadColors
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -70,7 +71,10 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
     val accent = colors.primary
     val textSize = with(density) { MaterialTheme.typography.labelSmall.fontSize.toPx() }
     val description = stringResource(R.string.editor_canvas_description)
-    val renders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing,vm.gestureInProgress) { vm.rendering=it }
+    val baseRenders = rememberObjectRenders(vm.project.objects.filter { it.visible }, vm.settings.sewing,vm.gestureInProgress) { vm.rendering=it }
+    val renders = remember(baseRenders,vm.project.threadColors) {
+        if(vm.project.threadColors.isEmpty()) baseRenders else baseRenders.map { (obj,data) -> obj to RenderData(vm.project.applyThreadColors(data.pattern)) }
+    }
     val selectedBounds = remember(vm.project,vm.selectedIds) { vm.project.selectionBounds(vm.selectedIds,fastPreview=true) }
     val selectedOutputBounds = rememberSelectionOutputBounds(vm.project, vm.selectedIds, vm.settings.sewing, vm.gestureInProgress)
     val snapDistance = with(density) { 8.dp.toPx() }
@@ -163,7 +167,7 @@ internal fun EditorCanvas(vm: EditorViewModel, fitRequest: Int, modifier: Modifi
         fun screen(p: Offset) = origin + p * scale
         val topLeft = screen(Offset(-hoop.width / 2f, -hoop.height / 2f))
         val hoopSize = Size(hoop.width * scale, hoop.height * scale)
-        drawRoundRect(colors.surface, topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
+        drawRoundRect(vm.project.fabricColorArgb?.let { androidx.compose.ui.graphics.Color(it) } ?: colors.surface, topLeft, hoopSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
         // A quiet 10 mm grid gives users a sense of the real sewing dimensions.
         for (x in (-hoop.width / 2)..(hoop.width / 2) step 100) {
             drawLine(colors.outline.copy(alpha = 0.35f), screen(Offset(x.toFloat(), -hoop.height / 2f)), screen(Offset(x.toFloat(), hoop.height / 2f)))

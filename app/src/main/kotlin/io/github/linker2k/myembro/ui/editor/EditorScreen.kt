@@ -74,6 +74,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
         var showDesigns by remember { mutableStateOf(false) }
+        var showColors by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
         var projectMenu by remember { mutableStateOf(false) }
@@ -146,6 +147,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             io.github.linker2k.myembro.ui.HomeButton(enabled, home) { goHome -> vm.leave(goHome) }
                         } }, actions = {
                             AgentAskButton(vm.agent, vm.project, enabled)
+                            IconButton(onClick={showColors=true},enabled=enabled && !vm.gestureInProgress) {
+                                Icon(Icons.Default.Palette,stringResource(R.string.editor_colors))
+                            }
                             EditorHistoryButton(vm, redo = false)
                             EditorHistoryButton(vm, redo = true)
                             Box {
@@ -265,7 +269,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 val inspector: @Composable (Modifier) -> Unit = { modifier ->
                     EditorInspector(vm, inspectorTab, { inspectorTab = it }, layout.expanded || inspectorExpanded,
                         { inspectorExpanded = !inspectorExpanded }, showJumps, { showJumps = it }, preview, { preview = it },
-                        { showProperties = true }, modifier, docked = layout.expanded)
+                        { showProperties = true }, modifier, docked = layout.expanded, onColors={showColors=true})
                 }
                 if (layout.expanded) Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
@@ -313,6 +317,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 problems.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
             } },
             confirmButton = { TextButton(onClick = vm::dismissExportProblems) { Text(stringResource(R.string.editor_apply)) } }) }
+        if(showColors) {
+            val initial=remember { vm.project }
+            ModalBottomSheet(onDismissRequest={showColors=false},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
+                EditorColorsPanel(initial,vm.settings.myThreads,vm.settings.sewing,
+                    onApply={draft -> vm.applyColors(initial,draft).also { if(it) showColors=false }},onCancel={showColors=false})
+            }
+        }
         if (showDesigns) ModalBottomSheet(onDismissRequest = { showDesigns = false }) {
             Text(stringResource(R.string.editor_add), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
             TextButton(onClick = { showDesigns = false; importDesign() }, modifier = Modifier.padding(horizontal = 12.dp)) {
