@@ -191,7 +191,7 @@ If the transfer fails, the result screen explains how to connect (OTG) and offer
 
 The clock icon in selection mode opens the recent USB transfer history (the screenshot was taken on an emulator, so only failed attempts are listed).
 
-**Important for the SE400:** files written to the SE400 over USB are erased when the machine is turned off.
+**Important:** a file sent to the machine over USB is erased when the machine is turned off, unless you save it to the machine's internal memory.
 
 **SE600/SE700:** machine profiles (100×100mm, USB memory) based on the manuals; transfer has not been tested on real machines yet.
 
@@ -205,7 +205,7 @@ At the top of **Settings**, **Backup** stores designs, projects, downloaded font
 
 **My threads** (under **Threads**): turn it on and tap **Choose threads** to tick the Brother threads you own. Search by name or number. Color drawings then use only your threads. An empty list uses all colors. My threads is kept in the backup.
 
-**Take a backup now.** The current APK is signed with a development key. When releases switch to the official signing key, the new version cannot be installed over the old one: you must uninstall once and reinstall, which deletes app data. Restore your ZIP afterwards.
+**Moving from an alpha to the beta:** the beta is signed with the official key, so it cannot be installed over an alpha. Save a backup in the alpha, uninstall it, install the beta and restore the ZIP. Updates from the beta onward install normally.
 
 ## 11. About and known limitations
 
@@ -216,7 +216,7 @@ At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL
 ![Home in dark theme](../images/manual/en/17-home-dark.png)
 
 Known limitations:
-- Signing key change: uninstall/reinstall will be needed once; back up first.
+- Moving from an alpha to the beta needs one uninstall/reinstall; back up first.
 - SE600/SE700: transfer not yet tested on real machines.
 
 ## 12. Ask AI
