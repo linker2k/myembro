@@ -15,11 +15,12 @@ import kotlin.test.*
 class ColorDefaultExpansionTest {
     @Test fun approvedDefaultMatchesPointTwoAndKeepsExtentAndExplicitZeroGolden() {
         assertEquals(0.2,ColorDrawingPipeline.DEFAULT_EXPAND_MM)
-        // Synthetic-only goldens independently generated from original main 2007a4f sources.
+        // Synthetic-only goldens from original main 2007a4f algorithms under approved P7 (2026-10-28).
+        // P7 can now retain optional outlines previously rejected at 16–30 penetrations.
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "2fbf9caa99e1abdc3955e17e0071e340d61bd2bbacf2f3c31bcac6b0d90658b7",
-            "robot" to "a7ab157713e753d2d29b644b4220af99745595b55dae12a32123434b66cd62f4")
+            "face" to "0c365deb402a3085b656569ed9798dcfbb1937b473cf5bb5fee5aa4d4c3687aa",
+            "robot" to "85178d50200dc3dcb4a374f322a290deda5ef50dabf104f6004aeea3ec8dc00d")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {
             val source=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/$name.png"))

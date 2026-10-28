@@ -87,7 +87,7 @@ class ExactPolicyTest {
         assertEquals(SewoutLimits.PEC_MIN_COORD_UNITS_0P1MM.toDouble(),number(1,"minimum y = (\\d+)"))
         assertEquals(SewoutLimits.hoopMaxXUnits0p1mm(HoopSpec.H100).toDouble(),number(2,"0[–-](\\d+)"))
         assertEquals(SewoutLimits.MAX_CONSECUTIVE_POSITIONS.toDouble(),number(5,"\\*\\*at most (\\d+)\\*\\*"))
-        assertEquals(SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL.toDouble(),number(7,"more than (\\d+) needle penetrations"))
+        assertEquals(SewoutLimits.MAX_GENERATED_PENETRATIONS_PER_CELL.toDouble(),number(7,"(?i)more than (\\d+) needle penetrations"))
         assertEquals(SewoutLimits.MAX_IMPORTED_PENETRATIONS_PER_CELL.toDouble(),number(7,"blocked only above (\\d+)"))
         assertEquals(SewoutLimits.DENSITY_CELL_UNITS_0P1MM/10.0,number(7,"([0-9.]+)mm cell"))
         assertEquals(SewoutLimits.MAX_STITCH_LENGTH_UNITS_0P1MM/10.0,number(8,"≤ ([0-9.]+)mm"))

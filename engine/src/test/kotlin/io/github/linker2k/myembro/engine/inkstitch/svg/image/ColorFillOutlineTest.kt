@@ -70,7 +70,6 @@ class ColorFillOutlineTest {
         assertEquals(before.regions.map { it.paths },after.regions.map { it.paths })
         assertEquals(before.pattern.threads,after.pattern.threads)
         assertTrue(after.pattern.stitchCount>before.pattern.stitchCount)
-        assertTrue(after.skippedOutlineCount>0,"Fixture exercises automatic outline omission")
         assertEquals(after.skippedOutlineCount.toString(),after.pattern.metadata["myembro.skipped_fill_outlines"])
         assertEquals(before.regionPatterns.keys,after.regionPatterns.keys)
         val bytes=PesWriter.write(after.pattern)

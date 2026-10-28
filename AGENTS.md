@@ -13,7 +13,7 @@ Every coding agent (Codex, Claude Code) reads this file before starting work. Th
 | P4 | **0-length JUMPs and 0-length needle penetrations (stitches) are forbidden**, including at thread start and after a trim. When stitching restarts at the same point after a trim, remove both the trim and the JUMP and continue stitching. | The PE-Design corpus has no 0-length commands. Starts without them (T1 and T3 in the A/B test) sewed normally on the real machine. |
 | P5 | Consecutive needle penetrations at the same position must be **at most 2**. 0-length penetrations count toward this. | Corpus distribution: 1 time 173 files, 2 times 158, 3 times 1, 5 times 2; p99 is 2. |
 | P6 | Lock stitches use the Ink/Stitch default `half_stitch`. Self-invented locks are forbidden. Where `ties=3`, as with the first element of a font, the start lock is guaranteed through the upstream parameter. | Equivalent to the Ink/Stitch v3.3.0 original. It was normal in real-machine test T3. |
-| P7 | A single 0.5mm cell must not receive more than 15 needle penetrations (app output). Imported PES are blocked only above 30. | Set from the corpus p99. The file that produced a bird's nest had 38. |
+| P7 | A 0.5mm cell with 16–30 needle penetrations is a **warning**: show its location and allow saving/sending. More than 30 needle penetrations **blocks** app-generated and imported output equally; imported files are also blocked only above 30. | User decision 2026-10-28: PE-Design corpus 334 files, cell p99=15, maximum=25; 3 files above 15 had 16/23/25. Actual bird’s-nest failure=38; existing imported blocking threshold=30. |
 | P8 | Maximum stitch length ≤ 12.0mm. | The corpus maximum is 12.0mm. |
 
 ## Working principles

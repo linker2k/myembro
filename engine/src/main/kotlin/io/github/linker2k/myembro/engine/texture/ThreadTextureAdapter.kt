@@ -29,15 +29,15 @@ import java.util.concurrent.CancellationException
 object ThreadTextureAdapter {
     data class Run(val thread: EmbThread, val squiggle: Int, val pixels: List<PixelPoint>, val sourceLineIndices: List<Int>)
     data class Result(val pattern: EmbPattern, val sketch: SketchResult, val runs: List<Run>,
-                      val mmPerPixel: Double, val hoop: HoopSpec, val sewout: SewoutReport,
+                      val mmPerPixel: Double, val hoop: HoopSpec,
                       val backgroundThread: EmbThread? = null) {
-        /** Candidates with blockers never produce bytes; the normal writer validates again. */
-        fun pes(): ByteArray {
-            require(!sewout.hasBlockingIssues && sewout.analysisComplete) {
-                "SEWOUT_BLOCKED: " + sewout.findingSeverities.filterValues { it == Severity.BLOCKER }.keys.joinToString()
-            }
-            return PesWriter.write(pattern, PesWriteSettings(hoop = hoop))
+        // Generation has no raw-coordinate preflight. Consumers that need output share one
+        // lazily encoded/checked PES; UI generation consumes pattern and uses its output gate.
+        private val checked by lazy { runCatching { PesWriter.writeChecked(pattern,PesWriteSettings(hoop=hoop)) } }
+        val sewout:SewoutReport get()=checked.fold({ it.report }) {
+            (it as? PesOutputSafety.Rejected)?.report ?: throw it
         }
+        fun pes():ByteArray = checked.getOrThrow().bytes
     }
 
     /** Existing Wu quantizer + existing Brother red-mean matcher; actual distinct count can be < N. */
@@ -133,7 +133,6 @@ object ThreadTextureAdapter {
             "myembro.texture.mm_per_pixel" to scale.toString(),
             "myembro.texture.color_order" to "light-to-dark-unconfirmed",
         ), raw.warnings)
-        val report = SewoutCheck.check(pattern, options = SewoutOptions(hoop = hoop, origin = DesignOrigin.APP_GENERATED))
-        return Result(pattern, sketch, ordered, scale, hoop, report, backgroundThread)
+        return Result(pattern, sketch, ordered, scale, hoop, backgroundThread)
     }
 }

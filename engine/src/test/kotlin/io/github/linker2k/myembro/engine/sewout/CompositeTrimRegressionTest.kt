@@ -29,8 +29,8 @@ class CompositeTrimRegressionTest {
         }
         assertEquals(1,PesReader.read(PecWriter.write(pattern)).trimCount)
     }
-    @Test fun genuineSixteenNeedleDensityIsRejectedWithoutDroppingBodyStitches() {
-        val body=List(16) { i->s(1-i%2,1-i%2) }
+    @Test fun genuineThirtyOneNeedleDensityIsRejectedWithoutDroppingBodyStitches() {
+        val body=List(31) { i->s(1-i%2,1-i%2) }
         val source=EmbPattern(body,listOf(PecThreads.forIndex(5)),mapOf("myembro.inkstitch.finished" to "v1"))
         assertEquals(body,PesWriter.prepareForOutput(source).stitches)
         for(version in PesVersion.entries) {

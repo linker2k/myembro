@@ -27,9 +27,9 @@ class PesExportSafetyTest {
         }
     }
 
-    @Test fun `generated density remains 15 and selected hoop is enforced`() {
+    @Test fun `generated density above 30 blocks and selected hoop is enforced`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            PesExport.requireSafe(dense(16), HoopSpec.H100, DesignOrigin.APP_GENERATED)
+            PesExport.requireSafe(dense(31), HoopSpec.H100, DesignOrigin.APP_GENERATED)
         }
         assertContains(error.message!!, "DENSITY_HOTSPOT")
         val bytes = checkNotNull(javaClass.getResourceAsStream("/fixtures/stops.v1.pes")).use { it.readBytes() }

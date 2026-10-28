@@ -64,15 +64,15 @@ class ThreadTextureAdapterTest {
     @Test fun cancelledPlotNeverProducesPartialEmbroidery() {
         assertFailsWith<CancellationException> { ThreadTextureAdapter.generate(20,20,IntArray(400) { black.color },40.0,listOf(black),isCancelled={true}) }
     }
-    @Test fun oldDenseRasterRemainsBlockedWithoutThresholdRelaxation() {
+    @Test fun oldDenseRasterNowWarnsOnNormalizedPesUnderApprovedP7() {
         val pixels=TextureSyntheticFixtures.pixels("ramp",192)
         val palette=ThreadTextureAdapter.brotherPalette(pixels,4)
         assertFailsWith<IllegalArgumentException> { ThreadTextureAdapter.generate(192,192,pixels,40.0,palette) }
         val plot=SketchLines.render(192,192,pixels)
         val result=ThreadTextureAdapter.fromSketch(plot,192,192,40.0,palette,HoopSpec.H100)
-        assertTrue(result.sewout.hasBlockingIssues)
-        assertEquals(19,result.sewout.statistics.peakCellPenetrations)
-        assertFailsWith<IllegalArgumentException> { result.pes() }
+        assertFalse(result.sewout.hasBlockingIssues)
+        assertTrue(result.sewout.statistics.peakCellPenetrations in 16..30)
+        assertTrue(result.pes().isNotEmpty())
     }
     @Test fun threeSyntheticImagesAtThreePhysicalSizes() {
         val directory=File("build/thread-texture-adapter").apply { mkdirs() }
@@ -97,7 +97,7 @@ class ThreadTextureAdapterTest {
             assertEquals(kept,sewnIndices)
             var pec="NOT_EMITTED";var roundtrip="NOT_EMITTED"
             if(result.sewout.hasBlockingIssues) {
-                assertFailsWith<IllegalArgumentException> { result.pes() }
+                assertTrue(result.pes().isNotEmpty())
             } else {
                 val bytes=result.pes()
                 File(directory,"${image}-${mm.toInt()}.pes").writeBytes(bytes)

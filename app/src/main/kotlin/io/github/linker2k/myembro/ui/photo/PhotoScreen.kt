@@ -187,8 +187,8 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize)
                 } else vm.report?.let { report ->
                     AssistChip(onClick = { showCheck = true }, label = {
-                        Text(stringResource(if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
-                    }, colors = AssistChipDefaults.assistChipColors(labelColor = if (vm.passed) colors.primary else colors.error))
+                        Text(stringResource(if (report.verdict == io.github.linker2k.myembro.engine.sewout.SewoutVerdict.CAUTION) R.string.sewout_badge_caution else if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
+                    }, colors = AssistChipDefaults.assistChipColors(labelColor = if (report.verdict == io.github.linker2k.myembro.engine.sewout.SewoutVerdict.CAUTION) colors.tertiary else if (vm.passed) colors.primary else colors.error))
                     Text(stringResource(R.string.photo_stats, report.statistics.stitchCount, sewoutMinutes(report.time.totalSeconds)),
                         style = MaterialTheme.typography.titleMedium)
                     vm.resultSizeMm?.let { (w, h) ->
@@ -224,6 +224,14 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     if (showCheck) AlertDialog(onDismissRequest = { showCheck = false }, title = { Text(stringResource(R.string.photo_check_title)) },
         text = { Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
             Text(stringResource(if (vm.report?.hasBlockingIssues == true) R.string.photo_blocked_hint else R.string.photo_check_hint))
+            vm.report?.findings?.filter { it.code == io.github.linker2k.myembro.engine.sewout.FindingCode.DENSITY_HOTSPOT && it.severity == io.github.linker2k.myembro.engine.sewout.Severity.WARNING }?.forEach { finding ->
+                finding.highlight?.area?.let { area ->
+                    Text(stringResource(R.string.photo_density_location,
+                        Dimensions.length(area.minX/10), Dimensions.length(area.maxX/10),
+                        Dimensions.length(area.minY/10), Dimensions.length(area.maxY/10),
+                        finding.measured?.toInt() ?: 0), color=colors.tertiary)
+                }
+            }
         } }, confirmButton = { TextButton(onClick = { showCheck = false }) { Text(stringResource(R.string.photo_close)) } })
 }
 

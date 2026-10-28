@@ -18,7 +18,7 @@ class OutputSafetyTest {
         val cases=listOf(
             "MISSING_LOCK_STITCH" to p(100 to 0,100 to 100,0 to 100,0 to 0,100 to 0),
             "LONG_STITCH" to p(10 to 0,0 to 10,121 to 10),
-            "DENSITY_HOTSPOT" to p(*Array(17) { i->i%2 to i%2 }),
+            "DENSITY_HOTSPOT" to p(*Array(32) { i->i%2 to i%2 }),
         )
         for((code,pattern)in cases)for(version in PesVersion.entries) {
             val e=assertFailsWith<IllegalArgumentException> { PesWriter.write(pattern,version) }

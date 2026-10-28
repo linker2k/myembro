@@ -35,7 +35,7 @@ internal object PesInvariants {
         if (zero > 0) out += "P4 zero-length moves=$zero"
         if (worstRun > 2) out += "P5 same-point run=$worstRun"
         val cells = moves.filter { it.command == Command.STITCH }.groupingBy { it.x / 5 to it.y / 5 }.eachCount()
-        cells.values.maxOrNull()?.takeIf { it > 15 }?.let { out += "P7 cell=$it" }
+        cells.values.maxOrNull()?.takeIf { it > SewoutLimits.MAX_PENETRATIONS_PER_CELL }?.let { out += "P7 cell=$it" }
         if (longest > 120.0) out += "P8 longest=${longest / 10}mm"
         return out
     }

@@ -27,6 +27,10 @@ class ThreadTexturePreviewTest {
         assertEquals(densityText,ThreadTextureOutputGate.blockerMessage(mapOf(limit to warning,dense to blocker)))
         assertEquals(generic,ThreadTextureOutputGate.blockerMessage(mapOf(dense to warning,limit to warning)))
         assertEquals(generic,ThreadTextureOutputGate.blockerMessage(emptyMap()))
+        assertEquals(io.github.linker2k.myembro.R.string.block_sewout_hoop,ThreadTextureOutputGate.blockerMessage(mapOf(FindingCode.HOOP_EXCEEDED to blocker)))
+        assertEquals(io.github.linker2k.myembro.R.string.block_sewout_repeated,ThreadTextureOutputGate.blockerMessage(mapOf(FindingCode.ZERO_LENGTH_MOTION to blocker)))
+        assertEquals(io.github.linker2k.myembro.R.string.block_sewout_long,ThreadTextureOutputGate.blockerMessage(mapOf(FindingCode.LONG_STITCH to blocker)))
+        assertEquals(io.github.linker2k.myembro.R.string.block_sewout_lock,ThreadTextureOutputGate.blockerMessage(mapOf(FindingCode.MISSING_LOCK_STITCH to blocker)))
     }
 
     private val source = IntArray(32*32) { i -> when {
@@ -91,7 +95,7 @@ class ThreadTexturePreviewTest {
         }
     }
     @Test fun densityAndOtherBlockersDisableBytesAndEditorWithoutBypass() {
-        val dense=EmbPattern(List(25) { Stitch(0,0,Command.STITCH) }+Stitch(0,0,Command.END),listOf(EmbThread(0xff000000.toInt())))
+        val dense=EmbPattern(List(31) { i -> Stitch(i%2,1-i%2,Command.STITCH) }+Stitch(0,1,Command.END),listOf(EmbThread(0xff000000.toInt())))
         val gated=ThreadTextureOutputGate.check(dense,PesWriteSettings(),SewoutMachines.SE400)
         assertTrue(gated.densityBlocked);assertFalse(gated.canUse);assertNull(gated.bytes)
         assertFalse(ThreadTextureOutputGate.canEdit(true,true,false,gated.report,false))
