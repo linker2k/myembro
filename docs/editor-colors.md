@@ -91,3 +91,17 @@ block fabric/thread pixels, and a black swatch's outline on a matching backgroun
 The existing 2 Colors-sheet interaction tests also pass. Pixel checks draw the
 activity's content view into an in-memory bitmap, avoiding unsupported Window
 PixelCopy capture in this JVM environment. No personal images are test fixtures.
+
+## Variant-scoped Compose UI tests
+
+`EditorColorsPanelUiTest` and `ColorRenderingUiTest` live in
+`app/src/testDebug/kotlin`: their Compose Activity is supplied by the existing
+`debugImplementation("androidx.compose.ui:ui-test-manifest")`. They must not run
+as release unit tests, whose manifest intentionally has no Compose test Activity.
+The common state/model/render-data tests remain in `src/test` and run for both
+variants. No test Activity is added to the release app.
+
+Variant validation: `./gradlew :app:test :app:lint :app:assembleDebug --console=plain`
+returned `BUILD SUCCESSFUL in 2m 52s`. Debug: 470 tests; release: 463 tests;
+0 failures/errors/skips in both. Both Activity-based test classes (7 tests) are
+present only in debug XML results. Lint has 0 errors; assembleDebug succeeds.
