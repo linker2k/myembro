@@ -40,7 +40,7 @@ From the beta on, the app is signed with a new key. Android does not allow insta
 3. Install the beta.
 4. Open **Settings → Backup**, tap **Restore ZIP** and pick your backup.
 
-After that, allow USB folder access again.
+After that, allow USB folder access again. If you use AI connection (experimental), enter the relay address and APP_KEY again: they are never stored in the backup.
 
 ## 7. Why can't I freely change the stitch type and density?
 

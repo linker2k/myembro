@@ -53,7 +53,7 @@ The beta is signed with a new key, so it cannot install over 0.3.x. Do this once
 3. Install the beta.
 4. Go to **Settings → Backup → Restore ZIP** and pick your backup.
 
-After reinstalling, allow USB folder access again.
+After reinstalling, allow USB folder access again. If you use AI connection (experimental), enter the relay address and APP_KEY again: they are never stored in the backup.
 
 ## Where to start
 

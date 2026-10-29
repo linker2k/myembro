@@ -265,7 +265,7 @@ The clock icon in selection mode opens the recent USB transfer history (the scre
 
 ![Settings: backup](../images/manual/en/15-settings-backup.png)
 
-At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes. The list has 58 Brother embroidery models, grouped by region: 30 sold in the United States (SE, PE, NS, NQ, XE, XJ, XP, EV, PR) and 28 sold in Korea (M, LB, Innovis, F, PR). Each shows its maximum embroidery area. Models larger than 100×100mm are marked **Not verified on a physical machine**. The full list with sources is in [machines.md](../machines.md).
+At the top of **Settings**, **Backup** stores designs, projects, downloaded fonts and settings in one ZIP. Tap **Save backup** and keep the ZIP outside the app; **Restore ZIP** reads it back. The AI connection address and APP_KEY are not in the backup. Below it are **AI connection (experimental)** (chapter 13) and **Machine model**, which shows the selected model (Brother SE400) with its maximum embroidery area (100×100mm) and notes. The list has 58 Brother embroidery models, grouped by region: 30 sold in the United States (SE, PE, NS, NQ, XE, XJ, XP, EV, PR) and 28 sold in Korea (M, LB, Innovis, F, PR). Each shows its maximum embroidery area. Models larger than 100×100mm are marked **Not verified on a physical machine**. The full list with sources is in [machines.md](../machines.md).
 
 ![My threads](../images/manual/en/15b-my-threads.png)
 
@@ -330,7 +330,7 @@ myembro sends **no stitches, pictures or files**, and the chatbot cannot reach y
 AI connection lets a chatbot work on your design directly, without copy and paste. It needs your own relay server (a Cloudflare Worker, see [relay/README.md](../../relay/README.md)) and a chatbot that supports MCP connectors, such as Claude. myembro still has no AI built in and stores no API key.
 
 1. In **Settings**, turn on **AI connection (experimental)**.
-2. Enter the **Relay address** (wss://…) and the **APP_KEY** of your relay. The key stays on this phone and is not in backups.
+2. Enter the **Relay address** (wss://…) and the **APP_KEY** of your relay. Both stay on this phone and are not in backups. After reinstalling the app or moving to a new phone, enter them again.
 3. Add the relay as a connector in your chatbot. A notification shows while the connection is on.
 
 What the chatbot can do:
