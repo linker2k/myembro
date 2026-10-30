@@ -72,6 +72,10 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
     val byRegion by produceState<Map<String, BlockOptions>?>(null, shape) {
         value = withContext(Dispatchers.Default) { shape.regions.associate { it.id to BlockApply.options(it, shape.transform) } }
     }
+    val outlineNote by produceState<Pair<Int, Boolean>?>(null, shape) {
+        value = null
+        value = loadOutlineNote { shape.skippedOutlineCount to shape.skippedOutlineCountUnconfirmed }
+    }
     fun picked() { selected = state.selected; draft = state.draft() }
     // Every committed change (apply, undo, redo) gets a fresh check of the whole design.
     LaunchedEffect(shape) { if (vm.blockStatus !is BlockStatus.Generating) vm.checkBlockSewout() }
@@ -97,8 +101,10 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                         SewoutBadge(status)
                     }
                     if (status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
-                    val skippedOutlines = remember(shape) { shape.skippedOutlineCount }
+                    val skippedOutlines = outlineNote?.first ?: 0
                     if (skippedOutlines > 0) Text(stringResource(R.string.photo_skipped_outlines, skippedOutlines),
+                        Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (outlineNote?.second == true) Text(stringResource(R.string.photo_skipped_outlines_unconfirmed),
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),

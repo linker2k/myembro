@@ -84,6 +84,10 @@ class ShapeObject internal constructor(
     /** Photo fill outlines left out because the sewout gate would block them; 0 for other shapes. */
     val skippedOutlineCount: Int get() = rendered.value.pattern.metadata[PhotoShapeRenderer.SKIPPED_OUTLINES_KEY]?.toIntOrNull() ?: 0
 
+    /** Legacy photo payloads may lack region-level provenance; do not infer it from a total. */
+    val skippedOutlineCountUnconfirmed: Boolean get() =
+        rendered.value.pattern.metadata[PhotoShapeRenderer.UNCONFIRMED_OUTLINES_KEY] == "true"
+
     // Regions are derived exclusively from immutable source/defaults in this draft.
     override fun equals(other: Any?): Boolean = other is ShapeObject && id == other.id &&
         name == other.name && sourceArt == other.sourceArt && widthMm == other.widthMm &&
