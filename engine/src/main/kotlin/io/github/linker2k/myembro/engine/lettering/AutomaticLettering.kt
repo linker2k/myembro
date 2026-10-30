@@ -34,6 +34,11 @@ data class ValidatedLetteringProfile(
 
 /** Automatic selection only among supplied, evidenced combinations. Unknown means unavailable. */
 class AutomaticLetteringPolicy(private val profiles:List<ValidatedLetteringProfile>) {
+    /**
+     * [measuredStrokeWidths] is only the range of a validated satin profile's `strokeWidths` (satin rail
+     * separation). No production caller passes it yet because validated-ranges.json has no satin profiles;
+     * it is kept for future SATIN_COLUMNS profiles. Without it, satin profiles are never candidates.
+     */
     fun candidates(fontId:String,revision:String,geometry:LetteringGeometry,text:String,
         measuredStrokeWidths:ValidatedHeightRange?=null):List<ValidatedLetteringProfile> {
         val codes=text.codePoints().toArray().filter { !Character.isWhitespace(it) }.toSet()
@@ -47,11 +52,16 @@ class AutomaticLetteringPolicy(private val profiles:List<ValidatedLetteringProfi
     fun select(candidates:List<ValidatedLetteringProfile>,heightMm:Double):ValidatedLetteringProfile? =
         candidates.filter { heightMm in it.heights }.sortedBy { if(it.style==StitchStyle.SATIN)0 else 1 }.firstOrNull()
 
-    /** S2 coordinator policy for unconfirmed fonts; this is not a certified size interval. */
+    /**
+     * S2 coordinator policy for unconfirmed fonts; this is not a certified size interval.
+     * OUTLINE geometry (TrueType outlines) goes to FILL for 5..90mm. The reason is not a stroke width:
+     * a TTF outline has no satin rails, and a medial-axis/rail extractor is not verified (docs/inkstitch-port.md).
+     * The 6.0mm satin limit ([TatamiLettering.MAX_SATIN_WIDTH_MM]) is not applied here; it applies only to
+     * rail separation in the satin rail path and to region diameter in StitchTypeRule.
+     */
     fun method(candidates:List<ValidatedLetteringProfile>,heightMm:Double,
-        geometry:LetteringGeometry?=null,measuredStrokeWidths:ValidatedHeightRange?=null):StitchStyle {
-        if(heightMm in TatamiLettering.MIN_HEIGHT_MM..TatamiLettering.MAX_HEIGHT_MM &&
-            (geometry==LetteringGeometry.OUTLINE || measuredStrokeWidths?.maxMm?.let { it>TatamiLettering.MAX_SATIN_WIDTH_MM }==true))
+        geometry:LetteringGeometry?=null):StitchStyle {
+        if(heightMm in TatamiLettering.MIN_HEIGHT_MM..TatamiLettering.MAX_HEIGHT_MM && geometry==LetteringGeometry.OUTLINE)
             return StitchStyle.FILL
         return select(candidates,heightMm)?.style ?: StitchStyle.RUNNING
     }

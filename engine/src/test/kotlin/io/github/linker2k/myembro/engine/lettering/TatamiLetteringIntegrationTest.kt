@@ -21,7 +21,6 @@ class TatamiLetteringIntegrationTest {
         val policy=AutomaticLetteringPolicy(emptyList())
         assertEquals(StitchStyle.FILL,policy.method(emptyList(),90.0,LetteringGeometry.OUTLINE))
         assertEquals(StitchStyle.RUNNING,policy.method(emptyList(),90.01,LetteringGeometry.OUTLINE))
-        assertEquals(StitchStyle.FILL,policy.method(emptyList(),20.0,LetteringGeometry.SATIN_COLUMNS,ValidatedHeightRange(6.01,7.0)))
         val rules=listOf(java.io.File("../docs/tatami-sweep-results/fill-allowed-regions.json"),
             java.io.File("docs/tatami-sweep-results/fill-allowed-regions.json")).first { it.isFile }
         val grid=Json.parseToJsonElement(rules.readText()).jsonObject.getValue("size_grid_mm").jsonArray.map { it.jsonPrimitive.double }
