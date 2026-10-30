@@ -23,12 +23,26 @@ density cell. Measured on the repository images `example-logo-flat.png`,
 blocked outputs 0, for both lengths.
 User decision 2026-10-30 (supersedes the 1.0mm single pass): **two passes of the 1.2mm
 Ink/Stitch run, the second staggered by half a stitch.** Pass 1 is the unchanged `Stroke`
-running stitch at 1.2mm with its locks. Pass 2 continues without a jump or trim and re-phases
-pass 1: its needles are the midpoints of pass 1's stitches (0.6mm along pass 1's own stitch
-line), ending at the first midpoint to close the ring, so it never uses a pass-1 hole. The
-effective penetration spacing is about 0.6mm; the user's estimate is 1–2 extra needles per
+running stitch at 1.2mm. Pass 2 continues without a jump or trim and re-phases pass 1:
+within each Ink/Stitch curve it uses the midpoints of pass 1's stitches. Following the
+2026-10-30 corner correction, it also visits the original pass-1 needles at the existing
+`RunningStitch.pathToCurves` boundaries, including the closing seam. It closes at the
+original seam point, not by joining the last midpoint directly to the first midpoint.
+Locks are planned after both passes. Reusing these boundary holes is intentional;
+on the rectangular controls, no other first-pass hole is reused. The
+effective interior penetration spacing is about 0.6mm; the user's estimate is 1–2 extra needles per
 0.5mm density cell. No new running-stitch algorithm, same color, region tags and selection.
 Color, silhouette and block-edited photo regions all use `ColorFillOutline.stitchGroups`.
+
+Corner correction verification (`integrate/beta3 fc0b6245` base): independent PEC
+measurement of a 20mm square with a 10mm square hole gives maximum hole intrusion
+**0mm for both passes** (previous two-pass result: 0.3mm). The original square exterior
+also has 0mm excursion. Four guarded 40mm outputs have BLOCK=0: launcher color/silhouette
+four-phase peaks **24/14**, banner color/silhouette **23/22**; independent decoding agrees,
+with zero 0-length motions and maximum consecutive identical needle count 1.
+Reproduction and exact rational hole-distance proof: `/tmp/myembro-corner-out/report.md`.
+
+The table below predates the corner correction and retains its original measurements.
 
 Measured 2026-10-30 (temporary engine test, removed): repository images resized to 192px wide,
 color = `ColorDrawingPipeline.trace(...,4)` + `generate(preview,HoopSpec.H100)`, silhouette =

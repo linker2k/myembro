@@ -20,10 +20,12 @@ class ColorDefaultExpansionTest {
         // Expansion 0 still bypasses buffer/clip; the outline policy intentionally changes PES bytes.
         // Goldens updated 2026-10-30 for the 1.0mm outline length (user decision), and again
         // 2026-10-30 for the two-pass 1.2mm half-stitch-staggered outline (user decision).
+        // 2026-10-30: preserve the first-pass Ink/Stitch curve-boundary needles in pass 2
+        // instead of shortcutting corners between midpoints (square-hole PES excursion 0.3 -> 0mm).
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "40d10e532af15a7e3c033dd83eb2517c71a543055746edabaa217ba7e0c92357",
-            "robot" to "08904b9d95df35184e4c5d0f36c6a9ede3b8458f3e1bfabaee0db362203ce445")
+            "face" to "af57b7accc20deff44a1a6b8032e064d0bd9ab0663de81c45f15a62eae2473bb",
+            "robot" to "dc73042705a3d8fa225b83c01e305525c22929b394504a1394e0e3dee56fe782")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {
             val source=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/$name.png"))
@@ -42,7 +44,7 @@ class ColorDefaultExpansionTest {
             assertContentEquals(explicit,internal,"$name internal default")
             assertEquals(PesReader.read(zero).bounds,PesReader.read(actual).bounds,"$name integer extent")
             val hash=MessageDigest.getInstance("SHA-256").digest(zero).joinToString("") { "%02x".format(it) }
-            assertEquals(golden,hash,"$name explicit zero matches approved one-pass baseline bytes")
+            assertEquals(golden,hash,"$name explicit zero matches approved corner-preserving two-pass bytes")
             assertFalse(SewoutCheck.checkPes(actual,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
             output?.resolve("$name-default.pes")?.writeBytes(actual)
             output?.resolve("$name-zero.pes")?.writeBytes(zero)

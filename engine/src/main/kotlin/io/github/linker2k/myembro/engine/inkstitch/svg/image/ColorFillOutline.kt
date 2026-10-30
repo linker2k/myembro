@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.inkstitch.elements.Stroke
+import io.github.linker2k.myembro.engine.inkstitch.stitches.RunningStitch
 import io.github.linker2k.myembro.engine.inkstitch.elements.StrokeParameters
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
 import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
@@ -24,22 +25,36 @@ internal object ColorFillOutline {
     val parameters=StrokeParameters(bean_stitch_repeats=listOf(0),repeats=1,
         running_stitch_length_mm=listOf(1.2))
 
-    /** Per ring: pass 1 is the unchanged Ink/Stitch running stitch (with its locks); pass 2 continues
-     * without a jump along pass 1's own stitch line, shifted by half a stitch: its needles are the
-     * midpoints of pass 1's stitches, ending at the first midpoint again to close the ring.
-     * No new running-stitch algorithm: pass 2 only re-phases pass 1's points.
+    /** User correction 2026-10-30: preserve Ink/Stitch curve boundaries on pass 2.
+     * Connecting only midpoints cut square-hole corners by 0.3mm in decoded PES.
+     * Reuse the source curve split and pass-1 boundary needles; stagger only within curves.
+     * Locks are still planned once, after the complete two-pass body.
      */
     fun stitchGroups(polygon:Polygon,thread:EmbThread):List<StitchGroup> {
         val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
-        return Stroke(rings.map { ring -> ring.coordinates.map {
+        val paths=rings.map { ring -> ring.coordinates.map {
             Point(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM)
-        } },thread,parameters).toStitchGroups(null).map { group -> group.copy(stitches=withStaggeredPass(group.stitches)) }
+        } }
+        return Stroke(paths,thread,parameters).toStitchGroups(null).mapIndexed { index,group ->
+            // Exactly the split used by RunningStitch.evenRunningStitch, not another corner rule.
+            val boundaries=RunningStitch.pathToCurves(paths[index],2*parameters.runningStitchTolerance)
+                .flatMap { listOf(it.first(),it.last()) }.map { it.x to it.y }.toSet()
+            group.copy(stitches=withStaggeredPass(group.stitches,boundaries))
+        }
     }
 
-    internal fun withStaggeredPass(first:List<Stitch>):List<Stitch> {
+    internal fun withStaggeredPass(first:List<Stitch>,boundaries:Set<Pair<Double,Double>>):List<Stitch> {
         if(first.size<2) return first
-        val second=first.zipWithNext { a,b -> a.copy(x=(a.x+b.x)/2,y=(a.y+b.y)/2) }
-        return first+second+second.first()
+        return buildList {
+            addAll(first)
+            fun appendPoint(stitch:Stitch) {
+                if(last().x!=stitch.x || last().y!=stitch.y) add(stitch)
+            }
+            for((a,b) in first.zipWithNext()) {
+                appendPoint(a.copy(x=(a.x+b.x)/2,y=(a.y+b.y)/2))
+                if((b.x to b.y) in boundaries) appendPoint(b)
+            }
+        }
     }
 
     data class Outline(val afterGroup:Int,val region:Int,val groups:List<StitchGroup>)
