@@ -15,6 +15,8 @@ internal class PhotoShapeSource(val pattern: EmbPattern, val fragments: Map<Stri
 
 internal object PhotoShapeRenderer {
     const val SKIPPED_OUTLINES_KEY = "myembro.skipped_fill_outlines"
+    const val REGION_OUTLINE_SKIPPED_KEY = "myembro.fill_outline_skipped"
+    const val UNCONFIRMED_OUTLINES_KEY = "myembro.skipped_fill_outlines_unconfirmed"
 
     fun render(source: PhotoShapeSource, regions: List<ShapeRegion>, overrides: Map<String,BlockStitch>, widthMm: Double): VectorArt.Result {
         val parts=regions.map { r -> VectorArt.Part(r.sourceShape,r.role,when(r.stitch.type) {
@@ -38,14 +40,23 @@ internal object PhotoShapeRenderer {
         }
         // Keep each outline only while the whole object still has no sewout blocker, as the photo route does.
         val selected=fragments.toMutableMap()
+        // This extra check is attribution only: keep the existing candidate-selection/output path.
+        // A blocker already present without the new outlines must not be blamed on an outline.
+        val baselinePasses=outlined.isNotEmpty() && passes(RegionOrderPatterns.compose(regions.map { it.id },fragments,source.pattern))
         var skipped=0
         for((id,candidate) in outlined) {
             val trial=selected+(id to candidate)
-            if(passes(RegionOrderPatterns.compose(regions.map { it.id },trial,source.pattern))) selected[id]=candidate else skipped++
+            if(passes(RegionOrderPatterns.compose(regions.map { it.id },trial,source.pattern))) selected[id]=candidate else if(baselinePasses) skipped++
         }
         val pattern=RegionOrderPatterns.compose(regions.map { it.id },selected,source.pattern)
-        val skippedTotal=skipped+(source.pattern.metadata[SKIPPED_OUTLINES_KEY]?.toIntOrNull() ?: 0)
-        return VectorArt.Result(EmbPattern(pattern.stitches,pattern.threads,pattern.metadata+(SKIPPED_OUTLINES_KEY to skippedTotal.toString()),pattern.warnings),
+        val unchanged=regions.filter { it.id !in overrides }
+        // Old photo payloads stored only a total. Never guess which edited region owned that total.
+        val originalTotal=source.pattern.metadata[SKIPPED_OUTLINES_KEY]?.toIntOrNull()
+        val flags=unchanged.map { source.fragments[it.id]?.metadata?.get(REGION_OUTLINE_SKIPPED_KEY)?.toBooleanStrictOrNull() }
+        val unconfirmed=flags.any { it==null } && originalTotal!=0
+        val skippedTotal=skipped+flags.count { it==true }
+        val notes=mapOf(SKIPPED_OUTLINES_KEY to skippedTotal.toString(),UNCONFIRMED_OUTLINES_KEY to unconfirmed.toString())
+        return VectorArt.Result(EmbPattern(pattern.stitches,pattern.threads,pattern.metadata+notes,pattern.warnings),
             parts,1.0,regionPatterns=selected)
     }
 

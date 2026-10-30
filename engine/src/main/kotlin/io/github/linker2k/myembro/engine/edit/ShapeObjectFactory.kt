@@ -40,7 +40,12 @@ object ShapeObjectFactory {
         val x = points.minOf { it.x }; val y = points.minOf { it.y }
         val art = VectorArt.Art(frozen(listOf(x,y,points.maxOf { it.x }-x,points.maxOf { it.y }-y)),
             frozen(regions.map { region -> VectorArt.Shape(pathData(region.paths), region.color.color and 0xffffff, null, fillRule=FillRule.EVEN_ODD) }))
-        return centeredForImport(retained(id,name,art,widthMm,regions,result.pattern,result.regionPatterns))
+        val skippedById=regions.mapIndexed { i,r -> r.id to sewn[i].outlineSkipped }.toMap()
+        val fragments=result.regionPatterns.mapValues { (id,p) ->
+            val skipped=skippedById.getValue(id)
+            EmbPattern(p.stitches,p.threads,p.metadata+(PhotoShapeRenderer.REGION_OUTLINE_SKIPPED_KEY to skipped.toString()),p.warnings)
+        }
+        return centeredForImport(retained(id,name,art,widthMm,regions,result.pattern,fragments))
     }
     /** Fresh picture insertion only. Keep original paths, cached needles and fragments untouched;
      * an integer pose translates every command together without rerendering or adding needles.
