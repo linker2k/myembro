@@ -29,16 +29,15 @@ class ColorFillOutlineTest {
             val n=first.size
             // Pass 1 is the unchanged Ink/Stitch 1.2mm run; pass 2 follows without a jump.
             assertEquals(first,group.stitches.subList(0,n))
-            assertEquals(2*n,group.stitches.size)
-            val second=group.stitches.subList(n,2*n)
-            for(i in 0 until n-1) {
-                assertEquals((first[i].x+first[i+1].x)/2,second[i].x,1e-9)
-                assertEquals((first[i].y+first[i+1].y)/2,second[i].y,1e-9)
-            }
-            assertEquals(second.first(),second.last())
-            // No pass-2 needle uses a pass-1 hole; no 0-length stitch; every stitch <= 1.2mm.
+            val second=group.stitches.drop(n)
+            val corners=rings[index].coordinates.map { it.x/10*PIXELS_PER_MM to it.y/10*PIXELS_PER_MM }.toSet()
             val holes=first.map { it.x to it.y }.toSet()
-            assertTrue(second.none { (it.x to it.y) in holes })
+            assertEquals(corners,second.map { it.x to it.y }.toSet().intersect(holes),
+                "Only original corner holes are reused on the rectangular ring")
+            val midpoints=first.zipWithNext { a,b -> (a.x+b.x)/2 to (a.y+b.y)/2 }
+            assertEquals(midpoints,second.filter { (it.x to it.y) !in corners }.map { it.x to it.y })
+            assertEquals(first.last(),second.last(),"close through the original seam corner")
+            // No 0-length stitch; every stitch <= 1.2mm.
             group.stitches.zipWithNext().forEach { (a,b) ->
                 val mm=kotlin.math.hypot(b.x-a.x,b.y-a.y)/PIXELS_PER_MM
                 assertTrue(mm>0.0 && mm<=1.2+1e-6,"stitch length $mm")
@@ -46,6 +45,50 @@ class ColorFillOutlineTest {
             val ring=rings[index]
             val length=first.zipWithNext().sumOf { (a,b) -> kotlin.math.hypot(b.x-a.x,b.y-a.y) }
             assertEquals(ring.length/10*PIXELS_PER_MM,length,1e-6)
+        }
+    }
+    @Test fun rectangularExteriorAndSquareHoleHaveZeroExcursionInBothPassesAndEncodedPes() {
+        val polygon=WKTReader().read("POLYGON ((0 0,200 0,200 200,0 200,0 0),(50 50,50 150,150 150,150 50,50 50))") as Polygon
+        val thread=PecThreads.forIndex(5)
+        val rings=listOf(polygon.exteriorRing,polygon.getInteriorRingN(0))
+        val first=Stroke(rings.map { ring -> ring.coordinates.map { SP(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread,ColorFillOutline.parameters).toStitchGroups(null)
+        val two=ColorFillOutline.stitchGroups(polygon,thread)
+        val factory=polygon.factory
+        fun outside(stitches:List<Stitch>):Double = stitches.zipWithNext().maxOfOrNull { (a,b) ->
+            val line=factory.createLineString(arrayOf(
+                org.locationtech.jts.geom.Coordinate(a.x/PIXELS_PER_MM*10,a.y/PIXELS_PER_MM*10),
+                org.locationtech.jts.geom.Coordinate(b.x/PIXELS_PER_MM*10,b.y/PIXELS_PER_MM*10)))
+            // Axis-aligned control rings: every segment must lie on its original side,
+            // including the pass junction, corners and the closing seam.
+            line.coordinates.maxOf { c -> polygon.distance(factory.createPoint(c)) }/10
+        } ?: 0.0
+        first.zip(two).forEachIndexed { i,(one,both) ->
+            assertEquals(0.0,outside(one.stitches),1e-12,"first ring $i")
+            assertEquals(outside(one.stitches),outside(both.stitches),1e-12,"two-pass ring $i")
+            both.stitches.zipWithNext().forEach { (a,b) ->
+                // Checking the entire segment detects a corner shortcut even when its
+                // endpoints are on the boundary. No sampling tolerance is used here.
+                val line=factory.createLineString(arrayOf(
+                    org.locationtech.jts.geom.Coordinate(a.x/PIXELS_PER_MM*10,a.y/PIXELS_PER_MM*10),
+                    org.locationtech.jts.geom.Coordinate(b.x/PIXELS_PER_MM*10,b.y/PIXELS_PER_MM*10)))
+                assertTrue(polygon.buffer(1e-10).covers(line),"ring $i leaves polygon: $line")
+            }
+        }
+        for(groups in listOf(first,two)) {
+            val bytes=PesWriter.write(GeneratedPatternProcessor.fromGroups(groups))
+            val decoded=PesReader.read(bytes)
+            var previous:io.github.linker2k.myembro.engine.model.Stitch?=null
+            for(point in decoded.stitches) {
+                val prior=previous
+                if(point.command==io.github.linker2k.myembro.engine.model.Command.STITCH && prior?.command==point.command) {
+                    val line=factory.createLineString(arrayOf(org.locationtech.jts.geom.Coordinate(prior.x.toDouble(),prior.y.toDouble()),org.locationtech.jts.geom.Coordinate(point.x.toDouble(),point.y.toDouble())))
+                    assertTrue(polygon.covers(line),"encoded ring leaves polygon: $line")
+                }
+                previous=point
+            }
+            val report=SewoutCheck.checkPes(bytes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
+            assertFalse(report.hasBlockingIssues,report.findings.toString())
+            assertTrue(PesInvariants.violations(bytes,HoopSpec.H100).isEmpty())
         }
     }
     @Test fun cumulativeDensityRejectsOnlyOptionalOutline() {
