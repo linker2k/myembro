@@ -208,6 +208,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             if(vm.step==2 && vm.textureActive) Text(stringResource(R.string.photo_texture_editor_hint),
                 style=MaterialTheme.typography.bodySmall, color=colors.onSurfaceVariant)
             if(vm.step==2 && vm.excludedCount>0) Text(stringResource(R.string.photo_excluded_regions,vm.excludedCount),color=colors.onSurfaceVariant)
+            if(vm.step==2 && vm.skippedOutlineCount>0) Text(stringResource(R.string.photo_skipped_outlines,vm.skippedOutlineCount),color=colors.onSurfaceVariant)
             vm.error?.let { Text(stringResource(it), color = colors.error) }
             if (vm.step < 2) Button(onClick = vm::next,
                 enabled = !vm.busy && (if (vm.step == 0) vm.source != null else vm.previewReady), modifier = Modifier.fillMaxWidth()) {

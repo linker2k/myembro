@@ -117,6 +117,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     }
     var colorPreview by mutableStateOf<ColorDrawingPipeline.Preview?>(null); private set
     val excludedCount get()=render?.pattern?.metadata?.get("myembro.excluded_regions")?.toIntOrNull() ?: 0
+    val skippedOutlineCount get()=render?.pattern?.metadata?.get("myembro.skipped_fill_outlines")?.toIntOrNull() ?: 0
     fun missingThread(thread: EmbThread) = settings.myThreads.missing(thread)
     val requiredThreads get() = render?.pattern?.threads?.distinctBy { it.catalogNumber to it.color }.orEmpty()
     fun changeColorCount(value:Int) {

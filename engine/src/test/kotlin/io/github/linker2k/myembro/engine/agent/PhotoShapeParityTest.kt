@@ -89,6 +89,38 @@ class PhotoShapeParityTest {
         println("PHOTO_SHAPE_PARITY colors=$colors shape=true stitches=${legacy.pattern.stitchCount} coordinates=IDENTICAL pes=IDENTICAL codec=IDENTICAL regions=${actual.regions.size}")
         assertIs<StitchObject>(PhotoPreparation(store).prepare("synthetic","outline",2,width,HoopSpec.H100).objectFor("outline","Outline"))
     }
+    @Test fun overriddenFillRegionKeepsOneOutlinePassAndRunningGetsNone() {
+        val image=ImageIO.read(ByteArrayInputStream(png(3)))
+        val store=AttachmentStore { _,req -> PhotoRaster(req.width,req.height,
+            IntArray(req.width*req.height) { p -> image.getRGB((p%req.width)*64/req.width,(p/req.width)*64/req.height) }) }
+        val original=assertIs<ShapeObject>(PhotoPreparation(store).prepare("synthetic","color",3,50.0,HoopSpec.H100).objectFor("photo","Photo"))
+        val target=original.regionOrder.first()
+        val region=original.regions.first { it.id==target }
+        val needle=io.github.linker2k.myembro.engine.model.Command.STITCH
+        fun needles(p:io.github.linker2k.myembro.engine.model.EmbPattern)=p.stitches.count { it.command==needle }
+        fun applied(patch:BlockStitchPatch)=assertIs<ShapeObject>(assertIs<io.github.linker2k.myembro.engine.edit.commands.CommandResult.Applied>(
+            io.github.linker2k.myembro.engine.edit.commands.apply(Project(objects=listOf(original)),
+                io.github.linker2k.myembro.engine.edit.commands.ProjectCommand.SetBlockStitch("photo",setOf(target),patch))).project.find("photo"))
+        for(patch in listOf(BlockStitchPatch(angle=135.0),BlockStitchPatch(fill_method="contour_fill",row_spacing_mm=0.4))) {
+            val obj=applied(patch)
+            val settings=patch.applyTo(region.stitch)
+            val fillOnly=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
+                ShapeBlockRenderer.generate(io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.RegionInput(target,region.paths,region.color,null),settings).groups,
+                pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+            // The outline is added on top of the unchanged fill and nothing was dropped by the gate.
+            assertTrue(needles(obj.regionPattern(target))>needles(fillOnly),"outline missing for $patch")
+            assertEquals("0",obj.localPattern().metadata["myembro.skipped_fill_outlines"])
+            assertFalse(io.github.linker2k.myembro.engine.sewout.SewoutCheck.check(obj.localPattern(),
+                options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)).hasBlockingIssues)
+        }
+        val running=applied(BlockStitchPatch(type=BlockStitch.Type.RUNNING))
+        val runningOnly=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
+            ShapeBlockRenderer.generate(io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.RegionInput(target,region.paths,region.color,null),
+                BlockStitchPatch(type=BlockStitch.Type.RUNNING).applyTo(region.stitch)).groups,
+            pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
+        assertEquals(runningOnly.stitches,running.regionPattern(target).stitches)
+    }
+
     @Test fun photoRegionsSupportOverridesOrderAndPersistenceWithoutReroutingOtherRegions() {
         val image=ImageIO.read(ByteArrayInputStream(png(3)))
         val store=AttachmentStore { _,req -> PhotoRaster(req.width,req.height,

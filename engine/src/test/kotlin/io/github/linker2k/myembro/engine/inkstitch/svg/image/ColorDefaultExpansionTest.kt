@@ -18,10 +18,11 @@ class ColorDefaultExpansionTest {
         // Synthetic-only goldens: baseline 46505dc with only the approved outline repeats 1 -> 0.
         // Independently rebuilt baseline + single-parameter overlay; /tmp/myembro-p7-freq/one-pass.
         // Expansion 0 still bypasses buffer/clip; the outline policy intentionally changes PES bytes.
+        // Goldens updated 2026-10-30 for the 1.0mm outline length (user decision).
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "826ead35421936ddd7688a0a4840f3364c4889f550ed2b6e6704bfbf356bdc66",
-            "robot" to "77bd7e3116c23835c92861fdd69cac233cd01fe1e1ea8c84560b0d846f45832a")
+            "face" to "6a45be0fa69185c39d44b2e31acbca99186ead7567a17e03aacd80d2552525a5",
+            "robot" to "6e90141f31fd3de54e0bf4464e3a2d0173cfb9a0fdac6f89e13c730f59d01e85")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {
             val source=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/$name.png"))

@@ -7,14 +7,20 @@ interior rings. The existing `Stroke` port generates the stitches; there is no n
 routing, running-stitch or lock algorithm. Its Ink/Stitch v3.3.0 source attribution remains
 in `Stroke.kt` and `StrokeParameters.kt` (upstream commit
 `b0edd96311ece82ee48816dc93466274b12c2a9c`). Parameters are `repeats=1`,
-`bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.655]`; other defaults are unchanged.
+`bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.0]`; other defaults are unchanged.
 The same color and region ownership tags are retained, without an added color block.
 
 User decision 2026-10-28: use one running pass (Ink/Stitch default), not three bean passes. Manager measurements in `/tmp/myembro-p7-freq` found peaks >=16 in 2–3% with fill alone (max 16–19), 17% with one pass (max 19), and 66% with three passes (max 29). Silhouettes reuse `ColorFillOutline.stitchGroups` and `select` with whole-region fill followed by the existing `PhotoOutline.route` order, including holes; no expansion is applied to their outlines. Existing photo extent fitting and final PES checks remain.
 The original region-to-region trim is transferred to the end of its outline.
 
-The 1.655mm length is the running-outline corpus median, approved by the user on
-2026-10-27. The local analysis `/tmp/myembro-overlap/REPORT.md` reports 45 running-outline
+User decision 2026-10-30: the length is 1.0mm. The earlier 1.655mm (running-outline corpus
+median, approved 2026-10-27) looked too sparse. A 1.0mm run puts about one needle in a 0.5mm
+density cell. Measured on the repository images `example-logo-flat.png`,
+`launcher-icon-artwork.png` and `readme-banner.png` at 40/60/90mm, color and silhouette
+(18 outputs): stitches +4–6%, maximum needles per 0.5mm cell unchanged or +1 to +3
+(highest 25, below the 30 limit), cells with 16+ needles unchanged or fewer, skipped outlines 0,
+blocked outputs 0, for both lengths.
+The earlier corpus note: The local analysis `/tmp/myembro-overlap/REPORT.md` reports 45 running-outline
 candidates and 7 satin candidates among 334 files; 72/74 detected outlines follow fill.
 Personal corpus files are not distributed with this change.
 

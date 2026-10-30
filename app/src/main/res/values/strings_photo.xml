@@ -62,6 +62,7 @@
     <string name="photo_color_file_stem">color_drawing</string>
     <string name="photo_color_failed">No sewable color regions remain. Try a transparent PNG or a simple drawing with a light background.</string>
     <string name="photo_color_preview_accessibility">Color drawing separation preview</string>
+    <string name="photo_skipped_outlines">Outline left out in %1$d places · needles there would pile up too much.</string>
     <string name="photo_excluded_regions">Excluded %1$d regions that could not be sewn safely.</string>
     <string name="photo_grayscale">Black &amp; white</string>
     <string name="photo_correction">Correction</string>

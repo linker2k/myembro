@@ -17,9 +17,10 @@ internal object ColorFillOutline {
     // User decision 2026-10-28: Ink/Stitch running default (one pass).
     // /tmp/myembro-p7-freq: fill-only >=16 peaks 2–3% (max 16–19),
     // one pass 17% (max 19), three passes 66% (max 29).
-    // Keep the approved corpus running-outline median length (2026-10-27).
+    // User decision 2026-10-30: 1.0mm (the corpus median 1.655mm looked too sparse). A 0.5mm density
+    // cell gains about one outline needle; docs/qa/color-fill-outline.md has the 1.655 vs 1.0 measurements.
     val parameters=StrokeParameters(bean_stitch_repeats=listOf(0),repeats=1,
-        running_stitch_length_mm=listOf(1.655))
+        running_stitch_length_mm=listOf(1.0))
 
     fun stitchGroups(polygon:Polygon,thread:EmbThread):List<StitchGroup> {
         val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)

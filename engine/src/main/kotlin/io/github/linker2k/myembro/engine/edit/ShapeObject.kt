@@ -81,6 +81,9 @@ class ShapeObject internal constructor(
     override fun withTransform(t: Transform) = if (transform == t) this else copy(transform = t)
     override fun withVisible(v: Boolean) = if (visible == v) this else copy(visible = v)
 
+    /** Photo fill outlines left out because the sewout gate would block them; 0 for other shapes. */
+    val skippedOutlineCount: Int get() = rendered.value.pattern.metadata[PhotoShapeRenderer.SKIPPED_OUTLINES_KEY]?.toIntOrNull() ?: 0
+
     // Regions are derived exclusively from immutable source/defaults in this draft.
     override fun equals(other: Any?): Boolean = other is ShapeObject && id == other.id &&
         name == other.name && sourceArt == other.sourceArt && widthMm == other.widthMm &&

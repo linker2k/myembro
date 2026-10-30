@@ -21,7 +21,7 @@ class ColorFillOutlineTest {
         val actual=ColorFillOutline.stitchGroups(polygon,thread)
         val rings=listOf(polygon.exteriorRing,polygon.getInteriorRingN(0))
         val expected=Stroke(rings.map { ring -> ring.coordinates.map { SP(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread,
-            StrokeParameters(repeats=1,bean_stitch_repeats=listOf(0),running_stitch_length_mm=listOf(1.655))).toStitchGroups(null)
+            StrokeParameters(repeats=1,bean_stitch_repeats=listOf(0),running_stitch_length_mm=listOf(1.0))).toStitchGroups(null)
         assertEquals(2,actual.size)
         assertEquals(expected.map { it.stitches },actual.map { it.stitches })
         actual.forEach { group ->

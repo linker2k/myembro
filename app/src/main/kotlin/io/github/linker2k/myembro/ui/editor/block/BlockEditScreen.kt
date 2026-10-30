@@ -97,6 +97,9 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                         SewoutBadge(status)
                     }
                     if (status is BlockStatus.Checking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                    val skippedOutlines = remember(shape) { shape.skippedOutlineCount }
+                    if (skippedOutlines > 0) Text(stringResource(R.string.photo_skipped_outlines, skippedOutlines),
+                        Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
                         vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background) { x, y, lineMm ->
