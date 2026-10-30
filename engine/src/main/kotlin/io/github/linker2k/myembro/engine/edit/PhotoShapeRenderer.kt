@@ -51,9 +51,10 @@ internal object PhotoShapeRenderer {
         val pattern=RegionOrderPatterns.compose(regions.map { it.id },selected,source.pattern)
         val unchanged=regions.filter { it.id !in overrides }
         // Old photo payloads stored only a total. Never guess which edited region owned that total.
-        val originalTotal=source.pattern.metadata[SKIPPED_OUTLINES_KEY]?.toIntOrNull()
+        // Photos from before fill outlines (v0.3.5 and older) have no total: nothing was left out, so nothing is unconfirmed.
+        val originalTotal=source.pattern.metadata[SKIPPED_OUTLINES_KEY]?.toIntOrNull() ?: 0
         val flags=unchanged.map { source.fragments[it.id]?.metadata?.get(REGION_OUTLINE_SKIPPED_KEY)?.toBooleanStrictOrNull() }
-        val unconfirmed=flags.any { it==null } && originalTotal!=0
+        val unconfirmed=flags.any { it==null } && originalTotal>0
         val skippedTotal=skipped+flags.count { it==true }
         val notes=mapOf(SKIPPED_OUTLINES_KEY to skippedTotal.toString(),UNCONFIRMED_OUTLINES_KEY to unconfirmed.toString())
         return VectorArt.Result(EmbPattern(pattern.stitches,pattern.threads,pattern.metadata+notes,pattern.warnings),

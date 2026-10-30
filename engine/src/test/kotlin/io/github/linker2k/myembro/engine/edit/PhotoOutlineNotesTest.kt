@@ -19,9 +19,9 @@ class PhotoOutlineNotesTest {
     private fun fill(r:ShapeRegion)=GeneratedPatternProcessor.fromGroups(
         ShapeBlockRenderer.generate(VectorArt.RegionInput(r.id,r.paths,r.color,null),r.stitch).groups,
         pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
-    private fun base(regions:List<ShapeRegion>,fragments:Map<String,EmbPattern>,skipped:Int)=
+    private fun base(regions:List<ShapeRegion>,fragments:Map<String,EmbPattern>,skipped:Int?)=
         RegionOrderPatterns.compose(regions.map { it.id },fragments,EmbPattern(emptyList(),emptyList(),
-            mapOf(PhotoShapeRenderer.SKIPPED_OUTLINES_KEY to skipped.toString())))
+            skipped?.let { mapOf(PhotoShapeRenderer.SKIPPED_OUTLINES_KEY to it.toString()) } ?: emptyMap()))
 
     @Test fun alreadyBlockedFillIsNotBlamedOnAnOutlineAndOutputStaysFillOnly() {
         val (regions,fragments)=fixture()
@@ -72,5 +72,13 @@ class PhotoOutlineNotesTest {
         assertEquals("false",all.pattern.metadata[PhotoShapeRenderer.UNCONFIRMED_OUTLINES_KEY])
         val noneSkipped=PhotoShapeRenderer.render(PhotoShapeSource(base(regions,fragments,0),fragments),regions,overrides,30.0)
         assertEquals("false",noneSkipped.pattern.metadata[PhotoShapeRenderer.UNCONFIRMED_OUTLINES_KEY])
+    }
+
+    @Test fun photoFromBeforeFillOutlinesShowsNoUnconfirmedNote() {
+        val (regions,fragments)=fixture()
+        val source=PhotoShapeSource(base(regions,fragments,null),fragments)
+        val result=PhotoShapeRenderer.render(source,regions,mapOf(regions.first().id to BlockStitch(type=BlockStitch.Type.RUNNING)),30.0)
+        assertEquals("0",result.pattern.metadata[PhotoShapeRenderer.SKIPPED_OUTLINES_KEY])
+        assertEquals("false",result.pattern.metadata[PhotoShapeRenderer.UNCONFIRMED_OUTLINES_KEY])
     }
 }

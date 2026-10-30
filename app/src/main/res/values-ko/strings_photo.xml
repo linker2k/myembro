@@ -93,5 +93,5 @@
     <string name="photo_texture_progress">실 그림 텍스처 만드는 중 · %1$d%%</string>
     <string name="photo_texture_stitch_limit">땀 수가 너무 많아요: 크기를 줄이거나 디테일을 거침으로 바꿔 보세요</string>
     <string name="photo_density_location">밀집 주의: 바늘 %5$d회 · 왼쪽 위 기준 x %1$s–%2$s · y %3$s–%4$s. 저장·전송할 수 있어요.</string>
-    <string name="photo_skipped_outlines_unconfirmed">이전 사진 영역의 외곽 생략 수는 미확인입니다.</string>
+    <string name="photo_skipped_outlines_unconfirmed">원래 사진에서도 외곽이 빠진 곳이 있을 수 있습니다. 예전 버전에서 만든 사진이라 몇 곳인지 셀 수 없습니다.</string>
 </resources>
