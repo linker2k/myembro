@@ -10,8 +10,15 @@ import io.github.linker2k.myembro.engine.model.*
 object TatamiLettering {
     const val MIN_HEIGHT_MM=5.0
     const val MAX_HEIGHT_MM=90.0
+    /** Below this width a satin becomes RUNNING. Basis: unverified (not documented; Ink/Stitch min_satin_stroke_width is 1.0). */
     const val MIN_SATIN_WIDTH_MM=0.9
+    /**
+     * Largest satin width. Basis: corpus satin crossing p95. "Width" here is the maximum separation between
+     * the two satin rails (or the maximum inscribed diameter of a logo/image region, see StitchTypeRule).
+     * It is not the width of a writing stroke.
+     */
     const val MAX_SATIN_WIDTH_MM=6.0
+    /** [widthMm] is the maximum rail separation / inscribed diameter. Wider than 6.0 -> FILL, narrower than 0.9 -> RUNNING. */
     fun methodForWidth(widthMm:Double):StitchStyle {
         require(widthMm.isFinite() && widthMm>=0)
         return when { widthMm<MIN_SATIN_WIDTH_MM -> StitchStyle.RUNNING

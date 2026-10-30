@@ -79,6 +79,7 @@ object SatinColumn {
             maxOf(left.maxOf { a -> factory.createPoint(org.locationtech.jts.geom.Coordinate(a.x,a.y)).distance(r) },
                 right.maxOf { b -> factory.createPoint(org.locationtech.jts.geom.Coordinate(b.x,b.y)).distance(l) })
         }
+        // width = maximum distance between the two rails (not a writing-stroke width); above 6.0mm -> fill.
         if(TatamiLettering.methodForWidth(if(kotlin.math.abs(width-6.0)<1e-9) 6.0 else width)==StitchStyle.FILL)
             return TatamiLettering.generateGlyphs(listOf(OutlineGlyph(listOf(leftRail+rightRail.asReversed()),thread)))
         val groups = if (left.size >= 2 && right.size >= 2)

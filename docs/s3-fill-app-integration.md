@@ -15,6 +15,13 @@ TatamiFill/FillRouting·InkAutoFill adapter and the main S1 contract.
   if explicit widthMm exceeds 6.0mm, sends the rail outline to the same fill.
 - Boundary rule is the coordinator-adopted auto-rules.md range 0.9–6.0mm(inclusive).
   Tests methodForWidth: below 0.9=RUNNING,0.9~6.0=SATIN,above 6.0=FILL.
+
+Clarification: "width" here means the largest distance between the two satin rails
+(or the largest inscribed diameter of a logo/image region). It is not a writing-stroke width.
+The basis of 6.0mm is the corpus satin crossing p95. The basis of 0.9mm is unverified
+(Ink/Stitch min_satin_stroke_width is 1.0). TrueType outline text goes to FILL because
+a TTF outline has no satin rails and a rail extractor is not verified, not because of a width.
+Hangul-only text uses centerline satin instead.
   Does not newly approve narrow satin outside existing verified profiles.
 - Automatic lettering displays `자동 · 채우기`; the height slider displays `채우기 높이`.
   Height is 5–90mm; asserts both endpoints equal the actual size_grid_mm minimum/maximum in the sweep JSON.
