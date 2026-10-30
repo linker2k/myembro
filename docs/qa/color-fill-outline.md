@@ -1,4 +1,4 @@
-# Single-pass same-color outline after color and silhouette fill
+# Two-pass staggered same-color outline after color and silhouette fill
 
 Base: main `51f0441`. Initial scope: `ColorDrawingPipeline`. Updated 2026-10-28 to include filled `RedworkPipeline` silhouettes; vector/emoji, texture and the separate OUTLINE mode are unchanged.
 
@@ -7,7 +7,8 @@ interior rings. The existing `Stroke` port generates the stitches; there is no n
 routing, running-stitch or lock algorithm. Its Ink/Stitch v3.3.0 source attribution remains
 in `Stroke.kt` and `StrokeParameters.kt` (upstream commit
 `b0edd96311ece82ee48816dc93466274b12c2a9c`). Parameters are `repeats=1`,
-`bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.0]`; other defaults are unchanged.
+`bean_stitch_repeats=[0]`, `running_stitch_length_mm=[1.2]`; other defaults are unchanged.
+Since 2026-10-30 each ring is sewn twice (see the two-pass decision below).
 The same color and region ownership tags are retained, without an added color block.
 
 User decision 2026-10-28: use one running pass (Ink/Stitch default), not three bean passes. Manager measurements in `/tmp/myembro-p7-freq` found peaks >=16 in 2–3% with fill alone (max 16–19), 17% with one pass (max 19), and 66% with three passes (max 29). Silhouettes reuse `ColorFillOutline.stitchGroups` and `select` with whole-region fill followed by the existing `PhotoOutline.route` order, including holes; no expansion is applied to their outlines. Existing photo extent fitting and final PES checks remain.
@@ -20,6 +21,47 @@ density cell. Measured on the repository images `example-logo-flat.png`,
 (18 outputs): stitches +4–6%, maximum needles per 0.5mm cell unchanged or +1 to +3
 (highest 25, below the 30 limit), cells with 16+ needles unchanged or fewer, skipped outlines 0,
 blocked outputs 0, for both lengths.
+User decision 2026-10-30 (supersedes the 1.0mm single pass): **two passes of the 1.2mm
+Ink/Stitch run, the second staggered by half a stitch.** Pass 1 is the unchanged `Stroke`
+running stitch at 1.2mm with its locks. Pass 2 continues without a jump or trim and re-phases
+pass 1: its needles are the midpoints of pass 1's stitches (0.6mm along pass 1's own stitch
+line), ending at the first midpoint to close the ring, so it never uses a pass-1 hole. The
+effective penetration spacing is about 0.6mm; the user's estimate is 1–2 extra needles per
+0.5mm density cell. No new running-stitch algorithm, same color, region tags and selection.
+Color, silhouette and block-edited photo regions all use `ColorFillOutline.stitchGroups`.
+
+Measured 2026-10-30 (temporary engine test, removed): repository images resized to 192px wide,
+color = `ColorDrawingPipeline.trace(...,4)` + `generate(preview,HoopSpec.H100)`, silhouette =
+`RedworkPipeline.trace` (alpha<128 → white, RGB24) + `generate(...,photoMode=true)`. Max cell =
+most STITCH commands in one 0.5mm cell (`floorDiv(x,5)`, `floorDiv(y,5)`); ≥16 = cells with 16+;
+block = `SewoutCheck.checkPes` blocking. Old = 1.0mm × 1 (main `9742b1b`), new = 1.2mm × 2.
+
+| Image | mm | Mode | Stitches old → new | Skipped | Max cell | Cells ≥16 | Block |
+|---|---:|---|---:|---:|---:|---:|---|
+| example-logo-flat | 40 | color | 1989 → 2190 | 0 → 0 | 7 → 7 | 0 → 0 | PASS |
+| example-logo-flat | 40 | silhouette | 2006 → 2206 | 0 → 0 | 6 → 8 | 0 → 0 | PASS |
+| example-logo-flat | 60 | color | 3453 → 3749 | 0 → 0 | 6 → 7 | 0 → 0 | PASS |
+| example-logo-flat | 60 | silhouette | 3473 → 3769 | 0 → 0 | 5 → 8 | 0 → 0 | PASS |
+| example-logo-flat | 90 | color | 6303 → 6742 | 0 → 0 | 6 → 7 | 0 → 0 | PASS |
+| example-logo-flat | 90 | silhouette | 6286 → 6723 | 0 → 0 | 7 → 8 | 0 → 0 | PASS |
+| launcher-icon-artwork | 40 | color | 2701 → 3092 | 0 → 0 | 20 → 23 | 1 → 1 | PASS |
+| launcher-icon-artwork | 40 | silhouette | 1874 → 2095 | 0 → 0 | 9 → 10 | 0 → 0 | PASS |
+| launcher-icon-artwork | 60 | color | 5261 → 5975 | 0 → 0 | 11 → 13 | 0 → 0 | PASS |
+| launcher-icon-artwork | 60 | silhouette | 3069 → 3391 | 0 → 0 | 10 → 13 | 0 → 0 | PASS |
+| launcher-icon-artwork | 90 | color | 13030 → 14730 | 0 → 0 | 15 → 15 | 0 → 0 | PASS |
+| launcher-icon-artwork | 90 | silhouette | 5286 → 5763 | 0 → 0 | 10 → 12 | 0 → 0 | PASS |
+| readme-banner | 40 | color | 1050 → 1230 | 0 → 0 | 15 → 16 | 0 → 1 | PASS |
+| readme-banner | 40 | silhouette | 1811 → 2083 | 0 → 0 | 13 → 18 | 0 → 2 | PASS |
+| readme-banner | 60 | color | 2129 → 2470 | 0 → 0 | 11 → 12 | 0 → 0 | PASS |
+| readme-banner | 60 | silhouette | 2661 → 3052 | 0 → 0 | 16 → 19 | 1 → 2 | PASS |
+| readme-banner | 90 | color | 5418 → 6212 | 0 → 0 | 11 → 14 | 0 → 0 | PASS |
+| readme-banner | 90 | silhouette | 4101 → 4638 | 0 → 0 | 14 → 16 | 0 → 1 | PASS |
+
+Stitches +7–17%, max cell +0 to +5 (highest 23, below the >30 block), skipped 0, blocked 0.
+Pass-2 vs pass-1 holes (color, 60mm, all rings): 0 exact coincidences in 1611 pass-2 needles;
+after rounding to 0.1mm units, 3 pass-2 needles land on a pass-1 needle of a *different part*
+of the same ring where the ring folds back near itself (closest 0.012mm); no 0-length stitch.
+
 The earlier corpus note: The local analysis `/tmp/myembro-overlap/REPORT.md` reports 45 running-outline
 candidates and 7 satin candidates among 334 files; 72/74 detected outlines follow fill.
 Personal corpus files are not distributed with this change.

@@ -38,7 +38,7 @@ object RedworkPipeline {
     /**
      * Caller supplies a known background pixel; no unvalidated automatic polarity heuristic.
      * Traces boundaries into filled regions with holes, then source-default tatami/underlay.
-     * Filled silhouettes include the same optional single-pass outline as color drawings.
+     * Filled silhouettes include the same optional two-pass staggered outline as color drawings.
      * widthMm is the full bitmap width; aspect ratio and placement about the hoop center are preserved.
      */
     fun generate(

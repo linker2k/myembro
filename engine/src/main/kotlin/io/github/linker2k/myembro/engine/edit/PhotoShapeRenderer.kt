@@ -24,7 +24,7 @@ internal object PhotoShapeRenderer {
         },r.color,
             widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id) }
         if(overrides.isEmpty()) return VectorArt.Result(source.pattern,parts,1.0,regionPatterns=source.fragments)
-        // Overridden fills get the same one-pass outline as the original photo route (ColorFillOutline).
+        // Overridden fills get the same two-pass staggered outline as the original photo route (ColorFillOutline).
         val outlined=mutableMapOf<String,EmbPattern>()
         val fragments=regions.associate { r ->
             val settings=overrides[r.id]

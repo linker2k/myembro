@@ -17,16 +17,29 @@ internal object ColorFillOutline {
     // User decision 2026-10-28: Ink/Stitch running default (one pass).
     // /tmp/myembro-p7-freq: fill-only >=16 peaks 2–3% (max 16–19),
     // one pass 17% (max 19), three passes 66% (max 29).
-    // User decision 2026-10-30: 1.0mm (the corpus median 1.655mm looked too sparse). A 0.5mm density
-    // cell gains about one outline needle; docs/qa/color-fill-outline.md has the 1.655 vs 1.0 measurements.
+    // User decision 2026-10-30 (first): 1.0mm, one pass (the corpus median 1.655mm looked too sparse).
+    // User decision 2026-10-30 (current): two passes of the 1.2mm Ink/Stitch run, the second staggered
+    // by half a stitch so its needles fall between the first pass's needles (effective spacing ~0.6mm,
+    // about 1–2 extra needles per 0.5mm density cell). docs/qa/color-fill-outline.md has the measurements.
     val parameters=StrokeParameters(bean_stitch_repeats=listOf(0),repeats=1,
-        running_stitch_length_mm=listOf(1.0))
+        running_stitch_length_mm=listOf(1.2))
 
+    /** Per ring: pass 1 is the unchanged Ink/Stitch running stitch (with its locks); pass 2 continues
+     * without a jump along pass 1's own stitch line, shifted by half a stitch: its needles are the
+     * midpoints of pass 1's stitches, ending at the first midpoint again to close the ring.
+     * No new running-stitch algorithm: pass 2 only re-phases pass 1's points.
+     */
     fun stitchGroups(polygon:Polygon,thread:EmbThread):List<StitchGroup> {
         val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
         return Stroke(rings.map { ring -> ring.coordinates.map {
             Point(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM)
-        } },thread,parameters).toStitchGroups(null)
+        } },thread,parameters).toStitchGroups(null).map { group -> group.copy(stitches=withStaggeredPass(group.stitches)) }
+    }
+
+    internal fun withStaggeredPass(first:List<Stitch>):List<Stitch> {
+        if(first.size<2) return first
+        val second=first.zipWithNext { a,b -> a.copy(x=(a.x+b.x)/2,y=(a.y+b.y)/2) }
+        return first+second+second.first()
     }
 
     data class Outline(val afterGroup:Int,val region:Int,val groups:List<StitchGroup>)

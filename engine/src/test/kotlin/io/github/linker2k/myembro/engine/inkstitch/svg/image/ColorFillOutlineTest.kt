@@ -15,24 +15,37 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class ColorFillOutlineTest {
-    @Test fun exteriorAndHoleFollowTheRunningPortOnceInSourceDirection() {
+    @Test fun exteriorAndHoleRunTwiceWithTheSecondPassStaggeredByHalfAStitch() {
         val polygon=WKTReader().read("POLYGON ((0 0,200 0,200 200,0 200,0 0),(50 50,50 150,150 150,150 50,50 50))") as Polygon
         val thread=PecThreads.SET.filterNotNull().first()
         val actual=ColorFillOutline.stitchGroups(polygon,thread)
         val rings=listOf(polygon.exteriorRing,polygon.getInteriorRingN(0))
-        val expected=Stroke(rings.map { ring -> ring.coordinates.map { SP(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread,
-            StrokeParameters(repeats=1,bean_stitch_repeats=listOf(0),running_stitch_length_mm=listOf(1.0))).toStitchGroups(null)
+        val firstPass=Stroke(rings.map { ring -> ring.coordinates.map { SP(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread,
+            StrokeParameters(repeats=1,bean_stitch_repeats=listOf(0),running_stitch_length_mm=listOf(1.2))).toStitchGroups(null)
         assertEquals(2,actual.size)
-        assertEquals(expected.map { it.stitches },actual.map { it.stitches })
-        actual.forEach { group ->
+        actual.forEachIndexed { index,group ->
             assertEquals(thread,group.color)
-            // A rectangle is traversed in the source direction once, without bean backtracking.
-            val points=group.stitches
-            val length=points.zipWithNext().sumOf { (a,b) -> kotlin.math.hypot(b.x-a.x,b.y-a.y) }
-            val ring=rings[actual.indexOf(group)]
+            val first=firstPass[index].stitches
+            val n=first.size
+            // Pass 1 is the unchanged Ink/Stitch 1.2mm run; pass 2 follows without a jump.
+            assertEquals(first,group.stitches.subList(0,n))
+            assertEquals(2*n,group.stitches.size)
+            val second=group.stitches.subList(n,2*n)
+            for(i in 0 until n-1) {
+                assertEquals((first[i].x+first[i+1].x)/2,second[i].x,1e-9)
+                assertEquals((first[i].y+first[i+1].y)/2,second[i].y,1e-9)
+            }
+            assertEquals(second.first(),second.last())
+            // No pass-2 needle uses a pass-1 hole; no 0-length stitch; every stitch <= 1.2mm.
+            val holes=first.map { it.x to it.y }.toSet()
+            assertTrue(second.none { (it.x to it.y) in holes })
+            group.stitches.zipWithNext().forEach { (a,b) ->
+                val mm=kotlin.math.hypot(b.x-a.x,b.y-a.y)/PIXELS_PER_MM
+                assertTrue(mm>0.0 && mm<=1.2+1e-6,"stitch length $mm")
+            }
+            val ring=rings[index]
+            val length=first.zipWithNext().sumOf { (a,b) -> kotlin.math.hypot(b.x-a.x,b.y-a.y) }
             assertEquals(ring.length/10*PIXELS_PER_MM,length,1e-6)
-            assertEquals(points.map { it.x to it.y }.distinct().size,points.size-1)
-
         }
     }
     @Test fun cumulativeDensityRejectsOnlyOptionalOutline() {
