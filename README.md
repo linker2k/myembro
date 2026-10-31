@@ -79,10 +79,10 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Underlay and pull compensation.** Fill uses Ink/Stitch's default underlay. Satin lettering follows the font's settings; center-run and zigzag underlay and pull compensation are supported, rather than enabled for every font.
-- **Jump trims.** When generated stitches jump to a separate part after sewing, the PES includes a TRIM command. Lettering uses Ink/Stitch's `collapse_len = 3.0` to sew short connections under 3mm unless the font requests a break; whether a trim actually cuts the thread depends on the machine.
-- **Locks.** Ink/Stitch's default `half_stitch` locks are added at thread starts and ends, including before and after trims. Missing locks block saving and sending of app-generated designs; lock positions are automatic to keep these safety rules intact.
-- **Block editing.** Change each region's stitch type (fill, satin or running), automatic/manual direction and sewing order. The engine supports row-spacing changes, but the current screen offers only Normal density.
+- **Underlay.** Fill sews an underlay first, as Ink/Stitch does by default, then fills over it. Satin lettering uses the underlay and pull compensation settings stored in the font file. Korean satin lettering has no underlay and no pull compensation.
+- **Moving to a separate part.** After one part is finished and before the needle moves to a separate part, the file gets a thread-cut command. Whether the thread is really cut depends on whether your machine has a thread cutter. In lettering, moves shorter than 3mm are not cut and are sewn through; only the places the font marks as breaks are cut. Korean satin lettering is cut between separate pieces.
+- **Lock stitches.** Ink/Stitch's default lock stitches are added where the thread starts and ends, and before and after each thread cut. If a design the app made is missing a lock stitch, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
+- **Block editing.** For each region you can change the stitch type (Fill, Satin or Running), the fill texture (Basic, Pattern, Contour or Circular), the direction (Auto, or a Manual angle) and the sewing order. Density offers only Normal for now; Dense and Sparse are coming in a later version.
 
 ## Safety checks
 
@@ -104,9 +104,9 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Planned
 
-- Measure width lost in real SE400 sew-outs before changing pull compensation; no fabric presets until measurements support them.
-- Draw a line on the canvas to set a block's stitch angle.
-- Direct editing of outline points (nodes) is a later candidate.
+- Sew on a real SE400, measure how much narrower satin comes out, then add pull compensation based on those measurements. No per-fabric settings until then.
+- Draw a line on the screen to set a block's stitch angle.
+- Moving the points of an outline one by one is a later candidate.
 
 ## For developers
 
