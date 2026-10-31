@@ -183,12 +183,6 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         load { file.name to file.readBytes() }
     }
 
-    fun openSample() {
-        openedFile = null
-        openedFileStamp = null
-        load { "flower.pes" to getApplication<Application>().assets.open("samples/flower.pes").use { it.readBytes() } }
-    }
-
     /** Keep the selected design across the document picker and configuration changes. */
     fun prepareSave(): String? {
         if (refuseBlockedExport()) return null

@@ -1,6 +1,6 @@
 # Bundled sample design licenses
 
-Checked 2026-10-22. The pack manifest lists every installed file, source, license, technique, dimensions, stitch count and SHA-256. Only `sample_*.pes` files are installed; the legacy `flower.pes` viewer demo is unchanged.
+Checked 2026-10-22. The pack manifest lists every installed file, source, license, technique, dimensions, stitch count and SHA-256. Only `sample_*.pes` files are installed.
 
 ## Original myembro designs — CC0-1.0
 

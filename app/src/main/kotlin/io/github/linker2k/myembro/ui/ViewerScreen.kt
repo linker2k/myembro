@@ -181,7 +181,7 @@ private fun ViewerContent(
             val data = vm.render
             when {
                 vm.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                data == null -> EmptyState(vm.error, onOpenFile, vm::openSample)
+                data == null -> EmptyState(vm.error, onOpenFile)
                 else -> Viewer(vm, data)
             }
         }
@@ -213,7 +213,7 @@ private fun ViewerContent(
 }
 
 @Composable
-private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () -> Unit) {
+private fun EmptyState(error: String?, onOpenFile: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -238,8 +238,6 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
         }
         Spacer(Modifier.height(24.dp))
         Button(onClick = onOpenFile, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_file)) }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onOpenSample, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_sample)) }
     }
 }
 
