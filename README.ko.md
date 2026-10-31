@@ -45,9 +45,11 @@
 
 ## 설치
 
-1. [최신 릴리스](https://github.com/linker2k/myembro/releases/latest)를 엽니다.
-2. `.apk` 파일을 안드로이드 폰에 내려받습니다.
-3. 파일을 열고, 폰이 물으면 이 출처의 설치를 허용합니다.
+1. 안드로이드 폰에서 [앱 다운로드](https://github.com/linker2k/myembro/releases/latest/download/myembro.apk)를 누릅니다.
+2. 받은 파일(`myembro.apk`)을 엽니다.
+3. 폰이 물으면 이 출처의 설치를 허용합니다.
+
+지난 버전과 바뀐 내용은 [릴리스 페이지](https://github.com/linker2k/myembro/releases)에 있습니다.
 
 ### 0.3.x에서 베타로 옮기기
 

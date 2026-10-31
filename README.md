@@ -45,9 +45,11 @@ When connected, the machine looks to the phone like a small USB disk. myembro wr
 
 ## Install
 
-1. Open the [latest release](https://github.com/linker2k/myembro/releases/latest).
-2. Download the `.apk` file to your Android phone.
-3. Open it and allow installing from this source when the phone asks.
+1. On your Android phone, tap [Download the app](https://github.com/linker2k/myembro/releases/latest/download/myembro.apk).
+2. Open the downloaded file (`myembro.apk`).
+3. Allow installing from this source when the phone asks.
+
+Older versions and change notes are on the [releases page](https://github.com/linker2k/myembro/releases).
 
 ### Moving from 0.3.x to the beta
 
