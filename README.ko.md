@@ -7,7 +7,7 @@
 **안드로이드 폰에서 자수 도안을 만들고 Brother 자수기로 보내는 앱입니다.**
 무료 오픈소스입니다.
 
-현재 버전: **v0.4.0-beta.3 (베타)**
+[![최신 버전](https://img.shields.io/github/v/release/linker2k/myembro?include_prereleases&label=%EC%B5%9C%EC%8B%A0%20%EB%B2%84%EC%A0%84)](https://github.com/linker2k/myembro/releases)
 
 > ### ⬇️ [앱 다운로드 (안드로이드)](https://github.com/linker2k/myembro/releases/latest/download/myembro.apk)
 > 휴대폰에서 누르면 바로 받아집니다. 받은 파일을 열어 설치하세요. 자세히: [설치 방법](#설치)
