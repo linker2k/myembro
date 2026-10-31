@@ -79,12 +79,12 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Underlay.** Fills get an underlay first, as in Ink/Stitch's defaults, and the fill is sewn over it. Satin lettering uses the underlay and pull compensation stored in the font. Korean satin lettering uses neither.
-- **Travel inside a fill.** When a fill area splits into several sections, the thread is not cut between them. The needle travels to the next section under an area that has not been filled yet, so the travel stitches end up hidden (Ink/Stitch's Underpath).
-- **Korean satin lettering.** The centerline of each letter becomes a satin column (Ink/Stitch's Convert Line to Satin). Within a group of touching strokes the thread is not cut, and travel runs under parts that will be covered later (Ink/Stitch's Auto-Route Satin Columns). Stroke groups are sewn in basic stroke order: top-left to bottom-right.
+- **Underlay.** Fills get an underlay first, and the fill is sewn over it. Satin lettering uses the underlay and pull compensation set in the font. Korean satin lettering uses neither.
+- **Travel inside a fill.** When a fill area splits into several sections, the thread is not cut between them. The needle travels to the next section under an area that has not been filled yet, so the travel stitches end up hidden.
+- **Korean satin lettering.** Each letter is sewn in satin along the middle of its strokes. Within a group of touching strokes the thread is not cut, and travel runs under parts that will be covered later. Stroke groups are sewn in basic stroke order: top-left to bottom-right.
 - **Separate pieces in photos.** Separate pieces are sewn nearest first, which shortens the thread that jumps between them.
 - **Jumps between parts.** Before the needle jumps to a separate part, the file gets a trim command. Whether the thread is actually cut depends on your machine. In lettering, jumps shorter than 3mm are sewn through instead of trimmed, except where the font marks a break. Korean satin lettering is trimmed only between stroke groups.
-- **Lock stitches.** Ink/Stitch's default lock stitches go where the thread starts and ends and on both sides of every trim. If a design made in the app is missing one, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
+- **Lock stitches.** Lock stitches go where the thread starts and ends and on both sides of every trim. If a design made in the app is missing one, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
 - **Block editing.** For each region you can change the stitch type (Fill, Satin or Running), fill texture (Basic, Pattern, Contour or Circular), direction (Auto or a manual angle) and sewing order. Density is Normal only for now; Dense and Sparse come in a later version.
 
 ## Safety checks
