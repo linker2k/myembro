@@ -91,11 +91,26 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     2 -> R.string.photo_progress_trace
                     else -> R.string.photo_progress_stitches
                 }))
-                Text(stringResource(R.string.photo_elapsed,elapsed),style=MaterialTheme.typography.bodySmall)
-                Text(stringResource(if(vm.step==2 && vm.style==PhotoMode.OUTLINE) R.string.photo_estimate_outline else if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
+                if (vm.step == 2) {
+                    val progress = vm.generationProgress
+                    if (progress.phase == "pes" || progress.phase == "outline validation")
+                        Text(stringResource(if (progress.phase == "pes") R.string.photo_progress_check else R.string.photo_progress_outline_check))
+                    progress.totalRegions?.let { total ->
+                        Text(stringResource(R.string.photo_regions_progress, progress.completedRegions ?: 0, total))
+                    }
+                    progress.stitches?.let { count -> Text(stringResource(R.string.photo_stitches_progress, count)) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.photo_elapsed, vm.generationElapsedMs / 1000), style = MaterialTheme.typography.bodySmall)
+                        if (vm.generationNeedsDecision) {
+                            TextButton(onClick = vm::extendGeneration) { Text(stringResource(R.string.photo_wait_more)) }
+                            TextButton(onClick = vm::cancel) { Text(stringResource(R.string.photo_stop_generation)) }
+                        }
+                    }
+                    if (vm.generationNeedsDecision) Text(stringResource(R.string.photo_wait_question))
+                } else Text(stringResource(R.string.photo_elapsed, elapsed), style = MaterialTheme.typography.bodySmall)
+                if (!vm.generationNeedsDecision) OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
             }
-            if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
+            if ((vm.step != 2 && elapsed >= 10) || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
                 Text(stringResource(R.string.photo_slow_hint))
                 TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
             }
@@ -247,9 +262,8 @@ private fun CropPreview(vm: PhotoViewModel) {
         val w = minOf(maxWidth, 300.dp * aspect.toFloat())
         Canvas(Modifier.width(w).height(w / aspect.toFloat()).semantics { contentDescription = description }
             .pointerInput(vm) { detectTransformGestures { _, pan, zoom, _ -> vm.transform(zoom, pan.x / size.width, pan.y / size.height) } }) {
-            drawIntoCanvas { canvas -> canvas.nativeCanvas.drawBitmap(bitmap,
-                Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height), RectF(0f, 0f, size.width, size.height),
-                android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)) }
+            drawIntoCanvas { canvas -> drawPhotoCrop(canvas.nativeCanvas, bitmap, crop,
+                size.width, size.height, vm.style == PhotoMode.COLOR) }
             drawRect(accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawCircle(accent, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(7.dp.toPx(), 7.dp.toPx()))
         }

@@ -37,7 +37,6 @@
     <string name="photo_progress_trace">윤곽 찾는 중 · 2/3</string>
     <string name="photo_progress_stitches">땀 만드는 중 · 3/3</string>
     <string name="photo_elapsed">%1$d초 경과</string>
-    <string name="photo_estimate">미리보기 예상 약 2초. 이미지와 기기에 따라 달라집니다.</string>
     <string name="photo_cancel">취소</string>
     <string name="photo_slow_hint">시간이 오래 걸리면 디테일을 낮춰 보세요.</string>
     <string name="photo_lower_detail">디테일 낮추기</string>
@@ -46,13 +45,11 @@
     <string name="photo_separated_preview">2색 분리 미리보기</string>
     <string name="photo_stitches_failed">윤곽은 찾았지만 땀을 만들지 못했습니다. 디테일을 낮추거나 단순한 부분을 잘라 주세요.</string>
     <string name="photo_timed_out">땀 생성 시간이 초과됐습니다. 디테일을 낮추거나 더 작은 부분을 잘라 주세요.</string>
-    <string name="photo_estimate_result">생성 예상 약 10초. 이미지에 따라 달라지며 1분 초과 시 디테일을 낮춰 주세요.</string>
     <string name="photo_style_silhouette">실루엣</string>
     <string name="photo_style_outline">외곽선</string>
     <string name="photo_outline_title">한 색 외곽선</string>
     <string name="photo_outline_file_stem">photo_outline</string>
     <string name="photo_outline_name">사진외곽선</string>
-    <string name="photo_estimate_outline">외곽선 생성 예상 약 2초. 이미지와 기기에 따라 달라집니다.</string>
     <string name="photo_style_color">컬러 그림</string>
     <string name="photo_color_title">컬러 그림 · 2–6색</string>
     <string name="photo_color_count">색 수 · %1$d색</string>
@@ -94,4 +91,11 @@
     <string name="photo_texture_stitch_limit">땀 수가 너무 많아요: 크기를 줄이거나 디테일을 거침으로 바꿔 보세요</string>
     <string name="photo_density_location">밀집 주의: 바늘 %5$d회 · 왼쪽 위 기준 x %1$s–%2$s · y %3$s–%4$s. 저장·전송할 수 있어요.</string>
     <string name="photo_skipped_outlines_unconfirmed">원래 사진에서도 외곽이 빠진 곳이 있을 수 있습니다. 예전 버전에서 만든 사진이라 몇 곳인지 셀 수 없습니다.</string>
+    <string name="photo_regions_progress">영역 %1$d / %2$d개</string>
+    <string name="photo_stitches_progress">지금까지 %1$d땀</string>
+    <string name="photo_progress_check">도안을 점검하고 있어요…</string>
+    <string name="photo_progress_outline_check">윤곽을 점검하고 있어요…</string>
+    <string name="photo_wait_more">1분 더 기다리기</string>
+    <string name="photo_stop_generation">그만두기</string>
+    <string name="photo_wait_question">오래 걸리고 있어요. 더 기다릴까요?</string>
 </resources>

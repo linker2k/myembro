@@ -63,11 +63,6 @@ internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
 
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
-/** Photo window generation limit (texture and color stages), user decision 2026-10-27: 1 minute. */
-internal const val PHOTO_GENERATION_TIMEOUT_MS = 60_000L
-/** The same boundary withTimeout applies: a run lasting the full limit or longer has timed out. */
-internal fun photoGenerationTimedOut(startMs: Long, nowMs: Long) = nowMs - startMs >= PHOTO_GENERATION_TIMEOUT_MS
-
 class PhotoViewModel @JvmOverloads constructor(app: Application,
     private val textureGenerator: ThreadTextureGenerator? = null,
 ) : AndroidViewModel(app) {
@@ -136,6 +131,32 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     var separatedPreview by mutableStateOf<Bitmap?>(null); private set
     var outline by mutableStateOf<RedworkOutline?>(null); private set
     var progressStage by mutableIntStateOf(0); private set
+    var generationElapsedMs by mutableLongStateOf(0L); private set
+    internal var generationProgress by mutableStateOf(PhotoGenerationProgress()); private set
+    private var generationAllowanceMs by mutableLongStateOf(PHOTO_GENERATION_TIMEOUT_MS)
+    internal var generationClock: () -> Long = SystemClock::elapsedRealtime
+    val generationNeedsDecision get() = busy && step == 2 && photoGenerationTimedOut(0, generationElapsedMs, generationAllowanceMs)
+    fun extendGeneration() {
+        if (generationNeedsDecision) generationAllowanceMs = photoExtendedAllowance(generationElapsedMs, generationAllowanceMs)
+    }
+    internal suspend fun <T> runGeneration(version: Int = revision, block: suspend () -> T): T = coroutineScope {
+        val start = generationClock()
+        generationElapsedMs = 0L
+        generationAllowanceMs = PHOTO_GENERATION_TIMEOUT_MS
+        generationProgress = PhotoGenerationProgress()
+        val timer = launch {
+            while (version == revision) {
+                generationElapsedMs = (generationClock() - start).coerceAtLeast(0)
+                delay(100)
+            }
+        }
+        try { block() } finally { timer.cancel() }
+    }
+    private fun generationCheckpoint(version: Int, phase: String) {
+        if (Thread.currentThread().isInterrupted || version != revision) throw InterruptedException()
+        generationProgress = generationProgress.checkpoint(phase)
+    }
+
     private var bytes: ByteArray? = null
     private var work: Job? = null
     private var revision = 0
@@ -253,9 +274,11 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; error = null; step = 2; progressStage = 3; render = null; shapeObject = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
+                val output = runGeneration(version) { runInterruptible(Dispatchers.Default) {
                     val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art, width)
                     val pattern = shape.localPattern()
+                    generationCheckpoint(version, "stitches_ready=${pattern.stitchCount}")
+                    generationCheckpoint(version, "pes")
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
                         SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED))
@@ -280,7 +303,8 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         }
     }
     fun transform(scale: Float, dx: Float, dy: Float) {
-        zoom = (zoom * scale).coerceIn(1f, 4f)
+        val bitmap = source ?: return
+        zoom = (zoom * scale).coerceIn(photoMinimumZoom(bitmap.width, bitmap.height, hoop.width.toDouble() / hoop.height), 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
     }
     fun changeStyle(value: PhotoMode) {
@@ -320,12 +344,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                     val h = if(selectedTexture.enabled) (w / aspect).toInt().coerceAtLeast(1)
                         else if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
                     val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                    // RGB-only engine contract: composite transparent photo pixels onto white paper.
-                    Canvas(scaled).apply {
-                        if(selectedMode!=PhotoMode.COLOR) drawColor(android.graphics.Color.WHITE)
-                        drawBitmap(bitmap, Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height),
-                            Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
-                    }
+                    drawPhotoCrop(Canvas(scaled), bitmap, crop, w.toFloat(), h.toFloat(), selectedMode == PhotoMode.COLOR)
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     val corrected = PhotoCorrections.adjust(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedNoise,selectedContrast,selectedCorrection == PhotoCorrection.OTSU)
                     if (version == revision) {
@@ -404,7 +423,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; progressStage = 3; textureProgress=0f; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
+                val output = runGeneration(version) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR && selectedTexture.enabled) {
@@ -415,17 +434,19 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                             error("Texture generation must not fall back to ordinary fill")
                         }
                     } else if(selectedStyle==PhotoMode.COLOR) {
-                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
-                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) { phase ->
+                            generationCheckpoint(version, phase)
                         }
                         shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
                             getApplication<Application>().getString(photoObjectName(selectedStyle)),generated,widthMm)
                         if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(requireNotNull(traced),
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
-                        if (Thread.currentThread().isInterrupted) throw InterruptedException()
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) { phase ->
+                        generationCheckpoint(version, phase)
                     }.pattern
+                    generationCheckpoint(version, "stitches_ready=${generatedPattern.stitchCount}")
+                    generationCheckpoint(version, "pes")
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced?.contourCount ?: 0}")
                     if(!selectedTexture.enabled && generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null) to shape
                     if(selectedTexture.enabled) {

@@ -147,7 +147,7 @@ You can also share a picture to myembro from another app (gallery, browser, file
 
 ![Result with sew-out check passed](../images/manual/en/09b-photo-result.png)
 
-The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. Making the stitches stops after 1 minute; then try lower detail or a smaller crop. Tap **Edit** to keep editing (including block editing, chapter 3) or **Send to USB** to send it to the machine.
+The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. While stitches are being made, the screen shows elapsed time and measured progress. After 1 minute, choose **Wait 1 more minute** or **Stop**; waiting can be extended again. Tap **Edit** to keep editing (including block editing, chapter 3) or **Send to USB** to send it to the machine.
 
 ## 6. Emoji
 
