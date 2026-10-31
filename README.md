@@ -54,17 +54,6 @@ When connected, the machine looks to the phone like a small USB disk. myembro wr
 
 Older versions and change notes are on the [releases page](https://github.com/linker2k/myembro/releases).
 
-### Moving from 0.3.x to the beta
-
-The beta is signed with a new key, so it cannot install over 0.3.x. Do this once:
-
-1. In the old app, go to **Settings → Backup → Save backup**. Keep the ZIP outside the app.
-2. Uninstall the old myembro.
-3. Install the beta.
-4. Go to **Settings → Backup → Restore ZIP** and pick your backup.
-
-After reinstalling, allow USB folder access again. If you use AI connection (experimental), enter the relay address and APP_KEY again: they are never stored in the backup.
-
 ## Where to start
 
 Open the app and tap **Start a new project**. You can start from a blank hoop, your own design, a photo or drawing, an emoji, or lettering.

@@ -275,8 +275,6 @@ At the top of **Settings**, **Backup** stores designs, projects, downloaded font
 
 **My threads** (under **Threads**): turn it on and tap **Choose threads** to tick the Brother threads you own. Search by name or number. Color drawings then use only your threads. An empty list uses all colors. My threads is kept in the backup.
 
-**Moving from an alpha to the beta:** the beta is signed with the official key, so it cannot be installed over an alpha. Save a backup in the alpha, uninstall it, install the beta and restore the ZIP. Updates from the beta onward install normally.
-
 ## 11. About and known limitations
 
 ![Settings: theme and about](../images/manual/en/16-about.png)
@@ -286,7 +284,6 @@ At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL
 ![Home in dark theme](../images/manual/en/17-home-dark.png)
 
 Known limitations:
-- Moving from an alpha to the beta needs one uninstall/reinstall; back up first.
 - Only the SE400 is tested on a real machine. Other models follow Brother's published specifications.
 
 ## 12. Ask AI
