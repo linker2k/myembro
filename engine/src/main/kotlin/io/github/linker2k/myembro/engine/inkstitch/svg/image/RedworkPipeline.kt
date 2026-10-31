@@ -137,7 +137,7 @@ object RedworkPipeline {
                         it.y * 10 / Units.mmToPixels(1.0)) }, true)
                 }
             }, FillRule.EVEN_ODD)
-            silhouetteGroups(region, thread, hoop, fit={ fitPhotoPattern(it,outline,photoMode) }) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
+            silhouetteGroups(region, thread, hoop, fit={ fitPhotoPattern(it,outline,photoMode) }, progress=checkpoint) { checkpoint("outline validation") }.also { fillOutlines = it }.groups
         }
         require(groups.isNotEmpty()) { "No fill remains at the original tatami defaults" }
         val finished = GeneratedPatternProcessor.fromGroups(groups)
@@ -170,12 +170,18 @@ object RedworkPipeline {
 
     /** Keep each island's original tatami and immediately following unexpanded outline. */
     internal fun silhouetteGroups(region: PolygonRegion, thread: EmbThread, hoop: HoopSpec,
-        fit:(EmbPattern)->EmbPattern={ it }, checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
+        fit:(EmbPattern)->EmbPattern={ it }, progress: (String) -> Unit = {}, checkpoint: () -> Unit = {}): ColorFillOutline.Selection {
         checkpoint()
         val fills=mutableListOf<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>()
-        val ordered=PhotoIslandOrder.polygons(region).mapIndexedNotNull { index,polygon ->
+        val polygons=PhotoIslandOrder.polygons(region)
+        var generatedStitches=0
+        progress("regions=0/${polygons.size};stitches=0")
+        val ordered=polygons.mapIndexedNotNull { index,polygon ->
             checkpoint()
+            progress("stitches")
             val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread)
+            generatedStitches += next.sumOf { it.stitches.size }
+            progress("regions=${index+1}/${polygons.size};stitches=$generatedStitches")
             if(next.isEmpty()) null else {
                 if(fills.isNotEmpty()) fills[fills.lastIndex]=fills.last().copy(trimAfter=true)
                 fills+=next

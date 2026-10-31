@@ -53,6 +53,11 @@ class PhotoContainSmokeInstrumentation : Instrumentation() {
             }
             fun shot(name: String) {
                 waitForIdleSync()
+                val frame = java.util.concurrent.CountDownLatch(1)
+                runOnMainSync { activity.window.decorView.postOnAnimation {
+                    activity.window.decorView.postOnAnimation { frame.countDown() }
+                } }
+                check(frame.await(10, java.util.concurrent.TimeUnit.SECONDS))
                 directory.resolve(name).outputStream().use {
                     check(uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it))
                 }
@@ -67,6 +72,12 @@ class PhotoContainSmokeInstrumentation : Instrumentation() {
             shot("03-next-preview.png")
             runOnMainSync { vm.next() }; ready()
             check(vm.render != null) { "result error=${vm.error}" }
+            val displayDeadline = SystemClock.uptimeMillis() + 10_000
+            while (SystemClock.uptimeMillis() < displayDeadline &&
+                uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText("Generating stitches")?.isNotEmpty() == true) {
+                SystemClock.sleep(50)
+            }
+            check(uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText("Generating stitches")?.isEmpty() == true)
             shot("04-result.png")
             finish(0, Bundle().apply { putString("result", "PHOTO_CONTAIN_PASS zoom=${vm.zoom} stitches=${vm.render!!.pattern.stitchCount}") })
         } catch (failure: Throwable) {

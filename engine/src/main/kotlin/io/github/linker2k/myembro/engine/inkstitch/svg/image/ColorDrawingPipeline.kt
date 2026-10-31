@@ -113,16 +113,25 @@ object ColorDrawingPipeline {
         val clipRegion=if(expandMm==0.0) null else PictureFillMask.closing(preview.colorRegionUnion,expandMm)
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
         val outlines=mutableListOf<ColorFillOutline.Outline>()
-        for(layer in preview.layers) {
+        // Cache the existing ordered polygons once; no change to stitch generation.
+        val layerShapes = preview.layers.map { layer ->
             checkpoint("stitches")
-            val outline=layer.outline;val thread=layer.thread
+            val outline=layer.outline
                 val region=PolygonRegion.fromPaths(outline.paths.flatMap { path ->
                     SvgPath.flatten(path,tolerance=Units.mmToPixels(0.1)).map { line ->
                         Polyline(line.points.map { Point(it.x*10/PIXELS_PER_MM,it.y*10/PIXELS_PER_MM) },true)
                     }
                 },FillRule.EVEN_ODD)
 
-                for(shape in PhotoIslandOrder.polygons(region)) {
+            layer to PhotoIslandOrder.polygons(region)
+        }
+        val totalRegions = layerShapes.sumOf { it.second.size }
+        var completedRegions = 0
+        var generatedStitches = 0
+        checkpoint("regions=0/$totalRegions;stitches=0")
+        for((layer, shapes) in layerShapes) {
+            val thread=layer.thread
+                for(shape in shapes) {
                     checkpoint("widths")
                     val widths=StitchTypeRule.widths(shape,10.0)
                     // Painted areas retain their polygon shape through the same default fill as
@@ -155,6 +164,9 @@ object ColorDrawingPipeline {
                     val sourcePaths=(listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN))
                         .map { ring -> Polyline(ring.coordinates.map { Point(it.x/10.0,it.y/10.0) },true) }
                     regions+=Region(thread,widths,resolved.type ?: method,next.size,resolved.excluded,sourcePaths)
+                    completedRegions++
+                    generatedStitches += next.sumOf { it.stitches.size }
+                    checkpoint("regions=$completedRegions/$totalRegions;stitches=$generatedStitches")
                 }
             }
         val selection=ColorFillOutline.select(groups,outlines,hoop) { checkpoint("outline validation") }

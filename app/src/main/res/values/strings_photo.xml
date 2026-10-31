@@ -37,7 +37,6 @@
     <string name="photo_progress_trace">Finding outlines · 2/3</string>
     <string name="photo_progress_stitches">Generating stitches · 3/3</string>
     <string name="photo_elapsed">%1$d seconds elapsed</string>
-    <string name="photo_estimate">Preview estimate: about 2 seconds. Time varies by image and device.</string>
     <string name="photo_cancel">Cancel</string>
     <string name="photo_slow_hint">Taking longer than expected? Try lower detail.</string>
     <string name="photo_lower_detail">Lower detail</string>
@@ -46,13 +45,11 @@
     <string name="photo_separated_preview">Two-color separation preview</string>
     <string name="photo_stitches_failed">Outlines were found, but stitches could not be generated. Lower detail or try a simpler crop.</string>
     <string name="photo_timed_out">Stitch generation took too long. Lower detail or crop a smaller area.</string>
-    <string name="photo_estimate_result">Generation estimate: about 10 seconds. Time varies; after 1 minute, try lower detail.</string>
     <string name="photo_style_silhouette">Silhouette</string>
     <string name="photo_style_outline">Outline</string>
     <string name="photo_outline_title">Single-color outline</string>
     <string name="photo_outline_file_stem">photo_outline</string>
     <string name="photo_outline_name">Photo outline</string>
-    <string name="photo_estimate_outline">Outline estimate: about 2 seconds. Time varies by image and device.</string>
     <string name="photo_style_color">Color drawing</string>
     <string name="photo_color_title">Color drawing · 2–6 colors</string>
     <string name="photo_color_count">Colors · %1$d</string>
@@ -94,4 +91,11 @@
     <string name="photo_texture_stitch_limit">Too many stitches: reduce the size or try Coarse detail.</string>
     <string name="photo_density_location">Density warning: %5$d needle drops · x %1$s–%2$s · y %3$s–%4$s (from top left). Saving and sending are allowed.</string>
     <string name="photo_skipped_outlines_unconfirmed">Outlines may also have been left out of the original picture. This picture was made in an older version, so the app cannot count them.</string>
+    <string name="photo_regions_progress">Regions %1$d / %2$d</string>
+    <string name="photo_stitches_progress">%1$d stitches made so far</string>
+    <string name="photo_progress_check">Checking the design…</string>
+    <string name="photo_progress_outline_check">Checking outlines…</string>
+    <string name="photo_wait_more">Wait 1 more minute</string>
+    <string name="photo_stop_generation">Stop</string>
+    <string name="photo_wait_question">This is taking a while. Keep waiting?</string>
 </resources>
