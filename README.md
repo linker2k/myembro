@@ -79,13 +79,13 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Underlay.** Fill sews an underlay first, as Ink/Stitch does by default, then fills over it. Satin lettering uses the underlay and pull compensation settings stored in the font file. Korean satin lettering has no underlay and no pull compensation.
-- **Sewing through a fill.** When one region is split into several sections, the thread is not cut between them. To reach the next section, the needle travels under the area that will be filled later, so the travel stitches do not show on top (Ink/Stitch fill's Underpath).
-- **Korean satin lettering.** The centerline of each letter is turned into satin (Ink/Stitch's Convert Line to Satin). Inside a group of touching strokes the thread is not cut, and travel runs under the spots that will be covered later (Ink/Stitch's Auto-Route Satin Columns). Stroke groups follow the basic stroke order (top-left to bottom-right).
-- **Separate pieces in photos.** In photo embroidery, separate pieces are visited nearest first, so less thread travels between them.
-- **Moving to a separate part.** After one part is finished and before the needle moves to a separate part, the file gets a thread-cut command. Whether the thread is really cut depends on whether your machine has a thread cutter. In lettering, moves shorter than 3mm are not cut and are sewn through; only the places the font marks as breaks are cut. Korean satin lettering is cut only between stroke groups.
-- **Lock stitches.** Ink/Stitch's default lock stitches are added where the thread starts and ends, and before and after each thread cut. If a design the app made is missing a lock stitch, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
-- **Block editing.** For each region you can change the stitch type (Fill, Satin or Running), the fill texture (Basic, Pattern, Contour or Circular), the direction (Auto, or a Manual angle) and the sewing order. Density offers only Normal for now; Dense and Sparse are coming in a later version.
+- **Underlay.** Fills get an underlay first, as in Ink/Stitch's defaults, and the fill is sewn over it. Satin lettering uses the underlay and pull compensation stored in the font. Korean satin lettering uses neither.
+- **Travel inside a fill.** When a fill area splits into several sections, the thread is not cut between them. The needle travels to the next section under an area that has not been filled yet, so the travel stitches end up hidden (Ink/Stitch's Underpath).
+- **Korean satin lettering.** The centerline of each letter becomes a satin column (Ink/Stitch's Convert Line to Satin). Within a group of touching strokes the thread is not cut, and travel runs under parts that will be covered later (Ink/Stitch's Auto-Route Satin Columns). Stroke groups are sewn in basic stroke order: top-left to bottom-right.
+- **Separate pieces in photos.** Separate pieces are sewn nearest first, which shortens the thread that jumps between them.
+- **Jumps between parts.** Before the needle jumps to a separate part, the file gets a trim command. Whether the thread is actually cut depends on your machine. In lettering, jumps shorter than 3mm are sewn through instead of trimmed, except where the font marks a break. Korean satin lettering is trimmed only between stroke groups.
+- **Lock stitches.** Ink/Stitch's default lock stitches go where the thread starts and ends and on both sides of every trim. If a design made in the app is missing one, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
+- **Block editing.** For each region you can change the stitch type (Fill, Satin or Running), fill texture (Basic, Pattern, Contour or Circular), direction (Auto or a manual angle) and sewing order. Density is Normal only for now; Dense and Sparse come in a later version.
 
 ## Safety checks
 
@@ -107,9 +107,9 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Planned
 
-- Sew on a real SE400, measure how much narrower satin comes out, then add pull compensation based on those measurements. No per-fabric settings until then.
-- Draw a line on the screen to set a block's stitch angle.
-- Moving the points of an outline one by one is a later candidate.
+- Pull compensation, once test sew-outs on a real SE400 show how much satin narrows. No per-fabric settings until those measurements exist.
+- Setting a block's stitch angle by drawing a line on the screen.
+- Later: editing an outline by moving its points one at a time.
 
 ## For developers
 
