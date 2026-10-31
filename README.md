@@ -79,11 +79,12 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Underlay.** Fills are sewn over an underlay.
-- **Connected sewing.** Within one area or one group of touching strokes, the thread is not cut; it travels under parts that will be covered later. Korean satin follows the basic stroke order (top-left to bottom-right).
-- **Trims.** The thread is cut only when jumping to a separate part, and parts are sewn nearest first to keep jumps short.
-- **Lock stitches.** Added automatically at the start and end and around every trim.
-- **Block editing.** Change the stitch type, texture, direction and order of each region.
+- **Automatic underlay** · laid under every fill.
+- **Connected sewing** · travel stitches get covered later.
+- **Korean satin goes top-left to bottom-right** · basic stroke order.
+- **Trims only between separate parts** · nearest part first.
+- **Automatic lock stitches** · at start, end and around trims.
+- **Type, direction and order per block** · in block editing.
 
 ## Safety checks
 
