@@ -17,6 +17,7 @@ This guide covers myembro v0.4.0-beta.2 (some screenshots show older versions).
 11. [About and known limitations](#11-about-and-known-limitations)
 12. [Ask AI](#12-ask-ai)
 13. [AI connection (experimental)](#13-ai-connection-experimental)
+- [Appendix. How stitches are made](#appendix-how-stitches-are-made)
 
 ## 1. Getting started
 
@@ -339,3 +340,29 @@ What the chatbot can do:
 - Look at a photo you choose: in the editor menu tap **Send a photo to AI** and confirm. The chatbot sees a reduced copy only.
 
 What stays with you: removing objects asks you on the phone first (you have 90 seconds), and saving, sharing and sending to USB are always done by you in the app.
+
+## Appendix. How stitches are made
+
+### Automatic underlay
+
+Before a fill is sewn on top, an underlay goes down first to hold the fabric. Satin lettering uses the underlay and pull compensation set in the font. Korean satin lettering has no underlay and no pull compensation.
+
+### Connected sewing
+
+When one region is split into several sections, the thread is not cut between them. To reach the next section, the needle travels under a spot that is not filled yet, so the travel thread is covered by later stitches and does not show.
+
+### Korean satin, top-left to bottom-right
+
+Korean satin lettering is sewn as satin along the middle line of each stroke. Inside a group of touching strokes the thread is not cut. Groups are sewn in the basic stroke order, from top-left to bottom-right; some letters are really written in a different order. The thread is cut only between groups.
+
+### Trims only between separate parts
+
+A thread-cut command is added only when the needle moves to a separate part. Letters closer than 3mm are sewn through without a cut. Whether the thread is really cut depends on whether your machine has a thread cutter. In photo embroidery, separate pieces are sewn nearest first; in the pictures we tested, this cut the length of thread jumping across by about 16% for silhouettes and about 19% for color drawings.
+
+### Automatic lock stitches
+
+Lock stitches are added where the thread starts and ends and on both sides of every thread cut, so nothing unravels. If a design the app made is missing a lock stitch, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
+
+### Change any block
+
+In **Block editing** you can change each region's stitch type (Fill, Satin or Running), fill texture (Basic, Pattern, Contour or Circular), direction (Auto or Manual) and sewing order. Density offers only **Normal** for now. For how to use it, see [Block editing](#block-editing).

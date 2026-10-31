@@ -86,6 +86,8 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 - **Automatic lock stitches** · start, end and both sides of every trim, so nothing unravels.
 - **Change any block** · stitch type, direction and order, with a tap.
 
+More detail: [user guide appendix](docs/manual/user-guide.md#appendix-how-stitches-are-made)
+
 ## Safety checks
 
 Before you save or send, the app checks every design it makes for five problems that ruin real sew-outs:
