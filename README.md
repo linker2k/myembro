@@ -79,12 +79,12 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Automatic underlay** · laid under every fill.
-- **Connected sewing** · travel stitches get covered later.
-- **Korean satin goes top-left to bottom-right** · basic stroke order.
-- **Trims only between separate parts** · nearest part first.
-- **Automatic lock stitches** · at start, end and around trims.
-- **Type, direction and order per block** · in block editing.
+- **Automatic underlay** · holds the fabric before the fill goes on.
+- **Connected sewing** · travel thread tucks under later stitches instead of sitting on top.
+- **Korean satin, top-left to bottom-right** · strokes are sewn the way you write them.
+- **Trims only between separate parts** · nearest part first, so less thread jumps across.
+- **Automatic lock stitches** · start, end and both sides of every trim, so nothing unravels.
+- **Change any block** · stitch type, direction and order, with a tap.
 
 ## Safety checks
 
@@ -106,9 +106,9 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Planned
 
-- Pull compensation, after measuring real sew-outs on an SE400
-- Setting the stitch angle by drawing a line on the screen
-- Editing outline points directly
+- **Pull compensation** · in progress
+- **Draw a line to set the stitch angle** · planned
+- **Edit outline points directly** · under consideration
 
 ## For developers
 
