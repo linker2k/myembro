@@ -9,6 +9,10 @@ Free and open source.
 
 Current version: **v0.4.0-beta.3 (beta)**
 
+> **Here to use the app?** [⬇️ Get the app (APK)](https://github.com/linker2k/myembro/releases/latest) · [How to install](#install) · [📖 User guide](docs/manual/user-guide.md) · [❓ FAQ](docs/faq.md)
+>
+> This page introduces the app. The user guide walks through every screen.
+
 ![myembro at a glance](docs/images/intro-en.gif)
 
 ## What you can do

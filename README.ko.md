@@ -9,6 +9,10 @@
 
 현재 버전: **v0.4.0-beta.3 (베타)**
 
+> **앱을 쓰려는 분은 여기부터:** [⬇️ 앱 받기(APK)](https://github.com/linker2k/myembro/releases/latest) · [설치 방법](#설치) · [📖 사용 설명서](docs/manual/user-guide.ko.md) · [❓ 자주 묻는 질문](docs/faq.ko.md)
+>
+> 이 페이지는 앱 소개입니다. 화면별 사용법은 사용 설명서에 있습니다.
+
 ![한눈에 보는 myembro](docs/images/intro-ko.gif)
 
 ## 할 수 있는 것
