@@ -1,0 +1,10 @@
+gradle.projectsEvaluated {
+ def app=gradle.rootProject.project(':app')
+ app.kotlin.sourceSets.getByName('testDebug').kotlin.srcDir(System.getenv('MYEMBRO_KANA_PROBE_SOURCE'))
+ app.tasks.withType(Test).configureEach {
+  maxHeapSize='6g'
+  ['hangul.out','hangul.first','hangul.last','hangul.workers','kana.out','kana.fonts'].each {
+   k -> if(app.findProperty(k)!=null)systemProperty k,app.findProperty(k)
+  }
+ }
+}
