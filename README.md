@@ -79,13 +79,11 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 ## How stitches are made
 
-- **Underlay.** Fills get an underlay first, and the fill is sewn over it. Satin lettering uses the underlay and pull compensation set in the font. Korean satin lettering uses neither.
-- **Travel inside a fill.** When a fill area splits into several sections, the thread is not cut between them. The needle travels to the next section under an area that has not been filled yet, so the travel stitches end up hidden.
-- **Korean satin lettering.** Each letter is sewn in satin along the middle of its strokes. Within a group of touching strokes the thread is not cut, and travel runs under parts that will be covered later. Stroke groups are sewn in basic stroke order: top-left to bottom-right.
-- **Separate pieces in photos.** Separate pieces are sewn nearest first, which shortens the thread that jumps between them.
-- **Jumps between parts.** Before the needle jumps to a separate part, the file gets a trim command. Whether the thread is actually cut depends on your machine. In lettering, jumps shorter than 3mm are sewn through instead of trimmed, except where the font marks a break. Korean satin lettering is trimmed only between stroke groups.
-- **Lock stitches.** Lock stitches go where the thread starts and ends and on both sides of every trim. If a design made in the app is missing one, saving and sending are blocked. The app places lock stitches itself; you cannot move them.
-- **Block editing.** For each region you can change the stitch type (Fill, Satin or Running), fill texture (Basic, Pattern, Contour or Circular), direction (Auto or a manual angle) and sewing order. Density is Normal only for now; Dense and Sparse come in a later version.
+- **Underlay.** Fills are sewn over an underlay.
+- **Connected sewing.** Within one area or one group of touching strokes, the thread is not cut; it travels under parts that will be covered later. Korean satin follows the basic stroke order (top-left to bottom-right).
+- **Trims.** The thread is cut only when jumping to a separate part, and parts are sewn nearest first to keep jumps short.
+- **Lock stitches.** Added automatically at the start and end and around every trim.
+- **Block editing.** Change the stitch type, texture, direction and order of each region.
 
 ## Safety checks
 
@@ -107,9 +105,9 @@ If any one is found, saving and sending are blocked. PES files you import are no
 
 ## Planned
 
-- Pull compensation, once test sew-outs on a real SE400 show how much satin narrows. No per-fabric settings until those measurements exist.
-- Setting a block's stitch angle by drawing a line on the screen.
-- Later: editing an outline by moving its points one at a time.
+- Pull compensation, after measuring real sew-outs on an SE400
+- Setting the stitch angle by drawing a line on the screen
+- Editing outline points directly
 
 ## For developers
 
