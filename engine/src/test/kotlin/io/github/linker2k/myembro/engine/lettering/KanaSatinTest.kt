@@ -63,6 +63,9 @@ class KanaSatinTest {
         val satin=KanaSatin.generate(data(1.0),15.0,15.0,thread)
         assertEquals("1",satin.metadata["myembro.kana.satin_marks"])
         assertEquals("0",satin.metadata["myembro.kana.bean_marks"])
+        val aboveBoundary=KanaSatin.generate(data(1.001),15.0,15.0,thread)
+        assertEquals("1",aboveBoundary.metadata["myembro.kana.satin_marks"])
+        assertEquals("0",aboveBoundary.metadata["myembro.kana.bean_marks"])
     }
     @Test fun markPolicyReevaluatesAtHeightAndSurvivesProjectRoundtrip() {
         val source=data(0.75)
