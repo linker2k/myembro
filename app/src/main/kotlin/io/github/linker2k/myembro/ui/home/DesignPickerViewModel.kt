@@ -32,8 +32,8 @@ class DesignPickerViewModel(app: Application) : AndroidViewModel(app) {
         val error: String? = null,
         val modifiedAt: Long = file.lastModified(),
         val byteSize: Long = file.length(),
+        val title: String = file.nameWithoutExtension,
     ) {
-        val title: String get() = file.nameWithoutExtension.removePrefix("sample_").replace('_', ' ')
         val ready: Boolean get() = thumbnail != null && error == null
     }
 
@@ -53,7 +53,7 @@ class DesignPickerViewModel(app: Application) : AndroidViewModel(app) {
                 val files = withContext(Dispatchers.IO) {
                     val app = getApplication<Application>()
                     DesignLibrary(app).list().filterNot(DesignLibrary::isSample).map { Item(it, false) } +
-                        BundledDesigns.files(app).map { Item(it, true) }
+                        BundledDesigns.files(app).map { Item(it, true, title = BundledDesigns.title(app, it)) }
                 }
                 val cache = items.associateBy { it.file }
                 items.clear()

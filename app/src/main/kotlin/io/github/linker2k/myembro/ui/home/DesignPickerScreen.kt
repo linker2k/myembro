@@ -73,11 +73,13 @@ fun DesignPickerScreen(
     onSelect: (File) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Open on the Samples tab: the bundled sample list from Home and the Designs tab. */
+    startWithSamples: Boolean = false,
 ) {
     val vm: DesignPickerViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
     MyembroTheme {
-        DesignPickerContent(vm.items, vm.loading, vm.failed, vm::refresh, onSelect, onBack, modifier)
+        DesignPickerContent(vm.items, vm.loading, vm.failed, vm::refresh, onSelect, onBack, modifier, startWithSamples)
     }
 }
 
@@ -85,10 +87,10 @@ fun DesignPickerScreen(
 @Composable
 private fun DesignPickerContent(
     items: List<DesignPickerViewModel.Item>, loading: Boolean, failed: Boolean, onRetry: () -> Unit,
-    onSelect: (File) -> Unit, onBack: () -> Unit, modifier: Modifier,
+    onSelect: (File) -> Unit, onBack: () -> Unit, modifier: Modifier, startWithSamples: Boolean = false,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    var samples by rememberSaveable { mutableStateOf(false) }
+    var samples by rememberSaveable { mutableStateOf(startWithSamples) }
     val mineScroll = rememberLazyGridState()
     val samplesScroll = rememberLazyGridState()
     val focus = LocalFocusManager.current
@@ -97,7 +99,7 @@ private fun DesignPickerContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.picker_title)) },
+            TopAppBar(title = { Text(stringResource(if (startWithSamples) R.string.home_gallery else R.string.picker_title)) },
                 navigationIcon = { Row {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.settings_back)) }
                     io.github.linker2k.myembro.ui.HomeButton()

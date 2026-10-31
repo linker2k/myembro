@@ -18,7 +18,10 @@ Free and open source.
 
 ## What you can do
 
+- 🎁 **136 sample designs.** Open one from **Sample designs** on Home or **Samples** on the Designs tab and it is copied into your own project to change.
 - 🖼️ **Photo or drawing → embroidery.** Pick a picture and choose silhouette, outline or color drawing (2–6 colors). The preview shows the real thread colors.
+- 🔍 **Photo crop.** Zoom out so the whole picture fits in the crop.
+- 🧵 **Thread colors.** Different colors are never merged into the same thread.
 - 🔤 **Lettering.** Type text in Korean or English. 72 embroidery fonts, plus your own TTF fonts. The app picks a stitch type that sews safely.
 - 😀 **Emoji → embroidery.** Search emoji (Korean words work too) and turn one into a design.
 - ✂️ **Edit.** Place, resize and rotate designs and text on the hoop.

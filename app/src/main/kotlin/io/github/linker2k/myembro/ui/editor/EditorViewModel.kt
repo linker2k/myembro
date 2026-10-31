@@ -493,17 +493,19 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         replaceSession(Project(hoop = supportedHoop(hoop)).add(obj), savedOnDisk = false, selection = setOf(obj.id))
     }
 
-    private fun importObject(file: File) = importDesignObject(file)
+    private fun importObject(file: File, name: String = file.nameWithoutExtension) = importDesignObject(file, name)
 
     /** Viewer entry point: its initial object is the baseline, not an undoable import.
-     * A saved project opens as a project, so its block shapes and layers stay editable. */
-    fun editDesign(file: File) = if (file.extension.equals(ProjectJson.EXTENSION, ignoreCase = true)) openProject(file) else requestReplacement {
+     * A saved project opens as a project, so its block shapes and layers stay editable.
+     * A bundled sample passes its display [name] and [hoop]; the new project is unsaved, the sample stays as is. */
+    fun editDesign(file: File, name: String = file.nameWithoutExtension, hoop: HoopSpec = HoopSpec.H100) =
+        if (file.extension.equals(ProjectJson.EXTENSION, ignoreCase = true)) openProject(file) else requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
-                val obj = withContext(Dispatchers.IO) { importObject(file) }
-                documentName = file.nameWithoutExtension
-                replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)).add(obj),
+                val obj = withContext(Dispatchers.IO) { importObject(file, name) }
+                documentName = name
+                replaceSession(Project(hoop = supportedHoop(hoop)).add(obj),
                     savedOnDisk = false, selection = setOf(obj.id))
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_load_failed, e)

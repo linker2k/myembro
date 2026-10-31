@@ -13,7 +13,7 @@ import kotlin.system.exitProcess
 object AgentScenario {
     val frames = mapOf("H100" to HoopSpec.H100, "H130x180" to HoopSpec.H130x180, "H160x260" to HoopSpec.H160x260)
     fun builtin(name: String, id: String, frame: String): Project {
-        require(name in setOf("sample_heart_running.pes", "myembro_logo.pes")) { "Unknown builtin" }
+        require(name in setOf("sample_71_heart.pes", "myembro_logo.pes")) { "Unknown builtin" }
         require(id.isNotBlank())
         val bytes = requireNotNull(javaClass.getResourceAsStream("/agent/builtins/$name")).use { it.readBytes() }
         return Project(frames.getValue(frame), listOf(StitchObject(id, name, PesReader.read(bytes))))

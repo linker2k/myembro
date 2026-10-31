@@ -16,7 +16,7 @@ class AndroidDesignResolver(context: Context) : DesignResolver {
         listOf(DesignAsset.read("builtin:myembro-logo",app.getString(R.string.library_logo_name),"myembro_logo.pes",
             app.assets.open(DefaultLogoInstaller.ASSET).use { it.readBytes() })) +
             BundledDesigns.files(app).mapNotNull { file -> runCatching {
-                DesignAsset.read("builtin:${file.name}",file.nameWithoutExtension,file.name,file.readBytes())
+                DesignAsset.read("builtin:${file.name}",BundledDesigns.title(app,file),file.name,file.readBytes())
             }.getOrNull() }
     }
     override fun builtins() = bundled.toList()

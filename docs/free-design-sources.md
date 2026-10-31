@@ -41,41 +41,26 @@ Sharing a downloaded PES/PEC/DST or ZIP can add it to the library through `Desig
 [integration notes](free-design-sources-integration.md) identify the specific change points.
 Manifest SEND/SEND_MULTIPLE filters, safe ZIP extraction functions, and unit tests are ready.
 
-## Bundled public design sources(existing sample pack)
-
-This link directory does not change the existing sample pack. Existing public data includes only one
-`spiralbox.pes` derivative under the
-[MIT license](https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/LICENSE)
-of the [pinned EmbroidePy/samples commit](https://github.com/EmbroidePy/samples/tree/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e).
-The same design in different formats was not counted as additional designs.
-Brother Artspira account/device-restricted designs, personal-use-only designs, and files from expired free promotions are not bundled.
-
 ## Our starter pack
 
-26 PES designs (25 original arrangements + one MIT community design), all centered
-within an 86×86 mm area in a 100×100 mm hoop. Original sample artwork is expressly
-CC0; converted Hershey glyphs retain their acknowledgement and Jua font attribution
-is recorded. See [pack licenses](../app/src/main/assets/samples/LICENSES.md),
-[manifest](../app/src/main/assets/samples/manifest.json) and [thumbnail sheet](samples.png).
+136 starter designs: AI-generated
+images, selected and in some cases recolored by people, converted to stitches by myembro and
+dedicated to CC0. The `F*` tattoo-flash designs are redrawn from Smithsonian American Art
+Museum *Tattoo Flash* 1998.84.50A–F (CC0). Most fit a 100×100 mm hoop; the 120×170 mm
+designs need a 130×180 mm hoop (`hoopMm` in the manifest). Per-design prompts, dates and
+edits: [provenance](samples/provenance.json); see also [pack licenses](../app/src/main/assets/samples/LICENSES.md)
+and [manifest](../app/src/main/assets/samples/manifest.json). Display names in Korean and
+English come from `tools/samples/catalog.json`.
 
-`tools/make_samples.py` is offline and reads only checked-in font/PES data. With the
-existing pyembroidery 1.5.1 environment plus local Pillow/fontTools:
+After regenerating the pack, install it again with one command:
 
 ```sh
-PYTHONPATH=/usr/lib/python3/dist-packages /path/to/venv/bin/python tools/make_samples.py
+python3 tools/samples/install_pack.py --pack /tmp/myembro-sample-pack
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Running/triple-running paths target 2.5 mm stitches; scanline fills use 0.4 mm row
-spacing, 3 mm along-row stitches and a 1.5 mm alternating phase. Normal running
-segments target the requested 1.5–4 mm range. Shorter contour-end/corner stitches,
-zero-distance needle entry after a jump, and short 0.4 mm fill turnarounds are
-intentional; no needle-down move exceeds 4 mm. Disconnected travel is trimmed
-before jumping. These are geometric starter designs; fabric/stabilizer and machine
-settings still need an ordinary test sew. The verifier uses our own PesReader.
-
-First launch/first launch after upgrading from the single-flower demo installs the
-whole pack once. Existing user files are preserved. Deleting a sample does not
-make it reappear at next launch. Sample file names start with `sample_` and the
-library shows a localized sample badge. A failed copy leaves no partial PES and is
-retried on the next launch; completed copies are not overwritten.
+Samples are not copied into the user's library. Home shows six fixed picks (manifest
+`order`), and "View all" or the Designs tab's Samples chip opens the full sample list.
+Opening a sample starts a new, unsaved project with that design under its display name
+and hoop; the bundled file is never changed. Sample copies that an earlier version put in
+a user's library are left as they are.
