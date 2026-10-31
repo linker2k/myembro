@@ -27,7 +27,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 
 - **New project** card: shows the default hoop (100×100mm, 4×4in). Tap **Start a new project**.
 - **Recent projects**: saved designs and projects appear here. **View all** opens the full list; **Import design** opens a PES/PEC/DST file from the phone.
-- **Sample designs**: built-in designs you can open right away.
+- **Sample designs**: six of the 136 built-in designs; open any one here, from **View all** or from **Samples** on the Designs tab and it is copied into a new project of your own in the editor.
 - Bottom bar: **Home**, **Designs**, **Create**, **Settings**. The gear at the top right also opens Settings.
 
 ## 2. Starting a new project
@@ -103,6 +103,8 @@ Single-line fonts (for example Hershey Script 1-stroke) offer **Normal** (runnin
 
 Choose **From a photo / drawing** on the new project sheet. The screen has three steps: crop, choose a mode, then the result.
 
+**Step 1 — crop.** You can zoom the picture out until the whole picture fits.
+
 You can also share a picture to myembro from another app (gallery, browser, files). It opens on this same screen. An SVG drawing is used as it is: only the size slider is shown.
 
 **Step 2 — mode.** Choose **Silhouette**, **Outline** or **Color drawing**. Color drawing with 4 colors is selected first.
@@ -120,6 +122,7 @@ You can also share a picture to myembro from another app (gallery, browser, file
 - The preview shows the picture in the actual thread colors.
 - Transparent background is not sewn. The most common color at the edge is treated as background.
 - Colors are matched to Brother threads automatically. If you set **My threads** (chapter 10), only your threads are used.
+- Different colors are never merged into the same thread.
 - Each color area is filled. Next to each other, colors overlap by 0.2mm so no gaps show. The outer edge of the design does not grow.
 - Each filled area gets a single-pass running outline in the same color. If an outline would fail the sewing check, that outline is left out.
 
