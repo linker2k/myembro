@@ -36,7 +36,13 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
         val restored = base
             .withOverrides(data.getValue("blocks").jsonObject.mapValues { decodeBlock(it.value.jsonObject) })
             .withTransform(fields.transform).withVisible(fields.visible)
-        return data["regionOrder"]?.let { restored.withRegionOrder(it.jsonArray.map { v -> v.jsonPrimitive.content }) } ?: restored
+        return data["regionOrder"]?.let {
+            val saved=it.jsonArray.map { v -> v.jsonPrimitive.content }
+            // Newly preserved paint must not renumber old edited blocks or invalidate old saved order.
+            val added=restored.regionOrder.filter { id -> id !in saved }
+            val order=if(added.all { id -> id.startsWith("small-region-") }) saved+added else saved
+            restored.withRegionOrder(order)
+        } ?: restored
     }
     /** Current editable block settings, shared by persistence and tool inspection. */
     fun encodeBlock(b: BlockStitch)=buildJsonObject {

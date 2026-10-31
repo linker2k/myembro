@@ -64,7 +64,7 @@ object VectorArt {
         val paths: List<Polyline> = emptyList(), val regionId: String = "")
     data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
         val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
-    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap())
+    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap(), val droppedSliverCount: Int = 0, val tinyOmittedCount: Int = 0)
 
     /**
      * Flat SVG 1.1 reader: `<g>` nesting with inherited presentation attributes (and `style`),
@@ -240,7 +240,7 @@ object VectorArt {
     /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
     fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true,
         regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null,
-        captureRegions: Boolean = false): Result {
+        captureRegions: Boolean = false, hoop: io.github.linker2k.myembro.engine.edit.HoopSpec = io.github.linker2k.myembro.engine.edit.HoopSpec.H100): Result {
         require(widthMm.isFinite() && widthMm > 0)
         val footprints = art.shapes.map(::footprint)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
@@ -254,7 +254,9 @@ object VectorArt {
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
         val toMm = org.locationtech.jts.geom.util.AffineTransformation.translationInstance(-cx, -cy).scale(scale, scale)
         var excludedCount = 0
+        var tinyOmittedCount = 0
         var regionOrdinal = 0
+        var smallRegionOrdinal = 0
         fun boundaryPaths(area: Geometry) = (0 until area.numGeometries).map { area.getGeometryN(it) }.filterIsInstance<Polygon>()
             .flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
                 .map { ring -> Polyline(ring.coordinates.map { MmPoint(it.x, it.y) }, true) } }
@@ -265,20 +267,23 @@ object VectorArt {
             Stroke(boundaryPaths(area).map { line -> line.points.map { px(it.x, it.y) } }, thread).toStitchGroups(previous())
         /** One region through the shared failure policy (satin → tatami → running → excluded), recorded as a part. */
         fun emit(index: Int, role: String, region: Geometry, thread: EmbThread, w: Double, rgb: Int, preferred: StitchTypeRule.Type,
-            satin: () -> List<StitchGroup>, running: () -> List<StitchGroup> = { outlineGroups(region, thread) }) {
-            val regionId = "region-${regionOrdinal++}"
+            satin: () -> List<StitchGroup>, running: () -> List<StitchGroup> = { outlineGroups(region, thread) }, retainedSmall: Boolean = false) {
+            val regionId = if(retainedSmall) "small-region-${smallRegionOrdinal++}" else "region-${regionOrdinal++}"
             val localPaths = boundaryPaths(toMm.transform(region)).ifEmpty {
                 subpaths(art.shapes[index]).map { line -> Polyline(line.points.map { q ->
                     MmPoint((q.x - cx) * scale, (q.y - cy) * scale)
                 }, line.closed) }
             }
-            val resolved = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
-                ?: StitchTypeRule.generateRegion(preferred, groups) { attempt -> when (attempt) {
+            val override = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
+            val attempted = override
+                ?: if(preferred==StitchTypeRule.Type.RUNNING) SmallRegionStitches.running(running(),hoop)
+                else StitchTypeRule.generateRegion(preferred, groups, hoop=hoop) { attempt -> when (attempt) {
                 StitchTypeRule.Type.SATIN -> satin()
                 StitchTypeRule.Type.TATAMI -> tatamiGroups(region, thread)
                 StitchTypeRule.Type.RUNNING -> running()
             } }
-            if (resolved.excluded) { excludedCount++; return }
+            val resolved=if(override==null && attempted.excluded) SmallRegionStitches.running(running(),hoop) else attempted
+            if (resolved.excluded) { excludedCount++; if(override==null) tinyOmittedCount++; return }
             if (captureRegions) {
                 val tag = "myembro.region:$regionId"
                 fun tagged(lock: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.LockStitch?) =
@@ -295,17 +300,17 @@ object VectorArt {
         /**
          * An area after overlap removal (everything drawn later is cut away, JTS difference): each visible
          * piece is classified by the shared rule. Satin pieces use [RegionSatin] (letter's centerline satin
-         * path); running-width slivers lie under later shapes' edges and are dropped.
+         * path); narrow regions use existing running outlines rather than being dropped.
          */
         fun area(index: Int, role: String, area: Geometry, thread: EmbThread, w: Double, rgb: Int) {
             val later = footprints.drop(index + 1)
             val visible = if (later.isEmpty() || !removeOverlaps) area else area.difference(UnaryUnionOp.union(later))
             for (piece in (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()) {
-                val type = rules.classify(piece, scale)
-                if (type == StitchTypeRule.Type.RUNNING) continue
+                val previousType=rules.classify(piece,scale)
+                val type = SmallRegionStitches.type(StitchTypeRule.maxWidth(piece)*scale,previousType)
                 emit(index, role, piece, thread, w, rgb, type, satin = {
                     RegionSatin.groups(toMm.transform(piece), { x, y -> Point(Units.mmToPixels(x), Units.mmToPixels(y)) }, thread).orEmpty()
-                })
+                }, retainedSmall=previousType==StitchTypeRule.Type.RUNNING)
             }
         }
         art.shapes.forEachIndexed { index, shape ->
@@ -341,6 +346,6 @@ object VectorArt {
         val pattern = if (groups.isEmpty()) EmbPattern(emptyList(), emptyList()) else GeneratedPatternProcessor.fromGroups(if (captureRegions) ownedGroups else groups,
             collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true, lockAtThreadBoundaries = true, omitZeroLengthMotions = true, stitchOwners = owners)
         return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name,
-            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap())
+            "myembro.excluded_regions" to excludedCount.toString(), "myembro.tiny_regions_omitted" to tinyOmittedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap(), 0, tinyOmittedCount)
     }
 }

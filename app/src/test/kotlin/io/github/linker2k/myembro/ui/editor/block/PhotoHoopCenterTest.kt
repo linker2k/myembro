@@ -38,7 +38,7 @@ class PhotoHoopCenterTest {
         assertEquals(result.pattern.stitches,inserted.localPattern().stitches)
         assertEquals(result.pattern.stitchCount,inserted.placedPattern().stitchCount)
         assertEquals(result.pattern.stitchCount,project.flatten().stitchCount)
-        assertTrue(SewoutLimits.placedFits(project.hoop,inserted.placedBounds()!!))
+        assertTrue("source=${result.pattern.bounds} placed=${inserted.placedBounds()} regions=${result.regions.size}",SewoutLimits.placedFits(project.hoop,inserted.placedBounds()!!))
         val sourcePes=PesWriter.write(result.pattern)
         val editorPes=PesWriter.write(project.flatten())
         assertArrayEquals(sourcePes,editorPes)

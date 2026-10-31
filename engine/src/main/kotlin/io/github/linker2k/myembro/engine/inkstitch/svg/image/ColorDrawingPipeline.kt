@@ -12,13 +12,14 @@ import io.github.linker2k.myembro.engine.inkstitch.utils.Point as StitchPoint
 import io.github.linker2k.myembro.engine.io.*
 import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule
+import io.github.linker2k.myembro.engine.inkstitch.svg.SmallRegionStitches
 import io.github.linker2k.myembro.engine.sewout.*
 
 
 /** Two-phase on-device color drawing conversion: tracing never generates stitches. */
 object ColorDrawingPipeline {
-    /** Smallest tested threshold preserving original colors and removing AA/specks in the
-     * 2 original 30mm drawings × 5 area candidates (ColorCleanupSweep). Not a universal guarantee. */
+    /** Legacy cleanup threshold, retained for API compatibility. User policy now preserves small paint;
+     * it is no longer used for merging colors or removing contours. */
     const val MINIMUM_REGION_AREA_MM2 = 3.0
     /** User approved 2026-10-27: /tmp/myembro-expand2/table-closing.md, proxy p50 0.55mm,
      * gap 8.96→5.78%, unchanged extent and PASS gates; 0.20mm² background-hole loss accepted.
@@ -69,8 +70,9 @@ object ColorDrawingPipeline {
         val quantized=ImageQuantizer.quantize(foreground.map { pixels[it] and 0xffffff }.toIntArray(),colorCount)
         val original=IntArray(argb.size) { -1 };val q=quantized.copyIndices()
         foreground.forEachIndexed { i,p -> original[p]=q[i] }
-        val cleaned=ColorRegionCleanup.mergeSmall(width,height,original,
-            (widthMm/width)*(widthMm/width),minAreaMm2)
+        require(minAreaMm2.isFinite() && minAreaMm2>=0)
+        // Legacy area argument remains source-compatible; paint is no longer merged away by area.
+        val cleaned=original
         // One explicit transparent border lets Potrace trace ink touching any crop edge.
         val w=width+2;val h=height+2
         val labels=IntArray(w*h) { p ->
@@ -84,14 +86,14 @@ object ColorDrawingPipeline {
                 val thread=if(myThreads.active) myThreads.nearest(rgb) else if(grayscale) Bt709Grayscale.nearestThread(rgb) else io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
                 try {
                     Layer(color,thread,RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
-                        paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint))
+                        paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint,preserveSmallContours=true))
                 } catch(failure:IllegalArgumentException) {
                     if(failure.message?.startsWith("No contour remains")==true) null else throw failure
                 }
             }
         }
         require(layers.isNotEmpty()) { "No color regions remain" }
-        require(layers.sumOf { it.outline.contourCount }<=maxContours) { "PHOTO_TOO_COMPLEX" }
+        require(layers.sumOf { it.outline.contourBudgetCount }<=maxContours) { "PHOTO_TOO_COMPLEX" }
         val paths=layers.flatMap { it.outline.paths }
         val ink=RedworkOutline("",layers.sumOf { it.outline.contourCount },widthMm,widthMm*height/width,paths,
             layers.sumOf { it.outline.foregroundAreaMm2 })
@@ -109,8 +111,14 @@ object ColorDrawingPipeline {
     }
     internal fun generate(preview:Preview,hoop:HoopSpec,captureRegions:Boolean,checkpoint:(String)->Unit={},includeFillOutlines:Boolean=true,expandMm:Double=DEFAULT_EXPAND_MM):Result {
         require(expandMm.isFinite())
-        // 0 must retain the original, unbuffered/unclipped route byte-for-byte.
-        val clipRegion=if(expandMm==0.0) null else PictureFillMask.closing(preview.colorRegionUnion,expandMm)
+        // Quantize in the original crop's top-left 0.1mm phase, then retain a centered local frame.
+        // At 99.9mm, rounding both +/-49.95 separately can create a 100.0mm span. This is a
+        // sub-grid origin phase, not another hoop margin, shrink or stitch-generator parameter.
+        fun phase(units:Double)=units-kotlin.math.round(units)
+        val phaseX=phase(preview.canvasWidthMm*10*(preview.width-2)/preview.width/2)
+        val phaseY=phase(preview.canvasWidthMm*10*(preview.height-2)/preview.width/2)
+        val shift=org.locationtech.jts.geom.util.AffineTransformation.translationInstance(phaseX,phaseY)
+        val clipRegion=if(expandMm==0.0) null else PolygonRegion(shift.transform(PictureFillMask.closing(preview.colorRegionUnion,expandMm).geometry))
         val groups=mutableListOf<StitchGroup>();val regions=mutableListOf<Region>()
         val outlines=mutableListOf<ColorFillOutline.Outline>()
         // Cache the existing ordered polygons once; no change to stitch generation.
@@ -119,7 +127,7 @@ object ColorDrawingPipeline {
             val outline=layer.outline
                 val region=PolygonRegion.fromPaths(outline.paths.flatMap { path ->
                     SvgPath.flatten(path,tolerance=Units.mmToPixels(0.1)).map { line ->
-                        Polyline(line.points.map { Point(it.x*10/PIXELS_PER_MM,it.y*10/PIXELS_PER_MM) },true)
+                        Polyline(line.points.map { Point(it.x*10/PIXELS_PER_MM+phaseX,it.y*10/PIXELS_PER_MM+phaseY) },true)
                     }
                 },FillRule.EVEN_ODD)
 
@@ -136,17 +144,20 @@ object ColorDrawingPipeline {
                     val widths=StitchTypeRule.widths(shape,10.0)
                     // Painted areas retain their polygon shape through the same default fill as
                     // silhouette. Only failed fill generation follows the existing running fallback.
-                    val method=StitchTypeRule.Type.TATAMI
+                    val method=SmallRegionStitches.type(widths.maxMm,StitchTypeRule.Type.TATAMI)
                     checkpoint("stitches")
-                    val resolved=StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
+                    fun running() : List<StitchGroup> {
+                        val polygon=shape as org.locationtech.jts.geom.Polygon
+                        val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
+                        return Stroke(rings.map { ring -> ring.coordinates.map { StitchPoint(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread).toStitchGroups(null)
+                    }
+                    val attempted=if(method==StitchTypeRule.Type.RUNNING) SmallRegionStitches.running(running(),hoop)
+                    else StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
                         if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm,
                             clipRegion=clipRegion)
-                        else {
-                            val polygon=shape as org.locationtech.jts.geom.Polygon
-                            val rings=listOf(polygon.exteriorRing)+(0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
-                            Stroke(rings.map { ring -> ring.coordinates.map { StitchPoint(it.x/10*PIXELS_PER_MM,it.y/10*PIXELS_PER_MM) } },thread).toStitchGroups(null)
-                        }
+                        else running()
                     }
+                    val resolved=if(attempted.excluded) SmallRegionStitches.running(running(),hoop) else attempted
                     val next=resolved.groups
                     if(next.isNotEmpty() && groups.isNotEmpty()) groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
                     val tag="myembro.region:region-${regions.count { !it.excluded && it.groups>0 }}"
@@ -178,6 +189,7 @@ object ColorDrawingPipeline {
             else GeneratedPatternProcessor.fromGroups(groups,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true,stitchOwners=owners)
         val pattern=io.github.linker2k.myembro.engine.model.EmbPattern(finished.stitches,finished.threads,
             finished.metadata+mapOf("myembro.excluded_regions" to regions.count { it.excluded }.toString(),
+                "myembro.tiny_regions_omitted" to regions.count { it.excluded }.toString(),
                 "myembro.skipped_fill_outlines" to regions.count { it.outlineSkipped }.toString(),
                 "myembro.fill_outline_checks" to selection.checks.toString()),finished.warnings)
         val threads=regions.filter { !it.excluded && it.groups>0 }.mapIndexed { i,r -> "region-$i" to r.thread }.toMap()

@@ -16,6 +16,7 @@ import java.io.File
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -45,8 +46,8 @@ class LogoDesignTest {
         assertEquals(emptyList(), blockers)
         assertTrue(report.analysisComplete)
         // The width rule on our own logo: clamp bar 3.2mm and hoop ring 5.3mm → satin, arches 6.8mm > 6 → tatami.
-        // The clamp body is covered by the bar and the ring except slivers under 0.9mm, so it is not sewn.
-        assertEquals(listOf("1 stroke SATIN", "2 stroke SATIN", "3 stroke TATAMI"), result.parts.map { "${it.shape} ${it.role} ${it.method}" })
+        // The formerly omitted narrow clamp-body pieces now use the existing running generator.
+        assertEquals(listOf("0 fill RUNNING", "0 fill RUNNING", "0 fill RUNNING", "1 stroke SATIN", "2 stroke SATIN", "3 stroke TATAMI"), result.parts.map { "${it.shape} ${it.role} ${it.method}" })
         System.getenv("LOGO_OUT")?.let { File(it) }?.let { out ->
             out.mkdirs()
             File(out, "LOGO60.PES").writeBytes(pes)
@@ -55,9 +56,13 @@ class LogoDesignTest {
             File(out, "THREADS.md").writeText(threads(result))
             File(out, "README.md").writeText(readme(result, report.statistics.stitchCount))
         }
-        // Save regeneration artifacts even when the bundled asset needs updating.
-        // The app's bundled default design is exactly this output (regenerate with LOGO_OUT when it changes).
-        assertContentEquals(File("../app/src/main/assets/designs/myembro_logo.pes").readBytes(), pes)
+        // The already shipped PES is stored stitch data, not a live SVG recipe. New generation
+        // preserves small paint without retroactively changing library imports/chat fixtures.
+        val bundled=File("../app/src/main/assets/designs/myembro_logo.pes").readBytes()
+        assertEquals("9e3a369ba8de95e00129ec1684da9d78aa66360b8759fe0c8aec0dbae0e6bc52",java.security.MessageDigest.getInstance("SHA-256").digest(bundled).joinToString("") { "%02x".format(it) })
+        assertEquals(emptyList(),PesInvariants.violations(bundled,hoop))
+        assertFalse(SewoutCheck.checkPes(bundled,options=SewoutOptions(hoop=hoop)).hasBlockingIssues)
+
     }
 
     private fun hex(rgb: Int) = "#%06X".format(rgb and 0xFFFFFF)
