@@ -52,7 +52,7 @@ object StitchTypeRule {
         }
     }
 
-    data class RegionStitches(val groups:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>, val type:Type?) {
+    data class RegionStitches(val groups:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>, val type:Type?, val coverage:SatinCoverage.Audit? = null) {
         val excluded:Boolean get()=type==null
     }
 
@@ -61,14 +61,23 @@ object StitchTypeRule {
         prefix:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup> = emptyList(),
         hoop:io.github.linker2k.myembro.engine.edit.HoopSpec = io.github.linker2k.myembro.engine.edit.HoopSpec.H100,
         validate:((List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>)->Boolean)? = null,
+        satinRegionMm:Geometry? = null,
+        satinBorder:Boolean = false,
         generate:(Type)->List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>):RegionStitches {
         val attempts=when(preferred) { Type.SATIN->listOf(Type.SATIN,Type.TATAMI,Type.RUNNING)
             Type.TATAMI->listOf(Type.TATAMI,Type.RUNNING);Type.RUNNING->listOf(Type.RUNNING) }
+        var rejectedCoverage:Double?=null
         for(type in attempts) {
             if(Thread.currentThread().isInterrupted) throw InterruptedException()
             try {
                 val candidate=generate(type)
                 if(candidate.isEmpty() || candidate.none { it.stitches.isNotEmpty() }) continue
+                var candidateCoverage:Double?=null
+                if(type==Type.SATIN && satinRegionMm!=null && !satinBorder) {
+                    val uncovered=SatinCoverage.uncoveredAreaMm2(satinRegionMm,candidate)
+                    candidateCoverage=uncovered
+                    if(uncovered>0.0) { rejectedCoverage=uncovered; continue }
+                }
                 val combined=prefix+candidate
                 val valid=validate?.invoke(combined) ?: run {
                     val isolated=io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
@@ -85,7 +94,14 @@ object StitchTypeRule {
                     !checked.report.hasBlockingIssues
                 }
                 if(Thread.currentThread().isInterrupted) throw InterruptedException()
-                if(valid) return RegionStitches(candidate,type)
+                if(valid) {
+                    val audit=if(preferred==Type.SATIN && satinRegionMm!=null && !satinBorder) {
+                        // The app needs only the satin decision. Expensive post-tatami area is an
+                        // offline diagnostic; do not delay cancellation for a measurement-only buffer.
+                        (rejectedCoverage ?: candidateCoverage)?.let { SatinCoverage.Audit(it,rejectedCoverage!=null) }
+                    } else null
+                    return RegionStitches(candidate,type,audit)
+                }
             } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled
             } catch(interrupted:InterruptedException) { throw interrupted
             } catch(_:Exception) { /* This region tries the next existing, validated generator. */ }
