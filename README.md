@@ -7,7 +7,7 @@
 **Make embroidery designs on your Android phone and send them to your Brother machine.**
 Free and open source.
 
-Current version: **v0.4.0-beta.2 (beta)**
+Current version: **v0.4.0-beta.3 (beta)**
 
 ![myembro at a glance](docs/images/intro-en.gif)
 
@@ -77,6 +77,13 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 - Every model gets PES files. Send them over a USB cable (SE400) or a USB flash drive connected to the phone (OTG).
 - Full list with sources: [docs/machines.md](docs/machines.md).
 
+## How stitches are made
+
+- **Underlay and pull compensation.** Fill uses Ink/Stitch's default underlay. Satin lettering follows the font's settings; center-run and zigzag underlay and pull compensation are supported, rather than enabled for every font.
+- **Jump trims.** When generated stitches jump to a separate part after sewing, the PES includes a TRIM command. Lettering uses Ink/Stitch's `collapse_len = 3.0` to sew short connections under 3mm unless the font requests a break; whether a trim actually cuts the thread depends on the machine.
+- **Locks.** Ink/Stitch's default `half_stitch` locks are added at thread starts and ends, including before and after trims. Missing locks block saving and sending of app-generated designs; lock positions are automatic to keep these safety rules intact.
+- **Block editing.** Change each region's stitch type (fill, satin or running), automatic/manual direction and sewing order. The engine supports row-spacing changes, but the current screen offers only Normal density.
+
 ## Safety checks
 
 Before you save or send, the app checks every design it makes for five problems that ruin real sew-outs:
@@ -94,6 +101,12 @@ If any one is found, saving and sending are blocked. PES files you import are no
 - Only the SE400 is tested on a real machine. Other models follow Brother's published specifications.
 - In color drawing, very small pieces (under 3mm²) are removed, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
 - Photo stitch generation stops after 1 minute. Pictures with about 100 color areas can hit this; use lower detail or a smaller crop.
+
+## Planned
+
+- Measure width lost in real SE400 sew-outs before changing pull compensation; no fabric presets until measurements support them.
+- Draw a line on the canvas to set a block's stitch angle.
+- Direct editing of outline points (nodes) is a later candidate.
 
 ## For developers
 
