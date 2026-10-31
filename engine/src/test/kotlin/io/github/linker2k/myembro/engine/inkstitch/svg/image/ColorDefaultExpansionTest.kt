@@ -18,8 +18,10 @@ class ColorDefaultExpansionTest {
         // Synthetic-only snapshots, measured for the user-approved small-region preservation.
         // Inputs retain the same bilinear resize + 4x4 white speck. Default expansion stays 0.2;
         // explicit zero still bypasses buffer/clip, while narrow paint now uses existing running.
+        // 2026-11-01: user-approved unique CIEDE2000 allocation changes face threads 35,49 -> 26,36;
+        // stitch coordinates checked identical to the pre-allocation snapshot (robot unchanged).
         val goldens=mapOf(
-            "face" to "f8bf80ba3179b3f74376d1af267066075b6957cf6941308cbc8fc3c89fe980db",
+            "face" to "a1c7cf79b08c4c866d1f95102dbd6ff10c59173db73e0688b00df95b029ac140",
             "robot" to "110b1eaa7cac72ceae2aeb901bc94692488e51ae1ff95620a4afcb61ae433d2f")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         val observed=linkedMapOf<String,String>()

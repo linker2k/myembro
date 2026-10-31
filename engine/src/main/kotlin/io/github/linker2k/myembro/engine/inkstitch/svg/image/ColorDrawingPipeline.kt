@@ -3,6 +3,8 @@
 package io.github.linker2k.myembro.engine.inkstitch.svg.image
 
 import io.github.linker2k.myembro.engine.geometry.*
+import io.github.linker2k.myembro.engine.color.DesignColor
+import io.github.linker2k.myembro.engine.color.ThreadAssignment
 import io.github.linker2k.myembro.engine.inkstitch.elements.*
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.*
 import io.github.linker2k.myembro.engine.inkstitch.svg.Units
@@ -28,7 +30,7 @@ object ColorDrawingPipeline {
     const val DEFAULT_EXPAND_MM = 0.2
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
-        val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray) {
+        val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray, val assignmentWarnings:List<ThreadAssignment.Shortage> = emptyList()) {
         // Raw pixels are retained only as an independent background-hole measurement reference.
         internal val backgroundReferenceRegion:PolygonRegion by lazy {
             PictureForegroundMask.polygonize(width,height,foregroundPixels,canvasWidthMm*10/width)
@@ -80,10 +82,15 @@ object ColorDrawingPipeline {
             if(x in 0 until width && y in 0 until height) cleaned[y*width+x] else -1
         }
         val paddedWidth=widthMm*w/width
+        val counts=IntArray(quantized.palette.size)
+        for(label in labels) if(label>=0) counts[label]++
+        val assignment=ThreadAssignment.assign(quantized.palette.mapIndexedNotNull { i,rgb ->
+            if(counts[i]==0) null else DesignColor(rgb,counts[i]*(widthMm/width)*(widthMm/width)) },
+            myThreads,if(grayscale) Bt709Grayscale.threads else PecThreads.SET.filterNotNull())
         val layers=quantized.palette.mapIndexedNotNull { color,rgb ->
             checkpoint("tracing")
             if(labels.none { it==color }) null else {
-                val thread=if(myThreads.active) myThreads.nearest(rgb) else if(grayscale) Bt709Grayscale.nearestThread(rgb) else io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.nearestThread(rgb)
+                val thread=assignment.threadFor(rgb)
                 try {
                     Layer(color,thread,RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
                         paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint,preserveSmallContours=true))
@@ -99,7 +106,7 @@ object ColorDrawingPipeline {
             layers.sumOf { it.outline.foregroundAreaMm2 })
         val foregroundPixels=BooleanArray(w*h)
         for(index in foreground) foregroundPixels[(index/width+1)*w+index%width+1]=true
-        return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink,foregroundPixels)
+        return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink,foregroundPixels,assignment.warnings)
     }
 
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result =
@@ -191,7 +198,7 @@ object ColorDrawingPipeline {
             finished.metadata+mapOf("myembro.excluded_regions" to regions.count { it.excluded }.toString(),
                 "myembro.tiny_regions_omitted" to regions.count { it.excluded }.toString(),
                 "myembro.skipped_fill_outlines" to regions.count { it.outlineSkipped }.toString(),
-                "myembro.fill_outline_checks" to selection.checks.toString()),finished.warnings)
+                "myembro.fill_outline_checks" to selection.checks.toString()),finished.warnings + preview.assignmentWarnings.map { it.message })
         val threads=regions.filter { !it.excluded && it.groups>0 }.mapIndexed { i,r -> "region-$i" to r.thread }.toMap()
         val fragments=if(captureRegions && groups.isNotEmpty()) io.github.linker2k.myembro.engine.inkstitch.svg.RegionOrderPatterns.split(finished,owners,threads) else emptyMap()
         return Result(pattern,regions,fragments)

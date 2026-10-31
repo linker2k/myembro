@@ -24,10 +24,14 @@ class ColorDrawingPipelineTest {
         val image=ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
         val pixels=image.getRGB(0,0,image.width,image.height,null,0,image.width)
         val preview=ColorDrawingPipeline.trace(image.width,image.height,pixels,30.0,4)
-        preview.layers.forEach { layer ->
-            val rgb=preview.palette[layer.paletteIndex]
-            assertEquals(PecThreads.SET.filterNotNull().minOf { PecThreads.distance(rgb,it.color) },PecThreads.distance(rgb,layer.thread.color))
-        }
+        // User-approved batch assignment replaces independent red-mean matching.
+        val labels=preview.indices()
+        val expected=io.github.linker2k.myembro.engine.color.ThreadAssignment.assign(
+            preview.palette.mapIndexedNotNull { i,rgb ->
+                labels.count { it==i }.takeIf { it>0 }?.let { io.github.linker2k.myembro.engine.color.DesignColor(rgb,it.toDouble()) }
+            })
+        preview.layers.forEach { layer -> assertEquals(expected.threadFor(preview.palette[layer.paletteIndex]),layer.thread) }
+        assertEquals(preview.layers.size,preview.layers.map { it.thread.color }.toSet().size)
         assertFailsWith<InterruptedException> { ColorDrawingPipeline.generate(preview) { throw InterruptedException() } }
         val pes=PesWriter.write(ColorDrawingPipeline.generate(preview).pattern)
         assertFalse(SewoutCheck.checkPes(pes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED)).hasBlockingIssues)
@@ -39,7 +43,7 @@ class ColorDrawingPipelineTest {
         image.setRGB(0,0,0xff252525.toInt())
         val preview=ColorDrawingPipeline.trace(128,128,image.getRGB(0,0,128,128,null,0,128),30.0,3)
         val result=ColorDrawingPipeline.generate(preview)
-        assertEquals(setOf("23","12","49"),result.pattern.threads.map { it.catalogNumber }.toSet())
+        assertEquals(setOf("23","12","5"),result.pattern.threads.map { it.catalogNumber }.toSet())
         assertTrue(preview.layers.none { it.thread.catalogNumber=="29" })
     }
 

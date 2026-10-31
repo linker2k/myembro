@@ -63,6 +63,9 @@ class LogoDesignTest {
         assertEquals(emptyList(),PesInvariants.violations(bundled,hoop))
         assertFalse(SewoutCheck.checkPes(bundled,options=SewoutOptions(hoop=hoop)).hasBlockingIssues)
 
+        // Regenerated SVG colors use the user-approved batch CIEDE2000 allocation.
+        val assignment=VectorArt.assignThreads(art)
+        result.parts.forEach { assertEquals(assignment.threadFor(it.sourceRgb),it.thread) }
     }
 
     private fun hex(rgb: Int) = "#%06X".format(rgb and 0xFFFFFF)

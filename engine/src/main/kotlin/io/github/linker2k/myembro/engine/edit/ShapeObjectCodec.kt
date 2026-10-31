@@ -5,12 +5,17 @@ import io.github.linker2k.myembro.engine.geometry.*
 import io.github.linker2k.myembro.engine.inkstitch.elements.*
 import io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt
 import kotlinx.serialization.json.*
+import io.github.linker2k.myembro.engine.io.MyThreads
 
 /** Additive v1 object codec; original import/text formats and codec precedence are unchanged. */
 object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObject::class.java) {
     override fun encodePayload(obj: ShapeObject): JsonObject = buildJsonObject {
         put("regionOrder",JsonArray(obj.regionOrder.map(::JsonPrimitive)))
         put("shapeVersion",1);put("widthMm",obj.widthMm)
+        if(obj.sourceArt.myThreads != MyThreads()) put("myThreads",buildJsonObject {
+            put("enabled",obj.sourceArt.myThreads.enabled)
+            put("indices",JsonArray(obj.sourceArt.myThreads.indices.sorted().map(::JsonPrimitive)))
+        })
         if (ShapeObjectFactory.isPhoto(obj)) put("photo", PhotoShapeCodec.encode(obj))
         put("viewBox",JsonArray(obj.sourceArt.viewBox.map(::JsonPrimitive)))
         put("shapes",JsonArray(obj.sourceArt.shapes.map { shape -> buildJsonObject {
@@ -30,7 +35,9 @@ object ShapeObjectCodec : TypedProjectObjectCodec<ShapeObject>("shape",ShapeObje
                 VectorArt.Shape(s.text("d"),s.getValue("fill").jsonPrimitive.intOrNull,s.getValue("stroke").jsonPrimitive.intOrNull,
                     s.number("strokeWidth"),s.getValue("lineCap").jsonPrimitive.contentOrNull,s.getValue("lineJoin").jsonPrimitive.contentOrNull,
                     Affine2D(m[0],m[1],m[2],m[3],m[4],m[5]),FillRule.valueOf(s.text("fillRule")))
-            })
+            }, data["myThreads"]?.jsonObject?.let { settings -> MyThreads(
+                settings.getValue("enabled").jsonPrimitive.boolean,
+                settings.getValue("indices").jsonArray.map { it.jsonPrimitive.int }.toSet()) } ?: MyThreads())
         val base = data["photo"]?.let { PhotoShapeCodec.decode(fields,art,data.number("widthMm"),it.jsonObject) }
             ?: ShapeObject.fromArt(fields.id,fields.name,art,data.number("widthMm"))
         val restored = base
