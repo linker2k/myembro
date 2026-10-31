@@ -31,9 +31,13 @@ internal object ThreadFilterMath {
         val surfaceScale = SURFACE_SCALE * pixelScale.toFloat()
         val result = IntArray(blurred.size)
         for (y in 0 until height) for (x in 0 until width) {
-            val n = normal(blurred, width, height, x, y)
-            val nx = -n[0] * n[2] * surfaceScale / 255f
-            val ny = -n[1] * n[3] * surfaceScale / 255f
+            val n = normalDerivative(blurred, width, height, x, y)
+            val borderX=x==0||x==width-1;val borderY=y==0||y==height-1
+            // Same source factors, primitive locals instead of a new FloatArray per pixel.
+            val factorX=if(borderX&&borderY)2f/3 else if(borderX)1f/2 else if(borderY)1f/3 else 1f/4
+            val factorY=if(borderX&&borderY)2f/3 else if(borderX)1f/3 else if(borderY)1f/2 else 1f/4
+            val nx = -(n shr 32).toInt().toFloat() * factorX * surfaceScale / 255f
+            val ny = -n.toInt().toFloat() * factorY * surfaceScale / 255f
             val dot = (nx*hx + ny*hy + hz) / sqrt(nx*nx + ny*ny + 1f) / hLength
             val light = if (dot <= 0f) 0f else SPECULAR_CONSTANT * dot.pow(SPECULAR_EXPONENT)
             // Inkscape nr-filter-specularlighting.cpp:59–66 explicitly premultiplies
@@ -45,32 +49,37 @@ internal object ThreadFilterMath {
     }
 
     /** Sobel derivatives and SVG edge/corner factors, lighting.rs:318–481. */
-    private fun normal(a: IntArray, w: Int, h: Int, x: Int, y: Int): FloatArray {
-        fun p(dx: Int, dy: Int) = a[(y+dy).coerceIn(0, h-1)*w+(x+dx).coerceIn(0,w-1)].toFloat()
+    private fun normalDerivative(a: IntArray, w: Int, h: Int, x: Int, y: Int): Long {
+        fun p(dx: Int, dy: Int) = a[(y+dy).coerceIn(0, h-1)*w+(x+dx).coerceIn(0,w-1)]
         val tl=p(-1,-1); val t=p(0,-1); val tr=p(1,-1)
         val l=p(-1,0); val c=p(0,0); val r=p(1,0)
         val bl=p(-1,1); val b=p(0,1); val br=p(1,1)
-        return when {
-            x==0 && y==0 -> floatArrayOf(-2*c+2*r-b+br, -2*c-r+2*b+br, 2f/3, 2f/3)
-            x==w-1 && y==0 -> floatArrayOf(-2*l+2*c-bl+b, -l-2*c+bl+2*b, 2f/3, 2f/3)
-            x==0 && y==h-1 -> floatArrayOf(-t+tr-2*c+2*r, -2*t-tr+2*c+r, 2f/3, 2f/3)
-            x==w-1 && y==h-1 -> floatArrayOf(-tl+t-2*l+2*c, -tl-2*t+l+2*c, 2f/3, 2f/3)
-            y==0 -> floatArrayOf(-2*l+2*r-bl+br, -l-2*c-r+bl+2*b+br, 1f/3, 1f/2)
-            y==h-1 -> floatArrayOf(-tl+tr-2*l+2*r, -tl-2*t-tr+l+2*c+r, 1f/3, 1f/2)
-            x==0 -> floatArrayOf(-t+tr-2*c+2*r-b+br, -2*t-tr+2*b+br, 1f/2, 1f/3)
-            x==w-1 -> floatArrayOf(-tl+t-2*l+2*c-bl+b, -tl-2*t+bl+2*b, 1f/2, 1f/3)
-            else -> floatArrayOf(-tl+tr-2*l+2*r-bl+br, -tl-2*t-tr+bl+2*b+br, 1f/4, 1f/4)
+        var dx: Int
+        var dy: Int
+        when {
+            x==0 && y==0 -> { dx=-2*c+2*r-b+br;dy=-2*c-r+2*b+br }
+            x==w-1 && y==0 -> { dx=-2*l+2*c-bl+b;dy=-l-2*c+bl+2*b }
+            x==0 && y==h-1 -> { dx=-t+tr-2*c+2*r;dy=-2*t-tr+2*c+r }
+            x==w-1 && y==h-1 -> { dx=-tl+t-2*l+2*c;dy=-tl-2*t+l+2*c }
+            y==0 -> { dx=-2*l+2*r-bl+br;dy=-l-2*c-r+bl+2*b+br }
+            y==h-1 -> { dx=-tl+tr-2*l+2*r;dy=-tl-2*t-tr+l+2*c+r }
+            x==0 -> { dx=-t+tr-2*c+2*r-b+br;dy=-2*t-tr+2*b+br }
+            x==w-1 -> { dx=-tl+t-2*l+2*c-bl+b;dy=-tl-2*t+bl+2*b }
+            else -> { dx=-tl+tr-2*l+2*r-bl+br;dy=-tl-2*t-tr+bl+2*b+br }
         }
+        // Lossless packing of the two signed integer Sobel derivatives; no quantization.
+        return (dx.toLong() shl 32) or (dy.toLong() and 0xFFFFFFFFL)
     }
 
     // Inkscape cairo-utils.h:149–153, also Pixman/Cairo's 8-bit UN8 multiplication.
-    private fun premultiply(color: Int, alpha: Int): Int {
+    internal fun premultiply(color: Int, alpha: Int): Int {
         val temp = color * alpha + 128
         return (temp + (temp ushr 8)) ushr 8
     }
 
     /** Original Inkscape fixed-point arithmetic composite, then Cairo source-over. */
-    fun composite(alpha: IntArray, specular: IntArray, rgb: Int, destination: IntArray) {
+    fun bake(alpha: IntArray, specular: IntArray, rgb: Int): IntArray {
+        val destination = IntArray(alpha.size)
         val colors = intArrayOf((rgb ushr 16) and 255, (rgb ushr 8) and 255, rgb and 255)
         // nr-filter-composite.cpp:36–57 uses coefficients scaled by 255^2.
         val fixedOne = 255*255
@@ -82,16 +91,15 @@ internal object ThreadFilterMath {
             val lightingAtop = premultiply(specular[i], a)
             val outA = ((k2+k3)*a).coerceIn(0, 255*fixedOne)
             val quantizedAlpha = (outA + fixedOne/2)/fixedOne
-            var pixel = -0x1000000
+            var pixel = quantizedAlpha shl 24
             for (channel in 0..2) {
                 val source = premultiply(colors[channel], a)
                 val weighted = (k2*lightingAtop+k3*source).coerceIn(0, outA)
                 val premultiplied = (weighted + fixedOne/2)/fixedOne
-                val background = (destination[i] ushr (16-channel*8)) and 255
-                val result = (premultiplied + premultiply(background,255-quantizedAlpha)).coerceIn(0,255)
-                pixel = pixel or (result shl (16-channel*8))
+                pixel = pixel or (premultiplied shl (16-channel*8))
             }
             destination[i] = pixel
         }
+        return destination
     }
 }

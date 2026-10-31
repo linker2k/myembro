@@ -22,6 +22,9 @@ def main():
     parser.add_argument('--candidate', type=Path, required=True)
     parser.add_argument('--reference', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--before', type=Path)
+    parser.add_argument('--benchmark', type=Path, nargs='*', default=[])
+    parser.add_argument('--coverage', type=Path)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     if args.out.resolve() != args.candidate.resolve():
@@ -81,11 +84,40 @@ encoding; JIT/GC and first Java2D use may affect results. Not a 50k/100k or Andr
 16 images: MAE {min(maes):.6f}…{max(maes):.6f}, SSIM {min(ssims):.8f}…{max(ssims):.8f}.
 JVM render {min(times):.3f}…{max(times):.3f} ms, total {sum(times):.3f} ms.
 
-**Not pixel-equivalent yet.** The highest-error case is tatami. A whole-page filter-region
-diagnostic reduces its error substantially: next step is the original Inkscape FilterSlot/FilterUnits
-bounds/coordinate mapping, then coverage AA. Do not fit new sigma/brightness constants.
-See docs/research/realistic-preview-cpu.md for fixed source commits, constants and limitations.
+**Not pixel-equivalent yet.** The highest-error case remains tatami. Compare coverage separately;
+do not fit new sigma/brightness constants. Exact object bounds and integer viewport ratios are
+now represented in the renderer. See docs/research/realistic-preview-cpu.md for source commits.
 '''
+    if args.before:
+        report += '\n## Before/after (same Inkscape reference)\n\n| Scene | DPI | MAE before → after | SSIM before → after |\n|---|---:|---:|---:|\n'
+        for dpi in [300,600]:
+            before=json.loads((args.before/f'comparison-{dpi}.json').read_text())['metrics']
+            after=json.loads((args.out/f'comparison-{dpi}.json').read_text())['metrics']
+            for name,value in after.items():
+                prior=before[name]
+                report+=f"| {name} | {dpi} | {prior['mae_0_255']:.6f} → {value['mae_0_255']:.6f} | {prior['ssim']:.8f} → {value['ssim']:.8f} |\n"
+    if args.benchmark:
+        report += '\n## Large synthetic workloads (600dpi, 2250×2000px)\n\n'
+        report += 'Separate cold JVMs. Render excludes fixture creation/hash/PNG encoding. Heap peak is sampled every 1ms; process RSS is Linux VmHWM, including JVM/native memory. Cache budget covers pixel payload only (one 18,000,000-byte output frame), not key/object overhead.\n\n'
+        report += '| Budget/run | Workload | Stitches | ms | ms/stitch | Peak sampled heap MiB | Peak process RSS MiB | Hits/misses |\n|---|---|---:|---:|---:|---:|---:|---:|\n'
+        for directory in args.benchmark:
+            for path in sorted(directory.glob('*.json')):
+                d=json.loads(path.read_text())
+                if 'segments' not in d:continue
+                label=f"{d.get('jvmMaxHeapBytes',512*1024**2)/1024**2:.0f}MiB JVM cap"
+                report+=f"| {label} | {d['workload']} | {d['segments']} | {d['renderMs']:.3f} | {d['msPerStitch']:.6f} | {d['peakSampledHeapBytes']/1024**2:.2f} | {d['processPeakRssKiB']/1024:.2f} | {d['cacheHits']}/{d['cacheMisses']} |\n"
+        report += '\nRepeated = a grid of 2500 placements repeated (best case). Varied = unique phase/delta per stitch (zero hits, stress case). These display-only synthetic paths are repository-owned, not machine-ready PES files. The heap cap experiments are benchmark configuration, not application memory policy.\n'
+    if args.coverage:
+        report+='\n## Coverage substitution diagnostic\n\nSame Kotlin filters, only Java2D coverage replaced by per-path Inkscape SourceAlpha. Reference PNGs unchanged. This is an explicit diagnostic, not the production rasterizer.\n\n| Scene | DPI | Java2D MAE / SSIM | Cairo-alpha MAE / SSIM |\n|---|---:|---:|---:|\n'
+        coverage={}
+        for dpi in [300,600]:
+            regular=json.loads((args.out/f'comparison-{dpi}.json').read_text())['metrics']
+            for path in sorted((args.coverage/'png'/str(dpi)).glob('*.png')):
+                value=metrics(read(args.reference/'png'/str(dpi)/path.name),read(path))
+                coverage[f'{path.stem}-{dpi}']=value
+                prior=regular[path.stem]
+                report+=f"| {path.stem} | {dpi} | {prior['mae_0_255']:.6f} / {prior['ssim']:.8f} | {value['mae_0_255']:.6f} / {value['ssim']:.8f} |\n"
+        (args.out/'coverage-comparison.json').write_text(json.dumps(coverage,indent=2)+'\n')
     (args.out / 'report.md').write_text(report)
     # Original/candidate pairs, same-size pixels; contact-sheet labels are not compared.
     tile = 378

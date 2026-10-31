@@ -17,7 +17,7 @@ class RealisticThreadRendererTest {
         .jsonObject.getValue("cases").jsonObject
     private val directory = File("build/realistic-preview-cpu")
 
-    private fun awtPath(path: List<ThreadPathCommand>) = Path2D.Double().apply {
+    internal fun awtPath(path: List<ThreadPathCommand>) = Path2D.Double().apply {
         path.forEach { command -> when (command) {
             is ThreadPathCommand.Move -> moveTo(command.p.x, command.p.y)
             is ThreadPathCommand.Line -> lineTo(command.p.x, command.p.y)
@@ -25,16 +25,18 @@ class RealisticThreadRendererTest {
             ThreadPathCommand.Close -> closePath()
         } }
     }
-    private val rasterizer = ThreadAlphaRasterizer { path, width, height ->
+    internal val rasterizer = ThreadAlphaRasterizer { path, width, height ->
         val image = BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB)
         image.createGraphics().apply {
             setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
             color=Color.WHITE
             fill(awtPath(path)); dispose()
         }
-        image.getRGB(0,0,width,height,null,0,width).map { it ushr 24 }.toIntArray()
+        image.getRGB(0,0,width,height,null,0,width).also { pixels ->
+            for(i in pixels.indices)pixels[i]=pixels[i] ushr 24
+        }
     }
-    private fun segments(name: String): List<RenderThreadSegment> = fixtures.getValue(name).jsonArray.flatMap { run ->
+    internal fun segments(name: String): List<RenderThreadSegment> = fixtures.getValue(name).jsonArray.flatMap { run ->
         val rgb=run.jsonObject.getValue("displayRgb").jsonPrimitive.content.removePrefix("#").toInt(16)
         val points=run.jsonObject.getValue("pointsMm").jsonArray.map { value ->
             val xy=value.jsonArray
@@ -48,8 +50,17 @@ class RealisticThreadRendererTest {
         for(dpi in listOf(300,600)) {
             val edge=floor(16/25.4*dpi+.5).toInt()
             val started=System.nanoTime()
-            val pixels=RealisticThreadRenderer.render(edge,edge,dpi,segments,rasterizer)
+            val actualScale=edge/(16*ThreadShape.SVG_PIXELS_PER_MM)
+            val pixels=RealisticThreadRenderer.render(edge,edge,dpi,segments,rasterizer,pixelsPerSvgUnit=actualScale)
             val elapsed=(System.nanoTime()-started)/1_000_000.0
+            val budget=segments.sumOf { val b=ThreadFilterRegion.bounds(ThreadShape.path(it,actualScale));b.width.toLong()*b.height*4 }
+            val cache=ThreadShapeCache(budget)
+            val cached=RealisticThreadRenderer.render(edge,edge,dpi,segments,rasterizer,cache,actualScale)
+            val cachedAgain=RealisticThreadRenderer.render(edge,edge,dpi,segments,rasterizer,cache,actualScale)
+            assertContentEquals(pixels,cached,"cache cold $name/$dpi")
+            assertContentEquals(pixels,cachedAgain,"cache warm $name/$dpi")
+            assertTrue(cache.hits>=segments.size,"all exact repeats must hit")
+            assertTrue(cache.cachedPixelBytes<=budget)
             assertEquals(edge*edge,pixels.size)
             assertTrue(pixels.any { it != -1 },name)
             assertTrue(pixels.all { it ushr 24 == 255 })
@@ -63,14 +74,16 @@ class RealisticThreadRendererTest {
             flat.createGraphics().apply {
                 color=Color.WHITE;fillRect(0,0,edge,edge)
                 setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
-                segments.forEach { s-> color=Color(s.displayRgb);fill(awtPath(ThreadShape.path(s,dpi/96.0))) }
+                segments.forEach { s-> color=Color(s.displayRgb);fill(awtPath(ThreadShape.path(s,actualScale))) }
                 dispose()
             }
             val control=File(directory,"flat-control/png/$dpi/$name.png").apply { parentFile.mkdirs() }
             assertTrue(ImageIO.write(flat,"png",control))
             File(directory,"$name-$dpi.json").writeText(buildJsonObject {
                 put("case",name);put("dpi",dpi);put("segments",segments.size);put("renderMs",elapsed)
-                put("width",edge);put("height",edge);put("jvm",System.getProperty("java.version"))
+                put("width",edge);put("height",edge);put("pixelsPerSvgUnit",actualScale);
+                put("cacheHits",cache.hits);put("cacheMisses",cache.misses);put("cachePixelBytes",cache.cachedPixelBytes);
+                put("cachedRendersEqual",true);put("jvm",System.getProperty("java.version"))
                 put("rasterizer","Java2D test-only, antialiased filled original cubic path")
             }.toString()+"\n")
             println("CPU_PREVIEW $name dpi=$dpi segments=${segments.size} renderMs=$elapsed")
@@ -135,6 +148,53 @@ class RealisticThreadRendererTest {
             assertContentEquals(a,InkscapeGaussian.blur(a,21,21,sigma),"sigma=$sigma")
         }
         assertFailsWith<IllegalArgumentException> { InkscapeGaussian.blur(a,21,21,Double.NaN) }
+    }
+    @Test fun noBudgetCacheAndSubpixelDirectionChangesRemainExact() {
+        val shifts=listOf(0.0,0.125,0.5,0.875)
+        val s=shifts.flatMap { phase -> listOf(
+            RenderThreadSegment(RenderPoint(4+phase,4+phase),RenderPoint(12+phase,4+phase),0x184687),
+            RenderThreadSegment(RenderPoint(4+phase,4+phase),RenderPoint(4+phase,12+phase),0x8E1D22),
+            RenderThreadSegment(RenderPoint(4+phase,4+phase),RenderPoint(12+phase,12+phase),0x184687)) }
+        for(dpi in listOf(300,600)) {
+            val cache=ThreadShapeCache(0)
+            val a=RealisticThreadRenderer.render(100,100,dpi,s,rasterizer)
+            val b=RealisticThreadRenderer.render(100,100,dpi,s,rasterizer,cache)
+            assertContentEquals(a,b)
+            assertEquals(0L,cache.cachedPixelBytes)
+            assertEquals(0L,cache.hits)
+            assertEquals(s.size.toLong(),cache.misses)
+        }
+    }
+    @Test fun tinyCacheEvictionAndRecolorDoNotChangeCompositing() {
+        val base=segments("crossing")
+        val s=(0..15).flatMap { pass->base.map {
+            it.copy(start=RenderPoint(it.start.x+pass/16.0,it.start.y),
+                end=RenderPoint(it.end.x+pass/16.0,it.end.y),displayRgb=if(pass%2==0)it.displayRgb else 0xA2A2A2)
+        } }
+        val region=ThreadFilterRegion.bounds(ThreadShape.path(s.first(),300/96.0))
+        val budget=region.width.toLong()*region.height*4
+        val cache=ThreadShapeCache(budget)
+        val expected=RealisticThreadRenderer.render(189,189,300,s,rasterizer)
+        repeat(2) { assertContentEquals(expected,RealisticThreadRenderer.render(189,189,300,s,rasterizer,cache)) }
+        assertTrue(cache.cachedPixelBytes<=budget)
+        assertTrue(cache.misses>s.size)
+    }
+    @Test fun originalOutwardBoundsAndIntegerViewportScaleArePreserved() {
+        val s=segments("horizontal").single()
+        val nominal=ThreadFilterRegion.bounds(ThreadShape.path(s,300/96.0))
+        val actual=ThreadFilterRegion.bounds(ThreadShape.path(s,189/(16*ThreadShape.SVG_PIXELS_PER_MM)))
+        assertEquals(91,nominal.top)
+        assertEquals(92,actual.top)
+        assertEquals(6,actual.height)
+    }
+    @Test fun originalCppFirGoldenAtActualFilterBounds() {
+        // Extracted ORIGINAL Inkscape nr-filter-gaussian.cpp FIR functions @ebf0e940,
+        // g++ -O2, 97x6 input, sigma=2.8125: [188,185,173,152,125,94].
+        // This is also the horizontal reference PNG's center-column blurred alpha.
+        val rows=intArrayOf(170,255,255,255,170,0)
+        val alpha=IntArray(97*6) { rows[it/97] }
+        val result=InkscapeGaussian.blur(alpha,97,6,2.8125)
+        assertContentEquals(intArrayOf(188,185,173,152,125,94),IntArray(6) { result[it*97+48] })
     }
     @Test fun invalidInputsRejected() {
         assertFailsWith<IllegalArgumentException> { RealisticThreadRenderer.render(20,20,0,emptyList(),rasterizer) }

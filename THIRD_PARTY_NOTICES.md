@@ -811,12 +811,18 @@ SPDX-License-Identifier: Unicode-3.0
   license above applies. Exact selected upstream definitions generate our external PNG reference.
 - Inkscape 1.4.2 `ebf0e940d050842d608d57f6a04e6daaa5c65f37`:
   `src/display/nr-filter-gaussian.cpp`, `nr-filter-specularlighting.cpp`,
-  `nr-filter-composite.cpp`, `cairo-templates.h`, `cairo-utils.h`, `src/util/fixed_point.h`.
+  `nr-filter-composite.cpp`, `cairo-templates.h`, `cairo-utils.h`, `src/util/fixed_point.h`,
+  `drawing-item.cpp`, `nr-filter-slot.cpp`, `nr-filter-units.cpp`, and `src/helper/png-write.cpp`
+  for original filter-domain rounding and export coordinate mapping.
   These files are GPL-2.0-or-later; the adaptations are distributed under GPL-3.0-or-later.
   Gaussian: Copyright (C) 2006–2008 authors, Niko Kiirala, bulia byak, Jasper van de Gronde.
   Lighting/composite: Copyright (C) 2007 authors, Niko Kiirala and Jean-Rene Reinhard.
   Cairo helpers/templates: Copyright (C) 2010 Authors, Krzysztof Kosiński.
   Fixed-point representation: Copyright (C) 2006 Jasper van de Gronde.
+  Filter slots/units: Copyright (C) 2006–2007 Niko Kiirala. Drawing-item bounds:
+  Copyright (C) 2011 Authors, Krzysztof Kosiński. PNG coordinate mapping reference:
+  Copyright (C) 1999–2002 authors (Lauris Kaplinski, libpng example contributors,
+  Peter Bostrom, Jon A. Cruz, Abhishek Sharma).
   Project license explanation retained in `engine/src/main/resources/licenses/inkscape-renderer/COPYING`;
   GPL-3.0 text is in the repository [LICENSE](LICENSE).
 - resvg `4ba2462da4ecf1f93731e957fc65d4ccb7c51bed`,
