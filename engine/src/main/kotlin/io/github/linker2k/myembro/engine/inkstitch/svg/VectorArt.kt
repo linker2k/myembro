@@ -64,7 +64,7 @@ object VectorArt {
         val paths: List<Polyline> = emptyList(), val regionId: String = "")
     data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
         val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
-    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap())
+    class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap(), val droppedSliverCount: Int = 0)
 
     /**
      * Flat SVG 1.1 reader: `<g>` nesting with inherited presentation attributes (and `style`),
@@ -240,7 +240,7 @@ object VectorArt {
     /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
     fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true,
         regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null,
-        captureRegions: Boolean = false): Result {
+        captureRegions: Boolean = false, hoop: io.github.linker2k.myembro.engine.edit.HoopSpec = io.github.linker2k.myembro.engine.edit.HoopSpec.H100): Result {
         require(widthMm.isFinite() && widthMm > 0)
         val footprints = art.shapes.map(::footprint)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
@@ -254,6 +254,7 @@ object VectorArt {
         fun previous() = groups.lastOrNull()?.stitches?.lastOrNull()
         val toMm = org.locationtech.jts.geom.util.AffineTransformation.translationInstance(-cx, -cy).scale(scale, scale)
         var excludedCount = 0
+        var droppedSliverCount = 0
         var regionOrdinal = 0
         fun boundaryPaths(area: Geometry) = (0 until area.numGeometries).map { area.getGeometryN(it) }.filterIsInstance<Polygon>()
             .flatMap { poly -> (listOf(poly.exteriorRing) + (0 until poly.numInteriorRing).map(poly::getInteriorRingN))
@@ -273,7 +274,7 @@ object VectorArt {
                 }, line.closed) }
             }
             val resolved = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
-                ?: StitchTypeRule.generateRegion(preferred, groups) { attempt -> when (attempt) {
+                ?: StitchTypeRule.generateRegion(preferred, groups, hoop=hoop) { attempt -> when (attempt) {
                 StitchTypeRule.Type.SATIN -> satin()
                 StitchTypeRule.Type.TATAMI -> tatamiGroups(region, thread)
                 StitchTypeRule.Type.RUNNING -> running()
@@ -302,7 +303,7 @@ object VectorArt {
             val visible = if (later.isEmpty() || !removeOverlaps) area else area.difference(UnaryUnionOp.union(later))
             for (piece in (0 until visible.numGeometries).map { visible.getGeometryN(it) }.filterIsInstance<Polygon>()) {
                 val type = rules.classify(piece, scale)
-                if (type == StitchTypeRule.Type.RUNNING) continue
+                if (type == StitchTypeRule.Type.RUNNING) { droppedSliverCount++; continue }
                 emit(index, role, piece, thread, w, rgb, type, satin = {
                     RegionSatin.groups(toMm.transform(piece), { x, y -> Point(Units.mmToPixels(x), Units.mmToPixels(y)) }, thread).orEmpty()
                 })
@@ -341,6 +342,6 @@ object VectorArt {
         val pattern = if (groups.isEmpty()) EmbPattern(emptyList(), emptyList()) else GeneratedPatternProcessor.fromGroups(if (captureRegions) ownedGroups else groups,
             collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true, lockAtThreadBoundaries = true, omitZeroLengthMotions = true, stitchOwners = owners)
         return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name,
-            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap())
+            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap(), droppedSliverCount)
     }
 }

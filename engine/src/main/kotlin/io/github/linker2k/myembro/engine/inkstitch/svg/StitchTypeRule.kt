@@ -76,10 +76,13 @@ object StitchTypeRule {
                     require(isolated.stitchCount>0) { "Region disappeared during postprocessing" }
                     val pattern=if(prefix.isEmpty()) isolated else io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternProcessor.fromGroups(
                         combined,pecJumpTrims=true,lockAtThreadBoundaries=true,omitZeroLengthMotions=true)
-                    val bytes=io.github.linker2k.myembro.engine.io.PesWriter.write(pattern)
-                    !io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(bytes,
-                        options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(hoop=hoop,
-                            origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)).hasBlockingIssues
+                    // Geometry generation validates the caller's frame, not an implicit SE400.
+                    // The existing writer boundary checks encoded P1–P8 for that selected hoop;
+                    // final machine compatibility remains the export/transfer caller's responsibility.
+                    val checked=io.github.linker2k.myembro.engine.io.PesWriter.writeChecked(pattern,
+                        io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=hoop),
+                        origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                    !checked.report.hasBlockingIssues
                 }
                 if(Thread.currentThread().isInterrupted) throw InterruptedException()
                 if(valid) return RegionStitches(candidate,type)
