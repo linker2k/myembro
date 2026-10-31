@@ -30,14 +30,12 @@ class ColorSampleRegressionTest {
         assertFalse(report.hasBlockingIssues,report.findings.toString())
         System.getenv("REGION_FALLBACK_OUT")?.let { directory -> java.io.File(directory).apply { mkdirs() }.resolve("sun-face.pes").writeBytes(bytes) }
     }
-    @Test fun allRegionsCanBeExcludedWithoutAbortingTheSession() {
+    @Test fun anImpossibleHoopBlocksExportWithoutErasingRepresentableRegions() {
         val image=javax.imageio.ImageIO.read(javaClass.getResourceAsStream("/image-to-design/face.png"))
         val preview=ColorDrawingPipeline.trace(image.width,image.height,image.getRGB(0,0,image.width,image.height,null,0,image.width),30.0,3)
-        val result=ColorDrawingPipeline.generate(preview,io.github.linker2k.myembro.engine.edit.HoopSpec("test tiny",1,1))
-        assertTrue(result.excludedCount>0)
-        assertEquals(result.regions.size,result.excludedCount)
-        assertEquals(0,result.pattern.stitchCount)
-        assertEquals(result.excludedCount.toString(),result.pattern.metadata["myembro.excluded_regions"])
+        val hoop=io.github.linker2k.myembro.engine.edit.HoopSpec("test tiny",1,1)
+        val result=ColorDrawingPipeline.generate(preview,hoop)
+        assertTrue(result.pattern.stitchCount>0)
+        assertFailsWith<PesOutputSafety.Rejected> { PesWriter.writeChecked(result.pattern,io.github.linker2k.myembro.engine.io.PesWriteSettings(hoop=hoop)) }
     }
-
 }

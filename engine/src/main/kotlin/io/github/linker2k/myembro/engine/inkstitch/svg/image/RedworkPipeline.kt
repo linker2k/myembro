@@ -31,6 +31,8 @@ class RedworkResult internal constructor(
 class RedworkOutline internal constructor(
     val outlineSvg: String, val contourCount: Int, val widthMm: Double, val heightMm: Double,
     val paths: List<String>, val foregroundAreaMm2: Double,
+    /** Legacy substantial-contour budget; preserved tiny paths do not consume the old fill budget. */
+    val contourBudgetCount: Int = contourCount,
 )
 
 /** Engine-only first redwork integration. Input is top-down RGB24, not ARGB or a decoded photograph. */
@@ -51,8 +53,15 @@ object RedworkPipeline {
     /** Photo preview stops here: no JTS fill graph, stitches, locks, PES or sewout analysis. */
     fun trace(width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
         thread: EmbThread, minAreaMm2: Double = 0.0, maxContours: Int = Int.MAX_VALUE,
+        onQuantized: (IntArray) -> Unit = {}, checkpoint: (String) -> Unit = {}): RedworkOutline =
+        trace(width,height,rgb,widthMm,backgroundPixelIndex,thread,minAreaMm2,maxContours,onQuantized,checkpoint,false)
+
+    /** Opt-in area preservation; the original overload keeps trailing checkpoint lambdas compatible. */
+    fun trace(width: Int, height: Int, rgb: IntArray, widthMm: Double, backgroundPixelIndex: Int,
+        thread: EmbThread, minAreaMm2: Double = 0.0, maxContours: Int = Int.MAX_VALUE,
         onQuantized: (IntArray) -> Unit = {},
         checkpoint: (String) -> Unit = {},
+        preserveSmallContours: Boolean,
     ): RedworkOutline {
         require(width in 1..4096 && height in 1..4096 && width.toLong() * height == rgb.size.toLong())
         require(widthMm.isFinite() && widthMm > 0 && widthMm <= 1000)
@@ -67,7 +76,7 @@ object RedworkPipeline {
         val bottomUp = BooleanArray(rgb.size) { index ->
             labels[(height - 1 - index / width) * width + index % width] != background
         }
-        return traceBinary(width, height, bottomUp, widthMm, thread, minAreaMm2, maxContours, checkpoint)
+        return traceBinary(width, height, bottomUp, widthMm, thread, minAreaMm2, maxContours, checkpoint, preserveSmallContours)
     }
 
     /** Explicit dark-ink mask: no Wu, no background-pixel polarity inference. */
@@ -86,11 +95,13 @@ object RedworkPipeline {
     }
 
     private fun traceBinary(width: Int, height: Int, bottomUp: BooleanArray, widthMm: Double,
-        thread: EmbThread, minAreaMm2: Double, maxContours: Int, checkpoint: (String) -> Unit): RedworkOutline {
+        thread: EmbThread, minAreaMm2: Double, maxContours: Int, checkpoint: (String) -> Unit, preserveSmallContours: Boolean = false): RedworkOutline {
         checkpoint("tracing")
-        val contours = BinaryContourTracer.trace(width, height, bottomUp, maxOf(2, kotlin.math.ceil(minAreaMm2 / (widthMm / width) / (widthMm / width)).toInt()))
+        val legacyAreaLimit=maxOf(2,kotlin.math.ceil(minAreaMm2/(widthMm/width)/(widthMm/width)).toInt())
+        val contours = BinaryContourTracer.trace(width,height,bottomUp,if(preserveSmallContours) 0 else legacyAreaLimit)
+        val budgetCount=if(preserveSmallContours) contours.count { it.area>legacyAreaLimit } else contours.size
         require(contours.isNotEmpty()) { "No contour remains after Potrace area filtering" }
-        require(contours.size <= maxContours) { "PHOTO_TOO_COMPLEX: reduce detail" }
+        require(budgetCount <= maxContours) { "PHOTO_TOO_COMPLEX: reduce detail" }
         val scale = Units.mmToPixels(widthMm) / width
         fun point(p: CurvePoint) = RegionPoint((p.x - width / 2.0) * scale, (height / 2.0 - p.y) * scale)
         val paths = contours.map { contour ->
@@ -115,7 +126,7 @@ object RedworkPipeline {
         val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-svgWidth / 2} ${-svgHeight / 2} $svgWidth $svgHeight" width="${widthMm}mm" height="${widthMm * height / width}mm"><path fill-rule="evenodd" fill="#${thread.hex.removePrefix("#")}" d="${paths.joinToString(" ")}"/></svg>"""
         checkpoint("preview_ready")
         return RedworkOutline(svg,contours.size,widthMm,widthMm * height / width,paths,
-            contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width))
+            contours.sumOf { if(it.positive) it.area else -it.area } * (widthMm/width) * (widthMm/width),budgetCount)
     }
 
     fun generate(outline: RedworkOutline, thread: EmbThread, photoMode: Boolean = false, style: PhotoStyle = PhotoStyle.SILHOUETTE, hoop: HoopSpec = HoopSpec.H100, checkpoint: (String) -> Unit = {}): RedworkResult {

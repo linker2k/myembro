@@ -45,7 +45,8 @@ class VectorArtClassificationTest {
         assertTrue(viewport.valid,viewport.errors.toString())
         assertFalse(report.hasBlockingIssues,report.findings.toString())
         assertEquals(listOf(StitchTypeRule.Type.SATIN,StitchTypeRule.Type.SATIN,StitchTypeRule.Type.TATAMI),
-            result.parts.map { it.method })
+            result.parts.map { it.method }.filter { it!=StitchTypeRule.Type.RUNNING })
+        assertTrue(result.parts.any { it.method==StitchTypeRule.Type.RUNNING })
     }
 
 }

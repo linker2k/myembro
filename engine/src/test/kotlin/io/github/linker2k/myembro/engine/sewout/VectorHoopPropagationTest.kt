@@ -11,7 +11,7 @@ class VectorHoopPropagationTest {
  @Test fun selectedLargeHoopReachesRegionWriterAndRetainsTheWholeBlock() {
   val art=VectorArt.parseSvg(svg)
   val old=VectorArt.render(art,120.0)
-  assertEquals(1,old.excludedCount)
+  assertFailsWith<PesOutputSafety.Rejected> { PesWriter.write(old.pattern) }
   val result=VectorArt.render(art,120.0,captureRegions=true,hoop=HoopSpec.H130x180)
   assertEquals(0,result.excludedCount);assertEquals(0,result.droppedSliverCount)
   assertEquals(1,result.parts.size);assertEquals(1,result.regionPatterns.size)
@@ -32,6 +32,7 @@ class VectorHoopPropagationTest {
  @Test fun sourceSliversAreReportedRatherThanHiddenAsZeroMissingBlocks() {
   val art=VectorArt.parseSvg("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill="#224488" d="M0 0H20V20H0Z"/><path fill="#cc4422" d="M0.5 0H20V20H0.5Z"/></svg>""")
   val r=VectorArt.render(art,20.0)
-  assertTrue(r.droppedSliverCount>0)
+  assertEquals(0,r.droppedSliverCount)
+  assertTrue(r.parts.any { it.method==io.github.linker2k.myembro.engine.inkstitch.svg.StitchTypeRule.Type.RUNNING })
  }
 }
