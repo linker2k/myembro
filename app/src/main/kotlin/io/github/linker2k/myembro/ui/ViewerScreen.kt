@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,6 +65,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -246,6 +248,8 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
 @Composable
 private fun Viewer(vm: ViewerViewModel, data: RenderData) {
     var fitRequest by remember { mutableIntStateOf(0) }
+    var realistic by remember(data) { mutableStateOf(false) }
+    LaunchedEffect(vm.playing) { if(vm.playing)realistic=false }
 
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { vm.pausePlayback() }
     DisposableEffect(vm) { onDispose { vm.pausePlayback() } }
@@ -264,7 +268,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         if (maxWidth >= MyembroLayout.ExpandedWidth) {
             val panelWidth = (maxWidth * .42f).coerceIn(280.dp, 400.dp)
             Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ }, Modifier.weight(1f).fillMaxSize())
+                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ }, realistic, { realistic=it;if(it)vm.pausePlayback() }, Modifier.weight(1f).fillMaxSize())
                 ViewerDetails(vm, data,
                     Modifier.width(panelWidth).fillMaxSize().verticalScroll(detailsScroll).padding(vertical = 12.dp),
                     compactStats = true)
@@ -272,7 +276,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
         } else {
             val maxPanelHeight = maxHeight * .54f
             Column(Modifier.fillMaxSize()) {
-                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ },
+                ViewerCanvas(vm, data, fitRequest, { vm.clearSewoutFocus(); fitRequest++ }, realistic, { realistic=it;if(it)vm.pausePlayback() },
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp))
                 ViewerDetails(vm, data, Modifier.fillMaxWidth().heightIn(max = maxPanelHeight)
                     .verticalScroll(detailsScroll).padding(12.dp))
@@ -282,7 +286,7 @@ private fun Viewer(vm: ViewerViewModel, data: RenderData) {
 }
 
 @Composable
-private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int, onFit: () -> Unit, modifier: Modifier) {
+private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int, onFit: () -> Unit, realistic:Boolean,onRealistic:(Boolean)->Unit, modifier: Modifier) {
     val blockers = remember(data, vm.sewoutReport) { viewerBlockingHighlights(data.pattern, vm.sewoutReport) }
     Box(modifier.clip(MyembroShapes.Card)) {
         StitchCanvas(
@@ -292,7 +296,7 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
             highlight = vm.focusedHighlight, focusRequest = vm.focusRequest,
             blockerHighlights = blockers, onBlockerTap = vm::focusSewout,
             showJumps = vm.showJumps,
-            fitRequest = fitRequest,
+            fitRequest = fitRequest, realistic=realistic,
             modifier = Modifier.fillMaxSize(),
             backgroundColor = MaterialTheme.colorScheme.background.toArgb(),
             hoopColor = MaterialTheme.colorScheme.outline.toArgb(),
@@ -311,6 +315,9 @@ private fun ViewerCanvas(vm: ViewerViewModel, data: RenderData, fitRequest: Int,
                 .background(MaterialTheme.colorScheme.surface, MyembroShapes.Button)) {
             Text(stringResource(R.string.sewout_clear_highlight))
         }
+        FilterChip(selected=realistic,onClick={onRealistic(!realistic)},
+            label={Text(stringResource(R.string.viewer_realistic))},
+            modifier=Modifier.align(Alignment.TopEnd).padding(top=12.dp,end=60.dp).testTag("viewer_realistic_toggle"))
         IconButton(
             onClick = onFit,
             modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)

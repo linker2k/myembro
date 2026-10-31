@@ -21,6 +21,9 @@ internal object ThreadFilterMath {
     const val K2 = 0.8f
     const val K3 = 1.2f
     fun specular(blurred: IntArray, width: Int, height: Int, pixelScale: Double): IntArray {
+        // resvg lighting.rs:222: sub-3x3 lighting produces an empty transparent result.
+        // At screen resolution keep the source color/composite instead of inventing tiny-image normals.
+        if(width<3 || height<3)return IntArray(blurred.size)
         // lighting.rs:172–200 and 229–237: distant-light halfway vector (view vector 0,0,1).
         val az = Math.toRadians(AZIMUTH_DEG).toFloat()
         val el = Math.toRadians(ELEVATION_DEG).toFloat()

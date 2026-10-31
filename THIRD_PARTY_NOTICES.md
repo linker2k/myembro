@@ -803,10 +803,12 @@ SPDX-License-Identifier: Unicode-3.0
 
 ## Experimental realistic thread preview (Ink/Stitch, Inkscape, resvg)
 
-- Display-only prototype: `engine/.../render/realistic/`. It is not connected to the app,
-  embroidery generation, or PES export. Its test fixtures are repository-owned synthetic paths.
+- Display-only renderer: `engine/.../render/realistic/`, connected to the optional static
+  Android viewer preview. It does not change embroidery generation or PES export. Its test
+  fixtures are repository-owned synthetic paths and the bundled flower design.
 - Ink/Stitch v3.3.0 `b0edd96311ece82ee48816dc93466274b12c2a9c`,
-  `lib/svg/rendering.py`: original capsule path, visual length deduction and filter parameters.
+  `lib/svg/rendering.py`: original capsule path, visual length deduction and filter parameters;
+  `lib/threads/color.py`: `visible_on_white` and `darker` display-color policy.
   GPL-3.0-or-later, Copyright (c) 2010 Authors / Ink/Stitch contributors; existing Ink/Stitch
   license above applies. Exact selected upstream definitions generate our external PNG reference.
 - Inkscape 1.4.2 `ebf0e940d050842d608d57f6a04e6daaa5c65f37`:

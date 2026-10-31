@@ -24,15 +24,34 @@ object RealisticThreadRenderer {
         require(pixelsPerSvgUnit > 0 && pixelsPerSvgUnit.isFinite())
         val scale = pixelsPerSvgUnit // Caller supplies actual integer-raster/SVG-viewport ratio.
         val output = IntArray(Math.multiplyExact(width, height)) { -1 }
+        renderTiles(dpi,segments,rasterizer,cache,scale) { left,top,tileWidth,tileHeight,tile ->
+            for(y in 0 until tileHeight) for(x in 0 until tileWidth) {
+                val targetX=left+x;val targetY=top+y
+                if(targetX !in 0 until width || targetY !in 0 until height)continue
+                val i=targetY*width+targetX
+                output[i]=compositeOpaque(output[i],tile[y*tileWidth+x])
+            }
+        }
+
+        return output
+    }
+    /** Stream premultiplied tiles to a platform-owned output; no full-page IntArray allocation. */
+    fun renderTiles(dpi: Int,segments: Iterable<RenderThreadSegment>,rasterizer: ThreadAlphaRasterizer,
+                    cache: ThreadShapeCache? = null,pixelsPerSvgUnit: Double = dpi/96.0,
+                    isCancelled: () -> Boolean = { false },
+                    onTile: (left:Int,top:Int,width:Int,height:Int,premultiplied:IntArray)->Unit) {
+        require(dpi>0 && pixelsPerSvgUnit>0 && pixelsPerSvgUnit.isFinite())
+        val scale=pixelsPerSvgUnit
         for (segment in segments) {
+            if (isCancelled()) throw java.util.concurrent.CancellationException("Preview cancelled")
             if (segment.start == segment.end) continue // A display segment is not a new needle penetration.
             val path = ThreadShape.path(segment, scale)
             val region = ThreadFilterRegion.bounds(path)
-            require(region.width >= 2 && region.height >= 2) { "Subpixel filter regions are not supported by this prototype" }
+            require(region.width > 0 && region.height > 0)
             val local = region.local(path)
             fun bake(): IntArray {
                 val mask = rasterizer.rasterize(local, region.width, region.height)
-                require(mask.size == region.width*region.height && mask.all { it in 0..255 })
+                require(mask.size == Math.multiplyExact(region.width,region.height) && mask.all { it in 0..255 })
                 val blur = InkscapeGaussian.blur(mask, region.width, region.height, ThreadFilterMath.SIGMA * scale)
                 val light = ThreadFilterMath.specular(blur, region.width, region.height, scale)
                 return ThreadFilterMath.bake(mask, light, segment.displayRgb)
@@ -43,25 +62,22 @@ object RealisticThreadRenderer {
                 cache.getOrBake(ThreadShapeCache.Key(kotlin.math.hypot(dx,dy),kotlin.math.atan2(dy,dx),dpi,scale,
                     x-kotlin.math.floor(x),y-kotlin.math.floor(y),segment.displayRgb,region.width,region.height,local),::bake)
             }
-            for (y in 0 until region.height) {
-                val targetY=region.top+y
-                if(targetY !in 0 until height)continue
-                for(x in 0 until region.width) {
-                    val targetX=region.left+x
-                    if(targetX !in 0 until width)continue
-                    val pixel=tile[y*region.width+x];val alpha=pixel ushr 24
-                    if(alpha==0)continue
-                    val i=targetY*width+targetX
-                    var result=-0x1000000
-                    for(channel in 0..2) {
-                        val shift=16-channel*8
-                        val color=((pixel ushr shift) and 255)+ThreadFilterMath.premultiply((output[i] ushr shift) and 255,255-alpha)
-                        result=result or (color.coerceAtMost(255) shl shift)
-                    }
-                    output[i]=result
-                }
-            }
+            if (isCancelled()) throw java.util.concurrent.CancellationException("Preview cancelled")
+            onTile(region.left,region.top,region.width,region.height,tile)
         }
-        return output
     }
+
+    /** Exact source-over for an opaque platform pixel and one already-premultiplied tile pixel. */
+    fun compositeOpaque(background:Int,pixel:Int):Int {
+        val alpha=pixel ushr 24
+        if(alpha==0)return background
+        var result=-0x1000000
+        for(channel in 0..2) {
+            val shift=16-channel*8
+            val color=((pixel ushr shift) and 255)+ThreadFilterMath.premultiply((background ushr shift) and 255,255-alpha)
+            result=result or (color.coerceAtMost(255) shl shift)
+        }
+        return result
+    }
+
 }
