@@ -4,14 +4,14 @@
 
 ## User direction (reason for revision)
 
-- "Use it as is" does not mean bringing over every Ink/Stitch feature and screen. It means **do not reinvent proven algorithms; first bring them over and apply them unchanged**.
+- "Use it as is" does not mean bringing over every Ink/Stitch feature and screen. It means **first look for proven algorithms and bring them over unchanged; build or change one only with a measured improvement (AGENTS.md)**.
 - Listing settings as Ink/Stitch does is verbose and complicated on a phone app.
 - The theme is **designs that sew reliably**. Apply only proven methods automatically, even at the cost of some freedom.
 - Detailed settings belong in the next version.
 
 ## Principles
 
-1. **Do not create new algorithms.** Port stitch generation directly from Ink/Stitch v3.3.0 and use its defaults. Image processing also uses proven public algorithms (for example, potrace-family contour tracing and standard color quantization). Remove custom heuristics from the default path.
+1. **Proven algorithms first.** Port stitch generation directly from Ink/Stitch v3.3.0 and use its defaults. Image processing also uses proven public algorithms (for example, potrace-family contour tracing and standard color quantization). Remove custom heuristics from the default path. New or changed algorithms need a written basis and a measured improvement (user decision 2026-10-31).
 2. **Automatic decisions, minimal input.** Users choose only what (text/font/image), where (position/size), and which colors. The app chooses stitch type, density, underlay, and lock stitches using proven rules.
 3. **Make failing combinations unavailable from the outset.** Restrict ranges instead of displaying warnings. For example, a size slider moves only within the range verified for that font and stitch type.
 4. **Attach evidence to decision rules.** Numeric values come only from Ink/Stitch defaults or measurements of the user's 334 PE-Design designs. Values without evidence remain "unconfirmed" and are not used. embro-codex calibrates and verifies rules against the measured corpus.
