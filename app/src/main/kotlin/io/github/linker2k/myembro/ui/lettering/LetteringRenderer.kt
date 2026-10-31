@@ -184,7 +184,7 @@ object LetteringFontPreview {
         val sample = normalizedLetteringText(text).lineSequence().first().ifBlank { "Abc" }
             .codePoints().toArray().take(4).joinToString("") { String(Character.toChars(it)) }
         val previewStyle = when {
-            source.face != null -> if (HangulSatin.applies(sample)) StitchStyle.SATIN else StitchStyle.RUNNING
+            source.face != null -> if (HangulSatin.applies(sample) || KanaSatin.applies(sample)) StitchStyle.SATIN else StitchStyle.RUNNING
             singleLineWeightEnabled(true, source.ink != null, fontId) -> stitchStyle
             else -> null
         }
@@ -197,6 +197,10 @@ object LetteringFontPreview {
 /** Keep geometry construction shared by main preview, cards, and the added object. */
 private fun prepareObject(loaded: LoadedFont, settings: LetteringSettings, thread: EmbThread): TextObject {
     val text = normalizedLetteringText(settings.text)
+    // Kana uses the same explicit 400 bundled family as Hangul; this guard cannot match Hangul.
+    if(KanaSatin.applies(text) && settings.stitchStyle==StitchStyle.SATIN && loaded.centerlineFace!=loaded.face)
+        return prepareObject(LoadedFont(loaded.centerlineFace,loaded.svg,loaded.hershey,loaded.revision+":kana400",
+            loaded.name,loaded.cmap,loaded.ink,loaded.testedRangeMm),settings,thread)
     // The bundled variable file defaults to Thin. Only the new Hangul path requests the existing
     // explicit 400 XML family, as KRSAT3 did; legacy outline/fill extraction remains unchanged.
     val source = if(settings.stitchStyle==StitchStyle.SATIN && HangulSatin.applies(text) && loaded.centerlineFace!=loaded.face)
@@ -223,6 +227,32 @@ private fun prepareObject(loaded: LoadedFont, settings: LetteringSettings, threa
         if (code == '\n'.code) lines += mutableListOf<LayoutGlyph>()
         else glyphs.getValue(String(Character.toChars(code))).let { glyph ->
             lines.last() += LayoutGlyph(index, glyph.advance, glyph.paths)
+        }
+    }
+    if(KanaSatin.applies(text) && settings.stitchStyle==StitchStyle.SATIN) {
+        return try {
+            val componentIds=mutableListOf<Int>();val widths=mutableMapOf<Int,Double>()
+            val markWidths=mutableMapOf<Int,Double>()
+            val tracedLines=lines.map { line -> line.map { glyph ->
+                val code=codes[glyph.index]
+                if(Character.isWhitespace(code)) LayoutGlyph(glyph.index,glyph.advance,emptyList()) else {
+                    val raster=io.github.linker2k.myembro.lettering.AndroidCenterlineGlyph.rasterize(String(Character.toChars(code)),source.face)
+                    val traced=KanaCenterlineGlyph.extract(raster,code,source.reference,glyph.paths)
+                    val offset=componentIds.size
+                    traced.components.forEachIndexed { index,component->
+                        componentIds+=component
+                        traced.marks[component]?.let { markWidths[offset+index]=it }
+                    }
+                    widths[glyph.index]=HangulSatin.measuredWidthSource(glyph.paths,source.reference)
+                    LayoutGlyph(glyph.index,glyph.advance,traced.paths)
+                }
+            } }
+            val traced=layoutGlyphs(tracedLines,source.reference,settings)
+            val data=KanaSatinData(CenterlineSatinData(traced.contours,traced.characters,componentIds,widths),markWidths)
+            prepareText(request.copy(kanaSatin=data),snapshot).textObject.also { it.localPattern() }
+        } catch(_:RuntimeException) {
+            // Only kana opts into this fallback; Hangul exceptions and outputs are untouched.
+            prepareText(request.copy(stitchStyle=StitchStyle.RUNNING),snapshot).textObject
         }
     }
     val centerline=source.face?.takeIf { HangulSatin.applies(text) && settings.stitchStyle==StitchStyle.SATIN }?.let { face ->

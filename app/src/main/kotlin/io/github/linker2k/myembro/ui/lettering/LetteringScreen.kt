@@ -349,7 +349,10 @@ private fun LetteringContent(
                             label = { Text(stringResource(R.string.lettering_weight_bold)) }, modifier = Modifier.weight(1f))
                     }
                 }
-                Text(stringResource(when (if (automatic?.singleLineWeightEnabled == true) settings.stitchStyle else automatic?.style) {
+                val shownStyle = if (automatic?.kanaSatin == true && renderedKey == generationKey)
+                    result?.textObject?.stitchStyle ?: automatic?.style
+                    else if (automatic?.singleLineWeightEnabled == true) settings.stitchStyle else automatic?.style
+                Text(stringResource(when (shownStyle) {
                     StitchStyle.BEAN -> R.string.lettering_bean
                     StitchStyle.RUNNING -> R.string.lettering_automatic_running
                     StitchStyle.SATIN -> R.string.lettering_automatic_satin
@@ -374,8 +377,8 @@ private fun LetteringContent(
                         contentDescription = context.getString(R.string.lettering_height)
                         stateDescription = Dimensions.length(height)
                     })
-                } else if (ranges.isEmpty() && (automatic?.style == StitchStyle.RUNNING || automatic?.centerlineSatin==true)) {
-                    Text(stringResource(if(automatic?.centerlineSatin==true) R.string.lettering_component_satin_note else R.string.lettering_satin_unconfirmed_running),
+                } else if (ranges.isEmpty() && (automatic?.style == StitchStyle.RUNNING || (automatic?.centerlineSatin==true || automatic?.kanaSatin==true))) {
+                    Text(stringResource(if(automatic?.centerlineSatin==true || automatic?.kanaSatin==true) R.string.lettering_component_satin_note else R.string.lettering_satin_unconfirmed_running),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     OutlinedTextField(letteringHeightDisplayText(heightDraft, height), onValueChange = { value ->
                         heightDraft = value
