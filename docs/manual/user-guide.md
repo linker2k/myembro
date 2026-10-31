@@ -2,7 +2,7 @@
 
 **English** | [한국어](user-guide.ko.md)
 
-This guide covers myembro v0.4.0-beta.2 (some screenshots show older versions).
+This guide covers the latest myembro (some screenshots show older versions).
 
 1. [Getting started](#1-getting-started)
 2. [Starting a new project](#2-starting-a-new-project)
@@ -278,7 +278,7 @@ At the top of **Settings**, **Backup** stores designs, projects, downloaded font
 
 ![Settings: theme and about](../images/manual/en/16-about.png)
 
-At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL-3.0-or-later, **Open-source licenses**) and the version (0.3.7 with the build commit). myembro is GPL-3.0-or-later.
+At the bottom of **Settings**: **Display theme**, **About** (**App license** GPL-3.0-or-later, **Open-source licenses**) and the app version with the build commit. myembro is GPL-3.0-or-later.
 
 ![Home in dark theme](../images/manual/en/17-home-dark.png)
 
