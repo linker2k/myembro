@@ -800,3 +800,29 @@ SPDX-License-Identifier: Unicode-3.0
 - Line/circle traversal adapted via the pinned DrawingBot helper, with MIT attribution
   in `SketchLineSampler.kt`; full permission and warranty notice retained in
   `engine/src/main/resources/licenses/thread-texture/ZINGL-MIT.txt`.
+
+## Experimental realistic thread preview (Ink/Stitch, Inkscape, resvg)
+
+- Display-only prototype: `engine/.../render/realistic/`. It is not connected to the app,
+  embroidery generation, or PES export. Its test fixtures are repository-owned synthetic paths.
+- Ink/Stitch v3.3.0 `b0edd96311ece82ee48816dc93466274b12c2a9c`,
+  `lib/svg/rendering.py`: original capsule path, visual length deduction and filter parameters.
+  GPL-3.0-or-later, Copyright (c) 2010 Authors / Ink/Stitch contributors; existing Ink/Stitch
+  license above applies. Exact selected upstream definitions generate our external PNG reference.
+- Inkscape 1.4.2 `ebf0e940d050842d608d57f6a04e6daaa5c65f37`:
+  `src/display/nr-filter-gaussian.cpp`, `nr-filter-specularlighting.cpp`,
+  `nr-filter-composite.cpp`, `cairo-templates.h`, `cairo-utils.h`, `src/util/fixed_point.h`.
+  These files are GPL-2.0-or-later; the adaptations are distributed under GPL-3.0-or-later.
+  Gaussian: Copyright (C) 2006–2008 authors, Niko Kiirala, bulia byak, Jasper van de Gronde.
+  Lighting/composite: Copyright (C) 2007 authors, Niko Kiirala and Jean-Rene Reinhard.
+  Cairo helpers/templates: Copyright (C) 2010 Authors, Krzysztof Kosiński.
+  Fixed-point representation: Copyright (C) 2006 Jasper van de Gronde.
+  Project license explanation retained in `engine/src/main/resources/licenses/inkscape-renderer/COPYING`;
+  GPL-3.0 text is in the repository [LICENSE](LICENSE).
+- resvg `4ba2462da4ecf1f93731e957fc65d4ccb7c51bed`,
+  `crates/resvg/src/filter/lighting.rs`, `composite.rs`: Sobel boundary factors,
+  halfway-vector specular calculation and premultiplied composition reference.
+  Copyright 2020 the Resvg Authors. MIT option selected from `Apache-2.0 OR MIT`;
+  complete MIT notice retained in `engine/src/main/resources/licenses/resvg/LICENSE-MIT`.
+  No Rust runtime/dependency is added. The final Gaussian uses Inkscape's FIR/IIR,
+  not resvg's five-box approximation. See [prototype measurements](docs/research/realistic-preview-cpu.md).
