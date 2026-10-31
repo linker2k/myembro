@@ -87,7 +87,7 @@ def install(pack):
         stitches, colors, width, height = pes_stats(target.read_bytes())
         # The pack may adopt a larger fit than planned when that recovers missing regions (size-comparison.md).
         fit = [round(float(v)) for v in result["fit"].split("x")]
-        samples.append({
+        row = {
             "file": design["file"],
             "title": design["title"],
             "titleEn": design["titleEn"],
@@ -103,7 +103,10 @@ def install(pack):
             "technique": design["kind"],
             "source": f"AI-generated image ({MODEL}), converted by myembro; docs/samples/provenance.json id {design['id']}",
             "attribution": "myembro contributors",
-        })
+        }
+        if "order" in design:  # the home screen's fixed sample row, 1 first
+            row["order"] = design["order"]
+        samples.append(row)
     manifest = {"version": 2, "hoopMm": [100, 100], "samples": samples}
     (ASSETS / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"installed {len(samples)}/{len(catalog)} designs into {ASSETS.relative_to(ROOT)}")

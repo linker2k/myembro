@@ -59,8 +59,8 @@ python3 tools/samples/install_pack.py --pack /tmp/myembro-sample-pack
 JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ./gradlew :engine:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-First launch/first launch after upgrading from the single-flower demo installs the
-whole pack once. Existing user files are preserved. Deleting a sample does not
-make it reappear at next launch. Sample file names start with `sample_`; the app shows the manifest name and a
-localized sample badge. A failed copy leaves no partial PES and is
-retried on the next launch; completed copies are not overwritten.
+Samples are not copied into the user's library. Home shows six fixed picks (manifest
+`order`), and "View all" or the Designs tab's Samples chip opens the full sample list.
+Opening a sample starts a new, unsaved project with that design under its display name
+and hoop; the bundled file is never changed. Sample copies that an earlier version put in
+a user's library are left as they are.

@@ -445,7 +445,8 @@
       ],
       "technique": "fill",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 17-penguin",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 1
     },
     {
       "file": "sample_18_owl.pes",
@@ -887,7 +888,8 @@
       ],
       "technique": "fill",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 34-four-leaf-clover",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 6
     },
     {
       "file": "sample_35_maple_leaf.pes",
@@ -2317,7 +2319,8 @@
       ],
       "technique": "fill",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c06-midcentury-bird",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 5
     },
     {
       "file": "sample_c07_stainedglass_hummingbird.pes",
@@ -2447,7 +2450,8 @@
       ],
       "technique": "fill",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c12-dancheong-pattern",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 2
     },
     {
       "file": "sample_c13_crane_pine_sun.pes",
@@ -3071,7 +3075,8 @@
       ],
       "technique": "line",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l06-whale",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 4
     },
     {
       "file": "sample_l07_monstera.pes",
@@ -3227,7 +3232,8 @@
       ],
       "technique": "fill",
       "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F01-rose",
-      "attribution": "myembro contributors"
+      "attribution": "myembro contributors",
+      "order": 3
     },
     {
       "file": "sample_f02_swallow_red.pes",

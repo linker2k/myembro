@@ -227,7 +227,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             catch (_: Exception) { message = app.getString(R.string.usb_history_load_failed) }
         } }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { library.seedSampleIfEmpty(); library.seedDefaultLogo() }
+            withContext(Dispatchers.IO) { library.seedDefaultLogo() }
             refresh()
         }
         refreshDrives()

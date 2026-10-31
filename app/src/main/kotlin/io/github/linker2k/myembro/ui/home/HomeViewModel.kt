@@ -53,7 +53,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         .orEmpty().filter { it.isFile && it.extension.equals("myembro", ignoreCase = true) }
                     val files = (projects + DesignLibrary(app).list().filterNot(DesignLibrary::isSample))
                         .sortedByDescending { it.lastModified() }.take(6)
-                    val gallery = BundledDesigns.files(app).take(6)
+                    val gallery = BundledDesigns.featured(app)
                     files.map(::describe) to gallery.map(::describe)
                 }
                 recent = content.first

@@ -254,7 +254,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 1
   },
   {
    "id": "18-owl",
@@ -509,7 +510,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 6
   },
   {
    "id": "35-maple-leaf",
@@ -1334,7 +1336,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 5
   },
   {
    "id": "c07-stainedglass-hummingbird",
@@ -1397,21 +1400,6 @@
    ]
   },
   {
-   "id": "c11-minhwa-peony",
-   "file": "sample_c11_minhwa_peony.pes",
-   "title": "민화 모란",
-   "titleEn": "Minhwa Peonies",
-   "kind": "fill",
-   "fitMm": [
-    120,
-    170
-   ],
-   "hoopMm": [
-    130,
-    180
-   ]
-  },
-  {
    "id": "c12-dancheong-pattern",
    "file": "sample_c12_dancheong_pattern.pes",
    "title": "단청 문양",
@@ -1424,7 +1412,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 2
   },
   {
    "id": "c13-crane-pine-sun",
@@ -1784,7 +1773,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 4
   },
   {
    "id": "l07-monstera",
@@ -1874,7 +1864,8 @@
    "hoopMm": [
     100,
     100
-   ]
+   ],
+   "order": 3
   },
   {
    "id": "F02-swallow-red",

@@ -107,13 +107,14 @@ internal fun EmbroideryTheme(content: @Composable () -> Unit) = MyembroTheme(con
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)? = null) {
-    EmbroideryTheme { LibraryContent(vm, onOpen, onFreeDesigns) }
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)? = null,
+    onSamples: (() -> Unit)? = null) {
+    EmbroideryTheme { LibraryContent(vm, onOpen, onFreeDesigns, onSamples) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?) {
+private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeDesigns: (() -> Unit)?, onSamples: (() -> Unit)?) {
     val selecting = vm.selection.isNotEmpty()
     var showUsbHelp by remember { mutableStateOf(false) }
     var fileExportMenu by remember { mutableStateOf(false) }
@@ -247,7 +248,7 @@ private fun LibraryContent(vm: LibraryViewModel, onOpen: (File) -> Unit, onFreeD
                                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         UsbStatus(vm) { vm.refreshDrives(); showUsbHelp = true }
-                        LibraryControls(vm, visible.size)
+                        LibraryControls(vm, visible.size, onSamples)
                     }
                 }
                 if (visible.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
@@ -367,7 +368,7 @@ private fun UsbStatus(vm: LibraryViewModel, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
+private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int, onSamples: (() -> Unit)? = null) {
     val focus = LocalFocusManager.current
     var sorting by remember { mutableStateOf(false) }
     OutlinedTextField(
@@ -429,6 +430,16 @@ private fun LibraryControls(vm: LibraryViewModel, visibleCount: Int) {
                 onClick = { vm.filter = LibraryViewModel.Filter.FAVORITES },
                 label = { Text(stringResource(R.string.library_filter_favorites)) },
                 leadingIcon = { Icon(Icons.Default.FavoriteBorder, null, Modifier.size(16.dp)) },
+                shape = MyembroShapes.Chip,
+                colors = libraryChipColors(),
+            )
+        }
+        // Bundled samples are not library files: this opens their own list (DesignPickerScreen).
+        if (onSamples != null) item {
+            FilterChip(
+                selected = false,
+                onClick = onSamples,
+                label = { Text(stringResource(R.string.picker_samples)) },
                 shape = MyembroShapes.Chip,
                 colors = libraryChipColors(),
             )

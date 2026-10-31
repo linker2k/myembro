@@ -67,6 +67,13 @@ class SamplePackTest {
         }
     }
 
+    /** Home shows the manifest's `order` 1..6, all for the 100mm hoop (user decision 2026-11-01). */
+    @Test fun homeRowIsSixFixedDesignsThatFitThe100mmHoop() {
+        val home = samples.filter { "order" in it }.sortedBy { it.getValue("order").jsonPrimitive.int }
+        assertEquals((1..6).toList(), home.map { it.getValue("order").jsonPrimitive.int })
+        home.forEach { assertEquals(listOf(100, 100), it.mm("hoopMm"), it.string("file")) }
+    }
+
     @Test fun licensesAndProvenanceCoverThePack() {
         val notices = File(assets, "LICENSES.md").readText()
         assertTrue(File(assets, "CC0-1.0.txt").readText().contains("CC0"))
