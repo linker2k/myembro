@@ -30,7 +30,7 @@ class ColorCleanupSweep {
                 val report=SewoutCheck.checkPes(pes,options=SewoutOptions(origin=DesignOrigin.APP_GENERATED))
                 val threads=result.pattern.threads.distinctBy { it.color }
                 val count=threads.size
-                val expected=if(name=="face") setOf("23","12","49") else setOf("23","32","49")
+                val expected=if(name=="face") setOf("23","12","36") else setOf("23","32","49")
                 counts.getOrPut(area) { mutableListOf() }+=if(threads.map { it.catalogNumber }.toSet()==expected && result.excludedCount==0) count else -1
                 rows+="$name\t$area\t3\t$count\t${result.pattern.stitchCount}\t${report.verdict}\t${(System.nanoTime()-start)/1e6}\t${threads.map { it.catalogNumber to it.description }}"
                 out?.resolve("$name-$area.pes")?.writeBytes(pes)

@@ -55,9 +55,15 @@ class LogoDesignTest {
             File(out, "THREADS.md").writeText(threads(result))
             File(out, "README.md").writeText(readme(result, report.statistics.stitchCount))
         }
-        // Save regeneration artifacts even when the bundled asset needs updating.
-        // The app's bundled default design is exactly this output (regenerate with LOGO_OUT when it changes).
-        assertContentEquals(File("../app/src/main/assets/designs/myembro_logo.pes").readBytes(), pes)
+        // The shipped PES is frozen imported artwork: preserve its bytes and source threads.
+        // Regenerated SVG now uses the user-approved batch CIEDE2000 allocation, so compare
+        // every encoded command/coordinate, while checking regenerated colors independently.
+        val bundled = io.github.linker2k.myembro.engine.io.PesReader.read(File("../app/src/main/assets/designs/myembro_logo.pes").readBytes())
+        val regenerated = io.github.linker2k.myembro.engine.io.PesReader.read(pes)
+        assertEquals(bundled.stitches, regenerated.stitches)
+        assertEquals(bundled.bounds, regenerated.bounds)
+        val assignment=VectorArt.assignThreads(art)
+        result.parts.forEach { assertEquals(assignment.threadFor(it.sourceRgb),it.thread) }
     }
 
     private fun hex(rgb: Int) = "#%06X".format(rgb and 0xFFFFFF)

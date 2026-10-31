@@ -114,7 +114,7 @@ class ShapeObject internal constructor(
 
         fun fromArt(id: String, name: String, art: VectorArt.Art, widthMm: Double): ShapeObject {
             require(id.isNotBlank()) { "Shape object ID must not be blank" }
-            val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes))
+            val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes), art.myThreads.copy(indices = java.util.Collections.unmodifiableSet(art.myThreads.indices.toSet())))
             val rendered = VectorArt.render(source, widthMm, name = name, captureRegions = true)
             val regions = rendered.parts.mapIndexed { i, part ->
                 val type = when (part.method) {

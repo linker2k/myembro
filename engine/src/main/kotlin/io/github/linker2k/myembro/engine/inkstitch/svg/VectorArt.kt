@@ -17,6 +17,9 @@ import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.GeneratedPatternP
 import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup
 import io.github.linker2k.myembro.engine.inkstitch.utils.Point
 import io.github.linker2k.myembro.engine.io.PecThreads
+import io.github.linker2k.myembro.engine.io.MyThreads
+import io.github.linker2k.myembro.engine.color.DesignColor
+import io.github.linker2k.myembro.engine.color.ThreadAssignment
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.model.EmbThread
 import org.locationtech.jts.geom.Coordinate
@@ -48,7 +51,7 @@ object VectorArt {
     data class Shape(val d: String, val fill: Int?, val stroke: Int?, val strokeWidth: Double = 1.0,
         val lineCap: String? = null, val lineJoin: String? = null,
         val transform: Affine2D = Affine2D.IDENTITY, val fillRule: FillRule = FillRule.NON_ZERO)
-    data class Art(val viewBox: List<Double>, val shapes: List<Shape>)
+    data class Art(val viewBox: List<Double>, val shapes: List<Shape>, val myThreads: MyThreads = MyThreads())
 
     /** Bounds of the shared [StitchTypeRule]; overridable only for sweeps. */
     data class Rules(val satinMinMm: Double = StitchTypeRule.SATIN_MIN_MM, val satinMaxMm: Double = StitchTypeRule.SATIN_MAX_MM) {
@@ -238,11 +241,21 @@ object VectorArt {
      * it, and slivers narrower than the satin minimum are dropped instead of sewn.
      */
     /** [removeOverlaps] false only to measure what overlap removal saves (tests); the app always removes. */
+    /** Palette allocation without stitch generation; areas are in source-coordinate square units. */
+    fun assignThreads(art: Art, myThreads: MyThreads = art.myThreads): ThreadAssignment.Result =
+        ThreadAssignment.assign(art.shapes.flatMap { shape -> listOfNotNull(
+            shape.fill?.let { DesignColor(it,fillGeometry(shape).area) },
+            shape.stroke?.let { DesignColor(it,strokeGeometry(shape).area) }) },myThreads)
+
     fun render(art: Art, widthMm: Double, rules: Rules = Rules(), name: String = "Art", removeOverlaps: Boolean = true,
         regionOverride: ((RegionInput) -> StitchTypeRule.RegionStitches?)? = null,
-        captureRegions: Boolean = false): Result {
+        captureRegions: Boolean = false, myThreads: MyThreads = art.myThreads): Result {
         require(widthMm.isFinite() && widthMm > 0)
-        val footprints = art.shapes.map(::footprint)
+        val fills = art.shapes.map { shape -> shape.fill?.let { fillGeometry(shape) } }
+        val strokes = art.shapes.map { shape -> shape.stroke?.let { strokeGeometry(shape) } }
+        val footprints = art.shapes.indices.map { i -> UnaryUnionOp.union(listOfNotNull(fills[i],strokes[i])) }
+        val assignment = ThreadAssignment.assign(art.shapes.flatMapIndexed { i,shape -> listOfNotNull(
+            shape.fill?.let { DesignColor(it,fills[i]!!.area) },shape.stroke?.let { DesignColor(it,strokes[i]!!.area) }) },myThreads)
         val bounds = UnaryUnionOp.union(footprints).envelopeInternal
         val scale = widthMm / bounds.width
         val cx = (bounds.minX + bounds.maxX) / 2; val cy = (bounds.minY + bounds.maxY) / 2
@@ -310,17 +323,17 @@ object VectorArt {
         }
         art.shapes.forEachIndexed { index, shape ->
             shape.fill?.let { rgb ->
-                val thread = nearestThread(rgb)
-                val region = fillGeometry(shape)
+                val thread = assignment.threadFor(rgb)
+                val region = fills[index]!!
                 val w = StitchTypeRule.maxWidth(region) * scale
                 if (rules.classify(region, scale) != StitchTypeRule.Type.RUNNING) area(index, "fill", region, thread, w, rgb)
                 else emit(index, "fill", region, thread, w, rgb, StitchTypeRule.Type.RUNNING, satin = { emptyList() },
                     running = { Stroke(subpaths(shape).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous()) })
             }
             shape.stroke?.let { rgb ->
-                val thread = nearestThread(rgb)
+                val thread = assignment.threadFor(rgb)
                 val w = shape.strokeWidth * scale
-                val band = strokeGeometry(shape)
+                val band = strokes[index]!!
                 // The stroke's band is the region: bends widen its maximum, so a 6.5mm arch line is tatami.
                 when (val type = rules.classify(band, scale)) {
                     StitchTypeRule.Type.TATAMI -> area(index, "stroke", band, thread, w, rgb)
@@ -341,6 +354,6 @@ object VectorArt {
         val pattern = if (groups.isEmpty()) EmbPattern(emptyList(), emptyList()) else GeneratedPatternProcessor.fromGroups(if (captureRegions) ownedGroups else groups,
             collapse_len = 3.0, min_stitch_len = .1, pecJumpTrims = true, lockAtThreadBoundaries = true, omitZeroLengthMotions = true, stitchOwners = owners)
         return Result(EmbPattern(pattern.stitches, pattern.threads, pattern.metadata + mapOf("name" to name,
-            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap())
+            "myembro.excluded_regions" to excludedCount.toString()), pattern.warnings + assignment.warnings.map { it.message }), parts, scale, excludedCount, if (captureRegions) RegionOrderPatterns.split(pattern, owners, parts.associate { it.regionId to it.thread }) else emptyMap())
     }
 }

@@ -22,9 +22,11 @@ class ColorDefaultExpansionTest {
         // 2026-10-30 for the two-pass 1.2mm half-stitch-staggered outline (user decision).
         // 2026-10-30: preserve the first-pass Ink/Stitch curve-boundary needles in pass 2
         // instead of shortcutting corners between midpoints (square-hole PES excursion 0.3 -> 0mm).
+        // 2026-11-01: user-approved unique CIEDE2000 allocation changes face thread 49 to 36;
+        // independently checked that the stitch-coordinate hash is unchanged.
         // ColorCleanupSweep 30mm/192px inputs with identical bilinear resize + 4×4 white speck.
         val goldens=mapOf(
-            "face" to "af57b7accc20deff44a1a6b8032e064d0bd9ab0663de81c45f15a62eae2473bb",
+            "face" to "1413e4d551455b5b03879e71a8ffc9d198c2e88b9ef52ff051b54186a8fe57d0",
             "robot" to "dc73042705a3d8fa225b83c01e305525c22929b394504a1394e0e3dee56fe782")
         val output=System.getenv("COLOR_DEFAULT_EXPAND_OUT")?.let { File(it).apply { mkdirs() } }
         for((name,golden) in goldens) {

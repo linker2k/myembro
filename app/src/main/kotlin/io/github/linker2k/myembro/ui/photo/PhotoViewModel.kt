@@ -254,7 +254,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         work = viewModelScope.launch {
             try {
                 val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
-                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art, width)
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art.copy(myThreads = snapshot.myThreads), width)
                     val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),

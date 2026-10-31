@@ -800,3 +800,13 @@ SPDX-License-Identifier: Unicode-3.0
 - Line/circle traversal adapted via the pinned DrawingBot helper, with MIT attribution
   in `SketchLineSampler.kt`; full permission and warranty notice retained in
   `engine/src/main/resources/licenses/thread-texture/ZINGL-MIT.txt`.
+
+## scikit-image 0.25.2 — color difference formulas
+
+`engine/.../color/ColorDifference.kt` adapts sRGB→Lab (D65, 2°) and CIEDE2000
+from [`skimage/color/colorconv.py`](https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/color/colorconv.py)
+and [`skimage/color/delta_e.py`](https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/color/delta_e.py).
+Copyright 2009–2022 the scikit-image team; BSD-3-Clause, GPL-compatible.
+The unmodified distribution license is bundled at
+`engine/src/main/resources/licenses/scikit-image/LICENSE.txt`.
+No Python or scikit-image runtime dependency is added.
