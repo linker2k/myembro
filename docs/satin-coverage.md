@@ -47,3 +47,25 @@ JAVA_HOME=/home/gosh2/.jdks/jdk-17.0.20.1+1 ANDROID_HOME=/home/gosh2/Android/Sdk
 ```
 
 Final code verification: `BUILD SUCCESSFUL in 9m 55s`; XML totals engine 1,044 + app debug/release 969 + MCP 10 = **2,023 tests, 0 failures/errors/skips**. Android lint: **0 errors/fatals**, 177 warnings. Full output: `/tmp/myembro-satin-coverage/full-check.log`. Cancellation regression completed in 1,551ms (debug) and 2,577ms (release), within the existing 3,000ms bound.
+
+## Final 136-design batch
+
+`python3 /tmp/myembro-satin-coverage/summarize.py` prints `DATASET_ASSERTIONS_PASS 136/136; BORDER_REVERTS 0`. `finalize.py` prints `TARGET_PROBE_BATCH_PES_IDENTICAL 2/2`, `LINE_ART_PES_BYTE_IDENTICAL 10/10` and `FINAL_ARTIFACT_ASSERTIONS_PASS`. All 136 initial jobs completed within their 600-second offline budget; no retry was needed for this final policy.
+
+| Metric | Before | After |
+|---|---:|---:|
+| Valid PES / selected fit-box bounds / sewout blockers | 136 / 136 / 0 | 136 / 136 / 0 |
+| Omitted extreme tiny regions | 296 | 296 |
+| Non-border satin → tatami regions | — | 1,134 |
+| Border satin → tatami regions | — | 0 |
+| Previously satin borders remaining satin | — | 161 |
+| Eligible non-border uncovered area, mm² | 6935.491400 | 0.111606 |
+| Satin target area share, 126 SVGs | 21.3988% | 10.8552% |
+| Satin penetrations / all penetrations, 136 outputs | Not stored in baseline | 10.2643% |
+| Total penetrations | 1,428,827 | 1,545,015 (+8.1317%) |
+
+The target paint-area denominator is 450152.023142mm². Final satin is 48864.801398mm² and 158,585 penetrations. Per-region owner penetration sums equal each encoded PES's count; emitted source-region sets match the frozen baseline after legacy-ID mapping. No baseline satin needle fraction is inferred from area.
+
+The complete split lists are `/tmp/myembro-satin-coverage/reverted-border.csv` (0 rows), `reverted-nonborder.csv` (1,134 rows) and `preserved-border.csv` (161 rows). Every reverted region is non-border, coverage-triggered and becomes existing tatami; none becomes running or disappears. `comparison.csv` contains per-design needle changes and diagnostics. `README.md`, `artifacts-sha256.json` and `input-sha256.json` retain reproduction details and byte identities.
+
+Skull region-5: 59.325193mm² source area, satin → tatami, uncovered 16.921752 → 0mm²; the whole design becomes 8,514 needles. Skull outer border region-6 stays satin. Crown region-1 stays polygon-ring satin; **the whole crown PES remains byte-identical to its 2,930-needle baseline**. Root `01-skull-before-after.png` / `03-crown-before-after.png` show flat previews under identical rendering conditions. `pes/` and `png/` each contain 136 artifacts.
