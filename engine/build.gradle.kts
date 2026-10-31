@@ -219,7 +219,7 @@ tasks.register<JavaExec>("runAgentScenario") {
 }
 
 tasks.processResources {
-    from(rootProject.file("app/src/main/assets/samples/sample_heart_running.pes")) { into("agent/builtins") }
+    from(rootProject.file("app/src/main/assets/samples/sample_71_heart.pes")) { into("agent/builtins") }
     from(rootProject.file("app/src/main/assets/designs/myembro_logo.pes")) { into("agent/builtins") }
 }
 

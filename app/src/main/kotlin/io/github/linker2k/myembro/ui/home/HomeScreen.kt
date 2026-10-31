@@ -226,12 +226,12 @@ private fun HomeContent(
                     SectionTitle(stringResource(R.string.home_gallery))
                 }
                 if (expanded) gridItems(samples, key = { "sample:${it.file.path}" }) { project ->
-                    ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample),
+                    ProjectCard(project, project.title, stringResource(R.string.home_sample),
                         Modifier.fillMaxWidth()) { onOpenRecent(project.file) }
                 } else item(key = "samples_row") {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(samples, key = { it.file.path }) { project ->
-                            ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample)) { onOpenRecent(project.file) }
+                            ProjectCard(project, project.title, stringResource(R.string.home_sample)) { onOpenRecent(project.file) }
                         }
                     }
                 }
@@ -277,9 +277,6 @@ private fun NewProjectCard(hoop: Hoop, frame: FrameOption? = null, onCreate: () 
         }
     }
 }
-
-private fun sampleTitle(project: HomeProject): String =
-    project.file.nameWithoutExtension.removePrefix("sample_").replace('_', ' ')
 
 @Composable
 private fun RecentEmpty(failed: Boolean, onAction: () -> Unit) {

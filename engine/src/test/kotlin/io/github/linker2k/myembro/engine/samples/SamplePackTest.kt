@@ -1,78 +1,86 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.samples
 
+import io.github.linker2k.myembro.engine.edit.HoopSpec
 import io.github.linker2k.myembro.engine.io.PesReader
 import io.github.linker2k.myembro.engine.model.Command
+import io.github.linker2k.myembro.engine.sewout.DesignOrigin
+import io.github.linker2k.myembro.engine.sewout.PecViewportCheck
+import io.github.linker2k.myembro.engine.sewout.PesOutputSafety
 import java.io.File
 import java.security.MessageDigest
-import kotlin.math.hypot
 import kotlin.test.*
 import kotlinx.serialization.json.*
 
+/** The starter pack installed by tools/samples/install_pack.py. */
 class SamplePackTest {
-    private val assets = listOf(File("../app/src/main/assets/samples"), File("app/src/main/assets/samples"))
-        .first { it.isDirectory }
+    private fun dir(path: String) = listOf(File("../$path"), File(path)).first { it.exists() }
+    private val assets = dir("app/src/main/assets/samples")
     private val manifest = Json.parseToJsonElement(File(assets, "manifest.json").readText()).jsonObject
     private val samples = manifest.getValue("samples").jsonArray.map { it.jsonObject }
+    private val catalog = Json.parseToJsonElement(dir("tools/samples/catalog.json").readText()).jsonObject
+        .getValue("designs").jsonArray.map { it.jsonObject }
+    private fun JsonObject.string(key: String) = getValue(key).jsonPrimitive.content
+    private fun JsonObject.mm(key: String) = getValue(key).jsonArray.map { it.jsonPrimitive.int }
+    // The only hoops the pack targets (catalog hoopMm); anything else is a catalog error.
+    private val hoops = mapOf(listOf(100, 100) to HoopSpec.H100, listOf(130, 180) to HoopSpec.H130x180)
 
-    @Test fun everyBundledDesignMatchesItsInventoryAndFits100mmHoop() {
-        assertTrue(samples.size >= 20)
-        assertEquals(samples.size, samples.map { it.getValue("file").jsonPrimitive.content }.distinct().size)
-        assertEquals(samples.map { it.getValue("file").jsonPrimitive.content }.toSet(),
-            assets.listFiles()!!.filter { it.name.startsWith("sample_") && it.extension == "pes" }.map { it.name }.toSet())
+    @Test fun everyBundledDesignMatchesItsInventory() {
+        val files = samples.map { it.string("file") }
+        assertTrue(samples.size >= 130, "${samples.size}")
+        assertEquals(files.size, files.distinct().size)
+        assertEquals(files.toSet(), assets.listFiles()!!.filter { it.name.startsWith("sample_") && it.extension == "pes" }.map { it.name }.toSet())
+        val byFile = catalog.associateBy { it.string("file") }
         for (entry in samples) {
-            val file = File(assets, entry.getValue("file").jsonPrimitive.content)
-            val bytes = file.readBytes()
+            val name = entry.string("file")
+            val design = assertNotNull(byFile[name], name)
+            assertEquals(design.string("title"), entry.string("title"), name)
+            assertEquals(design.string("titleEn"), entry.string("titleEn"), name)
+            assertEquals(design.mm("hoopMm"), entry.mm("hoopMm"), name)
+            val bytes = File(assets, name).readBytes()
             val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-            assertEquals(entry.getValue("sha256").jsonPrimitive.content, hash, file.name)
+            assertEquals(entry.string("sha256"), hash, name)
             val pattern = PesReader.read(bytes)
-            assertTrue(pattern.warnings.isEmpty(), "${file.name}: ${pattern.warnings}")
-            assertEquals(entry.getValue("stitches").jsonPrimitive.int, pattern.stitchCount, file.name)
-            assertEquals(entry.getValue("colors").jsonPrimitive.int, pattern.colorBlocks.size, file.name)
-            assertTrue(pattern.stitchCount > 0, file.name)
-            val b = assertNotNull(pattern.bounds, file.name)
-            assertTrue(b.minX >= -500 && b.maxX <= 500 && b.minY >= -500 && b.maxY <= 500, "${file.name}: $b")
-            assertEquals(Command.END, pattern.stitches.last().command, file.name)
+            assertTrue(pattern.warnings.isEmpty(), "$name: ${pattern.warnings}")
+            assertEquals(entry.getValue("stitches").jsonPrimitive.int, pattern.stitchCount, name)
+            assertEquals(entry.getValue("colors").jsonPrimitive.int, pattern.colorBlocks.size, name)
+            assertEquals(Command.END, pattern.stitches.last().command, name)
         }
+        assertEquals(samples.size, samples.map { it.string("title") }.distinct().size, "Korean names must be unique")
+        assertEquals(samples.size, samples.map { it.string("titleEn") }.distinct().size, "English names must be unique")
     }
 
-    @Test fun travelIsTrimmedAndSewnMovesAreAtMostFourMillimeters() {
+    /** Same encoded-PES gate as saving and USB: P1–P8 and the PEC viewport, against the design's own hoop. */
+    @Test fun everyBundledDesignPassesTheSewingGateForItsHoop() {
         for (entry in samples) {
-            val name = entry.getValue("file").jsonPrimitive.content
-            val p = PesReader.read(File(assets, name).readBytes())
-            var trimmed = true
-            p.stitches.forEachIndexed { i, s ->
-                when (s.command) {
-                    Command.TRIM -> trimmed = true
-                    Command.JUMP -> assertTrue(trimmed, "$name: untrimmed jump at $i")
-                    Command.STITCH -> {
-                        if (i > 0) {
-                            val previous = p.stitches[i-1]
-                            assertTrue(hypot(s.x.toDouble()-previous.x, s.y.toDouble()-previous.y) <= 40.01,
-                                "$name: needle-down move longer than 4 mm at $i")
-                        }
-                        trimmed = false
-                    }
-                    else -> Unit
-                }
-            }
+            val name = entry.string("file")
+            val hoop = assertNotNull(hoops[entry.mm("hoopMm")], name)
+            val bytes = File(assets, name).readBytes()
+            val decoded = PesReader.read(bytes)
+            val report = PesOutputSafety.check(bytes, hoop, decoded, origin = DesignOrigin.APP_GENERATED).report
+            assertTrue(report.analysisComplete && !report.hasBlockingIssues, "$name: $report")
+            assertTrue(PecViewportCheck.check(bytes, hoop).valid, name)
+            // Fit box from the catalog, +1mm as measured by the pack verifier (verification-round2.log).
+            val fit = entry.mm("fitMm")
+            val b = assertNotNull(decoded.bounds, name)
+            assertTrue(b.width <= fit[0] * 10 + 10 && b.height <= fit[1] * 10 + 10, "$name: $b vs $fit")
         }
     }
 
-    @Test fun licensesAndRequiredTechniquesArePresent() {
-        val names = samples.map { it.getValue("file").jsonPrimitive.content }
+    @Test fun licensesAndProvenanceCoverThePack() {
         val notices = File(assets, "LICENSES.md").readText()
         assertTrue(File(assets, "CC0-1.0.txt").readText().contains("CC0"))
+        assertTrue("## Starter designs 2026-10 — CC0-1.0" in notices)
+        assertTrue("1998.84.50A–F" in notices)
+        val provenance = Json.parseToJsonElement(dir("docs/samples/provenance.json").readText()).jsonObject
+            .getValue("designs").jsonArray.map { it.jsonObject }.associateBy { it.string("file") }
         for (entry in samples) {
-            assertTrue(entry.getValue("license").jsonPrimitive.content in setOf("CC0-1.0", "CC0-1.0 AND LicenseRef-Hershey", "MIT"))
-            assertTrue(notices.contains(entry.getValue("file").jsonPrimitive.content))
-            assertTrue(entry.getValue("source").jsonPrimitive.content.isNotBlank())
+            val name = entry.string("file")
+            assertEquals("CC0-1.0", entry.string("license"), name)
+            val record = assertNotNull(provenance[name], name)
+            assertTrue(record.string("prompt").isNotBlank() && record.string("model").isNotBlank(), name)
+            assertFalse("/tmp/" in record.toString() || "/home/" in record.toString(), "$name: local paths in provenance")
+            if (record.string("id").startsWith("F")) assertTrue("Smithsonian" in record.string("source"), name)
         }
-        for (required in listOf("heart", "star", "snowflake", "mandala", "leaf", "cloud", "petal_ring", "frame_square", "frame_circle", "fill_", "monogram_", "korean_embroidery", "korean_love")) {
-            assertTrue(names.any { it.contains(required) }, required)
-        }
-        assertTrue(samples.any { it.getValue("colors").jsonPrimitive.int == 3 })
-        assertTrue(samples.any { it.getValue("colors").jsonPrimitive.int == 4 })
-        assertTrue(samples.any { it.getValue("license").jsonPrimitive.content == "MIT" })
     }
 }

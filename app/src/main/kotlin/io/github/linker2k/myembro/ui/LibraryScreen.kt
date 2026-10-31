@@ -549,7 +549,7 @@ private fun DesignCard(
             }
         }
         Column(Modifier.padding(12.dp)) {
-            Text(item.file.nameWithoutExtension, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             Text(
                 item.summary ?: item.error ?: stringResource(R.string.library_reading),

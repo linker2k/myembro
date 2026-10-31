@@ -1,0 +1,1605 @@
+{
+ "version": 1,
+ "designs": [
+  {
+   "id": "01-skull",
+   "file": "sample_01_skull.pes",
+   "title": "해골",
+   "titleEn": "Skull",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A clean serious front-facing human SKULL patch. Cool crisp symmetrical shape, not cute, not smiling, no crossbones. Broad domed cranium, two large angular eye sockets, one broad triangular nasal hole, a chunky jaw with just three broad tooth blocks. Simplify anatomy into bold large masses. Format: B two colors. Exact palette excluding the white page: deep navy #24354B and warm sand #E4BF78; navy thick outline and sockets, sand interior. Strictly no additional colors. The artwork is bold simple flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "02-lightning",
+   "file": "sample_02_lightning.pes",
+   "title": "번개",
+   "titleEn": "Lightning",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A sharp clean LIGHTNING BOLT patch, one continuous bold striking geometric silhouette, dynamic diagonal zigzag, confidently cool rather than cute. No face, no extra sparks, no border badge. Format: B ONE color. Exact palette excluding the white page: ONLY deep navy #24354B as a single solid silhouette. Strictly no additional colors. The artwork is bold simple flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "03-crown",
+   "file": "sample_03_crown.pes",
+   "title": "왕관",
+   "titleEn": "Crown",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A clean stylish royal CROWN patch, three broad strong crown points and a substantial broad band. Symmetrical, confident and simple, not cute. No jewels, bead tips, thin lines, lettering or decorative tiny marks. Format: B two colors. Exact palette excluding the white page: deep navy #24354B as a thick broad outline and warm gold #D9A441 interior. Strictly no additional colors. The artwork is bold simple flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "04-anchor",
+   "file": "sample_04_anchor.pes",
+   "title": "닻",
+   "titleEn": "Anchor",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A clean classic ANCHOR patch, one strong symmetrical solid silhouette with a thick round top ring, broad vertical shaft, substantial crossbar, and heavy curved arms. Cool nautical emblem, no rope, no face, no extra details. Format: B ONE color. Exact palette excluding the white page: ONLY deep navy #24354B as one solid silhouette; ring hole shows background. Strictly no additional colors. The artwork is bold simple flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "05-rocket",
+   "file": "sample_05_rocket.pes",
+   "title": "로켓",
+   "titleEn": "Rocket",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: An original friendly rounded ROCKET illustration, short broad fuselage, chunky rounded nose, two broad fins, one large circular porthole and one simple broad exhaust flame. No rivets, stars or extra planets, no face or micro details. Charming bold flat toy-like silhouette. Format: A <=4 colors. Exact palette excluding the white page: ONLY deep navy #24354B, warm coral #ED7968, muted sky blue #80B8CF, warm gold #E5B34E. Navy thick outline, coral fuselage, blue large window, gold broad flame. Strictly no additional colors. The artwork is bold simple flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "06-cactus-pot",
+   "file": "sample_06_cactus_pot.pes",
+   "title": "선인장 화분",
+   "titleEn": "Cactus Pot",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: An original friendly CACTUS IN A FLOWERPOT. One broad green cactus trunk with two thick rounded arms, a simple broad terracotta pot. No spines, needles, flowers, pebbles or tiny dots. Optional two large solid dark dot eyes on the pot, absolutely NO white eye highlights. Format: A <=4 colors. Exact palette excluding the white page: ONLY deep brown #45362E, sage green #83A77A, terracotta #CC7758, blush pink #EAA0A0. Broad dark outline around cactus and pot, two substantial pink cheek ovals if a face is included. Strictly no additional colors. Flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "07-sitting-cat",
+   "file": "sample_07_sitting_cat.pes",
+   "title": "앉은 고양이",
+   "titleEn": "Sitting Cat",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: An original cute FULL-BODY SITTING CAT. Big rounded head, broad compact seated body, substantial curled tail beside body, broad front paws. Two large solid dark dot eyes without highlights, small broad nose, large pink cheek patches. No whiskers, fur strokes, spots, stripes, claws, collar or tiny paw lines. Format: A <=4 colors. Exact palette excluding the white page: ONLY dark brown #4E352A, warm tan #D5A06A, light peach #F3D7AD, rose pink #E7979E. Use substantial dark outlines around all body regions; no unoutlined white patches. Strictly no additional colors. Flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "08-mountain-sun-badge",
+   "file": "sample_08_mountain_sun_badge.pes",
+   "title": "산과 해 배지",
+   "titleEn": "Mountain and Sun Badge",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A clean stylish circular MOUNTAINS AND SUN BADGE. One bold circle with a very thick dark border, two broad angular mountain silhouettes in its lower half, one large simple round sun in upper half. Cool outdoors emblem, no face, no birds, no trees, no fine landscape lines. No white snow caps. Format: B two colors. Exact palette excluding the white page: ONLY deep navy #24354B and warm gold #D9A441. Navy outer circular border and mountain silhouettes and sun, gold sky and interior; exactly two printed inks. Strictly no additional colors. Flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "09-flame",
+   "file": "sample_09_flame.pes",
+   "title": "불꽃",
+   "titleEn": "Flame",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: A clean powerful FLAME PATCH, one broad outer teardrop/flame silhouette with three substantial lobes and one large nested inner flame. Stylish cool energy emblem, no face, no sparks, no extra droplets. Broad continuous shapes, no skinny flame strands or tiny cutouts. Format: B two colors. Exact palette excluding the white page: ONLY deep navy #24354B for one very thick outer silhouette outline and warm orange #E89342 for the large inner fill. Exactly two colors. Strictly no additional colors. Flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "10-octopus",
+   "file": "sample_10_octopus.pes",
+   "title": "문어",
+   "titleEn": "Octopus",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, on pure solid white #FFFFFF background. Flat uniform solid-color areas ONLY. NO gradients, shading, shadows, texture, grain, 3D or lighting, text, watermark or logo. Center the whole motif with clear white margins. For a finished motif 60mm across, EVERY decoration, hole, colored marking and narrow connector must be at least 2mm: use broad features >=4% of the motif size. NO eye highlights, glints, small seeds, dots of decoration, hairlines, tiny cutouts or tiny isolated pieces. White interior areas if any MUST be fully enclosed by a substantial colored outline to stay visible on white fabric; prefer colored interior fills instead of white. No resemblance to established characters, trademarks or logos. Do not add unrequested adornments. Subject: An original adorable OCTOPUS. Oversized round domed head and eight short broad rounded curling arms arranged clearly beneath it. Two large solid dark dot eyes with NO white glints, a broad simple happy mouth, two large cheek ovals. No suction cups, dots, bubbles, accessories or tiny separate details. All arms broad and substantial. Format: A <=4 colors. Exact palette excluding the white page: ONLY deep plum #4D354A, soft coral #E99099, warm light pink #F5C2C6. Thick deep-plum outline, coral main body and arms, light pink broad cheeks. No white interior markings. Strictly no additional colors. Flat raster illustration, not a stitched photo.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "11-sword-shield",
+   "file": "sample_11_sword_shield.pes",
+   "title": "칼과 방패",
+   "titleEn": "Sword and Shield",
+   "prompt": "a sword and a shield side by side, not overlapping, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "regenerated (redo pass)"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "12-diamond-gem",
+   "file": "sample_12_diamond_gem.pes",
+   "title": "보석",
+   "titleEn": "Diamond",
+   "prompt": "a faceted diamond gem icon with visible facets, bold outline, 2 colors, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "regenerated (redo pass)"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "13-dog-face",
+   "file": "sample_13_dog_face.pes",
+   "title": "강아지",
+   "titleEn": "Puppy",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute PUPPY FACE, oversized round head, two broad floppy ears, two large solid dot eyes, broad rounded triangular nose and two large pink cheek patches. Simple friendly face with no thin mouth strokes, no fur lines, no eyelashes, no whiskers, no collar. No eye highlights. Format: A <=4 colors. Exact palette: ONLY dark brown #49352A, warm caramel #C98F59, light peach cream #F3D5AE, rose pink #E79A9B. Use broad dark outline around cream patches. Add no other colors. Raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "14-rabbit",
+   "file": "sample_14_rabbit.pes",
+   "title": "토끼",
+   "titleEn": "Rabbit",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute seated RABBIT, big round head with two broad upright long rounded ears separated by a generous clear gap, compact chubby body, two large front feet and a small broad rounded tail. Two plain solid dark dot eyes and broad pink cheeks. No whiskers, thin mouth, toe lines, fur lines or tiny marks. All shapes chunky with rounded ends. Format: A <=4 colors. Exact palette: ONLY deep warm brown #493B34, pale apricot cream #F1D8B4, warm rose pink #E39DA3. Broad dark enclosing outlines everywhere around the pale body. Add no other colors. Raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "15-fox-face",
+   "file": "sample_15_fox_face.pes",
+   "title": "여우",
+   "titleEn": "Fox",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute FOX FACE, broad rounded triangular head, two substantial triangular ears with BLUNT rounded tips, large pale cheek patches fully enclosed by dark outline, two large solid dark dot eyes, broad dark oval nose. No mouth lines, whiskers, hair spikes, fur marks or eye highlights. Format: A <=4 colors. Exact palette: ONLY dark brown #49352C, warm burnt orange #D58A50, pale cream #F5DCB3, rose pink #E89B9D. Broad chunky flat shapes. Add no other colors. Raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "16-panda",
+   "file": "sample_16_panda.pes",
+   "title": "팬더",
+   "titleEn": "Panda",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute seated PANDA, oversized round head, broad round ears, plump body, two large simple front feet. Two large solid dark oval eye patches with NO white pupils or reflections, a broad dark oval nose, broad rose cheeks. No fine mouth, tiny toe pads, fingers, claws or fur marks. White head/body patches MUST be fully enclosed in very thick dark outline, including boundaries against the background. Format: A <=4 colors. Exact palette: ONLY deep charcoal navy #283444, white #FFFFFF and rose pink #E89EA8. White background is not part of the character. Add no other colors. Flat raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "17-penguin",
+   "file": "sample_17_penguin.pes",
+   "title": "펭귄",
+   "titleEn": "Penguin",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute PENGUIN, plump rounded standing silhouette, broad flippers, one large white face-and-belly patch fully enclosed inside its dark body outline, two large plain dot eyes with NO highlights, broad rounded oval beak and two broad rounded feet. Large blush cheeks. No toe lines, feather marks, thin mouth, scarves or accessories. Keep generous gaps between feet and flippers, no skinny pinched spaces. Format: A <=4 colors. Exact palette: ONLY deep navy #2A3C52, white #FFFFFF, warm gold #E1A94E and rose pink #E69DA5. Add no other colors. Flat raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "18-owl",
+   "file": "sample_18_owl.pes",
+   "title": "부엉이",
+   "titleEn": "Owl",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute OWL, oversized round head merged with plump oval body, very broad soft rounded ear tufts, two large pale round facial discs with large plain dark dot eyes, one broad rounded triangular beak, two large simple wing patches and two broad rounded feet. No tiny feather patterns, eye glints, thin brows, toe lines or small spots. Every detail substantial and gaps generous. Format: A <=4 colors. Exact palette: ONLY deep brown #4A352F, caramel tan #BA895D, pale cream #F2D9B0 and rose pink #E59A9F. Thick dark enclosing outlines around cream areas. Add no other colors. Flat raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "19-turtle",
+   "file": "sample_19_turtle.pes",
+   "title": "거북이",
+   "titleEn": "Turtle",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original cute TURTLE in three-quarter view, a big friendly rounded head, one broad domed shell with a single large inset oval patch, four short broad rounded legs and a short blunt rounded tail. Two large plain dark dot eyes and large blush cheeks, no eye highlights. No shell mosaic, scales, claws, tiny dots, thin mouth or narrow separating lines. Keep leg gaps at least 4% of whole design width. Format: A <=4 colors. Exact palette: ONLY deep brown #453E32, sage green #83A77A, light mint #BCD3A1 and rose pink #E59D9E. Add no other colors. Flat raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "20-baby-trex",
+   "file": "sample_20_baby_trex.pes",
+   "title": "아기 공룡",
+   "titleEn": "Baby T-Rex",
+   "prompt": "Create one ORIGINAL embroidery motif as a 1024x1024 PNG, pure WHITE background, ample empty margins. Perfectly FLAT SOLID color fills only, no gradient, shading, shadow, texture, grain, light effects, text, watermark or logo. No resemblance to existing characters or trademarks. At final motif size 60mm, minimum decoration thickness and minimum gap width are 2mm: keep EVERY gap and internal colored separator >=4% of whole motif size; use blunt rounded tips, never long thin tapered points. NO eye glints, tiny decorative dots, seeds, hairlines, little spots or isolated micro shapes. Eyes should be large plain solid dots with NO reflections. Every white interior patch must have a substantial enclosing colored border so it is visible on white fabric. Thick simple broad shapes, minimal details. Subject: An original adorable baby TYRANNOSAURUS REX in side three-quarter pose. Oversized rounded head with broad snout, plump compact body, two short thick arms, two big sturdy feet, and a short thick tail ending in a rounded BLUNT tip. One or two large plain dot eyes, broad blush cheek, one big rounded open mouth. No teeth, claws, toe marks, back spikes, scales, fine lines or eye glints. Every arm, tail and gap substantial; no tapering needle-like ends. Format: A <=4 colors. Exact palette: ONLY deep forest green #375448, sage green #8BB68E, pale warm cream #F2D7AD and rose pink #E49A9F. Thick dark outline around pale patches. Add no other colors. Flat raster illustration, not embroidery simulation.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "21-skull-rose",
+   "file": "sample_21_skull_rose.pes",
+   "title": "해골과 장미",
+   "titleEn": "Skull and Rose",
+   "prompt": "Create ONE ORIGINAL embroidery patch motif, 1024x1024 PNG, pure white background and clear margins. Flat UNIFORM SOLID color fills, no gradients, shading, shadows, texture, grain, stitch simulation, lighting, letters, watermark or logo. Bold, stylish and clean, NOT cute. Minimum decorative feature, hole, gap and connector at final motif size 60mm is 2mm: make them visibly >=4% of whole motif size. BLUNT rounded or flattened ends; never long needle-like tapers or fine spikes. No micro details, little stars, shine, eye glints or tiny notches. White interior areas if any must be surrounded by substantial colored silhouette. No resemblance to an existing brand, trademark or character. Favor broad simple legible shapes over realism. Subject: A serious front-facing SKULL with ONE ROSE next to its lower right jaw, a clean tattoo-inspired patch. Both the skull and the rose must be clearly readable: the rose sits beside, not across the face; do not cover eye sockets, nose or most of jaw. Skull has two broad angular eye sockets, broad nose hole and just two chunky tooth blocks. Rose is a simple broad round bloom with ONLY three large rounded petal shapes; no tiny spiral, no thin stem, no little thorns or leaves. Cool, not cute. Format B: TWO colors. Palette excluding white page: ONLY charcoal navy #26364A as a thick outer silhouette/separators and muted terracotta rose #CC806F as the fill inside both subjects. Add no other ink colors.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "recolored after generation"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "22-wolf-head",
+   "file": "sample_22_wolf_head.pes",
+   "title": "늑대",
+   "titleEn": "Wolf",
+   "prompt": "Create ONE ORIGINAL embroidery patch motif, 1024x1024 PNG, pure white background and clear margins. Flat UNIFORM SOLID color fills, no gradients, shading, shadows, texture, grain, stitch simulation, lighting, letters, watermark or logo. Bold, stylish and clean, NOT cute. Minimum decorative feature, hole, gap and connector at final motif size 60mm is 2mm: make them visibly >=4% of whole motif size. BLUNT rounded or flattened ends; never long needle-like tapers or fine spikes. No micro details, little stars, shine, eye glints or tiny notches. White interior areas if any must be surrounded by substantial colored silhouette. No resemblance to an existing brand, trademark or character. Favor broad simple legible shapes over realism. Subject: A clean side-profile WOLF HEAD silhouette looking slightly upward, distinctive long broad muzzle, open jaw with a wide simple negative-space gap, two substantial blunt-tipped ear shapes and a strong rounded neck/shoulder base. No eye dot, teeth, fur spikes, whiskers, internal lines or tiny cutouts. Simplify fur into just two broad rounded steps. Format B: ONE color. Palette excluding white page: ONLY deep navy #24354B as one solid silhouette. Add no other ink colors.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "23-eagle-wings",
+   "file": "sample_23_eagle_wings.pes",
+   "title": "독수리",
+   "titleEn": "Eagle Wings",
+   "prompt": "Create ONE ORIGINAL embroidery patch motif, 1024x1024 PNG, pure white background and clear margins. Flat UNIFORM SOLID color fills, no gradients, shading, shadows, texture, grain, stitch simulation, lighting, letters, watermark or logo. Bold, stylish and clean, NOT cute. Minimum decorative feature, hole, gap and connector at final motif size 60mm is 2mm: make them visibly >=4% of whole motif size. BLUNT rounded or flattened ends; never long needle-like tapers or fine spikes. No micro details, little stars, shine, eye glints or tiny notches. White interior areas if any must be surrounded by substantial colored silhouette. No resemblance to an existing brand, trademark or character. Favor broad simple legible shapes over realism. Subject: A bold EAGLE with WINGS SPREAD, front-facing symmetrical emblem. Broad central head and body, two large sweeping open wings, short broad tail. Each wing ends in only THREE thick rounded feather lobes, separated by broad rounded gaps, never many thin feather fingers. No individual feather lines, eyes, beak hole, talon details or tiny marks. Head has one broad rounded beak silhouette. Format B: ONE color. Palette excluding white page: ONLY deep navy #24354B as a solid silhouette. Add no other ink colors.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "24-dragon",
+   "file": "sample_24_dragon.pes",
+   "title": "용",
+   "titleEn": "Dragon",
+   "prompt": "Create ONE ORIGINAL embroidery patch motif, 1024x1024 PNG, pure white background and clear margins. Flat UNIFORM SOLID color fills, no gradients, shading, shadows, texture, grain, stitch simulation, lighting, letters, watermark or logo. Bold, stylish and clean, NOT cute. Minimum decorative feature, hole, gap and connector at final motif size 60mm is 2mm: make them visibly >=4% of whole motif size. BLUNT rounded or flattened ends; never long needle-like tapers or fine spikes. No micro details, little stars, shine, eye glints or tiny notches. White interior areas if any must be surrounded by substantial colored silhouette. No resemblance to an existing brand, trademark or character. Favor broad simple legible shapes over realism. Subject: A clean powerful DRAGON silhouette in side profile. Strong recognizable broad head and muzzle, one large broad bat-like wing, plump strong body, two stout legs, short thick curled tail with a BLUNT rounded tip. No scales, teeth, eye dot, fine claws, thin horns or tiny wing ribs. Use only two broad rounded wing lobes and wide negative-space gaps between body parts. No spindly limbs. Format B: ONE color. Palette excluding white page: ONLY deep navy #24354B as one solid silhouette. Add no other ink colors.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "25-winged-heart",
+   "file": "sample_25_winged_heart.pes",
+   "title": "날개 하트",
+   "titleEn": "Winged Heart",
+   "prompt": "Create ONE ORIGINAL embroidery patch motif, 1024x1024 PNG, pure white background and clear margins. Flat UNIFORM SOLID color fills, no gradients, shading, shadows, texture, grain, stitch simulation, lighting, letters, watermark or logo. Bold, stylish and clean, NOT cute. Minimum decorative feature, hole, gap and connector at final motif size 60mm is 2mm: make them visibly >=4% of whole motif size. BLUNT rounded or flattened ends; never long needle-like tapers or fine spikes. No micro details, little stars, shine, eye glints or tiny notches. White interior areas if any must be surrounded by substantial colored silhouette. No resemblance to an existing brand, trademark or character. Favor broad simple legible shapes over realism. Subject: A clean WINGED HEART emblem, one large broad heart in the middle with a clearly visible wing spreading to each side. Heart and wings must remain legible as separate main masses without hiding the heart. Each wing has just three broad rounded feather lobes with wide gaps. Heart lower tip is blunt/rounded, not sharp. No halo, ribbon, sparkle, thin feather details or text. Format B: TWO colors. Palette excluding white page: ONLY deep navy #24354B as very thick silhouette outlines and warm coral #DA8275 as inner fill of heart and wings. Add no other ink colors.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "recolored after generation"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "26-dagger",
+   "file": "sample_26_dagger.pes",
+   "title": "단검",
+   "titleEn": "Dagger",
+   "prompt": "단검 (B 2색)",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0",
+   "promptNote": "exact prompt not saved; subject and format from plan.md"
+  },
+  {
+   "id": "27-compass",
+   "file": "sample_27_compass.pes",
+   "title": "나침반",
+   "titleEn": "Compass",
+   "prompt": "나침반 (B 2색)",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0",
+   "promptNote": "exact prompt not saved; subject and format from plan.md"
+  },
+  {
+   "id": "28-pine-tree",
+   "file": "sample_28_pine_tree.pes",
+   "title": "소나무",
+   "titleEn": "Pine Tree",
+   "prompt": "소나무 (B 단색)",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0",
+   "promptNote": "exact prompt not saved; subject and format from plan.md"
+  },
+  {
+   "id": "29-wave",
+   "file": "sample_29_wave.pes",
+   "title": "파도",
+   "titleEn": "Wave",
+   "prompt": "파도 (B 2색)",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0",
+   "promptNote": "exact prompt not saved; subject and format from plan.md"
+  },
+  {
+   "id": "30-crescent-star",
+   "file": "sample_30_crescent_star.pes",
+   "title": "초승달과 별",
+   "titleEn": "Crescent Moon and Star",
+   "prompt": "Keep the crescent, replace the single star with several small scattered stars; white background, flat solid colors, no gradient, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "image edit of an earlier generation (fix pass)"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "31-rainbow-cloud",
+   "file": "sample_31_rainbow_cloud.pes",
+   "title": "무지개 구름",
+   "titleEn": "Rainbow Cloud",
+   "prompt": "a rainbow over fluffy clouds, cute 4-color illustration, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "recolored after generation"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "32-sunflower",
+   "file": "sample_32_sunflower.pes",
+   "title": "해바라기",
+   "titleEn": "Sunflower",
+   "prompt": "a sunflower, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "33-tulip",
+   "file": "sample_33_tulip.pes",
+   "title": "튤립",
+   "titleEn": "Tulip",
+   "prompt": "a tulip, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "34-four-leaf-clover",
+   "file": "sample_34_four_leaf_clover.pes",
+   "title": "네잎클로버",
+   "titleEn": "Four Leaf Clover",
+   "prompt": "four-leaf clover with exactly four heart-shaped leaves, flat green, white background, no gradient",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "image edit of an earlier generation (fix pass)"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "35-maple-leaf",
+   "file": "sample_35_maple_leaf.pes",
+   "title": "단풍잎",
+   "titleEn": "Maple Leaf",
+   "prompt": "flat orange autumn maple leaf, solid colors, simple dark vein lines, white background, no texture, no gradient",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "image edit of an earlier generation (fix pass)"
+   ],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "36-mushroom",
+   "file": "sample_36_mushroom.pes",
+   "title": "버섯",
+   "titleEn": "Mushroom",
+   "prompt": "a mushroom, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "37-cherries",
+   "file": "sample_37_cherries.pes",
+   "title": "체리",
+   "titleEn": "Cherries",
+   "prompt": "a pair of cherries, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "38-apple",
+   "file": "sample_38_apple.pes",
+   "title": "사과",
+   "titleEn": "Apple",
+   "prompt": "an apple, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "39-watermelon-slice",
+   "file": "sample_39_watermelon_slice.pes",
+   "title": "수박",
+   "titleEn": "Watermelon",
+   "prompt": "a watermelon slice, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "40-avocado",
+   "file": "sample_40_avocado.pes",
+   "title": "아보카도",
+   "titleEn": "Avocado",
+   "prompt": "an avocado half, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "41-donut",
+   "file": "sample_41_donut.pes",
+   "title": "도넛",
+   "titleEn": "Donut",
+   "prompt": "a donut, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "42-ice-cream-cone",
+   "file": "sample_42_ice_cream_cone.pes",
+   "title": "아이스크림",
+   "titleEn": "Ice Cream",
+   "prompt": "an ice cream cone, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "43-cupcake",
+   "file": "sample_43_cupcake.pes",
+   "title": "컵케이크",
+   "titleEn": "Cupcake",
+   "prompt": "a cupcake, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "44-coffee-cup",
+   "file": "sample_44_coffee_cup.pes",
+   "title": "커피잔",
+   "titleEn": "Coffee Cup",
+   "prompt": "a coffee cup, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "45-milk-carton",
+   "file": "sample_45_milk_carton.pes",
+   "title": "우유팩",
+   "titleEn": "Milk Carton",
+   "prompt": "a milk carton, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "46-rice-ball",
+   "file": "sample_46_rice_ball.pes",
+   "title": "주먹밥",
+   "titleEn": "Rice Ball",
+   "prompt": "a triangular rice ball wrapped with seaweed, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "47-pizza-slice",
+   "file": "sample_47_pizza_slice.pes",
+   "title": "피자",
+   "titleEn": "Pizza",
+   "prompt": "a pizza slice, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "48-hamburger",
+   "file": "sample_48_hamburger.pes",
+   "title": "햄버거",
+   "titleEn": "Hamburger",
+   "prompt": "a hamburger, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "50-bicycle",
+   "file": "sample_50_bicycle.pes",
+   "title": "자전거",
+   "titleEn": "Bicycle",
+   "prompt": "a bicycle, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "51-airplane",
+   "file": "sample_51_airplane.pes",
+   "title": "비행기",
+   "titleEn": "Airplane",
+   "prompt": "an airplane, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "52-sailboat",
+   "file": "sample_52_sailboat.pes",
+   "title": "돛단배",
+   "titleEn": "Sailboat",
+   "prompt": "a sailboat, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "53-train",
+   "file": "sample_53_train.pes",
+   "title": "기차",
+   "titleEn": "Train",
+   "prompt": "a train, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "54-astronaut-helmet",
+   "file": "sample_54_astronaut_helmet.pes",
+   "title": "우주비행사 헬멧",
+   "titleEn": "Astronaut Helmet",
+   "prompt": "an astronaut helmet, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "55-ringed-planet",
+   "file": "sample_55_ringed_planet.pes",
+   "title": "고리 행성",
+   "titleEn": "Ringed Planet",
+   "prompt": "a ringed planet, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "56-ufo",
+   "file": "sample_56_ufo.pes",
+   "title": "UFO",
+   "titleEn": "UFO",
+   "prompt": "a UFO, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "57-robot-face",
+   "file": "sample_57_robot_face.pes",
+   "title": "로봇",
+   "titleEn": "Robot",
+   "prompt": "a robot face, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "58-guitar",
+   "file": "sample_58_guitar.pes",
+   "title": "기타",
+   "titleEn": "Guitar",
+   "prompt": "a guitar, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "59-music-note",
+   "file": "sample_59_music_note.pes",
+   "title": "음표",
+   "titleEn": "Music Note",
+   "prompt": "a music note, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "60-headphones",
+   "file": "sample_60_headphones.pes",
+   "title": "헤드폰",
+   "titleEn": "Headphones",
+   "prompt": "headphones, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "61-camera",
+   "file": "sample_61_camera.pes",
+   "title": "카메라",
+   "titleEn": "Camera",
+   "prompt": "a camera, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "62-light-bulb",
+   "file": "sample_62_light_bulb.pes",
+   "title": "전구",
+   "titleEn": "Light Bulb",
+   "prompt": "a light bulb, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "63-key",
+   "file": "sample_63_key.pes",
+   "title": "열쇠",
+   "titleEn": "Key",
+   "prompt": "a key, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "64-padlock",
+   "file": "sample_64_padlock.pes",
+   "title": "자물쇠",
+   "titleEn": "Padlock",
+   "prompt": "a padlock, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "65-umbrella",
+   "file": "sample_65_umbrella.pes",
+   "title": "우산",
+   "titleEn": "Umbrella",
+   "prompt": "an umbrella, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "66-cloud-rain",
+   "file": "sample_66_cloud_rain.pes",
+   "title": "구름과 비",
+   "titleEn": "Rain Cloud",
+   "prompt": "a cloud with rain, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "67-snowflake",
+   "file": "sample_67_snowflake.pes",
+   "title": "눈송이",
+   "titleEn": "Snowflake",
+   "prompt": "a snowflake, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "68-sun",
+   "file": "sample_68_sun.pes",
+   "title": "태양",
+   "titleEn": "Sun",
+   "prompt": "a sun without a face, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "69-rainbow",
+   "file": "sample_69_rainbow.pes",
+   "title": "무지개",
+   "titleEn": "Rainbow",
+   "prompt": "a rainbow, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "70-plump-star",
+   "file": "sample_70_plump_star.pes",
+   "title": "통통한 별",
+   "titleEn": "Plump Star",
+   "prompt": "a plump star, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "71-heart",
+   "file": "sample_71_heart.pes",
+   "title": "하트",
+   "titleEn": "Heart",
+   "prompt": "a heart, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "72-eye-amulet",
+   "file": "sample_72_eye_amulet.pes",
+   "title": "눈 부적",
+   "titleEn": "Eye Amulet",
+   "prompt": "an eye amulet, bold 2-color patch icon, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "73-peace-hand",
+   "file": "sample_73_peace_hand.pes",
+   "title": "브이 손",
+   "titleEn": "Peace Sign Hand",
+   "prompt": "a hand making a V peace sign, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "75-whale-tail",
+   "file": "sample_75_whale_tail.pes",
+   "title": "고래 꼬리",
+   "titleEn": "Whale Tail",
+   "prompt": "a whale tail, bold single-color patch silhouette, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "76-shark",
+   "file": "sample_76_shark.pes",
+   "title": "상어",
+   "titleEn": "Shark",
+   "prompt": "a shark, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "77-fish",
+   "file": "sample_77_fish.pes",
+   "title": "물고기",
+   "titleEn": "Fish",
+   "prompt": "a fish, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "78-crab",
+   "file": "sample_78_crab.pes",
+   "title": "게",
+   "titleEn": "Crab",
+   "prompt": "a crab, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "79-snail",
+   "file": "sample_79_snail.pes",
+   "title": "달팽이",
+   "titleEn": "Snail",
+   "prompt": "a snail, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "80-bee",
+   "file": "sample_80_bee.pes",
+   "title": "벌",
+   "titleEn": "Bee",
+   "prompt": "a bee, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "81-ladybug",
+   "file": "sample_81_ladybug.pes",
+   "title": "무당벌레",
+   "titleEn": "Ladybug",
+   "prompt": "a ladybug, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "82-butterfly",
+   "file": "sample_82_butterfly.pes",
+   "title": "나비",
+   "titleEn": "Butterfly",
+   "prompt": "a butterfly, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "83-frog",
+   "file": "sample_83_frog.pes",
+   "title": "개구리",
+   "titleEn": "Frog",
+   "prompt": "a frog, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "84-duck",
+   "file": "sample_84_duck.pes",
+   "title": "오리",
+   "titleEn": "Duck",
+   "prompt": "a duck, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "85-pig",
+   "file": "sample_85_pig.pes",
+   "title": "돼지",
+   "titleEn": "Pig",
+   "prompt": "a pig, cute 4-color illustration with bold outline, white background, flat solid colors, no gradient, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c01-minhwa-tiger-magpie",
+   "file": "sample_c01_minhwa_tiger_magpie.pes",
+   "title": "민화 호랑이와 까치",
+   "titleEn": "Minhwa Tiger and Magpie",
+   "prompt": "Korean folk painting (minhwa) style tiger looking up at a magpie on a pine branch, bold outline. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c02-artdeco-swallow",
+   "file": "sample_c02_artdeco_swallow.pes",
+   "title": "아르데코 제비",
+   "titleEn": "Art Deco Swallow",
+   "prompt": "Art Deco sunburst with a stylized swallow, gold, navy and cream. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c03-woodblock-wave-boat",
+   "file": "sample_c03_woodblock_wave_boat.pes",
+   "title": "목판화 파도와 배",
+   "titleEn": "Woodblock Wave and Boat",
+   "prompt": "Japanese woodblock print style curling wave with a tiny paper boat, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c04-linocut-fox-moon",
+   "file": "sample_c04_linocut_fox_moon.pes",
+   "title": "판화 여우와 달",
+   "titleEn": "Linocut Fox and Moon",
+   "prompt": "linocut style fox curled inside a crescent moon, 2 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c05-whale-lighthouse",
+   "file": "sample_c05_whale_lighthouse.pes",
+   "title": "고래와 등대",
+   "titleEn": "Whale and Lighthouse",
+   "prompt": "surreal whale swimming through clouds with a small lighthouse on its back, retro flat illustration. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c06-midcentury-bird",
+   "file": "sample_c06_midcentury_bird.pes",
+   "title": "미드센추리 새",
+   "titleEn": "Mid-century Bird",
+   "prompt": "mid-century modern bird built from simple geometric shapes, 4 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c07-stainedglass-hummingbird",
+   "file": "sample_c07_stainedglass_hummingbird.pes",
+   "title": "스테인드글라스 벌새",
+   "titleEn": "Stained Glass Hummingbird",
+   "prompt": "stained glass style hummingbird and hibiscus, bold black lead lines, jewel colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c08-cabin-starry-badge",
+   "file": "sample_c08_cabin_starry_badge.pes",
+   "title": "별밤 오두막 배지",
+   "titleEn": "Starry Cabin Badge",
+   "prompt": "round retro travel patch, mountain cabin under a starry sky, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c09-celtic-heart",
+   "file": "sample_c09_celtic_heart.pes",
+   "title": "켈트 매듭 하트",
+   "titleEn": "Celtic Knot Heart",
+   "prompt": "Celtic knot heart drawn as one continuous interlaced band, 1 color. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c10-botanical-mushrooms",
+   "file": "sample_c10_botanical_mushrooms.pes",
+   "title": "보태니컬 버섯",
+   "titleEn": "Botanical Mushrooms",
+   "prompt": "botanical illustration style cluster of mushrooms with ferns, muted earthy colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c12-dancheong-pattern",
+   "file": "sample_c12_dancheong_pattern.pes",
+   "title": "단청 문양",
+   "titleEn": "Dancheong Pattern",
+   "prompt": "Korean dancheong temple pattern rosette, 4 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c13-crane-pine-sun",
+   "file": "sample_c13_crane_pine_sun.pes",
+   "title": "학과 소나무와 해",
+   "titleEn": "Crane, Pine and Sun",
+   "prompt": "Korean ten-longevity style crane under pine and red sun, 4 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c14-jogakbo-heart",
+   "file": "sample_c14_jogakbo_heart.pes",
+   "title": "조각보 하트",
+   "titleEn": "Jogakbo Heart",
+   "prompt": "Korean jogakbo patchwork heart made of geometric color blocks. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c15-artdeco-peacock",
+   "file": "sample_c15_artdeco_peacock.pes",
+   "title": "아르데코 공작",
+   "titleEn": "Art Deco Peacock",
+   "prompt": "Art Deco peacock fan, gold, teal and navy. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c16-linocut-owl",
+   "file": "sample_c16_linocut_owl.pes",
+   "title": "판화 부엉이",
+   "titleEn": "Linocut Owl",
+   "prompt": "linocut style owl on a branch, 2 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c17-midcentury-cat",
+   "file": "sample_c17_midcentury_cat.pes",
+   "title": "미드센추리 고양이",
+   "titleEn": "Mid-century Cat",
+   "prompt": "mid-century modern cat built from simple shapes, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c18-retro-ocean-badge",
+   "file": "sample_c18_retro_ocean_badge.pes",
+   "title": "레트로 바다 배지",
+   "titleEn": "Retro Ocean Badge",
+   "prompt": "round retro surf patch, sun over a single wave, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c19-stainedglass-butterfly",
+   "file": "sample_c19_stainedglass_butterfly.pes",
+   "title": "스테인드글라스 나비",
+   "titleEn": "Stained Glass Butterfly",
+   "prompt": "stained glass style butterfly, bold black lead lines, jewel colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c20-surreal-fish-balloon",
+   "file": "sample_c20_surreal_fish_balloon.pes",
+   "title": "풍선 금붕어",
+   "titleEn": "Goldfish Balloon",
+   "prompt": "surreal goldfish floating like a balloon tied to a string over tiny houses. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c21-paper-cut-rabbit-moon",
+   "file": "sample_c21_paper_cut_rabbit_moon.pes",
+   "title": "종이 오리기 토끼와 달",
+   "titleEn": "Paper-cut Rabbit and Moon",
+   "prompt": "paper-cut style rabbit under a full moon, 1 color. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c22-woodblock-mount",
+   "file": "sample_c22_woodblock_mount.pes",
+   "title": "목판화 산",
+   "titleEn": "Woodblock Mountain",
+   "prompt": "Japanese woodblock print style mountain with pine trees and clouds, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c23-folk-horse",
+   "file": "sample_c23_folk_horse.pes",
+   "title": "민속 말",
+   "titleEn": "Folk Horse",
+   "prompt": "Scandinavian folk art horse with flower ornaments, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c24-bauhaus-sun",
+   "file": "sample_c24_bauhaus_sun.pes",
+   "title": "바우하우스 해와 달",
+   "titleEn": "Bauhaus Sun and Moon",
+   "prompt": "Bauhaus geometric sun and moon composition, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c25-botanical-fern-flat",
+   "file": "sample_c25_botanical_fern_flat.pes",
+   "title": "고사리와 들꽃",
+   "titleEn": "Fern and Wildflowers",
+   "prompt": "botanical style fern and wildflowers, flat colors only, no shading. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c26-tattoo-panther",
+   "file": "sample_c26_tattoo_panther.pes",
+   "title": "타투 표범",
+   "titleEn": "Tattoo Panther",
+   "prompt": "traditional tattoo flash style panther head, bold outline, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c27-tattoo-ship-banner",
+   "file": "sample_c27_tattoo_ship_banner.pes",
+   "title": "리본 문 제비",
+   "titleEn": "Swallow with Banner",
+   "prompt": "traditional tattoo flash style swallow carrying an empty ribbon banner. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c28-cosmic-whale",
+   "file": "sample_c28_cosmic_whale.pes",
+   "title": "밤하늘 고래",
+   "titleEn": "Cosmic Whale",
+   "prompt": "whale made of night sky with stars inside its body, 3 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c29-mandala-lotus",
+   "file": "sample_c29_mandala_lotus.pes",
+   "title": "연꽃 만다라",
+   "titleEn": "Lotus Mandala",
+   "prompt": "lotus mandala, symmetrical, 2 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "c30-tiger-face-minimal",
+   "file": "sample_c30_tiger_face_minimal.pes",
+   "title": "호랑이 얼굴",
+   "titleEn": "Minimal Tiger Face",
+   "prompt": "minimalist tiger face from bold stripes, 2 colors. one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l01-sleeping-cat",
+   "file": "sample_l01_sleeping_cat.pes",
+   "title": "잠자는 고양이 선화",
+   "titleEn": "Sleeping Cat Line Art",
+   "prompt": "one continuous line drawing of a sleeping cat curled up. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l02-hand-flower",
+   "file": "sample_l02_hand_flower.pes",
+   "title": "꽃을 든 손 선화",
+   "titleEn": "Hand with Flower Line Art",
+   "prompt": "line art of a hand holding a single flower. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l03-mountain-moon",
+   "file": "sample_l03_mountain_moon.pes",
+   "title": "산과 달 선화",
+   "titleEn": "Mountains and Moon Line Art",
+   "prompt": "minimal line art of mountains with a crescent moon and a few stars. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l04-coffee-steam",
+   "file": "sample_l04_coffee_steam.pes",
+   "title": "김 나는 커피 선화",
+   "titleEn": "Steaming Coffee Line Art",
+   "prompt": "line art coffee cup with steam curling into a heart. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l05-bicycle-basket",
+   "file": "sample_l05_bicycle_basket.pes",
+   "title": "바구니 자전거 선화",
+   "titleEn": "Bicycle with Basket Line Art",
+   "prompt": "line art bicycle with a basket of flowers. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l06-whale",
+   "file": "sample_l06_whale.pes",
+   "title": "고래 선화",
+   "titleEn": "Whale Line Art",
+   "prompt": "line art whale with simple wave lines. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l07-monstera",
+   "file": "sample_l07_monstera.pes",
+   "title": "몬스테라 선화",
+   "titleEn": "Monstera Line Art",
+   "prompt": "line art monstera leaf with veins. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l08-face-line",
+   "file": "sample_l08_face_line.pes",
+   "title": "얼굴 선화",
+   "titleEn": "Face Line Art",
+   "prompt": "abstract one-line face with closed eyes and a leaf. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l09-hummingbird",
+   "file": "sample_l09_hummingbird.pes",
+   "title": "벌새 선화",
+   "titleEn": "Hummingbird Line Art",
+   "prompt": "line art hummingbird drinking from a flower. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "l10-potted-plant",
+   "file": "sample_l10_potted_plant.pes",
+   "title": "화분 선화",
+   "titleEn": "Potted Plant Line Art",
+   "prompt": "line art potted plant on a small stool. original line art, one dark color only, uniform medium line weight, no fills, no shading, white background, no text.",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [],
+   "license": "CC0-1.0"
+  },
+  {
+   "id": "F-sheet-130x180",
+   "file": "sample_f_sheet_130x180.pes",
+   "title": "빈티지 타투 시트",
+   "titleEn": "Vintage Flash Sheet",
+   "prompt": "redraw this vertical vintage tattoo flash sheet, same motifs, clean flat colors, bold dark outline, white background, no text or ribbons, portrait 13:18",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-center rose with leaves and bud; lower-left red swallow; lettering ribbon omitted; lower-right blue swallow; upper-left red front-facing butterfly; upper-right red profile butterfly"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F01-rose",
+   "file": "sample_f01_rose.pes",
+   "title": "빈티지 장미",
+   "titleEn": "Vintage Rose",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-center rose with leaves and bud"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F02-swallow-red",
+   "file": "sample_f02_swallow_red.pes",
+   "title": "빈티지 빨간 제비",
+   "titleEn": "Vintage Red Swallow",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, remove ribbon",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-left red swallow; lettering ribbon omitted"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F03-swallow-blue",
+   "file": "sample_f03_swallow_blue.pes",
+   "title": "빈티지 파란 제비",
+   "titleEn": "Vintage Blue Swallow",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-right blue swallow"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F04-butterfly-front",
+   "file": "sample_f04_butterfly_front.pes",
+   "title": "빈티지 나비 (정면)",
+   "titleEn": "Vintage Butterfly (Front)",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: upper-left red front-facing butterfly"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F05-butterfly-profile",
+   "file": "sample_f05_butterfly_profile.pes",
+   "title": "빈티지 나비 (옆)",
+   "titleEn": "Vintage Butterfly (Side)",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: upper-right red profile butterfly"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50C"
+   ]
+  },
+  {
+   "id": "F06-butterfly-angled",
+   "file": "sample_f06_butterfly_angled.pes",
+   "title": "빈티지 나비 (비스듬히)",
+   "titleEn": "Vintage Butterfly (Angled)",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: upper-left red angled butterfly"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50D"
+   ]
+  },
+  {
+   "id": "F07-anchor",
+   "file": "sample_f07_anchor.pes",
+   "title": "빈티지 닻",
+   "titleEn": "Vintage Anchor",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, anchor only, remove eagle and ribbon",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: anchor component of lower-right eagle/anchor motif; eagle and NAME ribbon omitted"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50A"
+   ]
+  },
+  {
+   "id": "F08-eagle",
+   "file": "sample_f08_eagle.pes",
+   "title": "빈티지 독수리",
+   "titleEn": "Vintage Eagle",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, eagle only, remove anchor and ribbon",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: eagle component of lower-right eagle/anchor motif; anchor and NAME ribbon omitted"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50A"
+   ]
+  },
+  {
+   "id": "F10-heart",
+   "file": "sample_f10_heart.pes",
+   "title": "빈티지 하트",
+   "titleEn": "Vintage Heart",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: standalone small red heart above upper-right cherub"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50D"
+   ]
+  },
+  {
+   "id": "F11-dagger",
+   "file": "sample_f11_dagger.pes",
+   "title": "빈티지 단검",
+   "titleEn": "Vintage Dagger",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, remove ribbon",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: center dagger; DEATH BEFORE DISHONOR ribbon omitted"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50F"
+   ]
+  },
+  {
+   "id": "F12-sailing-ship",
+   "file": "sample_f12_sailing_ship.pes",
+   "title": "빈티지 범선",
+   "titleEn": "Vintage Sailing Ship",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, remove flags",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-center sailing ship; crop excludes national flag at mast top"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50A"
+   ]
+  },
+  {
+   "id": "F13-horse-head",
+   "file": "sample_f13_horse_head.pes",
+   "title": "빈티지 말 머리",
+   "titleEn": "Vintage Horse Head",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text, horse head only",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: lower-left bridled horse head"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50F"
+   ]
+  },
+  {
+   "id": "F15-floral-sprig",
+   "file": "sample_f15_floral_sprig.pes",
+   "title": "빈티지 꽃가지",
+   "titleEn": "Vintage Floral Sprig",
+   "prompt": "redraw this vintage tattoo flash motif as clean flat-color art, bold dark outline, same design, white background, no paper texture, no text",
+   "date": "2026-10-31",
+   "model": "gpt image via Codex",
+   "edits": [
+    "redrawn from the source tattoo flash: small floral sprig beneath upper-left cannons; cannons excluded by crop"
+   ],
+   "license": "CC0-1.0",
+   "source": "Smithsonian American Art Museum, Tattoo Flash 1998.84.50A–F (CC0), https://americanart.si.edu/",
+   "sourceSheets": [
+    "Tattoo Flash 1998.84.50F"
+   ]
+  }
+ ]
+}

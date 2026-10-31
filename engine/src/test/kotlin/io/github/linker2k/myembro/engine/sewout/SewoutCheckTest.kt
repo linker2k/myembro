@@ -214,7 +214,9 @@ class SewoutCheckTest {
             val bytes = file.readBytes()
             val report = SewoutCheck.checkPes(bytes,machine)
             assertTrue(report.analysisComplete,"${file.name}: incomplete")
-            assertEquals(PecViewportCheck.check(bytes,report.options.hoop).errors.size,report.count(FindingCode.INVALID_PES),file.name)
+            // PEC_HOOP is HOOP_EXCEEDED, not INVALID_PES (130×180 samples on a 100mm machine).
+            assertEquals(PecViewportCheck.check(bytes,report.options.hoop).errors.count { !it.startsWith("PEC_HOOP:") },
+                report.count(FindingCode.INVALID_PES),file.name)
             assertTrue(report.statistics.stitchCount>0,file.name)
             assertEquals(report.statistics.stitchCount,report.stages.sumOf { it.stitchCount })
         }

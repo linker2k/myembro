@@ -20,7 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class HomeProject(val file: File, val thumbnail: Bitmap? = null)
+data class HomeProject(val file: File, val thumbnail: Bitmap? = null, val title: String = file.nameWithoutExtension)
 
 /** Local content only; the home screen never fabricates recent files or downloads templates. */
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -75,6 +75,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val thumbnail = try {
             Thumbnails.render(RenderData(DesignFormats.read(file)), 320)
         } catch (_: Exception) { null }
-        return HomeProject(file, thumbnail)
+        return HomeProject(file, thumbnail, BundledDesigns.title(getApplication(), file))
     }
 }
