@@ -18,7 +18,7 @@ Every coding agent (Codex, Claude Code) reads this file before starting work. Th
 
 ## Working principles
 
-- Do not invent new algorithms. Port verified originals (Ink/Stitch v3.3.0, potrace, Wu quantization) with their default values as-is, and prove by automated comparison that the result matches the original.
+- First survey verified originals and existing implementations (Ink/Stitch v3.3.0, potrace, Wu quantization, and others). If one fits, port it with its default values as-is and prove by automated comparison that the result matches the original. When you build something new or change an original, write down the limits and the improvement points of what you found as the basis, and decide whether it is an improvement by measurement, not by opinion. The P1–P8 safety rules above stay unchanged.
 - Models do not judge what can be measured. Code and tests judge, and reports attach the command or test output.
 - Every number used in a rule needs a basis: an upstream default, a corpus measurement or the original code. Without a basis, mark it "unverified" and do not use it.
 - Personal designs (the user's PE-Design library, uploaded files) are never committed and never used as test fixtures. Analyze them only locally in `/tmp`.
