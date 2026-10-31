@@ -61,7 +61,9 @@ object VectorArt {
         /** Measured region widths (mm) the shared rule decided on. */
         val widths: StitchTypeRule.Widths? = null,
         /** Actual emitted region boundaries, centered object-local millimeters (including holes). */
-        val paths: List<Polyline> = emptyList(), val regionId: String = "")
+        val paths: List<Polyline> = emptyList(), val regionId: String = "",
+        val satinCoverage: SatinCoverage.Audit? = null,
+        val satinBorder: SatinCoverage.Border = SatinCoverage.Border.NONE, val areaMm2: Double = 0.0)
     data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
         val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap(), val droppedSliverCount: Int = 0, val tinyOmittedCount: Int = 0)
@@ -274,10 +276,12 @@ object VectorArt {
                     MmPoint((q.x - cx) * scale, (q.y - cy) * scale)
                 }, line.closed) }
             }
+            val sourceLines=if(role=="stroke") subpaths(art.shapes[index]) else emptyList()
+            val border=SatinCoverage.border(region,sourceLines.isNotEmpty() && sourceLines.all { it.closed })
             val override = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
             val attempted = override
                 ?: if(preferred==StitchTypeRule.Type.RUNNING) SmallRegionStitches.running(running(),hoop)
-                else StitchTypeRule.generateRegion(preferred, groups, hoop=hoop) { attempt -> when (attempt) {
+                else StitchTypeRule.generateRegion(preferred, groups, hoop=hoop, satinRegionMm=toMm.transform(region), satinBorder=border!=SatinCoverage.Border.NONE) { attempt -> when (attempt) {
                 StitchTypeRule.Type.SATIN -> satin()
                 StitchTypeRule.Type.TATAMI -> tatamiGroups(region, thread)
                 StitchTypeRule.Type.RUNNING -> running()
@@ -295,7 +299,7 @@ object VectorArt {
                     lockStart = tagged(it.lockStart), lockEnd = tagged(it.lockEnd)) }
             }
             groups += resolved.groups
-            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths, regionId)
+            parts += Part(index, role, resolved.type!!, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths, regionId, resolved.coverage, border, region.area*scale*scale)
         }
         /**
          * An area after overlap removal (everything drawn later is cut away, JTS difference): each visible

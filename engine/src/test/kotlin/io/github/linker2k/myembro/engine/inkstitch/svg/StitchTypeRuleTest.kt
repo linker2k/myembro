@@ -55,7 +55,7 @@ class StitchTypeRuleTest {
         val body = f.toGeometry(org.locationtech.jts.geom.Envelope(2.0, 18.0, 2.0, 26.0)).buffer(2.0)
         rows += "robot body (20×28 stand-in)" to (StitchTypeRule.widths(body, 1.0) to StitchTypeRule.classify(body, 1.0))
         rows.forEach { (name, r) -> println("RULE | $name | max ${"%.2f".format(r.first.maxMm)} | median ${"%.2f".format(r.first.medianMm)} | centerline ${"%.1f".format(r.first.centerlineMm)} | ${r.second} |") }
-        assertEquals(listOf("clamp body" to Type.RUNNING,"clamp body" to Type.RUNNING,"clamp body" to Type.RUNNING,"clamp bar" to Type.SATIN, "hoop ring" to Type.SATIN, "logo M" to Type.TATAMI,
+        assertEquals(listOf("clamp body" to Type.RUNNING,"clamp body" to Type.RUNNING,"clamp body" to Type.RUNNING,"clamp bar" to Type.TATAMI, "hoop ring" to Type.SATIN, "logo M" to Type.TATAMI,
             "robot body (20×28 stand-in)" to Type.TATAMI), rows.map { it.first to it.second.second })
     }
 }

@@ -45,9 +45,9 @@ class LogoDesignTest {
         assertEquals(emptyList(), PesInvariants.violations(pes, hoop))
         assertEquals(emptyList(), blockers)
         assertTrue(report.analysisComplete)
-        // The width rule on our own logo: clamp bar 3.2mm and hoop ring 5.3mm → satin, arches 6.8mm > 6 → tatami.
+        // Width choice nominates clamp bar/ring as satin; the measured incomplete bar alone falls back to tatami.
         // The formerly omitted narrow clamp-body pieces now use the existing running generator.
-        assertEquals(listOf("0 fill RUNNING", "0 fill RUNNING", "0 fill RUNNING", "1 stroke SATIN", "2 stroke SATIN", "3 stroke TATAMI"), result.parts.map { "${it.shape} ${it.role} ${it.method}" })
+        assertEquals(listOf("0 fill RUNNING", "0 fill RUNNING", "0 fill RUNNING", "1 stroke TATAMI", "2 stroke SATIN", "3 stroke TATAMI"), result.parts.map { "${it.shape} ${it.role} ${it.method}" })
         System.getenv("LOGO_OUT")?.let { File(it) }?.let { out ->
             out.mkdirs()
             File(out, "LOGO60.PES").writeBytes(pes)

@@ -44,9 +44,10 @@ class VectorArtClassificationTest {
                 origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED))
         assertTrue(viewport.valid,viewport.errors.toString())
         assertFalse(report.hasBlockingIssues,report.findings.toString())
-        assertEquals(listOf(StitchTypeRule.Type.SATIN,StitchTypeRule.Type.SATIN,StitchTypeRule.Type.TATAMI),
+        assertEquals(listOf(StitchTypeRule.Type.TATAMI,StitchTypeRule.Type.SATIN,StitchTypeRule.Type.TATAMI),
             result.parts.map { it.method }.filter { it!=StitchTypeRule.Type.RUNNING })
         assertTrue(result.parts.any { it.method==StitchTypeRule.Type.RUNNING })
+        assertTrue(result.parts.single { it.shape==1 }.satinCoverage!!.fellBack)
     }
 
 }
