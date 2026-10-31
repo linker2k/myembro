@@ -247,9 +247,8 @@ private fun CropPreview(vm: PhotoViewModel) {
         val w = minOf(maxWidth, 300.dp * aspect.toFloat())
         Canvas(Modifier.width(w).height(w / aspect.toFloat()).semantics { contentDescription = description }
             .pointerInput(vm) { detectTransformGestures { _, pan, zoom, _ -> vm.transform(zoom, pan.x / size.width, pan.y / size.height) } }) {
-            drawIntoCanvas { canvas -> canvas.nativeCanvas.drawBitmap(bitmap,
-                Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height), RectF(0f, 0f, size.width, size.height),
-                android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)) }
+            drawIntoCanvas { canvas -> drawPhotoCrop(canvas.nativeCanvas, bitmap, crop,
+                size.width, size.height, vm.style == PhotoMode.COLOR) }
             drawRect(accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawCircle(accent, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(7.dp.toPx(), 7.dp.toPx()))
         }

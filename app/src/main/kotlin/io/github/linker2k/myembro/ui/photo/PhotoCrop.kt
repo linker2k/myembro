@@ -8,14 +8,22 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 
 internal data class PhotoCrop(val left: Int, val top: Int, val width: Int, val height: Int)
 
-/** Bounded source-pixel crop, preserving hoop aspect ratio and excluding blank margins. */
-internal fun photoCrop(width: Int, height: Int, aspect: Double, zoom: Float, panX: Float, panY: Float): PhotoCrop {
+/** Cover is 1; contain is the ratio of source and hoop aspect ratios. */
+internal fun photoMinimumZoom(width: Int, height: Int, aspect: Double): Float {
     require(width > 0 && height > 0 && aspect.isFinite() && aspect > 0)
-    val z = zoom.coerceIn(1f, 4f)
-    val w = (minOf(width.toDouble(), height * aspect) / z).toInt().coerceIn(1, width)
-    val h = (w / aspect).toInt().coerceIn(1, height)
-    return PhotoCrop(((width - w) * (panX.coerceIn(-1f, 1f) + 1) / 2).toInt(),
-        ((height - h) * (panY.coerceIn(-1f, 1f) + 1) / 2).toInt(), w, h)
+    val sourceAspect = width.toDouble() / height
+    return minOf(sourceAspect / aspect, aspect / sourceAspect).toFloat()
+}
+
+/** Virtual source-pixel viewport. Negative edges represent background outside the source. */
+internal fun photoCrop(width: Int, height: Int, aspect: Double, zoom: Float, panX: Float, panY: Float): PhotoCrop {
+    val z = zoom.coerceIn(photoMinimumZoom(width, height, aspect), 4f)
+    val w = kotlin.math.round(minOf(width.toDouble(), height * aspect) / z).toInt().coerceAtLeast(1)
+    val h = kotlin.math.round(minOf(height.toDouble(), width / aspect) / z).toInt().coerceAtLeast(1)
+    // On either side of cover, panning stops before exposing more than the available blank space.
+    fun edge(source: Int, viewport: Int, pan: Float) = kotlin.math.round(
+        (source - viewport) / 2.0 + kotlin.math.abs(source - viewport) * pan.coerceIn(-1f, 1f) / 2.0).toInt()
+    return PhotoCrop(edge(width, w, panX), edge(height, h, panY), w, h)
 }
 
 /**

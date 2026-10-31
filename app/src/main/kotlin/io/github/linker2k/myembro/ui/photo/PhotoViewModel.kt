@@ -280,7 +280,8 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         }
     }
     fun transform(scale: Float, dx: Float, dy: Float) {
-        zoom = (zoom * scale).coerceIn(1f, 4f)
+        val bitmap = source ?: return
+        zoom = (zoom * scale).coerceIn(photoMinimumZoom(bitmap.width, bitmap.height, hoop.width.toDouble() / hoop.height), 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
     }
     fun changeStyle(value: PhotoMode) {
@@ -320,12 +321,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                     val h = if(selectedTexture.enabled) (w / aspect).toInt().coerceAtLeast(1)
                         else if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
                     val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                    // RGB-only engine contract: composite transparent photo pixels onto white paper.
-                    Canvas(scaled).apply {
-                        if(selectedMode!=PhotoMode.COLOR) drawColor(android.graphics.Color.WHITE)
-                        drawBitmap(bitmap, Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height),
-                            Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
-                    }
+                    drawPhotoCrop(Canvas(scaled), bitmap, crop, w.toFloat(), h.toFloat(), selectedMode == PhotoMode.COLOR)
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     val corrected = PhotoCorrections.adjust(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedNoise,selectedContrast,selectedCorrection == PhotoCorrection.OTSU)
                     if (version == revision) {
