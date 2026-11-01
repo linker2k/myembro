@@ -26,7 +26,7 @@ class PhotoFilterSmokeInstrumentation: Instrumentation() {
             lateinit var vm:PhotoViewModel
             runOnMainSync {
                 vm=PhotoViewModel(targetContext.applicationContext as Application)
-                activity.setContent { MyembroTheme { PhotoScreen(vm,EmbroiderySettings(),{}, {}, {}) } }
+                activity.setContent { MyembroTheme { PhotoScreen(vm,EmbroiderySettings(),{}, {}) } }
                 vm.load(Uri.fromFile(input))
             }
             fun ready() {

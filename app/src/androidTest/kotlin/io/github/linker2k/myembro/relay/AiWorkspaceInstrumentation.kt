@@ -69,7 +69,7 @@ class AiWorkspaceInstrumentation : Instrumentation() {
                 .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             fun pictureButton(): AccessibilityNodeInfo? {
                 fun all(n:AccessibilityNodeInfo):List<AccessibilityNodeInfo> = listOf(n)+(0 until n.childCount).flatMap { n.getChild(it)?.let(::all).orEmpty() }
-                return uiAutomation.rootInActiveWindow?.let(::all)?.firstOrNull { it.text?.toString()==targetContext.getString(R.string.photo_edit) }
+                return uiAutomation.rootInActiveWindow?.let(::all)?.firstOrNull { it.text?.toString()==targetContext.getString(R.string.photo_next) }
             }
             await("picture input loaded") { pictureButton()!=null }
             check(vm.project.objects.size==1)

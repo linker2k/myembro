@@ -79,7 +79,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
         var projectMenu by remember { mutableStateOf(false) }
-        var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
         var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
@@ -96,9 +95,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
         // Keep the local design collection available alongside device files/folders.
         val addDesign = { vm.refreshDesigns(); showDesigns = true }
-        val openDocument = rememberDesignImporter(
-            onFiles = { vm.importDesigns(it, openSingleProject = true); fitRequest++; preview = 1f },
-            onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
         val importProgress by vm.importProgress.collectAsState()
         DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
@@ -158,8 +154,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                         onClick={projectMenu=false;showColors=true})
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
                                         onClick = { projectMenu = false; vm.requestProjectSave() })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
-                                        onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
                                         onClick = { projectMenu = false; vm.save() })
                                     if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
@@ -398,9 +392,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             confirmButton = { TextButton(onClick = { vm.submitSaveName(name, overwrite = true) }) { Text(stringResource(R.string.editor_overwrite)) } },
             dismissButton = { TextButton(onClick = vm::cancelOverwrite) { Text(stringResource(R.string.editor_cancel)) } }) }
         AgentAssistHost(vm.agent)
-        if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
-            onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
-            onDevice = { showOpenProjects = false; openDocument() })
     }
     }
 }

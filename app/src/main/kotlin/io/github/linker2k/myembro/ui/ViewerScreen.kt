@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -136,14 +138,15 @@ private fun ViewerContent(
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
                 Column {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Equal height: if one label wraps to two lines, the other button grows with it.
+                    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
-                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.viewer_send_usb))
                         }
                         OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
-                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.viewer_review_edit))
                         }

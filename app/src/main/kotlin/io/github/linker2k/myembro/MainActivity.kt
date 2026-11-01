@@ -238,9 +238,6 @@ class MainActivity : ComponentActivity() {
                                 incomingPictureTitle=null
                                 stack += Screen.EDITOR
                             }
-                        }, onSend = { file ->
-                            library.refresh(); library.clearSelection(); library.toggle(file)
-                            stack += Screen.LIBRARY; library.exportToUsb()
                         })
                     Screen.EMOJI -> io.github.linker2k.myembro.ui.emoji.EmojiScreen(emoji, settings.settings, onBack = back, onEdit = {
                         emoji.shapeObject?.let { shape ->
