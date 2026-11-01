@@ -47,7 +47,7 @@ describe('deployment tool contract drift gate', () => {
     expect(Object.keys(relay.properties).sort()).toEqual(Object.keys(strict.properties).sort());
     expect(relay.required).toEqual(['format', 'data']);
     expect(relay.properties.colors).toEqual({ ...strict.properties.colors, default: 4 });
-    expect(byName('import_picture').description).toMatch(/SVG is preferred[\s\S]*must be small/);
+    expect(byName('import_picture').description).toMatch(/Draw a PNG image first \(not SVG\)[\s\S]*at most 1000000 characters/);
   });
   it('pins block schemas to the app and keeps the patch optional and closed', () => {
     const source = readFileSync(new URL('../../app/src/main/kotlin/io/github/linker2k/myembro/relay/RelayBlockTools.kt', import.meta.url), 'utf8');
