@@ -15,13 +15,18 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
     data class Payload(val source: String, val name: String, val bytes: ByteArray, val converted: Boolean, val designLabel: String? = null, val automaticJumpTrim: Boolean? = null, val machineName: String? = null, val hoop: HoopSpec = HoopSpec.H100, val origin: DesignOrigin = DesignOrigin.IMPORTED)
     data class SpacePlan(val fingerprint: String, val candidates: List<Fat12Volume.Entry>,
         val payloads: List<Payload>, val failures: List<Pair<String, String>>, val freeBytes: Long,
-        val requiredBytes: Long, val freeEntries: Int, val clusterBytes: Int, val diagnostics: String = "") {
+        val requiredBytes: Long, val freeSlots: Set<Int>, val clusterBytes: Int, val requiredSlots: List<Int>,
+        val rootEntryCount: Int, val diagnostics: String = "") {
+        val freeEntries: Int get() = freeSlots.size
+        val requiredEntries: Int get() = requiredSlots.sum()
         fun canProceed(names: Set<String>): Boolean {
             if (names.isEmpty() || names.any { name -> candidates.none { it.name == name } }) return false
             val selected = candidates.filter { it.name in names }
             val reclaimed = selected.sumOf { ((it.size + clusterBytes - 1) / clusterBytes) * clusterBytes }
-            val slots = selected.sumOf { 1 + it.longNameSlots.size }
-            return freeBytes + reclaimed >= requiredBytes && freeEntries + slots >= payloads.size
+            val free = freeSlots + selected.flatMap { it.longNameSlots + it.rootIndex }
+            // Same contiguous first-fit check Fat12Volume.checkSpace runs after the deletions.
+            return freeBytes + reclaimed >= requiredBytes &&
+                Fat12Volume.fitsRootSlots(BooleanArray(rootEntryCount) { it in free }, requiredSlots)
         }
     }
     sealed interface Result {
@@ -42,7 +47,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
         return access.open(target).use { session ->
             try {
                 val volume = session.volume
-                try { volume.checkSpace(payloads.map { it.bytes.size }) }
+                try { volume.checkSpace(payloads.map { it.bytes.size }, names(volume.listRoot(), payloads).map { it.second }) }
                 catch (e: Fat12Volume.NoSpace) { return@use Result.NeedSpace(plan(volume, payloads, failures, e, session.diagnostics())) }
                 write(session, payloads, failures)
             } catch (e: Exception) { throw session.failure(e) }
@@ -63,7 +68,7 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
                     require(current != null && current in plan.candidates && !current.isDirectory && !current.isReadOnly && current.name.endsWith(".PES", true))
                 }
                 for (name in deleteNames) fs.deleteFile(name)
-                fs.checkSpace(payloads.map { it.bytes.size })
+                fs.checkSpace(payloads.map { it.bytes.size }, names(fs.listRoot(), payloads).map { it.second })
                 write(session, payloads, plan.failures)
             } catch (e: Exception) { throw session.failure(e) }
         }
@@ -71,9 +76,22 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
 
     private fun plan(fs: Fat12Volume, payloads: List<Payload>, failures: List<Pair<String, String>>, e: Fat12Volume.NoSpace, diagnostics: String) =
         SpacePlan(fs.fingerprint(), fs.listRoot().filter { !it.isDirectory && !it.isReadOnly && it.name.endsWith(".PES", true) },
-            payloads, failures, fs.freeBytes, e.requiredBytes, fs.freeRootEntries, fs.geometry.clusterBytes, diagnostics)
+            payloads, failures, fs.freeBytes, e.requiredBytes, fs.freeRootSlots, fs.geometry.clusterBytes,
+            names(fs.listRoot(), payloads).map { Fat12Volume.entrySlots(it.second) }, fs.geometry.rootEntryCount, diagnostics)
 
     companion object {
+        /** (8.3 alias, long name or null when identical) for each payload, in write order, so the
+         * space check and the writes allocate exactly the same names and root slots. */
+        internal fun names(existing: List<Fat12Volume.Entry>, payloads: List<Payload>): List<Pair<String, String?>> {
+            val taken = existing.flatMap { listOfNotNull(it.name, it.longName) }.toMutableList()
+            return payloads.map { payload ->
+                val long = UsbDesignNames.longName(payload.name, taken)
+                val alias = UsbDesignNames.unique(payload.source, taken, payload.designLabel)
+                taken += long; taken += alias
+                alias to long.takeIf { it != alias }
+            }
+        }
+
         private fun checkedPayloads(payloads: List<Payload>): List<Payload> = payloads.map {
             it.copy(bytes = it.bytes.copyOf())
         }.also { frozen ->
@@ -96,15 +114,19 @@ internal class DirectUsbExporter(private val access: DirectUsbAccess) {
             val failures = initialFailures.toMutableList()
             var converted = 0
             var failure: DirectUsbFailure? = null
+            // Root listing was already validated at mount; this reads no device data.
+            val planned = names(fs.listRoot(), frozen)
             for ((index, payload) in frozen.withIndex()) {
                 try {
-                    val preferred = UsbDesignNames.unique(payload.source, emptyList(), payload.designLabel)
-                    val name = UsbDesignNames.unique(payload.source, fs.listRoot().map { it.name }, payload.designLabel)
-                    val entry = fs.writeFile(name, payload.bytes)
-                    exported += entry.name
-                    written += UsbTransferredFile(entry.name, entry.size,
+                    // Compare what the user sees: a changed alias alone (DESIGN~1.PES) is not a rename.
+                    val preferred = names(emptyList(), listOf(payload)).single().let { it.second ?: it.first }
+                    val (alias, long) = planned[index]
+                    val entry = fs.writeFile(alias, payload.bytes, long)
+                    val shown = entry.longName ?: entry.name
+                    exported += shown
+                    written += UsbTransferredFile(shown, entry.size,
                         usbAllocatedBytes(entry.size, fs.geometry.clusterBytes), fs.geometry.clusterBytes, sourceName = payload.source, automaticJumpTrim = payload.automaticJumpTrim, machineName = payload.machineName)
-                    if (entry.name != preferred) notices += UsbTransferNotice.NAME_COLLISION
+                    if (shown != preferred) notices += UsbTransferNotice.NAME_COLLISION
                     remaining = fs.freeBytes
                     if (payload.converted) converted++
                 } catch (e: Exception) {

@@ -240,8 +240,10 @@ They are not generalized to other Android devices or machines.
 The implementation combines the pure Kotlin filesystem in `engine/fat12` with libaums 0.10.0's BOT/SCSI block driver
 in `usb/DirectUsbAccess`. When no SAF drive is available, a connected class 8 / subclass 6 / protocol 80 interface is
 exposed as a “Direct SE400 connection” drive. Actual writes require USB permission and a volume whose FAT12 BPB was
-successfully verified. Filenames use uppercase ASCII 8.3; collisions are avoided with `~1`, `~2`, etc., and no LFN is
-created (direct USB export naming policy). There are no formatting, partition-creation, or automatic-repair APIs.
+successfully verified. Each file gets a VFAT long name (the design file name, Hangul and punctuation kept; only
+`\ / : * ? " < > |` and control characters replaced; `name (1).pes` on collision) plus an uppercase ASCII 8.3 alias
+(`~1`, `~2`… on collision). Basis: on 2026-11-01 the user copied `01 빗 4종!@#$^&-+(123).pes` to the SE400 disk from a PC
+and the SE400 showed the design normally. There are no formatting, partition-creation, or automatic-repair APIs.
 All FAT copies are updated, and each write and the final file are compared through physical reads.
 
 If space or root entries are insufficient, processing stops **before writing** and shows the existing `.PES` list.
@@ -346,7 +348,7 @@ This profile is independent of the app UI profile; UI integration is a separate 
 The user confirmed successful direct SE400 USB transfer and that the design opens normally on the machine.
 This does not confirm sewing results or support for other machine/phone combinations.
 
-Transfer results remain in a result window until dismissed, summarizing the actual transferred filename (8.3 for direct USB),
+Transfer results remain in a result window until dismissed, summarizing the actual transferred filename (the long name for direct USB),
 PES byte size, and remaining space. Unconfirmed free space (e.g. a session interrupted by failure) is “unknown.”
 The measured SE400 batch's FAT reserved entries `00 00 00` and resulting media-byte mismatch, MBR/BPB length adjustment,
 and 119→115 cluster restriction are preserved under “Details”/diagnostic copy without user warnings.

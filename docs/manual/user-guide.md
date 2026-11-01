@@ -215,7 +215,7 @@ No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The S
    ![USB access request and the SE400 direct connection banner](../images/manual/en/usb-direct-05.jpg)
 
 5. **Wait for the result.**
-   Success: **✔ MYEMBRO_.PES sent** appears with the file size and the remaining space. The app has read the file back from the machine to check it. The file name is changed to an uppercase 8.3 name the machine can read, so "myembro 로고" becomes MYEMBRO_.PES.
+   Success: **✔ myembro 로고.pes sent** appears with the file size and the remaining space. The app has read the file back from the machine to check it. The file keeps its name, Korean included.
 
    ![USB transfer result](../images/manual/en/usb-direct-06.jpg)
 

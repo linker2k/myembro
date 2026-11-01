@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.usb
 
+import io.github.linker2k.myembro.engine.fat12.LongNames
 import io.github.linker2k.myembro.engine.fat12.ShortNames
 import java.util.Locale
 
-/** Prefer the original design filename; remove generic leading labels before 8.3 truncation.
+/** Long name: the design file name as-is (Hangul, spaces, punctuation), only VFAT-forbidden
+ * characters replaced. 8.3 alias: prefer the original name; remove generic leading labels before truncation.
  * PES thread brands/PEC labels are not filenames ("EMBROIDERY" is commonly a thread brand).
  */
 internal object UsbDesignNames {
@@ -35,4 +37,7 @@ internal object UsbDesignNames {
         }
         error("No unique PES short name available")
     }
+
+    fun longName(fileName: String, taken: Collection<String>): String =
+        LongNames.unique(fileName.replace('\\', '/').substringAfterLast('/'), taken)
 }

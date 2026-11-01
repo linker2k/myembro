@@ -175,6 +175,125 @@ class Fat12Test {
         assertContentEquals(original, disk.file.readBytes())
         clean(disk)
     }
+    /** dosfstools decodes LFN slots independently of our reader; -l lists each file's long path. */
+    private fun fsckList(disk: Disk): String {
+        val p = ProcessBuilder("/usr/sbin/fsck.fat", "-n", "-l", disk.file.path).redirectErrorStream(true)
+            .apply { environment()["LANG"] = "C.UTF-8"; environment()["LC_ALL"] = "C.UTF-8" }.start()
+        assertTrue(p.waitFor(15, TimeUnit.SECONDS))
+        val output = p.inputStream.bufferedReader(Charsets.UTF_8).readText()
+        assertEquals(0, p.exitValue(), output)
+        for (problem in listOf("Reclaiming", "orphan", "Orphan", "checksum", "Bad short", "Bad long", "differs"))
+            assertFalse(output.contains(problem), output)
+        return output
+    }
+
+    @Test fun `real-machine Hangul punctuation long name round trips with alias checksum and passes fsck`() = image { disk ->
+        val long = "01 빗 4종!@#\$^&-+(123).pes"
+        val pes = File("src/test/resources/fixtures/flower.v1.pes").readBytes()
+        val written = Fat12Volume.mount(disk).writeFile("4-123.PES", pes, long)
+        assertEquals("4-123.PES", written.name)
+        assertEquals(long, written.longName)
+        val fresh = Fat12Volume.mount(disk) // decode from disk, not from the writer's buffers
+        val entry = fresh.listRoot().single()
+        assertEquals(long, entry.longName)
+        assertEquals(LongNames.slotsFor(long), entry.longNameSlots.size)
+        assertEquals(listOf(0, 1), entry.longNameSlots)
+        assertEquals(2, entry.rootIndex)
+        assertContentEquals(pes, fresh.readFile(entry.name))
+        assertTrue(fsckList(disk).contains("Checking file /$long (4-123.PES)"))
+        fresh.deleteFile(entry.name)
+        val root = disk.readSectors(fresh.geometry.rootSector, 1)
+        assertEquals(listOf(0xE5, 0xE5, 0xE5), (0..2).map { root[it * 32].toInt() and 255 })
+        assertTrue(Fat12Volume.mount(disk).listRoot().isEmpty())
+        clean(disk)
+    }
+
+    @Test fun `LFN slot count boundaries 12 13 14 and 26 27 and 255 round trip`() = image { disk ->
+        val fs = Fat12Volume.mount(disk)
+        val cases = mapOf(12 to 1, 13 to 1, 14 to 2, 26 to 2, 27 to 3, 254 to 20, 255 to 20)
+        for ((length, slots) in cases) {
+            val long = "가".repeat(length - 4) + ".pes"
+            assertEquals(length, long.length)
+            assertEquals(slots, LongNames.slotsFor(long))
+            assertEquals(slots + 1, Fat12Volume.entrySlots(long))
+            fs.writeFile("L$length.PES", byteArrayOf(length.toByte()), long)
+        }
+        val fresh = Fat12Volume.mount(disk)
+        for ((length, slots) in cases) {
+            val entry = fresh.listRoot().single { it.name == "L$length.PES" }
+            assertEquals("가".repeat(length - 4) + ".pes", entry.longName)
+            assertEquals(slots, entry.longNameSlots.size)
+            assertContentEquals(byteArrayOf(length.toByte()), fresh.readFile(entry.name))
+        }
+        val listed = fsckList(disk)
+        for (length in cases.keys) assertTrue(listed.contains("Checking file /" + "가".repeat(length - 4) + ".pes (L$length.PES)\n"), listed)
+    }
+
+    @Test fun `256 UTF-16 units forbidden characters and duplicates are rejected before any write`() = image { disk ->
+        val fs = Fat12Volume.mount(disk)
+        fs.writeFile("A.PES", byteArrayOf(1), "봄 꽃.pes")
+        val writes = disk.writes
+        val rejected = listOf("a".repeat(252) + ".pes", "😀".repeat(126) + ".pes", "", " ", "a.pes.", "a.pes ", "a\u0000.pes", "a\u001F.pes") +
+            LongNames.FORBIDDEN.map { "a${it}b.pes" } + listOf("봄 꽃.pes", "봄 꽃.PES", "a.pes".replace("a", "A"))
+        assertEquals(256, rejected[0].length); assertEquals(256, rejected[1].length)
+        for (name in rejected) assertFailsWith<IllegalArgumentException>(name) { fs.writeFile("B.PES", byteArrayOf(2), name) }
+        assertEquals(writes, disk.writes)
+        assertEquals(1, Fat12Volume.mount(disk).listRoot().size)
+        // Valid edge characters: leading period/space inside, '+', ',', ';', '=', '[', ']' are VFAT-legal.
+        fs.writeFile("C.PES", byteArrayOf(3), ".a +,;=[]~.pes")
+        fsckList(disk)
+    }
+
+    @Test fun `LFN needs a contiguous run and root exhaustion fails without touching the disk`() = image(16) { disk ->
+        val fs = Fat12Volume.mount(disk)
+        repeat(fs.freeRootEntries) { fs.writeFile("F$it.PES", byteArrayOf()) }
+        listOf(1, 3, 5).forEach { fs.deleteFile("F$it.PES") } // 3 free slots, none adjacent
+        val long14 = "a".repeat(10) + ".pes" // 14 units: 2 LFN slots + 8.3 = 3 contiguous slots
+        assertEquals(3, Fat12Volume.entrySlots(long14))
+        assertEquals(3, fs.freeRootEntries)
+        val before = disk.file.readBytes()
+        val e = assertFailsWith<Fat12Volume.NoSpace> { fs.writeFile("N.PES", byteArrayOf(1), long14) }
+        assertEquals(3, e.requiredEntries); assertEquals(3, e.freeEntries)
+        assertFailsWith<Fat12Volume.NoSpace> { fs.checkSpace(listOf(1), listOf(long14)) }
+        assertContentEquals(before, disk.file.readBytes())
+        fs.deleteFile("F2.PES"); fs.deleteFile("F4.PES") // slots 1..5 free: run of 5
+        val long13 = "b".repeat(9) + ".pes" // n-1/n/n+1 against the 5-slot run: 1+1, 2+1 fit; batch of both = 5
+        fs.checkSpace(listOf(1, 1), listOf(long13, long14))
+        assertFailsWith<Fat12Volume.NoSpace> { fs.checkSpace(listOf(1, 1, 1), listOf(long13, long14, null)) }
+        fs.writeFile("M.PES", byteArrayOf(2), long13)
+        fs.writeFile("N.PES", byteArrayOf(3), long14)
+        assertEquals(0, fs.freeRootEntries)
+        val fresh = Fat12Volume.mount(disk)
+        assertEquals(long13, fresh.listRoot().single { it.name == "M.PES" }.longName)
+        assertEquals(long14, fresh.listRoot().single { it.name == "N.PES" }.longName)
+        fsckList(disk)
+    }
+
+    @Test fun `long name equal to the alias stores no LFN slot`() = image { disk ->
+        val fs = Fat12Volume.mount(disk)
+        val entry = fs.writeFile("LEMON.PES", byteArrayOf(1), "LEMON.PES")
+        assertTrue(entry.longNameSlots.isEmpty()); assertNull(entry.longName)
+        assertEquals(0, entry.rootIndex)
+        val lower = fs.writeFile("LIME.PES", byteArrayOf(2), "lime.pes")
+        assertEquals(listOf(1), lower.longNameSlots); assertEquals("lime.pes", lower.longName)
+        clean(disk)
+    }
+
+    @Test fun `LongNames unique keeps suffix inside 255 and never splits surrogates`() {
+        assertEquals("빗 4종.pes", LongNames.unique("빗 4종.pes", emptyList()))
+        assertEquals("빗 4종 (1).pes", LongNames.unique("빗 4종.pes", listOf("빗 4종.PES")))
+        assertEquals("빗 4종 (2).pes", LongNames.unique("빗 4종.pes", listOf("빗 4종.pes", "빗 4종 (1).pes")))
+        assertEquals("a_b_c.pes", LongNames.unique("a:b\u0001c.pes", emptyList()))
+        assertEquals("design.pes", LongNames.unique("...", emptyList()))
+        val max = "a".repeat(251) + ".pes"
+        assertEquals(max, LongNames.unique(max, emptyList()))
+        assertEquals("a".repeat(247) + " (1).pes", LongNames.unique(max, listOf(max)))
+        assertEquals(255, LongNames.unique(max, listOf(max)).length)
+        assertEquals(255, LongNames.sanitize("a".repeat(300) + ".pes").length)
+        val emoji = LongNames.sanitize("a" + "😀".repeat(200) + ".pes")
+        assertTrue(emoji.length <= 255 && !emoji[emoji.length - 5].isHighSurrogate(), emoji)
+    }
+
     @Test fun `deleting a Windows LFN also removes only its checksum owned slots`() = image { disk ->
         val fs = Fat12Volume.mount(disk)
         val entry = fs.writeFile("longname.pes", byteArrayOf(1, 2, 3))

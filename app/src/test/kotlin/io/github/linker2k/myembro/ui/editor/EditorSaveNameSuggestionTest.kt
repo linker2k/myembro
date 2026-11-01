@@ -14,15 +14,16 @@ class EditorSaveNameSuggestionTest {
             exists(candidate)
         }
 
-    @Test fun `logo space is replaced before proposing or checking collisions`() {
-        assertEquals("myembro_logo_2", suggestion("myembro logo.pes"))
-        assertEquals("myembro_logo_4", suggestion("myembro logo.pes") { it in setOf("myembro_logo_2", "myembro_logo_3") })
+    @Test fun `logo space is kept when proposing or checking collisions`() {
+        assertEquals("myembro logo_2", suggestion("myembro logo.pes"))
+        assertEquals("myembro logo_4", suggestion("myembro logo.pes") { it in setOf("myembro logo_2", "myembro logo_3") })
     }
 
-    @Test fun `Korean names receive a valid suggestion without changing manual names`() {
-        assertEquals("design_2", suggestion("정민.pes"))
-        assertEquals("design_3", suggestion("정민.pes") { it == "design_2" })
-        assertEquals("name___2", suggestion("name정민.myembro"))
+    @Test fun `Korean names are kept in suggestions`() {
+        assertEquals("정민_2", suggestion("정민.pes"))
+        assertEquals("정민_3", suggestion("정민.pes") { it == "정민_2" })
+        assertEquals("name정민_2", suggestion("name정민.myembro"))
+        assertEquals("01 빗 4종!@#\$^&-+(123)_2", suggestion("01 빗 4종!@#\$^&-+(123).pes"))
         assertEquals("정민", designSaveStem("정민.pes"))
     }
 
@@ -30,8 +31,9 @@ class EditorSaveNameSuggestionTest {
         for (name in listOf("a:b?c*<d>|e\"f.pes", "a\tb\nc.pes", "a\u0000b.pes", "heart❤.pes", "../myembro logo.PES", "a.b.myembro")) {
             suggestion(name)
         }
-        assertEquals("design_2", suggestion("❤?!"))
-        assertEquals("lemon_v2_2", suggestion("lemon.v2.pes"))
+        assertEquals("a_b_c_2", suggestion("a:b?c.pes"))
+        assertEquals("❤_!_2", suggestion("❤?!"))
+        assertEquals("lemon.v2_2", suggestion("lemon.v2.pes"))
         assertEquals("A-z_10", suggestion("A-z_09.pes"))
     }
 
@@ -48,10 +50,11 @@ class EditorSaveNameSuggestionTest {
         assertEquals(80, suggestion("a".repeat(78) + " 한글").length)
     }
 
-    @Test fun `unchanged machine filename rule still rejects invalid manual stems`() {
-        for (name in listOf("", "정민", "myembro logo", "a.b", "a?b", "a\tb")) {
+    @Test fun `machine filename rule rejects only long-name forbidden and control characters`() {
+        for (name in listOf("", " ", "a?b", "a\tb", "a/b", "a|b")) {
             assertFalse(Preflight.isValidFileNameStem(name), name)
         }
+        for (name in listOf("정민", "myembro logo", "a.b", "(1)!@#\$")) assertTrue(Preflight.isValidFileNameStem(name), name)
         assertFailsWith<IllegalArgumentException> { suggestion("  ") }
     }
 }

@@ -36,10 +36,10 @@ class SaveNameMessageTest {
     }
 
     @Test fun `English filename violation warnings contain zero Hangul characters`() {
-        for (name in listOf("myembro logo_2.pes", "정민.pes", "logo?.pes")) {
+        for (name in listOf("정민?.pes", "logo?.pes", "a|b.pes")) {
             val warnings = Preflight.check(pattern, name, fileNameMessages = messages(Locale.ENGLISH))
             assertEquals(1, warnings.size)
-            assertContains(warnings.single(), "Use only")
+            assertContains(warnings.single(), "cannot contain")
             assertContains(warnings.single(), "Brother SE400")
             assertEquals(0, hangul.findAll(warnings.single()).count())
         }
@@ -50,19 +50,20 @@ class SaveNameMessageTest {
     }
 
     @Test fun `Korean uses translated resources and preserves machine and length arguments`() {
-        val warnings = Preflight.check(pattern, "a b.pes", MachineProfile.SE400.copy(maxFileNameLength = 2),
+        val warnings = Preflight.check(pattern, "a*b.pes", MachineProfile.SE400.copy(maxFileNameLength = 2),
             fileNameMessages = messages(Locale.KOREAN))
         assertEquals(2, warnings.size)
-        assertContains(warnings[0], "파일명에는 영문")
+        assertContains(warnings[0], "기호와 제어 문자")
         assertContains(warnings[0], "Brother SE400")
         assertEquals("파일명이 2자를 초과합니다.", warnings[1])
     }
 
     @Test fun `JVM default is English and valid names still have no warnings`() {
-        val warning = Preflight.check(pattern, "myembro logo_2.pes").single()
+        val warning = Preflight.check(pattern, "myembro logo?.pes").single()
         assertEquals(0, hangul.findAll(warning).count())
         for (locale in listOf(Locale.ENGLISH, Locale.KOREAN)) {
-            assertTrue(Preflight.check(pattern, "myembro_logo_2.pes", fileNameMessages = messages(locale)).isEmpty())
+            for (name in listOf("myembro_logo_2.pes", "myembro 로고 (2).pes", "01 빗 4종!@#\$^&-+(123).pes"))
+                assertTrue(Preflight.check(pattern, name, fileNameMessages = messages(locale)).isEmpty(), name)
         }
     }
 }

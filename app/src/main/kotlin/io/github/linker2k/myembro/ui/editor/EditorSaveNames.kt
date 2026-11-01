@@ -15,10 +15,8 @@ internal fun designSaveStem(name: String): String =
 internal fun suggestDesignName(original: String, exists: (String) -> Boolean): String {
     val originalStem = designSaveStem(original)
     require(originalStem.isNotBlank())
-    // Suggestions must satisfy the same character rule as export preflight. Keep manual
-    // names/local project saving unchanged; use a readable fallback for non-ASCII names.
-    val stem = originalStem.map { if (Preflight.isValidFileNameStem(it.toString())) it else '_' }
-        .joinToString("").takeUnless { it.all { c -> c == '_' } } ?: "design"
+    // designSaveStem already replaced the long-name characters export preflight rejects.
+    val stem = originalStem
     val match = Regex("^(.*)_([0-9]+)$").matchEntire(stem)
     val root = match?.groupValues?.get(1)?.takeIf { it.isNotBlank() } ?: stem
     val previous = match?.groupValues?.get(2)?.toLongOrNull()

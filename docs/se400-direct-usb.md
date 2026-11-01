@@ -16,8 +16,11 @@ Already connected to the existing design-list/viewer→list USB export callbacks
 - Write order: data→FAT copies→root entry. Delete order: remove root reference→release FAT.
   Reads back and compares after each transfer, then rereads the entire new file. After I/O failure, discards the session
   without continuing subsequent file writes or automatically retrying. Does not write existing BPB/MBR.
-- `ShortNames`: ASCII uppercase 8.3, duplicate suffixes `_1`…, names containing only non-ASCII characters mapped to DESIGN.PES and similar names.
-  Does not create LFN. When deleting a file with an existing LFN, also removes only owned slots with verified order/checksum.
+- `ShortNames`: ASCII uppercase 8.3 alias, duplicate suffixes `_1`…, names containing only non-ASCII characters mapped to DESIGN.PES and similar names.
+- `LongNames` + `Fat12Volume.writeFile(alias, bytes, longName)`: VFAT long-name slots per fatgen103 section 7 (13 UTF-16 units per slot,
+  at most 255 units / 20 slots, alias checksum, 0x0000 terminator and 0xFFFF padding), written in one contiguous first-fit root run
+  before the 8.3 entry; `checkSpace` counts those slots. Omitted when the long name equals the alias. Deleting a file removes only
+  owned slots with verified order/checksum. Tests compare with an independent `fsck.fat -l` listing.
 - App `LibaumsBlockDevice`: Uses libaums **core 0.10.0** `BlockDeviceDriver`. In this version,
   `ScsiBlockDevice.blocks` is actually the last LBA, so **+1** converts it to sectorCount. Reconfirm this meaning
   when updating versions. Block transfers use chunks of at most 16KiB, with offsets in LBA rather than bytes.
