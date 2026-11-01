@@ -332,27 +332,34 @@ private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolea
 private fun DetailControls(vm: PhotoViewModel) {
     val colors = MaterialTheme.colorScheme
     Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
-    val sizes = vm.resolutionSteps
-    var sizeDraft by remember(sizes, vm.effectiveResolutionPx) { mutableFloatStateOf(sizes.indexOf(vm.effectiveResolutionPx).toFloat()) }
-    val size = sizes[sizeDraft.roundToInt().coerceIn(sizes.indices)]
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
     val applied = vm.appliedResolutionPx
-    val sizeLabel = if (applied != null && applied != size && size == vm.effectiveResolutionPx)
-        stringResource(R.string.photo_resolution_applied, size, applied) else stringResource(R.string.photo_resolution, size)
-    Text(sizeLabel, style = MaterialTheme.typography.labelLarge)
-    Slider(sizeDraft, { sizeDraft = it }, valueRange = 0f..(sizes.size - 1).toFloat(), steps = sizes.size - 2,
-        onValueChangeFinished = { vm.changeResolution(size) }, enabled = !vm.busy,
-        modifier = Modifier.semantics { contentDescription = sizeLabel })
-    val areas = vm.pieceAreaSteps
-    var areaDraft by remember(areas, vm.effectivePieceAreaMm2) { mutableFloatStateOf(areas.indexOf(vm.effectivePieceAreaMm2).toFloat()) }
-    val area = areas[areaDraft.roundToInt().coerceIn(areas.indices)]
-    val areaLabel = if (area == 0.0) stringResource(R.string.photo_piece_area_off)
-        else stringResource(R.string.photo_piece_area, pieceAreaText(area), 2 * kotlin.math.sqrt(area / kotlin.math.PI))
-    Text(areaLabel, style = MaterialTheme.typography.labelLarge)
-    Slider(areaDraft, { areaDraft = it }, valueRange = 0f..(areas.size - 1).toFloat(), steps = areas.size - 2,
-        onValueChangeFinished = { vm.changePieceArea(area) }, enabled = !vm.busy && vm.pieceAreaApplies,
-        modifier = Modifier.semantics { contentDescription = areaLabel })
+    StepSlider(vm.resolutionSteps, vm.effectiveResolutionPx, !vm.busy, { size ->
+        if (applied != null && applied != size && size == vm.effectiveResolutionPx) res.getString(R.string.photo_resolution_applied, size, applied)
+        else res.getString(R.string.photo_resolution, size)
+    }, vm::changeResolution)
+    StepSlider(vm.pieceAreaSteps, vm.effectivePieceAreaMm2, !vm.busy && vm.pieceAreaApplies, { area ->
+        if (area == 0.0) res.getString(R.string.photo_piece_area_off)
+        else res.getString(R.string.photo_piece_area, pieceAreaText(area), 2 * kotlin.math.sqrt(area / kotlin.math.PI))
+    }, vm::changePieceArea)
     Text(stringResource(if (vm.pieceAreaApplies) R.string.photo_detail_hint else R.string.photo_piece_area_bw),
         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+}
+
+/**
+ * Slider over fixed steps; dragging only moves the label and [onCommit] runs once on release.
+ * The committed step is read from the slider state when the gesture ends: a tap calls onValueChange and
+ * onValueChangeFinished back to back, before any recomposition, so a value captured at composition is stale.
+ */
+@Composable
+internal fun <T> StepSlider(steps: List<T>, value: T, enabled: Boolean, label: (T) -> String, onCommit: (T) -> Unit) {
+    var draft by remember(steps, value) { mutableFloatStateOf(steps.indexOf(value).coerceAtLeast(0).toFloat()) }
+    fun step() = steps[draft.roundToInt().coerceIn(steps.indices)]
+    val text = label(step())
+    Text(text, style = MaterialTheme.typography.labelLarge)
+    Slider(draft, { draft = it }, valueRange = 0f..(steps.size - 1).toFloat(), steps = (steps.size - 2).coerceAtLeast(0),
+        onValueChangeFinished = { onCommit(step()) }, enabled = enabled,
+        modifier = Modifier.semantics { contentDescription = text })
 }
 
 /** 0.0625 … 16 as written; the colour default π shows as 3.14. */
