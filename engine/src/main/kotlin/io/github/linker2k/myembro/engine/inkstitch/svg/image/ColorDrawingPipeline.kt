@@ -32,6 +32,8 @@ object ColorDrawingPipeline {
      * 120/127 sample-pack inputs fit at 99.9mm; the largest (275) took 143s to generate on a PC
      * and exceeded the 30,000-stitch sew-out limit (tools/color-trace/README.md). */
     const val MAX_REGION_CONTOURS = 128
+    /** Side limit of the Wu route ([trace]): the 1024px resolution maximum; 1024×1024 is exactly Wu's pixel limit. */
+    const val WU_MAX_EDGE = 1024
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
         val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray, val assignmentWarnings:List<ThreadAssignment.Shortage> = emptyList()) {
@@ -65,7 +67,8 @@ object ColorDrawingPipeline {
      */
     fun trace(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
         minAreaMm2:Double=MINIMUM_REGION_AREA_MM2,maxContours:Int=128,grayscale:Boolean=false,myThreads:io.github.linker2k.myembro.engine.io.MyThreads=io.github.linker2k.myembro.engine.io.MyThreads(),checkpoint:(String)->Unit={}):Preview {
-        require(width in 1..512 && height in 1..512 && width*height==argb.size)
+        // Wu's own pixel limit; the former 512px side limit came from the first oracle probe, without a recorded basis.
+        require(width in 1..WU_MAX_EDGE && height in 1..WU_MAX_EDGE && width.toLong()*height<=ImageQuantizer.MAX_PIXELS && width*height==argb.size)
         require(widthMm.isFinite() && widthMm>0 && colorCount in 2..6)
         checkpoint("quantization")
         val pixels=if(grayscale) IntArray(argb.size) { Bt709Grayscale.argb(argb[it]) } else argb
@@ -84,8 +87,9 @@ object ColorDrawingPipeline {
     /** Color drawing from the sample-pack color regions ([SampleColorRegions]) at up to 1024px;
      * contours, thread assignment and stitches follow the same route as [trace]. */
     fun traceRegions(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
-        maxContours:Int=MAX_REGION_CONTOURS,myThreads:io.github.linker2k.myembro.engine.io.MyThreads=io.github.linker2k.myembro.engine.io.MyThreads(),checkpoint:(String)->Unit={}):Preview {
-        val regions=SampleColorRegions.labels(width,height,argb,widthMm,colorCount,checkpoint=checkpoint)
+        maxContours:Int=MAX_REGION_CONTOURS,myThreads:io.github.linker2k.myembro.engine.io.MyThreads=io.github.linker2k.myembro.engine.io.MyThreads(),
+        minPieceAreaMm2:Double=SampleColorRegions.DEFAULT_PIECE_AREA_MM2,checkpoint:(String)->Unit={}):Preview {
+        val regions=SampleColorRegions.labels(width,height,argb,widthMm,colorCount,minPieceAreaMm2=minPieceAreaMm2,checkpoint=checkpoint)
         require(regions.palette.isNotEmpty()) { "No foreground after border background removal" }
         // 1026² padded masks exceed Wu's 1M-pixel input; the explicit mask tracer needs no quantization.
         return preview(width,height,regions.labels,regions.palette,widthMm,MINIMUM_REGION_AREA_MM2,maxContours,false,myThreads,checkpoint,binaryMask=true)

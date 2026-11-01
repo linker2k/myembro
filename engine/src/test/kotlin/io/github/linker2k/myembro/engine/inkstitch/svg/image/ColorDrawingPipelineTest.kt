@@ -8,6 +8,18 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class ColorDrawingPipelineTest {
+    /** Wu route side limit = the 1024px resolution maximum (1024² = Wu's 1,048,576-pixel limit). */
+    @Test fun wuRouteSideLimitIs1024Inclusive() {
+        fun stripes(w: Int, h: Int) = IntArray(w * h) { i -> val x = i % w; val y = i / w
+            if (x in w / 4 until w * 3 / 4 && y in h / 4 until h * 3 / 4) 0xff2233cc.toInt() else 0xffffffff.toInt() }
+        for (edge in listOf(1023, 1024)) {
+            ColorDrawingPipeline.trace(edge, 16, stripes(edge, 16), 99.9, 2)
+            ColorDrawingPipeline.trace(16, edge, stripes(16, edge), 99.9, 2)
+        }
+        assertFailsWith<IllegalArgumentException> { ColorDrawingPipeline.trace(1025, 16, stripes(1025, 16), 99.9, 2) }
+        assertFailsWith<IllegalArgumentException> { ColorDrawingPipeline.trace(16, 1025, stripes(16, 1025), 99.9, 2) }
+    }
+
     @Test fun borderBackgroundPartialAlphaAndCropEdgesHaveExplicitContracts() {
         val pixels=IntArray(32*32) { p -> if(p%32 in 4..27 && p/32 in 4..27) 0xffff0000.toInt() else 0xffffffff.toInt() }
         val opaque=ColorDrawingPipeline.trace(32,32,pixels,30.0,2)

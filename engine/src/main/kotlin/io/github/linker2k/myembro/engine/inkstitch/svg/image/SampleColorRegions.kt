@@ -22,6 +22,8 @@ object SampleColorRegions {
     const val MERGE_DELTA_E = 18.0
     const val MIN_DIAMETER_MM = 2.0
     const val CLEANUP_PASSES = 3
+    /** Area of the [MIN_DIAMETER_MM] circle, π mm². */
+    val DEFAULT_PIECE_AREA_MM2 = PI * (MIN_DIAMETER_MM / 2).pow(2)
 
     /** [labels]: palette index per pixel, −1 for background. [palette] is RGB, largest area first. */
     class Regions(val width: Int, val height: Int, val labels: IntArray, val palette: List<Int>)
@@ -37,9 +39,11 @@ object SampleColorRegions {
 
     /** [argb] is composited on white paper; fully transparent pixels are background. */
     fun labels(width: Int, height: Int, argb: IntArray, widthMm: Double, maxColors: Int,
-        sample: IntArray? = null, firstCenter: Int? = null, checkpoint: (String) -> Unit = {}): Regions {
+        sample: IntArray? = null, firstCenter: Int? = null, minPieceAreaMm2: Double = DEFAULT_PIECE_AREA_MM2,
+        checkpoint: (String) -> Unit = {}): Regions {
         require(width in 1..MAX_EDGE && height in 1..MAX_EDGE && width.toLong() * height == argb.size.toLong())
         require(widthMm.isFinite() && widthMm > 0 && maxColors in 2..6)
+        require(minPieceAreaMm2.isFinite() && minPieceAreaMm2 >= 0)
         checkpoint("quantization")
         val n = argb.size
         val lab = DoubleArray(n * 3)
@@ -75,7 +79,10 @@ object SampleColorRegions {
         removeBorderWhite(width, height, labels, white)
         for (p in 0 until n) if (argb[p] ushr 24 == 0) labels[p] = -1
         val mmPerPixel = widthMm / width
-        cleanup(width, height, labels, centers.size, PI * (MIN_DIAMETER_MM / 2 / mmPerPixel).pow(2), checkpoint)
+        // The default keeps the converter's exact expression, so its pixel threshold is bit-identical.
+        val minArea = if (minPieceAreaMm2 == DEFAULT_PIECE_AREA_MM2) PI * (MIN_DIAMETER_MM / 2 / mmPerPixel).pow(2)
+            else minPieceAreaMm2 / (mmPerPixel * mmPerPixel)
+        if (minArea > 0) cleanup(width, height, labels, centers.size, minArea, checkpoint)
         val areas = IntArray(centers.size)
         for (label in labels) if (label >= 0) areas[label]++
         val order = centers.indices.filter { areas[it] > 0 }.sortedByDescending { areas[it] }

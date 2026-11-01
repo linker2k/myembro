@@ -75,6 +75,33 @@ class SampleColorRegionsTest {
         }
     }
 
+    private fun speck(area: Int, minPieceAreaMm2: Double): Boolean {
+        val size = 400
+        val pixels = IntArray(size * size) { white }
+        for (y in 20..379) for (x in 20..199) pixels[y * size + x] = red
+        for (y in 20..379) for (x in 220..379) pixels[y * size + x] = blue
+        for (i in 0 until area) pixels[(100 + i / 20) * size + 60 + i % 20] = blue
+        val r = SampleColorRegions.labels(size, size, pixels, 40.0, 2, minPieceAreaMm2 = minPieceAreaMm2)
+        return r.labels[100 * size + 60] == r.labels[50 * size + 300]
+    }
+
+    /** Chosen piece area at 0.1mm/px: 1mm² = 100px, so 99 is repainted and 100, 101 stay; 0 keeps a 1px speck. */
+    @Test fun chosenPieceAreaIsAnExclusivePixelLimit() {
+        assertEquals(listOf(false, true, true), listOf(99, 100, 101).map { speck(it, 1.0) })
+        assertTrue(speck(1, 0.0))
+        assertFalse(speck(1, 0.25))
+    }
+
+    @Test fun explicitDefaultPieceAreaGivesTheConverterLabels() {
+        val size = 300
+        val pixels = IntArray(size * size) { i -> val x = i % size; val y = i / size
+            if ((x / 7 + y / 5) % 3 == 0) red else if (x in 40..260 && y in 40..260) blue else white }
+        val default = SampleColorRegions.labels(size, size, pixels, 37.3, 3)
+        val explicit = SampleColorRegions.labels(size, size, pixels, 37.3, 3, minPieceAreaMm2 = PI)
+        assertContentEquals(default.labels, explicit.labels)
+        assertEquals(default.palette, explicit.palette)
+    }
+
     @Test fun maximumColorsFollowTheSlider() {
         val colors = intArrayOf(0xffdd2222.toInt(), 0xff2233cc.toInt(), 0xff22aa33.toInt(), 0xffeecc11.toInt(), 0xff662288.toInt())
         val size = 250

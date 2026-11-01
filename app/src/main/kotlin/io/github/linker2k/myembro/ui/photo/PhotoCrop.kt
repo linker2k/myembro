@@ -43,6 +43,14 @@ internal fun photoInkRatio(outline: RedworkOutline): Double? {
     return ((xs.max() - xs.min()) / Units.mmToPixels(outline.widthMm)).takeIf { it.isFinite() && it > 0 }?.coerceAtMost(1.0)
 }
 
+/** Traced ink height ÷ width (size-independent, like [photoInkRatio]); null when nothing was traced. */
+internal fun photoInkAspect(outline: RedworkOutline): Double? {
+    val points = outline.paths.flatMap { d -> SvgPath.flatten(d).flatMap { line -> line.points } }
+    if (points.isEmpty()) return null
+    val w = points.maxOf { it.x } - points.minOf { it.x }; val h = points.maxOf { it.y } - points.minOf { it.y }
+    return (h / w).takeIf { it.isFinite() && it > 0 }
+}
+
 /** Embroidery (ink) width range for [ratio]: 20mm..99.9mm, the top lowered so the frame still fits the hoop. */
 internal fun photoInkWidthRange(hoop: HoopSpec, ratio: Double): ClosedFloatingPointRange<Double> {
     val max = minOf(photoMaxWidthMm(hoop), kotlin.math.floor(photoMaxWidthMm(hoop) * ratio * 10) / 10)
@@ -57,12 +65,13 @@ internal fun photoMaxWidthMm(hoop: HoopSpec): Double =
 internal fun photoRasterSize(detail: Int, widthMm: Double = 100.0, heightMm: Double = 100.0): Int =
     io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoRasterSize(detail, widthMm, heightMm)
 
-/** Color-drawing raster: the crop at source resolution, long side scaled down to at most
- * [SampleColorRegions.MAX_EDGE], aspect kept. */
-internal fun photoRegionRaster(crop: PhotoCrop): Pair<Int, Int> {
-    val scale = minOf(1.0, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE.toDouble() / maxOf(crop.width, crop.height))
-    return kotlin.math.round(crop.width * scale).toInt().coerceIn(1, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE) to
-        kotlin.math.round(crop.height * scale).toInt().coerceIn(1, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE)
+/** Color-drawing raster: the crop at source resolution, long side scaled down (never up) to at most
+ * [edge] (default [SampleColorRegions.MAX_EDGE]), aspect kept. */
+internal fun photoRegionRaster(crop: PhotoCrop,
+    edge: Int = io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE): Pair<Int, Int> {
+    val scale = minOf(1.0, edge.toDouble() / maxOf(crop.width, crop.height))
+    return kotlin.math.round(crop.width * scale).toInt().coerceIn(1, edge) to
+        kotlin.math.round(crop.height * scale).toInt().coerceIn(1, edge)
 }
 
 internal fun photoMinimumArea(detail: Int) =

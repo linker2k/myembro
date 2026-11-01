@@ -14,7 +14,7 @@
     <string name="photo_size">Embroidery size · width %1$s</string>
     <string name="photo_size_hint">Aspect ratio is kept. %1$s–%2$s; recalculates when you let go.</string>
     <string name="photo_result_size">Actual size %1$s</string>
-    <string name="photo_detail_hint">Higher detail keeps smaller outlines.</string>
+    <string name="photo_detail_hint">Higher resolution keeps finer outlines; a larger piece size removes more specks.</string>
     <string name="photo_next">Next</string>
     <string name="photo_pass">Sewing check · Pass</string>
     <string name="photo_blocked">Sewing check · Blocked</string>
@@ -94,4 +94,10 @@
     <string name="photo_wait_more">Wait 1 more minute</string>
     <string name="photo_stop_generation">Stop</string>
     <string name="photo_wait_question">This is taking a while. Keep waiting?</string>
+    <string name="photo_resolution">Resolution %1$d px</string>
+    <string name="photo_resolution_applied">Resolution %1$d px (traced at %2$d px)</string>
+    <string name="photo_piece_area">Remove pieces under %1$s mm² (about %2$.1f mm across)</string>
+    <string name="photo_piece_area_off">Remove small pieces: off</string>
+    <string name="photo_piece_area_bw">B&amp;W colour keeps every piece.</string>
+    <string name="photo_size_wh">Embroidery size · %1$s</string>
 </resources>
