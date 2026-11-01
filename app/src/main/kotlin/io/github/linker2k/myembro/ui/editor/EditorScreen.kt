@@ -69,8 +69,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
         val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
-        var relayPhotoRequest by remember { mutableIntStateOf(0) }
-        if (relayOn) io.github.linker2k.myembro.relay.RelayPhotoHandoff(vm.relayPhotos, launch = relayPhotoRequest)
         LaunchedEffect(relayOn) { if (relayOn) vm.prewarmRelayFonts() }
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
@@ -78,7 +76,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showColors by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
-        var projectMenu by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
         var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
@@ -146,22 +143,14 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
                             }
                             // Same unsaved-change dialog and draft handling as back.
-                            io.github.linker2k.myembro.ui.HomeButton(enabled, home) { goHome -> vm.leave(goHome) }
+                            io.github.linker2k.myembro.ui.HomeButton(enabled, home, iconSize = 28.dp) { goHome -> vm.leave(goHome) }
                         } }, actions = {
                             AgentAskButton(vm.agent, vm.project, enabled)
                             EditorHistoryButton(vm, redo = false)
                             EditorHistoryButton(vm, redo = true)
-                            Box {
-                                IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
-                                DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
-                                    DropdownMenuItem(text={Text(stringResource(R.string.editor_colors))},
-                                        leadingIcon={Icon(Icons.Default.Palette,null)},enabled=!vm.gestureInProgress,
-                                        onClick={projectMenu=false;showColors=true})
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_save_title)) },
-                                        onClick = { projectMenu = false; vm.requestSave() })
-                                    if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
-                                        onClick = { projectMenu = false; relayPhotoRequest++ })
-                                }
+                            // Opens the one save dialog (format choice inside), or the replace/save-as choice for an opened file.
+                            IconButton(onClick = { vm.requestSave() }, enabled = enabled && vm.project.objects.any { it.visible }) {
+                                Icon(Icons.Default.Save, stringResource(R.string.editor_save_title), Modifier.size(26.dp))
                             }
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
@@ -190,10 +179,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                        // Opens the one save dialog (format choice inside), or the replace/save-as choice for an opened file.
-                        FilledTonalIconButton(onClick = { vm.requestSave() }, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
-                            Icon(Icons.Default.Save, stringResource(R.string.editor_save_title), Modifier.size(20.dp))
-                        }
                     }
                     if (vm.multiPositionFrame != null) {
                         val fit = remember(vm.project, vm.sewingPositions, vm.gestureInProgress) {

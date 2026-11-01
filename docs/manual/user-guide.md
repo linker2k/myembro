@@ -338,7 +338,6 @@ AI connection lets a chatbot work on your design directly, without copy and past
 What the chatbot can do:
 - Read the design open in the editor and change it. Each change is one undo step. A change that fails the sewing check is not made.
 - Add a picture it drew (SVG, PNG or JPEG). It opens in the photo window first, so you check it before it is added.
-- Look at a photo you choose: in the editor menu tap **Send a photo to AI** and confirm. The chatbot sees a reduced copy only.
 
 What stays with you: removing objects asks you on the phone first (you have 90 seconds), and saving, sharing and sending to USB are always done by you in the app.
 

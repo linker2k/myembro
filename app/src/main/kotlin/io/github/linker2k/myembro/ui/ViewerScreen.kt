@@ -80,6 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.ui.format.Dimensions
+import io.github.linker2k.myembro.ui.format.keepWords
 import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
@@ -143,12 +144,12 @@ private fun ViewerContent(
                         Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
                             shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.viewer_send_usb))
+                            Text(keepWords(stringResource(R.string.viewer_send_usb)))
                         }
                         OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
                             shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.viewer_review_edit))
+                            Text(keepWords(stringResource(R.string.viewer_review_edit)))
                         }
                     }
                 }

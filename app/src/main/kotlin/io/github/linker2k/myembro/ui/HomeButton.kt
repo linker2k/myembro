@@ -5,6 +5,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.res.stringResource
@@ -18,9 +22,9 @@ val LocalGoHome = compositionLocalOf<(() -> Unit)?> { null }
  * back button), given the Home action to run once leaving is allowed.
  */
 @Composable
-fun HomeButton(enabled: Boolean = true, home: (() -> Unit)? = LocalGoHome.current, exit: (() -> Unit) -> Unit = { it() }) {
+fun HomeButton(enabled: Boolean = true, home: (() -> Unit)? = LocalGoHome.current, iconSize: Dp = 24.dp, exit: (() -> Unit) -> Unit = { it() }) {
     home ?: return
-    IconButton(onClick = { exit(home) }, enabled = enabled) { Icon(Icons.Outlined.Home, stringResource(R.string.home_go)) }
+    IconButton(onClick = { exit(home) }, enabled = enabled) { Icon(Icons.Outlined.Home, stringResource(R.string.home_go), Modifier.size(iconSize)) }
 }
 
 /** Pops every screen above Home and returns them, top last; back pops one. */
