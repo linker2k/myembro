@@ -1,6 +1,7 @@
 # 그림 → 땀: 변환 흐름 참고 문서
 
-그림 변환을 고치거나 리뷰하는 개발자용 문서입니다. `main` `c3b8d4f6`(2026-11-01) 기준 코드를 설명합니다.
+그림 변환을 고치거나 리뷰하는 개발자용 문서입니다. beta.7 기준입니다: `main` `13511d13`에 `agent/clamp-prepared`,
+`agent/detail-split`, `agent/block-empty`를 합친 `integrate/beta7-test` `224bbf23`(2026-11-01).
 줄 번호는 바뀔 수 있으니, 번호가 맞지 않으면 적힌 심볼 이름으로 찾으세요. 영문판:
 [picture-to-stitches.md](picture-to-stitches.md).
 
@@ -86,7 +87,7 @@ ViewModel은 `photo/PhotoViewModel.kt`입니다. 단계는 `step = 0, 1, 2`(자�
 ### 4.2 컬러 그림(기본) — 샘플 팩 방식 색 영역
 
 모드 = 컬러, 흑백 끔, 실 질감 끔일 때 씁니다(`PhotoViewModel.kt:339`). 래스터 = 자른 영역을 원본 해상도로,
-긴 변이 1024px를 넘을 때만 **줄여서** 1024px 이하로(`photoRegionRaster`, `PhotoCrop.kt:62–66`). 이어서
+긴 변이 고른 해상도 단계(기본 1024px, 4.7절)를 넘을 때만 **줄여서**(`photoRegionRaster`, `PhotoCrop.kt:70`). 이어서
 `ColorDrawingPipeline.traceRegions`(`image/ColorDrawingPipeline.kt:86–92`) → `SampleColorRegions.labels`
 (`image/SampleColorRegions.kt:39–86`).
 
@@ -95,7 +96,7 @@ ViewModel은 `photo/PhotoViewModel.kt`입니다. 단계는 `step = 0, 1, 2`(자�
 
 | 단계 | 코드 | 상수 | 경계 | 근거 |
 |---|---|---|---|---|
-| 크기 한도 | `:17`, `:41` | `MAX_EDGE = 1024` | 가로, 세로 1..1024 포함 | 팩 원본 PNG가 1024px(cute-art `final-list.json`). |
+| 크기 한도 | `:17`, `:41` | `MAX_EDGE = 1024` | 가로, 세로 1..1024 포함. 해상도 슬라이더의 최댓값이기도 함 | 팩 원본 PNG가 1024px(cute-art `final-list.json`). |
 | 투명도 | `:88–97`, `:76` | — | 알파 0 → 배경(라벨 −1). 반투명은 색 통계를 낼 때 흰 종이 위에 합성 | 변환기 동작. |
 | Lab | `:240–252` | sRGB, D65 2° | — | scikit-image 0.25 `rgb2lab`. |
 | 표본 | `:99–108` | `SAMPLE_PIXELS = 40000` | n ≤ 40000이면 전부 | 변환기 값. NumPy 난수 대신 Kotlin `Random(1)`. |
@@ -103,7 +104,7 @@ ViewModel은 `photo/PhotoViewModel.kt`입니다. 단계는 `step = 0, 1, 2`(자�
 | 희소 선합침 | `:137–147` | `SPARSE_FRACTION = 0.005` | 표본의 **0.5% 미만**인 군집을 가장 가까운 중심에 합침(같으면 유지) | 사용자가 승인한 변환기 v2 수정. |
 | 색 합침 | `:62–71` | `MERGE_DELTA_E = 18.0` | **색 수 ≤ 슬라이더 + 1이고 가장 가까운 쌍의 ΔE ≥ 18**이 될 때까지 가장 가까운 쌍을 합침. 여기 ΔE는 Lab 유클리드(CIE76) | 변환기 값. +1은 흰 배경 자리. |
 | 테두리 흰 배경 | `:74–75`, `:149–161` | — | L*가 가장 높은 군집 중 그림 테두리와 4방향으로 이어진 픽셀 → 배경 | 변환기(SciPy `ndi.label` 기본 연결). |
-| 작은 조각 | `:77–78`, `:163–212` | `MIN_DIAMETER_MM = 2.0`, `CLEANUP_PASSES = 3` | 4방향 연결 조각의 픽셀 넓이가 **π·(1mm / 픽셀당 mm)² 미만**이면, 도시 블록 거리 2 이내에서 가장 많은 라벨로 다시 칠함(동률 → 가장 낮은 라벨, 배경이 먼저). 한도와 같으면 유지 | 변환기 값. |
+| 작은 조각 | `:83–85`, 정리 `:163–212` | 고른 조각 기준(기본 `DEFAULT_PIECE_AREA_MM2` = π mm², `:26`), `CLEANUP_PASSES = 3` | 4방향 연결 조각의 픽셀 넓이가 **기준 / (픽셀당 mm)² 미만**이면, 도시 블록 거리 2 이내에서 가장 많은 라벨로 다시 칠함(동률 → 가장 낮은 라벨, 배경이 먼저). 한도와 같으면 유지. 기본값은 변환기 식 `π·(1mm / 픽셀당 mm)²`를 그대로 써서 한도가 이전과 비트 단위로 같음 | 변환기 값(지름 2mm). 다른 단계: 4.7절. |
 | 팔레트 순서 | `:79–85` | — | 넓이 큰 순 | 변환기. |
 
 일치 검증(`tools/color-trace/README.md`, 2026-11-01, 팩 1024px 입력 3개): NumPy 표본을 쓰면 팔레트가 같고
@@ -115,33 +116,36 @@ ViewModel은 `photo/PhotoViewModel.kt`입니다. 단계는 `step = 0, 1, 2`(자�
 
 ### 4.3 컬러 + 흑백 켬 (Wu 경로)
 
-`ColorDrawingPipeline.trace`(`:66–82`). 래스터는 `photoRasterSize(detail, w, h)`
-(`image/PhotoPreparationPolicy.kt:11–13`): `min(128 | 192 | 256, ceil(max(가로, 세로)mm / 0.2))`, 즉 픽셀당 최대 0.2mm.
-가로, 세로 512 이하 필요(`:68`). 픽셀을 BT.709 회색으로 바꾸고, 테두리 배경을 고르고(`ColorRegionCleanup`),
+`ColorDrawingPipeline.trace`(`:66–82`). 래스터 긴 변 = 고른 해상도 단계. 기본 192px만 여전히 `photoRasterEdge`
+(`image/PhotoPreparationPolicy.kt:15`)로 `min(192, ceil(max(가로, 세로)mm / 0.2))`를 적용해 기본 결과가 같음.
+사용자가 고른 단계는 그대로 씀(`PhotoViewModel.kt:358`). 가로, 세로 `WU_MAX_EDGE = 1024` 이하, 1,048,576픽셀 이하 필요
+(`ColorDrawingPipeline.kt:36, :71`; Wu 한도 `ImageQuantizer.MAX_PIXELS`, `ImageQuantizer.kt:20`). 예전 512 한도는 첫 oracle 프로브에서
+온 값으로 근거 기록이 없었음. 픽셀을 BT.709 회색으로 바꾸고, 테두리 배경을 고르고(`ColorRegionCleanup`),
 색 수만큼 Wu 양자화한 뒤 4.2와 같은 색별 Potrace와 실 배정을 합니다. '내 실'이 켜져 있지 않으면 실 후보는 무채색
 묶음(`Bt709Grayscale.threads`)입니다.
 
-참고: 컬러 모드에서는 세부 슬라이더가 숨겨지지만(`PhotoScreen.kt:171–198`), 이 경로는 현재 `detail` 값을 그대로
-씁니다(기본 1, 또는 실루엣/외곽선에서 마지막으로 고른 값).
+이 경로에는 작은 조각 정리 단계가 없어서 조각 기준 슬라이더를 끄고 짧은 안내를 보여 줍니다(`PhotoViewModel.kt:91`).
 
 ### 4.4 실루엣과 외곽선 (Wu / Potrace 경로)
 
-`PhotoViewModel.kt:378–411`. 래스터는 4.3과 같음(128/192/256px). 입력은 두 가지:
+래스터는 4.3과 같음(기본 192px, 4.7절). 입력은 두 가지:
 
 - Otsu 켬 → 흑백 마스크로 `RedworkPipeline.traceMask`(`:393–404`).
 - 그 외 → `RedworkPipeline.trace`: Wu 2색, 배경 = 0번 픽셀 색. `PHOTO_TOO_COMPLEX`가 아닌
   `IllegalArgumentException`이 나고 대비가 1.0이면 `photoContrastStretch`(채널별 최소/최대, `PhotoPreparationPolicy.kt:17`)로
   **한 번만** 다시 시도(`:406–411`).
 
-Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 / 0.5 / 0.25 mm²(`PhotoPreparationPolicy.kt:15`).
+Potrace 작은 점 거름: 고른 조각 기준(기본 0.5 mm² = 예전 세부 1. 예전 세부 2·0의 0.25·1.0도 단계에 있음).
 픽셀로 `max(2, ceil(mm² / 픽셀²))` 바꾸고, Potrace는 **넓이 > 한도**인 윤곽만 남김(`image/RedworkPipeline.kt:101–102`).
+그래서 '끔'(0)이어도 2픽셀 이하 점은 지워짐(Potrace 기본값).
 근거: 사진 단순화 기본값(`qa/photo-silhouette-performance.md`), 봉제 안전 규칙이 아님. Potrace 원본 기본값은 `turdsize = 2`.
 
 ### 4.5 윤곽 수 한도 (모든 래스터 모드)
 
 `maxContours = 128`(`PhotoViewModel.kt:381, :397`; `ColorDrawingPipeline.MAX_REGION_CONTOURS`, `:34`).
 128을 넘으면 땀을 만들기 전에 `PHOTO_TOO_COMPLEX`로 멈추고(`RedworkPipeline.kt:105`, `ColorDrawingPipeline.kt:123`),
-'너무 복잡함'과 '세부 낮추기' 버튼을 보여 줍니다(`PhotoViewModel.lowerDetail` `:314`. 컬러 모드에서는 실 질감 단계만 낮춤).
+'너무 복잡함'을 보여 줍니다. 해상도를 낮추거나 조각 기준을 올리는 것은 사용자가 하고, 해상도를 자동으로 낮추지 않음
+(사용자 결정 2026-11-01). '세부 낮추기' 버튼은 실 질감에만 남음(`PhotoViewModel.lowerDetail`, `:342`).
 컬러 모드에서는 `max(2, ceil(3.0 mm² / 픽셀²))` 픽셀보다 큰 윤곽만 한도에 셉니다
 (`MINIMUM_REGION_AREA_MM2 = 3.0`, `:25`; 이 셈에만 남은 예전 값).
 근거: 휴대폰 작업량 한도(`qa/photo-silhouette-performance.md`). 팩 입력 127개를 99.9mm에서 측정: p50 25, p90 99, 최대 275,
@@ -155,6 +159,24 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 | 최대 그림 폭 | `PhotoPreparationPolicy.kt:8–9` | `floor(min(W − 1, (H − 1)·W/H)) / 10` mm → 100×100 후프에서 99.9mm | 포함 | AGENTS.md P2/P2a(0..단위−1). |
 | 슬라이더 | `photoInkWidthRange` `PhotoCrop.kt:47–50` | 슬라이더는 **실제 자수(잉크)** 폭. 틀 폭 = 잉크 폭 ÷ 잉크 비율 | 포함, 0.1mm 단위 | 잉크 비율은 크기와 무관(`:40–44`). 0.05mm 이상 바뀔 때만 다시 추적(`PhotoViewModel.kt:201`). |
 | SVG 범위 | `pictureWidthRange` `PictureSizePolicy.kt:11–14` | 20mm .. floor(min(W − 1, (H − 1)/비율)) / 10 | 포함 | P2. |
+| 크기 제목 | `EmbroiderySizeSlider.kt:31, :48`; `photoInkAspect` `PhotoCrop.kt:47` | '가로 × 세로 mm (in)', 세로 = 가로 × 추적된 잉크 비율(SVG는 그림 비율), mm는 소수 한 자리 | — | 사용자 요청 2026-11-01. 인치는 앱의 `Dimensions.inches`를 써서 3.0은 '3'으로 표시. |
+
+### 4.7 디테일 조절: 해상도와 작은 조각 기준 (beta.7)
+
+그림 화면의 모든 모드에 있는 독립된 단계 슬라이더 두 개(실 질감을 켜면 숨김). 근거: 사용자 결정 2026-11-01.
+코드: `PhotoPreparationPolicy.kt:15–43`, `PhotoViewModel.kt:82–103`, `PhotoScreen.kt:332`(`DetailControls`), `:355`(`StepSlider`).
+
+| 항목 | 값 | 경계 / 규칙 |
+|---|---|---|
+| 해상도 단계 | 128, 181, 256, 362, 512, 724, 1024px(×√2) | 최댓값 = 기존 컬러 상한 1024(사용자 결정. 1448은 뺌). |
+| 입력 상한 | 디코드한 그림의 긴 변보다 큰 단계는 숨김 | `resolutionSteps(default, sourceEdge)`, 포함: 1024px 그림은 1024까지, 1023px 그림은 724까지. |
+| 모드 기본값 | 컬러 1024(자른 영역, 키우지 않음). 실루엣·외곽선·흑백 컬러 192 | 기본 단계는 입력보다 커도 항상 남김(128px 그림도 192, 예전처럼 확대). |
+| 0.2mm/px 한도 | 기본값에만 적용 | 사용자가 고른 단계는 깎지 않음(사용자 결정: 큰 후프). 160×260에서 1024px는 0.254mm/px(6.6절). |
+| 조각 기준 단계 | 0.25, 0.5, 1, 2, 4, 8, 16 mm²(×2, 지름 ×√2), 실루엣·외곽선은 '끔' 추가 | 컬러에는 '끔'이 없음: 복잡한 선화에서 208초 걸린 뒤 밀도 검사에 막힘(6.6절). |
+| 조각 기준 기본값 | 컬러 π mm²(지름 2mm, '3.14'로 표시), 실루엣·외곽선 0.5 mm² | 기본값을 단계에 그대로 끼워 넣어 기본 결과가 같음. |
+| 모드·흑백 전환 | 두 슬라이더가 그 모드의 기본값으로 돌아감 | `PhotoViewModel.kt:103, :336`. |
+| 실제 해상도 | 추적한 긴 변이 다르면 '(실제 N px)' 표시 | `appliedResolutionPx`, `:372`. |
+| 반영 | 손을 뗄 때 한 번. 탭하면 탭한 단계가 반영됨 | `StepSlider`가 제스처가 끝날 때 슬라이더 상태를 읽음. 수정 전에는 탭이 화면을 그릴 때 잡아 둔 이전 값을 반영함(실기 버그 2026-11-01, `StepSliderTapTest`). |
 
 ## 5. 실 색 배정 (컬러 모드)
 
@@ -218,10 +240,49 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 ### 6.5 진행 표시와 기다리기
 
 - 진행 지점 `regions=i/n;stitches=k`(`ColorDrawingPipeline.kt:166, :207`)가 `PhotoGenerationProgress`로 들어감
-  (`photo/PhotoGenerationWait.kt:12–22`).
+  (`photo/PhotoGenerationWait.kt`). 숫자는 로캘의 천 단위 구분 기호로 표시.
+- 타타미 영역 하나 안에서는 경로 그리기 루프(`FillRouting.route`의 `for ((index, edge) in collapsed.withIndex())`)가
+  채움 단계마다 약 100번 `region_step=i/n`을 보냄. 밑땀과 본땀은 따로 셈.
+  전달 경로는 `DefaultTatami.stitchGroups` → `InkAutoFill.paths` → `TatamiFill.fill`이고, 화면에는 '이 영역 i / n'으로 표시.
+  그 앞 단계는 `region_stage=rows` / `region_stage=route`(`TatamiFill.fill`, `FillRouting.route`)로
+  숫자 없이 단계 이름('줄 만드는 중', '경로 계산 중')만 표시(사용자 결정 2026-11-01).
+  같은 루프가 스레드 interrupt를 확인하므로, 큰 영역에서도 '그만두기'를 누르면 약 0.5초 안에 멈춤(에뮬레이터 측정, 2026-11-01).
+- 이동 땀 잘라 맞추기(`FillRouting.clampPath`)는 영역의 1e-6px 버퍼를 폴리곤마다 한 번 prepared로 만들고
+  (`clampArea`, JTS `PreparedGeometryFactory`) 그 위에서 `covers`를 판정. Ink/Stitch v3.3.0 원본
+  `lib/utils/clamp_path.py`도 prepared 도형(`prep(polygon.buffer(1e-9))`, 호출마다 새로 만듦)을 씀.
+  예전에는 `clampPath`가 이동 땀마다 `polygon.buffer(1e-6)`를 새로 만들고 prepared가 아닌 `covers()`를 돌렸음.
+  가장 큰 영역에 구멍 42개·점 1,615개인 늑대 선화에서 측정: PC JVM에서 37초 중 36.6초가 이 영역. 수정 후 영역 시간 5.9초
+  (커밋 `adc1de0b`), integrator의 이후 PC 실행에서 4.8초(측정 조건은 저장소에 기록 없음). 사용자 휴대폰에서는 같은 그림이
+  134초 넘게 → 13초(사용자 실측, 2026-11-01). 땀은 바이트 단위로 같음(`WolfLineArtRegressionTest` 다이제스트).
 - 60초(`PHOTO_GENERATION_TIMEOUT_MS = 60_000`, `:5`, `≥` 포함)가 지나면 '1분 더 기다리기 / 그만두기'를 물음
   (`PhotoScreen.kt:103–108`). 기다리면 허용 시간을 `max(경과, 허용) + 60초`로(`:9–10`), 반복 가능.
   근거: 사용자 요청('1분마다 결정').
+
+### 6.6 디테일 조절 측정 (beta.7)
+
+PC JVM, 실제 추적 → 생성 → PES → `SewoutCheck` 경로, 99.9mm, 4색, 한 축만 바꾸고 다른 축은 모드 기본값. 도구:
+`./gradlew :engine:detailSplitGrid`(`DetailSplitCli`. 입력은 복사하지 않음). 결과와 비교 그림: `/tmp/myembro-detail-split/axes/`,
+`/tmp/myembro-detail-split/koi/`.
+
+팩 그림(해골, 앉은 고양이, 아기 티렉스. 1024px 원본)과 `robot.png`:
+- 해상도 128 → 1024px: 윤곽 수는 거의 같고(해골 19–20, 고양이 24, 티렉스 16–17) 땀 수 1–2% 차이. 가장자리가 매끈해짐
+  (확대 그림). 컬러는 키우지 않아 `robot.png`(128px)는 128 그대로.
+- 컬러 조각 기준: 0.25 mm²부터는 기본값과 거의 같음. 0('끔', 이제 컬러에서 뺌)에서는 안티앨리어싱 가장자리 픽셀이 윤곽
+  1,139–2,056개가 되고, 아주 작은 러닝 1,100–1,900개가 빠지며, 땀 생성이 2–4초 대신 17–23초.
+- 실루엣 조각 기준: 이 깨끗한 그림들에서는 변화 없음.
+
+복잡한 선화(잉어, 466×280px, 그림 전체를 맞춤, 로컬 입력):
+
+| 모드 | 조각 기준(해상도 기본) | 해상도(조각 기준 기본) |
+|---|---|---|
+| 컬러 | 끔: 208초 뒤 막힘(밀도 32 > 30, P7). 0.25: 막힘, 후프를 0.1mm 넘음(10절). 0.5: 윤곽 461(셈 81), 17,620땀. π(기본): 63, 18,368땀. 16: 13, 11,568땀. 0.5부터 모두 통과. | 128: 윤곽 81, 10,649땀. 362: 108, 20,348땀. 512 이상 = 466px 원본: 63, 18,368땀. |
+| 실루엣 | 끔–0.5: 윤곽 91, 11,292땀. 2: 35, 9,338. 16: 6, 7,326. 모두 통과. | 128: 43. 192(기본): 91. 256 이상: 윤곽 128 초과('너무 복잡함'. 256에서 130, 1024에서 388). |
+| 외곽선 | 윤곽 수는 실루엣과 같음. 3,810 → 1,650땀. | 윤곽 수는 실루엣과 같음. |
+
+큰 후프(해골, 1024px, 모드 기본 조각 기준, 각 후프 최대 폭): 100×100 0.098mm/px, 16,235땀(컬러). 130×180 0.176mm/px,
+38,770땀, 5.7초. 160×260 0.254mm/px, 64,212땀, 10.5초. 모두 통과, 윤곽 한도에 걸리지 않음.
+
+에뮬레이터 5558, 해골 2단계: 컬러 1024px 1,660ms, 실루엣 192px 126ms.
 
 ## 7. 봉제 검사와 넘기기
 
@@ -244,7 +305,8 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 | 모드 | 2단계 | 실루엣 / 외곽선 / 컬러 | 컬러 | — | `PhotoScreen.kt:131–137` |
 | 색 수 | 2단계, 컬러 | 2–6, 1씩 | 4(AI: 요청 값) | — | `PhotoScreen.kt:184–186`, `PhotoViewModel.kt:115–118` |
 | 흑백 | 2단계, 컬러 | 켬/끔 | 끔 | — | `PhotoScreen.kt:180` |
-| 세부 | 2단계, 실루엣/외곽선 | 0 / 1 / 2(128 / 192 / 256px) | 1 | 컬러 모드에서 숨김 | `PhotoScreen.kt:193–198` |
+| 해상도 | 2단계, 모든 모드 | 128–1024px, ×√2 단계, 그림 긴 변 이하 | 컬러 1024, 그 외 192 | 실 질감이면 숨김 | 4.7절 |
+| 작은 조각 기준 | 2단계, 모든 모드 | 컬러 0.25–16 mm², 실루엣·외곽선 끔·0.25–16 mm² | 컬러 π(3.14), 그 외 0.5 | 흑백 컬러에서 꺼짐, 실 질감이면 숨김 | 4.7절 |
 | 노이즈 | 2단계 | 끔 / 약 / 중 / 강(0/3/5/7) | 컬러 끔, 단색 3 | 투명도 우회 시 꺼짐 | `PhotoScreen.kt:141–149` |
 | 대비 | 2단계 | 0.5–2.0 | 1.0 | 투명도 우회 시 꺼짐 | `PhotoScreen.kt:150–155` |
 | Otsu | 2단계, 단색 | 켬/끔 | 끔 | 컬러에는 없음 | `PhotoScreen.kt:156–160` |
@@ -259,7 +321,7 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 
 | 조작 | 범위 | 기본값 | 막히는 조건 | 코드 |
 |---|---|---|---|---|
-| 종류 | 채움 / 새틴 / 러닝 | 생성 결과 | 새틴: `SATIN_GEOMETRY_UNSUPPORTED`(새틴 불가 모양), `SATIN_GENERATION_FAILED`, `SATIN_STITCH_TOO_LONG`(현재 크기에서 12.0mm 초과, P8). 러닝: `NO_RUNNING_PATH`. 채움: `EMPTY_FILL_REGION`. 못 쓰는 선택지도 이유와 함께 보임 | `BlockStitchCapabilities.kt:36–46, :77`; `BlockEditScreen.kt:336` |
+| 종류 | 채움 / 새틴 / 러닝 / 비우기 | 생성 결과 | 새틴: `SATIN_GEOMETRY_UNSUPPORTED`(새틴 불가 모양), `SATIN_GENERATION_FAILED`, `SATIN_STITCH_TOO_LONG`(현재 크기에서 12.0mm 초과, P8). 러닝: `NO_RUNNING_PATH`. 채움: `EMPTY_FILL_REGION`. 못 쓰는 선택지도 이유와 함께 보임 | `BlockStitchCapabilities.kt:36–46, :77`; `BlockEditScreen.kt:336` |
 | 텍스처(채움) | 기본(`tatami_fill`), 무늬(`meander_fill`, 타일 선택), 윤곽(`contour_fill`), 원형(`circular_fill`) | 기본 | 그러데이션은 없음(색 정지점 데이터 필요) | `BlockApply.kt:25–26`; `BlockStitchCapabilities.kt:31` |
 | 방향 | 자동 / 수동 각도 0–179°(정수) | 자동 | 러닝에는 없음 | `BlockEditState.kt:40–44`; `BlockApply.kt:51–52` |
 | 수동 각도 빗금 | 고른 블럭 위에 그 각도의 얇은 선, 화면 표시만 | — | 자동이나 러닝이면 안 보임 | `BlockEditScreen.kt:116, :270`(`drawHatch`: 선 1dp, 간격 6dp, 실 명도 < 0.5면 흰 선, 아니면 어두운 선) |
@@ -267,6 +329,19 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 | 순서 | 고른 블럭을 앞/뒤로 | 바느질 순서 | — | `BlockEditScreen.kt:124`; `EditorViewModel.applyBlockOrder` `:580` |
 
 블럭 편집을 못 쓰는 경우: 땀만 있는 도안(연 PES), 실루엣/외곽선 결과(`ShapeObject` 없음).
+
+**비우기**(beta.7, 사용자 결정 2026-11-01): `BlockStitch.Type.EMPTY`(`edit/ShapeObject.kt:24`).
+- 블럭은 객체의 영역으로 남지만 땀을 만들지 않음: `ShapeBlockRenderer.kt:52`는 그룹을 돌려주지 않고, `VectorArt.kt:298`은
+  영역 기록을 남기고, `PhotoShapeRenderer.kt:40`은 빈 조각을 쓰며, `RegionOrderPatterns.compose`가 건너뜀
+  (`RegionOrderPatterns.kt:42`). 다른 블럭이 같은 실을 쓰지 않으면 실 목록·땀 수·트림·시간에서 빠짐.
+- 다른 종류를 고르면 원래 땀으로 돌아감. 실행 취소 한 단계. 다중 선택·모두 선택에 적용.
+- 캔버스: 비운 블럭은 천으로 보임(채움·윤곽 없음, `BlockEditScreen.kt:250`). 탭은 모양으로 판정해 계속 선택 가능.
+  시트는 방향·밀도를 숨기고 한 줄 안내를 보여 줌(`:354–356`).
+- 객체가 하나뿐일 때 모든 블럭을 비우면 땀이 없어, 기존 봉제 검사가 적용을 거부하고(`EMPTY_DESIGN`, '바늘땀이 없어요')
+  이전 설정을 유지함. 그래서 빈 도안은 저장·전송되지 않음. 다른 객체가 있으면 한 객체를 전부 비울 수 있음.
+- 늑대 선화(5558, 2026-11-01): 흰 블럭 45개를 비우면 27,167 → 14,853땀, 2 → 1색, 트림 89 → 39.
+- AI 연결의 `set_block_stitch` 스키마는 아직 FILL/SATIN/RUNNING만 제공.
+- 테스트: `BlockEmptyTest`(벡터·사진, 되돌리기, JSON 왕복, 전부 비우기 거부, 실행 취소).
 
 ### 8.3 편집기: 그 밖
 
@@ -281,7 +356,8 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 |---|---|---|
 | 윤곽 수 한도 | 128 | 휴대폰 작업량. 넘는 그림은 생성에 몇 분이 걸리고 땀 수 한도도 넘었음(4.5절). 넘으면 윤곽을 버리지 않고 땀 만들기 전에 멈춤. |
 | 컬러 래스터 | 긴 변 1024px 이하 | 팩 변환기 입력 크기와 같고 일치 검증도 1024px에서 함. 큰 입력은 줄이기만 하고 키우지 않음. |
-| 단색 래스터 | 128 / 192 / 256px, 픽셀당 0.2mm 이하 | `qa/photo-silhouette-performance.md`. 사진 원래 해상도로 작업하지 않음. |
+| 해상도 최댓값 | 1024px, 그림 긴 변 이하 | 기존 컬러 상한(사용자 결정 2026-11-01). 1024²는 Wu 픽셀 한도와도 같음. |
+| 단색 기본 래스터 | 192px, 픽셀당 0.2mm 이하 | 예전 세부 1(`qa/photo-silhouette-performance.md`). 기본 결과를 같게 유지. |
 | 디코드 | 긴 변 1536px 이하 | 기존 메모리/시간 한도. |
 | k-means 10, ΔE 18, 0.5%, 2mm | — | 변환기 값을 그대로 포팅. 일치가 합격 기준이라 바꾸면 일치가 깨짐. |
 | 땀 생성기 값 | Ink/Stitch v3.3.0 기본값 | AGENTS.md: 검증된 원본을 기본값 그대로 포팅, 조정 화면 없음. |
@@ -294,12 +370,14 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 |---|---|
 | 경계 색의 실 배정 | 밝은 색부터 고르는 방식이라, 더 밝은 색이 가장 가까운 실을 먼저 가져가면 중간 색은 두 번째로 가까운 실을 받을 수 있음. 보고된 사례: 해골 그림에서 남색 실 **21과 23**이 예상과 다르게 골라짐. 입력과 ΔE 값은 저장소에 기록되어 있지 않음(세부는 **미확인**). 규칙을 바꾸기 전에 재현 입력이 필요. |
 | 오목 모서리 새틴 틈(왕관) | 왕관의 검은 테두리는 구멍이 있는 다각형이라 빈틈 대체에서 빠지고, 오목 모서리에 작은 틈이 있어도 새틴을 유지함(`satin-coverage.md`). 테두리는 의도된 동작. 수정 결정 없음. |
-| 컬러 모드에 세부 슬라이더 없음 | 컬러 영역은 자른 원본(≤1024px)으로 돌림. 숨겨진 `detail`은 흑백 경로에 여전히 영향(4.3절). 보여 줄지 미결. |
-| 휴대폰 시간 | 1024px 컬러 영역은 PC JVM에서만(`tools/color-trace/README.md`), 예전 경로는 에뮬레이터에서만 측정. 실제 휴대폰 시간은 **미측정**. 2026-11-01 사용자 실기(beta.6): 체감 지연 없음(측정값 아님). |
+| 그림 가장자리의 얇은 조각 | 폭 1mm 미만 조각의 러닝 윤곽은 채움처럼 잘리지 않아, 틀 가장자리에 닿은 곡선이 0.1mm 넘을 수 있음. 잉어 선화 0.25 mm²에서 관찰(100mm 후프에서 x −501…499). 봉제 검사가 파일을 막음. 수정안: 러닝 윤곽도 채움처럼 자르기, 또는 실루엣처럼 결과를 맞추기. 아직 고치지 않음. |
+| 해상도에 따른 팔레트 변화 | 해골의 어두운 색이 256/512px에서는 Brother 회색, 1024px에서는 남색 실이 됨. k-means 중심이 해상도에 따라 조금 움직임. 위 경계 색 사례의 단서일 수 있음. |
+| 깨끗한 그림의 실루엣 조각 기준 | 팩 그림에서는 조각 기준이 아무것도 바꾸지 않음(작은 점이 없음). 선화에서는 바뀜(잉어 윤곽 91 → 6). |
+| 휴대폰 시간 | 1024px 컬러 영역은 PC JVM에서만(`tools/color-trace/README.md`), 예전 경로는 에뮬레이터에서만 측정. 실제 휴대폰 시간은 **미측정**. 2026-11-01 사용자 실기(beta.6): 체감 지연 없음(측정값 아님). 에뮬레이터 5558 2단계(해골): 컬러 1024px 1,660ms, 실루엣 192px 126ms. clamp 수정 후 큰 영역: 6.5절. |
 | 난수 | Kotlin `Random` 표본은 NumPy와 다름: 검증 입력에서 60픽셀 이하, 팔레트 채널 ±1 차이. |
 | 최대 배율 4배, 대비 0.5–2.0 | **미확인** 제품 값. |
 | 촘촘/성김 밀도 | 근거가 생길 때까지 꺼 둠. |
-| 큰 그림 | 팩 그림 127개 중 7개는 99.9mm에서 윤곽 128개를 넘어 '너무 복잡함'으로 거부됨. |
+| 큰 그림 | 팩 그림 127개 중 7개는 99.9mm에서 윤곽 128개를 넘어 '너무 복잡함'으로 거부됨. 복잡한 선화도 마찬가지: 잉어 실루엣 256px 이상(윤곽 130–388). |
 
 ## 11. 바꾼 뒤 확인 방법
 

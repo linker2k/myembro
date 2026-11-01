@@ -64,7 +64,8 @@ Designs made from a photo, an emoji or an SVG keep their color areas as blocks. 
 ![Block editing: one region selected](../images/manual/en/03b-block-edit.png)
 
 1. Tap a region on the canvas. Turn on **Multi-select** to pick several, or tap **Select all**.
-2. Choose the **Stitch type**: **Fill**, **Satin** or **Running**. A type the region cannot use is greyed out, with the reason above it (for example *Satin: this shape cannot be satin*).
+2. Choose the **Stitch type**: **Fill**, **Satin**, **Running** or **Empty**. A type the region cannot use is greyed out, with the reason above it (for example *Satin: this shape cannot be satin*).
+   **Empty** leaves the block unsewn so the fabric shows; you cannot empty every block of a design.
 3. For Fill, choose the **Texture**: **Basic**, **Pattern** (an Ink/Stitch meander tile), **Contour** or **Circular**.
 4. **Direction**: **Auto**, or **Manual** with a stitch angle. With Manual, thin lines at that angle show on the selected blocks.
 5. **Density**: only **Normal** for now. Dense and sparse come in a later version.
@@ -93,6 +94,8 @@ The hoop is 100×100mm by default. Designs must stay inside it: coordinates run 
 ![Mixed Korean and Latin text: automatic fill](../images/manual/en/05-lettering-hangul.png)
 ![Korean only: automatic satin](../images/manual/en/05b-lettering-hangul-satin.png)
 
+Japanese kana works too; voiced marks (゛ and ゜) are sewn after the character. Chinese (Han character) lettering is still in development.
+
 The app chooses the stitch type and shows it under the font list, for example **Automatic · Fill** or **Automatic · Satin**. In the screenshots, mixed text ("안녕 myembro") becomes fill and Korean-only text ("안녕") becomes satin. Only sizes that sew safely are offered. The 72 verified Ink/Stitch fonts are stitched as satin.
 
 ![Single-line font, Normal](../images/manual/en/06-single-line-normal.png)
@@ -118,6 +121,10 @@ You can also share a picture to myembro from another app (gallery, browser, file
 - **Black-and-white separation** (silhouette and outline only): splits the picture into dark and light automatically.
 - For color pictures with a transparent background, noise reduction and contrast are turned off.
 
+**Detail** (all modes):
+- **Resolution**: 128–1024px. Steps larger than the picture are not offered.
+- **Remove small pieces**: 0.25–16mm² for color; silhouette and outline can also turn it off.
+
 **Color drawing** (2–6 colors):
 - Set **Colors** with the slider, or turn on **Black & white**.
 - The preview shows the picture in the actual thread colors.
@@ -129,13 +136,13 @@ You can also share a picture to myembro from another app (gallery, browser, file
 
 ![Silhouette mode](../images/manual/en/07-photo-silhouette.png)
 
-- **Silhouette**: one color, filled, with a same-color single-pass running outline around each filled area and its holes. Outlines that fail the sewing check are omitted. The **Detail** slider keeps smaller contours the higher it is.
+- **Silhouette**: one color, filled, with a same-color single-pass running outline around each filled area and its holes. Outlines that fail the sewing check are omitted.
 
 ![Outline mode](../images/manual/en/08-photo-outline.png)
 
 - **Outline**: one color, traced outline of the same picture.
 
-**Embroidery size · width** slider (all modes): the aspect ratio is kept. The range is computed for the picture, and the design is recalculated when you release the slider. The largest size is 99.9mm.
+**Embroidery size** slider (all modes): the title shows width × height, and the aspect ratio is kept. The range is computed for the picture, and the design is recalculated when you release the slider. The largest size is 99.9mm.
 
 **Thread texture (experimental).** In Color drawing, turn on **Thread texture** to sew the picture as layered thread lines, like a sketch.
 
@@ -151,7 +158,7 @@ You can also share a picture to myembro from another app (gallery, browser, file
 
 ![Result with sew-out check passed](../images/manual/en/09b-photo-result.png)
 
-The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. While stitches are being made, the screen shows elapsed time and measured progress. After 1 minute, choose **Wait 1 more minute** or **Stop**; waiting can be extended again. Tap **Next** to open it in the editor (including block editing, chapter 3); save it there and send it to the machine (chapter 9).
+The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. While stitches are being made, the screen shows elapsed time and measured progress; a large area shows **making rows**, **planning the path** and **This region i / n**. After 1 minute, choose **Wait 1 more minute** or **Stop**; waiting can be extended again. Tap **Next** to open it in the editor (including block editing, chapter 3); save it there and send it to the machine (chapter 9).
 
 ## 6. Emoji
 
