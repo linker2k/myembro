@@ -57,6 +57,14 @@ internal fun photoMaxWidthMm(hoop: HoopSpec): Double =
 internal fun photoRasterSize(detail: Int, widthMm: Double = 100.0, heightMm: Double = 100.0): Int =
     io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoRasterSize(detail, widthMm, heightMm)
 
+/** Color-drawing raster: the crop at source resolution, long side scaled down to at most
+ * [SampleColorRegions.MAX_EDGE], aspect kept. */
+internal fun photoRegionRaster(crop: PhotoCrop): Pair<Int, Int> {
+    val scale = minOf(1.0, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE.toDouble() / maxOf(crop.width, crop.height))
+    return kotlin.math.round(crop.width * scale).toInt().coerceIn(1, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE) to
+        kotlin.math.round(crop.height * scale).toInt().coerceIn(1, io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE)
+}
+
 internal fun photoMinimumArea(detail: Int) =
     io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMinimumArea(detail)
 

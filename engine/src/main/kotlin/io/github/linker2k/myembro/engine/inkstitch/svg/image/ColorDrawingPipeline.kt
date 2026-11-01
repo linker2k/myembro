@@ -28,6 +28,10 @@ object ColorDrawingPipeline {
      * Applies only to color-picture fill, with the existing Potrace-union closing clip.
      */
     const val DEFAULT_EXPAND_MM = 0.2
+    /** Unchanged mobile work budget (docs/qa/photo-silhouette-performance.md) for 1024px regions:
+     * 120/127 sample-pack inputs fit at 99.9mm; the largest (275) took 143s to generate on a PC
+     * and exceeded the 30,000-stitch sew-out limit (tools/color-trace/README.md). */
+    const val MAX_REGION_CONTOURS = 128
     data class Layer(val paletteIndex:Int,val thread: io.github.linker2k.myembro.engine.model.EmbThread, val outline: RedworkOutline)
     class Preview internal constructor(val width:Int,val height:Int,private val labels:IntArray,
         val palette:List<Int>,val layers:List<Layer>,val canvasWidthMm:Double,val inkOutline:RedworkOutline,private val foregroundPixels:BooleanArray, val assignmentWarnings:List<ThreadAssignment.Shortage> = emptyList()) {
@@ -74,7 +78,21 @@ object ColorDrawingPipeline {
         foreground.forEachIndexed { i,p -> original[p]=q[i] }
         require(minAreaMm2.isFinite() && minAreaMm2>=0)
         // Legacy area argument remains source-compatible; paint is no longer merged away by area.
-        val cleaned=original
+        return preview(width,height,original,quantized.palette,widthMm,minAreaMm2,maxContours,grayscale,myThreads,checkpoint,binaryMask=false)
+    }
+
+    /** Color drawing from the sample-pack color regions ([SampleColorRegions]) at up to 1024px;
+     * contours, thread assignment and stitches follow the same route as [trace]. */
+    fun traceRegions(width:Int,height:Int,argb:IntArray,widthMm:Double,colorCount:Int,
+        maxContours:Int=MAX_REGION_CONTOURS,myThreads:io.github.linker2k.myembro.engine.io.MyThreads=io.github.linker2k.myembro.engine.io.MyThreads(),checkpoint:(String)->Unit={}):Preview {
+        val regions=SampleColorRegions.labels(width,height,argb,widthMm,colorCount,checkpoint=checkpoint)
+        require(regions.palette.isNotEmpty()) { "No foreground after border background removal" }
+        // 1026² padded masks exceed Wu's 1M-pixel input; the explicit mask tracer needs no quantization.
+        return preview(width,height,regions.labels,regions.palette,widthMm,MINIMUM_REGION_AREA_MM2,maxContours,false,myThreads,checkpoint,binaryMask=true)
+    }
+
+    private fun preview(width:Int,height:Int,cleaned:IntArray,palette:List<Int>,widthMm:Double,minAreaMm2:Double,maxContours:Int,
+        grayscale:Boolean,myThreads:io.github.linker2k.myembro.engine.io.MyThreads,checkpoint:(String)->Unit,binaryMask:Boolean):Preview {
         // One explicit transparent border lets Potrace trace ink touching any crop edge.
         val w=width+2;val h=height+2
         val labels=IntArray(w*h) { p ->
@@ -82,17 +100,19 @@ object ColorDrawingPipeline {
             if(x in 0 until width && y in 0 until height) cleaned[y*width+x] else -1
         }
         val paddedWidth=widthMm*w/width
-        val counts=IntArray(quantized.palette.size)
+        val counts=IntArray(palette.size)
         for(label in labels) if(label>=0) counts[label]++
-        val assignment=ThreadAssignment.assign(quantized.palette.mapIndexedNotNull { i,rgb ->
+        val assignment=ThreadAssignment.assign(palette.mapIndexedNotNull { i,rgb ->
             if(counts[i]==0) null else DesignColor(rgb,counts[i]*(widthMm/width)*(widthMm/width)) },
             myThreads,if(grayscale) Bt709Grayscale.threads else PecThreads.SET.filterNotNull())
-        val layers=quantized.palette.mapIndexedNotNull { color,rgb ->
+        val layers=palette.mapIndexedNotNull { color,rgb ->
             checkpoint("tracing")
             if(labels.none { it==color }) null else {
                 val thread=assignment.threadFor(rgb)
                 try {
-                    Layer(color,thread,RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
+                    Layer(color,thread,if(binaryMask) RedworkPipeline.traceMask(w,h,ByteArray(labels.size) { if(labels[it]==color) 0 else -1 },
+                        paddedWidth,thread,minAreaMm2,maxContours,checkpoint=checkpoint,preserveSmallContours=true)
+                    else RedworkPipeline.trace(w,h,IntArray(labels.size) { if(labels[it]==color) 0 else 0xffffff },
                         paddedWidth,0,thread,minAreaMm2,maxContours,checkpoint=checkpoint,preserveSmallContours=true))
                 } catch(failure:IllegalArgumentException) {
                     if(failure.message?.startsWith("No contour remains")==true) null else throw failure
@@ -105,8 +125,8 @@ object ColorDrawingPipeline {
         val ink=RedworkOutline("",layers.sumOf { it.outline.contourCount },widthMm,widthMm*height/width,paths,
             layers.sumOf { it.outline.foregroundAreaMm2 })
         val foregroundPixels=BooleanArray(w*h)
-        for(index in foreground) foregroundPixels[(index/width+1)*w+index%width+1]=true
-        return Preview(w,h,labels,quantized.palette,layers,paddedWidth,ink,foregroundPixels,assignment.warnings)
+        for(index in cleaned.indices) if(cleaned[index]>=0) foregroundPixels[(index/width+1)*w+index%width+1]=true
+        return Preview(w,h,labels,palette,layers,paddedWidth,ink,foregroundPixels,assignment.warnings)
     }
 
     fun generate(preview:Preview,hoop:HoopSpec=HoopSpec.H100,checkpoint:(String)->Unit={}):Result =

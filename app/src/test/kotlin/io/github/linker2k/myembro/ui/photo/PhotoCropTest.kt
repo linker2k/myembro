@@ -6,6 +6,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PhotoCropTest {
+    @Test fun colorRegionRasterKeepsSourcePixelsUpTo1024() {
+        assertEquals(1023 to 1023, photoRegionRaster(PhotoCrop(0, 0, 1023, 1023)))
+        assertEquals(1024 to 1024, photoRegionRaster(PhotoCrop(0, 0, 1024, 1024)))
+        assertEquals(1024 to 1024, photoRegionRaster(PhotoCrop(0, 0, 1025, 1025)))
+        assertEquals(1024 to 768, photoRegionRaster(PhotoCrop(-10, 0, 1536, 1152)))
+        assertEquals(683 to 1024, photoRegionRaster(PhotoCrop(0, 0, 1000, 1500)))
+        assertEquals(1 to 1, photoRegionRaster(PhotoCrop(0, 0, 1, 1)))
+    }
+
     @Test fun contrastStretchHasExactEndpointsAndDoesNotInventUniformDetail() {
         kotlin.test.assertContentEquals(intArrayOf(0,0x7F7F7F,0xFFFFFF),
             photoContrastStretch(intArrayOf(0x646464,0x656565,0x666666)))
