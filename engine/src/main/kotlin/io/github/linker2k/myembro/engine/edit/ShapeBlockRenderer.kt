@@ -49,6 +49,7 @@ internal object ShapeBlockRenderer {
 
     fun generate(input: VectorArt.RegionInput, settings: BlockStitch): StitchTypeRule.RegionStitches {
         validate(settings)
+        if (settings.type == BlockStitch.Type.EMPTY) return StitchTypeRule.RegionStitches(emptyList(), null, empty = true)
         return try { generateValidated(input, settings) }
         catch(e: java.util.concurrent.CancellationException) { throw e }
         catch(e: InterruptedException) { throw e }
@@ -74,8 +75,10 @@ internal object ShapeBlockRenderer {
             BlockStitch.Type.FILL -> StitchTypeRule.Type.TATAMI
             BlockStitch.Type.SATIN -> StitchTypeRule.Type.SATIN
             BlockStitch.Type.RUNNING -> StitchTypeRule.Type.RUNNING
+            BlockStitch.Type.EMPTY -> error("EMPTY is handled in generate")
         }
         val groups = when(settings.type) {
+            BlockStitch.Type.EMPTY -> error("EMPTY is handled in generate")
             BlockStitch.Type.RUNNING -> Stroke(paths.map { line -> line.points.map { io.github.linker2k.myembro.engine.inkstitch.utils.Point(it.x,it.y) } }, thread).toStitchGroups(previous)
             BlockStitch.Type.SATIN -> RegionSatin.groups(PolygonRegion.fromPaths(input.paths,FillRule.EVEN_ODD).geometry,
                 { x,y -> io.github.linker2k.myembro.engine.inkstitch.utils.Point(x*PIXELS_PER_MM,y*PIXELS_PER_MM) }, thread, settings.satin ?: SatinParameters())

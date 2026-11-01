@@ -113,7 +113,7 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
                     // A manual angle shows as hatching over the selection while the slider moves; display only.
-                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type != BlockType.RUNNING && selected.isNotEmpty() }
+                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY && selected.isNotEmpty() }
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
                         vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background, hatch) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
@@ -246,8 +246,11 @@ internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor
             val chosen = r.id in state.selected
             val color = Color(r.color).copy(alpha = if (!dim || chosen) 1f else 0.3f)
             val (rings, lines) = regionPaths(r, fit)
-            drawPath(rings, color)
-            drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
+            // An emptied block sews nothing, so only the fabric shows (user decision 2026-11-01); taps still hit its shape.
+            if (r.stitch.type != BlockType.EMPTY) {
+                drawPath(rings, color)
+                drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
+            }
         }
         if (hatchDeg != null) state.regions.filter { it.id in state.selected }.forEach { r ->
             drawHatch(regionPaths(r, fit).first, hatchDeg, Color(r.color))
@@ -333,7 +336,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                 Text(stringResource(R.string.block_edit_type_unavailable, stringResource(TYPE_NAMES[type.ordinal]), reasonText(code)),
                     style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
-            Segmented(listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running),
+            Segmented(TYPE_NAMES,
                 draft.type.ordinal, enabled = { BlockType.entries[it] in options.types }) { onDraft(draft.copy(type = BlockType.entries[it])) }
             if (draft.type == BlockType.FILL) {
                 Label(R.string.block_edit_texture)
@@ -348,7 +351,9 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     MeanderGrid(draft.tile) { onDraft(draft.copy(tile = it)) }
                 }
             }
-            if (draft.type != BlockType.RUNNING) {
+            if (draft.type == BlockType.EMPTY) Text(stringResource(R.string.block_edit_empty_hint),
+                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            if (draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY) {
                 Label(R.string.block_edit_direction)
                 Segmented(listOf(R.string.block_edit_direction_auto, R.string.block_edit_direction_manual), if (draft.autoAngle) 0 else 1) {
                     onDraft(draft.copy(autoAngle = it == 0))
@@ -391,7 +396,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
     }
 }
 
-private val TYPE_NAMES = listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running)
+private val TYPE_NAMES = listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running, R.string.block_edit_type_empty)
 
 /** Engine reason codes in a few words; an unknown code is shown as is. */
 @Composable

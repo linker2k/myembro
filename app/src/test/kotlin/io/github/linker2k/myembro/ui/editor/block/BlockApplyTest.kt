@@ -27,6 +27,14 @@ class BlockApplyTest {
     private fun project() = Project(hoop = HoopSpec.H100).add(ShapeObject.fromSvg("o", "two", svg, 40.0))
     private fun shape(p: Project) = p.find("o") as ShapeObject
 
+    @Test fun emptyMapsBothWaysAndIsAlwaysOffered() {
+        val patch = BlockApply.patch(BlockStitchDraft(type = BlockType.EMPTY))
+        assertEquals(io.github.linker2k.myembro.engine.edit.BlockStitch.Type.EMPTY, patch.type)
+        assertNull(patch.fill_method)
+        assertEquals(BlockType.EMPTY, BlockApply.draft(patch.applyTo(io.github.linker2k.myembro.engine.edit.BlockStitch())).type)
+        assertTrue(BlockOptions().allows(BlockStitchDraft(type = BlockType.EMPTY)))
+    }
+
     @Test fun patternAnd135DegreesMapToUpstreamFields() {
         val patch = BlockApply.patch(BlockStitchDraft(texture = BlockTexture.PATTERN, tile = "hexagon", autoAngle = false, angleDeg = 135))
         assertEquals("meander_fill", patch.fill_method); assertEquals("hexagon", patch.meander_pattern)

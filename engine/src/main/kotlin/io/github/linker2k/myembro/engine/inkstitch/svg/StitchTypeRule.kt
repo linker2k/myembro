@@ -52,7 +52,9 @@ object StitchTypeRule {
         }
     }
 
-    data class RegionStitches(val groups:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>, val type:Type?, val coverage:SatinCoverage.Audit? = null) {
+    /** [empty]: a block the user emptied; it keeps its region but has no stitches (not an exclusion). */
+    data class RegionStitches(val groups:List<io.github.linker2k.myembro.engine.inkstitch.stitch_plan.StitchGroup>, val type:Type?, val coverage:SatinCoverage.Audit? = null,
+        val empty:Boolean = false) {
         val excluded:Boolean get()=type==null
     }
 
