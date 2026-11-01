@@ -335,10 +335,12 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                 delay(180)
                 val output = runInterruptible(Dispatchers.Default) {
                     val aspect = frame.width.toDouble() / frame.height
+                    // Color drawing (not B&W) reads the crop at source resolution, like the sample pack.
+                    val regionRaster = if(selectedMode==PhotoMode.COLOR && !selectedTexture.enabled && !selectedGrayscale) photoRegionRaster(crop) else null
                     val w = if(selectedTexture.enabled) io.github.linker2k.myembro.engine.texture.TextureRasterPolicy.edge(pictureWidth,selectedTexture.detail.pitchMmPerPixel)
-                        else if (aspect >= 1) edge else (edge * aspect).toInt().coerceAtLeast(1)
+                        else regionRaster?.first ?: if (aspect >= 1) edge else (edge * aspect).toInt().coerceAtLeast(1)
                     val h = if(selectedTexture.enabled) (w / aspect).toInt().coerceAtLeast(1)
-                        else if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
+                        else regionRaster?.second ?: if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
                     val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                     drawPhotoCrop(Canvas(scaled), bitmap, crop, w.toFloat(), h.toFloat(), selectedMode == PhotoMode.COLOR)
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
@@ -356,11 +358,17 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                         return@runInterruptible (null as RedworkOutline?) to 1.0
                     }
                     if(selectedMode==PhotoMode.COLOR) {
-                        val preview=ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
-                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads) { phase ->
+                        val started = SystemClock.elapsedRealtime(); var quantized = started
+                        val progress: (String) -> Unit = { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                            if(phase!="quantization" && progressStage==1) quantized = SystemClock.elapsedRealtime()
                             progressStage=if(phase=="quantization") 1 else 2
                         }
+                        val preview=if(regionRaster!=null) ColorDrawingPipeline.traceRegions(w,h,corrected.pixels,pictureWidth,selectedColors,
+                            myThreads=snapshot.myThreads,checkpoint=progress)
+                        else ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads,checkpoint=progress)
+                        Log.i("PhotoTiming", "color_regions_ms=${quantized-started} color_trace_ms=${SystemClock.elapsedRealtime()-started} raster=${w}x${h} sample_regions=${regionRaster!=null}")
                         if(version==revision) {
                             colorPreview=preview
                             separatedPreview=Bitmap.createBitmap(preview.previewPixels(),preview.width,preview.height,Bitmap.Config.ARGB_8888)
