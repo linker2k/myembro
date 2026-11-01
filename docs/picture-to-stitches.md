@@ -307,7 +307,7 @@ Not available: stitch-only designs (opened PES) and silhouette/outline results (
 | Boundary-colour thread choice | Greedy lighter-first order can give a mid colour a second-best thread when a lighter colour took the nearest one. Reported case: skull picture navy thread **21 vs 23** chosen differently than expected. Input and ΔE values are not recorded in the repository (**unverified** details); needs a reproducible input before any rule change. |
 | Satin gaps at concave corners (crown) | The crown's black border is a polygon ring, so it is exempt from the coverage fallback and keeps satin with small gaps at concave corners (`satin-coverage.md`). Intentional for borders; no fix decided. |
 | No detail slider in colour mode | Colour regions run at the source crop (≤ 1024 px); the hidden `detail` still affects the B&W route (section 4.3). Whether to expose it is open. |
-| Phone timing | Colour regions at 1024 px are timed only on PC JVM (`tools/color-trace/README.md`) and the emulator for older routes; real-phone timing is **not measured**. |
+| Phone timing | Colour regions at 1024 px are timed only on PC JVM (`tools/color-trace/README.md`) and the emulator for older routes; real-phone timing is **not measured**. 2026-11-01 user test on a real phone (beta.6): no noticeable delay (an observation, not a measurement). |
 | Random generator | Kotlin `Random` sample differs from NumPy: ≤ 60 pixels and palette channel ±1 on the parity inputs. |
 | Max zoom 4×, contrast 0.5–2.0 | **Unverified** product values. |
 | Dense/Sparse density | Disabled until there is a basis. |
