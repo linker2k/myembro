@@ -46,7 +46,8 @@ object BlockApply {
         BlockDensity.NORMAL to FillParameters().row_spacing_mm, BlockDensity.SPARSE to null)
 
     fun patch(d: BlockStitchDraft) = BlockStitchPatch(
-        type = when (d.type) { BlockType.FILL -> BlockStitch.Type.FILL; BlockType.SATIN -> BlockStitch.Type.SATIN; BlockType.RUNNING -> BlockStitch.Type.RUNNING },
+        type = when (d.type) { BlockType.FILL -> BlockStitch.Type.FILL; BlockType.SATIN -> BlockStitch.Type.SATIN; BlockType.RUNNING -> BlockStitch.Type.RUNNING
+            BlockType.EMPTY -> BlockStitch.Type.EMPTY },
         fill_method = if (d.type == BlockType.FILL) FILL_METHOD.getValue(d.texture) else null,
         automatic_angle = d.autoAngle,
         angle = if (d.autoAngle) null else d.angleDeg.toDouble(),
@@ -55,7 +56,8 @@ object BlockApply {
     )
 
     fun draft(s: BlockStitch) = BlockStitchDraft(
-        type = when (s.type) { BlockStitch.Type.FILL -> BlockType.FILL; BlockStitch.Type.SATIN -> BlockType.SATIN; BlockStitch.Type.RUNNING -> BlockType.RUNNING },
+        type = when (s.type) { BlockStitch.Type.FILL -> BlockType.FILL; BlockStitch.Type.SATIN -> BlockType.SATIN; BlockStitch.Type.RUNNING -> BlockType.RUNNING
+            BlockStitch.Type.EMPTY -> BlockType.EMPTY },
         texture = FILL_METHOD.entries.firstOrNull { it.value == s.fill.fill_method }?.key ?: BlockTexture.BASIC,
         tile = s.meander_pattern,
         autoAngle = s.automatic_angle,

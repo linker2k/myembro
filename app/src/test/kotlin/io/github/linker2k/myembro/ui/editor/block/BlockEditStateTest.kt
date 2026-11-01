@@ -72,10 +72,10 @@ class BlockOptionsTest {
         val map = mapOf("a" to BlockOptions(), "b" to noSatin)
         s.tap(5.0, 5.0, false)                                     // overlapping: b is on top
         assertEquals(setOf("b"), s.selected)
-        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), s.options(map)!!.types)
+        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING, BlockType.EMPTY), s.options(map)!!.types)
         s.selectAll()
         val both = s.options(map)!!
-        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING), both.types)
+        assertEquals(setOf(BlockType.FILL, BlockType.RUNNING, BlockType.EMPTY), both.types)
         assertEquals("SATIN_GEOMETRY_UNSUPPORTED", both.unavailable[BlockType.SATIN])
         assertEquals(false, both.allows(BlockStitchDraft(type = BlockType.SATIN)))
         assertEquals(true, both.allows(BlockStitchDraft(texture = BlockTexture.PATTERN)))

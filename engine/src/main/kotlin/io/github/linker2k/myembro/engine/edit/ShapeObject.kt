@@ -20,7 +20,8 @@ data class BlockStitch(
     val meander_pattern: String = io.github.linker2k.myembro.engine.inkstitch.stitches.MeanderFillParameters().meander_pattern,
     val meander_scale_percent: List<Double> = listOf(100.0, 100.0),
 ) {
-    enum class Type { FILL, SATIN, RUNNING }
+    /** EMPTY (user decision 2026-11-01): the block stays, sews nothing and shows the fabric; any other type restores it. */
+    enum class Type { FILL, SATIN, RUNNING, EMPTY }
 }
 
 /** One actually emitted region, after occlusion and the existing safety fallback.

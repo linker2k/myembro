@@ -13,6 +13,8 @@
     <string name="block_edit_type_fill">채움</string>
     <string name="block_edit_type_satin">새틴</string>
     <string name="block_edit_type_running">러닝</string>
+    <string name="block_edit_type_empty">비우기</string>
+    <string name="block_edit_empty_hint">이 블럭은 수놓지 않아 천이 그대로 보입니다. 다른 종류를 고르면 다시 채웁니다.</string>
     <string name="block_edit_texture">텍스처</string>
     <string name="block_edit_texture_basic">기본</string>
     <string name="block_edit_texture_pattern">무늬</string>

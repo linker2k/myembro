@@ -66,7 +66,9 @@ object VectorArt {
         /** Actual emitted region boundaries, centered object-local millimeters (including holes). */
         val paths: List<Polyline> = emptyList(), val regionId: String = "",
         val satinCoverage: SatinCoverage.Audit? = null,
-        val satinBorder: SatinCoverage.Border = SatinCoverage.Border.NONE, val areaMm2: Double = 0.0)
+        val satinBorder: SatinCoverage.Border = SatinCoverage.Border.NONE, val areaMm2: Double = 0.0,
+        /** An emptied block: listed as a region, sews nothing. */
+        val empty: Boolean = false)
     data class RegionInput(val id: String, val paths: List<Polyline>, val thread: EmbThread,
         val previous: io.github.linker2k.myembro.engine.inkstitch.stitch_plan.Stitch?)
     class Result(val pattern: EmbPattern, val parts: List<Part>, val scale: Double, val excludedCount: Int = 0, val regionPatterns: Map<String, EmbPattern> = emptyMap(), val droppedSliverCount: Int = 0, val tinyOmittedCount: Int = 0)
@@ -293,6 +295,11 @@ object VectorArt {
             val sourceLines=if(role=="stroke") subpaths(art.shapes[index]) else emptyList()
             val border=SatinCoverage.border(region,sourceLines.isNotEmpty() && sourceLines.all { it.closed })
             val override = regionOverride?.invoke(RegionInput(regionId, localPaths, thread, previous()))
+            if (override?.empty == true) {
+                parts += Part(index, role, preferred, thread, w, rgb, StitchTypeRule.widths(region, 1 / scale), localPaths, regionId,
+                    satinBorder = border, areaMm2 = region.area*scale*scale, empty = true)
+                return
+            }
             val attempted = override
                 ?: if(preferred==StitchTypeRule.Type.RUNNING) SmallRegionStitches.running(running(),hoop)
                 else StitchTypeRule.generateRegion(preferred, groups, hoop=hoop, satinRegionMm=toMm.transform(region), satinBorder=border!=SatinCoverage.Border.NONE) { attempt -> when (attempt) {
