@@ -25,6 +25,7 @@ Free and open source.
 - 🔤 **Lettering.** Type text in Korean or English. 72 embroidery fonts, plus your own TTF fonts. The app picks a stitch type that sews safely.
 - 😀 **Emoji → embroidery.** Search emoji (Korean words work too) and turn one into a design.
 - ✂️ **Edit.** Place, resize and rotate designs and text on the hoop.
+- 🧩 **Block editing.** When you set the fill direction by hand, the angle shows as thin slanted lines.
 - 👀 **View.** Open PES, PEC and DST files. See thread colors, play the stitches and check stitch count, size and time.
 - 🔌 **Send to the machine.** 58 Brother embroidery models from the US and Korea. Send PES over a USB cable (SE400) or a USB flash drive.
 - 💾 **Back up.** Save designs, projects, fonts and settings in one ZIP and restore them later.
