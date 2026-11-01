@@ -99,15 +99,41 @@ private fun NumericField(value: String, onChange: (String) -> Unit, label: Int, 
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
+/** One save dialog for both formats. The name stays editable; "Export file" exists for projects only. */
 @Composable
-internal fun SaveProjectDialog(initialName: String, title: Int, onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: ((String) -> Unit)? = null) {
-    var name by remember(initialName) { mutableStateOf(initialName) }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(title)) },
-        text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.editor_project_name)) }) },
+internal fun SaveDesignDialog(prompt: EditorSavePrompt, pesEnabled: Boolean, onKind: (EditorSaveKind) -> Unit,
+    onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: (String) -> Unit) {
+    var name by remember(prompt.suggestedName) { mutableStateOf(prompt.suggestedName) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_save_title)) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.editor_save_name)) })
+            Text(stringResource(R.string.editor_save_format), style = MaterialTheme.typography.labelLarge)
+            for ((kind, label) in listOf(EditorSaveKind.PROJECT to R.string.editor_format_project, EditorSaveKind.PES to R.string.editor_format_pes)) {
+                val enabled = kind != EditorSaveKind.PES || pesEnabled
+                Row(Modifier.fillMaxWidth().clickable(enabled = enabled) { onKind(kind) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(prompt.kind == kind, { onKind(kind) }, enabled = enabled)
+                    Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        } },
         confirmButton = { TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_save_local)) } },
         dismissButton = {
             Row {
-                if (onExport != null) TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
+                if (prompt.kind == EditorSaveKind.PROJECT) TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
+            }
+        })
+}
+
+/** Saving a design opened from an app file: replace that file (confirmed next) or save under a new name. */
+@Composable
+internal fun SaveChoiceDialog(choice: EditorSaveChoice, onReplace: () -> Unit, onSaveAs: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_save_title)) },
+        text = { Text(stringResource(R.string.editor_save_choice_body, choice.file.name)) },
+        confirmButton = { TextButton(onClick = onReplace) { Text(stringResource(R.string.editor_save_replace)) } },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onSaveAs) { Text(stringResource(R.string.editor_save_as)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
             }
         })

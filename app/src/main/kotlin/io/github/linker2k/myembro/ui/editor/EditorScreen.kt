@@ -156,12 +156,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                     DropdownMenuItem(text={Text(stringResource(R.string.editor_colors))},
                                         leadingIcon={Icon(Icons.Default.Palette,null)},enabled=!vm.gestureInProgress,
                                         onClick={projectMenu=false;showColors=true})
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
-                                        onClick = { projectMenu = false; vm.requestProjectSave() })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_save_title)) },
+                                        onClick = { projectMenu = false; vm.requestSave() })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
                                         onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
-                                        onClick = { projectMenu = false; vm.save() })
                                     if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
                                         onClick = { projectMenu = false; relayPhotoRequest++ })
                                 }
@@ -193,8 +191,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         Spacer(Modifier.weight(1f))
                         Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                        FilledTonalIconButton(onClick = vm::save, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
-                            Icon(Icons.Default.Save, stringResource(R.string.editor_save), Modifier.size(20.dp))
+                        // Opens the one save dialog (format choice inside), or the replace/save-as choice for an opened file.
+                        FilledTonalIconButton(onClick = { vm.requestSave() }, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Default.Save, stringResource(R.string.editor_save_title), Modifier.size(20.dp))
                         }
                     }
                     if (vm.multiPositionFrame != null) {
@@ -381,15 +380,16 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
         if (showProperties && vm.selectedIds.size == 1) ObjectProperties(vm) { showProperties = false }
-        vm.savePrompt?.let { request ->
-            SaveProjectDialog(initialName = request.suggestedName,
-                title = if (request.kind == EditorSaveKind.PROJECT) R.string.editor_project_save else R.string.editor_save,
+        vm.saveChoice?.let { choice -> SaveChoiceDialog(choice, onReplace = vm::replaceOpenedFile,
+            onSaveAs = vm::saveOpenedFileAs, onDismiss = vm::cancelSaveChoice) }
+        vm.savePrompt?.takeIf { it.form }?.let { request ->
+            SaveDesignDialog(request, pesEnabled = vm.project.objects.any { it.visible }, onKind = vm::selectSaveKind,
                 onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
-                onExport = if (request.kind == EditorSaveKind.PROJECT) { name ->
+                onExport = { name ->
                     exportName = name
                     vm.hideSavePrompt()
                     exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro")
-                } else null)
+                })
         }
         vm.overwriteName?.let { name -> AlertDialog(
             onDismissRequest = vm::cancelOverwrite,

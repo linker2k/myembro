@@ -4,8 +4,11 @@ package io.github.linker2k.myembro.ui.editor
 import io.github.linker2k.myembro.engine.export.Preflight
 import java.io.File
 
-internal enum class EditorSaveKind { PROJECT, PES }
-internal data class EditorSavePrompt(val kind: EditorSaveKind, val suggestedName: String)
+internal enum class EditorSaveKind(val extension: String) { PROJECT("myembro"), PES("pes") }
+/** One save dialog for both formats; [form] false = only the replace confirmation of an opened file. */
+internal data class EditorSavePrompt(val kind: EditorSaveKind, val suggestedName: String, val form: Boolean = true)
+/** Shown when saving a design that was opened from an app file: replace it, or save under a new name. */
+internal data class EditorSaveChoice(val file: File, val kind: EditorSaveKind)
 internal class EditorSaveConflict(val fileName: String) : Exception(fileName)
 
 internal fun designSaveStem(name: String): String =
