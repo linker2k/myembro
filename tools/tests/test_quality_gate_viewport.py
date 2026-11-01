@@ -24,8 +24,10 @@ class ExactViewportTest(unittest.TestCase):
         doc=(Path(__file__).resolve().parents[2]/'AGENTS.md').read_text()
         self.assertIn(f"{limits['max_stitch_units_0p1mm']/10:.1f}mm",doc)
         self.assertIn(f"**at most {limits['max_consecutive_positions']}**",doc)
-        self.assertIn(f"more than {limits['max_generated_penetrations']} needle penetrations",doc)
-        self.assertIn(f"Imported PES are blocked only above {limits['max_imported_penetrations']}",doc)
+        # AGENTS.md P7 wording (2026-10-28 English rewrite): "More than 30 needle penetrations **blocks**",
+        # "imported files are also blocked only above 30".
+        self.assertIn(f"more than {limits['max_generated_penetrations']} needle penetrations",doc.lower())
+        self.assertIn(f"imported files are also blocked only above {limits['max_imported_penetrations']}",doc)
 
     def test_all_hoop_integer_boundaries(self):
         for hoop in [(1000,1000),(1300,1800),(1600,2600),(731,1247)]:
