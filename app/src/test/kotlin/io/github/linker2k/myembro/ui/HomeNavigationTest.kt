@@ -28,7 +28,7 @@ class HomeNavigationTest {
     @Test fun everyHomeButtonLeavesThroughTheScreensOwnBackPath() {
         val editor = source("ui/editor/EditorScreen.kt")
         // The same vm.leave as the back arrow and the system back: unsaved dialog, save, discard, cancel.
-        assertTrue("HomeButton(enabled, home) { goHome -> vm.leave(goHome) }" in editor)
+        assertTrue("HomeButton(enabled, home, iconSize = 28.dp) { goHome -> vm.leave(goHome) }" in editor)
         assertTrue("BackHandler(onBack = { vm.leave(onBack) })" in editor)
         // Lettering and fonts drawn inside the editor get no Home that could skip the editor's check.
         assertTrue("LocalGoHome provides null" in editor)
