@@ -22,9 +22,13 @@ import io.github.linker2k.myembro.ui.format.Dimensions
  * kept. Dragging only moves the label; [onCommit] runs once on release (no live recalculation).
  */
 @Composable
-internal fun EmbroiderySizeSlider(widthMm: Double, range: ClosedFloatingPointRange<Double>, onCommit: (Double) -> Unit) {
+internal fun EmbroiderySizeSlider(widthMm: Double, range: ClosedFloatingPointRange<Double>, onCommit: (Double) -> Unit,
+    aspect: Double? = null) {
     var draft by remember(widthMm) { mutableFloatStateOf(widthMm.toFloat().coerceIn(range.start.toFloat(), range.endInclusive.toFloat())) }
-    val label = stringResource(R.string.photo_size, Dimensions.length(Math.round(draft * 10) / 10.0))
+    val width = Math.round(draft * 10) / 10.0
+    // With a known aspect (height ÷ width) the title shows width × height; the height follows the picture.
+    val label = if (aspect == null) stringResource(R.string.photo_size, Dimensions.length(width))
+        else stringResource(R.string.photo_size_wh, sizeText(width, Math.round(width * aspect * 10) / 10.0))
     Text(label, style = MaterialTheme.typography.titleSmall)
     Slider(draft, { draft = it }, valueRange = range.start.toFloat()..range.endInclusive.toFloat(),
         onValueChangeFinished = { onCommit(draft.toDouble()) }, enabled = range.endInclusive > range.start,
@@ -39,3 +43,7 @@ internal fun EmbroiderySizeSlider(widthMm: Double, range: ClosedFloatingPointRan
  */
 internal fun pictureWidthRange(hoop: HoopSpec, aspect: Double): ClosedFloatingPointRange<Double> =
     io.github.linker2k.myembro.engine.geometry.pictureWidthRange(hoop, aspect)
+
+/** "73.2 × 95.0mm (2.9 × 3.7in)": one decimal in mm, inches as elsewhere. */
+internal fun sizeText(widthMm: Double, heightMm: Double): String =
+    "%.1f × %.1fmm (%s × %sin)".format(java.util.Locale.ROOT, widthMm, heightMm, Dimensions.inches(widthMm), Dimensions.inches(heightMm))

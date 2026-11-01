@@ -16,8 +16,10 @@ class WuQuantizedImage internal constructor(val palette: List<Int>, indices: Int
 
 /** Wu 1991 variance-minimizing quantization, original v2 implementation. Engine-only, no app caller. */
 object ImageQuantizer {
+    /** JVM resource limit of this port (docs/image-pipeline.md "Explicit differences in the Wu port"). */
+    const val MAX_PIXELS = 1_048_576
     fun quantize(rgb: IntArray, colorCount: Int): WuQuantizedImage {
-        require(rgb.isNotEmpty() && rgb.size <= 1_048_576)
+        require(rgb.isNotEmpty() && rgb.size <= MAX_PIXELS)
         require(colorCount in 1..256)
         require(rgb.all { it in 0..0xFFFFFF }) { "Input must be RGB24; alpha handling is outside this algorithm" }
         return State(rgb).quantize(colorCount)

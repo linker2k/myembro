@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -111,13 +112,13 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
             }
             if ((vm.step != 2 && elapsed >= 10) || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
                 Text(stringResource(R.string.photo_slow_hint))
-                TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
+                if (vm.textureActive) TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
             }
             if (vm.isSvg) {
                 Text(stringResource(R.string.svg_picture_direct))
                 val range = vm.inkWidthRange
                 val size = vm.inkWidthMm
-                if (range != null && size != null) EmbroiderySizeSlider(size, range, vm::changeSize)
+                if (range != null && size != null) EmbroiderySizeSlider(size, range, vm::changeSize, vm.inkAspect)
             }
             if (vm.step == 0) {
                 if (vm.source != null) CropPreview(vm) else Surface(Modifier.fillMaxWidth().height(260.dp), color = colors.surfaceVariant) {
@@ -165,7 +166,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 else if (vm.step == 1 && vm.separatedPreview != null) Image(vm.separatedPreview!!.asImageBitmap(),
                     contentDescription=stringResource(if(vm.style==PhotoMode.COLOR) R.string.photo_color_preview_accessibility else R.string.photo_separated_preview),
                     modifier=Modifier.fillMaxWidth().height(300.dp),contentScale=ContentScale.Fit)
-                else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.detail,
+                else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.effectiveResolutionPx,
                     Modifier.fillMaxWidth().height(300.dp), colors.background.toArgb(), colors.outline.toArgb(), frame = vm.hoop, preservePlacement = true)
                 else Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) { if (vm.busy) CircularProgressIndicator() }
                 if (vm.step == 1) {
@@ -187,18 +188,12 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         Text(stringResource(R.string.photo_color_hint),style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                         ThreadTextureControls(vm.textureOptions, !vm.busy, vm::changeTextureEnabled,
                             vm::changeTextureDetail)
-
-                    } else {
-                    Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
-                    val detailLabel = stringResource(R.string.photo_detail)
-                    Slider(vm.detail.toFloat(), { vm.changeDetail(it.toInt()) }, valueRange = 0f..2f, steps = 1,
-                        modifier = Modifier.semantics { contentDescription = detailLabel })
-                    Text(stringResource(R.string.photo_detail_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    }
+                        if (!vm.textureActive) DetailControls(vm)
+                    } else DetailControls(vm)
                     // Embroidery (ink) width in mm, aspect kept. The drag only moves the label; tracing reruns once on release.
                     val range = vm.inkWidthRange
                     val ink = vm.inkWidthMm
-                    if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize)
+                    if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize, vm.inkAspect)
                 } else vm.report?.let { report ->
                     AssistChip(onClick = { showCheck = true }, label = {
                         Text(stringResource(if (report.verdict == io.github.linker2k.myembro.engine.sewout.SewoutVerdict.CAUTION) R.string.sewout_badge_caution else if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
@@ -325,3 +320,35 @@ private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolea
         Text(stringResource(R.string.photo_texture_editor_hint), style=MaterialTheme.typography.bodySmall)
     }
 }
+
+/** Two independent steps: picture resolution (px) and the small-piece area (mm²); tracing reruns on release. */
+@Composable
+private fun DetailControls(vm: PhotoViewModel) {
+    val colors = MaterialTheme.colorScheme
+    Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
+    val sizes = vm.resolutionSteps
+    var sizeDraft by remember(sizes, vm.effectiveResolutionPx) { mutableFloatStateOf(sizes.indexOf(vm.effectiveResolutionPx).toFloat()) }
+    val size = sizes[sizeDraft.roundToInt().coerceIn(sizes.indices)]
+    val applied = vm.appliedResolutionPx
+    val sizeLabel = if (applied != null && applied != size && size == vm.effectiveResolutionPx)
+        stringResource(R.string.photo_resolution_applied, size, applied) else stringResource(R.string.photo_resolution, size)
+    Text(sizeLabel, style = MaterialTheme.typography.labelLarge)
+    Slider(sizeDraft, { sizeDraft = it }, valueRange = 0f..(sizes.size - 1).toFloat(), steps = sizes.size - 2,
+        onValueChangeFinished = { vm.changeResolution(size) }, enabled = !vm.busy,
+        modifier = Modifier.semantics { contentDescription = sizeLabel })
+    val areas = vm.pieceAreaSteps
+    var areaDraft by remember(areas, vm.effectivePieceAreaMm2) { mutableFloatStateOf(areas.indexOf(vm.effectivePieceAreaMm2).toFloat()) }
+    val area = areas[areaDraft.roundToInt().coerceIn(areas.indices)]
+    val areaLabel = if (area == 0.0) stringResource(R.string.photo_piece_area_off)
+        else stringResource(R.string.photo_piece_area, pieceAreaText(area), 2 * kotlin.math.sqrt(area / kotlin.math.PI))
+    Text(areaLabel, style = MaterialTheme.typography.labelLarge)
+    Slider(areaDraft, { areaDraft = it }, valueRange = 0f..(areas.size - 1).toFloat(), steps = areas.size - 2,
+        onValueChangeFinished = { vm.changePieceArea(area) }, enabled = !vm.busy && vm.pieceAreaApplies,
+        modifier = Modifier.semantics { contentDescription = areaLabel })
+    Text(stringResource(if (vm.pieceAreaApplies) R.string.photo_detail_hint else R.string.photo_piece_area_bw),
+        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+}
+
+/** 0.0625 … 16 as written; the colour default π shows as 3.14. */
+internal fun pieceAreaText(mm2: Double): String =
+    if (mm2 == kotlin.math.PI) "3.14" else java.math.BigDecimal(mm2).stripTrailingZeros().toPlainString()

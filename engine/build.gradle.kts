@@ -265,3 +265,13 @@ tasks.register<JavaExec>("sweepThreadTextureRaster") {
     maxHeapSize = "1g"
     args(providers.gradleProperty("texturePitchOutput").orElse("/tmp/myembro-texture-pitch").get())
 }
+
+// Opt-in local grid: resolution × small-piece area (docs/picture-to-stitches.md); inputs are never copied.
+tasks.register<JavaExec>("detailSplitGrid") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.DetailSplitCli")
+    systemProperty("java.awt.headless", "true")
+    maxHeapSize = "3g"
+    args(providers.gradleProperty("detailSplitArgs").orElse("/tmp/myembro-detail-split").get().split(','))
+}
