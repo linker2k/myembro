@@ -28,7 +28,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 - **New project** card: shows the default hoop (100×100mm, 4×4in). Tap **Start a new project**.
 - **Recent projects**: saved designs and projects appear here. **View all** opens the full list; **Import design** opens a PES/PEC/DST file from the phone.
 - **Sample designs**: six of the 136 built-in designs; open any one here, from **View all** or from **Samples** on the Designs tab and it is copied into a new project of your own in the editor.
-- Bottom bar: **Home**, **Designs**, **Create**, **Settings**. The gear at the top right also opens Settings.
+- Bottom bar: **Home**, **Designs**, **Create**, **Settings**.
 
 ## 2. Starting a new project
 
@@ -151,7 +151,7 @@ You can also share a picture to myembro from another app (gallery, browser, file
 
 ![Result with sew-out check passed](../images/manual/en/09b-photo-result.png)
 
-The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. While stitches are being made, the screen shows elapsed time and measured progress. After 1 minute, choose **Wait 1 more minute** or **Stop**; waiting can be extended again. Tap **Edit** to keep editing (including block editing, chapter 3) or **Send to USB** to send it to the machine.
+The result shows **Sewing check · Pass**, the stitch count and estimated time, the actual size and **Threads needed · Brother** (number and name). A thread you do not own is marked **Not in my threads**. The time is an estimate. While stitches are being made, the screen shows elapsed time and measured progress. After 1 minute, choose **Wait 1 more minute** or **Stop**; waiting can be extended again. Tap **Next** to open it in the editor (including block editing, chapter 3); save it there and send it to the machine (chapter 9).
 
 ## 6. Emoji
 

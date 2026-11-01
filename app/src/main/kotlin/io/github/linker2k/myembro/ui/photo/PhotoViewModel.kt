@@ -27,12 +27,9 @@ import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.sewout.*
 import io.github.linker2k.myembro.ui.RenderData
-import io.github.linker2k.myembro.ui.editor.suggestDesignName
-import io.github.linker2k.myembro.ui.editor.writeNamedDesign
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import io.github.linker2k.myembro.ui.viewerSewoutMachine
 import kotlinx.coroutines.*
-import java.io.File
 import kotlin.math.abs
 
 /** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
@@ -170,7 +167,6 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     } ?: inkRatio?.let { photoInkWidthRange(hoop, it) }
     val inkWidthMm: Double? get() = if (svgArt != null) widthMm else inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
-    val canSend get() = !busy && bytes != null && passed
     val canEdit get() = ThreadTextureOutputGate.canEdit(textureActive, (render?.pattern?.stitchCount ?: 0)>0, busy, report, bytes != null)
     val resultName get() = getApplication<Application>().getString(if(textureActive) R.string.photo_texture_name else R.string.photo_name)
 
@@ -473,25 +469,6 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
             } catch (_: LinkageError) { if(version==revision) error=R.string.device_generation_failed
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
             } finally { if(version==revision) busy=false }
-        }
-    }
-    fun send(onReady: (File) -> Unit) {
-        if (!canSend) return
-        val pes = bytes ?: return
-        busy = true; error = null
-        viewModelScope.launch {
-            try {
-                val file = withContext(Dispatchers.IO) {
-                    val directory = File(getApplication<Application>().filesDir, "designs")
-                    val name = suggestDesignName(getApplication<Application>().getString(when { textureActive -> R.string.photo_texture_file_stem; style==PhotoMode.OUTLINE -> R.string.photo_outline_file_stem; style==PhotoMode.COLOR -> R.string.photo_color_file_stem; else -> R.string.photo_file_stem })) { stem ->
-                        directory.listFiles()?.any { it.nameWithoutExtension.equals(stem, true) } == true
-                    }
-                    writeNamedDesign(directory, name, "pes", false, pes)
-                }
-                onReady(file)
-            } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { error = R.string.photo_save_failed
-            } finally { busy = false }
         }
     }
 }

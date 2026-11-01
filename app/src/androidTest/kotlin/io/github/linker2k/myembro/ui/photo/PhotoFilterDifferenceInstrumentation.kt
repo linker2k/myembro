@@ -41,7 +41,7 @@ class PhotoFilterDifferenceInstrumentation: Instrumentation() {
             val settings=EmbroiderySettings()
             runOnMainSync {
                 vm=PhotoViewModel(targetContext.applicationContext as Application)
-                activity.setContent { MyembroTheme { PhotoScreen(vm,settings,{}, {}, {}) } }
+                activity.setContent { MyembroTheme { PhotoScreen(vm,settings,{}, {}) } }
                 vm.load(Uri.fromFile(input))
             }
             fun ready() {

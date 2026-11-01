@@ -16,8 +16,6 @@
     <string name="photo_result_size">실제 크기 %1$s</string>
     <string name="photo_detail_hint">디테일이 높을수록 작은 윤곽까지 남습니다.</string>
     <string name="photo_next">다음</string>
-    <string name="photo_edit">편집기</string>
-    <string name="photo_send">보내기</string>
     <string name="photo_pass">봉제 점검 · 통과</string>
     <string name="photo_blocked">봉제 점검 · 차단</string>
     <string name="photo_stats">%1$,d땀 · 약 %2$d분</string>
@@ -30,8 +28,6 @@
     <string name="photo_name">사진실루엣</string>
     <string name="photo_load_failed">사진을 열 수 없습니다. 다른 사진을 골라 주세요.</string>
     <string name="photo_generate_failed">사용할 윤곽을 찾지 못했습니다. 2색 분리 미리보기를 확인해 주세요. 그림·로고·손글씨처럼 선이 뚜렷한 이미지에 적합합니다.</string>
-    <string name="photo_save_failed">전송할 파일을 준비하지 못했습니다. 다시 시도해 주세요.</string>
-    <string name="photo_file_stem">photo_silhouette</string>
     <string name="photo_progress_decode">사진 여는 중</string>
     <string name="photo_progress_quantize">색 나누는 중 · 1/3</string>
     <string name="photo_progress_trace">윤곽 찾는 중 · 2/3</string>
@@ -48,7 +44,6 @@
     <string name="photo_style_silhouette">실루엣</string>
     <string name="photo_style_outline">외곽선</string>
     <string name="photo_outline_title">한 색 외곽선</string>
-    <string name="photo_outline_file_stem">photo_outline</string>
     <string name="photo_outline_name">사진외곽선</string>
     <string name="photo_style_color">컬러 그림</string>
     <string name="photo_color_title">컬러 그림 · 2–6색</string>
@@ -56,7 +51,6 @@
     <string name="photo_color_hint">투명 배경은 봉제하지 않습니다. 테두리에서 가장 많은 색은 배경으로 제외하며, Brother 64색 실에 자동으로 맞춥니다.</string>
     <string name="photo_threads_title">필요한 실 · Brother</string>
     <string name="photo_thread_row">%1$s · %2$s</string>
-    <string name="photo_color_file_stem">color_drawing</string>
     <string name="photo_color_failed">봉제할 컬러 영역이 남지 않았습니다. 투명 배경 PNG나 밝은 배경의 간단한 그림을 골라주세요.</string>
     <string name="photo_color_preview_accessibility">컬러 그림 색 분리 미리보기</string>
     <string name="photo_skipped_outlines">외곽 %1$d곳 생략 · 바늘이 너무 몰리는 곳이라 외곽 러닝을 넣지 않았습니다.</string>
@@ -84,7 +78,6 @@
     <string name="photo_texture_fine">세밀</string>
     <string name="photo_texture_editor_hint">텍스처 자수는 편집기에서 땀 도안으로 열립니다. 색 블럭별로 편집할 수 없습니다.</string>
     <string name="photo_texture_name">실 그림 텍스처</string>
-    <string name="photo_texture_file_stem">thread_texture</string>
     <string name="photo_texture_dense">너무 빽빽해요: 디테일을 거침으로 바꿔 보세요</string>
     <string name="photo_texture_blocked">봉제 점검에서 차단됐어요. 크기나 디테일을 바꾼 뒤 편집하거나 보내 주세요.</string>
     <string name="photo_texture_progress">실 그림 텍스처 만드는 중 · %1$d%%</string>

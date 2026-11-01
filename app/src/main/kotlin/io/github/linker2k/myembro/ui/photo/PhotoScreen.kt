@@ -39,7 +39,6 @@ import io.github.linker2k.myembro.ui.StitchCanvas
 import io.github.linker2k.myembro.ui.sewoutMinutes
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
-import java.io.File
 import androidx.core.graphics.PathParser
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 
@@ -49,7 +48,7 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
-    onEdit: () -> Unit, onSend: (File) -> Unit) {
+    onEdit: () -> Unit) {
     LaunchedEffect(settings) { vm.configure(settings) }
     val back = { if (vm.isSvg) { vm.cancel(); onBack() } else if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
@@ -230,10 +229,8 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 Text(stringResource(R.string.photo_next))
             } else {
                 if (!vm.isSvg && !vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
-                Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
-                }
+                // Sending to USB happens from the editor, so the result screen only moves on.
+                Button(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.photo_next)) }
             }
         }
     }

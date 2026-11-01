@@ -3,9 +3,6 @@ package io.github.linker2k.myembro.ui.editor
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +23,6 @@ import io.github.linker2k.myembro.engine.edit.densityWarning
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
-import java.io.File
 import java.util.Locale
 import io.github.linker2k.myembro.ui.format.Dimensions
 import kotlin.math.abs
@@ -142,23 +138,3 @@ internal fun SaveChoiceDialog(choice: EditorSaveChoice, onReplace: () -> Unit, o
         })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ProjectPicker(vm: EditorViewModel, onDismiss: () -> Unit, onOpen: (File) -> Unit, onDevice: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(stringResource(R.string.editor_project_open), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
-        OutlinedButton(onClick = onDevice, modifier = Modifier.padding(horizontal = 20.dp)) {
-            Icon(Icons.Default.FolderOpen, null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.editor_open_device))
-        }
-        if (vm.projectFiles.isEmpty()) Text(stringResource(R.string.editor_projects_empty), Modifier.padding(20.dp))
-        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
-            items(vm.projectFiles, key = { it.path }) { file ->
-                ListItem(headlineContent = { Text(file.name) }, leadingContent = { Icon(Icons.Default.Description, null) },
-                    modifier = Modifier.clickable { onOpen(file) })
-            }
-        }
-        Spacer(Modifier.height(24.dp))
-    }
-}

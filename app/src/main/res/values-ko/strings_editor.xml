@@ -31,11 +31,8 @@
     <string name="editor_saved">라이브러리에 저장했습니다: %1$s</string>
     <string name="editor_empty_export">저장할 바늘땀이 없습니다.</string>
     <string name="editor_project_menu">프로젝트 메뉴</string>
-    <string name="editor_project_open">프로젝트 열기</string>
     <string name="editor_save_local">앱에 저장</string>
     <string name="editor_export_file">파일로 저장</string>
-    <string name="editor_open_device">기기에서 열기</string>
-    <string name="editor_projects_empty">아직 저장한 프로젝트가 없습니다.</string>
     <string name="editor_project_saved">프로젝트를 저장했습니다: %1$s</string>
     <string name="editor_project_open_failed">프로젝트 열기 실패: %1$s</string>
     <string name="editor_project_save_failed">프로젝트 저장 실패: %1$s</string>

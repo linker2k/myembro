@@ -45,7 +45,7 @@ class PhotoProgressSmokeInstrumentation : Instrumentation() {
             }
             val activity=startActivitySync(Intent(targetContext,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) as MainActivity
             lateinit var vm:PhotoViewModel
-            fun content() { activity.setContent { MyembroTheme { PhotoScreen(vm,EmbroiderySettings(),{}, {}, {}) } } }
+            fun content() { activity.setContent { MyembroTheme { PhotoScreen(vm,EmbroiderySettings(),{}, {}) } } }
             runOnMainSync {
                 vm=PhotoViewModel(targetContext.applicationContext as Application,generator)
                 vm.generationClock=clock::get

@@ -72,9 +72,9 @@ class AiChangeInstrumentation : Instrumentation() {
             val smile = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#FFCC00"/>""" +
                 """<circle cx="35" cy="40" r="6" fill="#000000"/><circle cx="65" cy="40" r="6" fill="#000000"/></svg>"""
             check(ok(call("import_picture", buildJsonObject { put("format", "svg"); put("data", smile); put("title", "Smile") })))
-            await("picture input confirmation") { find(targetContext.getString(R.string.photo_edit)) != null }
+            await("picture input confirmation") { find(targetContext.getString(R.string.photo_next)) != null }
             check(AiWorkspace.editor(targetContext.applicationContext as android.app.Application).project.objects.isEmpty())
-            click(targetContext.getString(R.string.photo_edit))
+            click(targetContext.getString(R.string.photo_next))
             await("user confirmed picture") { find(objects(1)) != null }
             check(!notified())
             shot("01-home-switches-to-editor.png")

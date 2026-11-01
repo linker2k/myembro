@@ -31,11 +31,8 @@
     <string name="editor_saved">Saved to library: %1$s</string>
     <string name="editor_empty_export">There are no visible stitches to save.</string>
     <string name="editor_project_menu">Project menu</string>
-    <string name="editor_project_open">Open project</string>
     <string name="editor_save_local">Save in app</string>
     <string name="editor_export_file">Export file</string>
-    <string name="editor_open_device">Open from device</string>
-    <string name="editor_projects_empty">No saved projects yet.</string>
     <string name="editor_project_saved">Project saved: %1$s</string>
     <string name="editor_project_open_failed">Could not open project: %1$s</string>
     <string name="editor_project_save_failed">Could not save project: %1$s</string>
