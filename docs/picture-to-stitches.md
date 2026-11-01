@@ -1,7 +1,8 @@
 # Picture → stitches: pipeline reference
 
-For developers changing or reviewing the picture conversion. It describes the code on `main` at
-`c3b8d4f6` (2026-11-01). Line numbers drift: search for the named symbol when a number no longer
+For developers changing or reviewing the picture conversion. It describes beta.7: `main` `13511d13` plus the
+`agent/clamp-prepared`, `agent/detail-split` and `agent/block-empty` branches as merged in
+`integrate/beta7-test` `224bbf23` (2026-11-01). Line numbers drift: search for the named symbol when a number no longer
 matches. Korean version: [picture-to-stitches.ko.md](picture-to-stitches.ko.md).
 
 Path abbreviations used below:
@@ -88,8 +89,8 @@ width = maximum for the hoop.
 ### 4.2 Colour drawing (default) — sample-pack regions
 
 Used when mode = COLOR, B&W off and thread texture off (`PhotoViewModel.kt:339`).
-Raster = crop at source resolution, long side scaled **down only** to ≤ 1024px (`photoRegionRaster`,
-`PhotoCrop.kt:62–66`). Then `ColorDrawingPipeline.traceRegions` (`image/ColorDrawingPipeline.kt:86–92`) →
+Raster = crop at source resolution, long side scaled **down only** to the chosen resolution step
+(default 1024px, section 4.7; `photoRegionRaster`, `PhotoCrop.kt:70`). Then `ColorDrawingPipeline.traceRegions` (`image/ColorDrawingPipeline.kt:86–92`) →
 `SampleColorRegions.labels` (`image/SampleColorRegions.kt:39–86`).
 
 This is a port of the sample-pack converter `tools/color-trace/png2svg_claude_v2.py` `convert()` up to its
@@ -97,7 +98,7 @@ This is a port of the sample-pack converter `tools/color-trace/png2svg_claude_v2
 
 | Step | Code | Constant | Boundary | Basis |
 |---|---|---|---|---|
-| Size limit | `:17`, `:41` | `MAX_EDGE = 1024` | width, height ∈ 1..1024 inclusive | Pack source PNGs are 1024px (cute-art `final-list.json`). |
+| Size limit | `:17`, `:41` | `MAX_EDGE = 1024` | width, height ∈ 1..1024 inclusive; also the top of the resolution slider | Pack source PNGs are 1024px (cute-art `final-list.json`). |
 | Alpha | `:88–97`, `:76` | — | alpha 0 → background (label −1); partial alpha composited on white for colour statistics | Converter behaviour. |
 | Lab | `:240–252` | sRGB, D65 2° | — | scikit-image 0.25 `rgb2lab`. |
 | Sample | `:99–108` | `SAMPLE_PIXELS = 40000` | all pixels if n ≤ 40000 | Converter value. Kotlin `Random(1)` replaces NumPy's generator. |
@@ -105,7 +106,7 @@ This is a port of the sample-pack converter `tools/color-trace/png2svg_claude_v2
 | Sparse fold | `:137–147` | `SPARSE_FRACTION = 0.005` | cluster count **< 0.5 %** of the sample is folded into its nearest centre (equal is kept) | User-approved v2 fix of the converter. |
 | Merge | `:62–71` | `MERGE_DELTA_E = 18.0` | merge closest pair until **colours ≤ slider + 1 and closest pair ΔE ≥ 18**; ΔE here is Lab Euclidean (CIE76) | Converter value. The +1 is the white background slot. |
 | Border white | `:74–75`, `:149–161` | — | cluster with highest L*, 4-connected to the image border → background | Converter (SciPy `ndi.label` default connectivity). |
-| Small pieces | `:77–78`, `:163–212` | `MIN_DIAMETER_MM = 2.0`, `CLEANUP_PASSES = 3` | 4-connected piece with pixel area **< π·(1mm / mm-per-px)²** is repainted with the most common label within city-block distance ≤ 2 (ties → lowest label, background first); area equal to the limit is kept | Converter value. |
+| Small pieces | `:83–85`, cleanup `:163–212` | chosen piece area (default `DEFAULT_PIECE_AREA_MM2` = π mm², `:26`), `CLEANUP_PASSES = 3` | 4-connected piece with pixel area **< area / (mm-per-px)²** is repainted with the most common label within city-block distance ≤ 2 (ties → lowest label, background first); area equal to the limit is kept. The default uses the converter's own expression `π·(1mm / mm-per-px)²`, so its threshold is bit-identical to before | Converter value (2mm diameter); other steps: section 4.7. |
 | Palette order | `:79–85` | — | largest area first | Converter. |
 
 Parity (`tools/color-trace/README.md`, 2026-11-01, three 1024px pack inputs): with NumPy's sample the
@@ -118,36 +119,41 @@ dropped; `small-regions.md`).
 
 ### 4.3 Colour drawing with B&W on (Wu route)
 
-`ColorDrawingPipeline.trace` (`:66–82`). Raster from `photoRasterSize(detail, w, h)`
-(`image/PhotoPreparationPolicy.kt:11–13`): `min(128 | 192 | 256, ceil(max(w, h)mm / 0.2))`, so at most
-0.2 mm per pixel. Requires width, height ≤ 512 (`:68`). Pixels converted to BT.709 grey, border
+`ColorDrawingPipeline.trace` (`:66–82`). Raster long side = the chosen resolution step; the default 192px
+is still limited by `photoRasterEdge` (`image/PhotoPreparationPolicy.kt:15`):
+`min(192, ceil(max(w, h)mm / 0.2))`, so the default result is unchanged. A chosen step is used as chosen
+(`PhotoViewModel.kt:358`). Requires width, height ≤ `WU_MAX_EDGE = 1024` and ≤ 1,048,576 pixels
+(`ColorDrawingPipeline.kt:36, :71`; Wu's limit `ImageQuantizer.MAX_PIXELS`, `ImageQuantizer.kt:20`). The former 512
+side limit came from the first oracle probe without a recorded basis. Pixels converted to BT.709 grey, border
 background selected (`ColorRegionCleanup`), Wu quantisation to the colour count, then the same per-colour
 Potrace and thread assignment as 4.2. Thread candidates are the neutral grey set
 (`Bt709Grayscale.threads`) unless My Threads is active.
 
-Note: the detail slider is hidden in colour mode (`PhotoScreen.kt:171–198`), but this route still uses
-the current `detail` value (1 by default, or whatever was last chosen in silhouette/outline).
+This route has no small-piece step, so the piece-area slider is disabled here with a short note
+(`PhotoViewModel.kt:91`).
 
 ### 4.4 Silhouette and outline (Wu / Potrace route)
 
-`PhotoViewModel.kt:378–411`. Raster as in 4.3 (128/192/256 px). Two inputs:
+Raster as in 4.3 (default 192 px, section 4.7). Two inputs:
 
 - Otsu on → `RedworkPipeline.traceMask` on the binary mask (`:393–404`).
 - otherwise → `RedworkPipeline.trace`: Wu 2 colours, background = colour of pixel 0. On an
   `IllegalArgumentException` other than `PHOTO_TOO_COMPLEX`, with contrast 1.0, retry **once** with
   `photoContrastStretch` (min/max per channel, `PhotoPreparationPolicy.kt:17`) (`:406–411`).
 
-Potrace small-speck filter: `photoMinimumArea(detail)` = 1.0 / 0.5 / 0.25 mm² for detail 0/1/2
-(`PhotoPreparationPolicy.kt:15`), converted to pixels as `max(2, ceil(mm² / px²))` and Potrace keeps
-contours with **area > limit** (`image/RedworkPipeline.kt:101–102`). Basis: photo simplification presets
+Potrace small-speck filter: the chosen piece area (default 0.5 mm², the former detail 1;
+0.25 and 1.0, the former detail 2 and 0, are also steps), converted to pixels as `max(2, ceil(mm² / px²))`;
+Potrace keeps contours with **area > limit** (`image/RedworkPipeline.kt:101–102`). "Off" (0) therefore still
+drops specks of ≤ 2 pixels, the Potrace default. Basis: photo simplification presets
 (`qa/photo-silhouette-performance.md`), not a sewing-safety rule. Upstream Potrace default `turdsize = 2`.
 
 ### 4.5 Contour budget (all raster modes)
 
 `maxContours = 128` (`PhotoViewModel.kt:381, :397`; `ColorDrawingPipeline.MAX_REGION_CONTOURS`, `:34`).
 More than 128 → `PHOTO_TOO_COMPLEX` before stitches are generated (`RedworkPipeline.kt:105`,
-`ColorDrawingPipeline.kt:123`), shown as "too complex" with a "lower detail" button
-(`PhotoViewModel.lowerDetail` `:314`; in colour mode it only steps thread texture).
+`ColorDrawingPipeline.kt:123`), shown as "too complex". The user lowers resolution or raises the piece area;
+resolution is never lowered automatically (user decision 2026-11-01). The "lower detail" button remains only
+for thread texture (`PhotoViewModel.lowerDetail`, `:342`).
 In colour mode only contours larger than `max(2, ceil(3.0 mm² / px²))` pixels count toward the budget
 (`MINIMUM_REGION_AREA_MM2 = 3.0`, `:25`; legacy value kept only for this count).
 Basis: mobile workload budget (`qa/photo-silhouette-performance.md`); measured on 127 pack inputs at
@@ -162,6 +168,25 @@ Basis: mobile workload budget (`qa/photo-silhouette-performance.md`); measured o
 | Maximum picture width | `PhotoPreparationPolicy.kt:8–9` | `floor(min(W − 1, (H − 1)·W/H)) / 10` mm → 99.9 mm on 100×100 | inclusive | AGENTS.md P2/P2a (0..units−1). |
 | Slider | `photoInkWidthRange` `PhotoCrop.kt:47–50` | the slider shows **embroidery (ink)** width; frame width = ink ÷ ink-ratio | inclusive, 0.1 mm steps | Ink ratio is size-independent (`:40–44`). Re-traces only when the change is ≥ 0.05 mm (`PhotoViewModel.kt:201`). |
 | SVG range | `pictureWidthRange` `PictureSizePolicy.kt:11–14` | 20 mm .. floor(min(W − 1, (H − 1)/aspect)) / 10 | inclusive | P2. |
+| Size title | `EmbroiderySizeSlider.kt:31, :48`; `photoInkAspect` `PhotoCrop.kt:47` | "width × height mm (in)", height = width × traced ink aspect (SVG: art aspect), one decimal in mm | — | User request 2026-11-01. Inches use the app's `Dimensions.inches` (3.0 shows as "3"). |
+
+### 4.7 Detail controls: resolution and small-piece area (beta.7)
+
+Two independent step sliders on the picture screen in every mode (hidden with thread texture). Basis: user
+decisions 2026-11-01. Code: `PhotoPreparationPolicy.kt:15–43`, `PhotoViewModel.kt:82–103`,
+`PhotoScreen.kt:332` (`DetailControls`), `:355` (`StepSlider`).
+
+| Item | Value | Boundary / rule |
+|---|---|---|
+| Resolution steps | 128, 181, 256, 362, 512, 724, 1024 px (×√2) | Top = the existing colour limit 1024 (user decision; 1448 was dropped). |
+| Input limit | steps above the decoded picture's long side are hidden | `resolutionSteps(default, sourceEdge)`, inclusive: a 1024px picture keeps 1024, a 1023px one stops at 724. |
+| Mode defaults | colour 1024 (crop, never scaled up); silhouette, outline and colour B&W 192 | The default step is always kept, even above the input (192 for a 128px picture, scaled up as before). |
+| 0.2 mm/px cap | applies to the default only | A chosen step is not cut (user decision: large hoops). At 160×260 1024px is 0.254 mm/px (section 6.6). |
+| Piece area steps | 0.25, 0.5, 1, 2, 4, 8, 16 mm² (×2, diameter ×√2), plus "off" for silhouette/outline | Colour has no "off": on complex line art it took 208 s and then hit a density block (section 6.6). |
+| Piece area defaults | colour π mm² (2mm diameter, shown "3.14"), silhouette/outline 0.5 mm² | The default is inserted as its own step, so the default result is unchanged. |
+| Mode / B&W change | both sliders return to the mode default | `PhotoViewModel.kt:103, :336`. |
+| Applied resolution | the label shows "(actual N px)" when the traced long side differs | `appliedResolutionPx`, `:372`. |
+| Commit | once on release; a tap commits the tapped step | `StepSlider` reads the slider state when the gesture ends. Before the fix a tap committed the old value captured at composition (field bug 2026-11-01; `StepSliderTapTest`). |
 
 ## 5. Thread assignment (colour modes)
 
@@ -240,11 +265,43 @@ them, that **non-border** region falls back to tatami (`svg/StitchTypeRule.kt:60
 - Travel clamping (`FillRouting.clampPath`) prepares the region's 1e-6px buffer once per polygon
   (`clampArea`, JTS `PreparedGeometryFactory`) and tests `covers` on it. The original Ink/Stitch v3.3.0
   `lib/utils/clamp_path.py` also uses a prepared geometry (`prep(polygon.buffer(1e-9))`, rebuilt per call).
-  Measured on a line-art picture whose largest region has 42 holes: region time 36.6 s → 5.9 s on a PC JVM
-  with byte-identical stitches (`WolfLineArtRegressionTest`).
+  Before, `clampPath` rebuilt `polygon.buffer(1e-6)` and ran an unprepared `covers()` for every travel leg.
+  Measured on the wolf line art, whose largest region has 42 holes and 1,615 points: on a PC JVM 36.6 s of the
+  37 s were in this region; after the fix the region took 5.9 s (commit `adc1de0b`), and 4.8 s in the
+  integrator's later PC run (conditions not recorded in the repository). On the user's phone the same picture
+  went from more than 134 s to 13 s (user measurement, 2026-11-01). Stitches are byte-identical
+  (`WolfLineArtRegressionTest` digests).
 - After 60 s (`PHOTO_GENERATION_TIMEOUT_MS = 60_000`, `:5`, inclusive `≥`) the screen asks "wait 1 more
   minute / stop" (`PhotoScreen.kt:103–108`). Waiting sets the allowance to `max(elapsed, allowance) + 60 s`
   (`:9–10`); repeatable. Basis: user request ("one-minute decision interval").
+
+### 6.6 Measurements for the detail controls (beta.7)
+
+PC JVM, production trace → generate → PES → `SewoutCheck` route, 99.9 mm, 4 colours, one axis changed at a time
+(the other at its mode default). Tool: `./gradlew :engine:detailSplitGrid` (`DetailSplitCli`; inputs are never
+copied). Outputs and comparison sheets: `/tmp/myembro-detail-split/axes/`, `/tmp/myembro-detail-split/koi/`.
+
+Pack drawings (skull, sitting cat, baby T-rex; 1024px sources) and `robot.png`:
+- Resolution 128 → 1024 px changes contours little (skull 19–20, cat 24, T-rex 16–17) and stitches by 1–2 %;
+  edges get smoother (zoomed sheets). Colour never scales up, so `robot.png` (128px) stays at 128.
+- Colour piece area: from 0.25 mm² up the result is almost the default. At 0 ("off", now removed for colour)
+  anti-aliased edge pixels became 1,139–2,056 contours, 1,100–1,900 tiny runs were omitted and stitch generation
+  took 17–23 s instead of 2–4 s.
+- Silhouette piece area: no change on these clean drawings.
+
+Complex line art (koi, 466×280px, whole picture fitted, local input):
+
+| Mode | Piece area (default resolution) | Resolution (default piece area) |
+|---|---|---|
+| Colour | off: 208 s, then blocked (density 32 > 30, P7). 0.25: blocked, 0.1 mm over the hoop (section 10). 0.5: 461 contours (81 counted), 17,620 st. π (default): 63, 18,368 st. 16: 13, 11,568 st. All non-off steps from 0.5 pass. | 128: 81 contours, 10,649 st; 362: 108, 20,348 st; 512 and above = the 466px source: 63, 18,368 st. |
+| Silhouette | off–0.5: 91 contours, 11,292 st; 2: 35, 9,338; 16: 6, 7,326. All pass. | 128: 43; 192 (default): 91; 256 and above: over 128 contours ("too complex"; 130 at 256, 388 at 1024). |
+| Outline | Same contours as silhouette; 3,810 → 1,650 st. | Same contour counts as silhouette. |
+
+Large hoops (skull, 1024px, mode default piece area, each hoop's maximum width): 100×100 0.098 mm/px,
+16,235 st (colour); 130×180 0.176 mm/px, 38,770 st, 5.7 s; 160×260 0.254 mm/px, 64,212 st, 10.5 s. All pass,
+no budget hit.
+
+Emulator 5558, step 2 of the skull: colour 1024 px 1,660 ms, silhouette 192 px 126 ms.
 
 ## 7. Sewing check and hand-off
 
@@ -269,7 +326,8 @@ them, that **non-border** region falls back to tatami (`svg/StitchTypeRule.kt:60
 | Mode | step 2 | Silhouette / Outline / Colour | Colour | — | `PhotoScreen.kt:131–137` |
 | Colour count | step 2, colour | 2–6, step 1 | 4 (AI: requested value) | — | `PhotoScreen.kt:184–186`, `PhotoViewModel.kt:115–118` |
 | B&W | step 2, colour | on/off | off | — | `PhotoScreen.kt:180` |
-| Detail | step 2, silhouette/outline | 0 / 1 / 2 (128 / 192 / 256 px) | 1 | hidden in colour mode | `PhotoScreen.kt:193–198` |
+| Resolution | step 2, all modes | 128–1024 px, ×√2 steps, ≤ picture long side | colour 1024, others 192 | hidden with thread texture | section 4.7 |
+| Small-piece area | step 2, all modes | colour 0.25–16 mm²; silhouette/outline off, 0.25–16 mm² | colour π (3.14), others 0.5 | disabled for colour B&W; hidden with thread texture | section 4.7 |
 | Noise | step 2 | off / weak / medium / strong (0/3/5/7) | colour off, mono 3 | disabled on alpha bypass | `PhotoScreen.kt:141–149` |
 | Contrast | step 2 | 0.5–2.0 | 1.0 | disabled on alpha bypass | `PhotoScreen.kt:150–155` |
 | Otsu | step 2, mono | on/off | off | not offered in colour | `PhotoScreen.kt:156–160` |
@@ -284,7 +342,7 @@ Apply always runs the full sewing check; a blocked apply keeps the previous sett
 
 | Control | Range | Default | Blocked when | Code |
 |---|---|---|---|---|
-| Type | Fill / Satin / Running | from generation | Satin: `SATIN_GEOMETRY_UNSUPPORTED` (shape cannot be satin), `SATIN_GENERATION_FAILED`, `SATIN_STITCH_TOO_LONG` (> 12.0 mm at the current scale, P8). Running: `NO_RUNNING_PATH`. Fill: `EMPTY_FILL_REGION`. Disabled options stay visible with a reason. | `BlockStitchCapabilities.kt:36–46, :77`; `BlockEditScreen.kt:336` |
+| Type | Fill / Satin / Running / Empty | from generation | Satin: `SATIN_GEOMETRY_UNSUPPORTED` (shape cannot be satin), `SATIN_GENERATION_FAILED`, `SATIN_STITCH_TOO_LONG` (> 12.0 mm at the current scale, P8). Running: `NO_RUNNING_PATH`. Fill: `EMPTY_FILL_REGION`. Disabled options stay visible with a reason. | `BlockStitchCapabilities.kt:36–46, :77`; `BlockEditScreen.kt:336` |
 | Texture (fill) | Basic (`tatami_fill`), Pattern (`meander_fill`, tile grid), Contour (`contour_fill`), Circular (`circular_fill`) | Basic | Gradient not offered (needs colour stops) | `BlockApply.kt:25–26`; `BlockStitchCapabilities.kt:31` |
 | Direction | Auto / Manual angle 0–179° (integer) | Auto | Running: not shown | `BlockEditState.kt:40–44`; `BlockApply.kt:51–52` |
 | Manual angle hatching | thin lines at the angle over the selected blocks, display only | — | not shown for Auto or Running | `BlockEditScreen.kt:116, :270` (`drawHatch`: 1 dp lines, 6 dp gap; white on thread luminance < 0.5, dark otherwise) |
@@ -292,6 +350,21 @@ Apply always runs the full sewing check; a blocked apply keeps the previous sett
 | Order | move selected blocks earlier/later | sewing order | — | `BlockEditScreen.kt:124`; `EditorViewModel.applyBlockOrder` `:580` |
 
 Not available: stitch-only designs (opened PES) and silhouette/outline results (no `ShapeObject`).
+
+**Empty** (beta.7, user decision 2026-11-01): `BlockStitch.Type.EMPTY` (`edit/ShapeObject.kt:24`).
+- The block stays a region of the object but sews nothing: `ShapeBlockRenderer.kt:52` returns no groups,
+  `VectorArt.kt:298` still records the part, `PhotoShapeRenderer.kt:40` uses an empty fragment, and
+  `RegionOrderPatterns.compose` skips it (`RegionOrderPatterns.kt:42`). Its thread therefore leaves the thread
+  list, stitch count, trims and time when no other block uses it.
+- Choosing any other type restores the original stitches; one undo step; works with multi-select and select-all.
+- Canvas: an emptied block is drawn as fabric (no fill, no outline; `BlockEditScreen.kt:250`); taps still hit
+  its shape. The sheet hides direction/density and shows a one-line hint (`:354–356`).
+- Emptying every block of the only object leaves no stitches: the existing sewing check refuses the apply
+  (`EMPTY_DESIGN`, "no stitches") and keeps the previous settings, so an empty design is never saved or sent.
+  With other objects present, one object may be fully emptied.
+- Wolf line art (5558, 2026-11-01): 45 white blocks emptied → 27,167 → 14,853 stitches, 2 → 1 colours, 89 → 39 trims.
+- The AI connection's `set_block_stitch` schema still offers only FILL/SATIN/RUNNING.
+- Tests: `BlockEmptyTest` (vector and photo, restore, JSON round trip, all-empty refusal, undo).
 
 ### 8.3 Editor: other
 
@@ -306,7 +379,8 @@ Not available: stitch-only designs (opened PES) and silhouette/outline results (
 |---|---|---|
 | Contour budget | 128 | Mobile workload; above it generation took minutes and exceeded stitch limits (section 4.5). Exceeding stops before stitches instead of dropping contours. |
 | Colour raster | ≤ 1024 px long side | Matches the pack converter's input size; parity measured at 1024 px. Larger inputs are scaled down, never up. |
-| Mono raster | 128 / 192 / 256 px and ≤ 0.2 mm/px | `qa/photo-silhouette-performance.md`; working at photo resolution is not done. |
+| Resolution maximum | 1024 px, and never above the picture's long side | Existing colour limit (user decision 2026-11-01); 1024² is also Wu's pixel limit. |
+| Default mono raster | 192 px and ≤ 0.2 mm/px | Former detail 1 (`qa/photo-silhouette-performance.md`); kept so the default result is unchanged. |
 | Decode | ≤ 1536 px long edge | Existing memory/time limit. |
 | k-means 10, ΔE 18, 0.5 %, 2 mm | — | Ported converter values; parity is the acceptance criterion. Changing them breaks parity. |
 | Stitch generator parameters | Ink/Stitch v3.3.0 defaults | AGENTS.md: port verified originals with defaults; no tuning UI. |
@@ -319,12 +393,14 @@ Not available: stitch-only designs (opened PES) and silhouette/outline results (
 |---|---|
 | Boundary-colour thread choice | Greedy lighter-first order can give a mid colour a second-best thread when a lighter colour took the nearest one. Reported case: skull picture navy thread **21 vs 23** chosen differently than expected. Input and ΔE values are not recorded in the repository (**unverified** details); needs a reproducible input before any rule change. |
 | Satin gaps at concave corners (crown) | The crown's black border is a polygon ring, so it is exempt from the coverage fallback and keeps satin with small gaps at concave corners (`satin-coverage.md`). Intentional for borders; no fix decided. |
-| No detail slider in colour mode | Colour regions run at the source crop (≤ 1024 px); the hidden `detail` still affects the B&W route (section 4.3). Whether to expose it is open. |
-| Phone timing | Colour regions at 1024 px are timed only on PC JVM (`tools/color-trace/README.md`) and the emulator for older routes; real-phone timing is **not measured**. 2026-11-01 user test on a real phone (beta.6): no noticeable delay (an observation, not a measurement). |
+| Thin pieces at the picture edge | Running outlines of pieces narrower than 1 mm are not clipped like fills, so a curve touching the frame edge can cross it by 0.1 mm. Seen on the koi line art at 0.25 mm² (x −501…499 on a 100 mm hoop); the sewing check blocks the file. Fix options: clip running outlines like fills, or fit the result as silhouette does. Not changed yet. |
+| Palette shifts with resolution | On the skull the dark colour became Brother grey at 256/512 px and navy at 1024 px: the k-means centre moves slightly with resolution. A possible lead for the boundary-colour case above. |
+| Silhouette piece area on clean art | On the pack drawings the piece area changes nothing (no specks); on line art it does (koi 91 → 6 contours). |
+| Phone timing | Colour regions at 1024 px are timed only on PC JVM (`tools/color-trace/README.md`) and the emulator for older routes; real-phone timing is **not measured**. 2026-11-01 user test on a real phone (beta.6): no noticeable delay (an observation, not a measurement). Emulator 5558 step 2 (skull): colour 1024 px 1,660 ms, silhouette 192 px 126 ms. Large region after the clamp fix: section 6.5. |
 | Random generator | Kotlin `Random` sample differs from NumPy: ≤ 60 pixels and palette channel ±1 on the parity inputs. |
 | Max zoom 4×, contrast 0.5–2.0 | **Unverified** product values. |
 | Dense/Sparse density | Disabled until there is a basis. |
-| Large pictures | 7/127 pack pictures exceed 128 contours at 99.9 mm and are refused as too complex. |
+| Large pictures | 7/127 pack pictures exceed 128 contours at 99.9 mm and are refused as too complex. Complex line art too: koi silhouette at 256 px and above (130–388 contours). |
 
 ## 11. Checking a change
 

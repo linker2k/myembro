@@ -21,11 +21,12 @@ Free and open source.
 - 🎁 **136 sample designs.** Open one from **Sample designs** on Home or **Samples** on the Designs tab and it is copied into your own project to change.
 - 🖼️ **Photo or drawing → embroidery.** Pick a picture and choose silhouette, outline or color drawing (2–6 colors). The preview shows the real thread colors.
 - 🔍 **Photo crop.** Zoom out so the whole picture fits in the crop.
+- 🎚️ **Photo detail.** Set the resolution and the small-piece size separately.
 - 🧵 **Thread colors.** Different colors are never merged into the same thread.
-- 🔤 **Lettering.** Type text in Korean or English. 72 embroidery fonts, plus your own TTF fonts. The app picks a stitch type that sews safely.
+- 🔤 **Lettering.** Type text in Korean, English or Japanese kana. 72 embroidery fonts, plus your own TTF fonts. The app picks a stitch type that sews safely.
 - 😀 **Emoji → embroidery.** Search emoji (Korean words work too) and turn one into a design.
 - ✂️ **Edit.** Place, resize and rotate designs and text on the hoop.
-- 🧩 **Block editing.** When you set the fill direction by hand, the angle shows as thin slanted lines.
+- 🧩 **Block editing.** A hand-set fill angle shows as thin slanted lines, and blocks you do not want can be emptied so they are not sewn.
 - 👀 **View.** Open PES, PEC and DST files. See thread colors, play the stitches and check stitch count, size and time.
 - 🔌 **Send to the machine.** 58 Brother embroidery models from the US and Korea. Send PES over a USB cable (SE400) or a USB flash drive.
 - 💾 **Back up.** Save designs, projects, fonts and settings in one ZIP and restore them later.
@@ -103,12 +104,13 @@ If any one is found, saving and sending are blocked. PES files you import are no
 ## Known limitations
 
 - Only the SE400 is tested on a real machine. Other models follow Brother's published specifications.
-- In color drawing, very small pieces (under 3mm²) are removed, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
-- Photo stitch generation stops after 1 minute. Pictures with about 100 color areas can hit this; use lower detail or a smaller crop.
+- In color drawing, small pieces (by default under about 3mm²) take the surrounding color, and background slits narrower than 0.4mm between color areas are covered by the 0.2mm color overlap.
+- Very complex pictures can stop as "too complex"; lower the resolution, raise the piece size or crop smaller.
 
 ## Planned
 
 - **Pull compensation** · in progress
+- **Chinese (Han character) lettering** · in development
 - **Draw a line to set the stitch angle** · planned
 - **Edit outline points directly** · under consideration
 
