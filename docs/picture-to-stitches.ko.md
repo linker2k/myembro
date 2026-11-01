@@ -222,7 +222,8 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 - 타타미 영역 하나 안에서는 경로 그리기 루프(`FillRouting.route`의 `for ((index, edge) in collapsed.withIndex())`)가
   채움 단계마다 약 100번 `region_step=i/n`을 보냄. 밑땀과 본땀은 따로 셈.
   전달 경로는 `DefaultTatami.stitchGroups` → `InkAutoFill.paths` → `TatamiFill.fill`이고, 화면에는 '이 영역 i / n'으로 표시.
-  그 앞 단계(줄, 그래프, 이동 그래프)에는 영역 내부 진행 표시가 없음(사용자 결정 2026-11-01).
+  그 앞 단계는 `region_stage=rows` / `region_stage=route`(`TatamiFill.fill`, `FillRouting.route`)로
+  숫자 없이 단계 이름('줄 만드는 중', '경로 계산 중')만 표시(사용자 결정 2026-11-01).
   같은 루프가 스레드 interrupt를 확인하므로, 큰 영역에서도 '그만두기'를 누르면 약 0.5초 안에 멈춤(에뮬레이터 측정, 2026-11-01).
 - 이동 땀 잘라 맞추기(`FillRouting.clampPath`)는 영역의 1e-6px 버퍼를 폴리곤마다 한 번 prepared로 만들고
   (`clampArea`, JTS `PreparedGeometryFactory`) 그 위에서 `covers`를 판정. Ink/Stitch v3.3.0 원본

@@ -21,6 +21,17 @@ import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.alg.matching.blossom.v5.KolmogorovWeightedPerfectMatching
 import kotlin.math.*
 
+/** Progress inside one fill pass: row creation, route planning, then path rendering [done]/[total]. */
+data class FillProgress(val stage: Stage, val done: Int = 0, val total: Int = 0) {
+    enum class Stage { ROWS, ROUTE, RENDER }
+    /** Photo generation checkpoint text, read by the photo screen. */
+    val checkpoint: String get() = when (stage) {
+        Stage.ROWS -> "region_stage=rows"
+        Stage.ROUTE -> "region_stage=route"
+        Stage.RENDER -> "region_step=$done/$total"
+    }
+}
+
 /** Original fill multigraph / Hierholzer / disappearing underpath edges, without networkx. */
 object FillRouting {
     fun routeSegments(shape: Geometry, segments: List<List<FillPoint>>, startingPoint: FillPoint?,
@@ -39,7 +50,7 @@ object FillRouting {
     internal fun route(shape: Geometry, segments: List<List<FillPoint>>, startingPoint: FillPoint?,
         endingPoint: FillPoint?, underpath: Boolean, runningLengthPx: Double, tolerancePx: Double,
         angle: Double, skipLast: Boolean, gapFillRows: Int = 0,
-        progress: ((done: Int, total: Int) -> Unit)? = null,
+        progress: ((FillProgress) -> Unit)? = null,
         render: (List<FillPoint>, Boolean) -> List<FillPoint>): List<FillPoint> {
         if (shape.isEmpty || segments.isEmpty()) return emptyList()
         require(segments.size <= 200_000)
@@ -59,6 +70,7 @@ object FillRouting {
             return result
         }
         val polygon = parts.single()
+        progress?.invoke(FillProgress(FillProgress.Stage.ROUTE))
         val outlines = listOf(polygon.exteriorRing) + (0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
         val fill = Graph()
         for ((index, segment) in segments.withIndex()) {
@@ -126,7 +138,7 @@ object FillRouting {
         val progressStep = maxOf(1, collapsed.size / 100)
         for ((index, edge) in collapsed.withIndex()) {
             if (Thread.currentThread().isInterrupted) throw InterruptedException()
-            if (progress != null && ((index + 1) % progressStep == 0 || index == collapsed.lastIndex)) progress(index + 1, collapsed.size)
+            if (progress != null && ((index + 1) % progressStep == 0 || index == collapsed.lastIndex)) progress(FillProgress(FillProgress.Stage.RENDER, index + 1, collapsed.size))
             if (edge.segment()) {
                 val source = edge.edge.points ?: listOf(edge.a.point(), edge.b.point())
                 val rendered = render(source, source.first().distance(edge.a.point()) > source.last().distance(edge.a.point()))

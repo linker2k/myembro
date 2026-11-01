@@ -20,7 +20,7 @@ object InkAutoFill {
 
     fun paths(region: PolygonRegion, settings: Settings = Settings(),
         startingPoint: Point? = null, endingPoint: Point? = null, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null,
-        progress: ((done: Int, total: Int) -> Unit)? = null): List<List<Point>> {
+        progress: ((FillProgress) -> Unit)? = null): List<List<Point>> {
         require(expandMm.isFinite())
         if (region.isEmpty) return emptyList()
         val scale=PIXELS_PER_MM/10

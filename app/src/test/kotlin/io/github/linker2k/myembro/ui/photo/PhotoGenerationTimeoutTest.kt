@@ -32,12 +32,16 @@ class PhotoGenerationTimeoutTest {
         assertEquals(421, progress.stitches)
         assertEquals(progress.copy(phase="pes"), progress.checkpoint("pes"))
         assertEquals(500, progress.checkpoint("stitches_ready=500").stitches)
-        val inside = progress.checkpoint("region_step=1200/3797")
+        val route = progress.checkpoint("region_stage=rows").checkpoint("region_stage=route")
+        assertEquals("route", route.regionStage)
+        assertEquals(null, route.regionSteps)
+        val inside = route.checkpoint("region_step=1200/3797")
         assertEquals(1200, inside.regionStep)
         assertEquals(3797, inside.regionSteps)
         assertEquals("stitches", inside.phase)
         val next = inside.checkpoint("regions=3/3;stitches=900")
         assertEquals(null, next.regionStep)
         assertEquals(null, next.regionSteps)
+        assertEquals(null, next.regionStage)
     }
 }

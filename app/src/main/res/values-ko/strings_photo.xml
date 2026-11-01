@@ -85,6 +85,8 @@
     <string name="photo_density_location">밀집 주의: 바늘 %5$d회 · 왼쪽 위 기준 x %1$s–%2$s · y %3$s–%4$s. 저장·전송할 수 있어요.</string>
     <string name="photo_skipped_outlines_unconfirmed">원래 사진에서도 외곽이 빠진 곳이 있을 수 있습니다. 예전 버전에서 만든 사진이라 몇 곳인지 셀 수 없습니다.</string>
     <string name="photo_regions_progress">영역 %1$,d / %2$,d개</string>
+    <string name="photo_region_stage_rows">이 영역: 줄 만드는 중</string>
+    <string name="photo_region_stage_route">이 영역: 경로 계산 중</string>
     <string name="photo_region_step_progress">이 영역 %1$,d / %2$,d</string>
     <string name="photo_stitches_progress">지금까지 %1$,d땀</string>
     <string name="photo_progress_check">도안을 점검하고 있어요…</string>

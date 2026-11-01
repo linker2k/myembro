@@ -22,9 +22,9 @@ object DefaultTatami {
         stitchLength=40.0,travelLength=25.0,staggers=4,underpath=true)
     private val underlay = top.copy(angleDegrees=90.0,rowSpacing=7.5)
 
-    /** [progress] reports path steps inside one fill pass (underlay, then top); it restarts per pass. */
+    /** [progress] reports stages and path steps inside one fill pass (underlay, then top); it restarts per pass. */
     fun stitchGroups(region: PolygonRegion, thread: EmbThread, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null,
-        progress: ((done: Int, total: Int) -> Unit)? = null): List<StitchGroup> {
+        progress: ((io.github.linker2k.myembro.engine.inkstitch.stitches.FillProgress) -> Unit)? = null): List<StitchGroup> {
         require(expandMm.isFinite())
         if (region.isEmpty) return emptyList()
         val locks = LockStitches.fromParameters(LockStitchParameters())

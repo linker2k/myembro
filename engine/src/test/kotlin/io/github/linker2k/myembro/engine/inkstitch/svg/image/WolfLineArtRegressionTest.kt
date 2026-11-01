@@ -30,7 +30,7 @@ class WolfLineArtRegressionTest {
         val pixels = PhotoCorrections.adjust(w, h, image.getRGB(0, 0, w, h, null, 0, w), false, 0, 1f).pixels
         val preview = ColorDrawingPipeline.traceRegions(w, h, pixels, widthMm, 4)
         val steps = mutableListOf<String>()
-        val result = ColorDrawingPipeline.generate(preview, hoop) { if (it.startsWith("region_step=")) steps += it }
+        val result = ColorDrawingPipeline.generate(preview, hoop) { if (it.startsWith("region_")) steps += it }
         assertEquals(46, result.regions.size)
         assertEquals(27_167, result.pattern.stitchCount)
         assertEquals("b30b88db81b9543d8bed878976b958e82a445a05d55aa75a227a4fd832a0d35a", digest(result.pattern.stitches))
@@ -53,14 +53,21 @@ class WolfLineArtRegressionTest {
             minAreaMm2 = PhotoPreparationPolicy.photoMinimumArea(2), maxContours = 128)
         val steps = mutableListOf<String>()
         val result = RedworkPipeline.generate(outline, thread, photoMode = true, style = PhotoStyle.SILHOUETTE, hoop = hoop) {
-            if (it.startsWith("region_step=")) steps += it }
+            if (it.startsWith("region_")) steps += it }
         assertEquals(15_816, result.pattern.stitchCount)
         assertEquals("37717af911f087000ce1210e9126b473b3c80cb95c9377f0f1cb3c58eee47aed", digest(result.pattern.stitches))
         assertProgress(steps)
     }
 
-    /** Each fill pass counts up within 1..total and restarts only after reaching its total. */
-    private fun assertProgress(steps: List<String>) {
+    /** Each pass names its stages before counting up within 1..total. */
+    private fun assertProgress(events: List<String>) {
+        assertTrue(events.isNotEmpty())
+        // Path steps are always announced: rows before route, route before its first step.
+        assertEquals("region_stage=rows", events.first())
+        events.zipWithNext().filter { (_, b) -> b == "region_stage=route" }.forEach { (a, _) -> assertTrue(a != "region_stage=route") }
+        events.zipWithNext().filter { (a, b) -> b.startsWith("region_step=") && !a.startsWith("region_step=") }
+            .forEach { (a, _) -> assertEquals("region_stage=route", a) }
+        val steps = events.filter { it.startsWith("region_step=") }
         assertTrue(steps.isNotEmpty())
         val pairs = steps.map { it.removePrefix("region_step=").split('/').map(String::toInt) }
         assertTrue(pairs.all { (done, total) -> done in 1..total })

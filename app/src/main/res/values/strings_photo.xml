@@ -85,6 +85,8 @@
     <string name="photo_density_location">Density warning: %5$d needle drops · x %1$s–%2$s · y %3$s–%4$s (from top left). Saving and sending are allowed.</string>
     <string name="photo_skipped_outlines_unconfirmed">Outlines may also have been left out of the original picture. This picture was made in an older version, so the app cannot count them.</string>
     <string name="photo_regions_progress">Regions %1$,d / %2$,d</string>
+    <string name="photo_region_stage_rows">This region: making rows</string>
+    <string name="photo_region_stage_route">This region: planning the path</string>
     <string name="photo_region_step_progress">This region %1$,d / %2$,d</string>
     <string name="photo_stitches_progress">%1$,d stitches made so far</string>
     <string name="photo_progress_check">Checking the design…</string>

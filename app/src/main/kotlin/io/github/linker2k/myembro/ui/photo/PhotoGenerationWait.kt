@@ -11,14 +11,16 @@ internal fun photoExtendedAllowance(elapsedMs: Long, allowanceMs: Long): Long =
 
 internal data class PhotoGenerationProgress(val phase: String = "stitches",
     val completedRegions: Int? = null, val totalRegions: Int? = null, val stitches: Int? = null,
-    /** Path steps inside the region being sewn (one fill pass); cleared when a region completes. */
-    val regionStep: Int? = null, val regionSteps: Int? = null) {
+    /** Stage, then path steps, inside the region being sewn (one fill pass); cleared when a region completes. */
+    val regionStage: String? = null, val regionStep: Int? = null, val regionSteps: Int? = null) {
     fun checkpoint(value: String): PhotoGenerationProgress {
         if (value.startsWith("regions=")) {
             val parts = value.removePrefix("regions=").split(';', '/')
             return copy(completedRegions = parts[0].toInt(), totalRegions = parts[1].toInt(),
-                stitches = parts[2].removePrefix("stitches=").toInt(), regionStep = null, regionSteps = null)
+                stitches = parts[2].removePrefix("stitches=").toInt(), regionStage = null, regionStep = null, regionSteps = null)
         }
+        if (value.startsWith("region_stage="))
+            return copy(regionStage = value.removePrefix("region_stage="), regionStep = null, regionSteps = null)
         if (value.startsWith("region_step=")) {
             val parts = value.removePrefix("region_step=").split('/')
             return copy(regionStep = parts[0].toInt(), regionSteps = parts[1].toInt())

@@ -233,8 +233,9 @@ them, that **non-border** region falls back to tatami (`svg/StitchTypeRule.kt:60
 - Inside one tatami region, `region_step=i/n` reports the path-rendering loop (`FillRouting.route`,
   `for ((index, edge) in collapsed.withIndex())`), about 100 times per fill pass; underlay and top count
   separately. It is passed down `DefaultTatami.stitchGroups` → `InkAutoFill.paths` → `TatamiFill.fill`.
-  The screen shows "This region i / n". The earlier steps of a region (rows, graph, travel graph) have no
-  in-region progress (user decision 2026-11-01). The same loop checks the thread interrupt, so "Stop"
+  The screen shows "This region i / n". Before that, `region_stage=rows` / `region_stage=route`
+  (`TatamiFill.fill`, `FillRouting.route`) show only the stage name ("making rows", "planning the path"),
+  without numbers (user decision 2026-11-01). The same loop checks the thread interrupt, so "Stop"
   ends a large region within about 0.5 s (emulator measurement, 2026-11-01).
 - Travel clamping (`FillRouting.clampPath`) prepares the region's 1e-6px buffer once per polygon
   (`clampArea`, JTS `PreparedGeometryFactory`) and tests `covers` on it. The original Ink/Stitch v3.3.0
