@@ -199,6 +199,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
     internal fun selectSaveKind(kind: EditorSaveKind) { savePrompt = savePrompt?.copy(kind = kind) }
+    internal fun selectSaveLocation(toFile: Boolean) { savePrompt = savePrompt?.copy(toFile = toFile) }
     internal fun cancelNamedSave() { savePrompt = null; overwriteName = null; continueAfterNamedSave = false }
     internal fun hideSavePrompt() { savePrompt = null }
     internal fun cancelOverwrite() {
@@ -864,8 +865,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** "Save as a file" for PES: the same checks and bytes as an app save, written to the picked document. */
+    internal fun exportPes(name: String, uri: Uri) = writePes(name, overwrite = false, uri = uri)
     /** Named PES export; replacement requires explicit confirmation. */
-    private fun writePes(name: String, overwrite: Boolean) {
+    private fun writePes(name: String, overwrite: Boolean, uri: Uri? = null) {
         if (interactionBlocked || gestureInProgress || project.objects.none { it.visible }) return
         endGesture()
         val snapshot = project
@@ -879,19 +882,25 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes", getApplication<Application>().resources)
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings.copy(hoop = snapshot.hoop))
-                    writeNamedDesign(projectDir, name, "pes", overwrite, bytes).also {
-                        if (io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern) == io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
-                            io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).record(bytes)
+                    val file = if (uri == null) writeNamedDesign(projectDir, name, "pes", overwrite, bytes) else {
+                        getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                            ?: error(getApplication<Application>().getString(R.string.editor_file_write_error))
+                        null
                     }
+                    if (io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern) == io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                        io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).record(bytes)
+                    file
                 }
-                documentName = saved.nameWithoutExtension
-                documentFile = saved
+                documentName = saved?.nameWithoutExtension ?: designSaveStem(name)
+                if (saved != null) documentFile = saved
                 documentKind = EditorSaveKind.PES
                 documents.markSaved(snapshot)
                 sync()
-                lastSavedFile = saved
-                designs = withContext(Dispatchers.IO) { library.list() }
-                message = getApplication<Application>().getString(R.string.editor_saved, saved.name)
+                if (saved != null) {
+                    lastSavedFile = saved
+                    designs = withContext(Dispatchers.IO) { library.list() }
+                }
+                message = getApplication<Application>().getString(R.string.editor_saved, saved?.name ?: "${designSaveStem(name)}.pes")
                 finishNamedSave() // Unsaved-change dialog: continue after a PES save too.
             } catch (e: CancellationException) { throw e
             } catch (e: EditorSaveConflict) {

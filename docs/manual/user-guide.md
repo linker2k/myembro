@@ -49,7 +49,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 ![Editor with the myembro logo](../images/manual/en/03-editor-logo.png)
 
 - Top: back, home, **Ask AI** (sparkle, chapter 12), undo/redo, menu. Below it the hoop chip (for example **Hoop 100×100mm**), **Edit blocks**, the object count and the **Save** button.
-- **Save** (button or menu) asks for a name and a format (.myembro or .pes); a design opened from the app offers **Save (replace)** or **Save as…**.
+- **Save** (button or menu) asks for a name, a format (.myembro or .pes) and where to save (in the app or as a file); a design opened from the app offers **Save (replace)** or **Save as…**.
 - Left tools: select, pan (hand), fit to view, grid.
 - **Layers** panel: each design or lettering object is a layer; the eye icon shows or hides it, **+** adds one.
 - Tap an object to select it. Drag the corner handles to resize; the size labels show mm and inches.

@@ -90,6 +90,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showJumps by rememberSaveable { mutableStateOf(false) }
         var preview by remember { mutableFloatStateOf(1f) }
         var exportName by remember { mutableStateOf("myembro") }
+        var exportKind by remember { mutableStateOf(EditorSaveKind.PROJECT) }
         val enabled = !vm.interactionBlocked && !vm.gestureInProgress
         val importDesign = rememberDesignImporter(
             onFiles = { vm.importDesigns(it); preview = 1f },
@@ -102,7 +103,11 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         val importProgress by vm.importProgress.collectAsState()
         DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-            if (uri != null) vm.saveProject(exportName, uri, afterSave = vm::finishNamedSave) else vm.cancelNamedSave()
+            when {
+                uri == null -> vm.cancelNamedSave()
+                exportKind == EditorSaveKind.PES -> vm.exportPes(exportName, uri)
+                else -> vm.saveProject(exportName, uri, afterSave = vm::finishNamedSave)
+            }
         }
         val snackbar = remember { SnackbarHostState() }
         val message = vm.message
@@ -384,11 +389,13 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             onSaveAs = vm::saveOpenedFileAs, onDismiss = vm::cancelSaveChoice) }
         vm.savePrompt?.takeIf { it.form }?.let { request ->
             SaveDesignDialog(request, pesEnabled = vm.project.objects.any { it.visible }, onKind = vm::selectSaveKind,
-                onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
+                onLocation = vm::selectSaveLocation, onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
                 onExport = { name ->
                     exportName = name
+                    exportKind = request.kind
                     vm.hideSavePrompt()
-                    exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro")
+                    val extension = ".${request.kind.extension}"
+                    exportDocument.launch(if (name.endsWith(extension, ignoreCase = true)) name else "$name$extension")
                 })
         }
         vm.overwriteName?.let { name -> AlertDialog(

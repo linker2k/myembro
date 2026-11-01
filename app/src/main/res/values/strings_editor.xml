@@ -143,4 +143,6 @@
     <string name="editor_save_choice_body">This design was opened from %1$s. Replace that file, or save a copy under a new name?</string>
     <string name="editor_save_replace">Save (replace)</string>
     <string name="editor_save_as">Save as…</string>
+    <string name="editor_save_location">Save to</string>
+    <string name="editor_file_write_error">Cannot write this file.</string>
 </resources>

@@ -99,10 +99,10 @@ private fun NumericField(value: String, onChange: (String) -> Unit, label: Int, 
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
-/** One save dialog for both formats. The name stays editable; "Export file" exists for projects only. */
+/** One save dialog: name, format and location, then one Save button. */
 @Composable
 internal fun SaveDesignDialog(prompt: EditorSavePrompt, pesEnabled: Boolean, onKind: (EditorSaveKind) -> Unit,
-    onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: (String) -> Unit) {
+    onLocation: (Boolean) -> Unit, onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: (String) -> Unit) {
     var name by remember(prompt.suggestedName) { mutableStateOf(prompt.suggestedName) }
     AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_save_title)) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -115,14 +115,17 @@ internal fun SaveDesignDialog(prompt: EditorSavePrompt, pesEnabled: Boolean, onK
                     Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-        } },
-        confirmButton = { TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_save_local)) } },
-        dismissButton = {
-            Row {
-                if (prompt.kind == EditorSaveKind.PROJECT) TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
+            Text(stringResource(R.string.editor_save_location), style = MaterialTheme.typography.labelLarge)
+            for ((toFile, label) in listOf(false to R.string.editor_save_local, true to R.string.editor_export_file)) {
+                Row(Modifier.fillMaxWidth().clickable { onLocation(toFile) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(prompt.toFile == toFile, { onLocation(toFile) })
+                    Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                }
             }
-        })
+        } },
+        confirmButton = { TextButton(onClick = { if (prompt.toFile) onExport(name) else onSave(name) }, enabled = name.isNotBlank()) {
+            Text(stringResource(R.string.editor_save_title)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) } })
 }
 
 /** Saving a design opened from an app file: replace that file (confirmed next) or save under a new name. */

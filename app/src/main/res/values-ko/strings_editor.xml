@@ -143,4 +143,6 @@
     <string name="editor_save_choice_body">%1$s 파일을 열어 편집했습니다. 이 파일을 덮어쓸까요, 새 이름으로 저장할까요?</string>
     <string name="editor_save_replace">저장(덮어쓰기)</string>
     <string name="editor_save_as">다른 이름으로 저장</string>
+    <string name="editor_save_location">저장 위치</string>
+    <string name="editor_file_write_error">이 파일에 쓸 수 없습니다.</string>
 </resources>

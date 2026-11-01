@@ -128,4 +128,26 @@ class EditorSaveFlowTest {
         assertNull(vm.saveChoice)
         assertEquals(EditorSavePrompt(EditorSaveKind.PES, "늑대_2"), vm.savePrompt)
     }
+
+    @Test fun oneDialogChoosesNameFormatAndLocationAndPesCanGoToAPickedFile() {
+        val sample = File(app.cacheDir, "sample.pes").apply { writeBytes(File("../engine/src/test/resources/fixtures/stops.v1.pes").readBytes()) }
+        val vm = editor()
+        vm.editDesign(sample, "봄날")
+        settle(vm) { vm.project.objects.isNotEmpty() }
+        vm.requestSave()
+        settle(vm) { vm.savePrompt != null }
+        assertFalse(vm.savePrompt!!.toFile)
+        vm.selectSaveLocation(true)
+        assertEquals(EditorSavePrompt(EditorSaveKind.PES, "봄날_2", toFile = true), vm.savePrompt)
+        vm.selectSaveKind(EditorSaveKind.PROJECT) // both formats can go to a file
+        assertEquals(EditorSavePrompt(EditorSaveKind.PROJECT, "봄날_2", toFile = true), vm.savePrompt)
+        vm.selectSaveKind(EditorSaveKind.PES)
+        vm.hideSavePrompt() // the screen opens the system file picker here
+        val picked = File(app.cacheDir, "picked.pes").apply { delete() }
+        vm.exportPes("봄날_2", android.net.Uri.fromFile(picked))
+        settle(vm) { picked.isFile || vm.exportProblems != null || vm.message != null }
+        assertNull(vm.exportProblems)
+        assertEquals("#PES", picked.readBytes().copyOf(4).toString(Charsets.ISO_8859_1))
+        assertFalse(File(designs, "봄날_2.pes").exists(), "a file export does not also save in the app")
+    }
 }
