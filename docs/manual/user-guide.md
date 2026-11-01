@@ -50,7 +50,7 @@ Install the APK from the latest GitHub pre-release. The home screen opens first.
 
 - Top: back, home, **Ask AI** (sparkle, chapter 12), undo/redo, menu. Below it the hoop chip (for example **Hoop 100×100mm**), **Edit blocks**, the object count and the **Save** button.
 - **Save** (button or menu) asks for a name, a format (.myembro or .pes) and where to save (in the app or as a file); a design opened from the app offers **Save (replace)** or **Save as…**.
-- Left tools: select, pan (hand), fit to view, grid.
+- Left tools: select, pan (hand), fit to view, magnet snap (magnet icon; when on, a moved design lines up with the hoop center or the edges and centers of other designs).
 - **Layers** panel: each design or lettering object is a layer; the eye icon shows or hides it, **+** adds one.
 - Tap an object to select it. Drag the corner handles to resize; the size labels show mm and inches.
 - Bottom sheet tabs **Transform**, **Stitches**, **Colors**. In Transform, type **Width (mm)** / **Height (mm)** (the lock keeps the aspect ratio), set rotation, flip, then tap **Apply**.
@@ -66,7 +66,7 @@ Designs made from a photo, an emoji or an SVG keep their color areas as blocks. 
 1. Tap a region on the canvas. Turn on **Multi-select** to pick several, or tap **Select all**.
 2. Choose the **Stitch type**: **Fill**, **Satin** or **Running**. A type the region cannot use is greyed out, with the reason above it (for example *Satin: this shape cannot be satin*).
 3. For Fill, choose the **Texture**: **Basic**, **Pattern** (an Ink/Stitch meander tile), **Contour** or **Circular**.
-4. **Direction**: **Auto**, or **Manual** with a stitch angle.
+4. **Direction**: **Auto**, or **Manual** with a stitch angle. With Manual, thin lines at that angle show on the selected blocks.
 5. **Density**: only **Normal** for now. Dense and sparse come in a later version.
 6. Tap **Apply**. The stitches are made in the background and checked with the real sewing check. A **Cancel** button and the elapsed time show while it works. If the check fails, nothing changes and the previous settings stay.
 

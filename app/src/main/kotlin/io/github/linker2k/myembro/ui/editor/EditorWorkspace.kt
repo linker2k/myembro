@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.materialIcon
+import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,7 +55,23 @@ internal fun EditorToolRail(navigationOnly: Boolean, enabled: Boolean, snapping:
             RailButton(Icons.Default.PanTool, R.string.editor_pan_tool, navigationOnly, enabled, onPan)
             RailButton(Icons.Default.CenterFocusStrong, R.string.editor_fit, false, enabled, onFit)
             HorizontalDivider(Modifier.width(28.dp).padding(vertical = 4.dp))
-            RailButton(Icons.Default.GridOn, R.string.editor_snap, snapping, enabled, onSnap)
+            RailButton(SnapMagnetIcon, R.string.editor_snap, snapping, enabled, onSnap)
+        }
+    }
+}
+
+/** Horseshoe magnet held to a guide line below it; a 24dp filled icon like the Material ones beside it. */
+private val SnapMagnetIcon: ImageVector by lazy {
+    materialIcon(name = "Filled.SnapMagnet") {
+        materialPath {
+            // Arch with legs pointing down.
+            moveTo(5f, 10f); arcTo(7f, 7f, 0f, false, true, 19f, 10f); verticalLineTo(14f); horizontalLineTo(15.5f)
+            verticalLineTo(10f); arcTo(3.5f, 3.5f, 0f, false, false, 8.5f, 10f); verticalLineTo(14f); horizontalLineTo(5f); close()
+            // Pole tips.
+            moveTo(5f, 15f); horizontalLineTo(8.5f); verticalLineTo(17.5f); horizontalLineTo(5f); close()
+            moveTo(15.5f, 15f); horizontalLineTo(19f); verticalLineTo(17.5f); horizontalLineTo(15.5f); close()
+            // Guide line.
+            moveTo(3f, 19f); horizontalLineTo(21f); verticalLineTo(21f); horizontalLineTo(3f); close()
         }
     }
 }

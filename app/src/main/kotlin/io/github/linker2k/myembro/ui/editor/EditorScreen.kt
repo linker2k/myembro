@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -218,7 +220,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 val layersHeight = (maxHeight * 0.3f).coerceIn(112.dp, 248.dp)
                 val canvas: @Composable (Modifier, Boolean) -> Unit = { modifier, floatingTools ->
                     Box(modifier) {
-                        EditorCanvas(vm, fitRequest, Modifier.fillMaxSize(), navigationOnly, showJumps, preview)
+                        EditorCanvas(vm, fitRequest, Modifier.fillMaxSize().clipToBounds(), navigationOnly, showJumps, preview)
                         // Shapes this device could not generate are drawn from their last good stitches: say so.
                         val fallbackCount = if (vm.rendering) 0 else ShapeStitchGuard.failedIds().count { id -> vm.project.find(id)?.visible == true }
                         if (fallbackCount > 0) Surface(color = colors.errorContainer, shape = MaterialTheme.shapes.small,
@@ -233,7 +235,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         if (floatingTools) EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                             onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                             onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
-                            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 36.dp))
+                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 14.dp, top = 36.dp))
                         if (floatingTools && vm.project.objects.isNotEmpty()) MiniLayerPanel(vm, enabled, addDesign, { showLayers = true },
                             Modifier.align(Alignment.TopEnd).padding(top = 36.dp, end = 12.dp).width(miniLayerWidth))
                         if (vm.project.objects.isEmpty()) FilledTonalButton(onClick = addDesign, enabled = enabled,
@@ -259,7 +261,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                         onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                         onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
-                        modifier = Modifier.padding(top = 24.dp))
+                        // The canvas does not clip, so a zoomed design would paint over the rail placed before it.
+                        modifier = Modifier.zIndex(1f).padding(top = 24.dp))
                     canvas(Modifier.weight(1f).fillMaxHeight(), false)
                     Column(Modifier.width(layout.panelWidthDp.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         EditorLayerPanel(vm, addDesign, Modifier.fillMaxWidth().height(layersHeight))

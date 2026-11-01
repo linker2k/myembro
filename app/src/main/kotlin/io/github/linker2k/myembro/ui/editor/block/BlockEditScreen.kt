@@ -44,6 +44,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.luminance
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
@@ -107,8 +112,10 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                     if (outlineNote?.second == true) Text(stringResource(R.string.photo_skipped_outlines_unconfirmed),
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
+                    // A manual angle shows as hatching over the selection while the slider moves; display only.
+                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type != BlockType.RUNNING && selected.isNotEmpty() }
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
-                        vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background) { x, y, lineMm ->
+                        vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background, hatch) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
                 }
             }
@@ -219,7 +226,8 @@ internal class BlockCanvasFit(bounds: RegionBounds?, width: Float, height: Float
 }
 
 @Composable
-internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor: Color, onTap: (Double, Double, Double) -> Unit) {
+internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor: Color, hatchDeg: Int? = null,
+                          onTap: (Double, Double, Double) -> Unit) {
     val outline = MaterialTheme.colorScheme.primary
     val description = stringResource(R.string.block_edit_canvas)
     val touchPx = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.toPx() }
@@ -241,12 +249,38 @@ internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor
             drawPath(rings, color)
             drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
         }
+        if (hatchDeg != null) state.regions.filter { it.id in state.selected }.forEach { r ->
+            drawHatch(regionPaths(r, fit).first, hatchDeg, Color(r.color))
+        }
         state.regions.filter { it.id in state.selected }.forEach { r ->
             val (rings, lines) = regionPaths(r, fit)
             listOf(rings, lines).forEach { path ->
                 drawPath(path, Color.White, style = Stroke(5.dp.toPx()))
                 drawPath(path, outline, style = Stroke(2.5.dp.toPx()))
             }
+        }
+    }
+}
+
+/**
+ * Thin parallel lines at the fill angle, clipped to the region: white on dark thread, dark on light thread
+ * (luminance threshold 0.5 as in FreeDesignSourcesScreen). Screen direction (cos a, -sin a) matches Fill.kt's
+ * row direction (-1, 0).rotate(-a) in the same y-down object frame.
+ */
+private fun DrawScope.drawHatch(rings: Path, deg: Int, thread: Color) {
+    val a = Math.toRadians(deg.toDouble())
+    val dx = cos(a).toFloat(); val dy = -sin(a).toFloat()
+    val gap = 6.dp.toPx()
+    val half = hypot(size.width, size.height) / 2f
+    val c = center
+    val line = if (thread.luminance() < 0.5f) Color.White.copy(alpha = 0.85f) else Color(0xFF1C1B1F).copy(alpha = 0.75f)
+    clipPath(rings) {
+        var t = -half
+        while (t <= half) {
+            // Offset along the normal (-dy, dx), then span the whole canvas along the direction.
+            val ox = c.x - dy * t; val oy = c.y + dx * t
+            drawLine(line, Offset(ox - dx * half, oy - dy * half), Offset(ox + dx * half, oy + dy * half), 1.dp.toPx())
+            t += gap
         }
     }
 }
