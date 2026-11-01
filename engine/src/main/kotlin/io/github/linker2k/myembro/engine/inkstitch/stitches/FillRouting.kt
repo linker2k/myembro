@@ -5,6 +5,8 @@ package io.github.linker2k.myembro.engine.inkstitch.stitches
 import io.github.linker2k.myembro.engine.inkstitch.svg.PIXELS_PER_MM
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.linearref.LengthIndexedLine
+import org.locationtech.jts.geom.prep.PreparedGeometry
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory
 import org.locationtech.jts.operation.overlayng.OverlayNG
 import org.locationtech.jts.operation.overlayng.OverlayNGRobust
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper
@@ -37,6 +39,7 @@ object FillRouting {
     internal fun route(shape: Geometry, segments: List<List<FillPoint>>, startingPoint: FillPoint?,
         endingPoint: FillPoint?, underpath: Boolean, runningLengthPx: Double, tolerancePx: Double,
         angle: Double, skipLast: Boolean, gapFillRows: Int = 0,
+        progress: ((done: Int, total: Int) -> Unit)? = null,
         render: (List<FillPoint>, Boolean) -> List<FillPoint>): List<FillPoint> {
         if (shape.isEmpty || segments.isEmpty()) return emptyList()
         require(segments.size <= 200_000)
@@ -47,7 +50,7 @@ object FillRouting {
             for (part in parts.sortedBy { if (previous == null) it.envelopeInternal.minX else it.distance(FillGeometry.point(previous!!)) }) {
                 val own = segments.filter { part.buffer(1e-6).covers(FillGeometry.line(it)) }
                 val path = route(part, own, previous, endingPoint, underpath, runningLengthPx, tolerancePx,
-                    angle, skipLast, gapFillRows, render)
+                    angle, skipLast, gapFillRows, progress, render)
                 if (path.isNotEmpty()) {
                     result += if (result.isEmpty()) path.first() else path.first().tagged("jump")
                     result += path.drop(1); previous = path.last()
@@ -117,7 +120,13 @@ object FillRouting {
         FillTrace.emit("collapsed_euler_path") { collapsed.joinToString(";") { "${it.a}|${it.b}|${it.edge.key}" } }
         val result = mutableListOf<FillPoint>()
         if (collapsed.isNotEmpty() && !collapsed.first().segment()) result += collapsed.first().a.point()
-        for (edge in collapsed) {
+        // One prepared clamp area per polygon: clamp_path.py also prepares it (prep(polygon.buffer)).
+        val clampArea by lazy { clampArea(polygon) }
+        // About 100 reports; one step is one path edge, the unit that dominates large fills.
+        val progressStep = maxOf(1, collapsed.size / 100)
+        for ((index, edge) in collapsed.withIndex()) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
+            if (progress != null && ((index + 1) % progressStep == 0 || index == collapsed.lastIndex)) progress(index + 1, collapsed.size)
             if (edge.segment()) {
                 val source = edge.edge.points ?: listOf(edge.a.point(), edge.b.point())
                 val rendered = render(source, source.first().distance(edge.a.point()) > source.last().distance(edge.a.point()))
@@ -137,7 +146,7 @@ object FillRouting {
                 require(nodes.isNotEmpty()) { "No travel route inside fill polygon" }
                 var points = nodes.map(Node::point)
                 if (underpath && points.size > 2) points = FillGeometry.smoothPath(points, 2.0)
-                points = clampPath(points, polygon)
+                points = clampPath(points, polygon, clampArea)
                 check(points.isEmpty() || points.last().distance(edge.b.point()) < 1e-4) { "Fill travel clamping lost its endpoint" }
                 val stitches = FillRunning.run(points, runningLengthPx, tolerancePx).map { it.tagged("travel") }
                 result += if (skipLast && !edge.outline()) stitches else stitches.drop(1)
@@ -441,13 +450,16 @@ object FillRouting {
         return if (direct.length <= ring.length-direct.length) FillGeometry.points(direct) else wrapped
     }
 
+    /** Boundary graph nodes are rounded to 1e-6px. A smaller tolerance can erase an
+     * entire legitimate boundary leg and leave a long unsewn gap before the next row.
+     * Prepared once per polygon, as clamp_path.py prepares `prep(polygon.buffer(1e-9))`;
+     * prepared covers() answers exactly as Geometry.covers(). */
+    internal fun clampArea(polygon: Polygon): PreparedGeometry = PreparedGeometryFactory.prepare(polygon.buffer(1e-6))
+
     /** Clamp each full exterior excursion once, rather than projecting every outside vertex. */
-    internal fun clampPath(path: List<FillPoint>, polygon: Polygon): List<FillPoint> {
+    internal fun clampPath(path: List<FillPoint>, polygon: Polygon, inside: PreparedGeometry = clampArea(polygon)): List<FillPoint> {
         if (path.size < 2) return path
         val outlines = listOf(polygon.exteriorRing) + (0 until polygon.numInteriorRing).map(polygon::getInteriorRingN)
-        // Boundary graph nodes are rounded to 1e-6px. A smaller tolerance can erase an
-        // entire legitimate boundary leg and leave a long unsewn gap before the next row.
-        val inside = polygon.buffer(1e-6)
         val first = if (inside.covers(FillGeometry.point(path.first()))) path.first() else {
             val ring = outlines.minBy { it.distance(FillGeometry.point(path.first())) }
             val indexed = LengthIndexedLine(ring)

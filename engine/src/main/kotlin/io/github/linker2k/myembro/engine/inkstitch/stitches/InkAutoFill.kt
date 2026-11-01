@@ -19,7 +19,8 @@ object InkAutoFill {
     }
 
     fun paths(region: PolygonRegion, settings: Settings = Settings(),
-        startingPoint: Point? = null, endingPoint: Point? = null, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null): List<List<Point>> {
+        startingPoint: Point? = null, endingPoint: Point? = null, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null,
+        progress: ((done: Int, total: Int) -> Unit)? = null): List<List<Point>> {
         require(expandMm.isFinite())
         if (region.isEmpty) return emptyList()
         val scale=PIXELS_PER_MM/10
@@ -34,7 +35,8 @@ object InkAutoFill {
         val points=TatamiFill.fill(clipped,Math.toRadians(settings.angleDegrees),settings.rowSpacing*scale,null,
             settings.stitchLength*scale,settings.travelLength*scale,
             // fill_stitch.py running_stitch_tolerance getter defaults to 0.2mm.
-            0.2*PIXELS_PER_MM,settings.staggers.toDouble(),false,px(startingPoint),px(endingPoint),settings.underpath)
+            0.2*PIXELS_PER_MM,settings.staggers.toDouble(),false,px(startingPoint),px(endingPoint),settings.underpath,
+            progress=progress)
         val paths=mutableListOf<List<Point>>()
         var current=mutableListOf<Point>()
         for(point in points) {

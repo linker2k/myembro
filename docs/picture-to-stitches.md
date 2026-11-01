@@ -228,7 +228,19 @@ them, that **non-border** region falls back to tatami (`svg/StitchTypeRule.kt:60
 ### 6.5 Progress and waiting
 
 - Progress checkpoints `regions=i/n;stitches=k` (`ColorDrawingPipeline.kt:166, :207`) feed
-  `PhotoGenerationProgress` (`photo/PhotoGenerationWait.kt:12–22`).
+  `PhotoGenerationProgress` (`photo/PhotoGenerationWait.kt`). Numbers are shown with the locale's
+  thousands separator.
+- Inside one tatami region, `region_step=i/n` reports the path-rendering loop (`FillRouting.route`,
+  `for ((index, edge) in collapsed.withIndex())`), about 100 times per fill pass; underlay and top count
+  separately. It is passed down `DefaultTatami.stitchGroups` → `InkAutoFill.paths` → `TatamiFill.fill`.
+  The screen shows "This region i / n". The earlier steps of a region (rows, graph, travel graph) have no
+  in-region progress (user decision 2026-11-01). The same loop checks the thread interrupt, so "Stop"
+  ends a large region within about 0.5 s (emulator measurement, 2026-11-01).
+- Travel clamping (`FillRouting.clampPath`) prepares the region's 1e-6px buffer once per polygon
+  (`clampArea`, JTS `PreparedGeometryFactory`) and tests `covers` on it. The original Ink/Stitch v3.3.0
+  `lib/utils/clamp_path.py` also uses a prepared geometry (`prep(polygon.buffer(1e-9))`, rebuilt per call).
+  Measured on a line-art picture whose largest region has 42 holes: region time 36.6 s → 5.9 s on a PC JVM
+  with byte-identical stitches (`WolfLineArtRegressionTest`).
 - After 60 s (`PHOTO_GENERATION_TIMEOUT_MS = 60_000`, `:5`, inclusive `≥`) the screen asks "wait 1 more
   minute / stop" (`PhotoScreen.kt:103–108`). Waiting sets the allowance to `max(elapsed, allowance) + 60 s`
   (`:9–10`); repeatable. Basis: user request ("one-minute decision interval").
