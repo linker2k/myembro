@@ -13,7 +13,8 @@ object TatamiFill {
         staggers: Double, skipLast: Boolean, startingPoint: FillPoint?, endingPoint: FillPoint? = null,
         underpath: Boolean = true, gapFillRows: Int = 0,
         pullCompensationPx: List<Double> = listOf(0.0,0.0),
-        pullCompensationPercent: List<Double> = listOf(0.0,0.0)): List<FillPoint> {
+        pullCompensationPercent: List<Double> = listOf(0.0,0.0),
+        progress: ((FillProgress) -> Unit)? = null): List<FillPoint> {
         require(pullCompensationPx.size == 2 && pullCompensationPercent.size == 2)
         require((pullCompensationPx+pullCompensationPercent).all { it.isFinite() && it >= 0 })
         var valid = FillGeometry.makeValid(shape)
@@ -25,11 +26,12 @@ object TatamiFill {
         }
         FillTrace.emit("valid_geometry") { org.locationtech.jts.io.WKBWriter.toHex(org.locationtech.jts.io.WKBWriter().write(valid)) }
         FillTrace.emit("parameters") { listOf(angle,rowSpacing,maxStitchLength,runningStitchLength,runningStitchTolerance,staggers).joinToString { it.toBits().toString() } }
+        progress?.invoke(FillProgress(FillProgress.Stage.ROWS))
         val segments = Fill.intersectRegionWithGrating(valid, angle, rowSpacing, endRowSpacing).flatten()
         FillTrace.emit("row_segments") { FillTrace.points(segments) }
         if (segments.isEmpty()) return fallback(valid, runningStitchLength, runningStitchTolerance)
         return FillRouting.route(valid, segments, startingPoint, endingPoint, underpath,
-            runningStitchLength, runningStitchTolerance, angle, skipLast, gapFillRows) { points, reversed ->
+            runningStitchLength, runningStitchTolerance, angle, skipLast, gapFillRows, progress) { points, reversed ->
             val directed = if (reversed) points.reversed() else points
             Fill.stitchRow(directed.first(), directed.last(), angle, rowSpacing, maxStitchLength, staggers, skipLast)
         }

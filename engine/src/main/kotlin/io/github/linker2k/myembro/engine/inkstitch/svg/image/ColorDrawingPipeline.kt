@@ -181,7 +181,7 @@ object ColorDrawingPipeline {
                     val attempted=if(method==StitchTypeRule.Type.RUNNING) SmallRegionStitches.running(running(),hoop)
                     else StitchTypeRule.generateRegion(method,if(groups.isEmpty()) groups else groups.dropLast(1)+groups.last().copy(trimAfter=true),hoop) { attempt ->
                         if(attempt==StitchTypeRule.Type.TATAMI) DefaultTatami.stitchGroups(PolygonRegion(shape),thread,expandMm=expandMm,
-                            clipRegion=clipRegion)
+                            clipRegion=clipRegion) { checkpoint(it.checkpoint) }
                         else running()
                     }
                     val resolved=if(attempted.excluded) SmallRegionStitches.running(running(),hoop) else attempted

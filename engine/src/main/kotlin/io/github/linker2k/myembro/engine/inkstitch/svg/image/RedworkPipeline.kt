@@ -191,7 +191,7 @@ object RedworkPipeline {
         val ordered=polygons.mapIndexedNotNull { index,polygon ->
             checkpoint()
             progress("stitches")
-            val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread)
+            val next=DefaultTatami.stitchGroups(PolygonRegion(polygon),thread) { progress(it.checkpoint) }
             generatedStitches += next.sumOf { it.stitches.size }
             progress("regions=${index+1}/${polygons.size};stitches=$generatedStitches")
             if(next.isEmpty()) null else {

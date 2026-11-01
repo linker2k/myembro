@@ -218,7 +218,18 @@ Potrace 작은 점 거름: `photoMinimumArea(detail)` = 세부 0/1/2에서 1.0 /
 ### 6.5 진행 표시와 기다리기
 
 - 진행 지점 `regions=i/n;stitches=k`(`ColorDrawingPipeline.kt:166, :207`)가 `PhotoGenerationProgress`로 들어감
-  (`photo/PhotoGenerationWait.kt:12–22`).
+  (`photo/PhotoGenerationWait.kt`). 숫자는 로캘의 천 단위 구분 기호로 표시.
+- 타타미 영역 하나 안에서는 경로 그리기 루프(`FillRouting.route`의 `for ((index, edge) in collapsed.withIndex())`)가
+  채움 단계마다 약 100번 `region_step=i/n`을 보냄. 밑땀과 본땀은 따로 셈.
+  전달 경로는 `DefaultTatami.stitchGroups` → `InkAutoFill.paths` → `TatamiFill.fill`이고, 화면에는 '이 영역 i / n'으로 표시.
+  그 앞 단계는 `region_stage=rows` / `region_stage=route`(`TatamiFill.fill`, `FillRouting.route`)로
+  숫자 없이 단계 이름('줄 만드는 중', '경로 계산 중')만 표시(사용자 결정 2026-11-01).
+  같은 루프가 스레드 interrupt를 확인하므로, 큰 영역에서도 '그만두기'를 누르면 약 0.5초 안에 멈춤(에뮬레이터 측정, 2026-11-01).
+- 이동 땀 잘라 맞추기(`FillRouting.clampPath`)는 영역의 1e-6px 버퍼를 폴리곤마다 한 번 prepared로 만들고
+  (`clampArea`, JTS `PreparedGeometryFactory`) 그 위에서 `covers`를 판정. Ink/Stitch v3.3.0 원본
+  `lib/utils/clamp_path.py`도 prepared 도형(`prep(polygon.buffer(1e-9))`, 호출마다 새로 만듦)을 씀.
+  가장 큰 영역에 구멍이 42개인 선화 그림에서 측정: PC JVM 기준 영역 시간 36.6초 → 5.9초, 땀은 바이트 단위로 같음
+  (`WolfLineArtRegressionTest`).
 - 60초(`PHOTO_GENERATION_TIMEOUT_MS = 60_000`, `:5`, `≥` 포함)가 지나면 '1분 더 기다리기 / 그만두기'를 물음
   (`PhotoScreen.kt:103–108`). 기다리면 허용 시간을 `max(경과, 허용) + 60초`로(`:9–10`), 반복 가능.
   근거: 사용자 요청('1분마다 결정').

@@ -97,6 +97,12 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     progress.totalRegions?.let { total ->
                         Text(stringResource(R.string.photo_regions_progress, progress.completedRegions ?: 0, total))
                     }
+                    val regionSteps = progress.regionSteps
+                    if (regionSteps != null) Text(stringResource(R.string.photo_region_step_progress, progress.regionStep ?: 0, regionSteps))
+                    else when (progress.regionStage) {
+                        "rows" -> Text(stringResource(R.string.photo_region_stage_rows))
+                        "route" -> Text(stringResource(R.string.photo_region_stage_route))
+                    }
                     progress.stitches?.let { count -> Text(stringResource(R.string.photo_stitches_progress, count)) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.photo_elapsed, vm.generationElapsedMs / 1000), style = MaterialTheme.typography.bodySmall)

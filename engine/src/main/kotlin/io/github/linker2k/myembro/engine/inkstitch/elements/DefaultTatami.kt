@@ -22,7 +22,9 @@ object DefaultTatami {
         stitchLength=40.0,travelLength=25.0,staggers=4,underpath=true)
     private val underlay = top.copy(angleDegrees=90.0,rowSpacing=7.5)
 
-    fun stitchGroups(region: PolygonRegion, thread: EmbThread, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null): List<StitchGroup> {
+    /** [progress] reports stages and path steps inside one fill pass (underlay, then top); it restarts per pass. */
+    fun stitchGroups(region: PolygonRegion, thread: EmbThread, expandMm: Double = 0.0, clipRegion: PolygonRegion? = null,
+        progress: ((io.github.linker2k.myembro.engine.inkstitch.stitches.FillProgress) -> Unit)? = null): List<StitchGroup> {
         require(expandMm.isFinite())
         if (region.isEmpty) return emptyList()
         val locks = LockStitches.fromParameters(LockStitchParameters())
@@ -33,7 +35,7 @@ object DefaultTatami {
             val component = PolygonRegion(part)
             for ((settings, tag) in listOf(underlay to "fill_underlay", top to "fill_top")) {
                 for (path in InkAutoFill.paths(component,settings,start,expandMm=if(tag=="fill_top") expandMm else 0.0,
-                    clipRegion=if(tag=="fill_top") clipRegion else null)) {
+                    clipRegion=if(tag=="fill_top") clipRegion else null,progress=progress)) {
                     if (path.isEmpty()) continue
                     start = path.last()
                     groups += StitchGroup(color=thread,stitches=path.map {
