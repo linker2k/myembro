@@ -6,7 +6,8 @@ usage: annotate_shots.py SPEC.json SHOT_DIR LANG OUT_DIR
 SHOT_DIR holds NAME.png + NAME.xml (uiautomator dump taken with the shot).
 For each shot in SPEC, every item [pattern, index, name_ko, name_en] is found
 by regex on a node's text or content-desc (index = n-th match; [ko, en] when
-the languages differ). Numbers go
+the languages differ). A pattern "@l,t,r,b" marks a fixed area instead, for
+things the dump does not list (e.g. a preview drawn on the canvas). Numbers go
 top->bottom, then left->right, so the same element gets the same number in
 every language even when text width differs. Writes OUT_DIR/NAME.png and
 OUT_DIR/legend.md (number -> element name in LANG).
@@ -80,7 +81,10 @@ def annotate(png, xml, items, lang, out_png):
     for pattern, index, name_ko, name_en in items:
         if isinstance(index, list):
             index = index[0] if lang == "ko" else index[1]
-        b = find(all_nodes, pattern, index)
+        if pattern.startswith("@"):
+            b = [int(v) for v in pattern[1:].split(",")]
+        else:
+            b = find(all_nodes, pattern, index)
         name = name_ko if lang == "ko" else name_en
         (found if b else missing).append((b, name) if b else name)
     found = reading_order(found)

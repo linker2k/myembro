@@ -1,227 +1,1170 @@
 {
   "01a-home": [
-    ["^버전 |^Version ", 0, "버전 정보", "Version info"],
-    ["^새 프로젝트 시작$|^Start a new project$", 0, "새 프로젝트 시작", "Start a new project"],
-    ["^최근 프로젝트$|^Recent projects$", 0, "최근 프로젝트", "Recent projects"],
-    ["^모두 보기$|^View all$", 0, "모두 보기", "View all"],
-    ["^홈$|^Home$", 0, "홈", "Home"],
-    ["^도안$|^Designs$", 0, "도안 목록", "Designs"],
-    ["^만들기$|^Create$", 0, "만들기", "Create"],
-    ["^설정$|^Settings$", 0, "설정", "Settings"]
+    [
+      "^버전 |^Version ",
+      0,
+      "버전 정보",
+      "Version info"
+    ],
+    [
+      "^새 프로젝트 시작$|^Start a new project$",
+      0,
+      "새 프로젝트 시작",
+      "Start a new project"
+    ],
+    [
+      "^최근 프로젝트$|^Recent projects$",
+      0,
+      "최근 프로젝트",
+      "Recent projects"
+    ],
+    [
+      "^모두 보기$|^View all$",
+      0,
+      "모두 보기",
+      "View all"
+    ],
+    [
+      "^홈$|^Home$",
+      0,
+      "홈",
+      "Home"
+    ],
+    [
+      "^도안$|^Designs$",
+      0,
+      "도안 목록",
+      "Designs"
+    ],
+    [
+      "^만들기$|^Create$",
+      0,
+      "만들기",
+      "Create"
+    ],
+    [
+      "^설정$|^Settings$",
+      0,
+      "설정",
+      "Settings"
+    ]
   ],
   "01b-home-scroll": [
-    ["^샘플 도안$|^Sample designs$", 0, "샘플 도안", "Sample designs"],
-    ["^빠른 시작$|^Quick start$", 0, "빠른 시작", "Quick start"],
-    ["^도안 가져오기$|^Import design$", 0, "도안 가져오기", "Import design"],
-    ["^글자 넣기$|^Add lettering$", 0, "글자 넣기", "Add lettering"],
-    ["^무료 도안 찾기$|^Find free designs$", 0, "무료 도안 찾기", "Find free designs"],
-    ["^사진→자수$|^Photo to embroidery$", 0, "사진→자수", "Photo to embroidery"]
+    [
+      "^샘플 도안$|^Sample designs$",
+      0,
+      "샘플 도안",
+      "Sample designs"
+    ],
+    [
+      "^빠른 시작$|^Quick start$",
+      0,
+      "빠른 시작",
+      "Quick start"
+    ],
+    [
+      "^도안 가져오기$|^Import design$",
+      0,
+      "도안 가져오기",
+      "Import design"
+    ],
+    [
+      "^글자 넣기$|^Add lettering$",
+      0,
+      "글자 넣기",
+      "Add lettering"
+    ],
+    [
+      "^무료 도안 찾기$|^Find free designs$",
+      0,
+      "무료 도안 찾기",
+      "Find free designs"
+    ],
+    [
+      "^사진→자수$|^Photo to embroidery$",
+      0,
+      "사진→자수",
+      "Photo to embroidery"
+    ]
   ],
   "02-new-project": [
-    ["^빈 후프에서 시작$|^Start with a blank hoop$", 0, "빈 후프에서 시작", "Start with a blank hoop"],
-    ["^내 도안으로 시작$|^Start with my design$", 0, "내 도안으로 시작", "Start with my design"],
-    ["^사진/그림$|^From a photo / drawing$", 0, "사진/그림", "From a photo / drawing"],
-    ["^이모지로$|^From an emoji$", 0, "이모지로", "From an emoji"],
-    ["^글자로 시작$|^Start with lettering$", 0, "글자로 시작", "Start with lettering"]
+    [
+      "^빈 후프에서 시작$|^Start with a blank hoop$",
+      0,
+      "빈 후프에서 시작",
+      "Start with a blank hoop"
+    ],
+    [
+      "^내 도안으로 시작$|^Start with my design$",
+      0,
+      "내 도안으로 시작",
+      "Start with my design"
+    ],
+    [
+      "^사진/그림$|^From a photo / drawing$",
+      0,
+      "사진/그림",
+      "From a photo / drawing"
+    ],
+    [
+      "^이모지로$|^From an emoji$",
+      0,
+      "이모지로",
+      "From an emoji"
+    ],
+    [
+      "^글자로 시작$|^Start with lettering$",
+      0,
+      "글자로 시작",
+      "Start with lettering"
+    ]
   ],
   "03-editor": [
-    ["^라이브러리로 돌아가기$|^Back to library$", 0, "뒤로(도안 목록)", "Back (to designs)"],
-    ["^AI에게 맡기기$|^Ask AI$", 0, "AI에게 맡기기", "Ask AI"],
-    ["^실행취소$|^Undo$", 0, "실행취소", "Undo"],
-    ["^다시실행$|^Redo$", 0, "다시실행", "Redo"],
-    ["^저장$|^Save$", 0, "저장", "Save"],
-    ["^후프 |^Hoop ", 0, "후프 칩", "Hoop chip"],
-    ["^블럭 편집$|^Edit blocks$", 0, "블럭 편집", "Edit blocks"],
-    ["^객체 \\d+개$|objects$", 0, "객체 수", "Object count"],
-    ["^선택$|^Select$", 0, "선택 도구", "Select tool"],
-    ["^화면 이동$|^Pan canvas$", 0, "화면 이동", "Pan canvas"],
-    ["^후프를 화면에 맞추기$|^Fit hoop to screen$", 0, "후프를 화면에 맞추기", "Fit hoop to screen"],
-    ["^자석 스냅$|^Snap$", 0, "자석 스냅", "Snap"],
-    ["^레이어$|^Layers$", 0, "레이어 패널", "Layers panel"],
-    ["^도안 추가$|^Add design$", 0, "도안 추가(+)", "Add design (+)"],
-    ["^레이어 숨기기$|^Hide layer$", 0, "레이어 숨기기(눈)", "Hide layer (eye)"],
-    ["^전체 레이어|^All layers", 0, "전체 레이어", "All layers"],
-    ["속성 펼치기|속성 접기|^Expand properties$|^Collapse properties$", 0, "속성 펼치기/접기", "Expand/collapse properties"],
-    ["^변형$|^Transform$", 0, "변형 탭", "Transform tab"],
-    ["^스티치$|^Stitches$", 0, "스티치 탭", "Stitches tab"],
-    ["^색상$|^Colors$", 0, "색상 탭", "Colors tab"],
-    ["^선택$|^Select$", 1, "아래 탭: 선택", "Bottom tab: Select"],
-    ["^도안$|^Designs$", 0, "아래 탭: 도안", "Bottom tab: Designs"],
-    ["^변형$|^Transform$", 1, "아래 탭: 변형", "Bottom tab: Transform"],
-    ["^글자$|^Text$", 0, "아래 탭: 글자", "Bottom tab: Text"],
-    ["^레이어$|^Layers$", 1, "아래 탭: 레이어", "Bottom tab: Layers"]
+    [
+      "^라이브러리로 돌아가기$|^Back to library$",
+      0,
+      "뒤로(도안 목록)",
+      "Back (to designs)"
+    ],
+    [
+      "^AI에게 맡기기$|^Ask AI$",
+      0,
+      "AI에게 맡기기",
+      "Ask AI"
+    ],
+    [
+      "^실행취소$|^Undo$",
+      0,
+      "실행취소",
+      "Undo"
+    ],
+    [
+      "^다시실행$|^Redo$",
+      0,
+      "다시실행",
+      "Redo"
+    ],
+    [
+      "^저장$|^Save$",
+      0,
+      "저장",
+      "Save"
+    ],
+    [
+      "^후프 |^Hoop ",
+      0,
+      "후프 칩",
+      "Hoop chip"
+    ],
+    [
+      "^블럭 편집$|^Edit blocks$",
+      0,
+      "블럭 편집",
+      "Edit blocks"
+    ],
+    [
+      "^객체 \\d+개$|objects$",
+      0,
+      "객체 수",
+      "Object count"
+    ],
+    [
+      "^선택$|^Select$",
+      0,
+      "선택 도구",
+      "Select tool"
+    ],
+    [
+      "^화면 이동$|^Pan canvas$",
+      0,
+      "화면 이동",
+      "Pan canvas"
+    ],
+    [
+      "^후프를 화면에 맞추기$|^Fit hoop to screen$",
+      0,
+      "후프를 화면에 맞추기",
+      "Fit hoop to screen"
+    ],
+    [
+      "^자석 스냅$|^Snap$",
+      0,
+      "자석 스냅",
+      "Snap"
+    ],
+    [
+      "^레이어$|^Layers$",
+      0,
+      "레이어 패널",
+      "Layers panel"
+    ],
+    [
+      "^도안 추가$|^Add design$",
+      0,
+      "도안 추가(+)",
+      "Add design (+)"
+    ],
+    [
+      "^레이어 숨기기$|^Hide layer$",
+      0,
+      "레이어 숨기기(눈)",
+      "Hide layer (eye)"
+    ],
+    [
+      "^전체 레이어|^All layers",
+      0,
+      "전체 레이어",
+      "All layers"
+    ],
+    [
+      "속성 펼치기|속성 접기|^Expand properties$|^Collapse properties$",
+      0,
+      "속성 펼치기/접기",
+      "Expand/collapse properties"
+    ],
+    [
+      "^변형$|^Transform$",
+      0,
+      "변형 탭",
+      "Transform tab"
+    ],
+    [
+      "^스티치$|^Stitches$",
+      0,
+      "스티치 탭",
+      "Stitches tab"
+    ],
+    [
+      "^색상$|^Colors$",
+      0,
+      "색상 탭",
+      "Colors tab"
+    ],
+    [
+      "^선택$|^Select$",
+      1,
+      "아래 탭: 선택",
+      "Bottom tab: Select"
+    ],
+    [
+      "^도안$|^Designs$",
+      0,
+      "아래 탭: 도안",
+      "Bottom tab: Designs"
+    ],
+    [
+      "^변형$|^Transform$",
+      1,
+      "아래 탭: 변형",
+      "Bottom tab: Transform"
+    ],
+    [
+      "^글자$|^Text$",
+      0,
+      "아래 탭: 글자",
+      "Bottom tab: Text"
+    ],
+    [
+      "^레이어$|^Layers$",
+      1,
+      "아래 탭: 레이어",
+      "Bottom tab: Layers"
+    ]
   ],
   "03c-transform": [
-    ["^가로 \\(mm\\)$|^Width \\(mm\\)$", 0, "가로", "Width"],
-    ["^가로세로 비율 고정$|^Lock aspect ratio$", 0, "비율 고정", "Lock aspect ratio"],
-    ["^세로 \\(mm\\)$|^Height \\(mm\\)$", 0, "세로", "Height"],
-    ["^X \\(mm\\)$", 0, "X 위치", "X position"],
-    ["^Y \\(mm\\)$", 0, "Y 위치", "Y position"],
-    ["^회전 \\(°\\)$|^Rotation \\(°\\)$", 0, "회전", "Rotation"],
-    ["^객체 속성$|^Object properties$", 0, "객체 속성", "Object properties"],
-    ["^적용$|^Apply$", 0, "적용", "Apply"]
+    [
+      "^가로 \\(mm\\)$|^Width \\(mm\\)$",
+      0,
+      "가로",
+      "Width"
+    ],
+    [
+      "^가로세로 비율 고정$|^Lock aspect ratio$",
+      0,
+      "비율 고정",
+      "Lock aspect ratio"
+    ],
+    [
+      "^세로 \\(mm\\)$|^Height \\(mm\\)$",
+      0,
+      "세로",
+      "Height"
+    ],
+    [
+      "^X \\(mm\\)$",
+      0,
+      "X 위치",
+      "X position"
+    ],
+    [
+      "^Y \\(mm\\)$",
+      0,
+      "Y 위치",
+      "Y position"
+    ],
+    [
+      "^회전 \\(°\\)$|^Rotation \\(°\\)$",
+      0,
+      "회전",
+      "Rotation"
+    ],
+    [
+      "^객체 속성$|^Object properties$",
+      0,
+      "객체 속성",
+      "Object properties"
+    ],
+    [
+      "^적용$|^Apply$",
+      0,
+      "적용",
+      "Apply"
+    ]
   ],
   "03e-multi-select": [
-    ["^\\d+개 선택$|^\\d+ selected$", 0, "선택한 개수", "Selected count"],
-    ["^모두 선택$|^Select all$", 0, "모두 선택", "Select all"],
-    ["^선택 해제$|^Clear$", 0, "선택 해제", "Clear"],
-    ["^왼쪽 정렬$|^Left$", 0, "왼쪽 정렬", "Align left"],
-    ["^가로 중앙$|^Center X$", 0, "가로 중앙", "Center X"],
-    ["^오른쪽 정렬$|^Right$", 0, "오른쪽 정렬", "Align right"],
-    ["^위쪽 정렬$|^Top$", 0, "위쪽 정렬", "Align top"],
-    ["^세로 중앙$|^Center Y$", 0, "세로 중앙", "Center Y"],
-    ["^아래쪽 정렬$|^Bottom$", 0, "아래쪽 정렬", "Align bottom"],
-    ["^복제$|^Duplicate$", 0, "복제", "Duplicate"],
-    ["^좌우 반전$|^Mirror$", 0, "좌우 반전", "Mirror"],
-    ["^90° 회전$|^Rotate 90°$", 0, "90° 회전", "Rotate 90°"],
-    ["^중앙 정렬$|^Center$", 0, "후프 중앙으로", "Center in hoop"],
-    ["^삭제$|^Delete$", 0, "삭제", "Delete"]
+    [
+      "^\\d+개 선택$|^\\d+ selected$",
+      0,
+      "선택한 개수",
+      "Selected count"
+    ],
+    [
+      "^모두 선택$|^Select all$",
+      0,
+      "모두 선택",
+      "Select all"
+    ],
+    [
+      "^선택 해제$|^Clear$",
+      0,
+      "선택 해제",
+      "Clear"
+    ],
+    [
+      "^왼쪽 정렬$|^Left$",
+      0,
+      "왼쪽 정렬",
+      "Align left"
+    ],
+    [
+      "^가로 중앙$|^Center X$",
+      0,
+      "가로 중앙",
+      "Center X"
+    ],
+    [
+      "^오른쪽 정렬$|^Right$",
+      0,
+      "오른쪽 정렬",
+      "Align right"
+    ],
+    [
+      "^위쪽 정렬$|^Top$",
+      0,
+      "위쪽 정렬",
+      "Align top"
+    ],
+    [
+      "^세로 중앙$|^Center Y$",
+      0,
+      "세로 중앙",
+      "Center Y"
+    ],
+    [
+      "^아래쪽 정렬$|^Bottom$",
+      0,
+      "아래쪽 정렬",
+      "Align bottom"
+    ],
+    [
+      "^복제$|^Duplicate$",
+      0,
+      "복제",
+      "Duplicate"
+    ],
+    [
+      "^좌우 반전$|^Mirror$",
+      0,
+      "좌우 반전",
+      "Mirror"
+    ],
+    [
+      "^90° 회전$|^Rotate 90°$",
+      0,
+      "90° 회전",
+      "Rotate 90°"
+    ],
+    [
+      "^중앙 정렬$|^Center$",
+      0,
+      "후프 중앙으로",
+      "Center in hoop"
+    ],
+    [
+      "^삭제$|^Delete$",
+      0,
+      "삭제",
+      "Delete"
+    ]
   ],
   "03f-stitch-tab": [
-    ["^땀 수$|^Stitches$", [0, 1], "땀 수", "Stitches"],
-    ["^색상$|^Colors$", [1, 1], "색 수", "Colors"],
-    ["^트림$|^Trims$", 0, "트림 수", "Trims"],
-    ["^점프 표시$|^Show jumps$", 0, "점프 표시", "Show jumps"],
-    ["^봉제 미리보기$|^Sewing preview$", 0, "봉제 미리보기", "Sewing preview"]
+    [
+      "^땀 수$|^Stitches$",
+      [
+        0,
+        1
+      ],
+      "땀 수",
+      "Stitches"
+    ],
+    [
+      "^색상$|^Colors$",
+      [
+        1,
+        1
+      ],
+      "색 수",
+      "Colors"
+    ],
+    [
+      "^트림$|^Trims$",
+      0,
+      "트림 수",
+      "Trims"
+    ],
+    [
+      "^점프 표시$|^Show jumps$",
+      0,
+      "점프 표시",
+      "Show jumps"
+    ],
+    [
+      "^봉제 미리보기$|^Sewing preview$",
+      0,
+      "봉제 미리보기",
+      "Sewing preview"
+    ]
   ],
   "03g-color-sheet": [
-    ["^실행취소$|^Undo$", 0, "실행취소", "Undo"],
-    ["^배경천 색$|^Fabric color$", 0, "배경천 색", "Fabric color"],
-    ["^직접 고르기|^Custom color", 0, "직접 고르기", "Custom color"],
-    ["^자수실 색$|^Embroidery threads$", 0, "자수실 색", "Embroidery threads"],
-    ["^Light Brown$", 0, "실 한 줄(누르면 바꾸기)", "Thread row (tap to change)"],
-    ["^취소$|^Cancel$", 0, "취소", "Cancel"],
-    ["^적용$|^Apply$", 0, "적용", "Apply"]
+    [
+      "^실행취소$|^Undo$",
+      0,
+      "실행취소",
+      "Undo"
+    ],
+    [
+      "^배경천 색$|^Fabric color$",
+      0,
+      "배경천 색",
+      "Fabric color"
+    ],
+    [
+      "^직접 고르기|^Custom color",
+      0,
+      "직접 고르기",
+      "Custom color"
+    ],
+    [
+      "^자수실 색$|^Embroidery threads$",
+      0,
+      "자수실 색",
+      "Embroidery threads"
+    ],
+    [
+      "^Light Brown$",
+      0,
+      "실 한 줄(누르면 바꾸기)",
+      "Thread row (tap to change)"
+    ],
+    [
+      "^취소$|^Cancel$",
+      0,
+      "취소",
+      "Cancel"
+    ],
+    [
+      "^적용$|^Apply$",
+      0,
+      "적용",
+      "Apply"
+    ]
   ],
   "04-block-edit": [
-    ["^완료$|^Done$", 0, "완료", "Done"],
-    ["^실행취소$|^Undo$", 0, "실행취소", "Undo"],
-    ["^다시실행$|^Redo$", 0, "다시실행", "Redo"],
-    ["^다중 선택$|^Multi-select$", 0, "다중 선택", "Multi-select"],
-    ["^모두 선택$|^Select all$", 0, "모두 선택", "Select all"],
-    ["^봉제 검사|^Sewing check", 0, "점검 상태", "Check status"],
-    ["^영역 \\d+개 선택$|region selected$", 0, "선택한 영역", "Selected regions"],
-    ["^적용$|^Apply$", 0, "적용", "Apply"],
-    ["^종류$|^Stitch type$", 0, "종류", "Stitch type"],
-    ["^텍스처$|^Texture$", 0, "텍스처", "Texture"],
-    ["^방향$|^Direction$", 0, "방향", "Direction"],
-    ["^밀도$|^Density$", 0, "밀도", "Density"]
+    [
+      "^완료$|^Done$",
+      0,
+      "완료",
+      "Done"
+    ],
+    [
+      "^실행취소$|^Undo$",
+      0,
+      "실행취소",
+      "Undo"
+    ],
+    [
+      "^다시실행$|^Redo$",
+      0,
+      "다시실행",
+      "Redo"
+    ],
+    [
+      "^다중 선택$|^Multi-select$",
+      0,
+      "다중 선택",
+      "Multi-select"
+    ],
+    [
+      "^모두 선택$|^Select all$",
+      0,
+      "모두 선택",
+      "Select all"
+    ],
+    [
+      "^봉제 검사|^Sewing check",
+      0,
+      "점검 상태",
+      "Check status"
+    ],
+    [
+      "^영역 \\d+개 선택$|region selected$",
+      0,
+      "선택한 영역",
+      "Selected regions"
+    ],
+    [
+      "^적용$|^Apply$",
+      0,
+      "적용",
+      "Apply"
+    ],
+    [
+      "^종류$|^Stitch type$",
+      0,
+      "종류",
+      "Stitch type"
+    ],
+    [
+      "^텍스처$|^Texture$",
+      0,
+      "텍스처",
+      "Texture"
+    ],
+    [
+      "^방향$|^Direction$",
+      0,
+      "방향",
+      "Direction"
+    ],
+    [
+      "^밀도$|^Density$",
+      0,
+      "밀도",
+      "Density"
+    ]
   ],
   "05-lettering": [
-    ["^뒤로$|^Back$", 0, "뒤로", "Back"],
-    ["^100×100mm", 0, "후프 크기", "Hoop size"],
-    ["후프 맞춤과 글자 맞춤|^Switch between hoop", 0, "후프/글자 맞춤 전환", "Hoop/lettering fit"],
-    ["^문구$|^Phrase$", 0, "문구", "Phrase"],
-    ["글자$|characters$", 0, "글자 수", "Character count"],
-    ["^자수 폰트$|^Embroidery font$", 0, "자수 폰트", "Embroidery font"],
-    ["^글꼴 더 보기$|^More fonts$", 0, "글꼴 더 보기", "More fonts"],
-    ["^고운바탕$|^Gowun Batang$", 0, "글꼴 카드", "Font card"],
-    ["^자동 · |^Automatic · ", 0, "땀 종류", "Stitch type"],
-    ["^도안에 추가$|^Add to design$", 0, "도안에 추가", "Add to design"]
+    [
+      "^뒤로$|^Back$",
+      0,
+      "뒤로",
+      "Back"
+    ],
+    [
+      "^100×100mm",
+      0,
+      "후프 크기",
+      "Hoop size"
+    ],
+    [
+      "후프 맞춤과 글자 맞춤|^Switch between hoop",
+      0,
+      "후프/글자 맞춤 전환",
+      "Hoop/lettering fit"
+    ],
+    [
+      "^문구$|^Phrase$",
+      0,
+      "문구",
+      "Phrase"
+    ],
+    [
+      "글자$|characters$",
+      0,
+      "글자 수",
+      "Character count"
+    ],
+    [
+      "^자수 폰트$|^Embroidery font$",
+      0,
+      "자수 폰트",
+      "Embroidery font"
+    ],
+    [
+      "^글꼴 더 보기$|^More fonts$",
+      0,
+      "글꼴 더 보기",
+      "More fonts"
+    ],
+    [
+      "^고운바탕$|^Gowun Batang$",
+      0,
+      "글꼴 카드",
+      "Font card"
+    ],
+    [
+      "^자동 · |^Automatic · ",
+      0,
+      "땀 종류",
+      "Stitch type"
+    ],
+    [
+      "^도안에 추가$|^Add to design$",
+      0,
+      "도안에 추가",
+      "Add to design"
+    ]
   ],
   "05b-font-library": [
-    ["^뒤로$|^Back$", 0, "뒤로", "Back"],
-    ["^내 폰트 추가$|^Add my font$", 0, "내 폰트 추가", "Add my font"],
-    ["^전체$|^All$", 0, "글꼴 종류 필터", "Font filters"],
-    ["^글꼴 즐겨찾기 추가$|^Add font to favorites$", 0, "즐겨찾기", "Favorite"],
-    ["^라이선스$|^License$", 0, "라이선스", "License"]
+    [
+      "^뒤로$|^Back$",
+      0,
+      "뒤로",
+      "Back"
+    ],
+    [
+      "^내 폰트 추가$|^Add my font$",
+      0,
+      "내 폰트 추가",
+      "Add my font"
+    ],
+    [
+      "^전체$|^All$",
+      0,
+      "글꼴 종류 필터",
+      "Font filters"
+    ],
+    [
+      "^글꼴 즐겨찾기 추가$|^Add font to favorites$",
+      0,
+      "즐겨찾기",
+      "Favorite"
+    ],
+    [
+      "^라이선스$|^License$",
+      0,
+      "라이선스",
+      "License"
+    ]
   ],
   "06-photo-crop": [
-    ["^1 / 3$", 0, "단계", "Step"],
-    ["^100×100mm", 0, "후프 크기", "Hoop size"],
-    ["후프 틀의 사진|^Photo in hoop frame", 0, "자르기 틀", "Crop frame"],
-    ["^다른 사진$|^Change photo$", 0, "다른 사진", "Change photo"],
-    ["^다음$|^Next$", 0, "다음", "Next"]
+    [
+      "^1 / 3$",
+      0,
+      "단계",
+      "Step"
+    ],
+    [
+      "^100×100mm",
+      0,
+      "후프 크기",
+      "Hoop size"
+    ],
+    [
+      "후프 틀의 사진|^Photo in hoop frame",
+      0,
+      "자르기 틀",
+      "Crop frame"
+    ],
+    [
+      "^다른 사진$|^Change photo$",
+      0,
+      "다른 사진",
+      "Change photo"
+    ],
+    [
+      "^다음$|^Next$",
+      0,
+      "다음",
+      "Next"
+    ]
   ],
   "06b-photo-color": [
-    ["^2 / 3$", 0, "단계", "Step"],
-    ["^실루엣$|^Silhouette$", 0, "실루엣", "Silhouette"],
-    ["^외곽선$|^Outline$", 0, "외곽선", "Outline"],
-    ["^컬러 그림$|^Color drawing$", 0, "컬러 그림", "Color drawing"],
-    ["^노이즈 감쇄|^Noise reduction", 0, "노이즈 감쇄", "Noise reduction"],
-    ["^대비|^Contrast", 0, "대비", "Contrast"],
-    ["색 분리 미리보기|separation preview", 0, "미리보기", "Preview"]
+    [
+      "^2 / 3$",
+      0,
+      "단계",
+      "Step"
+    ],
+    [
+      "^실루엣$|^Silhouette$",
+      0,
+      "실루엣",
+      "Silhouette"
+    ],
+    [
+      "^외곽선$|^Outline$",
+      0,
+      "외곽선",
+      "Outline"
+    ],
+    [
+      "^컬러 그림$|^Color drawing$",
+      0,
+      "컬러 그림",
+      "Color drawing"
+    ],
+    [
+      "^노이즈 감쇄|^Noise reduction",
+      0,
+      "노이즈 감쇄",
+      "Noise reduction"
+    ],
+    [
+      "^대비|^Contrast",
+      0,
+      "대비",
+      "Contrast"
+    ],
+    [
+      "색 분리 미리보기|separation preview",
+      0,
+      "미리보기",
+      "Preview"
+    ]
   ],
   "06g-photo-result": [
-    ["^3 / 3$", 0, "단계", "Step"],
-    ["^주의$|^Caution$|^통과$|^Pass$", 0, "봉제 점검 배지", "Sewing check badge"],
-    ["땀 · 약|stitches · approx", 0, "땀 수·시간", "Stitches and time"],
-    ["^실제 크기|^Actual size", 0, "실제 크기", "Actual size"],
-    ["^필요한 실|^Threads needed", 0, "필요한 실", "Threads needed"]
+    [
+      "^3 / 3$",
+      0,
+      "단계",
+      "Step"
+    ],
+    [
+      "^주의$|^Caution$|^통과$|^Pass$",
+      0,
+      "봉제 점검 배지",
+      "Sewing check badge"
+    ],
+    [
+      "땀 · 약|stitches · approx",
+      0,
+      "땀 수·시간",
+      "Stitches and time"
+    ],
+    [
+      "^실제 크기|^Actual size",
+      0,
+      "실제 크기",
+      "Actual size"
+    ],
+    [
+      "^필요한 실|^Threads needed",
+      0,
+      "필요한 실",
+      "Threads needed"
+    ]
   ],
   "07-emoji": [
-    ["^고양이|^cat|^dog", 0, "검색", "Search"],
-    ["^오프라인|^Offline", 0, "분류", "Categories"],
-    ["^고양이 얼굴$|^Cat face$|^Dog face$", 0, "바로 쓸 수 있는 이모지", "Ready emoji"],
-    ["내려받기 필요|download needed", 0, "내려받기가 필요한 이모지", "Emoji to download"]
+    [
+      "^고양이|^cat|^dog",
+      0,
+      "검색",
+      "Search"
+    ],
+    [
+      "^오프라인|^Offline",
+      0,
+      "분류",
+      "Categories"
+    ],
+    [
+      "^고양이 얼굴$|^Cat face$|^Dog face$",
+      0,
+      "바로 쓸 수 있는 이모지",
+      "Ready emoji"
+    ],
+    [
+      "내려받기 필요|download needed",
+      0,
+      "내려받기가 필요한 이모지",
+      "Emoji to download"
+    ]
   ],
   "08-library": [
-    ["^도안 목록$|^Designs$", 0, "도안 목록", "Designs"],
-    ["^최근 USB 전송 기록$|^Recent USB transfers$", 0, "전송 기록", "Transfer history"],
-    ["^도안 가져오기$|^Import designs$", 0, "도안 가져오기", "Import designs"],
-    ["^무료 도안 찾기$|^Find free designs$", 0, "무료 도안 찾기", "Find free designs"],
-    ["^연결된 USB 없음$|^No USB drive connected$", 0, "USB 상태", "USB status"],
-    ["^도안 이름 검색$|^Search designs by name$", 0, "검색", "Search"],
-    ["^전체 \\d|^All \\d", 0, "필터", "Filters"],
-    ["^최근 추가순$|^Newest first$", 0, "정렬", "Sort"],
-    ["^아기 공룡$|^Baby dino$", 0, "도안 카드", "Design card"],
-    ["^즐겨찾기 추가$|^Add to favorites$", 0, "즐겨찾기", "Favorite"]
+    [
+      "^도안 목록$|^Designs$",
+      0,
+      "도안 목록",
+      "Designs"
+    ],
+    [
+      "^최근 USB 전송 기록$|^Recent USB transfers$",
+      0,
+      "전송 기록",
+      "Transfer history"
+    ],
+    [
+      "^도안 가져오기$|^Import designs$",
+      0,
+      "도안 가져오기",
+      "Import designs"
+    ],
+    [
+      "^무료 도안 찾기$|^Find free designs$",
+      0,
+      "무료 도안 찾기",
+      "Find free designs"
+    ],
+    [
+      "^연결된 USB 없음$|^No USB drive connected$",
+      0,
+      "USB 상태",
+      "USB status"
+    ],
+    [
+      "^도안 이름 검색$|^Search designs by name$",
+      0,
+      "검색",
+      "Search"
+    ],
+    [
+      "^전체 \\d|^All \\d",
+      0,
+      "필터",
+      "Filters"
+    ],
+    [
+      "^최근 추가순$|^Newest first$",
+      0,
+      "정렬",
+      "Sort"
+    ],
+    [
+      "^아기 공룡$|^Baby dino$",
+      0,
+      "도안 카드",
+      "Design card"
+    ],
+    [
+      "^즐겨찾기 추가$|^Add to favorites$",
+      0,
+      "즐겨찾기",
+      "Favorite"
+    ]
   ],
   "08c-viewer": [
-    ["^홈으로 가기$|^Go to home$", 0, "홈", "Home"],
-    ["^파일 열기$|^Open file$", 0, "파일 열기", "Open file"],
-    ["^도안 내보내기$|^Export design$", 0, "도안 내보내기", "Export design"],
-    ["^통과$|^Pass$", 0, "봉제 점검 배지", "Sewing check badge"],
-    ["^화면에 맞추기$|^Fit to screen$", 0, "화면에 맞추기", "Fit to screen"],
-    ["^땀 미리보기$|^Stitch preview$", 0, "땀 미리보기", "Stitch preview"],
-    ["^재생$|^Play$", 0, "재생", "Play"],
-    ["^땀 수$|^Stitches$", 0, "땀 수", "Stitches"],
-    ["^예상 시간$|^Est. time$", 0, "예상 시간", "Estimated time"],
-    ["^크기$|^Size$", 0, "크기", "Size"],
-    ["^중심 X|^Center X", 0, "중심 위치", "Center"],
-    ["^색상 순서$|^Thread order$", 0, "색상 순서", "Thread order"],
-    ["^USB.*송$|^Send to USB$", 0, "USB로 전송", "Send to USB"],
-    ["^수.?정$|^Edit$", 0, "수정", "Edit"]
+    [
+      "^홈으로 가기$|^Go to home$",
+      0,
+      "홈",
+      "Home"
+    ],
+    [
+      "^파일 열기$|^Open file$",
+      0,
+      "파일 열기",
+      "Open file"
+    ],
+    [
+      "^도안 내보내기$|^Export design$",
+      0,
+      "도안 내보내기",
+      "Export design"
+    ],
+    [
+      "^통과$|^Pass$",
+      0,
+      "봉제 점검 배지",
+      "Sewing check badge"
+    ],
+    [
+      "^화면에 맞추기$|^Fit to screen$",
+      0,
+      "화면에 맞추기",
+      "Fit to screen"
+    ],
+    [
+      "^땀 미리보기$|^Stitch preview$",
+      0,
+      "땀 미리보기",
+      "Stitch preview"
+    ],
+    [
+      "^재생$|^Play$",
+      0,
+      "재생",
+      "Play"
+    ],
+    [
+      "^땀 수$|^Stitches$",
+      0,
+      "땀 수",
+      "Stitches"
+    ],
+    [
+      "^예상 시간$|^Est. time$",
+      0,
+      "예상 시간",
+      "Estimated time"
+    ],
+    [
+      "^크기$|^Size$",
+      0,
+      "크기",
+      "Size"
+    ],
+    [
+      "^중심 X|^Center X",
+      0,
+      "중심 위치",
+      "Center"
+    ],
+    [
+      "^색상 순서$|^Thread order$",
+      0,
+      "색상 순서",
+      "Thread order"
+    ],
+    [
+      "^USB.*송$|^Send to USB$",
+      0,
+      "USB로 전송",
+      "Send to USB"
+    ],
+    [
+      "^수.?정$|^Edit$",
+      0,
+      "수정",
+      "Edit"
+    ]
   ],
   "09-sewout": [
-    ["^봉제 전 검증$|^Sew-out check$", 0, "봉제 전 검증", "Sew-out check"],
-    ["^검증 · |^Check · ", 0, "요약(차단·경고·시간)", "Summary (blockers, warnings, time)"],
-    ["^문제$|^Issues$", 0, "문제 탭", "Issues tab"],
-    ["^작업 순서$|^Steps$", 0, "작업 순서 탭", "Steps tab"],
-    ["^색별 추정$|^Colors$", 0, "색별 추정 탭", "Colors tab"],
-    ["^기종 사양$|^Machine$", 0, "기종 사양 탭", "Machine tab"],
-    ["^경고$|^Warning$", 0, "경고 항목", "Warning item"],
-    ["^위치 보기$|^Show location$", 0, "위치 보기", "Show location"]
+    [
+      "^봉제 전 검증$|^Sew-out check$",
+      0,
+      "봉제 전 검증",
+      "Sew-out check"
+    ],
+    [
+      "^검증 · |^Check · ",
+      0,
+      "요약(차단·경고·시간)",
+      "Summary (blockers, warnings, time)"
+    ],
+    [
+      "^문제$|^Issues$",
+      0,
+      "문제 탭",
+      "Issues tab"
+    ],
+    [
+      "^작업 순서$|^Steps$",
+      0,
+      "작업 순서 탭",
+      "Steps tab"
+    ],
+    [
+      "^색별 추정$|^Colors$",
+      0,
+      "색별 추정 탭",
+      "Colors tab"
+    ],
+    [
+      "^기종 사양$|^Machine$",
+      0,
+      "기종 사양 탭",
+      "Machine tab"
+    ],
+    [
+      "^경고$|^Warning$",
+      0,
+      "경고 항목",
+      "Warning item"
+    ],
+    [
+      "^위치 보기$|^Show location$",
+      0,
+      "위치 보기",
+      "Show location"
+    ]
   ],
   "11-free-sources": [
-    ["^받은 PES|^Download a PES", 0, "가져오는 방법", "How to import"],
-    ["^Brother Sewingcraft$", 0, "사이트 이름", "Site name"],
-    ["^사이트 열기$|^Open website$", 0, "사이트 열기", "Open website"],
-    ["^PES 제공$|^PES available$", 0, "조건 표시", "Terms tags"],
-    ["^이용 조건 보기$|^Read usage terms$", 0, "이용 조건 보기", "Read usage terms"]
+    [
+      "^받은 PES|^Download a PES",
+      0,
+      "가져오는 방법",
+      "How to import"
+    ],
+    [
+      "^Brother Sewingcraft$",
+      0,
+      "사이트 이름",
+      "Site name"
+    ],
+    [
+      "^사이트 열기$|^Open website$",
+      0,
+      "사이트 열기",
+      "Open website"
+    ],
+    [
+      "^PES 제공$|^PES available$",
+      0,
+      "조건 표시",
+      "Terms tags"
+    ],
+    [
+      "^이용 조건 보기$|^Read usage terms$",
+      0,
+      "이용 조건 보기",
+      "Read usage terms"
+    ]
   ],
   "12-settings-1": [
-    ["^백업$|^Backup$", 0, "백업", "Backup"],
-    ["^백업 저장$|^Save backup$", 0, "백업 저장", "Save backup"],
-    ["^ZIP 복원$|^Restore ZIP$", 0, "ZIP 복원", "Restore ZIP"],
-    ["^AI 연결|^AI connection", 0, "AI 연결(실험)", "AI connection (experimental)"],
-    ["^미싱과 자수$|^Machine and embroidery$", 0, "미싱과 자수", "Machine and embroidery"],
-    ["^미싱 기종$|^Machine model$", 0, "미싱 기종", "Machine model"]
+    [
+      "^백업$|^Backup$",
+      0,
+      "백업",
+      "Backup"
+    ],
+    [
+      "^백업 저장$|^Save backup$",
+      0,
+      "백업 저장",
+      "Save backup"
+    ],
+    [
+      "^ZIP 복원$|^Restore ZIP$",
+      0,
+      "ZIP 복원",
+      "Restore ZIP"
+    ],
+    [
+      "^AI 연결|^AI connection",
+      0,
+      "AI 연결(실험)",
+      "AI connection (experimental)"
+    ],
+    [
+      "^미싱과 자수$|^Machine and embroidery$",
+      0,
+      "미싱과 자수",
+      "Machine and embroidery"
+    ],
+    [
+      "^미싱 기종$|^Machine model$",
+      0,
+      "미싱 기종",
+      "Machine model"
+    ]
   ],
   "12b-settings-2": [
-    ["^사용자 정의 프레임 추가$|^Add custom frame$", 0, "사용자 정의 프레임 추가", "Add custom frame"],
-    ["^실 브랜드$|^Thread brand$", 0, "실 브랜드", "Thread brand"],
-    ["^PES 출력 버전$|^PES output version$", 0, "PES 출력 버전", "PES output version"],
-    ["^실 선택|^Choose threads", 0, "내 실 고르기", "Choose my threads"],
-    ["^화면 테마$|^Display theme$", 0, "화면 테마", "Display theme"],
-    ["^앱 정보$|^About$", 0, "앱 정보", "About"]
+    [
+      "^사용자 정의 프레임 추가$|^Add custom frame$",
+      0,
+      "사용자 정의 프레임 추가",
+      "Add custom frame"
+    ],
+    [
+      "^실 브랜드$|^Thread brand$",
+      0,
+      "실 브랜드",
+      "Thread brand"
+    ],
+    [
+      "^PES 출력 버전$|^PES output version$",
+      0,
+      "PES 출력 버전",
+      "PES output version"
+    ],
+    [
+      "^실 선택|^Choose threads",
+      0,
+      "내 실 고르기",
+      "Choose my threads"
+    ],
+    [
+      "^화면 테마$|^Display theme$",
+      0,
+      "화면 테마",
+      "Display theme"
+    ],
+    [
+      "^앱 정보$|^About$",
+      0,
+      "앱 정보",
+      "About"
+    ]
   ],
   "13-ask-sheet": [
-    ["^무엇을 바꿀까요|^What should change", 0, "요청 입력", "Request"],
-    ["^말로 입력$|^Speak$", 0, "말로 입력", "Speak"],
-    ["^사진 첨부$|^Attach photo$", 0, "사진 첨부", "Attach photo"],
-    ["^챗봇에게 보낼 내용|^What the chatbot will see", 0, "보낼 내용 보기", "What the chatbot will see"],
-    ["^복사$|^Copy$", 0, "복사", "Copy"],
-    ["^챗봇에 공유$|^Share to chatbot$", 0, "챗봇에 공유", "Share to chatbot"]
+    [
+      "^무엇을 바꿀까요|^What should change",
+      0,
+      "요청 입력",
+      "Request"
+    ],
+    [
+      "^말로 입력$|^Speak$",
+      0,
+      "말로 입력",
+      "Speak"
+    ],
+    [
+      "^사진 첨부$|^Attach photo$",
+      0,
+      "사진 첨부",
+      "Attach photo"
+    ],
+    [
+      "^챗봇에게 보낼 내용|^What the chatbot will see",
+      0,
+      "보낼 내용 보기",
+      "What the chatbot will see"
+    ],
+    [
+      "^복사$|^Copy$",
+      0,
+      "복사",
+      "Copy"
+    ],
+    [
+      "^챗봇에 공유$|^Share to chatbot$",
+      0,
+      "챗봇에 공유",
+      "Share to chatbot"
+    ]
+  ],
+  "04e-block-manual-angle": [
+    [
+      "^수동$|^Manual$",
+      0,
+      "방향(자동/수동)",
+      "Direction (Auto/Manual)"
+    ],
+    [
+      "^바느질 각도$|^Stitch angle$",
+      0,
+      "각도 슬라이더",
+      "Angle slider"
+    ],
+    [
+      "^\\d+°$",
+      0,
+      "각도 값",
+      "Angle value"
+    ],
+    [
+      "@660,900,760,960",
+      0,
+      "빗금 미리보기",
+      "Hatching preview"
+    ],
+    [
+      "^적용$|^Apply$",
+      0,
+      "적용",
+      "Apply"
+    ]
   ]
 }

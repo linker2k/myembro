@@ -329,7 +329,7 @@ Designs made from photos, emoji or drawings keep their color regions as blocks. 
 
    ![Choosing a meander tile](../images/manual/en/04d-block-pattern.png)
 
-5. Under **Direction**, choose **Auto** or **Manual**. With Manual, set it with the **Stitch angle** slider. Hatching at that angle shows over the selected regions.
+5. Under **Direction**, choose **Auto** or **Manual**. With Manual, set the angle (see [Manual angle](#manual-angle) below).
 6. Scroll down to **Sewing order**. It reads like "Sewn 1 of 10 (front = sewn first)". Move it with **First**, **Forward**, **Back** or **Last**.
 
    ![Sewing order](../images/manual/en/04b-block-order.png)
@@ -337,10 +337,52 @@ Designs made from photos, emoji or drawings keep their color regions as blocks. 
 7. Tap **Apply**. The seconds taken and a **Cancel** button show.
 8. When finished, tap **Done**.
 
+### Manual angle
+
+Set the direction of the stitch rows in a fill region yourself.
+
+#### Screen layout
+
+![Manual angle at 45°](../images/manual/en/04e-block-manual-angle.png)
+
+| No. | Name | What it does |
+|---|---|---|
+| 1 | Hatching preview | Hatching at the chosen angle shows over the selected regions. It is only a preview; the stitches do not change yet. It is drawn in white on dark threads and in black on light threads. |
+| 2 | Apply | Tap it to change the stitches to that angle. |
+| 3 | Direction (Auto/Manual) | **Auto** is the app default, 0° (horizontal rows). **Manual** shows the slider. |
+| 4 | Angle slider | Sets 0–179° in 1° steps. |
+| 5 | Angle value | The current angle. |
+
+#### How to use it
+
+1. In block editing, select a fill region.
+2. Under **Texture**, choose **Basic**.
+3. Under **Direction**, tap **Manual**.
+4. Drag the slider to set the angle. Check the direction with the hatching.
+5. Tap **Apply**.
+6. When you select that region again later, the slider shows its current angle.
+
+#### Row direction
+
+| Angle | Stitch rows |
+|---|---|
+| 0° | Horizontal (─) |
+| 45° | Rising to the right (/) |
+| 90° | Vertical (│) |
+| 135° | Rising to the left (\\) |
+
+Higher values turn the rows counterclockwise.
+
+#### Good to know
+
+- The angle changes the visible stitch rows only with the **Basic** fill texture. With **Pattern**, **Contour** and **Circular**, the top stitches look the same; only the underlay beneath them changes direction.
+- Direction also shows for satin, but satin does not use the angle.
+- Direction does not show for Running and Empty.
+- With several regions selected, "The same angle goes to all N regions" appears and they all get the same angle.
+
 ### Good to know
 
 - **Empty** sews nothing in that block, so the fabric shows. You cannot empty every block.
-- If you give several regions a manual angle, "The same angle goes to all N regions" appears.
 - Dense and sparse are coming in a later version.
 - If the new stitches fail the sew-out check, **Not applied** appears and the previous settings stay. Tap **Details** to see why (for example, satin stitches would exceed 12mm).
 - Where needles would pile up too much, no outline running stitch is added. Then **Outline left out in N places** appears.
