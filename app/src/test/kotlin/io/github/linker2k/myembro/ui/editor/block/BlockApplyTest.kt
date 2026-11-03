@@ -45,6 +45,13 @@ class BlockApplyTest {
         assertEquals(true, auto.automatic_angle); assertNull(auto.angle); assertNull(auto.meander_pattern)
     }
 
+    @Test fun onlyFillCarriesAnAngle() {
+        for (type in listOf(BlockType.SATIN, BlockType.RUNNING, BlockType.EMPTY)) {
+            val patch = BlockApply.patch(BlockStitchDraft(type = type, autoAngle = false, angleDeg = 135))
+            assertNull(patch.automatic_angle); assertNull(patch.angle)
+        }
+    }
+
     @Test fun appliedSettingsReadBackIntoTheSheetAndCommitAsOneUndoStep() {
         val base = project()
         val region = shape(base).regions.first().id

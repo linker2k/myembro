@@ -376,8 +376,7 @@ Higher values turn the rows counterclockwise.
 #### Good to know
 
 - The angle changes the visible stitch rows only with the **Basic** fill texture. With **Pattern**, **Contour** and **Circular**, the top stitches look the same; only the underlay beneath them changes direction.
-- Direction also shows for satin, but satin does not use the angle.
-- Direction does not show for Running and Empty.
+- Direction does not show for Satin, Running and Empty.
 - With several regions selected, "The same angle goes to all N regions" appears and they all get the same angle.
 
 ### Good to know

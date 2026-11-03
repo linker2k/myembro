@@ -157,10 +157,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // The hoop chip gives way (ellipsis) so Edit blocks, the object count and Save stay on screen.
+                        // The hoop chip shows mm only so the size fits; it still gives way (ellipsis) on very narrow screens.
                         Box(Modifier.weight(1f, fill = false)) {
                             SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
+                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.sizeMm(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
                                     maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
                             DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
@@ -179,7 +179,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                             label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
                             leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         Spacer(Modifier.weight(1f))
-                        Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
+                        Text(pluralStringResource(R.plurals.editor_object_count, vm.project.objects.size, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
                     if (vm.multiPositionFrame != null) {

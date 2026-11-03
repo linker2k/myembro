@@ -49,8 +49,9 @@ object BlockApply {
         type = when (d.type) { BlockType.FILL -> BlockStitch.Type.FILL; BlockType.SATIN -> BlockStitch.Type.SATIN; BlockType.RUNNING -> BlockStitch.Type.RUNNING
             BlockType.EMPTY -> BlockStitch.Type.EMPTY },
         fill_method = if (d.type == BlockType.FILL) FILL_METHOD.getValue(d.texture) else null,
-        automatic_angle = d.autoAngle,
-        angle = if (d.autoAngle) null else d.angleDeg.toDouble(),
+        // Only fill has a direction; other types leave the stored angle untouched.
+        automatic_angle = if (d.type == BlockType.FILL) d.autoAngle else null,
+        angle = if (d.type == BlockType.FILL && !d.autoAngle) d.angleDeg.toDouble() else null,
         row_spacing_mm = ROW_SPACING_MM[d.density],
         meander_pattern = if (d.type == BlockType.FILL && d.texture == BlockTexture.PATTERN) d.tile else null,
     )

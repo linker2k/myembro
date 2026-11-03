@@ -87,7 +87,7 @@ class AiWorkspaceInstrumentation : Instrumentation() {
                 return uiAutomation.rootInActiveWindow?.let(::all).orEmpty()
             }
             fun find(text: String) = nodes().firstOrNull { it.text?.toString() == text || it.contentDescription?.toString() == text }
-            await("object count") { find(targetContext.getString(R.string.editor_object_count, 2)) != null }
+            await("object count") { find(targetContext.resources.getQuantityString(R.plurals.editor_object_count, 2, 2)) != null }
             var undo = checkNotNull(find(targetContext.getString(R.string.editor_undo)))
             while (!undo.isClickable) undo = checkNotNull(undo.parent)
             check(undo.isEnabled) { "Undo is disabled" }
