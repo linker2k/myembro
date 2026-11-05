@@ -677,10 +677,16 @@
       "Crop frame"
     ],
     [
-      "^다른 사진$|^Change photo$",
+      "^사진$|^Photos$",
       0,
-      "다른 사진",
-      "Change photo"
+      "사진",
+      "Photos"
+    ],
+    [
+      "^파일$|^Files$",
+      0,
+      "파일",
+      "Files"
     ],
     [
       "^다음$|^Next$",

@@ -8,8 +8,8 @@
     <string name="photo_preview_title">Single-color silhouette</string>
     <string name="photo_result_title">Your embroidery</string>
     <string name="photo_crop_hint">Best for clear drawings, logos and handwriting. Pinch to zoom and drag to position. Keep the top-left dot over the background.</string>
-    <string name="photo_pick">Choose photo</string>
-    <string name="photo_pick_again">Change photo</string>
+    <string name="photo_pick_photos">Photos</string>
+    <string name="photo_pick_file">Files</string>
     <string name="photo_detail">Detail</string>
     <string name="photo_size">Embroidery size · width %1$s</string>
     <string name="photo_size_hint">Aspect ratio is kept. %1$s–%2$s; recalculates when you let go.</string>
