@@ -456,10 +456,11 @@ There are three steps: crop, mode and result. Sharing a picture to myembro from 
 | 1 | Step | The current step (1/3). |
 | 2 | Hoop size | The hoop to fit. |
 | 3 | Crop frame | Pinch to zoom and drag to position. |
-| 4 | Change photo | Choose a different picture. |
-| 5 | Next | Goes to step 2. |
+| 4 | Photos | Pick a picture from your photos. |
+| 5 | Files | Pick a picture file, including SVG. |
+| 6 | Next | Goes to step 2. |
 
-1. Tap **Choose photo** and pick a picture.
+1. Tap **Photos** or **Files** and pick a picture.
 2. Fit the part you want inside the frame. You can zoom out so the whole picture shows.
 3. Tap **Next**.
 

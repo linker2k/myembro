@@ -53,11 +53,15 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
     LaunchedEffect(settings) { vm.configure(settings) }
     val back = { if (vm.isSvg) { vm.cancel(); onBack() } else if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
-    // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
+    // Photos: the system photo picker, images only and no permission; androidx falls back to the file chooser on
+    // devices without it. Files: the document picker with PictureIntake's types, which also lets SVG through.
+    // Both read the picked picture once into memory; nothing is copied or kept.
     val pictureImport=io.github.linker2k.myembro.ui.LocalPictureImport.current
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if(uri!=null) {
+    val picked: (android.net.Uri?) -> Unit = { uri -> if(uri!=null) {
         if(pictureImport!=null) pictureImport(listOf(uri),{}) else { vm.begin();vm.load(uri) }
     } }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), picked)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument(), picked)
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
@@ -131,8 +135,11 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(PictureIntake.pickerMimes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        enabled = !vm.busy, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_pick_photos)) }
+                    OutlinedButton(onClick = { picker.launch(PictureIntake.pickerMimes) }, enabled = !vm.busy,
+                        modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_pick_file)) }
                 }
             } else {
                 if(vm.step==1) SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
