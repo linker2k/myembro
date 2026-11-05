@@ -157,29 +157,31 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // The hoop chip gives way (ellipsis) so Edit blocks, the object count and Save stay on screen.
-                        Box(Modifier.weight(1f, fill = false)) {
-                            SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
-                            DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                                vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
-                                    onClick = { vm.setHoop(hoop); hoopMenu = false }) }
-                                vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_multi_frame, Dimensions.size(frame.coverage.width / 10.0, frame.coverage.height / 10.0))) },
-                                    onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
+                        // The hoop chip shows mm only so the size fits; the left group takes all
+                        // space the count leaves, so only the hoop chip gives way (ellipsis) on very narrow screens.
+                        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.weight(1f, fill = false)) {
+                                SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
+                                    label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.sizeMm(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
+                                DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
+                                    vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
+                                        onClick = { vm.setHoop(hoop); hoopMenu = false }) }
+                                    vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.editor_multi_frame, Dimensions.size(frame.coverage.width / 10.0, frame.coverage.height / 10.0))) },
+                                        onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
+                                }
                             }
+                            // Blocks exist only on vector shapes; an imported PES has stitches only.
+                            val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
+                            val stitchOnly = stringResource(R.string.block_edit_stitch_only)
+                            if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
+                                onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
+                                label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
+                                leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         }
-                        // Blocks exist only on vector shapes; an imported PES has stitches only.
-                        val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
-                        val stitchOnly = stringResource(R.string.block_edit_stitch_only)
-                        if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
-                            onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
-                            label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
-                            leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
-                        Spacer(Modifier.weight(1f))
-                        Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
+                        Text(pluralStringResource(R.plurals.editor_object_count, vm.project.objects.size, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
                     if (vm.multiPositionFrame != null) {

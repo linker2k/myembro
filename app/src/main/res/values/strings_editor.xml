@@ -1,7 +1,7 @@
 <resources>
     <string name="editor_title">Embroidery editor</string>
     <string name="editor_back">Back to library</string>
-    <string name="editor_hoop_size">Hoop %1$s</string>
+    <string name="editor_hoop_size">%1$s</string>
     <string name="editor_add">Add design</string>
     <string name="editor_layers">Layers</string>
     <string name="editor_duplicate">Duplicate</string>
@@ -13,7 +13,10 @@
     <string name="editor_redo">Redo</string>
     <string name="editor_fit">Fit hoop to screen</string>
     <string name="editor_composition">Your composition</string>
-    <string name="editor_object_count">%1$d objects</string>
+    <plurals name="editor_object_count">
+        <item quantity="one">%1$d object</item>
+        <item quantity="other">%1$d objects</item>
+    </plurals>
     <string name="editor_outside">Design extends outside the sewing area. Move or resize it before sewing.</string>
     <string name="editor_navigation_hint">Tap a design to select. Drag empty fabric to pan; pinch there to zoom.</string>
     <string name="editor_selection_hint">Drag to move. Use two fingers to rotate and scale, or drag a corner handle.</string>

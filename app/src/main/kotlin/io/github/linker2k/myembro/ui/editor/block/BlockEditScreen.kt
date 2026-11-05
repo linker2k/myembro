@@ -113,7 +113,7 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
                     // A manual angle shows as hatching over the selection while the slider moves; display only.
-                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY && selected.isNotEmpty() }
+                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type == BlockType.FILL && selected.isNotEmpty() }
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
                         vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background, hatch) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
@@ -353,7 +353,8 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
             }
             if (draft.type == BlockType.EMPTY) Text(stringResource(R.string.block_edit_empty_hint),
                 style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-            if (draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY) {
+            // Direction is a fill setting only; satin, running and empty show none.
+            if (draft.type == BlockType.FILL) {
                 Label(R.string.block_edit_direction)
                 Segmented(listOf(R.string.block_edit_direction_auto, R.string.block_edit_direction_manual), if (draft.autoAngle) 0 else 1) {
                     onDraft(draft.copy(autoAngle = it == 0))
@@ -368,6 +369,8 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     if (count > 1) Text(stringResource(R.string.block_edit_same_angle, count), style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant)
                 }
+            }
+            if (draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY) {
                 Label(R.string.block_edit_density)
                 // Only steps with an Ink/Stitch basis are offered (BlockApply.ROW_SPACING_MM).
                 Segmented(listOf(R.string.block_edit_density_dense, R.string.block_edit_density_normal, R.string.block_edit_density_sparse),

@@ -60,7 +60,7 @@ class AiChangeInstrumentation : Instrumentation() {
             }
             val notifications = targetContext.getSystemService(android.app.NotificationManager::class.java)
             fun notified() = notifications.activeNotifications.any { it.id == 7103 }
-            val objects = { n: Int -> targetContext.getString(R.string.editor_object_count, n) }
+            val objects = { n: Int -> targetContext.resources.getQuantityString(R.plurals.editor_object_count, n, n) }
 
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
                 .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity

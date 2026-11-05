@@ -39,6 +39,12 @@ object Dimensions {
         return "${number(widthMm)}×${number(heightMm)}mm (${inches(widthMm)}×${inches(heightMm)}in)"
     }
 
+    /** Millimetres only, for tight spots such as the editor hoop chip; the full [size] stays in its menu. */
+    fun sizeMm(widthMm: Double, heightMm: Double): String {
+        require(widthMm >= 0 && heightMm >= 0) { "Size must not be negative" }
+        return "${number(widthMm)}×${number(heightMm)}mm"
+    }
+
     /** Brother SA432, SA431 and SA434 nominal sizes; order remains width × height. */
     fun hoopSize(widthMm: Int, heightMm: Int): String {
         val nominal = when (widthMm to heightMm) {

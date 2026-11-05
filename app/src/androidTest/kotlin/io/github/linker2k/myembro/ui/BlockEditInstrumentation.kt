@@ -89,7 +89,7 @@ class BlockEditInstrumentation : Instrumentation() {
                 }
             }
             val vm = AiWorkspace.editor(app)
-            await(targetContext.getString(R.string.editor_object_count, 1))
+            await(targetContext.resources.getQuantityString(R.plurals.editor_object_count, 1, 1))
             shot("04-before-editor.png")
             val beforeStitches = vm.project.flatten().stitches.size
             val undoBefore = vm.undoSteps
@@ -191,7 +191,7 @@ class BlockEditInstrumentation : Instrumentation() {
             log += "ORDER PASS: $wing ${orderBefore.indexOf(wing) + 1} -> ${orderAfter.indexOf(wing) + 1} of ${orderAfter.size}, one undo step; badge ${vm.blockStatus}"
             shot("09-block-order.png")
             sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
-            await(targetContext.getString(R.string.editor_object_count, 1))
+            await(targetContext.resources.getQuantityString(R.plurals.editor_object_count, 1, 1))
             val afterStitches = vm.project.flatten().stitches.size
             shot("06-after-editor.png")
             log += "STITCHES: before $beforeStitches, after $afterStitches"
