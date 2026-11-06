@@ -296,7 +296,7 @@ imported 20/30/31 density classification using synthetic fixtures only.
 
 `list_emoji({query, groupId})` uses the same EmojiCatalog/CatalogEmoji.matches as
 the picker, now in the engine with app type aliases. Empty query/group lists the
-30 bundled entries plus locally downloaded entries. A query searches the full
+29 bundled entries plus locally downloaded entries. A query searches the full
 catalog (including CLDR Korean names/keywords); an explicit group lists that
 catalog group. Rows carry id, name, nameKo, glyph, groupId, bundled, available,
 downloadRequired and the pinned SHA-256. Listing does not read/download SVG data.
@@ -338,7 +338,7 @@ AndroidDesignResolver(context))` on the serialized background executor.
 raster contract are documented below.
 
 Verification: `EmojiToolTest` covers heart 20mm prepare/add/prepare_pes PASS,
-minimum/maximum ±0.1mm, Korean search, 30 bundled plus local downloads, no-fetch
+minimum/maximum ±0.1mm, Korean search, 29 bundled plus local downloads, no-fetch
 status, missing IDs, integrity/read errors, preparation/history isolation, one-step
 undo and exact source stitches/threads/metadata against the existing VectorArt path.
 

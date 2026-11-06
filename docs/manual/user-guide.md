@@ -539,7 +539,7 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
 | No. | Name | What it does |
 |---|---|---|
 | 1 | Search | Search in English or Korean. |
-| 2 | Categories | Offline 30, Animals & nature, Food, Travel and more. |
+| 2 | Categories | Offline 29, Animals & nature, Food, Travel and more. |
 | 3 | Ready emoji | Emoji that come with the app. |
 | 4 | Emoji to download | A cloud mark means it has to be downloaded first. |
 

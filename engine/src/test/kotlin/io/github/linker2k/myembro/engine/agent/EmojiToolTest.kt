@@ -40,11 +40,11 @@ class EmojiToolTest {
         }
         for(w in listOf(range.start,range.start+0.1,range.endInclusive-0.1,range.endInclusive)) ready(kernel,w)
     }
-    @Test fun `bundled thirty korean search and unavailable rows retain catalog behavior`() {
+    @Test fun `bundled twenty nine korean search and unavailable rows retain catalog behavior`() {
         val kernel=ToolDispatcher()
         val local=kernel.dispatch(Project(),"0","list_emoji",args("""{"query":"","groupId":""}"""))
         val rows=local.output.getValue("emoji").jsonArray
-        assertEquals(30,rows.size);assertTrue(rows.all { it.jsonObject.getValue("available").jsonPrimitive.boolean })
+        assertEquals(29,rows.size);assertTrue(rows.all { it.jsonObject.getValue("available").jsonPrimitive.boolean })
         val hearts=kernel.dispatch(Project(),"0","list_emoji",args("""{"query":"하트","groupId":""}"""))
         assertTrue(hearts.output.getValue("emoji").jsonArray.any { it.jsonObject.string("id")=="red-heart" })
         val cactus=kernel.dispatch(Project(),"0","prepare_emoji",prepare(id="cactus"))
@@ -61,9 +61,24 @@ class EmojiToolTest {
         }
         val kernel=ToolDispatcher(emojiResolver=resolver)
         val listed=kernel.dispatch(Project(),"0","list_emoji",args("""{"query":"","groupId":""}"""))
-        assertEquals(31,listed.output.getValue("emoji").jsonArray.size);assertEquals(0,reads)
+        assertEquals(30,listed.output.getValue("emoji").jsonArray.size);assertEquals(0,reads)
         assertTrue(kernel.dispatch(Project(),"0","prepare_emoji",prepare(id=local.id)).ok)
         assertEquals(1,reads)
+    }
+    @Test fun `removed teddy bear is not found by id English or Korean name and nothing crashes`() {
+        val kernel=ToolDispatcher();val p=Project()
+        val prepared=kernel.dispatch(p,"0","prepare_emoji",prepare(id="teddy-bear"))
+        assertEquals("EMOJI_NOT_FOUND",prepared.code);assertNull(prepared.output["resultId"]);assertSame(p,prepared.project)
+        for(query in listOf("teddy bear","teddy","테디 베어","테디")) {
+            val listed=kernel.dispatch(p,"0","list_emoji",args("""{"query":"$query","groupId":""}"""))
+            assertTrue(listed.ok,listed.output.toString())
+            assertTrue(listed.output.getValue("emoji").jsonArray.none { it.jsonObject.string("id")=="teddy-bear" },query)
+        }
+        val designs=kernel.dispatch(p,"0","list_builtin_designs",args("{}"))
+        assertTrue(designs.ok);assertTrue(designs.output.getValue("designs").jsonArray.none { "teddy" in it.jsonObject.string("id") })
+        val design=kernel.dispatch(p,"0","add_design",args("""{"transactionId":"t","assetId":"builtin:teddy-bear","objectId":"teddy","name":"Teddy"}"""))
+        assertEquals("DESIGN_NOT_FOUND",design.code);assertSame(p,design.project)
+        println("EMOJI_TEDDY_REMOVED prepare=${prepared.code} add_design=${design.code}; list_emoji teddy/테디 rows without teddy-bear")
     }
     @Test fun `unknown emoji and forged result ids reject and checksum mismatch fails closed`() {
         val kernel=ToolDispatcher();val p=Project()

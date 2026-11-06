@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import javax.xml.parsers.DocumentBuilderFactory
 
-/** Untrusted SVG entry boundary. The element limit is the measured maximum of the 30 pinned bundled
+/** Untrusted SVG entry boundary. The element limit is the measured maximum of the 29 pinned bundled
  * emoji; the byte limit is a user decision (2026-11-05: 200,000 bytes, inclusive, not KiB); the point
  * limit is a user decision (2026-11-06: 2,000, inclusive) from local cost measurement: 103 of 127 local
  * pictures fit, desktop stitch generation max 8.4 s, none over 20 s.

@@ -19,9 +19,9 @@ class EmojiCatalogTest {
     private val bundledDir = File("src/main/assets/${EmojiCatalog.BUNDLED}")
     private fun sha(f: File) = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { "%02x".format(it) }
 
-    @Test fun bundleIsThirtyVerifiedPicturesUnderOneMegabyteWithLicense() {
+    @Test fun bundleIsTwentyNineVerifiedPicturesUnderOneMegabyteWithLicense() {
         val bundled = catalog.emoji.filter { it.bundled }
-        assertEquals(30, bundled.size)
+        assertEquals(29, bundled.size)
         bundled.forEach { assertEquals(it.sha256, sha(File(bundledDir, "${it.id}.svg")), it.id) }
         assertEquals(bundled.map { "${it.id}.svg" }.toSet() + "LICENSE", bundledDir.list()!!.toSet())
         assertTrue(File(bundledDir, "LICENSE").readText().contains("MIT License"))
@@ -70,6 +70,13 @@ class EmojiCatalogTest {
         assertTrue(dog in catalog.emoji.filter { it.matches("강아지") } && dog in catalog.emoji.filter { it.matches("Dog") })
         assertTrue(catalog.emoji.single { it.id == "cactus" }.matches("선인장"))
         assertTrue(File("src/main/assets/emoji/CLDR-LICENSE").readText().contains("UNICODE LICENSE V3"))
+    }
+
+    /** teddy-bear was removed (2026-11-06): not bundled, not downloadable, not found by name or Korean name. */
+    @Test fun teddyBearIsGoneFromBundleCatalogAndSearch() {
+        assertTrue(catalog.emoji.none { it.id == "teddy-bear" || it.glyph == "\uD83E\uDDF8" })
+        assertTrue(!File(bundledDir, "teddy-bear.svg").exists())
+        for (query in listOf("teddy bear", "Teddy", "테디 베어", "테디")) assertEquals(emptyList(), catalog.emoji.filter { it.matches(query) }.map { it.id }, query)
     }
 
     @Test fun downloadUrlIsPinnedAndEncoded() {
