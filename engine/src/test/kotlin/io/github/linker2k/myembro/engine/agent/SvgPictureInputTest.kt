@@ -24,15 +24,15 @@ class SvgPictureInputTest {
     @Test fun corpusMaximaAreMeasuredAndAllBundledFilesPass() {
         val rows = File("../app/src/main/assets/emoji/bundled").listFiles()!!.filter { it.extension == "svg" }
             .map { SvgPictureInput.parse(it.readBytes()).metrics }
-        assertEquals(30, rows.size)
+        assertEquals(29, rows.size)
         // Measured corpus maximum (lady-beetle.svg); the accepted limit is the larger user-set MAX_BYTES.
         assertEquals(4788, rows.maxOf { it.bytes })
         assertTrue(rows.maxOf { it.bytes } <= SvgPictureInput.MAX_BYTES)
         assertEquals(SvgPictureInput.MAX_ELEMENTS, rows.maxOf { it.elements })
-        // Measured corpus maximum (teddy-bear.svg); the accepted limit is the larger user-set MAX_PATH_POINTS.
-        assertEquals(202, rows.maxOf { it.pathPoints })
+        // Measured corpus maximum (sunflower.svg and butterfly.svg); the accepted limit is the larger user-set MAX_PATH_POINTS.
+        assertEquals(186, rows.maxOf { it.pathPoints })
         assertTrue(rows.maxOf { it.pathPoints } <= SvgPictureInput.MAX_PATH_POINTS)
-        println("SVG_CORPUS 30/30 PASS; maxima bytes=4788 elements=14 points=202")
+        println("SVG_CORPUS 29/29 PASS; maxima bytes=4788 elements=14 points=186")
     }
     @Test fun boundaries() {
         assertEquals(200_000, SvgPictureInput.MAX_BYTES)

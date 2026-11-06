@@ -9,11 +9,13 @@ trace algorithm, stitch settings, automatic sewing exception, or external servic
 Generic shared content named `.svg` is also recognized through its display name.
 `SvgPictureInput` validates the complete input **before** `VectorArt.parseSvg`.
 
-The element limit is the exact measured maximum of the **30 locally bundled** entries in
+The element limit is the exact measured maximum of the **29 locally bundled** entries in
 `app/src/main/assets/emoji/bundled`, from the existing Fluent catalog pinned to
 `1ffb34c752ecf5d402f04cfb4b392c77f57c54bc`. This is a conservative local corpus,
 not a claim that all downloadable catalog entries fit these limits. Larger or
 more complex AI output falls back to PNG rather than raising limits speculatively.
+`teddy-bear` was removed from the app on 2026-11-06 (user decision): its duplicate head outline
+left zero-area overlap pieces whose width measurement took minutes on a phone.
 The byte limit is not a corpus maximum: it is a user decision (2026-11-05) of
 **200,000 bytes** (decimal, not KiB), inclusive. The corpus byte maximum is still 4788.
 The vertex limit is also a user decision (2026-11-06): **2,000** flattened vertices, inclusive,
@@ -26,10 +28,10 @@ stays 14 and also keeps nested groups shallow, so no separate depth guard is add
 |---|---:|---|
 | UTF-8 file bytes | 200,000 | user decision 2026-11-05 (corpus maximum 4788, `lady-beetle.svg`) |
 | XML elements, including root | 14 | `lady-beetle.svg` |
-| Flattened path vertices across shapes | 2,000 | user decision 2026-11-06 (corpus maximum 202, `teddy-bear.svg`, existing `SvgPath.flatten` default tolerance/transform) |
+| Flattened path vertices across shapes | 2,000 | user decision 2026-11-06 (corpus maximum 186, `sunflower.svg` and `butterfly.svg`, existing `SvgPath.flatten` default tolerance/transform) |
 
 `SvgCorpusMeasureTest` prints measurements per file, while `SvgPictureInputTest`
-asserts the maxima and all 30 accepted entries. The input stream reads at most
+asserts the maxima and all 29 accepted entries. The input stream reads at most
 200,001 bytes, detecting overflow without buffering the rest. Per-path point budgets
 are enforced during the existing flattening operation; the original global
 200000-emission guard and default behavior remain unchanged for existing callers.
@@ -97,7 +99,7 @@ Whole repository check: `BUILD SUCCESSFUL in 3m 2s`.
 Targeted build/unit/lint: `BUILD SUCCESSFUL in 1m 18s`.
 Engine tests cover every byte/element/point cap at n−1/n/n+1, XXE/internal/external
 DTD rejection, external href/url, scripts/foreignObject/image/text/events, all
-30 bundled entries and a 2-color SVG producing PES sewing PASS with the original
+29 bundled entries and a 2-color SVG producing PES sewing PASS with the original
 VectorArt-default stitches. App tests cover PNG/SVG format and literal lettering,
 unchanged request/colors on PNG retry and the one-shot AI-return marker.
 
