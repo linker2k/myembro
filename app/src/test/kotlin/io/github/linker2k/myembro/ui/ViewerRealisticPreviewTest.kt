@@ -41,4 +41,17 @@ class ViewerRealisticPreviewTest {
         try { assertEquals(Color.WHITE,image.bitmap.getPixel(90,90)) } finally { image.bitmap.recycle() }
         assertFailsWith<java.util.concurrent.CancellationException> { renderViewerRealistic(pattern,p) { true } }
     }
+
+    @Test fun nativeAndAboveUseSourceCropAndReleaseOnlyOnce() {
+        val pattern=EmbPattern(listOf(Stitch(0,0,Command.STITCH),Stitch(10,0,Command.STITCH)),listOf(EmbThread(Color.RED)))
+        for(multiplier in listOf(1,2)) {
+            val native=io.github.linker2k.myembro.engine.render.realistic.FixedRealisticPreview.PIXELS_PER_MM
+            val p=ViewerRealisticPlan(128,128,(native*multiplier/10).toFloat(),0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
+            val image=renderViewerRealistic(pattern,p){false}
+            assertNotNull(image.nativeCrop)
+            assertEquals(128/multiplier,image.bitmap.width)
+            image.close();image.close()
+            assertTrue(image.bitmap.isRecycled)
+        }
+    }
 }

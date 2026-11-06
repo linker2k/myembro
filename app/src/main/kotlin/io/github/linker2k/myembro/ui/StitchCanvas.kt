@@ -3,6 +3,8 @@ package io.github.linker2k.myembro.ui
 
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Rect
+import kotlin.math.roundToInt
 import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -126,9 +128,9 @@ fun StitchCanvas(
         frame?.width?.toFloat() ?: hoop.widthMm*10f,frame?.height?.toFloat() ?: hoop.heightMm*10f,
         preservePlacement,canvasSize.width.toFloat(),canvasSize.height.toFloat()) else 0f
     val preview=rememberViewerRealistic(realistic,data,canvasSize,rasterFit,cx,cy,
-        frame?.width?.toFloat() ?: hoop.widthMm*10f,frame?.height?.toFloat() ?: hoop.heightMm*10f,backgroundColor,fabricColor)
+        frame?.width?.toFloat() ?: hoop.widthMm*10f,frame?.height?.toFloat() ?: hoop.heightMm*10f,backgroundColor,fabricColor,zoom,pan.x,pan.y)
     val realisticLabel=stringResource(R.string.viewer_realistic)
-    val bitmapPaint=remember { Paint(Paint.FILTER_BITMAP_FLAG) }
+    val bitmapPaint=remember { Paint() } // Never ask Android to shrink/filter the preview.
     Box(modifier.clipToBounds().onSizeChanged { canvasSize=it }.semantics { testTagsAsResourceId=true }) {
     Canvas(
         Modifier.fillMaxSize().testTag(if(preview.image!=null) "viewer_realistic_image" else "viewer_stitch_canvas").semantics {
@@ -187,8 +189,24 @@ fun StitchCanvas(
             val finished=preview.image
             if(realistic&&finished!=null&&!finished.bitmap.isRecycled) {
                 val plan=finished.plan
-                canvas.drawBitmap(finished.bitmap,null,RectF(plan.leftUnits.toFloat(),plan.topUnits.toFloat(),
-                    (plan.leftUnits+plan.width/plan.unitsToPixels).toFloat(),(plan.topUnits+plan.height/plan.unitsToPixels).toFloat()),bitmapPaint)
+                canvas.save()
+                // Cancel only our world transform; retain the Compose parent's placement/clip.
+                canvas.translate(cx,cy);canvas.scale(1f/scale,1f/scale)
+                canvas.translate(-size.width/2f-pan.x,-size.height/2f-pan.y)
+                val crop=finished.nativeCrop
+                if(crop==null)canvas.drawBitmap(finished.bitmap,0f,0f,bitmapPaint) // exact viewport pixels
+                else {
+                    val requestedX=crop.left.roundToInt();val requestedY=crop.top.roundToInt()
+                    val requestedW=crop.width().roundToInt().coerceIn(1,plan.width)
+                    val requestedH=crop.height().roundToInt().coerceIn(1,plan.height)
+                    val l=maxOf(0,requestedX);val t=maxOf(0,requestedY)
+                    val r=minOf(finished.bitmap.width,requestedX+requestedW)
+                    val b=minOf(finished.bitmap.height,requestedY+requestedH)
+                    if(r>l&&b>t)canvas.drawBitmap(finished.bitmap,Rect(l,t,r,b),
+                        RectF((l-requestedX)*plan.width.toFloat()/requestedW,(t-requestedY)*plan.height.toFloat()/requestedH,
+                            (r-requestedX)*plan.width.toFloat()/requestedW,(b-requestedY)*plan.height.toFloat()/requestedH),bitmapPaint)
+                }
+                canvas.restore()
                 // The still contains fabric, not UI overlays. Keep the hoop ring above the image.
                 canvas.drawRoundRect(cx-hoopW/2,cy-hoopH/2,cx+hoopW/2,cy+hoopH/2,60f,60f,hoopPaint)
             } else {

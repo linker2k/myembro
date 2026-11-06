@@ -304,3 +304,16 @@ tasks.register<Test>("realisticBrightnessAcceptance") {
     testLogging { events("failed", "passed"); showStandardStreams = true }
     outputs.upToDateWhen { false }
 }
+
+// Explicit two-scene measurement; render and box times exclude PNG encoding.
+tasks.register<JavaExec>("measureFixedRealisticPreview") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.render.realistic.FixedRealisticMeasurement")
+    systemProperty("java.awt.headless", "true")
+    maxHeapSize = "768m"
+    args(providers.gradleProperty("fixedPreviewOutput").orElse(layout.buildDirectory.dir("fixed-preview").get().asFile.path).get(),
+        providers.gradleProperty("fixedPreviewPes").orElse("").get())
+    doFirst { require(providers.gradleProperty("fixedPreviewPes").isPresent) { "Supply -PfixedPreviewPes=/path/to/generated-skull.pes" } }
+}
