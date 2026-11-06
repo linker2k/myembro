@@ -14,6 +14,7 @@ import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModelProvider
 import io.github.linker2k.myembro.MainActivity
 import io.github.linker2k.myembro.R
+import io.github.linker2k.myembro.library.BundledDesigns
 import io.github.linker2k.myembro.engine.model.*
 import java.io.File
 import java.security.MessageDigest
@@ -151,14 +152,15 @@ class RealisticViewerInstrumentation:Instrumentation() {
             replace(input);awaitCondition { !ready() };Thread.sleep(300);check(!ready())
             check(before==hash(input)) { "Pattern mutated" }
             // A normal bundled PES uses the real ViewModel load path; preserve its original bytes.
-            runOnMainSync { vm.openSample() }
-            awaitCondition { !vm.loading&&vm.render!=null&&vm.fileName=="flower.pes" }
+            val bundledSample=BundledDesigns.files(targetContext).single { it.name=="sample_02_lightning.pes" }
+            runOnMainSync { vm.openFile(bundledSample) }
+            awaitCondition { !vm.loading&&vm.render!=null&&vm.fileName=="sample_02_lightning.pes" }
             waitForIdleSync();awaitCondition { !ready() }
             awaitCondition { !vm.checkingSewout }
             val safetyBefore=vm.sewoutReport?.hasBlockingIssues
             val sourceField=ViewerViewModel::class.java.getDeclaredField("sourceBytes").apply { isAccessible=true }
             val sourceBefore=(sourceField.get(vm) as ByteArray).copyOf()
-            click();awaitCondition { ready() };shot("realistic-bundled-flower.png")
+            click();awaitCondition { ready() };shot("realistic-bundled-lightning.png")
             check(safetyBefore==vm.sewoutReport?.hasBlockingIssues) { "Safety result changed" }
             check(sourceBefore.contentEquals(sourceField.get(vm) as ByteArray)) { "PES source bytes mutated" }
             val pesSha=MessageDigest.getInstance("SHA-256").digest(sourceBefore).joinToString("") { "%02x".format(it.toInt() and 255) }

@@ -20,8 +20,8 @@ class ViewerRealisticPreviewTest {
     private val plan=ViewerRealisticPlan(600,400,.368f,0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
     private fun sha(b:ByteArray)=MessageDigest.getInstance("SHA-256").digest(b).toList()
     @Test fun bundledPesAndModelAreByteIdenticalAfterRendering() {
-        val bytes=RuntimeEnvironment.getApplication().assets.open("samples/flower.pes").use { it.readBytes() }
-        val source=bytes.copyOf();val pattern=PatternReader.read(bytes,"flower.pes")
+        val bytes=RuntimeEnvironment.getApplication().assets.open("samples/sample_02_lightning.pes").use { it.readBytes() }
+        val source=bytes.copyOf();val pattern=PatternReader.read(bytes,"sample_02_lightning.pes")
         val stitches=pattern.stitches.toList();val threads=pattern.threads.toList();val metadata=pattern.metadata.toMap()
         val pes=sha(PesWriter.write(pattern))
         val image=renderViewerRealistic(pattern,plan) { false }
