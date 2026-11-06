@@ -16,6 +16,7 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 import io.github.linker2k.myembro.engine.render.realistic.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -26,9 +27,10 @@ import kotlin.math.*
 
 internal data class ViewerRealisticPlan(val width:Int,val height:Int,val unitsToPixels:Float,
     val centerX:Float,val centerY:Float,val hoopWidth:Float,val hoopHeight:Float,
-    val background:Int,val fabric:Int) {
-    val leftUnits get()=centerX-width/(2.0*unitsToPixels)
-    val topUnits get()=centerY-height/(2.0*unitsToPixels)
+    val background:Int,val fabric:Int,val hoopCenterX:Float=centerX,val hoopCenterY:Float=centerY,
+    val originXUnits:Double?=null,val originYUnits:Double?=null,val renderContent:Boolean=true) {
+    val leftUnits get()=originXUnits ?: (centerX-width/(2.0*unitsToPixels))
+    val topUnits get()=originYUnits ?: (centerY-height/(2.0*unitsToPixels))
     val svgScale get()=unitsToPixels*10.0/ThreadShape.SVG_PIXELS_PER_MM
     val dpi get()=(svgScale*96).roundToInt().coerceAtLeast(1)
     val outputBytes get()=width.toLong()*height*4
@@ -74,7 +76,7 @@ private class AndroidThreadAlpha:ThreadAlphaRasterizer,AutoCloseable {
 
 /** Render only: never writes pattern, source bytes, sewing gates or export settings. */
 private fun renderNativeViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticPlan,isCancelled:()->Boolean):ViewerRealisticImage {
-    require(plan.width>=3&&plan.height>=3&&plan.unitsToPixels>0)
+    require(plan.width>0&&plan.height>0&&plan.unitsToPixels>0)
     val started=System.nanoTime()
     val bitmap=Bitmap.createBitmap(plan.width,plan.height,Bitmap.Config.ARGB_8888).apply { density=Bitmap.DENSITY_NONE }
     try {
@@ -82,12 +84,14 @@ private fun renderNativeViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticP
         canvas.drawColor(plan.background)
         val fit=plan.unitsToPixels
         val fabric=Paint().apply { color=plan.fabric }
-        canvas.drawRoundRect(plan.width/2f-plan.hoopWidth*fit/2,plan.height/2f-plan.hoopHeight*fit/2,
-            plan.width/2f+plan.hoopWidth*fit/2,plan.height/2f+plan.hoopHeight*fit/2,60f*fit,60f*fit,fabric)
+        if(plan.renderContent)canvas.drawRoundRect(((plan.hoopCenterX-plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
+            ((plan.hoopCenterY-plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),
+            ((plan.hoopCenterX+plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
+            ((plan.hoopCenterY+plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),60f*fit,60f*fit,fabric)
         var scratch=IntArray(0)
         var maxTile=0
         AndroidThreadAlpha().use { alpha ->
-            val segments=PatternThreadSegments.from(pattern,plan.leftUnits,plan.topUnits).asIterable()
+            val segments=if(plan.renderContent)PatternThreadSegments.from(pattern,plan.leftUnits,plan.topUnits).asIterable() else emptyList()
             RealisticThreadRenderer.renderTiles(FixedRealisticPreview.dpi,segments,alpha,cache=null,pixelsPerSvgUnit=FixedRealisticPreview.svgScale,
                 isCancelled=isCancelled) { left,top,width,height,tile ->
                 val x=max(0,left);val y=max(0,top);val right=min(plan.width,left+width);val bottom=min(plan.height,top+height)
@@ -129,12 +133,30 @@ private class NativePreviewCache {
     @Synchronized fun close(){closed=true;if(users==0){master?.close();master=null}}
 }
 
-private fun nativePlan(plan:ViewerRealisticPlan):ViewerRealisticPlan {
-    val ratio=FixedRealisticPreview.PIXELS_PER_MM/(plan.unitsToPixels*10.0)
-    return plan.copy(width=ceil(plan.width*ratio).toInt().coerceAtLeast(3),
-        height=ceil(plan.height*ratio).toInt().coerceAtLeast(3),
-        unitsToPixels=(FixedRealisticPreview.PIXELS_PER_MM/10).toFloat())
+internal fun nativePlan(pattern:EmbPattern,plan:ViewerRealisticPlan):ViewerRealisticPlan {
+    val b=pattern.bounds
+    val hoopLeft=plan.hoopCenterX-plan.hoopWidth/2.0
+    val hoopTop=plan.hoopCenterY-plan.hoopHeight/2.0
+    val left=max(hoopLeft,b?.minX?.toDouble() ?: hoopLeft)
+    val top=max(hoopTop,b?.minY?.toDouble() ?: hoopTop)
+    val right=min(plan.hoopCenterX+plan.hoopWidth/2.0,b?.maxX?.toDouble() ?: hoopLeft)
+    val bottom=min(plan.hoopCenterY+plan.hoopHeight/2.0,b?.maxY?.toDouble() ?: hoopTop)
+    val nativeUnits=FixedRealisticPreview.PIXELS_PER_MM/10
+    val intersects=right>=left&&bottom>=top
+    val x=if(intersects)left else hoopLeft;val y=if(intersects)top else hoopTop
+    val width=if(intersects)ceil((right-left)*nativeUnits).toInt().coerceAtLeast(1) else 1
+    val height=if(intersects)ceil((bottom-top)*nativeUnits).toInt().coerceAtLeast(1) else 1
+    return plan.copy(width=width,height=height,unitsToPixels=nativeUnits.toFloat(),
+        centerX=(x+width/(2*nativeUnits)).toFloat(),centerY=(y+height/(2*nativeUnits)).toFloat(),
+        originXUnits=x,originYUnits=y,renderContent=intersects&&b!=null)
 }
+
+// 미측정, 체감용: owner-requested gesture settling delay, not a sewing/rendering limit.
+internal const val REALISTIC_GESTURE_DEBOUNCE_MS=100L
+
+/** Keep a completed image even when its camera plan is stale, until its replacement is ready. */
+internal fun displayedRealisticImage(enabled:Boolean,image:ViewerRealisticImage?):ViewerRealisticImage? =
+    image?.takeIf { enabled&&!it.bitmap.isRecycled }
 
 /** Direct entry point also used by JVM/Android tests. */
 internal fun renderViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticPlan,isCancelled:()->Boolean):ViewerRealisticImage {
@@ -145,7 +167,7 @@ internal fun renderViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticPlan,i
 private fun resolveViewerRealistic(pattern:EmbPattern,base:ViewerRealisticPlan,output:ViewerRealisticPlan,
     cache:NativePreviewCache,isCancelled:()->Boolean):ViewerRealisticImage {
     val started=System.nanoTime()
-    val master=cache.acquire() ?: cache.install(renderNativeViewerRealistic(pattern,nativePlan(base),isCancelled))
+    val master=cache.acquire() ?: cache.install(renderNativeViewerRealistic(pattern,nativePlan(pattern,base),isCancelled))
     var held=true
     try {
         val ppm=output.unitsToPixels*10.0
@@ -173,7 +195,7 @@ private fun resolveViewerRealistic(pattern:EmbPattern,base:ViewerRealisticPlan,o
     } finally { if(held)cache.release() }
 }
 
-internal data class ViewerRealisticState(val image:ViewerRealisticImage?,val busy:Boolean,val failed:Boolean)
+internal data class ViewerRealisticState(val image:ViewerRealisticImage?,val busy:Boolean,val failed:Boolean,val current:Boolean=true)
 
 @Composable
 internal fun rememberViewerRealistic(enabled:Boolean,data:RenderData,size:IntSize,fit:Float,cx:Float,cy:Float,
@@ -181,7 +203,8 @@ internal fun rememberViewerRealistic(enabled:Boolean,data:RenderData,size:IntSiz
     val basePlan=remember(data,size,fit,cx,cy,hoopW,hoopH,background,fabric) {
         ViewerRealisticPlan(size.width,size.height,fit,cx,cy,hoopW,hoopH,background,fabric)
     }
-    val source=remember(data,basePlan,enabled){NativePreviewCache()}
+    // The bounded native source no longer depends on canvas size, fit, zoom or pan.
+    val source=remember(data,hoopW,hoopH,cx,cy,background,fabric,enabled){NativePreviewCache()}
     DisposableEffect(source){onDispose{source.close()}}
     val plan=remember(basePlan,zoom,panX,panY){
         val scale=fit*zoom
@@ -201,11 +224,13 @@ internal fun rememberViewerRealistic(enabled:Boolean,data:RenderData,size:IntSiz
     }
     LaunchedEffect(enabled,data,plan) {
         val mine=Any();ticket=mine
-        // Main-thread disposal; a stale draw lambda checks isRecycled before drawing.
-        image?.close()
-        image=null;failed=false;busy=false
-        if(!enabled || size.width<3 || size.height<3 || fit<=0)return@LaunchedEffect
+        failed=false;busy=false
+        if(!enabled || size.width<3 || size.height<3 || fit<=0) {
+            image?.close();image=null
+            return@LaunchedEffect
+        }
         busy=true
+        if(image!=null||zoom!=1f||panX!=0f||panY!=0f)delay(REALISTIC_GESTURE_DEBOUNCE_MS)
         renderMutex.withLock {
         val pending=AtomicReference<ViewerRealisticImage?>(null)
         try {
@@ -214,7 +239,7 @@ internal fun rememberViewerRealistic(enabled:Boolean,data:RenderData,size:IntSiz
                 resolveViewerRealistic(data.pattern,basePlan,plan,source) { !context.isActive }.also { pending.set(it) }
             }
             coroutineContext.ensureActive()
-            if(ticket===mine) { image=rendered;pending.set(null) }
+            if(ticket===mine) { val previous=image;image=rendered;pending.set(null);previous?.close() }
         } catch(cancelled:java.util.concurrent.CancellationException) { throw cancelled }
         catch(_:Exception) { if(ticket===mine)failed=true }
         catch(_:OutOfMemoryError) { if(ticket===mine)failed=true }
@@ -224,5 +249,5 @@ internal fun rememberViewerRealistic(enabled:Boolean,data:RenderData,size:IntSiz
         }
         }
     }
-    return ViewerRealisticState(image?.takeIf { enabled&&it.plan==plan },enabled&&busy,enabled&&failed)
+    return ViewerRealisticState(displayedRealisticImage(enabled,image),enabled&&busy,enabled&&failed,image?.plan==plan)
 }

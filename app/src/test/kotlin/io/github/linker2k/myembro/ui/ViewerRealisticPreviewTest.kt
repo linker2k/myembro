@@ -49,9 +49,34 @@ class ViewerRealisticPreviewTest {
             val p=ViewerRealisticPlan(128,128,(native*multiplier/10).toFloat(),0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
             val image=renderViewerRealistic(pattern,p){false}
             assertNotNull(image.nativeCrop)
-            assertEquals(128/multiplier,image.bitmap.width)
+            assertEquals((pattern.bounds!!.width*io.github.linker2k.myembro.engine.render.realistic.FixedRealisticPreview.PIXELS_PER_MM/10).toInt(),image.bitmap.width)
             image.close();image.close()
             assertTrue(image.bitmap.isRecycled)
         }
+    }
+
+    @Test fun sourcePlanIsDesignIntersectHoopIndependentOfPortraitCanvas() {
+        val huge=EmbPattern(listOf(Stitch(-1000,-2000,Command.STITCH),Stitch(2000,3000,Command.STITCH)),listOf(EmbThread(Color.RED)))
+        val portrait=ViewerRealisticPlan(1080,2400,.92f,0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
+        val native=nativePlan(huge,portrait)
+        assertEquals(3200,native.width);assertEquals(3200,native.height)
+        assertEquals(-500.0,native.leftUnits);assertEquals(-500.0,native.topUnits)
+        assertEquals(40_960_000L,native.outputBytes)
+        assertEquals(native.width,nativePlan(huge,portrait.copy(width=2400,height=1080)).width)
+        val small=EmbPattern(listOf(Stitch(-250,-250,Command.STITCH),Stitch(250,250,Command.STITCH)),listOf(EmbThread(Color.RED)))
+        assertEquals(1600,nativePlan(small,portrait).width)
+        val outside=EmbPattern(listOf(Stitch(900,900,Command.STITCH),Stitch(1000,1000,Command.STITCH)),listOf(EmbThread(Color.RED)))
+        assertFalse(nativePlan(outside,portrait).renderContent)
+    }
+    @Test fun completedImageRemainsDisplayableWithAnOlderCameraPlan() {
+        val bitmap=android.graphics.Bitmap.createBitmap(3,3,android.graphics.Bitmap.Config.ARGB_8888)
+        val image=ViewerRealisticImage(bitmap,plan,0.0,0)
+        val newer=plan.copy(unitsToPixels=plan.unitsToPixels*2,centerX=20f)
+        assertNotEquals(newer,image.plan)
+        assertSame(image,displayedRealisticImage(true,image))
+        assertFalse(image.bitmap.isRecycled)
+        assertNull(displayedRealisticImage(false,image))
+        image.close()
+        assertNull(displayedRealisticImage(true,image))
     }
 }

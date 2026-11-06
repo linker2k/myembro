@@ -194,8 +194,16 @@ fun StitchCanvas(
                 canvas.translate(cx,cy);canvas.scale(1f/scale,1f/scale)
                 canvas.translate(-size.width/2f-pan.x,-size.height/2f-pan.y)
                 val crop=finished.nativeCrop
-                if(crop==null)canvas.drawBitmap(finished.bitmap,0f,0f,bitmapPaint) // exact viewport pixels
-                else {
+                // A pending viewport keeps the prior image at its old world-space plan.
+                val displayLeft=((plan.leftUnits-cx)*scale+size.width/2f+pan.x).toFloat()
+                val displayTop=((plan.topUnits-cy)*scale+size.height/2f+pan.y).toFloat()
+                val displayWidth=plan.width*scale/plan.unitsToPixels
+                val displayHeight=plan.height*scale/plan.unitsToPixels
+                if(crop==null) {
+                    if(preview.current)canvas.drawBitmap(finished.bitmap,0f,0f,bitmapPaint)
+                    else canvas.drawBitmap(finished.bitmap,null,RectF(displayLeft,displayTop,
+                        displayLeft+displayWidth,displayTop+displayHeight),bitmapPaint)
+                } else {
                     val requestedX=crop.left.roundToInt();val requestedY=crop.top.roundToInt()
                     val requestedW=crop.width().roundToInt().coerceIn(1,plan.width)
                     val requestedH=crop.height().roundToInt().coerceIn(1,plan.height)
@@ -203,8 +211,8 @@ fun StitchCanvas(
                     val r=minOf(finished.bitmap.width,requestedX+requestedW)
                     val b=minOf(finished.bitmap.height,requestedY+requestedH)
                     if(r>l&&b>t)canvas.drawBitmap(finished.bitmap,Rect(l,t,r,b),
-                        RectF((l-requestedX)*plan.width.toFloat()/requestedW,(t-requestedY)*plan.height.toFloat()/requestedH,
-                            (r-requestedX)*plan.width.toFloat()/requestedW,(b-requestedY)*plan.height.toFloat()/requestedH),bitmapPaint)
+                        RectF(displayLeft+(l-requestedX)*displayWidth/requestedW,displayTop+(t-requestedY)*displayHeight/requestedH,
+                            displayLeft+(r-requestedX)*displayWidth/requestedW,displayTop+(b-requestedY)*displayHeight/requestedH),bitmapPaint)
                 }
                 canvas.restore()
                 // The still contains fabric, not UI overlays. Keep the hoop ring above the image.

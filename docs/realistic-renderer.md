@@ -47,3 +47,34 @@ Results: the selected engine tests24/24 passed (original renderer19, segment/str
 The new JVM checks cover exact1.5-ratio area weights, a native-pixel crop, **32/64px/mm source identity and zero downsample callbacks**, and patch mean spread≤1.0 over4.43/8/16/32 outputs. Observed patch mean spread is0.3048193355. App tests cover source crop at native/above-native, idempotent release, cancellation, jumps/trims and unchanged model/PES bytes. The older opt-in direct-render acceptance task is left intact; its different-density direct-render contract is not this new pipeline and was not relabeled as a passing check.
 
 Run output: `BUILD SUCCESSFUL`. Native output rows have `calls=0`; lower-density rows have `calls=1`. Disposable PNGs: `/tmp/myembro-realistic-band/v5/{patch,skull}-{4.43,8.0,16.0,32.0}pxmm.png` (8 total). Measurement code is in engine tests, and this document/table are persistent in the repository.
+
+
+## Deployment blockers: retained frame and bounded native source
+
+The owner requested two fixes after06fe5aae. A completed image now remains displayed while a new viewport is pending. Its stored world-space plan is projected through the **current** camera transform, so pan/zoom does not fall through to flat stitch lines. Replacement happens only after the new result is ready; the previous image is then released. Disabled/disposed/recycled images are not kept. The current image still uses the settled1:1/native-crop paths; only the temporary prior frame is transformed during interaction.
+
+Viewport work is delayed until100ms after the last camera change. The single `REALISTIC_GESTURE_DEBOUNCE_MS` constant is explicitly annotated **“미측정, 체감용”**: owner-requested UX settling, not a measured rendering or sewing threshold. LaunchedEffect cancellation coalesces camera changes. Native-source leases remain valid while the previous frame is shown.
+
+The native source region is now **needle-down design bounds intersected with the world-space hoop rectangle**, independent of canvas size/aspect/fit/zoom/pan. The native plan retains its exact world origin, separately from the hoop center, so limiting the bitmap does not recenter the design or fabric. No intersection produces an empty-content background source. Degenerate line/empty allocations use a minimum1pixel dimension. Off-source viewport regions are background. The source-cache key also excludes canvas size and fit, allowing the same bounded source to survive rotation/resizing.
+
+### Native bitmap allocation arithmetic
+
+These are ARGB_8888 source-bitmap bytes (`width*height*4`), **not process RSS/GPU memory or total preview memory**. Output frames, AA scratch and temporary retained frames are additional. The first row is the manager's previous portrait-size example, not a new device measurement. The next rows are computed from native32px/mm and the clipped design/hoop extent.
+
+| Source extent/example | Native dimensions | Bytes | MiB |
+|---|---:|---:|---:|
+| Prior portrait example | 3700×5800 | 85,840,000 | 81.863403 |
+| At most100×100mm hoop | 3200×3200 | 40,960,000 | 39.062500 |
+| Clipped50×50mm design | 1600×1600 | 10,240,000 | 9.765625 |
+| Clipped10×10mm design | 320×320 | 409,600 | 0.390625 |
+
+`sourcePlanIsDesignIntersectHoopIndependentOfPortraitCanvas` asserts the100mm source cap,40,960,000-byte allocation, exact origin, portrait/landscape independence, smaller design limit and empty-content out-of-hoop case. `completedImageRemainsDisplayableWithAnOlderCameraPlan` checks that a completed bitmap with an older plan is retained and unrecycled until released. Actual gesture animation was not measured on an emulator/device.
+
+```bash
+./gradlew --offline --max-workers=4 :engine:test \
+  --tests '*FixedRealisticPreviewTest' --tests '*RealisticThreadRendererTest' \
+  --tests '*PatternThreadSegmentsTest' \
+  :app:testDebugUnitTest --tests '*ViewerRealisticPreviewTest' --continue
+```
+
+Selected engine24/24 and app5/5 passed; after excluding canvas/fit from the cache key, the selected app5/5 passed again. `BUILD SUCCESSFUL`. Renderer formulas, native density and PES/model data were not changed. No emulator was used.
