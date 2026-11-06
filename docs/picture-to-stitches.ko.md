@@ -51,7 +51,7 @@ ViewModel은 `photo/PhotoViewModel.kt`입니다. 단계는 `step = 0, 1, 2`(자�
 | 그림 선택 | `PhotoViewModel.load(uri)` `:203` | 내용을 직접 판별합니다(`photo/PictureIntake.kt:11`). MIME은 믿지 않습니다. 그림이 아니면 기존 도안 가져오기로 넘깁니다. |
 | 공유(SEND / SEND_MULTIPLE), 열기(VIEW) | `photo/ExternalPictureRouting.kt:7` `externalInputUris`, `:20` `routePictureSources` | 스트림이 `data`보다 우선. 그림이 여러 장이면 **마지막** 한 장을 열고, 나머지 파일은 가져오기로 넘깁니다. `MainActivity.kt:387, :414`에서 호출. |
 | AI `import_picture` | `app/.../relay/RelayPicture.kt`; `PictureInbox`(`photo/PictureInbox.kt`); `MainActivity.kt:100–104` → `beginAiPicture(colors)` `:180` | PNG/JPEG base64 1,000,000자 이하(`RelayPicture.kt:19`, 근거: 중계 메시지 1 MiB 한도에서 봉투 크기를 뺌). `colors` 2–6, 기본 4(`:21`, 사진 화면 기본값과 같음). 사용자가 사진 화면에서 다시 확인합니다. 가장 최근 요청만 남깁니다(`LatestPictureInbox`). |
-| SVG | `loadSvg` `:248` → `generateSvg` `:268` | 자르기와 모드를 건너뜁니다. 한도는 `svg/SvgPictureInput.kt:16–18`: 4788바이트, 요소 14개, 경로 점 202개 이하(근거 `docs/agent/svg-picture.md`). 첫 폭은 이모지 폭(`EmojiViewModel.WIDTH_MM`)을 크기 범위로 자른 값. `VectorArt`를 쓰며, 자동 새틴은 새틴 빈틈 규칙(6.4)을 받습니다. |
+| SVG | `loadSvg` `:248` → `generateSvg` `:268` | 자르기와 모드를 건너뜁니다. 한도는 `svg/SvgPictureInput.kt:17–19`: 200,000바이트(포함), 요소 14개, 경로 점 2,000개 이하(근거 `docs/agent/svg-picture.md`). 첫 폭은 이모지 폭(`EmojiViewModel.WIDTH_MM`)을 크기 범위로 자른 값. `VectorArt`를 쓰며, 자동 새틴은 새틴 빈틈 규칙(6.4)을 받습니다. |
 
 래스터 디코드: `decodeUprightPhoto` `:36–59`. 긴 변이 **1536px보다 크면** 2의 거듭제곱 `inSampleSize`로 반씩 줄여,
 디코드한 긴 변은 1536px 이하입니다. EXIF 방향 2–8을 적용합니다. 근거: `qa/photo-silhouette-performance.md`에 기록된 기존 디코드 한도.

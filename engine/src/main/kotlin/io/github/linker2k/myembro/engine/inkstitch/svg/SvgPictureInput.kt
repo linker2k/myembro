@@ -10,14 +10,19 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import javax.xml.parsers.DocumentBuilderFactory
 
-/** Untrusted SVG entry boundary. Limits are measured maxima of the 30 pinned bundled emoji;
- * see docs/agent/svg-picture.md. Not a new renderer: validated input uses VectorArt unchanged. */
+/** Untrusted SVG entry boundary. The element limit is the measured maximum of the 30 pinned bundled
+ * emoji; the byte limit is a user decision (2026-11-05: 200,000 bytes, inclusive, not KiB); the point
+ * limit is a user decision (2026-11-06: 2,000, inclusive) from local cost measurement: 103 of 127 local
+ * pictures fit, desktop stitch generation max 8.4 s, none over 20 s.
+ * See docs/agent/svg-picture.md. Not a new renderer: validated input uses VectorArt unchanged. */
 object SvgPictureInput {
-    const val MAX_BYTES = 4788
+    const val MAX_BYTES = 200_000
     const val MAX_ELEMENTS = 14
-    const val MAX_PATH_POINTS = 202
+    const val MAX_PATH_POINTS = 2_000
     data class Metrics(val bytes: Int, val elements: Int, val pathPoints: Int)
     data class Parsed(val art: VectorArt.Art, val metrics: Metrics)
+    /** Defaults are the limits above; other values exist only for local cost measurement (SvgCostMeasureTest). */
+    data class Limits(val bytes: Int = MAX_BYTES, val elements: Int = MAX_ELEMENTS, val pathPoints: Int = MAX_PATH_POINTS)
 
     fun read(input: InputStream): ByteArray {
         val buffer = ByteArray(MAX_BYTES + 1)
@@ -32,8 +37,8 @@ object SvgPictureInput {
         return buffer.copyOf(size)
     }
 
-    fun parse(bytes: ByteArray): Parsed {
-        require(bytes.size <= MAX_BYTES) { "SVG byte limit" }
+    fun parse(bytes: ByteArray, limits: Limits = Limits()): Parsed {
+        require(bytes.size <= limits.bytes) { "SVG byte limit" }
         val svg = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
         // Lexical prohibition is independent of Android/JAXP feature support. UTF-16 and NUL are
@@ -64,7 +69,7 @@ object SvgPictureInput {
         require(root.localName == "svg" && root.namespaceURI == "http://www.w3.org/2000/svg") { "SVG root required" }
         val allowed = setOf("svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "title", "desc", "metadata", "defs")
         val elements = doc.getElementsByTagName("*")
-        require(elements.length <= MAX_ELEMENTS) { "SVG element limit" }
+        require(elements.length <= limits.elements) { "SVG element limit" }
         for (i in 0 until elements.length) {
             val e = elements.item(i) as Element
             require(e.namespaceURI == root.namespaceURI && e.localName in allowed) { "Unsupported SVG element" }
@@ -81,9 +86,9 @@ object SvgPictureInput {
         var points = 0
         for (shape in art.shapes) {
             require(shape.strokeWidth.isFinite() && shape.strokeWidth >= 0) { "Invalid stroke" }
-            val paths = SvgPath.flatten(shape.d, shape.transform, maxPoints = MAX_PATH_POINTS - points)
+            val paths = SvgPath.flatten(shape.d, shape.transform, maxPoints = limits.pathPoints - points)
             points += paths.sumOf { it.points.size }
-            require(points <= MAX_PATH_POINTS && paths.flatMap { it.points }.all { it.x.isFinite() && it.y.isFinite() }) { "SVG point limit" }
+            require(points <= limits.pathPoints && paths.flatMap { it.points }.all { it.x.isFinite() && it.y.isFinite() }) { "SVG point limit" }
         }
         return Parsed(art, Metrics(bytes.size, elements.length, points))
     }
