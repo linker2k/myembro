@@ -32,7 +32,9 @@ object RelayPicture {
     private val PNG = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     private val JPEG = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
 
-    val DESCRIPTION = "Open an AI-made picture in myembro's picture input screen. The user must confirm there before a ShapeObject layer is added; this call never changes the design. SVG is preferred: send SVG text in data (flat solid fills, no embedded text/images). Raster PNG, JPEG, BMP, WebP, GIF, HEIF or AVIF must be small base64 (at most $MAX_BASE64_CHARS characters). colors 2-6 (default $DEFAULT_COLORS) is the initial color-mode choice. Only the latest pending picture is kept in memory. If too large, ask the user to share the picture to myembro."
+    // User-approved wording (2026-11-01). Basis: 136 generated samples (2026-10-31): direct SVG lost a blind
+    // comparison 5:0, PNG first was better, long requirements spoiled the drawing. SVG input stays supported.
+    val DESCRIPTION = "Open an AI-made picture in myembro's picture input screen; the user confirms there before it is added. Draw a PNG image first (not SVG). Keep the drawing prompt short: the subject, one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos. Thin lines are fine. Send PNG as base64 (at most $MAX_BASE64_CHARS characters); if it is too large, ask the user to save the picture and share it to myembro. colors 2-6 (default $DEFAULT_COLORS) is the initial color choice."
 
     fun opened(format:String,title:String)=buildJsonObject {
         put("ok",true);put("status","awaiting_user_confirmation");put("added",false)

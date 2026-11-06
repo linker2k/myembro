@@ -1,8 +1,7 @@
 <resources>
     <string name="editor_title">Embroidery editor</string>
     <string name="editor_back">Back to library</string>
-    <string name="editor_save">Save PES</string>
-    <string name="editor_hoop_size">Hoop %1$s</string>
+    <string name="editor_hoop_size">%1$s</string>
     <string name="editor_add">Add design</string>
     <string name="editor_layers">Layers</string>
     <string name="editor_duplicate">Duplicate</string>
@@ -14,7 +13,10 @@
     <string name="editor_redo">Redo</string>
     <string name="editor_fit">Fit hoop to screen</string>
     <string name="editor_composition">Your composition</string>
-    <string name="editor_object_count">%1$d objects</string>
+    <plurals name="editor_object_count">
+        <item quantity="one">%1$d object</item>
+        <item quantity="other">%1$d objects</item>
+    </plurals>
     <string name="editor_outside">Design extends outside the sewing area. Move or resize it before sewing.</string>
     <string name="editor_navigation_hint">Tap a design to select. Drag empty fabric to pan; pinch there to zoom.</string>
     <string name="editor_selection_hint">Drag to move. Use two fingers to rotate and scale, or drag a corner handle.</string>
@@ -31,14 +33,8 @@
     <string name="editor_save_failed">Could not save PES: %1$s</string>
     <string name="editor_saved">Saved to library: %1$s</string>
     <string name="editor_empty_export">There are no visible stitches to save.</string>
-    <string name="editor_project_menu">Project menu</string>
-    <string name="editor_project_save">Save project (.myembro)</string>
-    <string name="editor_project_open">Open project</string>
-    <string name="editor_project_name">Project name</string>
     <string name="editor_save_local">Save in app</string>
     <string name="editor_export_file">Export file</string>
-    <string name="editor_open_device">Open from device</string>
-    <string name="editor_projects_empty">No saved projects yet.</string>
     <string name="editor_project_saved">Project saved: %1$s</string>
     <string name="editor_project_open_failed">Could not open project: %1$s</string>
     <string name="editor_project_save_failed">Could not save project: %1$s</string>
@@ -138,4 +134,14 @@
     <string name="editor_colors_hint">Preview fabric and thread colors together.</string>
     <string name="editor_colors_preview_failed">Unable to preview this design. Your changes can still be canceled.</string>
     <string name="editor_title_compact">Editor</string>
+    <string name="editor_save_title">Save</string>
+    <string name="editor_save_name">Name</string>
+    <string name="editor_save_format">Format</string>
+    <string name="editor_format_project">Project (.myembro) – keeps everything editable</string>
+    <string name="editor_format_pes">Embroidery file (.pes) – for the machine</string>
+    <string name="editor_save_choice_body">This design was opened from %1$s. Replace that file, or save a copy under a new name?</string>
+    <string name="editor_save_replace">Save (replace)</string>
+    <string name="editor_save_as">Save as…</string>
+    <string name="editor_save_location">Save to</string>
+    <string name="editor_file_write_error">Cannot write this file.</string>
 </resources>

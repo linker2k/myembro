@@ -35,4 +35,18 @@ class UsbDesignNamesTest {
         assertFailsWith<IllegalArgumentException> { usbAllocatedBytes(-1, 4096) }
         assertFailsWith<IllegalArgumentException> { usbAllocatedBytes(1, 0) }
     }
+
+    @Test fun `long name keeps the original design file name and only replaces forbidden characters`() {
+        assertEquals("01 빗 4종!@#\$^&-+(123).pes", UsbDesignNames.longName("01 빗 4종!@#\$^&-+(123).pes", emptyList()))
+        assertEquals("봄 꽃.pes", UsbDesignNames.longName("folder/봄 꽃.pes", emptyList()))
+        assertEquals("a_b.pes", UsbDesignNames.longName("a|b.pes", emptyList()))
+        assertEquals("봄 꽃 (1).pes", UsbDesignNames.longName("봄 꽃.pes", listOf("봄 꽃.PES")))
+    }
+
+    @Test fun `batch names are planned in write order without own alias collisions`() {
+        fun payload(name: String) = DirectUsbExporter.Payload(name, name, ByteArray(1), false)
+        val names = DirectUsbExporter.names(emptyList(), listOf(payload("LEMON.PES"), payload("lemon.pes"), payload("봄.pes"), payload("봄.pes")))
+        assertEquals(listOf("LEMON.PES" to null, "LEMON~1.PES" to "lemon (1).pes", "DESIGN.PES" to "봄.pes",
+            "DESIGN~1.PES" to "봄 (1).pes"), names)
+    }
 }

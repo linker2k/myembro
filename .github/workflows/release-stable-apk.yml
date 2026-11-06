@@ -1,0 +1,56 @@
+# Copies the release's versioned APK (myembro-<version>.apk) to myembro.apk, the fixed name the
+# README download link uses (releases/latest/download/myembro.apk). Same bytes; no signing, no secrets.
+name: Release stable APK name
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (for example v0.4.0-beta.3)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  stable-apk:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Find exactly one versioned APK
+        id: find
+        run: |
+          mapfile -t apks < <(gh release view "$TAG" --json assets -q '.assets[].name' | grep -E '^myembro-.+\.apk$')
+          if [ "${#apks[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one myembro-*.apk in $TAG, found ${#apks[@]}: ${apks[*]}"
+            exit 1
+          fi
+          echo "name=${apks[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the same bytes as myembro.apk
+        env:
+          APK: ${{ steps.find.outputs.name }}
+        run: |
+          mkdir in out
+          gh release download "$TAG" --pattern "$APK" --dir in
+          cp "in/$APK" myembro.apk
+          gh release upload "$TAG" myembro.apk --clobber
+
+      - name: Check both assets have the same sha256
+        env:
+          APK: ${{ steps.find.outputs.name }}
+        run: |
+          gh release download "$TAG" --pattern myembro.apk --dir out
+          versioned=$(sha256sum "in/$APK" | cut -d' ' -f1)
+          stable=$(sha256sum out/myembro.apk | cut -d' ' -f1)
+          echo "$APK $versioned"
+          echo "myembro.apk $stable"
+          if [ "$versioned" != "$stable" ]; then
+            echo "::error::myembro.apk does not match $APK"
+            exit 1
+          fi

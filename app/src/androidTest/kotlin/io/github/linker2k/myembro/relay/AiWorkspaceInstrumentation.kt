@@ -69,7 +69,7 @@ class AiWorkspaceInstrumentation : Instrumentation() {
                 .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             fun pictureButton(): AccessibilityNodeInfo? {
                 fun all(n:AccessibilityNodeInfo):List<AccessibilityNodeInfo> = listOf(n)+(0 until n.childCount).flatMap { n.getChild(it)?.let(::all).orEmpty() }
-                return uiAutomation.rootInActiveWindow?.let(::all)?.firstOrNull { it.text?.toString()==targetContext.getString(R.string.photo_edit) }
+                return uiAutomation.rootInActiveWindow?.let(::all)?.firstOrNull { it.text?.toString()==targetContext.getString(R.string.photo_next) }
             }
             await("picture input loaded") { pictureButton()!=null }
             check(vm.project.objects.size==1)
@@ -87,7 +87,7 @@ class AiWorkspaceInstrumentation : Instrumentation() {
                 return uiAutomation.rootInActiveWindow?.let(::all).orEmpty()
             }
             fun find(text: String) = nodes().firstOrNull { it.text?.toString() == text || it.contentDescription?.toString() == text }
-            await("object count") { find(targetContext.getString(R.string.editor_object_count, 2)) != null }
+            await("object count") { find(targetContext.resources.getQuantityString(R.plurals.editor_object_count, 2, 2)) != null }
             var undo = checkNotNull(find(targetContext.getString(R.string.editor_undo)))
             while (!undo.isClickable) undo = checkNotNull(undo.parent)
             check(undo.isEnabled) { "Undo is disabled" }

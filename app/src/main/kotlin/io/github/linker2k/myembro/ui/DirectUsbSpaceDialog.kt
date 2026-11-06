@@ -24,13 +24,13 @@ internal fun DirectUsbSpaceDialog(vm: LibraryViewModel) {
         title = { Text(stringResource(R.string.usb_direct_space_title)) },
         text = { Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.usb_direct_space_body, plan.requiredBytes, plan.freeBytes, plan.payloads.size, plan.freeEntries))
+            Text(stringResource(R.string.usb_direct_space_body, plan.requiredBytes, plan.freeBytes, plan.requiredEntries, plan.freeEntries))
             if (plan.candidates.isEmpty()) Text(stringResource(R.string.usb_direct_space_empty))
             plan.candidates.forEach { entry ->
                 Row(Modifier.fillMaxWidth().clickable { toggle(entry.name) }.padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(entry.name in selected, { toggle(entry.name) })
-                    Text("${entry.name} (${entry.size} B)", style = MaterialTheme.typography.bodyMedium)
+                    Text("${entry.longName ?: entry.name} (${entry.size} B)", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         } },

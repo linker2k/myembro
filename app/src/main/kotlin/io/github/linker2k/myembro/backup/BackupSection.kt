@@ -26,9 +26,9 @@ fun BackupSection(vm: BackupViewModel = viewModel()) {
                 Text(stringResource(R.string.backup_title),style=MaterialTheme.typography.titleMedium)
             }
             Text(stringResource(R.string.backup_description),style=MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                Button(enabled=!vm.busy,onClick={save.launch("myembro-backup-${LocalDate.now()}.zip")}) {Text(stringResource(R.string.backup_save))}
-                OutlinedButton(enabled=!vm.busy,onClick={load.launch(arrayOf("application/zip","application/x-zip-compressed","application/octet-stream"))}) {Text(stringResource(R.string.backup_restore))}
+            Row(Modifier.height(IntrinsicSize.Min),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Button(modifier=Modifier.fillMaxHeight(),enabled=!vm.busy,onClick={save.launch("myembro-backup-${LocalDate.now()}.zip")}) {Text(stringResource(R.string.backup_save))}
+                OutlinedButton(modifier=Modifier.fillMaxHeight(),enabled=!vm.busy,onClick={load.launch(arrayOf("application/zip","application/x-zip-compressed","application/octet-stream"))}) {Text(stringResource(R.string.backup_restore))}
             }
             if(vm.busy) {LinearProgressIndicator(Modifier.fillMaxWidth());Text(vm.progress.ifBlank {stringResource(R.string.backup_working)})}
         }

@@ -3,6 +3,7 @@ package io.github.linker2k.myembro.ui.photo
 
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrection
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoCorrections
+import io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -27,12 +28,9 @@ import io.github.linker2k.myembro.engine.io.PesWriter
 import io.github.linker2k.myembro.engine.model.EmbThread
 import io.github.linker2k.myembro.engine.sewout.*
 import io.github.linker2k.myembro.ui.RenderData
-import io.github.linker2k.myembro.ui.editor.suggestDesignName
-import io.github.linker2k.myembro.ui.editor.writeNamedDesign
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
 import io.github.linker2k.myembro.ui.viewerSewoutMachine
 import kotlinx.coroutines.*
-import java.io.File
 import kotlin.math.abs
 
 /** The photo screen's decode: at most 1536px on the long edge (power-of-two sampling), EXIF orientation applied. */
@@ -63,11 +61,6 @@ internal fun decodeUprightPhoto(open: () -> java.io.InputStream): Bitmap {
 
 enum class PhotoMode { SILHOUETTE, OUTLINE, COLOR }
 
-/** Photo window generation limit (texture and color stages), user decision 2026-10-27: 1 minute. */
-internal const val PHOTO_GENERATION_TIMEOUT_MS = 60_000L
-/** The same boundary withTimeout applies: a run lasting the full limit or longer has timed out. */
-internal fun photoGenerationTimedOut(startMs: Long, nowMs: Long) = nowMs - startMs >= PHOTO_GENERATION_TIMEOUT_MS
-
 class PhotoViewModel @JvmOverloads constructor(app: Application,
     private val textureGenerator: ThreadTextureGenerator? = null,
 ) : AndroidViewModel(app) {
@@ -79,11 +72,35 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     var panX by mutableFloatStateOf(0f); private set
     var panY by mutableFloatStateOf(0f); private set
     var style by mutableStateOf(PhotoMode.COLOR); private set
-    var detail by mutableIntStateOf(1); private set
+    /** Picture resolution (long side, px) and small-piece area (mm²); null keeps the mode default, so the
+     * defaults give the former detail-1 / sample-pack results. A mode or B&W change returns to the default. */
+    var resolutionPx by mutableStateOf<Int?>(null); private set
+    var pieceAreaMm2 by mutableStateOf<Double?>(null); private set
+    /** Long side actually traced by the latest preparation (after the default's 0.2mm/px cap and the source size). */
+    var appliedResolutionPx by mutableStateOf<Int?>(null); private set
+    private val usesColorRegions get() = style == PhotoMode.COLOR && !grayscale
+    val resolutionSteps: List<Int> get() = PhotoPreparationPolicy.resolutionSteps(
+        if (usesColorRegions) PhotoPreparationPolicy.COLOR_DEFAULT_EDGE else PhotoPreparationPolicy.MONO_DEFAULT_EDGE,
+        source?.let { maxOf(it.width, it.height) } ?: Int.MAX_VALUE)
+    val effectiveResolutionPx get() = resolutionPx ?: if (usesColorRegions) PhotoPreparationPolicy.COLOR_DEFAULT_EDGE else PhotoPreparationPolicy.MONO_DEFAULT_EDGE
+    val pieceAreaSteps: List<Double> get() = PhotoPreparationPolicy.pieceAreaSteps(
+        if (style == PhotoMode.COLOR) PhotoPreparationPolicy.COLOR_DEFAULT_PIECE_AREA_MM2 else PhotoPreparationPolicy.MONO_DEFAULT_PIECE_AREA_MM2,
+        allowOff = style != PhotoMode.COLOR)
+    val effectivePieceAreaMm2 get() = pieceAreaMm2 ?: if (style == PhotoMode.COLOR) PhotoPreparationPolicy.COLOR_DEFAULT_PIECE_AREA_MM2 else PhotoPreparationPolicy.MONO_DEFAULT_PIECE_AREA_MM2
+    /** The colour B&W (Wu) route has no small-piece step; its paint is preserved as before. */
+    val pieceAreaApplies get() = !(style == PhotoMode.COLOR && grayscale)
+    fun changeResolution(value: Int) {
+        require(value in resolutionSteps)
+        if (value != effectiveResolutionPx) { resolutionPx = value; step = 1; prepare() }
+    }
+    fun changePieceArea(value: Double) {
+        require(value in pieceAreaSteps)
+        if (value != effectivePieceAreaMm2) { pieceAreaMm2 = value; step = 1; prepare() }
+    }
     var colorCount by mutableIntStateOf(4); private set
     var grayscale by mutableStateOf(false); private set
     fun changeGrayscale(value:Boolean) {
-        if(value!=grayscale) { grayscale=value;step=1;prepare() }
+        if(value!=grayscale) { grayscale=value;resolutionPx=null;step=1;prepare() }
     }
     // Null preserves the existing per-mode default: one median3 for mono, none for color.
     var noiseSize by mutableStateOf<Int?>(null); private set
@@ -136,6 +153,32 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     var separatedPreview by mutableStateOf<Bitmap?>(null); private set
     var outline by mutableStateOf<RedworkOutline?>(null); private set
     var progressStage by mutableIntStateOf(0); private set
+    var generationElapsedMs by mutableLongStateOf(0L); private set
+    internal var generationProgress by mutableStateOf(PhotoGenerationProgress()); private set
+    private var generationAllowanceMs by mutableLongStateOf(PHOTO_GENERATION_TIMEOUT_MS)
+    internal var generationClock: () -> Long = SystemClock::elapsedRealtime
+    val generationNeedsDecision get() = busy && step == 2 && photoGenerationTimedOut(0, generationElapsedMs, generationAllowanceMs)
+    fun extendGeneration() {
+        if (generationNeedsDecision) generationAllowanceMs = photoExtendedAllowance(generationElapsedMs, generationAllowanceMs)
+    }
+    internal suspend fun <T> runGeneration(version: Int = revision, block: suspend () -> T): T = coroutineScope {
+        val start = generationClock()
+        generationElapsedMs = 0L
+        generationAllowanceMs = PHOTO_GENERATION_TIMEOUT_MS
+        generationProgress = PhotoGenerationProgress()
+        val timer = launch {
+            while (version == revision) {
+                generationElapsedMs = (generationClock() - start).coerceAtLeast(0)
+                delay(100)
+            }
+        }
+        try { block() } finally { timer.cancel() }
+    }
+    private fun generationCheckpoint(version: Int, phase: String) {
+        if (Thread.currentThread().isInterrupted || version != revision) throw InterruptedException()
+        generationProgress = generationProgress.checkpoint(phase)
+    }
+
     private var bytes: ByteArray? = null
     private var work: Job? = null
     private var revision = 0
@@ -147,9 +190,11 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
     val inkWidthRange: ClosedFloatingPointRange<Double>? get() = svgArt?.let {
         pictureWidthRange(hoop, io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(it))
     } ?: inkRatio?.let { photoInkWidthRange(hoop, it) }
+    /** Embroidery height ÷ width, for the "width × height" size title. */
+    val inkAspect: Double? get() = svgArt?.let { io.github.linker2k.myembro.engine.inkstitch.svg.VectorArt.aspectRatio(it) }
+        ?: (colorPreview?.inkOutline ?: outline)?.let(::photoInkAspect)
     val inkWidthMm: Double? get() = if (svgArt != null) widthMm else inkRatio?.let { Math.round(widthMm * it * 10) / 10.0 }
     val passed get() = report?.let { it.analysisComplete && !it.hasBlockingIssues } == true
-    val canSend get() = !busy && bytes != null && passed
     val canEdit get() = ThreadTextureOutputGate.canEdit(textureActive, (render?.pattern?.stitchCount ?: 0)>0, busy, report, bytes != null)
     val resultName get() = getApplication<Application>().getString(if(textureActive) R.string.photo_texture_name else R.string.photo_name)
 
@@ -157,7 +202,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         work?.cancel(); revision++; busy = false; step = 0; source = null; error = null
         isSvg = false; svgArt = null; textureOptions = ThreadTextureOptions()
         correction = PhotoCorrection.ORIGINAL; correctionAlphaBypassed = false; noiseSize = null; contrastFactor = 1f
-        zoom = 1f; panX = 0f; panY = 0f; detail = 1; colorCount = 4; grayscale=false; style = PhotoMode.COLOR; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
+        zoom = 1f; panX = 0f; panY = 0f; resolutionPx = null; pieceAreaMm2 = null; colorCount = 4; grayscale=false; style = PhotoMode.COLOR; widthMm = photoMaxWidthMm(hoop); inkRatio = null; invalidateResult()
     }
     /** Only a returned AI picture carries its requested color count; normal begin retains 4. */
     fun beginAiPicture(colors: Int) {
@@ -253,9 +298,11 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; error = null; step = 2; progressStage = 3; render = null; shapeObject = null; report = null; bytes = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
-                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art, width)
+                val output = runGeneration(version) { runInterruptible(Dispatchers.Default) {
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", getApplication<Application>().getString(photoObjectName(PhotoMode.COLOR)), art.copy(myThreads = snapshot.myThreads), width)
                     val pattern = shape.localPattern()
+                    generationCheckpoint(version, "stitches_ready=${pattern.stitchCount}")
+                    generationCheckpoint(version, "pes")
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     val check = SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),
                         SewoutOptions(hoop = frame, origin = DesignOrigin.APP_GENERATED))
@@ -280,21 +327,19 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         }
     }
     fun transform(scale: Float, dx: Float, dy: Float) {
-        zoom = (zoom * scale).coerceIn(1f, 4f)
+        val bitmap = source ?: return
+        zoom = (zoom * scale).coerceIn(photoMinimumZoom(bitmap.width, bitmap.height, hoop.width.toDouble() / hoop.height), 4f)
         panX = (panX - dx * 2).coerceIn(-1f, 1f); panY = (panY - dy * 2).coerceIn(-1f, 1f)
     }
     fun changeStyle(value: PhotoMode) {
         if(value==style) return
-        work?.cancel(); revision++; busy=false; style=value; error=null
+        work?.cancel(); revision++; busy=false; style=value; error=null; resolutionPx=null; pieceAreaMm2=null
         if(value == PhotoMode.COLOR && correction == PhotoCorrection.OTSU) correction = PhotoCorrection.ORIGINAL
         render=null; report=null; bytes=null; step=1; prepare()
     }
-    fun changeDetail(value: Int) { if (value != detail) { detail = value; step = 1; prepare() } }
     fun cancel() { work?.cancel(); revision++; busy = false; error = null; if (step == 1) step = 0 }
-    fun lowerDetail() {
-        if(textureActive) changeTextureDetail(TextureDetail.COARSE)
-        else if (detail > 0) changeDetail(detail - 1) else back()
-    }
+    /** Thread texture only; resolution is never lowered automatically (user decision 2026-11-01). */
+    fun lowerDetail() { if(textureActive) changeTextureDetail(TextureDetail.COARSE) }
     fun back() { work?.cancel(); revision++; busy = false; error = null; step = (step - 1).coerceAtLeast(0) }
     fun next() { if (step == 0) { step = 1; prepare() } else if (previewReady && !busy) { step = 2; generateResult() } }
     private fun invalidateResult() { texturePreview = null; colorPreview = null; outline = null; separatedPreview = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null }
@@ -308,24 +353,25 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         val pictureWidth = widthMm.coerceIn(PHOTO_MIN_WIDTH_MM..photoMaxWidthMm(frame))
         val selectedTexture = textureOptions.copy(enabled=textureActive)
         val pictureHeight = pictureWidth * frame.height / frame.width
-        val edge = photoRasterSize(detail, pictureWidth, pictureHeight)
+        val selectedResolution = effectiveResolutionPx; val selectedPieceArea = effectivePieceAreaMm2
+        // The 0.2mm/px cap shapes only the default (unchanged results); a chosen step is used as chosen.
+        val edge = if (resolutionPx == null) PhotoPreparationPolicy.photoRasterEdge(selectedResolution, pictureWidth, pictureHeight) else selectedResolution
         busy = true; progressStage = 1; error = null; invalidateResult()
         work = viewModelScope.launch {
             try {
                 delay(180)
                 val output = runInterruptible(Dispatchers.Default) {
                     val aspect = frame.width.toDouble() / frame.height
-                    val w = if(selectedTexture.enabled) io.github.linker2k.myembro.engine.texture.TextureRasterPolicy.edge(pictureWidth,selectedTexture.detail.pitchMmPerPixel)
-                        else if (aspect >= 1) edge else (edge * aspect).toInt().coerceAtLeast(1)
-                    val h = if(selectedTexture.enabled) (w / aspect).toInt().coerceAtLeast(1)
-                        else if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
+                    // Color drawing (not B&W) reads the crop at source resolution, like the sample pack.
+                    val regionRaster = if(selectedMode==PhotoMode.COLOR && !selectedTexture.enabled && !selectedGrayscale) photoRegionRaster(crop, selectedResolution) else null
+                    val w0 = if(selectedTexture.enabled) io.github.linker2k.myembro.engine.texture.TextureRasterPolicy.edge(pictureWidth,selectedTexture.detail.pitchMmPerPixel)
+                        else regionRaster?.first ?: if (aspect >= 1) edge else (edge * aspect).toInt().coerceAtLeast(1)
+                    val h0 = if(selectedTexture.enabled) (w0 / aspect).toInt().coerceAtLeast(1)
+                        else regionRaster?.second ?: if (aspect >= 1) (edge / aspect).toInt().coerceAtLeast(1) else edge
+                    val w = w0; val h = h0
+                    if (version == revision) appliedResolutionPx = maxOf(w, h)
                     val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                    // RGB-only engine contract: composite transparent photo pixels onto white paper.
-                    Canvas(scaled).apply {
-                        if(selectedMode!=PhotoMode.COLOR) drawColor(android.graphics.Color.WHITE)
-                        drawBitmap(bitmap, Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height),
-                            Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
-                    }
+                    drawPhotoCrop(Canvas(scaled), bitmap, crop, w.toFloat(), h.toFloat(), selectedMode == PhotoMode.COLOR)
                     val pixels = IntArray(w * h); scaled.getPixels(pixels, 0, w, 0, 0, w, h); scaled.recycle()
                     val corrected = PhotoCorrections.adjust(w,h,pixels,selectedMode!=PhotoMode.COLOR,selectedNoise,selectedContrast,selectedCorrection == PhotoCorrection.OTSU)
                     if (version == revision) {
@@ -341,11 +387,17 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                         return@runInterruptible (null as RedworkOutline?) to 1.0
                     }
                     if(selectedMode==PhotoMode.COLOR) {
-                        val preview=ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
-                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads) { phase ->
+                        val started = SystemClock.elapsedRealtime(); var quantized = started
+                        val progress: (String) -> Unit = { phase ->
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                            if(phase!="quantization" && progressStage==1) quantized = SystemClock.elapsedRealtime()
                             progressStage=if(phase=="quantization") 1 else 2
                         }
+                        val preview=if(regionRaster!=null) ColorDrawingPipeline.traceRegions(w,h,corrected.pixels,pictureWidth,selectedColors,
+                            myThreads=snapshot.myThreads,minPieceAreaMm2=selectedPieceArea,checkpoint=progress)
+                        else ColorDrawingPipeline.trace(w,h,corrected.pixels,pictureWidth,selectedColors,
+                            minAreaMm2=ColorDrawingPipeline.MINIMUM_REGION_AREA_MM2,grayscale=selectedGrayscale,myThreads=snapshot.myThreads,checkpoint=progress)
+                        Log.i("PhotoTiming", "color_regions_ms=${quantized-started} color_trace_ms=${SystemClock.elapsedRealtime()-started} raster=${w}x${h} sample_regions=${regionRaster!=null}")
                         if(version==revision) {
                             colorPreview=preview
                             separatedPreview=Bitmap.createBitmap(preview.previewPixels(),preview.width,preview.height,Bitmap.Config.ARGB_8888)
@@ -355,7 +407,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                     var tick = SystemClock.elapsedRealtime(); var phase = "raster"
                     fun trace(input: IntArray) = RedworkPipeline.trace(w,h,input,pictureWidth,0,
                         EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
-                        minAreaMm2 = photoMinimumArea(detail), maxContours = 128,
+                        minAreaMm2 = selectedPieceArea, maxContours = 128,
                         onQuantized = { separated ->
                             if (version == revision) separatedPreview = Bitmap.createBitmap(
                                 separated.map { it or 0xFF000000.toInt() }.toIntArray(),w,h,Bitmap.Config.ARGB_8888)
@@ -371,7 +423,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                     if (binaryMask != null) {
                         val traced = RedworkPipeline.traceMask(w,h,binaryMask,pictureWidth,
                             EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(R.string.photo_name)),
-                            minAreaMm2=photoMinimumArea(detail),maxContours=128,
+                            minAreaMm2=selectedPieceArea,maxContours=128,
                             onQuantized={ separated -> if(version==revision) separatedPreview=Bitmap.createBitmap(
                                 separated.map { it or 0xff000000.toInt() }.toIntArray(),w,h,Bitmap.Config.ARGB_8888) }) {
                             if(Thread.currentThread().isInterrupted) throw InterruptedException()
@@ -404,7 +456,7 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
         busy = true; progressStage = 3; textureProgress=0f; error = null; render = null; shapeObject = null; report = null; bytes = null; resultSizeMm = null
         work = viewModelScope.launch {
             try {
-                val output = withTimeout(PHOTO_GENERATION_TIMEOUT_MS) { runInterruptible(Dispatchers.Default) {
+                val output = runGeneration(version) { runInterruptible(Dispatchers.Default) {
                     val tick = SystemClock.elapsedRealtime()
                     var shape: io.github.linker2k.myembro.engine.edit.ShapeObject? = null
                     val generatedPattern = if(selectedStyle==PhotoMode.COLOR && selectedTexture.enabled) {
@@ -415,17 +467,19 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
                             error("Texture generation must not fall back to ordinary fill")
                         }
                     } else if(selectedStyle==PhotoMode.COLOR) {
-                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) {
-                            if(Thread.currentThread().isInterrupted) throw InterruptedException()
+                        val generated = ColorDrawingPipeline.generate(requireNotNull(colorPreview),frame) { phase ->
+                            generationCheckpoint(version, phase)
                         }
                         shape = io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.fromPhoto("prepared",
                             getApplication<Application>().getString(photoObjectName(selectedStyle)),generated,widthMm)
                         if(shape == null) Log.w("PhotoBlocks", "Block editing unavailable: ${io.github.linker2k.myembro.engine.edit.ShapeObjectFactory.photoUnsupportedReason(generated)}")
                         generated.pattern
                     } else RedworkPipeline.generate(requireNotNull(traced),
-                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) {
-                        if (Thread.currentThread().isInterrupted) throw InterruptedException()
+                        EmbThread(0xFFB5492A.toInt(),getApplication<Application>().getString(photoObjectName(selectedStyle))),photoMode=true,hoop=frame,style=if(selectedStyle==PhotoMode.OUTLINE) PhotoStyle.OUTLINE else PhotoStyle.SILHOUETTE) { phase ->
+                        generationCheckpoint(version, phase)
                     }.pattern
+                    generationCheckpoint(version, "stitches_ready=${generatedPattern.stitchCount}")
+                    generationCheckpoint(version, "pes")
                     Log.i("PhotoTiming", "stitches_ms=${SystemClock.elapsedRealtime()-tick} contours=${traced?.contourCount ?: 0}")
                     if(!selectedTexture.enabled && generatedPattern.stitchCount==0) return@runInterruptible Triple(RenderData(generatedPattern),null,null) to shape
                     if(selectedTexture.enabled) {
@@ -452,25 +506,6 @@ class PhotoViewModel @JvmOverloads constructor(app: Application,
             } catch (_: LinkageError) { if(version==revision) error=R.string.device_generation_failed
             } catch (_: Exception) { if(version==revision) error=R.string.photo_stitches_failed
             } finally { if(version==revision) busy=false }
-        }
-    }
-    fun send(onReady: (File) -> Unit) {
-        if (!canSend) return
-        val pes = bytes ?: return
-        busy = true; error = null
-        viewModelScope.launch {
-            try {
-                val file = withContext(Dispatchers.IO) {
-                    val directory = File(getApplication<Application>().filesDir, "designs")
-                    val name = suggestDesignName(getApplication<Application>().getString(when { textureActive -> R.string.photo_texture_file_stem; style==PhotoMode.OUTLINE -> R.string.photo_outline_file_stem; style==PhotoMode.COLOR -> R.string.photo_color_file_stem; else -> R.string.photo_file_stem })) { stem ->
-                        directory.listFiles()?.any { it.nameWithoutExtension.equals(stem, true) } == true
-                    }
-                    writeNamedDesign(directory, name, "pes", false, pes)
-                }
-                onReady(file)
-            } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { error = R.string.photo_save_failed
-            } finally { busy = false }
         }
     }
 }

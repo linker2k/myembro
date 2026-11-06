@@ -98,7 +98,7 @@ class PictureIntakeInstrumentation : Instrumentation() {
                 }
                 if(index==0) check(display.endsWith(".svg"))
                 check(resolver.getType(download!!) == mime)
-                click(targetContext.getString(R.string.photo_pick_again))
+                click(targetContext.getString(R.string.photo_pick_file))
                 await("SAF picker") { uiAutomation.rootInActiveWindow?.packageName?.toString()?.contains("documentsui")==true }
                 if(find(display)==null) {
                     if(find("Downloads","다운로드")==null) click("Show roots","루트 표시","탐색 창 표시","탐색 메뉴 열기")

@@ -1,0 +1,2051 @@
+{
+ "version": 1,
+ "designs": [
+  {
+   "id": "01-skull",
+   "file": "sample_01_skull.pes",
+   "title": "해골",
+   "titleEn": "Skull",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "02-lightning",
+   "file": "sample_02_lightning.pes",
+   "title": "번개",
+   "titleEn": "Lightning",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "03-crown",
+   "file": "sample_03_crown.pes",
+   "title": "왕관",
+   "titleEn": "Crown",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "04-anchor",
+   "file": "sample_04_anchor.pes",
+   "title": "닻",
+   "titleEn": "Anchor",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "05-rocket",
+   "file": "sample_05_rocket.pes",
+   "title": "로켓",
+   "titleEn": "Rocket",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "06-cactus-pot",
+   "file": "sample_06_cactus_pot.pes",
+   "title": "선인장 화분",
+   "titleEn": "Cactus Pot",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "07-sitting-cat",
+   "file": "sample_07_sitting_cat.pes",
+   "title": "앉은 고양이",
+   "titleEn": "Sitting Cat",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "08-mountain-sun-badge",
+   "file": "sample_08_mountain_sun_badge.pes",
+   "title": "산과 해 배지",
+   "titleEn": "Mountain and Sun Badge",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "09-flame",
+   "file": "sample_09_flame.pes",
+   "title": "불꽃",
+   "titleEn": "Flame",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "10-octopus",
+   "file": "sample_10_octopus.pes",
+   "title": "문어",
+   "titleEn": "Octopus",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "11-sword-shield",
+   "file": "sample_11_sword_shield.pes",
+   "title": "칼과 방패",
+   "titleEn": "Sword and Shield",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "12-diamond-gem",
+   "file": "sample_12_diamond_gem.pes",
+   "title": "보석",
+   "titleEn": "Diamond",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "13-dog-face",
+   "file": "sample_13_dog_face.pes",
+   "title": "강아지",
+   "titleEn": "Puppy",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "14-rabbit",
+   "file": "sample_14_rabbit.pes",
+   "title": "토끼",
+   "titleEn": "Rabbit",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "15-fox-face",
+   "file": "sample_15_fox_face.pes",
+   "title": "여우",
+   "titleEn": "Fox",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "16-panda",
+   "file": "sample_16_panda.pes",
+   "title": "팬더",
+   "titleEn": "Panda",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "17-penguin",
+   "file": "sample_17_penguin.pes",
+   "title": "펭귄",
+   "titleEn": "Penguin",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 1
+  },
+  {
+   "id": "18-owl",
+   "file": "sample_18_owl.pes",
+   "title": "부엉이",
+   "titleEn": "Owl",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "19-turtle",
+   "file": "sample_19_turtle.pes",
+   "title": "거북이",
+   "titleEn": "Turtle",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "20-baby-trex",
+   "file": "sample_20_baby_trex.pes",
+   "title": "아기 공룡",
+   "titleEn": "Baby T-Rex",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "21-skull-rose",
+   "file": "sample_21_skull_rose.pes",
+   "title": "해골과 장미",
+   "titleEn": "Skull and Rose",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "22-wolf-head",
+   "file": "sample_22_wolf_head.pes",
+   "title": "늑대",
+   "titleEn": "Wolf",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "23-eagle-wings",
+   "file": "sample_23_eagle_wings.pes",
+   "title": "독수리",
+   "titleEn": "Eagle Wings",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "24-dragon",
+   "file": "sample_24_dragon.pes",
+   "title": "용",
+   "titleEn": "Dragon",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "25-winged-heart",
+   "file": "sample_25_winged_heart.pes",
+   "title": "날개 하트",
+   "titleEn": "Winged Heart",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "26-dagger",
+   "file": "sample_26_dagger.pes",
+   "title": "단검",
+   "titleEn": "Dagger",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "27-compass",
+   "file": "sample_27_compass.pes",
+   "title": "나침반",
+   "titleEn": "Compass",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "28-pine-tree",
+   "file": "sample_28_pine_tree.pes",
+   "title": "소나무",
+   "titleEn": "Pine Tree",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "29-wave",
+   "file": "sample_29_wave.pes",
+   "title": "파도",
+   "titleEn": "Wave",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "30-crescent-star",
+   "file": "sample_30_crescent_star.pes",
+   "title": "초승달과 별",
+   "titleEn": "Crescent Moon and Star",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "31-rainbow-cloud",
+   "file": "sample_31_rainbow_cloud.pes",
+   "title": "무지개 구름",
+   "titleEn": "Rainbow Cloud",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "32-sunflower",
+   "file": "sample_32_sunflower.pes",
+   "title": "해바라기",
+   "titleEn": "Sunflower",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "33-tulip",
+   "file": "sample_33_tulip.pes",
+   "title": "튤립",
+   "titleEn": "Tulip",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "34-four-leaf-clover",
+   "file": "sample_34_four_leaf_clover.pes",
+   "title": "네잎클로버",
+   "titleEn": "Four Leaf Clover",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 6
+  },
+  {
+   "id": "35-maple-leaf",
+   "file": "sample_35_maple_leaf.pes",
+   "title": "단풍잎",
+   "titleEn": "Maple Leaf",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "36-mushroom",
+   "file": "sample_36_mushroom.pes",
+   "title": "버섯",
+   "titleEn": "Mushroom",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "37-cherries",
+   "file": "sample_37_cherries.pes",
+   "title": "체리",
+   "titleEn": "Cherries",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "38-apple",
+   "file": "sample_38_apple.pes",
+   "title": "사과",
+   "titleEn": "Apple",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "39-watermelon-slice",
+   "file": "sample_39_watermelon_slice.pes",
+   "title": "수박",
+   "titleEn": "Watermelon",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "40-avocado",
+   "file": "sample_40_avocado.pes",
+   "title": "아보카도",
+   "titleEn": "Avocado",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "41-donut",
+   "file": "sample_41_donut.pes",
+   "title": "도넛",
+   "titleEn": "Donut",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "42-ice-cream-cone",
+   "file": "sample_42_ice_cream_cone.pes",
+   "title": "아이스크림",
+   "titleEn": "Ice Cream",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "43-cupcake",
+   "file": "sample_43_cupcake.pes",
+   "title": "컵케이크",
+   "titleEn": "Cupcake",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "44-coffee-cup",
+   "file": "sample_44_coffee_cup.pes",
+   "title": "커피잔",
+   "titleEn": "Coffee Cup",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "45-milk-carton",
+   "file": "sample_45_milk_carton.pes",
+   "title": "우유팩",
+   "titleEn": "Milk Carton",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "46-rice-ball",
+   "file": "sample_46_rice_ball.pes",
+   "title": "주먹밥",
+   "titleEn": "Rice Ball",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "47-pizza-slice",
+   "file": "sample_47_pizza_slice.pes",
+   "title": "피자",
+   "titleEn": "Pizza",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "48-hamburger",
+   "file": "sample_48_hamburger.pes",
+   "title": "햄버거",
+   "titleEn": "Hamburger",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "50-bicycle",
+   "file": "sample_50_bicycle.pes",
+   "title": "자전거",
+   "titleEn": "Bicycle",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "51-airplane",
+   "file": "sample_51_airplane.pes",
+   "title": "비행기",
+   "titleEn": "Airplane",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "52-sailboat",
+   "file": "sample_52_sailboat.pes",
+   "title": "돛단배",
+   "titleEn": "Sailboat",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "53-train",
+   "file": "sample_53_train.pes",
+   "title": "기차",
+   "titleEn": "Train",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "54-astronaut-helmet",
+   "file": "sample_54_astronaut_helmet.pes",
+   "title": "우주비행사 헬멧",
+   "titleEn": "Astronaut Helmet",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "55-ringed-planet",
+   "file": "sample_55_ringed_planet.pes",
+   "title": "고리 행성",
+   "titleEn": "Ringed Planet",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "56-ufo",
+   "file": "sample_56_ufo.pes",
+   "title": "UFO",
+   "titleEn": "UFO",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "57-robot-face",
+   "file": "sample_57_robot_face.pes",
+   "title": "로봇",
+   "titleEn": "Robot",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "58-guitar",
+   "file": "sample_58_guitar.pes",
+   "title": "기타",
+   "titleEn": "Guitar",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "59-music-note",
+   "file": "sample_59_music_note.pes",
+   "title": "음표",
+   "titleEn": "Music Note",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "60-headphones",
+   "file": "sample_60_headphones.pes",
+   "title": "헤드폰",
+   "titleEn": "Headphones",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "61-camera",
+   "file": "sample_61_camera.pes",
+   "title": "카메라",
+   "titleEn": "Camera",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "62-light-bulb",
+   "file": "sample_62_light_bulb.pes",
+   "title": "전구",
+   "titleEn": "Light Bulb",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "63-key",
+   "file": "sample_63_key.pes",
+   "title": "열쇠",
+   "titleEn": "Key",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "64-padlock",
+   "file": "sample_64_padlock.pes",
+   "title": "자물쇠",
+   "titleEn": "Padlock",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "65-umbrella",
+   "file": "sample_65_umbrella.pes",
+   "title": "우산",
+   "titleEn": "Umbrella",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "66-cloud-rain",
+   "file": "sample_66_cloud_rain.pes",
+   "title": "구름과 비",
+   "titleEn": "Rain Cloud",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "67-snowflake",
+   "file": "sample_67_snowflake.pes",
+   "title": "눈송이",
+   "titleEn": "Snowflake",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "68-sun",
+   "file": "sample_68_sun.pes",
+   "title": "태양",
+   "titleEn": "Sun",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "69-rainbow",
+   "file": "sample_69_rainbow.pes",
+   "title": "무지개",
+   "titleEn": "Rainbow",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "70-plump-star",
+   "file": "sample_70_plump_star.pes",
+   "title": "통통한 별",
+   "titleEn": "Plump Star",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "71-heart",
+   "file": "sample_71_heart.pes",
+   "title": "하트",
+   "titleEn": "Heart",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "72-eye-amulet",
+   "file": "sample_72_eye_amulet.pes",
+   "title": "눈 부적",
+   "titleEn": "Eye Amulet",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "73-peace-hand",
+   "file": "sample_73_peace_hand.pes",
+   "title": "브이 손",
+   "titleEn": "Peace Sign Hand",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "75-whale-tail",
+   "file": "sample_75_whale_tail.pes",
+   "title": "고래 꼬리",
+   "titleEn": "Whale Tail",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "76-shark",
+   "file": "sample_76_shark.pes",
+   "title": "상어",
+   "titleEn": "Shark",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "77-fish",
+   "file": "sample_77_fish.pes",
+   "title": "물고기",
+   "titleEn": "Fish",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "78-crab",
+   "file": "sample_78_crab.pes",
+   "title": "게",
+   "titleEn": "Crab",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "79-snail",
+   "file": "sample_79_snail.pes",
+   "title": "달팽이",
+   "titleEn": "Snail",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "80-bee",
+   "file": "sample_80_bee.pes",
+   "title": "벌",
+   "titleEn": "Bee",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "81-ladybug",
+   "file": "sample_81_ladybug.pes",
+   "title": "무당벌레",
+   "titleEn": "Ladybug",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "82-butterfly",
+   "file": "sample_82_butterfly.pes",
+   "title": "나비",
+   "titleEn": "Butterfly",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "83-frog",
+   "file": "sample_83_frog.pes",
+   "title": "개구리",
+   "titleEn": "Frog",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "84-duck",
+   "file": "sample_84_duck.pes",
+   "title": "오리",
+   "titleEn": "Duck",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "85-pig",
+   "file": "sample_85_pig.pes",
+   "title": "돼지",
+   "titleEn": "Pig",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c01-minhwa-tiger-magpie",
+   "file": "sample_c01_minhwa_tiger_magpie.pes",
+   "title": "민화 호랑이와 까치",
+   "titleEn": "Minhwa Tiger and Magpie",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c02-artdeco-swallow",
+   "file": "sample_c02_artdeco_swallow.pes",
+   "title": "아르데코 제비",
+   "titleEn": "Art Deco Swallow",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c03-woodblock-wave-boat",
+   "file": "sample_c03_woodblock_wave_boat.pes",
+   "title": "목판화 파도와 배",
+   "titleEn": "Woodblock Wave and Boat",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c04-linocut-fox-moon",
+   "file": "sample_c04_linocut_fox_moon.pes",
+   "title": "판화 여우와 달",
+   "titleEn": "Linocut Fox and Moon",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c05-whale-lighthouse",
+   "file": "sample_c05_whale_lighthouse.pes",
+   "title": "고래와 등대",
+   "titleEn": "Whale and Lighthouse",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c06-midcentury-bird",
+   "file": "sample_c06_midcentury_bird.pes",
+   "title": "미드센추리 새",
+   "titleEn": "Mid-century Bird",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 5
+  },
+  {
+   "id": "c07-stainedglass-hummingbird",
+   "file": "sample_c07_stainedglass_hummingbird.pes",
+   "title": "스테인드글라스 벌새",
+   "titleEn": "Stained Glass Hummingbird",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c08-cabin-starry-badge",
+   "file": "sample_c08_cabin_starry_badge.pes",
+   "title": "별밤 오두막 배지",
+   "titleEn": "Starry Cabin Badge",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c09-celtic-heart",
+   "file": "sample_c09_celtic_heart.pes",
+   "title": "켈트 매듭 하트",
+   "titleEn": "Celtic Knot Heart",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c10-botanical-mushrooms",
+   "file": "sample_c10_botanical_mushrooms.pes",
+   "title": "보태니컬 버섯",
+   "titleEn": "Botanical Mushrooms",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c12-dancheong-pattern",
+   "file": "sample_c12_dancheong_pattern.pes",
+   "title": "단청 문양",
+   "titleEn": "Dancheong Pattern",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 2
+  },
+  {
+   "id": "c13-crane-pine-sun",
+   "file": "sample_c13_crane_pine_sun.pes",
+   "title": "학과 소나무와 해",
+   "titleEn": "Crane, Pine and Sun",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c14-jogakbo-heart",
+   "file": "sample_c14_jogakbo_heart.pes",
+   "title": "조각보 하트",
+   "titleEn": "Jogakbo Heart",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c15-artdeco-peacock",
+   "file": "sample_c15_artdeco_peacock.pes",
+   "title": "아르데코 공작",
+   "titleEn": "Art Deco Peacock",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c16-linocut-owl",
+   "file": "sample_c16_linocut_owl.pes",
+   "title": "판화 부엉이",
+   "titleEn": "Linocut Owl",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c17-midcentury-cat",
+   "file": "sample_c17_midcentury_cat.pes",
+   "title": "미드센추리 고양이",
+   "titleEn": "Mid-century Cat",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c18-retro-ocean-badge",
+   "file": "sample_c18_retro_ocean_badge.pes",
+   "title": "레트로 바다 배지",
+   "titleEn": "Retro Ocean Badge",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c19-stainedglass-butterfly",
+   "file": "sample_c19_stainedglass_butterfly.pes",
+   "title": "스테인드글라스 나비",
+   "titleEn": "Stained Glass Butterfly",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c20-surreal-fish-balloon",
+   "file": "sample_c20_surreal_fish_balloon.pes",
+   "title": "풍선 금붕어",
+   "titleEn": "Goldfish Balloon",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c21-paper-cut-rabbit-moon",
+   "file": "sample_c21_paper_cut_rabbit_moon.pes",
+   "title": "종이 오리기 토끼와 달",
+   "titleEn": "Paper-cut Rabbit and Moon",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c22-woodblock-mount",
+   "file": "sample_c22_woodblock_mount.pes",
+   "title": "목판화 산",
+   "titleEn": "Woodblock Mountain",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c23-folk-horse",
+   "file": "sample_c23_folk_horse.pes",
+   "title": "민속 말",
+   "titleEn": "Folk Horse",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c24-bauhaus-sun",
+   "file": "sample_c24_bauhaus_sun.pes",
+   "title": "바우하우스 해와 달",
+   "titleEn": "Bauhaus Sun and Moon",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c25-botanical-fern-flat",
+   "file": "sample_c25_botanical_fern_flat.pes",
+   "title": "고사리와 들꽃",
+   "titleEn": "Fern and Wildflowers",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "c26-tattoo-panther",
+   "file": "sample_c26_tattoo_panther.pes",
+   "title": "타투 표범",
+   "titleEn": "Tattoo Panther",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c27-tattoo-ship-banner",
+   "file": "sample_c27_tattoo_ship_banner.pes",
+   "title": "리본 문 제비",
+   "titleEn": "Swallow with Banner",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c28-cosmic-whale",
+   "file": "sample_c28_cosmic_whale.pes",
+   "title": "밤하늘 고래",
+   "titleEn": "Cosmic Whale",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c29-mandala-lotus",
+   "file": "sample_c29_mandala_lotus.pes",
+   "title": "연꽃 만다라",
+   "titleEn": "Lotus Mandala",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "c30-tiger-face-minimal",
+   "file": "sample_c30_tiger_face_minimal.pes",
+   "title": "호랑이 얼굴",
+   "titleEn": "Minimal Tiger Face",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l01-sleeping-cat",
+   "file": "sample_l01_sleeping_cat.pes",
+   "title": "잠자는 고양이 선화",
+   "titleEn": "Sleeping Cat Line Art",
+   "kind": "line",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l02-hand-flower",
+   "file": "sample_l02_hand_flower.pes",
+   "title": "꽃을 든 손 선화",
+   "titleEn": "Hand with Flower Line Art",
+   "kind": "line",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l03-mountain-moon",
+   "file": "sample_l03_mountain_moon.pes",
+   "title": "산과 달 선화",
+   "titleEn": "Mountains and Moon Line Art",
+   "kind": "line",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l04-coffee-steam",
+   "file": "sample_l04_coffee_steam.pes",
+   "title": "김 나는 커피 선화",
+   "titleEn": "Steaming Coffee Line Art",
+   "kind": "line",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l05-bicycle-basket",
+   "file": "sample_l05_bicycle_basket.pes",
+   "title": "바구니 자전거 선화",
+   "titleEn": "Bicycle with Basket Line Art",
+   "kind": "line",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l06-whale",
+   "file": "sample_l06_whale.pes",
+   "title": "고래 선화",
+   "titleEn": "Whale Line Art",
+   "kind": "line",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 4
+  },
+  {
+   "id": "l07-monstera",
+   "file": "sample_l07_monstera.pes",
+   "title": "몬스테라 선화",
+   "titleEn": "Monstera Line Art",
+   "kind": "line",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l08-face-line",
+   "file": "sample_l08_face_line.pes",
+   "title": "얼굴 선화",
+   "titleEn": "Face Line Art",
+   "kind": "line",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l09-hummingbird",
+   "file": "sample_l09_hummingbird.pes",
+   "title": "벌새 선화",
+   "titleEn": "Hummingbird Line Art",
+   "kind": "line",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "l10-potted-plant",
+   "file": "sample_l10_potted_plant.pes",
+   "title": "화분 선화",
+   "titleEn": "Potted Plant Line Art",
+   "kind": "line",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F-sheet-130x180",
+   "file": "sample_f_sheet_130x180.pes",
+   "title": "빈티지 타투 시트",
+   "titleEn": "Vintage Flash Sheet",
+   "kind": "fill",
+   "fitMm": [
+    120,
+    170
+   ],
+   "hoopMm": [
+    130,
+    180
+   ]
+  },
+  {
+   "id": "F01-rose",
+   "file": "sample_f01_rose.pes",
+   "title": "빈티지 장미",
+   "titleEn": "Vintage Rose",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ],
+   "order": 3
+  },
+  {
+   "id": "F02-swallow-red",
+   "file": "sample_f02_swallow_red.pes",
+   "title": "빈티지 빨간 제비",
+   "titleEn": "Vintage Red Swallow",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F03-swallow-blue",
+   "file": "sample_f03_swallow_blue.pes",
+   "title": "빈티지 파란 제비",
+   "titleEn": "Vintage Blue Swallow",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F04-butterfly-front",
+   "file": "sample_f04_butterfly_front.pes",
+   "title": "빈티지 나비 (정면)",
+   "titleEn": "Vintage Butterfly (Front)",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F05-butterfly-profile",
+   "file": "sample_f05_butterfly_profile.pes",
+   "title": "빈티지 나비 (옆)",
+   "titleEn": "Vintage Butterfly (Side)",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F06-butterfly-angled",
+   "file": "sample_f06_butterfly_angled.pes",
+   "title": "빈티지 나비 (비스듬히)",
+   "titleEn": "Vintage Butterfly (Angled)",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F07-anchor",
+   "file": "sample_f07_anchor.pes",
+   "title": "빈티지 닻",
+   "titleEn": "Vintage Anchor",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F08-eagle",
+   "file": "sample_f08_eagle.pes",
+   "title": "빈티지 독수리",
+   "titleEn": "Vintage Eagle",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F10-heart",
+   "file": "sample_f10_heart.pes",
+   "title": "빈티지 하트",
+   "titleEn": "Vintage Heart",
+   "kind": "fill",
+   "fitMm": [
+    60,
+    60
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F11-dagger",
+   "file": "sample_f11_dagger.pes",
+   "title": "빈티지 단검",
+   "titleEn": "Vintage Dagger",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F12-sailing-ship",
+   "file": "sample_f12_sailing_ship.pes",
+   "title": "빈티지 범선",
+   "titleEn": "Vintage Sailing Ship",
+   "kind": "fill",
+   "fitMm": [
+    98,
+    98
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F13-horse-head",
+   "file": "sample_f13_horse_head.pes",
+   "title": "빈티지 말 머리",
+   "titleEn": "Vintage Horse Head",
+   "kind": "fill",
+   "fitMm": [
+    90,
+    90
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "F15-floral-sprig",
+   "file": "sample_f15_floral_sprig.pes",
+   "title": "빈티지 꽃가지",
+   "titleEn": "Vintage Floral Sprig",
+   "kind": "fill",
+   "fitMm": [
+    75,
+    75
+   ],
+   "hoopMm": [
+    100,
+    100
+   ]
+  }
+ ]
+}

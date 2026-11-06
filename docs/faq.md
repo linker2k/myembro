@@ -29,7 +29,7 @@ In color drawings and silhouettes, after each area is filled, the app sews one r
 
 ## 5. What if photo embroidery does not finish within 1 minute?
 
-Making the stitches stops after 1 minute, and the app says it took too long. Tap **Lower detail**, or go back and crop a smaller area. In color drawing you can also lower the **Colors** count.
+After 1 minute the app asks whether to keep waiting. If it takes long or says "too complex", lower the **Resolution**, raise **Remove small pieces**, or go back and crop a smaller area. In color drawing you can also lower the **Colors** count.
 
 ## 6. Why do I have to reinstall to move to the beta?
 

@@ -13,7 +13,7 @@ could therefore reach the unsupported-extension embroidery-file error.
 
 The picker now includes all 6 requested MIME filters. Its selected file, SEND,
 SEND_MULTIPLE and VIEW use `PictureIntake`/`inspectPicture`, independent of reported
-MIME. At most the existing SVG byte limit plus 1 is read on IO (4789 bytes), without
+MIME. At most the existing SVG byte limit plus 1 is read on IO (200,001 bytes), without
 XML parsing, writes or downloads in the routing layer:
 
 - PNG: full 8-byte signature; JPEG: FF D8 FF; WebP: RIFF plus WEBP at offset 8.

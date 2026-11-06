@@ -54,6 +54,15 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("components",JsonArray(source.components.map(::JsonPrimitive)))
             put("widths",buildJsonObject { source.widths.forEach { (index,width)->put(index.toString(),width) } })
         }) }
+        obj.kanaSatin?.let { kana -> put("kanaSatin",buildJsonObject {
+            val source=kana.centerlines
+            put("version",1)
+            put("paths",JsonArray(source.paths.map { path -> JsonArray(path.map { (x,y)->buildJsonArray { add(x);add(y) } }) }))
+            put("characters",JsonArray(source.characters.map(::JsonPrimitive)))
+            put("components",JsonArray(source.components.map(::JsonPrimitive)))
+            put("widths",buildJsonObject { source.widths.forEach { (index,width)->put(index.toString(),width) } })
+            put("markWidths",buildJsonObject { kana.markWidths.forEach { (index,width)->put(index.toString(),width) } })
+        }) }
         put("contours", JsonArray(obj.contours.map { contour ->
             JsonArray(contour.map { (x, y) -> buildJsonArray { add(x); add(y) } })
         }))
@@ -86,6 +95,16 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
                 source.getValue("characters").jsonArray.map { it.jsonPrimitive.int },
                 source.getValue("components").jsonArray.map { it.jsonPrimitive.int },
                 source.getValue("widths").jsonObject.map { (key,value)->key.toInt() to value.jsonPrimitive.double }.toMap())
+        },
+        kanaSatin = data["kanaSatin"]?.jsonObject?.let { source ->
+            require(source.getValue("version").jsonPrimitive.int==1)
+            io.github.linker2k.myembro.engine.lettering.KanaSatinData(
+                io.github.linker2k.myembro.engine.lettering.CenterlineSatinData(
+                    source.getValue("paths").jsonArray.map { path -> path.jsonArray.map { p -> val pair=p.jsonArray;require(pair.size==2);pair[0].jsonPrimitive.double to pair[1].jsonPrimitive.double } },
+                    source.getValue("characters").jsonArray.map { it.jsonPrimitive.int },
+                    source.getValue("components").jsonArray.map { it.jsonPrimitive.int },
+                    source.getValue("widths").jsonObject.map { (key,value)->key.toInt() to value.jsonPrimitive.double }.toMap()),
+                source.getValue("markWidths").jsonObject.map { (key,value)->key.toInt() to value.jsonPrimitive.double }.toMap())
         },
         contours = data["contours"]?.jsonArray?.map { contour ->
             contour.jsonArray.map { point ->

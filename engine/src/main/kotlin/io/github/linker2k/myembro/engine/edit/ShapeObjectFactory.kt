@@ -61,7 +61,7 @@ object ShapeObjectFactory {
         regions: List<ShapeRegion>, pattern: EmbPattern, fragments: Map<String,EmbPattern> = emptyMap()): ShapeObject {
         require(id.isNotBlank() && widthMm.isFinite() && widthMm > 0)
         require(regions.isNotEmpty() && regions.all { it.role == PHOTO_FILL && it.paths.isNotEmpty() })
-        val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes))
+        val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes), art.myThreads.copy(indices = java.util.Collections.unmodifiableSet(art.myThreads.indices.toSet())))
         val cached = EmbPattern(frozen(pattern.stitches), frozen(pattern.threads),
             Collections.unmodifiableMap(LinkedHashMap(pattern.metadata)), frozen(pattern.warnings))
         val native=Collections.unmodifiableMap(fragments.mapValues { (_,p) -> EmbPattern(frozen(p.stitches),frozen(p.threads),

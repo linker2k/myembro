@@ -15,12 +15,22 @@ class PreflightTest {
     }
 
     @Test fun confirmedLimitsProduceKoreanWarnings() {
-        val warnings = Preflight.check(pattern(1001, 1001, 30001), "한글 이름.pes", patternCount = 13)
+        val warnings = Preflight.check(pattern(1001, 1001, 30001), "한글 이름?.pes", patternCount = 13)
         assertEquals(4, warnings.size)
         assertTrue(warnings.any { "100×100mm" in it })
         assertTrue(warnings.any { "30000땀" in it && "30001땀" in it })
-        assertTrue(warnings.any { "file names" in it })
+        assertTrue(warnings.any { "File names" in it })
         assertTrue(warnings.any { "12개" in it })
+    }
+
+    @Test fun onlyLongNameForbiddenAndControlCharactersWarn() {
+        // SE400 listed a PC-copied '01 빗 4종!@#$^&-+(123).pes' (2026-11-01).
+        for (ok in listOf("01 빗 4종!@#\$^&-+(123).pes", "한글 이름.pes", "a.b c,;=[]'~.pes", "😀.pes"))
+            assertTrue(Preflight.check(pattern(), ok).isEmpty(), ok)
+        for (bad in "\\:*?\"<>|".map { "a${it}b.pes" } + listOf("a\u0001b.pes", " .pes")) {
+            val warnings = Preflight.check(pattern(), bad)
+            assertTrue(warnings.any { "File names" in it } || warnings.any { "최상위" in it }, bad)
+        }
     }
 
     @Test fun internalMemoryLimitIsNotAppliedToPcTransferBytes() {

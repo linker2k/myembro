@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
     private val settings: SettingsViewModel by viewModels()
 
     /** [PICK_DESIGN] is "start from my design" in the new-project sheet: a pick starts a project. */
-    private enum class Screen { LIBRARY, PICK_DESIGN, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS, PHOTO, EMOJI }
+    private enum class Screen { LIBRARY, PICK_DESIGN, SAMPLES, VIEWER, EDITOR, SETTINGS, LETTERING, FREE_DESIGNS, PHOTO, EMOJI }
 
     /** Screens above home; back pops one. Home is always the root. */
     private val stack = mutableStateListOf<Screen>()
@@ -198,15 +198,26 @@ class MainActivity : ComponentActivity() {
                         onNewProjectFrame = { spec -> newProject(spec) },
                         onPhoto = { incomingPictureTitle=null; photo.begin(); stack += Screen.PHOTO },
                         onEmoji = { emoji.close(); stack += Screen.EMOJI },
+                        onOpenSample = { file -> editDesign(file); stack += Screen.EDITOR },
+                        onAllSamples = { stack += Screen.SAMPLES },
                     )
-                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS })
+                    Screen.LIBRARY -> LibraryScreen(library, onOpen = ::openDesign, onFreeDesigns = { stack += Screen.FREE_DESIGNS },
+                        onSamples = { stack += Screen.SAMPLES })
                     Screen.FREE_DESIGNS -> FreeDesignSourcesScreen(onBack = back)
                     Screen.PICK_DESIGN -> DesignPickerScreen(
                         onSelect = { file ->
-                            editor.editDesign(file)
+                            editDesign(file)
                             stack[stack.lastIndex] = Screen.EDITOR
                         },
                         onBack = back,
+                    )
+                    Screen.SAMPLES -> DesignPickerScreen(
+                        onSelect = { file ->
+                            editDesign(file)
+                            stack[stack.lastIndex] = Screen.EDITOR
+                        },
+                        onBack = back,
+                        startWithSamples = true,
                     )
                     Screen.PHOTO -> PhotoScreen(photo, settings.settings, onBack = back,
                         onEdit = {
@@ -227,9 +238,6 @@ class MainActivity : ComponentActivity() {
                                 incomingPictureTitle=null
                                 stack += Screen.EDITOR
                             }
-                        }, onSend = { file ->
-                            library.refresh(); library.clearSelection(); library.toggle(file)
-                            stack += Screen.LIBRARY; library.exportToUsb()
                         })
                     Screen.EMOJI -> io.github.linker2k.myembro.ui.emoji.EmojiScreen(emoji, settings.settings, onBack = back, onEdit = {
                         emoji.shapeObject?.let { shape ->
@@ -411,6 +419,14 @@ class MainActivity : ComponentActivity() {
 
     private fun showViewer() {
         if (stack.lastOrNull() != Screen.VIEWER) stack += Screen.VIEWER
+    }
+
+    /** Bundled samples open under their display name and hoop as a new, unsaved project. */
+    private fun editDesign(file: File) {
+        if (io.github.linker2k.myembro.library.DesignLibrary.isSample(file))
+            editor.editDesign(file, io.github.linker2k.myembro.library.BundledDesigns.title(this, file),
+                io.github.linker2k.myembro.library.BundledDesigns.hoop(this, file))
+        else editor.editDesign(file)
     }
 
     private fun openDesign(file: File) {

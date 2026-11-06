@@ -20,7 +20,8 @@ data class BlockStitch(
     val meander_pattern: String = io.github.linker2k.myembro.engine.inkstitch.stitches.MeanderFillParameters().meander_pattern,
     val meander_scale_percent: List<Double> = listOf(100.0, 100.0),
 ) {
-    enum class Type { FILL, SATIN, RUNNING }
+    /** EMPTY (user decision 2026-11-01): the block stays, sews nothing and shows the fabric; any other type restores it. */
+    enum class Type { FILL, SATIN, RUNNING, EMPTY }
 }
 
 /** One actually emitted region, after occlusion and the existing safety fallback.
@@ -114,7 +115,7 @@ class ShapeObject internal constructor(
 
         fun fromArt(id: String, name: String, art: VectorArt.Art, widthMm: Double): ShapeObject {
             require(id.isNotBlank()) { "Shape object ID must not be blank" }
-            val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes))
+            val source = VectorArt.Art(frozen(art.viewBox), frozen(art.shapes), art.myThreads.copy(indices = java.util.Collections.unmodifiableSet(art.myThreads.indices.toSet())))
             val rendered = VectorArt.render(source, widthMm, name = name, captureRegions = true)
             val regions = rendered.parts.mapIndexed { i, part ->
                 val type = when (part.method) {

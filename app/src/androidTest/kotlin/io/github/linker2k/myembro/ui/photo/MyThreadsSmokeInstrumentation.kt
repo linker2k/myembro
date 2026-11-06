@@ -143,7 +143,7 @@ class MyThreadsSmokeInstrumentation : Instrumentation() {
                     val settings = preferences.read()
                     photo = PhotoViewModel(app)
                     photo.configure(settings)
-                    activity.setContent { MyembroTheme { PhotoScreen(photo,settings,{}, {}, {}) } }
+                    activity.setContent { MyembroTheme { PhotoScreen(photo,settings,{}, {}) } }
                     photo.load(Uri.fromFile(input))
                 }
                 ready(); check(photo.source!=null)

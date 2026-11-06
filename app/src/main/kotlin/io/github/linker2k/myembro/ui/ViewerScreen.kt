@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,6 +82,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.ui.format.Dimensions
+import io.github.linker2k.myembro.ui.format.keepWords
 import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
@@ -138,16 +141,17 @@ private fun ViewerContent(
         bottomBar = {
             if (vm.render != null && !vm.loading) Surface(modifier = Modifier.navigationBarsPadding(), color = MaterialTheme.colorScheme.background) {
                 Column {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Equal height: if one label wraps to two lines, the other button grows with it.
+                    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = { checkedUsb?.invoke() }, enabled = vm.canExport && vm.sewoutReady && checkedUsb != null,
-                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Usb, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.viewer_send_usb))
+                            Text(keepWords(stringResource(R.string.viewer_send_usb)))
                         }
                         OutlinedButton(onClick = { onEdit?.invoke() }, enabled = vm.canExport && onEdit != null,
-                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f)) {
+                            shape = MyembroShapes.Button, modifier = Modifier.weight(1f).fillMaxHeight()) {
                             Icon(Icons.Default.Edit, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.viewer_review_edit))
+                            Text(keepWords(stringResource(R.string.viewer_review_edit)))
                         }
                     }
                 }
@@ -183,7 +187,7 @@ private fun ViewerContent(
             val data = vm.render
             when {
                 vm.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                data == null -> EmptyState(vm.error, onOpenFile, vm::openSample)
+                data == null -> EmptyState(vm.error, onOpenFile)
                 else -> Viewer(vm, data)
             }
         }
@@ -215,7 +219,7 @@ private fun ViewerContent(
 }
 
 @Composable
-private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () -> Unit) {
+private fun EmptyState(error: String?, onOpenFile: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -240,8 +244,6 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit, onOpenSample: () 
         }
         Spacer(Modifier.height(24.dp))
         Button(onClick = onOpenFile, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_file)) }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onOpenSample, shape = MyembroShapes.Button) { Text(stringResource(R.string.open_sample)) }
     }
 }
 

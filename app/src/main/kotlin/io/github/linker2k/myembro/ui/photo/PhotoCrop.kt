@@ -8,14 +8,22 @@ import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 
 internal data class PhotoCrop(val left: Int, val top: Int, val width: Int, val height: Int)
 
-/** Bounded source-pixel crop, preserving hoop aspect ratio and excluding blank margins. */
-internal fun photoCrop(width: Int, height: Int, aspect: Double, zoom: Float, panX: Float, panY: Float): PhotoCrop {
+/** Cover is 1; contain is the ratio of source and hoop aspect ratios. */
+internal fun photoMinimumZoom(width: Int, height: Int, aspect: Double): Float {
     require(width > 0 && height > 0 && aspect.isFinite() && aspect > 0)
-    val z = zoom.coerceIn(1f, 4f)
-    val w = (minOf(width.toDouble(), height * aspect) / z).toInt().coerceIn(1, width)
-    val h = (w / aspect).toInt().coerceIn(1, height)
-    return PhotoCrop(((width - w) * (panX.coerceIn(-1f, 1f) + 1) / 2).toInt(),
-        ((height - h) * (panY.coerceIn(-1f, 1f) + 1) / 2).toInt(), w, h)
+    val sourceAspect = width.toDouble() / height
+    return minOf(sourceAspect / aspect, aspect / sourceAspect).toFloat()
+}
+
+/** Virtual source-pixel viewport. Negative edges represent background outside the source. */
+internal fun photoCrop(width: Int, height: Int, aspect: Double, zoom: Float, panX: Float, panY: Float): PhotoCrop {
+    val z = zoom.coerceIn(photoMinimumZoom(width, height, aspect), 4f)
+    val w = kotlin.math.round(minOf(width.toDouble(), height * aspect) / z).toInt().coerceAtLeast(1)
+    val h = kotlin.math.round(minOf(height.toDouble(), width / aspect) / z).toInt().coerceAtLeast(1)
+    // On either side of cover, panning stops before exposing more than the available blank space.
+    fun edge(source: Int, viewport: Int, pan: Float) = kotlin.math.round(
+        (source - viewport) / 2.0 + kotlin.math.abs(source - viewport) * pan.coerceIn(-1f, 1f) / 2.0).toInt()
+    return PhotoCrop(edge(width, w, panX), edge(height, h, panY), w, h)
 }
 
 /**
@@ -35,6 +43,14 @@ internal fun photoInkRatio(outline: RedworkOutline): Double? {
     return ((xs.max() - xs.min()) / Units.mmToPixels(outline.widthMm)).takeIf { it.isFinite() && it > 0 }?.coerceAtMost(1.0)
 }
 
+/** Traced ink height ÷ width (size-independent, like [photoInkRatio]); null when nothing was traced. */
+internal fun photoInkAspect(outline: RedworkOutline): Double? {
+    val points = outline.paths.flatMap { d -> SvgPath.flatten(d).flatMap { line -> line.points } }
+    if (points.isEmpty()) return null
+    val w = points.maxOf { it.x } - points.minOf { it.x }; val h = points.maxOf { it.y } - points.minOf { it.y }
+    return (h / w).takeIf { it.isFinite() && it > 0 }
+}
+
 /** Embroidery (ink) width range for [ratio]: 20mm..99.9mm, the top lowered so the frame still fits the hoop. */
 internal fun photoInkWidthRange(hoop: HoopSpec, ratio: Double): ClosedFloatingPointRange<Double> {
     val max = minOf(photoMaxWidthMm(hoop), kotlin.math.floor(photoMaxWidthMm(hoop) * ratio * 10) / 10)
@@ -48,6 +64,15 @@ internal fun photoMaxWidthMm(hoop: HoopSpec): Double =
 /** Shared unchanged raster/detail policy, used by UI and headless preparation. */
 internal fun photoRasterSize(detail: Int, widthMm: Double = 100.0, heightMm: Double = 100.0): Int =
     io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoRasterSize(detail, widthMm, heightMm)
+
+/** Color-drawing raster: the crop at source resolution, long side scaled down (never up) to at most
+ * [edge] (default [SampleColorRegions.MAX_EDGE]), aspect kept. */
+internal fun photoRegionRaster(crop: PhotoCrop,
+    edge: Int = io.github.linker2k.myembro.engine.inkstitch.svg.image.SampleColorRegions.MAX_EDGE): Pair<Int, Int> {
+    val scale = minOf(1.0, edge.toDouble() / maxOf(crop.width, crop.height))
+    return kotlin.math.round(crop.width * scale).toInt().coerceIn(1, edge) to
+        kotlin.math.round(crop.height * scale).toInt().coerceIn(1, edge)
+}
 
 internal fun photoMinimumArea(detail: Int) =
     io.github.linker2k.myembro.engine.inkstitch.svg.image.PhotoPreparationPolicy.photoMinimumArea(detail)

@@ -1,7 +1,6 @@
 <resources>
     <string name="editor_title">도안 편집</string>
     <string name="editor_back">라이브러리로 돌아가기</string>
-    <string name="editor_save">PES 저장</string>
     <string name="editor_hoop_size">후프 %1$s</string>
     <string name="editor_add">도안 추가</string>
     <string name="editor_layers">레이어</string>
@@ -14,7 +13,9 @@
     <string name="editor_redo">다시실행</string>
     <string name="editor_fit">후프를 화면에 맞추기</string>
     <string name="editor_composition">나의 자수 구성</string>
-    <string name="editor_object_count">객체 %1$d개</string>
+    <plurals name="editor_object_count">
+        <item quantity="other">객체 %1$d개</item>
+    </plurals>
     <string name="editor_outside">도안이 봉제 가능 영역을 벗어났습니다. 자수 전에 위치나 크기를 조절하세요.</string>
     <string name="editor_navigation_hint">도안을 탭해 선택하세요. 빈 천을 드래그하면 화면 이동, 두 손가락으로 확대·축소합니다.</string>
     <string name="editor_selection_hint">드래그로 이동, 두 손가락으로 회전·크기 조절, 모서리 핸들로 크기를 조절합니다.</string>
@@ -31,14 +32,8 @@
     <string name="editor_save_failed">PES 저장 실패: %1$s</string>
     <string name="editor_saved">라이브러리에 저장했습니다: %1$s</string>
     <string name="editor_empty_export">저장할 바늘땀이 없습니다.</string>
-    <string name="editor_project_menu">프로젝트 메뉴</string>
-    <string name="editor_project_save">프로젝트 저장 (.myembro)</string>
-    <string name="editor_project_open">프로젝트 열기</string>
-    <string name="editor_project_name">프로젝트 이름</string>
     <string name="editor_save_local">앱에 저장</string>
     <string name="editor_export_file">파일로 저장</string>
-    <string name="editor_open_device">기기에서 열기</string>
-    <string name="editor_projects_empty">아직 저장한 프로젝트가 없습니다.</string>
     <string name="editor_project_saved">프로젝트를 저장했습니다: %1$s</string>
     <string name="editor_project_open_failed">프로젝트 열기 실패: %1$s</string>
     <string name="editor_project_save_failed">프로젝트 저장 실패: %1$s</string>
@@ -138,4 +133,14 @@
     <string name="editor_colors_hint">배경천과 자수실 색을 미리보기로 함께 맞춰 보세요.</string>
     <string name="editor_colors_preview_failed">이 도안을 미리 볼 수 없습니다. 취소하면 변경 내용을 버릴 수 있습니다.</string>
     <string name="editor_title_compact">편집기</string>
+    <string name="editor_save_title">저장</string>
+    <string name="editor_save_name">이름</string>
+    <string name="editor_save_format">형식</string>
+    <string name="editor_format_project">프로젝트(.myembro) – 모두 다시 편집 가능</string>
+    <string name="editor_format_pes">자수 파일(.pes) – 자수기용</string>
+    <string name="editor_save_choice_body">%1$s 파일을 열어 편집했습니다. 이 파일을 덮어쓸까요, 새 이름으로 저장할까요?</string>
+    <string name="editor_save_replace">저장(덮어쓰기)</string>
+    <string name="editor_save_as">다른 이름으로 저장</string>
+    <string name="editor_save_location">저장 위치</string>
+    <string name="editor_file_write_error">이 파일에 쓸 수 없습니다.</string>
 </resources>

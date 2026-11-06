@@ -10,7 +10,8 @@ import kotlin.math.hypot
  * Block editor state over a ShapeObject's regions: outlines for drawing and hit tests, the selection, and the
  * sheet's choices. Applying goes through the engine's SetBlockStitch (EditorViewModel.applyBlockStitch).
  */
-enum class BlockType { FILL, SATIN, RUNNING }
+/** EMPTY sews nothing and leaves the fabric showing; the block stays and can be filled again. */
+enum class BlockType { FILL, SATIN, RUNNING, EMPTY }
 
 /**
  * Fill textures as the PE-Design style menu shows them; PATTERN uses an Ink/Stitch meander tile.

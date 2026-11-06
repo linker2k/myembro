@@ -14,6 +14,8 @@
     <string name="block_edit_type_fill">Fill</string>
     <string name="block_edit_type_satin">Satin</string>
     <string name="block_edit_type_running">Running</string>
+    <string name="block_edit_type_empty">Empty</string>
+    <string name="block_edit_empty_hint">Sews nothing here: the fabric shows. Choose another type to fill it again.</string>
     <string name="block_edit_texture">Texture</string>
     <string name="block_edit_texture_basic">Basic</string>
     <string name="block_edit_texture_pattern">Pattern</string>

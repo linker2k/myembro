@@ -4,7 +4,7 @@ package io.github.linker2k.myembro.engine.fat12
 import java.text.Normalizer
 import java.util.Locale
 
-/** ASCII uppercase 8.3 only. Collisions use _1, _2…; never emits LFN directory entries. */
+/** ASCII uppercase 8.3 aliases. Collisions use _1, _2…; long names are written by [Fat12Volume]. */
 object ShortNames {
     private fun clean(s: String): String = Normalizer.normalize(s, Normalizer.Form.NFKD)
         .uppercase(Locale.ROOT).filter { it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-' || it == '~' }

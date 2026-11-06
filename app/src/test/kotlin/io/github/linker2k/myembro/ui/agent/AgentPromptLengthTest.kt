@@ -17,8 +17,8 @@ class AgentPromptLengthTest {
         AgentFontInfo("hershey-script-1", "Hershey Script 1-stroke", false, true, 5.0, 60.0),
         AgentFontInfo("inkstitch-abril", "Abril En Flor", false, true, 10.0, 40.0),
     )
-    // Same shape as assets/samples/manifest.json (29 samples); names and sizes are fixture values.
-    private val designs = (1..29).map { AgentDesignInfo("sample_$it", "샘플 도안 $it", 60.0 + it, 55.5) }
+    // Same shape as assets/samples/manifest.json (136 samples); names and sizes are fixture values.
+    private val designs = (1..136).map { AgentDesignInfo("sample_$it", "샘플 도안 $it", 60.0 + it, 55.5) }
     private val project = Project(HoopSpec("100 × 100", 1000, 1000), listOf(
         StitchObject("uuid-logo", "myembro logo", EmbPattern(listOf(Stitch(0, 0, Command.STITCH)), listOf(EmbThread(0xFFB8862B.toInt()), EmbThread(0xFFC2185B.toInt())))),
         TextObject("uuid-hi", "안녕", text = "안녕", fontId = "jua", heightMm = 12.0)))

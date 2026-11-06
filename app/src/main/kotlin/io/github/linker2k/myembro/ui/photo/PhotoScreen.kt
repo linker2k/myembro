@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -39,7 +40,6 @@ import io.github.linker2k.myembro.ui.StitchCanvas
 import io.github.linker2k.myembro.ui.sewoutMinutes
 import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.ui.settings.EmbroiderySettings
-import java.io.File
 import androidx.core.graphics.PathParser
 import io.github.linker2k.myembro.engine.inkstitch.svg.image.RedworkOutline
 
@@ -49,15 +49,19 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> Unit,
-    onEdit: () -> Unit, onSend: (File) -> Unit) {
+    onEdit: () -> Unit) {
     LaunchedEffect(settings) { vm.configure(settings) }
     val back = { if (vm.isSvg) { vm.cancel(); onBack() } else if (vm.step > 0) vm.back() else { vm.cancel(); onBack() } }
     BackHandler(onBack = back)
-    // Android photo picker, images only; androidx activity falls back to its own legacy picker on older devices.
+    // Photos: the system photo picker, images only and no permission; androidx falls back to the file chooser on
+    // devices without it. Files: the document picker with PictureIntake's types, which also lets SVG through.
+    // Both read the picked picture once into memory; nothing is copied or kept.
     val pictureImport=io.github.linker2k.myembro.ui.LocalPictureImport.current
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if(uri!=null) {
+    val picked: (android.net.Uri?) -> Unit = { uri -> if(uri!=null) {
         if(pictureImport!=null) pictureImport(listOf(uri),{}) else { vm.begin();vm.load(uri) }
     } }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), picked)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument(), picked)
     val colors = MaterialTheme.colorScheme
     val scroll = rememberScrollState()
     LaunchedEffect(vm.step) { scroll.scrollTo(0) }
@@ -91,27 +95,51 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                     2 -> R.string.photo_progress_trace
                     else -> R.string.photo_progress_stitches
                 }))
-                Text(stringResource(R.string.photo_elapsed,elapsed),style=MaterialTheme.typography.bodySmall)
-                Text(stringResource(if(vm.step==2 && vm.style==PhotoMode.OUTLINE) R.string.photo_estimate_outline else if(vm.step==2) R.string.photo_estimate_result else R.string.photo_estimate),style=MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
+                if (vm.step == 2) {
+                    val progress = vm.generationProgress
+                    if (progress.phase == "pes" || progress.phase == "outline validation")
+                        Text(stringResource(if (progress.phase == "pes") R.string.photo_progress_check else R.string.photo_progress_outline_check))
+                    progress.totalRegions?.let { total ->
+                        Text(stringResource(R.string.photo_regions_progress, progress.completedRegions ?: 0, total))
+                    }
+                    val regionSteps = progress.regionSteps
+                    if (regionSteps != null) Text(stringResource(R.string.photo_region_step_progress, progress.regionStep ?: 0, regionSteps))
+                    else when (progress.regionStage) {
+                        "rows" -> Text(stringResource(R.string.photo_region_stage_rows))
+                        "route" -> Text(stringResource(R.string.photo_region_stage_route))
+                    }
+                    progress.stitches?.let { count -> Text(stringResource(R.string.photo_stitches_progress, count)) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.photo_elapsed, vm.generationElapsedMs / 1000), style = MaterialTheme.typography.bodySmall)
+                        if (vm.generationNeedsDecision) {
+                            TextButton(onClick = vm::extendGeneration) { Text(stringResource(R.string.photo_wait_more)) }
+                            TextButton(onClick = vm::cancel) { Text(stringResource(R.string.photo_stop_generation)) }
+                        }
+                    }
+                    if (vm.generationNeedsDecision) Text(stringResource(R.string.photo_wait_question))
+                } else Text(stringResource(R.string.photo_elapsed, elapsed), style = MaterialTheme.typography.bodySmall)
+                if (!vm.generationNeedsDecision) OutlinedButton(onClick=vm::cancel) { Text(stringResource(R.string.photo_cancel)) }
             }
-            if (elapsed >= 10 || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
+            if ((vm.step != 2 && elapsed >= 10) || vm.error == R.string.photo_too_complex || vm.error == R.string.photo_timed_out || vm.error == R.string.photo_stitches_failed) {
                 Text(stringResource(R.string.photo_slow_hint))
-                TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
+                if (vm.textureActive) TextButton(onClick=vm::lowerDetail) { Text(stringResource(R.string.photo_lower_detail)) }
             }
             if (vm.isSvg) {
                 Text(stringResource(R.string.svg_picture_direct))
                 val range = vm.inkWidthRange
                 val size = vm.inkWidthMm
-                if (range != null && size != null) EmbroiderySizeSlider(size, range, vm::changeSize)
+                if (range != null && size != null) EmbroiderySizeSlider(size, range, vm::changeSize, vm.inkAspect)
             }
             if (vm.step == 0) {
                 if (vm.source != null) CropPreview(vm) else Surface(Modifier.fillMaxWidth().height(260.dp), color = colors.surfaceVariant) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddPhotoAlternate, null, Modifier.size(56.dp), tint = colors.primary) }
                 }
                 Text(stringResource(R.string.photo_crop_hint), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = { picker.launch(PictureIntake.pickerMimes) }, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(if (vm.source == null) R.string.photo_pick else R.string.photo_pick_again))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        enabled = !vm.busy, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_pick_photos)) }
+                    OutlinedButton(onClick = { picker.launch(PictureIntake.pickerMimes) }, enabled = !vm.busy,
+                        modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_pick_file)) }
                 }
             } else {
                 if(vm.step==1) SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -151,7 +179,7 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 else if (vm.step == 1 && vm.separatedPreview != null) Image(vm.separatedPreview!!.asImageBitmap(),
                     contentDescription=stringResource(if(vm.style==PhotoMode.COLOR) R.string.photo_color_preview_accessibility else R.string.photo_separated_preview),
                     modifier=Modifier.fillMaxWidth().height(300.dp),contentScale=ContentScale.Fit)
-                else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.detail,
+                else if (data != null) StitchCanvas(data, Int.MAX_VALUE, Hoop.H100, false, vm.effectiveResolutionPx,
                     Modifier.fillMaxWidth().height(300.dp), colors.background.toArgb(), colors.outline.toArgb(), frame = vm.hoop, preservePlacement = true)
                 else Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) { if (vm.busy) CircularProgressIndicator() }
                 if (vm.step == 1) {
@@ -173,18 +201,12 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                         Text(stringResource(R.string.photo_color_hint),style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                         ThreadTextureControls(vm.textureOptions, !vm.busy, vm::changeTextureEnabled,
                             vm::changeTextureDetail)
-
-                    } else {
-                    Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
-                    val detailLabel = stringResource(R.string.photo_detail)
-                    Slider(vm.detail.toFloat(), { vm.changeDetail(it.toInt()) }, valueRange = 0f..2f, steps = 1,
-                        modifier = Modifier.semantics { contentDescription = detailLabel })
-                    Text(stringResource(R.string.photo_detail_hint), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                    }
+                        if (!vm.textureActive) DetailControls(vm)
+                    } else DetailControls(vm)
                     // Embroidery (ink) width in mm, aspect kept. The drag only moves the label; tracing reruns once on release.
                     val range = vm.inkWidthRange
                     val ink = vm.inkWidthMm
-                    if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize)
+                    if (range != null && ink != null) EmbroiderySizeSlider(ink, range, vm::changeSize, vm.inkAspect)
                 } else vm.report?.let { report ->
                     AssistChip(onClick = { showCheck = true }, label = {
                         Text(stringResource(if (report.verdict == io.github.linker2k.myembro.engine.sewout.SewoutVerdict.CAUTION) R.string.sewout_badge_caution else if (vm.passed) R.string.photo_pass else R.string.photo_blocked))
@@ -215,10 +237,8 @@ fun PhotoScreen(vm: PhotoViewModel, settings: EmbroiderySettings, onBack: () -> 
                 Text(stringResource(R.string.photo_next))
             } else {
                 if (!vm.isSvg && !vm.busy && vm.render == null) Button(onClick=vm::next) { Text(stringResource(R.string.photo_retry)) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_edit)) }
-                Button(onClick = { vm.send(onSend) }, enabled = vm.canSend, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.photo_send)) }
-                }
+                // Sending to USB happens from the editor, so the result screen only moves on.
+                Button(onClick = onEdit, enabled = vm.canEdit, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.photo_next)) }
             }
         }
     }
@@ -247,9 +267,8 @@ private fun CropPreview(vm: PhotoViewModel) {
         val w = minOf(maxWidth, 300.dp * aspect.toFloat())
         Canvas(Modifier.width(w).height(w / aspect.toFloat()).semantics { contentDescription = description }
             .pointerInput(vm) { detectTransformGestures { _, pan, zoom, _ -> vm.transform(zoom, pan.x / size.width, pan.y / size.height) } }) {
-            drawIntoCanvas { canvas -> canvas.nativeCanvas.drawBitmap(bitmap,
-                Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height), RectF(0f, 0f, size.width, size.height),
-                android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)) }
+            drawIntoCanvas { canvas -> drawPhotoCrop(canvas.nativeCanvas, bitmap, crop,
+                size.width, size.height, vm.style == PhotoMode.COLOR) }
             drawRect(accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawCircle(accent, 5.dp.toPx(), androidx.compose.ui.geometry.Offset(7.dp.toPx(), 7.dp.toPx()))
         }
@@ -314,3 +333,42 @@ private fun ThreadTextureControls(options: ThreadTextureOptions, enabled: Boolea
         Text(stringResource(R.string.photo_texture_editor_hint), style=MaterialTheme.typography.bodySmall)
     }
 }
+
+/** Two independent steps: picture resolution (px) and the small-piece area (mm²); tracing reruns on release. */
+@Composable
+private fun DetailControls(vm: PhotoViewModel) {
+    val colors = MaterialTheme.colorScheme
+    Text(stringResource(R.string.photo_detail), style = MaterialTheme.typography.titleSmall)
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val applied = vm.appliedResolutionPx
+    StepSlider(vm.resolutionSteps, vm.effectiveResolutionPx, !vm.busy, { size ->
+        if (applied != null && applied != size && size == vm.effectiveResolutionPx) res.getString(R.string.photo_resolution_applied, size, applied)
+        else res.getString(R.string.photo_resolution, size)
+    }, vm::changeResolution)
+    StepSlider(vm.pieceAreaSteps, vm.effectivePieceAreaMm2, !vm.busy && vm.pieceAreaApplies, { area ->
+        if (area == 0.0) res.getString(R.string.photo_piece_area_off)
+        else res.getString(R.string.photo_piece_area, pieceAreaText(area), 2 * kotlin.math.sqrt(area / kotlin.math.PI))
+    }, vm::changePieceArea)
+    Text(stringResource(if (vm.pieceAreaApplies) R.string.photo_detail_hint else R.string.photo_piece_area_bw),
+        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+}
+
+/**
+ * Slider over fixed steps; dragging only moves the label and [onCommit] runs once on release.
+ * The committed step is read from the slider state when the gesture ends: a tap calls onValueChange and
+ * onValueChangeFinished back to back, before any recomposition, so a value captured at composition is stale.
+ */
+@Composable
+internal fun <T> StepSlider(steps: List<T>, value: T, enabled: Boolean, label: (T) -> String, onCommit: (T) -> Unit) {
+    var draft by remember(steps, value) { mutableFloatStateOf(steps.indexOf(value).coerceAtLeast(0).toFloat()) }
+    fun step() = steps[draft.roundToInt().coerceIn(steps.indices)]
+    val text = label(step())
+    Text(text, style = MaterialTheme.typography.labelLarge)
+    Slider(draft, { draft = it }, valueRange = 0f..(steps.size - 1).toFloat(), steps = (steps.size - 2).coerceAtLeast(0),
+        onValueChangeFinished = { onCommit(step()) }, enabled = enabled,
+        modifier = Modifier.semantics { contentDescription = text })
+}
+
+/** 0.0625 … 16 as written; the colour default π shows as 3.14. */
+internal fun pieceAreaText(mm2: Double): String =
+    if (mm2 == kotlin.math.PI) "3.14" else java.math.BigDecimal(mm2).stripTrailingZeros().toPlainString()

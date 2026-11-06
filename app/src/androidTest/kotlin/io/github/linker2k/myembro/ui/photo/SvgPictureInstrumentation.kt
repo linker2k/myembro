@@ -103,7 +103,7 @@ class SvgPictureInstrumentation : Instrumentation() {
             val bad = File(dir, "unsupported.svg").apply { writeText(valid.replace("<rect width=", "<text>unsupported</text><rect width=")) }
             runOnMainSync { activity.startActivity(intent(bad, "image/svg+xml")) }
             Thread.sleep(150); await("unsupported SVG") { !vm.busy && vm.error != null }
-            check(vm.error == R.string.svg_picture_unsupported && vm.isSvg && !vm.canSend)
+            check(vm.error == R.string.svg_picture_unsupported && vm.isSvg && !vm.canEdit)
             shot("04-unsupported-svg.png")
             log += "SVG_UNSUPPORTED PASS: unsupported element -> localized PNG guidance, sending disabled"
             finish(0, Bundle().apply { putString("result", log.joinToString("\n") + "\nSVG_PICTURE_PASS") })

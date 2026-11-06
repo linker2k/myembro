@@ -98,14 +98,16 @@ class ShapeObjectOverridesTest {
         val s=ShapeObject.fromSvg("heart","strip","<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 25\"><path fill=\"#F8312F\" d=\"M0 0H4V25H0Z\"/></svg>",4.0)
         val p=Project(objects=listOf(s))
         val patterns=mutableListOf<List<io.github.linker2k.myembro.engine.model.Stitch>>()
-        for(type in BlockStitch.Type.entries) {
+        // EMPTY on this one-block object would leave nothing to sew; BlockEmptyTest covers it.
+        val sewing=BlockStitch.Type.entries-BlockStitch.Type.EMPTY
+        for(type in sewing) {
             val patch=BlockStitchPatch(type=type,zigzag_spacing_mm=if(type==BlockStitch.Type.SATIN) 0.6 else null)
             val result=assertIs<CommandResult.Applied>(apply(p,command(p,patch)))
             val restored=ProjectJson.decode(ProjectJson.encode(result.project))
             assertEquals(result.project.flatten().stitches,restored.flatten().stitches)
             patterns+=restored.flatten().stitches
         }
-        assertEquals(BlockStitch.Type.entries.size,patterns.distinct().size)
+        assertEquals(sewing.size,patterns.distinct().size)
     }
 
 }

@@ -11,10 +11,8 @@ The registry owner connects it after integration. Only the repository's syntheti
   Supply that **same instance** as `attachmentStore` when constructing the existing
   Ask AI `androidAgentKernel`. Supply its **existing** bound `ToolTurnController` to
   `RelayPhotoTools`; do not create another live `EditSession` or independent kernel.
-- Mount `RelayPhotoHandoff(photos)` in the connected editor's controls. It opens the
-  system image picker, then asks for consent **for that individual photo**. Cancellation,
-  dismiss, or merely choosing a photo grants no capability. The trusted UI's
-  `handoff(uri, consentGiven)` is not a remote tool and must never be mapped to JSON.
+- The editor's "Send a photo to AI" picker (`RelayPhotoHandoff`) was removed on 2026-11-01
+  (user decision). `handoff(uri, consentGiven)` stays trusted-UI only and must never be mapped to JSON.
 - Register `RelayPhotoTools.definitions` and route its four `NAMES` to `call`.
   Definitions retain the catalog annotation names; the registry projects them through
   `RelayProtocol.mcpAnnotations`, like existing tools. Do not register the UI's consent

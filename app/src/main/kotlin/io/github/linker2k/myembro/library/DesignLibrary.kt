@@ -21,15 +21,6 @@ class DesignLibrary(private val context: Context) {
         if (file.parentFile == dir) file.delete()
     }
 
-    /** Installs the whole pack once, including upgrades from the former single-flower demo.
-     * Deleted samples stay deleted after installation; user files are never overwritten.
-     */
-    fun seedSampleIfEmpty() {
-        SampleInstaller(dir).install(context.assets.list("samples").orEmpty().toList()) { name ->
-            context.assets.open("samples/$name")
-        }
-    }
-
     /** Adds the 'myembro logo' default design once, under its localized name. */
     fun seedDefaultLogo() {
         DefaultLogoInstaller(dir).install(context.getString(R.string.library_logo_name) + ".pes") {
@@ -40,6 +31,7 @@ class DesignLibrary(private val context: Context) {
     fun isDefaultLogo(file: File): Boolean = file.parentFile == dir && file.name == DefaultLogoInstaller.installedName(dir)
 
     companion object {
+        /** Bundled samples (BundledDesigns) and copies an earlier version put in the library, which are kept. */
         fun isSample(file: File): Boolean = file.name.startsWith("sample_")
 
         val SUPPORTED = DesignFormats.extensions

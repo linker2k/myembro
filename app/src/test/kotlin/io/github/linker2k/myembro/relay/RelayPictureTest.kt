@@ -70,7 +70,7 @@ class RelayPictureTest {
             assertNotNull(bad.toString(), schema.validate("import_picture", bad))
         val offered = RelayProtocol.offer(listOf(RelayPicture.DEFINITION)).single()
         val description = offered.getValue("description").jsonPrimitive.content
-        assertTrue(description, "SVG is preferred" in description && "must be small" in description)
+        assertTrue(description, "Draw a PNG image first (not SVG)" in description && "at most 1000000 characters" in description)
         val input = offered.getValue("inputSchema").jsonObject
         assertEquals(listOf("format", "data"), input.getValue("required").jsonArray.map { it.jsonPrimitive.content })
         assertEquals(JsonPrimitive(4), input.getValue("properties").jsonObject.getValue("colors").jsonObject["default"])

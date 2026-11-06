@@ -11,10 +11,10 @@ import java.util.UUID
 
 /** Adding a project treats its visible design as one object; opening it preserves editable layers.
  * A project holding a single block shape is that object already, so it is added as-is to keep its blocks. */
-internal fun importDesignObject(file: File): DesignObject {
+internal fun importDesignObject(file: File, name: String = file.nameWithoutExtension): DesignObject {
     val id = UUID.randomUUID().toString()
     if (!file.extension.equals("myembro", true))
-        return StitchObject.fromBytes(id, file.nameWithoutExtension, file.readBytes(), file.name)
+        return StitchObject.fromBytes(id, name, file.readBytes(), file.name)
     val shape = ProjectJson.decode(file.readText().removePrefix("\uFEFF")).objects.singleOrNull() as? ShapeObject
-    return shape?.withId(id) ?: StitchObject(id, file.nameWithoutExtension, DesignFormats.read(file))
+    return shape?.withId(id) ?: StitchObject(id, name, DesignFormats.read(file))
 }

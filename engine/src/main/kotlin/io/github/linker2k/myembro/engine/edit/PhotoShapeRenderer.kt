@@ -23,8 +23,13 @@ internal object PhotoShapeRenderer {
             BlockStitch.Type.FILL -> StitchTypeRule.Type.TATAMI
             BlockStitch.Type.SATIN -> StitchTypeRule.Type.SATIN
             BlockStitch.Type.RUNNING -> StitchTypeRule.Type.RUNNING
+            BlockStitch.Type.EMPTY -> when(r.defaultStitch.type) {
+                BlockStitch.Type.SATIN -> StitchTypeRule.Type.SATIN
+                BlockStitch.Type.RUNNING -> StitchTypeRule.Type.RUNNING
+                else -> StitchTypeRule.Type.TATAMI
+            }
         },r.color,
-            widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id) }
+            widthMm,r.color.color and 0xffffff,paths=r.paths,regionId=r.id,empty=r.stitch.type==BlockStitch.Type.EMPTY) }
         if(overrides.isEmpty()) return VectorArt.Result(source.pattern,parts,1.0,regionPatterns=source.fragments)
         // Overridden fills get the same two-pass staggered outline as the original photo route (ColorFillOutline).
         val outlined=mutableMapOf<String,EmbPattern>()
@@ -32,6 +37,7 @@ internal object PhotoShapeRenderer {
             val settings=overrides[r.id]
             r.id to if(settings==null) source.fragments[r.id]
                 ?: error("PHOTO_SOURCE_PROVENANCE_MISSING: reimport this picture")
+            else if(settings.type==BlockStitch.Type.EMPTY) EmbPattern(emptyList(),listOf(r.color))
             else {
                 val groups=ShapeBlockRenderer.generate(VectorArt.RegionInput(r.id,r.paths,r.color,null),settings).groups
                 if(settings.type==BlockStitch.Type.FILL) outlined[r.id]=finish(groups.dropLast(1)+groups.last().copy(trimAfter=false)+outlineGroups(r))

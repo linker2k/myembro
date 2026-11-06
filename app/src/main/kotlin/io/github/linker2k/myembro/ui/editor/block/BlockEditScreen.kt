@@ -44,6 +44,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.luminance
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
@@ -107,8 +112,10 @@ fun BlockEditScreen(vm: EditorViewModel, shape: ShapeObject, onClose: () -> Unit
                     if (outlineNote?.second == true) Text(stringResource(R.string.photo_skipped_outlines_unconfirmed),
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (status is BlockStatus.Generating) GeneratingRow(vm, status)
+                    // A manual angle shows as hatching over the selection while the slider moves; display only.
+                    val hatch = draft.angleDeg.takeIf { !draft.autoAngle && draft.type == BlockType.FILL && selected.isNotEmpty() }
                     key(state, selected) { RegionCanvas(state, Modifier.fillMaxWidth().weight(1f).padding(12.dp),
-                        vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background) { x, y, lineMm ->
+                        vm.project.fabricColorArgb?.let { Color(it) } ?: MaterialTheme.colorScheme.background, hatch) { x, y, lineMm ->
                         state.tap(x, y, multi, lineMm); picked() } }
                 }
             }
@@ -219,7 +226,8 @@ internal class BlockCanvasFit(bounds: RegionBounds?, width: Float, height: Float
 }
 
 @Composable
-internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor: Color, onTap: (Double, Double, Double) -> Unit) {
+internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor: Color, hatchDeg: Int? = null,
+                          onTap: (Double, Double, Double) -> Unit) {
     val outline = MaterialTheme.colorScheme.primary
     val description = stringResource(R.string.block_edit_canvas)
     val touchPx = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.toPx() }
@@ -238,8 +246,14 @@ internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor
             val chosen = r.id in state.selected
             val color = Color(r.color).copy(alpha = if (!dim || chosen) 1f else 0.3f)
             val (rings, lines) = regionPaths(r, fit)
-            drawPath(rings, color)
-            drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
+            // An emptied block sews nothing, so only the fabric shows (user decision 2026-11-01); taps still hit its shape.
+            if (r.stitch.type != BlockType.EMPTY) {
+                drawPath(rings, color)
+                drawPath(lines, color, style = Stroke(1.5.dp.toPx()))
+            }
+        }
+        if (hatchDeg != null) state.regions.filter { it.id in state.selected }.forEach { r ->
+            drawHatch(regionPaths(r, fit).first, hatchDeg, Color(r.color))
         }
         state.regions.filter { it.id in state.selected }.forEach { r ->
             val (rings, lines) = regionPaths(r, fit)
@@ -247,6 +261,29 @@ internal fun RegionCanvas(state: BlockEditState, modifier: Modifier, fabricColor
                 drawPath(path, Color.White, style = Stroke(5.dp.toPx()))
                 drawPath(path, outline, style = Stroke(2.5.dp.toPx()))
             }
+        }
+    }
+}
+
+/**
+ * Thin parallel lines at the fill angle, clipped to the region: white on dark thread, dark on light thread
+ * (luminance threshold 0.5 as in FreeDesignSourcesScreen). Screen direction (cos a, -sin a) matches Fill.kt's
+ * row direction (-1, 0).rotate(-a) in the same y-down object frame.
+ */
+private fun DrawScope.drawHatch(rings: Path, deg: Int, thread: Color) {
+    val a = Math.toRadians(deg.toDouble())
+    val dx = cos(a).toFloat(); val dy = -sin(a).toFloat()
+    val gap = 6.dp.toPx()
+    val half = hypot(size.width, size.height) / 2f
+    val c = center
+    val line = if (thread.luminance() < 0.5f) Color.White.copy(alpha = 0.85f) else Color(0xFF1C1B1F).copy(alpha = 0.75f)
+    clipPath(rings) {
+        var t = -half
+        while (t <= half) {
+            // Offset along the normal (-dy, dx), then span the whole canvas along the direction.
+            val ox = c.x - dy * t; val oy = c.y + dx * t
+            drawLine(line, Offset(ox - dx * half, oy - dy * half), Offset(ox + dx * half, oy + dy * half), 1.dp.toPx())
+            t += gap
         }
     }
 }
@@ -299,7 +336,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                 Text(stringResource(R.string.block_edit_type_unavailable, stringResource(TYPE_NAMES[type.ordinal]), reasonText(code)),
                     style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
-            Segmented(listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running),
+            Segmented(TYPE_NAMES,
                 draft.type.ordinal, enabled = { BlockType.entries[it] in options.types }) { onDraft(draft.copy(type = BlockType.entries[it])) }
             if (draft.type == BlockType.FILL) {
                 Label(R.string.block_edit_texture)
@@ -314,7 +351,10 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     MeanderGrid(draft.tile) { onDraft(draft.copy(tile = it)) }
                 }
             }
-            if (draft.type != BlockType.RUNNING) {
+            if (draft.type == BlockType.EMPTY) Text(stringResource(R.string.block_edit_empty_hint),
+                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            // Direction is a fill setting only; satin, running and empty show none.
+            if (draft.type == BlockType.FILL) {
                 Label(R.string.block_edit_direction)
                 Segmented(listOf(R.string.block_edit_direction_auto, R.string.block_edit_direction_manual), if (draft.autoAngle) 0 else 1) {
                     onDraft(draft.copy(autoAngle = it == 0))
@@ -329,6 +369,8 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
                     if (count > 1) Text(stringResource(R.string.block_edit_same_angle, count), style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant)
                 }
+            }
+            if (draft.type != BlockType.RUNNING && draft.type != BlockType.EMPTY) {
                 Label(R.string.block_edit_density)
                 // Only steps with an Ink/Stitch basis are offered (BlockApply.ROW_SPACING_MM).
                 Segmented(listOf(R.string.block_edit_density_dense, R.string.block_edit_density_normal, R.string.block_edit_density_sparse),
@@ -357,7 +399,7 @@ private fun BlockSheet(count: Int, draft: BlockStitchDraft, onDraft: (BlockStitc
     }
 }
 
-private val TYPE_NAMES = listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running)
+private val TYPE_NAMES = listOf(R.string.block_edit_type_fill, R.string.block_edit_type_satin, R.string.block_edit_type_running, R.string.block_edit_type_empty)
 
 /** Engine reason codes in a few words; an unknown code is shown as is. */
 @Composable

@@ -135,7 +135,12 @@ tasks.register("koreanTtfSweepClasspath") {
 }
 
 // Release sweeps render many patterns in parallel.
-tasks.test { maxHeapSize = "3g" }
+tasks.test {
+    maxHeapSize = "3g"
+    // Local SVG cost measurement only (SvgCostMeasureTest); off unless -PsvgMeasure=true.
+    systemProperty("svgMeasure", providers.gradleProperty("svgMeasure").orElse("false").get())
+    systemProperty("svgCostGroups", providers.gradleProperty("svgCostGroups").orElse("").get())
+}
 
 tasks.register<JavaExec>("makeS4Samples") {
     group = "verification"
@@ -219,7 +224,7 @@ tasks.register<JavaExec>("runAgentScenario") {
 }
 
 tasks.processResources {
-    from(rootProject.file("app/src/main/assets/samples/sample_heart_running.pes")) { into("agent/builtins") }
+    from(rootProject.file("app/src/main/assets/samples/sample_71_heart.pes")) { into("agent/builtins") }
     from(rootProject.file("app/src/main/assets/designs/myembro_logo.pes")) { into("agent/builtins") }
 }
 
@@ -316,4 +321,14 @@ tasks.register<JavaExec>("measureFixedRealisticPreview") {
     args(providers.gradleProperty("fixedPreviewOutput").orElse(layout.buildDirectory.dir("fixed-preview").get().asFile.path).get(),
         providers.gradleProperty("fixedPreviewPes").orElse("").get())
     doFirst { require(providers.gradleProperty("fixedPreviewPes").isPresent) { "Supply -PfixedPreviewPes=/path/to/generated-skull.pes" } }
+}
+
+// Opt-in local grid: resolution × small-piece area (docs/picture-to-stitches.md); inputs are never copied.
+tasks.register<JavaExec>("detailSplitGrid") {
+    group = "verification"
+    classpath = oracleSourceSet.runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.inkstitch.oracle.DetailSplitCli")
+    systemProperty("java.awt.headless", "true")
+    maxHeapSize = "3g"
+    args(providers.gradleProperty("detailSplitArgs").orElse("/tmp/myembro-detail-split").get().split(','))
 }

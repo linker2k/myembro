@@ -3,8 +3,6 @@ package io.github.linker2k.myembro.ui.editor
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,7 +24,6 @@ import io.github.linker2k.myembro.engine.edit.densityWarning
 import io.github.linker2k.myembro.engine.edit.TextObject
 import io.github.linker2k.myembro.engine.lettering.ThreadWeight
 import io.github.linker2k.myembro.engine.lettering.StitchStyle
-import java.io.File
 import java.util.Locale
 import io.github.linker2k.myembro.ui.format.Dimensions
 import kotlin.math.abs
@@ -99,37 +96,46 @@ private fun NumericField(value: String, onChange: (String) -> Unit, label: Int, 
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
+/** One save dialog: name, format and location, then one Save button. */
 @Composable
-internal fun SaveProjectDialog(initialName: String, title: Int, onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: ((String) -> Unit)? = null) {
-    var name by remember(initialName) { mutableStateOf(initialName) }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(title)) },
-        text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.editor_project_name)) }) },
-        confirmButton = { TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_save_local)) } },
+internal fun SaveDesignDialog(prompt: EditorSavePrompt, pesEnabled: Boolean, onKind: (EditorSaveKind) -> Unit,
+    onLocation: (Boolean) -> Unit, onDismiss: () -> Unit, onSave: (String) -> Unit, onExport: (String) -> Unit) {
+    var name by remember(prompt.suggestedName) { mutableStateOf(prompt.suggestedName) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_save_title)) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(stringResource(R.string.editor_save_name)) })
+            Text(stringResource(R.string.editor_save_format), style = MaterialTheme.typography.labelLarge)
+            for ((kind, label) in listOf(EditorSaveKind.PROJECT to R.string.editor_format_project, EditorSaveKind.PES to R.string.editor_format_pes)) {
+                val enabled = kind != EditorSaveKind.PES || pesEnabled
+                Row(Modifier.fillMaxWidth().clickable(enabled = enabled) { onKind(kind) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(prompt.kind == kind, { onKind(kind) }, enabled = enabled)
+                    Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            Text(stringResource(R.string.editor_save_location), style = MaterialTheme.typography.labelLarge)
+            for ((toFile, label) in listOf(false to R.string.editor_save_local, true to R.string.editor_export_file)) {
+                Row(Modifier.fillMaxWidth().clickable { onLocation(toFile) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(prompt.toFile == toFile, { onLocation(toFile) })
+                    Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        } },
+        confirmButton = { TextButton(onClick = { if (prompt.toFile) onExport(name) else onSave(name) }, enabled = name.isNotBlank()) {
+            Text(stringResource(R.string.editor_save_title)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) } })
+}
+
+/** Saving a design opened from an app file: replace that file (confirmed next) or save under a new name. */
+@Composable
+internal fun SaveChoiceDialog(choice: EditorSaveChoice, onReplace: () -> Unit, onSaveAs: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.editor_save_title)) },
+        text = { Text(stringResource(R.string.editor_save_choice_body, choice.file.name)) },
+        confirmButton = { TextButton(onClick = onReplace) { Text(stringResource(R.string.editor_save_replace)) } },
         dismissButton = {
             Row {
-                if (onExport != null) TextButton(onClick = { onExport(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.editor_export_file)) }
+                TextButton(onClick = onSaveAs) { Text(stringResource(R.string.editor_save_as)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
             }
         })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ProjectPicker(vm: EditorViewModel, onDismiss: () -> Unit, onOpen: (File) -> Unit, onDevice: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(stringResource(R.string.editor_project_open), Modifier.padding(20.dp), style = MaterialTheme.typography.titleLarge)
-        OutlinedButton(onClick = onDevice, modifier = Modifier.padding(horizontal = 20.dp)) {
-            Icon(Icons.Default.FolderOpen, null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.editor_open_device))
-        }
-        if (vm.projectFiles.isEmpty()) Text(stringResource(R.string.editor_projects_empty), Modifier.padding(20.dp))
-        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
-            items(vm.projectFiles, key = { it.path }) { file ->
-                ListItem(headlineContent = { Text(file.name) }, leadingContent = { Icon(Icons.Default.Description, null) },
-                    modifier = Modifier.clickable { onOpen(file) })
-            }
-        }
-        Spacer(Modifier.height(24.dp))
-    }
-}

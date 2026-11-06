@@ -50,7 +50,7 @@ class IntegerHoopCenterTest {
         }
     }
     @Test fun importedSourceBytesAndNormalizedOutputRemainUnchanged() {
-        val bytes=checkNotNull(javaClass.getResourceAsStream("/agent/builtins/sample_heart_running.pes")).readBytes()
+        val bytes=checkNotNull(javaClass.getResourceAsStream("/agent/builtins/sample_71_heart.pes")).readBytes()
         val obj=StitchObject.fromBytes("import","sample",bytes,"sample.pes")
         val original=obj.source
         val centered=obj.localPattern()

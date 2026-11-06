@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.linker2k.myembro.engine.export
 
+import io.github.linker2k.myembro.engine.fat12.LongNames
 import io.github.linker2k.myembro.engine.model.Command
 import io.github.linker2k.myembro.engine.model.EmbPattern
 import java.util.Locale
@@ -26,15 +27,14 @@ data class MachineProfile(
 enum class ExportDestination { PC_TRANSFER, INTERNAL_MEMORY }
 
 object Preflight {
-    private val fileNameStemPattern = Regex("[A-Za-z0-9_-]+")
-
-    /** Existing machine filename character rule; length remains profile-specific. */
-    fun isValidFileNameStem(stem: String): Boolean = stem.matches(fileNameStemPattern)
+    /** VFAT long-name characters only (fatgen103 section 7); Hangul, spaces and other punctuation are
+     * fine: SE400 listed such a PC-copied name on 2026-11-01. Length remains profile-specific. */
+    fun isValidFileNameStem(stem: String): Boolean = stem.isNotBlank() && stem.all(LongNames::isAllowedChar)
 
     /** JVM callers use English; UI callers supply localized resource-backed messages. */
     data class FileNameMessages(
         val invalidCharacters: (String) -> String = { machine ->
-            "Use only letters A–Z, numbers, hyphens (-), and underscores (_) in file names. Special characters or Korean letters may not display on $machine."
+            "File names for $machine cannot contain \\ / : * ? \" < > | or control characters."
         },
         val tooLong: (Int) -> String = { limit -> "The file name exceeds $limit characters." },
     )

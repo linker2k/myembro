@@ -918,7 +918,7 @@
         },
         {
             "name": "import_picture",
-            "description": "Open an AI-made picture in myembro's picture input screen. The user must confirm there before a ShapeObject layer is added; this call never changes the design. SVG is preferred: send SVG text in data (flat solid fills, no embedded text/images). Raster PNG, JPEG, BMP, WebP, GIF, HEIF or AVIF must be small base64 (at most 1000000 characters). colors 2-6 (default 4) is the initial color-mode choice. Only the latest pending picture is kept in memory. If too large, ask the user to share the picture to myembro.",
+            "description": "Open an AI-made picture in myembro's picture input screen; the user confirms there before it is added. Draw a PNG image first (not SVG). Keep the drawing prompt short: the subject, one original design, white background, flat solid colors, no gradient, no text, no existing characters or logos. Thin lines are fine. Send PNG as base64 (at most 1000000 characters); if it is too large, ask the user to save the picture and share it to myembro. colors 2-6 (default 4) is the initial color choice.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

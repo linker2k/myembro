@@ -74,8 +74,9 @@ Worker has a 100 MB request-body limit (Free/Pro), so it is not the binding limi
 - The app caps raster `data` at **1,000,000 base64 characters**
   (`RelayPicture.MAX_BASE64_CHARS`). That leaves 48,576 bytes for the envelope; the relay test
   checks the maximum data with a 600-Hangul-character title still fits.
-- SVG keeps `SvgPictureInput.MAX_BYTES` = **4788** UTF-8 bytes (the measured corpus maximum,
-  docs/agent/svg-picture.md). An SVG over that limit gets "simplify it or send a small PNG".
+- SVG keeps `SvgPictureInput.MAX_BYTES` = **200,000** UTF-8 bytes, inclusive (user decision
+  2026-11-05, docs/agent/svg-picture.md). With quotes JSON-escaped (2 bytes each) it still fits the 1 MiB
+  call cap; a call the relay finds larger is refused there with the share guidance above. An SVG over that limit gets "simplify it or send a small PNG".
 - No app↔relay chunking: one picture under the cap is one message, and over the cap the user
   shares it instead. The share flow is the existing AI picture return (docs/agent/ai-picture.md).
 

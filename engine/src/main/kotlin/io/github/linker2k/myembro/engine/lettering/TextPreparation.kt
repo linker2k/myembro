@@ -61,6 +61,7 @@ data class TextPreparationRequest(
     val threadWeight: ThreadWeight = ThreadWeight.WT40,
     /** Already prepared by the host; extracting/tracing centerlines is outside this API's current scope. */
     val centerlineSatin: CenterlineSatinData? = null,
+    val kanaSatin: KanaSatinData? = null,
 )
 
 /** Host selects/validates the method before preparing, as before; no new automatic rules. */
@@ -107,7 +108,7 @@ fun prepareText(request: TextPreparationRequest, font: ResolvedTextFont,
         alignment = TextAlignment.valueOf(request.alignment.name), arcRadiusMm = request.arcRadiusMm,
         characterThreads = request.characterColors.mapValues { (_, color) -> if (color == request.thread.color) request.thread else EmbThread(color) },
         contourCharacters = layout.characters, contourBaselines = layout.baselines,
-        singleLine = font !is ResolvedTextFont.OutlineSnapshot, centerlineSatin = request.centerlineSatin,
+        singleLine = font !is ResolvedTextFont.OutlineSnapshot, centerlineSatin = request.centerlineSatin, kanaSatin = request.kanaSatin,
         stitchStyle = request.stitchStyle ?: StitchStyle.RUNNING,
         fillOptions = request.fillOptions, satinOptions = request.satinOptions, threadWeight = request.threadWeight,
     ), font)

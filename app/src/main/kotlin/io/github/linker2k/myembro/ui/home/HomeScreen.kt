@@ -41,7 +41,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -116,6 +115,9 @@ fun HomeScreen(
     onOpenAiProject: (() -> Unit)? = null,
     /** Whether the Create sheet is open (MainActivity does not switch screens under it). */
     onSheetChange: (Boolean) -> Unit = {},
+    /** A bundled sample opens as a new project; the sample itself is never changed. */
+    onOpenSample: (File) -> Unit = onOpenRecent,
+    onAllSamples: (() -> Unit)? = null,
 ) {
     val vm: HomeViewModel = viewModel()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -124,7 +126,7 @@ fun HomeScreen(
             onNewProject, onOpenRecent, onImport, onLettering, onOpenLibrary, onSettings, modifier,
             vm.settings.availableViewerHoops, vm.settings.defaultHoop, onCreateFromDesign, letteringAvailable,
             onFreeDesigns, vm.settings.defaultFrame, onNewProjectFrame, onPhoto, BuildConfig.VERSION_NAME, onVersion, onEmoji,
-            aiProjectObjects, onOpenAiProject, onSheetChange)
+            aiProjectObjects, onOpenAiProject, onSheetChange, onOpenSample, onAllSamples)
     }
 }
 
@@ -145,6 +147,8 @@ private fun HomeContent(
     aiProjectObjects: Int = 0,
     onOpenAiProject: (() -> Unit)? = null,
     onSheetChange: (Boolean) -> Unit = {},
+    onOpenSample: (File) -> Unit = onOpenRecent,
+    onAllSamples: (() -> Unit)? = null,
 ) {
     var showNewProject by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(showNewProject) { onSheetChange(showNewProject) }
@@ -168,10 +172,6 @@ private fun HomeContent(
                         }
                     }
                 },
-                actions = {
-                    IconButton(onClick = onSettings) {
-                    Icon(Icons.Default.Settings, stringResource(R.string.home_settings))
-                } },
             )
         },
         bottomBar = { HomeTabs({ showNewProject = true }, onOpenLibrary, onSettings) },
@@ -223,15 +223,15 @@ private fun HomeContent(
                     }
                 }
                 item(key = "samples_heading", span = { GridItemSpan(maxLineSpan) }) {
-                    SectionTitle(stringResource(R.string.home_gallery))
+                    SectionTitle(stringResource(R.string.home_gallery), onAllSamples)
                 }
                 if (expanded) gridItems(samples, key = { "sample:${it.file.path}" }) { project ->
-                    ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample),
-                        Modifier.fillMaxWidth()) { onOpenRecent(project.file) }
+                    ProjectCard(project, project.title, stringResource(R.string.home_sample),
+                        Modifier.fillMaxWidth()) { onOpenSample(project.file) }
                 } else item(key = "samples_row") {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(samples, key = { it.file.path }) { project ->
-                            ProjectCard(project, sampleTitle(project), stringResource(R.string.home_sample)) { onOpenRecent(project.file) }
+                            ProjectCard(project, project.title, stringResource(R.string.home_sample)) { onOpenSample(project.file) }
                         }
                     }
                 }
@@ -277,9 +277,6 @@ private fun NewProjectCard(hoop: Hoop, frame: FrameOption? = null, onCreate: () 
         }
     }
 }
-
-private fun sampleTitle(project: HomeProject): String =
-    project.file.nameWithoutExtension.removePrefix("sample_").replace('_', ' ')
 
 @Composable
 private fun RecentEmpty(failed: Boolean, onAction: () -> Unit) {

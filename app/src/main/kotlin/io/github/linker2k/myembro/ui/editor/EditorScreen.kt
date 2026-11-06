@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -69,8 +71,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         // AI connection: "Send a photo to AI" (menu) opens the picker, then asks consent for that photo.
         val relayOn = io.github.linker2k.myembro.relay.RelayService.connection.collectAsState().value != null
-        var relayPhotoRequest by remember { mutableIntStateOf(0) }
-        if (relayOn) io.github.linker2k.myembro.relay.RelayPhotoHandoff(vm.relayPhotos, launch = relayPhotoRequest)
         LaunchedEffect(relayOn) { if (relayOn) vm.prewarmRelayFonts() }
         LaunchedEffect(vm.project.hoop, vm.settings.machineModel, multiPositionPositions) { vm.configureSewingPositions(multiPositionPositions) }
         var splitPreview by remember { mutableStateOf<EditorSplitPreview?>(null) }
@@ -78,8 +78,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showColors by remember { mutableStateOf(false) }
         var showLayers by remember { mutableStateOf(false) }
         var hoopMenu by remember { mutableStateOf(false) }
-        var projectMenu by remember { mutableStateOf(false) }
-        var showOpenProjects by remember { mutableStateOf(false) }
         var showProperties by remember { mutableStateOf(false) }
         var blockEdit by remember { mutableStateOf(false) }
         var fitRequest by remember { mutableIntStateOf(0) }
@@ -90,19 +88,21 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         var showJumps by rememberSaveable { mutableStateOf(false) }
         var preview by remember { mutableFloatStateOf(1f) }
         var exportName by remember { mutableStateOf("myembro") }
+        var exportKind by remember { mutableStateOf(EditorSaveKind.PROJECT) }
         val enabled = !vm.interactionBlocked && !vm.gestureInProgress
         val importDesign = rememberDesignImporter(
             onFiles = { vm.importDesigns(it); preview = 1f },
             onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
         // Keep the local design collection available alongside device files/folders.
         val addDesign = { vm.refreshDesigns(); showDesigns = true }
-        val openDocument = rememberDesignImporter(
-            onFiles = { vm.importDesigns(it, openSingleProject = true); fitRequest++; preview = 1f },
-            onFolder = { vm.importDesigns(emptyList(), tree = it); preview = 1f })
         val importProgress by vm.importProgress.collectAsState()
         DesignImportDialogs(importProgress, vm.importReport, vm::dismissImportReport, vm.importDecisions, vm::cancelImport)
         val exportDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-            if (uri != null) vm.saveProject(exportName, uri, afterSave = vm::finishNamedSave) else vm.cancelNamedSave()
+            when {
+                uri == null -> vm.cancelNamedSave()
+                exportKind == EditorSaveKind.PES -> vm.exportPes(exportName, uri)
+                else -> vm.saveProject(exportName, uri, afterSave = vm::finishNamedSave)
+            }
         }
         val snackbar = remember { SnackbarHostState() }
         val message = vm.message
@@ -145,57 +145,44 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.editor_back))
                             }
                             // Same unsaved-change dialog and draft handling as back.
-                            io.github.linker2k.myembro.ui.HomeButton(enabled, home) { goHome -> vm.leave(goHome) }
+                            io.github.linker2k.myembro.ui.HomeButton(enabled, home, iconSize = 28.dp) { goHome -> vm.leave(goHome) }
                         } }, actions = {
                             AgentAskButton(vm.agent, vm.project, enabled)
                             EditorHistoryButton(vm, redo = false)
                             EditorHistoryButton(vm, redo = true)
-                            Box {
-                                IconButton(onClick = { projectMenu = true }, enabled = enabled) { Icon(Icons.Default.MoreVert, stringResource(R.string.editor_project_menu)) }
-                                DropdownMenu(projectMenu, onDismissRequest = { projectMenu = false }) {
-                                    DropdownMenuItem(text={Text(stringResource(R.string.editor_colors))},
-                                        leadingIcon={Icon(Icons.Default.Palette,null)},enabled=!vm.gestureInProgress,
-                                        onClick={projectMenu=false;showColors=true})
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_save)) },
-                                        onClick = { projectMenu = false; vm.requestProjectSave() })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_project_open)) },
-                                        onClick = { projectMenu = false; vm.refreshProjects(); showOpenProjects = true })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_save)) }, enabled = vm.project.objects.any { it.visible },
-                                        onClick = { projectMenu = false; vm.save() })
-                                    if (relayOn) DropdownMenuItem(text = { Text(stringResource(R.string.relay_photo_send)) },
-                                        onClick = { projectMenu = false; relayPhotoRequest++ })
-                                }
+                            // Opens the one save dialog (format choice inside), or the replace/save-as choice for an opened file.
+                            IconButton(onClick = { vm.requestSave() }, enabled = enabled && vm.project.objects.any { it.visible }) {
+                                Icon(Icons.Default.Save, stringResource(R.string.editor_save_title), Modifier.size(26.dp))
                             }
                         })
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // The hoop chip gives way (ellipsis) so Edit blocks, the object count and Save stay on screen.
-                        Box(Modifier.weight(1f, fill = false)) {
-                            SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
-                                label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.size(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
-                            DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
-                                vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
-                                    onClick = { vm.setHoop(hoop); hoopMenu = false }) }
-                                vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_multi_frame, Dimensions.size(frame.coverage.width / 10.0, frame.coverage.height / 10.0))) },
-                                    onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
+                        // The hoop chip shows mm only so the size fits; the left group takes all
+                        // space the count leaves, so only the hoop chip gives way (ellipsis) on very narrow screens.
+                        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.weight(1f, fill = false)) {
+                                SuggestionChip(onClick = { hoopMenu = true }, enabled = enabled && vm.availableHoops.isNotEmpty(),
+                                    label = { Text(stringResource(R.string.editor_hoop_size, Dimensions.sizeMm(vm.project.hoop.width / 10.0, vm.project.hoop.height / 10.0)),
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    icon = { Icon(Icons.Default.CropSquare, null, Modifier.size(16.dp)) })
+                                DropdownMenu(hoopMenu, onDismissRequest = { hoopMenu = false }) {
+                                    vm.availableHoops.forEach { hoop -> DropdownMenuItem(text = { Text(Dimensions.size(hoop.width / 10.0, hoop.height / 10.0)) },
+                                        onClick = { vm.setHoop(hoop); hoopMenu = false }) }
+                                    vm.multiPositionFrames.forEach { frame -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.editor_multi_frame, Dimensions.size(frame.coverage.width / 10.0, frame.coverage.height / 10.0))) },
+                                        onClick = { vm.setMultiPositionFrame(frame); hoopMenu = false }) }
+                                }
                             }
+                            // Blocks exist only on vector shapes; an imported PES has stitches only.
+                            val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
+                            val stitchOnly = stringResource(R.string.block_edit_stitch_only)
+                            if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
+                                onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
+                                label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
+                                leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
                         }
-                        // Blocks exist only on vector shapes; an imported PES has stitches only.
-                        val chosen = vm.selected.takeIf { vm.selectedIds.size == 1 }
-                        val stitchOnly = stringResource(R.string.block_edit_stitch_only)
-                        if (chosen is ShapeObject || chosen is StitchObject) AssistChip(enabled = enabled,
-                            onClick = { if (chosen is ShapeObject) blockEdit = true else vm.message = stitchOnly },
-                            label = { Text(stringResource(R.string.block_edit_open), maxLines = 1) },
-                            leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) })
-                        Spacer(Modifier.weight(1f))
-                        Text(stringResource(R.string.editor_object_count, vm.project.objects.size),
+                        Text(pluralStringResource(R.plurals.editor_object_count, vm.project.objects.size, vm.project.objects.size),
                             style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                        FilledTonalIconButton(onClick = vm::save, enabled = enabled && vm.project.objects.any { it.visible }, modifier = Modifier.size(40.dp)) {
-                            Icon(Icons.Default.Save, stringResource(R.string.editor_save), Modifier.size(20.dp))
-                        }
                     }
                     if (vm.multiPositionFrame != null) {
                         val fit = remember(vm.project, vm.sewingPositions, vm.gestureInProgress) {
@@ -235,7 +222,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                 val layersHeight = (maxHeight * 0.3f).coerceIn(112.dp, 248.dp)
                 val canvas: @Composable (Modifier, Boolean) -> Unit = { modifier, floatingTools ->
                     Box(modifier) {
-                        EditorCanvas(vm, fitRequest, Modifier.fillMaxSize(), navigationOnly, showJumps, preview)
+                        EditorCanvas(vm, fitRequest, Modifier.fillMaxSize().clipToBounds(), navigationOnly, showJumps, preview)
                         // Shapes this device could not generate are drawn from their last good stitches: say so.
                         val fallbackCount = if (vm.rendering) 0 else ShapeStitchGuard.failedIds().count { id -> vm.project.find(id)?.visible == true }
                         if (fallbackCount > 0) Surface(color = colors.errorContainer, shape = MaterialTheme.shapes.small,
@@ -250,7 +237,7 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                         if (floatingTools) EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                             onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                             onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
-                            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 36.dp))
+                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 14.dp, top = 36.dp))
                         if (floatingTools && vm.project.objects.isNotEmpty()) MiniLayerPanel(vm, enabled, addDesign, { showLayers = true },
                             Modifier.align(Alignment.TopEnd).padding(top = 36.dp, end = 12.dp).width(miniLayerWidth))
                         if (vm.project.objects.isEmpty()) FilledTonalButton(onClick = addDesign, enabled = enabled,
@@ -276,7 +263,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
                     EditorToolRail(navigationOnly, enabled, vm.snapEnabled,
                         onSelect = { navigationOnly = false }, onPan = { navigationOnly = true },
                         onFit = { fitRequest++; preview = 1f }, onSnap = vm::toggleSnap,
-                        modifier = Modifier.padding(top = 24.dp))
+                        // The canvas does not clip, so a zoomed design would paint over the rail placed before it.
+                        modifier = Modifier.zIndex(1f).padding(top = 24.dp))
                     canvas(Modifier.weight(1f).fillMaxHeight(), false)
                     Column(Modifier.width(layout.panelWidthDp.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         EditorLayerPanel(vm, addDesign, Modifier.fillMaxWidth().height(layersHeight))
@@ -381,15 +369,18 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
         }
         if (showLayers) LayerSheet(vm) { showLayers = false }
         if (showProperties && vm.selectedIds.size == 1) ObjectProperties(vm) { showProperties = false }
-        vm.savePrompt?.let { request ->
-            SaveProjectDialog(initialName = request.suggestedName,
-                title = if (request.kind == EditorSaveKind.PROJECT) R.string.editor_project_save else R.string.editor_save,
-                onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
-                onExport = if (request.kind == EditorSaveKind.PROJECT) { name ->
+        vm.saveChoice?.let { choice -> SaveChoiceDialog(choice, onReplace = vm::replaceOpenedFile,
+            onSaveAs = vm::saveOpenedFileAs, onDismiss = vm::cancelSaveChoice) }
+        vm.savePrompt?.takeIf { it.form }?.let { request ->
+            SaveDesignDialog(request, pesEnabled = vm.project.objects.any { it.visible }, onKind = vm::selectSaveKind,
+                onLocation = vm::selectSaveLocation, onDismiss = vm::cancelNamedSave, onSave = { vm.submitSaveName(it) },
+                onExport = { name ->
                     exportName = name
+                    exportKind = request.kind
                     vm.hideSavePrompt()
-                    exportDocument.launch(if (name.endsWith(".myembro")) name else "$name.myembro")
-                } else null)
+                    val extension = ".${request.kind.extension}"
+                    exportDocument.launch(if (name.endsWith(extension, ignoreCase = true)) name else "$name$extension")
+                })
         }
         vm.overwriteName?.let { name -> AlertDialog(
             onDismissRequest = vm::cancelOverwrite,
@@ -398,9 +389,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit,
             confirmButton = { TextButton(onClick = { vm.submitSaveName(name, overwrite = true) }) { Text(stringResource(R.string.editor_overwrite)) } },
             dismissButton = { TextButton(onClick = vm::cancelOverwrite) { Text(stringResource(R.string.editor_cancel)) } }) }
         AgentAssistHost(vm.agent)
-        if (showOpenProjects) ProjectPicker(vm, onDismiss = { showOpenProjects = false },
-            onOpen = { file -> vm.openProject(file); showOpenProjects = false; fitRequest++; preview = 1f },
-            onDevice = { showOpenProjects = false; openDocument() })
     }
     }
 }

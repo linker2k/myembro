@@ -114,7 +114,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             } finally { busy = false }
         }
     }
-    val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null || savePrompt != null
+    val interactionBlocked get() = busy || draftLoading || replacementRequested || recoveryProject != null || savePrompt != null || saveChoice != null
     private val projectSources = DesignSourceResolver(File(app.filesDir, "designs"))
     private val draftStore = EditorDraftStore(File(app.filesDir, "drafts"), projectSources)
     private val draftWrites = Channel<Project?>(Channel.CONFLATED)
@@ -141,38 +141,76 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private val projectDir get() = File(getApplication<Application>().filesDir, "designs")
     private val legacyProjectDir get() = File(getApplication<Application>().filesDir, "projects")
     private var documentName: String? = null
+    /** App file this session was opened from or last saved to; only these can be replaced in place. */
+    private var documentFile: File? = null
+    /** Default format of the save dialog. PES only when a stitch file (not a project) was opened for
+     * editing or last saved; new designs and opened .myembro projects default to the project format. */
+    internal var documentKind = EditorSaveKind.PROJECT
+        private set
     internal var savePrompt by mutableStateOf<EditorSavePrompt?>(null)
+        private set
+    internal var saveChoice by mutableStateOf<EditorSaveChoice?>(null)
         private set
     internal var overwriteName by mutableStateOf<String?>(null)
         private set
     private var continueAfterNamedSave = false
 
-    fun requestProjectSave() = requestNamedSave(EditorSaveKind.PROJECT)
-    private fun requestNamedSave(kind: EditorSaveKind, continueAfterSave: Boolean = false) {
+    /** Save button and menu "Save": one dialog on the default format ([documentKind]); a file opened
+     * from the app first offers replace or save-as. PES needs a visible object, as before. */
+    fun requestSave() {
+        if (busy || gestureInProgress || recoveryProject != null) return
+        val kind = if (project.objects.any { it.visible }) documentKind else EditorSaveKind.PROJECT
+        val opened = documentFile?.takeIf { it.isFile && kind == documentKind }
+        if (opened != null) saveChoice = EditorSaveChoice(opened, kind)
+        else requestNamedSave(kind)
+    }
+    /** Save choice "Save": replace the opened file, still behind the usual replace confirmation. */
+    internal fun replaceOpenedFile() {
+        val choice = saveChoice ?: return
+        saveChoice = null
+        savePrompt = EditorSavePrompt(choice.kind, choice.file.nameWithoutExtension, form = false)
+        overwriteName = choice.file.nameWithoutExtension
+    }
+    /** Save choice "Save as": the save dialog with the current name + suffix suggested. */
+    internal fun saveOpenedFileAs() {
+        val choice = saveChoice ?: return
+        saveChoice = null
+        requestNamedSave(choice.kind)
+    }
+    internal fun cancelSaveChoice() { saveChoice = null; continueAfterNamedSave = false }
+    /** Name the user sees for the design: the opened/saved file, else the first visible object. */
+    private fun saveNameSource(): String = documentName
+        ?: project.objects.firstOrNull { it.visible }?.name?.let(::designSaveStem)?.ifBlank { null }
+        ?: getApplication<Application>().getString(R.string.editor_default_name)
+    private fun requestNamedSave(kind: EditorSaveKind) {
         if (busy || gestureInProgress || recoveryProject != null) return
         busy = true
         viewModelScope.launch {
             try {
-                val original = documentName ?: getApplication<Application>().getString(R.string.editor_default_name)
+                val original = saveNameSource()
                 val proposed = withContext(Dispatchers.IO) {
-                    val extension = if (kind == EditorSaveKind.PES) "pes" else "myembro"
-                    suggestDesignName(original) { designSaveTarget(projectDir, it, extension).exists() }
+                    // Free in both formats, so switching the format in the dialog keeps a new name.
+                    suggestDesignName(original) { stem -> EditorSaveKind.entries.any { designSaveTarget(projectDir, stem, it.extension).exists() } }
                 }
-                continueAfterNamedSave = continueAfterSave
                 savePrompt = EditorSavePrompt(kind, proposed)
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_save_failed, e)
             } finally { busy = false }
         }
     }
+    internal fun selectSaveKind(kind: EditorSaveKind) { savePrompt = savePrompt?.copy(kind = kind) }
+    internal fun selectSaveLocation(toFile: Boolean) { savePrompt = savePrompt?.copy(toFile = toFile) }
     internal fun cancelNamedSave() { savePrompt = null; overwriteName = null; continueAfterNamedSave = false }
     internal fun hideSavePrompt() { savePrompt = null }
-    internal fun cancelOverwrite() { overwriteName = null }
+    internal fun cancelOverwrite() {
+        overwriteName = null
+        if (savePrompt?.form == false) cancelNamedSave()
+    }
     internal fun submitSaveName(name: String, overwrite: Boolean = false) {
         val request = savePrompt ?: return
         if (busy || gestureInProgress || designSaveStem(name).isBlank()) return
-        val extension = if (request.kind == EditorSaveKind.PES) "pes" else "myembro"
-        if (!overwrite && designSaveTarget(projectDir, name, extension).exists()) { overwriteName = name; return }
+        if (request.kind == EditorSaveKind.PES && project.objects.none { it.visible }) return
+        if (!overwrite && designSaveTarget(projectDir, name, request.kind.extension).exists()) { overwriteName = name; return }
         savePrompt = null
         overwriteName = null
         if (request.kind == EditorSaveKind.PROJECT) saveProject(name, afterSave = ::finishNamedSave, overwrite = overwrite)
@@ -425,6 +463,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         replacementRequested = documents.needsDecision
     }
     fun leave(onBack: () -> Unit) = requestReplacement {
+        forgetDocument() // A later photo/emoji added to the empty editor must not inherit the old file name.
         replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)), savedOnDisk = true)
         onBack()
     }
@@ -436,7 +475,8 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun saveAndContinue() {
         if (!replacementRequested) return
-        requestNamedSave(EditorSaveKind.PROJECT, continueAfterSave = true)
+        continueAfterNamedSave = true
+        requestNamedSave(EditorSaveKind.PROJECT)
     }
     fun restoreDraft() {
         val recovered = recoveryProject ?: return
@@ -483,27 +523,37 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         replacementRequested = documents.needsDecision
         queueDraft()
     }
+    private fun forgetDocument() { documentName = null; documentFile = null; documentKind = EditorSaveKind.PROJECT }
+    /** Only files directly in the app's design folder are replaced in place (submitSaveName writes there). */
+    private fun appFile(file: File): File? = file.takeIf {
+        runCatching { it.canonicalFile.parentFile == projectDir.canonicalFile }.getOrDefault(false) }
     fun newProject(hoop: HoopSpec = HoopSpec.H100) = requestReplacement {
-        documentName = null
+        forgetDocument()
         replaceSession(Project(hoop = supportedHoop(hoop)), savedOnDisk = true)
     }
     /** The entry snapshot starts clean; subsequent edits form the undo history. */
     fun startWith(obj: DesignObject, hoop: HoopSpec) = requestReplacement {
+        forgetDocument()
         documentName = designSaveStem(obj.name).ifBlank { null }
         replaceSession(Project(hoop = supportedHoop(hoop)).add(obj), savedOnDisk = false, selection = setOf(obj.id))
     }
 
-    private fun importObject(file: File) = importDesignObject(file)
+    private fun importObject(file: File, name: String = file.nameWithoutExtension) = importDesignObject(file, name)
 
     /** Viewer entry point: its initial object is the baseline, not an undoable import.
-     * A saved project opens as a project, so its block shapes and layers stay editable. */
-    fun editDesign(file: File) = if (file.extension.equals(ProjectJson.EXTENSION, ignoreCase = true)) openProject(file) else requestReplacement {
+     * A saved project opens as a project, so its block shapes and layers stay editable.
+     * A bundled sample passes its display [name] and [hoop]; the new project is unsaved, the sample stays as is. */
+    fun editDesign(file: File, name: String = file.nameWithoutExtension, hoop: HoopSpec = HoopSpec.H100) =
+        if (file.extension.equals(ProjectJson.EXTENSION, ignoreCase = true)) openProject(file) else requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
-                val obj = withContext(Dispatchers.IO) { importObject(file) }
-                documentName = file.nameWithoutExtension
-                replaceSession(Project(hoop = supportedHoop(HoopSpec.H100)).add(obj),
+                val obj = withContext(Dispatchers.IO) { importObject(file, name) }
+                documentName = name
+                // An opened stitch file saves back as PES by default; a bundled sample is not an app file.
+                documentFile = appFile(file)
+                documentKind = EditorSaveKind.PES
+                replaceSession(Project(hoop = supportedHoop(hoop)).add(obj),
                     savedOnDisk = false, selection = setOf(obj.id))
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_load_failed, e)
@@ -762,17 +812,19 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
     private fun report(resource: Int, e: Exception) {
         message = getApplication<Application>().getString(resource, e.localizedMessage.orEmpty())
     }
-    fun openProject(file: File) = loadProject(file.nameWithoutExtension) { file.readText() }
-    fun openProject(uri: Uri) = loadProject(uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.')) {
+    fun openProject(file: File) = loadProject(file.nameWithoutExtension, appFile(file)) { file.readText() }
+    fun openProject(uri: Uri) = loadProject(uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.'), null) {
         getApplication<Application>().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
             ?: error(getApplication<Application>().getString(R.string.editor_project_read_error))
     }
-    private fun loadProject(name: String?, read: () -> String) = requestReplacement {
+    private fun loadProject(name: String?, file: File?, read: () -> String) = requestReplacement {
         busy = true
         viewModelScope.launch {
             try {
                 val loaded = withContext(Dispatchers.IO) { readEditorProject(read(), projectSources) }
                 documentName = name
+                documentFile = file
+                documentKind = EditorSaveKind.PROJECT
                 replaceSession(loaded, savedOnDisk = true)
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { report(R.string.editor_project_open_failed, e)
@@ -788,7 +840,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
             var savedSuccessfully = false
             try {
                 val savedName = withContext(Dispatchers.IO) {
-                    if (uri == null) saveProjectSnapshot(projectDir, name, snapshot, overwrite).name
+                    if (uri == null) saveProjectSnapshot(projectDir, name, snapshot, overwrite).also { documentFile = it }.name
                     else {
                         val text = ProjectJson.encode(snapshot)
                         getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { it.write(text) }
@@ -798,6 +850,7 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 projectFiles = withContext(Dispatchers.IO) { (listProjectFiles(projectDir) + listProjectFiles(legacyProjectDir)).sortedByDescending { it.lastModified() } }
                 documentName = designSaveStem(name)
+                documentKind = EditorSaveKind.PROJECT
                 documents.markSaved(snapshot)
                 sync()
                 message = getApplication<Application>().getString(R.string.editor_project_saved, savedName)
@@ -812,9 +865,10 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** "Save as a file" for PES: the same checks and bytes as an app save, written to the picked document. */
+    internal fun exportPes(name: String, uri: Uri) = writePes(name, overwrite = false, uri = uri)
     /** Named PES export; replacement requires explicit confirmation. */
-    fun save() { if (!interactionBlocked && project.objects.any { it.visible }) requestNamedSave(EditorSaveKind.PES) }
-    private fun writePes(name: String, overwrite: Boolean) {
+    private fun writePes(name: String, overwrite: Boolean, uri: Uri? = null) {
         if (interactionBlocked || gestureInProgress || project.objects.none { it.visible }) return
         endGesture()
         val snapshot = project
@@ -828,17 +882,26 @@ class EditorViewModel(app: Application) : AndroidViewModel(app) {
                     val problems = editorExportProblems(snapshot, exportSettings, "${designSaveStem(name)}.pes", getApplication<Application>().resources)
                     if (problems.isNotEmpty()) throw EditorExportBlocked(problems)
                     val bytes = PesWriter.write(pattern, exportSettings.writeSettings.copy(hoop = snapshot.hoop))
-                    writeNamedDesign(projectDir, name, "pes", overwrite, bytes).also {
-                        if (io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern) == io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
-                            io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).record(bytes)
+                    val file = if (uri == null) writeNamedDesign(projectDir, name, "pes", overwrite, bytes) else {
+                        getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                            ?: error(getApplication<Application>().getString(R.string.editor_file_write_error))
+                        null
                     }
+                    if (io.github.linker2k.myembro.engine.sewout.SewoutCheck.originOf(pattern) == io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED)
+                        io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication()).record(bytes)
+                    file
                 }
-                documentName = saved.nameWithoutExtension
+                documentName = saved?.nameWithoutExtension ?: designSaveStem(name)
+                if (saved != null) documentFile = saved
+                documentKind = EditorSaveKind.PES
                 documents.markSaved(snapshot)
                 sync()
-                lastSavedFile = saved
-                designs = withContext(Dispatchers.IO) { library.list() }
-                message = getApplication<Application>().getString(R.string.editor_saved, saved.name)
+                if (saved != null) {
+                    lastSavedFile = saved
+                    designs = withContext(Dispatchers.IO) { library.list() }
+                }
+                message = getApplication<Application>().getString(R.string.editor_saved, saved?.name ?: "${designSaveStem(name)}.pes")
+                finishNamedSave() // Unsaved-change dialog: continue after a PES save too.
             } catch (e: CancellationException) { throw e
             } catch (e: EditorSaveConflict) {
                 savePrompt = EditorSavePrompt(EditorSaveKind.PES, name)

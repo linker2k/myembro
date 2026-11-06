@@ -107,7 +107,7 @@ class EmojiViewModel(app: Application) : AndroidViewModel(app) {
                 val frame = snapshot.defaultFrame.spec
                 val width = minOf(widthMm, (minOf(frame.width, frame.height) - 1) / 10.0)
                 val result = runInterruptible(Dispatchers.Default) {
-                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", e.name, picture, width)
+                    val shape = io.github.linker2k.myembro.engine.edit.ShapeObject.fromArt("prepared", e.name, picture.copy(myThreads = snapshot.myThreads), width)
                     val pattern = shape.localPattern()
                     val pes = PesWriter.write(pattern, snapshot.writeSettings)
                     Triple(shape, SewoutCheck.checkPes(pes, viewerSewoutMachine(snapshot.machineProfile?.id, snapshot.machineModel),

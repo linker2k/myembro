@@ -16,6 +16,7 @@ import io.github.linker2k.myembro.ui.format.Dimensions
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.model.Bounds
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
+import io.github.linker2k.myembro.library.BundledDesigns
 import io.github.linker2k.myembro.library.DesignLibrary
 import io.github.linker2k.myembro.library.DesignFormats
 import io.github.linker2k.myembro.library.DesignImportProgress
@@ -67,6 +68,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val stitchCount: Int? = null,
         val modifiedAt: Long = file.lastModified(),
         val bounds: Bounds? = null,
+        /** Bundled samples show their manifest name; other files their file name. */
+        val title: String = file.nameWithoutExtension,
     )
 
     enum class Filter { ALL, FITS_100, PES, RECENT, FAVORITES }
@@ -85,7 +88,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     val visibleItems: List<Item> by derivedStateOf {
         val recentCutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7)
         val filtered = items.filter { item ->
-            item.file.name.contains(searchQuery.trim(), ignoreCase = true) && when (filter) {
+            (item.file.name.contains(searchQuery.trim(), ignoreCase = true) ||
+                item.title.contains(searchQuery.trim(), ignoreCase = true)) && when (filter) {
                 Filter.ALL -> true
                 Filter.FITS_100 -> item.fits100 == true
                 Filter.PES -> item.file.extension.equals("pes", ignoreCase = true)
@@ -93,7 +97,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 Filter.FAVORITES -> item.file.name in favorites
             }
         }
-        val byName = compareBy<Item> { it.file.name.lowercase(Locale.ROOT) }.thenBy { it.file.path }
+        val byName = compareBy<Item> { it.title.lowercase(Locale.ROOT) }.thenBy { it.file.path }
         when (sort) {
             Sort.RECENT -> filtered.sortedWith(compareByDescending<Item> { it.modifiedAt }.then(byName))
             Sort.NAME -> filtered.sortedWith(byName)
@@ -223,7 +227,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             catch (_: Exception) { message = app.getString(R.string.usb_history_load_failed) }
         } }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { library.seedSampleIfEmpty(); library.seedDefaultLogo() }
+            withContext(Dispatchers.IO) { library.seedDefaultLogo() }
             refresh()
         }
         refreshDrives()
@@ -266,11 +270,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun reload() {
         loading = true
         try {
-            val (files, logo) = withContext(Dispatchers.IO) { library.list().let { list -> list to list.firstOrNull(library::isDefaultLogo)?.name } }
+            val (files, logo) = withContext(Dispatchers.IO) {
+                BundledDesigns.titles(getApplication())
+                library.list().let { list -> list to list.firstOrNull(library::isDefaultLogo)?.name }
+            }
             defaultLogoName = logo
             val cached = items.associateBy { it.file }
             items.clear()
-            items += files.map { f -> cached[f]?.takeIf { it.thumbnail != null } ?: Item(f) }
+            items += files.map { f -> cached[f]?.takeIf { it.thumbnail != null } ?: Item(f, title = BundledDesigns.title(getApplication(), f)) }
             selection.retainAll(files.toSet())
             for (file in files) {
                 if (items.firstOrNull { it.file == file }?.thumbnail != null) continue
@@ -294,8 +301,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             fits100 = p.bounds?.let { Hoop.H100.fits(it.width, it.height) },
             stitchCount = p.stitchCount,
             bounds = p.bounds,
+            title = BundledDesigns.title(getApplication(), file),
         )
-    }.getOrElse { Item(file, error = it.message ?: it.javaClass.simpleName) }
+    }.getOrElse { Item(file, error = it.message ?: it.javaClass.simpleName, title = BundledDesigns.title(getApplication(), file)) }
 
     fun import(uris: List<Uri>, tree: Uri? = null, onComplete: (DesignImportReport) -> Unit = {}) {
         if ((uris.isEmpty() && tree == null) || importing) return

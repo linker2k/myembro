@@ -162,12 +162,12 @@ private fun AskSheet(controller: AgentAssistController) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             val ready = prompt != null && controller.request.isNotBlank()
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
                     copy(context, prompt!!.text)
                     Toast.makeText(context, R.string.agent_copied, Toast.LENGTH_SHORT).show()
                     controller.sent()
-                }, enabled = ready) {
+                }, enabled = ready, modifier = Modifier.fillMaxHeight()) {
                     Icon(Icons.Default.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.agent_copy))
                 }
@@ -178,7 +178,7 @@ private fun AskSheet(controller: AgentAssistController) {
                     AgentShare.extras(prompt!!).forEach { (key, value) -> send.putExtra(key, value) }
                     context.startActivity(Intent.createChooser(send, context.getString(R.string.agent_share_chooser)))
                     controller.sent()
-                }, enabled = ready) {
+                }, enabled = ready, modifier = Modifier.fillMaxHeight()) {
                     Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.agent_share))
                 }
@@ -199,16 +199,16 @@ private fun ReplySheet(controller: AgentAssistController) {
             OutlinedTextField(controller.reply, { controller.reply = it }, Modifier.fillMaxWidth().heightIn(max = 260.dp), minLines = 5,
                 placeholder = { Text(stringResource(R.string.agent_reply_hint)) },
                 textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 // Read only on this tap, never in the background.
-                OutlinedButton(onClick = { paste(context)?.let { controller.reply = it } }) {
+                OutlinedButton(onClick = { paste(context)?.let { controller.reply = it } }, modifier = Modifier.fillMaxHeight()) {
                     Icon(Icons.Default.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.agent_paste))
                 }
                 Spacer(Modifier.weight(1f))
                 if (checking) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 Button(onClick = { checking = true; scope.launch { try { controller.check() } finally { checking = false } } },
-                    enabled = controller.reply.isNotBlank() && !checking) {
+                    enabled = controller.reply.isNotBlank() && !checking, modifier = Modifier.fillMaxHeight()) {
                     Text(stringResource(R.string.agent_check))
                 }
             }

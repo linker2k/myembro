@@ -18,6 +18,8 @@ class DimensionsTest {
         assertEquals("0.2", Dimensions.inches(3.81))
         assertEquals("3.9", Dimensions.inches(100.0))
         assertEquals("1.3×2.4mm (0×0.1in)", Dimensions.size(1.25, 2.35))
+        assertEquals("100×100mm", Dimensions.sizeMm(100.0, 100.0))
+        assertEquals("1.3×2.4mm", Dimensions.sizeMm(1.25, 2.35))
     }
     @Test fun `manufacturer nominal hoop labels are distinct from true conversions`() {
         assertEquals("100×100mm (4×4in)", Dimensions.hoopSize(100, 100))

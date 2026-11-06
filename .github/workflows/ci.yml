@@ -4,7 +4,15 @@ on:
   # Every branch, so agent branches are green before the integrator merges them.
   push:
     branches: ['**']
+    paths-ignore:
+      # Docs text and manual screenshots only. Tests read docs/**/*.json and some docs images, and
+      # AGENTS.md rule text, so those still run CI.
+      - 'docs/**/*.md'
+      - 'docs/images/manual/**'
+      - 'README.md'
+      - 'README.ko.md'
   pull_request:
+    paths-ignore: ['docs/**/*.md', 'docs/images/manual/**', 'README.md', 'README.ko.md']
 
 jobs:
   build:

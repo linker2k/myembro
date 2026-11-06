@@ -159,6 +159,8 @@ class ToolDispatcher(
                         LetteringAlignment.CENTER,(TextObject(id=id).lineSpacing-1)*height,
                         EmbThread(a.string("threadColor").removePrefix("#").toInt(16) or (-1 shl 24)),stitchStyle=style),font,TextPreparationPolicy(id))
                     if(automatic.centerlineSatin && obj.centerlineSatin==null) throw TextToolRejection("TEXT_PREPARATION_UNAVAILABLE","Resolved Hangul centerline data is required")
+                    if(automatic.kanaSatin && obj.kanaSatin==null && obj.stitchStyle!=StitchStyle.RUNNING)
+                        throw TextToolRejection("TEXT_PREPARATION_UNAVAILABLE","Resolved kana centerline data or running fallback is required")
                     if(name=="add_text") ProjectCommand.Add(obj) else ProjectCommand.ReplaceText(id,obj)
                 }
                 "set_object_transforms" -> {

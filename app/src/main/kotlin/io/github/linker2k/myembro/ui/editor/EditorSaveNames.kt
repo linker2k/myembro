@@ -4,8 +4,13 @@ package io.github.linker2k.myembro.ui.editor
 import io.github.linker2k.myembro.engine.export.Preflight
 import java.io.File
 
-internal enum class EditorSaveKind { PROJECT, PES }
-internal data class EditorSavePrompt(val kind: EditorSaveKind, val suggestedName: String)
+internal enum class EditorSaveKind(val extension: String) { PROJECT("myembro"), PES("pes") }
+/** One save dialog: name, format and location ([toFile] = the system file picker instead of the app).
+ * [form] false = only the replace confirmation of an opened file. */
+internal data class EditorSavePrompt(val kind: EditorSaveKind, val suggestedName: String, val form: Boolean = true,
+    val toFile: Boolean = false)
+/** Shown when saving a design that was opened from an app file: replace it, or save under a new name. */
+internal data class EditorSaveChoice(val file: File, val kind: EditorSaveKind)
 internal class EditorSaveConflict(val fileName: String) : Exception(fileName)
 
 internal fun designSaveStem(name: String): String =
@@ -15,10 +20,8 @@ internal fun designSaveStem(name: String): String =
 internal fun suggestDesignName(original: String, exists: (String) -> Boolean): String {
     val originalStem = designSaveStem(original)
     require(originalStem.isNotBlank())
-    // Suggestions must satisfy the same character rule as export preflight. Keep manual
-    // names/local project saving unchanged; use a readable fallback for non-ASCII names.
-    val stem = originalStem.map { if (Preflight.isValidFileNameStem(it.toString())) it else '_' }
-        .joinToString("").takeUnless { it.all { c -> c == '_' } } ?: "design"
+    // designSaveStem already replaced the long-name characters export preflight rejects.
+    val stem = originalStem
     val match = Regex("^(.*)_([0-9]+)$").matchEntire(stem)
     val root = match?.groupValues?.get(1)?.takeIf { it.isNotBlank() } ?: stem
     val previous = match?.groupValues?.get(2)?.toLongOrNull()

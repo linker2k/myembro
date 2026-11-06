@@ -1,348 +1,3551 @@
 {
-  "version": 1,
+  "version": 2,
   "hoopMm": [
     100,
     100
   ],
   "samples": [
     {
-      "file": "sample_heart_running.pes",
-      "title": "하트 · 러닝",
+      "file": "sample_01_skull.pes",
+      "title": "해골",
+      "titleEn": "Skull",
       "license": "CC0-1.0",
-      "sha256": "7f9fac73dd303fd192b708336bffa15cfe20e0fac4be63ffcfd8c732fc30a2c7",
-      "stitches": 87,
+      "sha256": "13a96e7dff0148ab95e3b2290823754e555b8662de31fc6f0100ef1d85f30d17",
+      "stitches": 8514,
+      "colors": 2,
+      "widthMm": 62.7,
+      "heightMm": 74.7,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 01-skull",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_02_lightning.pes",
+      "title": "번개",
+      "titleEn": "Lightning",
+      "license": "CC0-1.0",
+      "sha256": "1e8957122745684a683457455d071bd710ec53c7af44f1cd11dd11c095b8e893",
+      "stitches": 1713,
       "colors": 1,
+      "widthMm": 36.8,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 02-lightning",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_03_crown.pes",
+      "title": "왕관",
+      "titleEn": "Crown",
+      "license": "CC0-1.0",
+      "sha256": "e89e6fc2f4eaab1bb5c8a7ab292b10e2c686503602dfa9364ffb89e3248b1605",
+      "stitches": 2930,
+      "colors": 2,
+      "widthMm": 58.8,
+      "heightMm": 40.9,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 03-crown",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_04_anchor.pes",
+      "title": "닻",
+      "titleEn": "Anchor",
+      "license": "CC0-1.0",
+      "sha256": "393cbbb8268b40e96fa1f01ab968ba287a98e8b9b300715cb27716d0e4263ba1",
+      "stitches": 5206,
+      "colors": 2,
+      "widthMm": 78.2,
+      "heightMm": 90.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 04-anchor",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_05_rocket.pes",
+      "title": "로켓",
+      "titleEn": "Rocket",
+      "license": "CC0-1.0",
+      "sha256": "c80d08a6a695280e1a0faf7a05ce6fdcec2eaea182048efd0529aeb9c2cbd75e",
+      "stitches": 9236,
+      "colors": 4,
+      "widthMm": 75.0,
+      "heightMm": 73.8,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 05-rocket",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_06_cactus_pot.pes",
+      "title": "선인장 화분",
+      "titleEn": "Cactus Pot",
+      "license": "CC0-1.0",
+      "sha256": "ca7dd32077a3396a1c8a68397d8e3ba727dc33d242cda8192907829b1c355981",
+      "stitches": 6879,
+      "colors": 4,
+      "widthMm": 57.6,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 06-cactus-pot",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_07_sitting_cat.pes",
+      "title": "앉은 고양이",
+      "titleEn": "Sitting Cat",
+      "license": "CC0-1.0",
+      "sha256": "24b124b2edc5ce68e3995c24a8ea3832bf661820cc5bd5a1a5c18b6d15fccd07",
+      "stitches": 13364,
+      "colors": 4,
+      "widthMm": 79.7,
+      "heightMm": 90.2,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 07-sitting-cat",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_08_mountain_sun_badge.pes",
+      "title": "산과 해 배지",
+      "titleEn": "Mountain and Sun Badge",
+      "license": "CC0-1.0",
+      "sha256": "25acde48f3f27f74730244a684857ff6ab5c3ae4592bd770e796ba3de497bfde",
+      "stitches": 13848,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 97.4,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 08-mountain-sun-badge",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_09_flame.pes",
+      "title": "불꽃",
+      "titleEn": "Flame",
+      "license": "CC0-1.0",
+      "sha256": "42e982677c686e858d0a752388b711154bec287ab2e868b8b2ae9ee5bb1ff741",
+      "stitches": 4631,
+      "colors": 2,
+      "widthMm": 45.8,
+      "heightMm": 59.9,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 09-flame",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_10_octopus.pes",
+      "title": "문어",
+      "titleEn": "Octopus",
+      "license": "CC0-1.0",
+      "sha256": "f41d9f1999fcdfb307de5456604aa3850712db7963e0c30be8b8b96c5f2d12a3",
+      "stitches": 9809,
+      "colors": 4,
+      "widthMm": 75.0,
+      "heightMm": 66.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 10-octopus",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_11_sword_shield.pes",
+      "title": "칼과 방패",
+      "titleEn": "Sword and Shield",
+      "license": "CC0-1.0",
+      "sha256": "20dab43919964b4b737653494c98047fcb24d7514d1a0b25260a6300d00523f5",
+      "stitches": 6909,
+      "colors": 2,
+      "widthMm": 75.0,
+      "heightMm": 59.3,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 11-sword-shield",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_12_diamond_gem.pes",
+      "title": "보석",
+      "titleEn": "Diamond",
+      "license": "CC0-1.0",
+      "sha256": "0f0b5f613b32a6a550d43eed5b0c910e98db32b5ea1ed7517d2c11df4d9d1134",
+      "stitches": 5404,
+      "colors": 3,
+      "widthMm": 57.8,
+      "heightMm": 43.2,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 12-diamond-gem",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_13_dog_face.pes",
+      "title": "강아지",
+      "titleEn": "Puppy",
+      "license": "CC0-1.0",
+      "sha256": "041b7cce6844714bfa560185a41cdf8fa2d87178785a403cbfc6c1a650dd2fd9",
+      "stitches": 8145,
+      "colors": 4,
+      "widthMm": 75.1,
+      "heightMm": 55.2,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 13-dog-face",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_14_rabbit.pes",
+      "title": "토끼",
+      "titleEn": "Rabbit",
+      "license": "CC0-1.0",
+      "sha256": "869f4c42eb805067afeae223b10d86c6f72d8138621cb4e9b32f262a4912b4f7",
+      "stitches": 7883,
+      "colors": 3,
+      "widthMm": 49.0,
+      "heightMm": 75.1,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 14-rabbit",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_15_fox_face.pes",
+      "title": "여우",
+      "titleEn": "Fox",
+      "license": "CC0-1.0",
+      "sha256": "5a21774f7dee34dd30cb150e290600aa6e34b52d9674e15815491e5ed5dfe89d",
+      "stitches": 9076,
+      "colors": 4,
+      "widthMm": 74.9,
+      "heightMm": 67.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 15-fox-face",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_16_panda.pes",
+      "title": "팬더",
+      "titleEn": "Panda",
+      "license": "CC0-1.0",
+      "sha256": "033e60ea7085a861fd90d136f3b4d289e02f87f69c03799e69125b02b87e7f0f",
+      "stitches": 15001,
+      "colors": 3,
+      "widthMm": 82.9,
+      "heightMm": 98.0,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 16-panda",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_17_penguin.pes",
+      "title": "펭귄",
+      "titleEn": "Penguin",
+      "license": "CC0-1.0",
+      "sha256": "ec00662e99c31e1d9017436394d1f55f4ee6f235f3d80ba0486a80c364d2e236",
+      "stitches": 12672,
+      "colors": 4,
+      "widthMm": 93.6,
+      "heightMm": 98.0,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 17-penguin",
+      "attribution": "myembro contributors",
+      "order": 1
+    },
+    {
+      "file": "sample_18_owl.pes",
+      "title": "부엉이",
+      "titleEn": "Owl",
+      "license": "CC0-1.0",
+      "sha256": "e4ff55f311cf55be9f2645cafa59716e3673bff761a7d3328ce525276c4598e4",
+      "stitches": 11485,
+      "colors": 4,
+      "widthMm": 62.7,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 18-owl",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_19_turtle.pes",
+      "title": "거북이",
+      "titleEn": "Turtle",
+      "license": "CC0-1.0",
+      "sha256": "d1063390de6e7e0a9a19ca2106fb86b20735b7b46408a45e597f96787d533da7",
+      "stitches": 9631,
+      "colors": 4,
+      "widthMm": 89.9,
+      "heightMm": 65.2,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 19-turtle",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_20_baby_trex.pes",
+      "title": "아기 공룡",
+      "titleEn": "Baby T-Rex",
+      "license": "CC0-1.0",
+      "sha256": "b4cdf274ab063ed656ec2dbf59a77bd3b801e5326feaa5cc0be0e6d284e7ee40",
+      "stitches": 10803,
+      "colors": 4,
+      "widthMm": 89.9,
+      "heightMm": 84.7,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 20-baby-trex",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_21_skull_rose.pes",
+      "title": "해골과 장미",
+      "titleEn": "Skull and Rose",
+      "license": "CC0-1.0",
+      "sha256": "22999b507706ff13e5e576b28aecaa05ed7f5e5353f3c27af386836b5decc846",
+      "stitches": 12673,
+      "colors": 3,
+      "widthMm": 85.0,
+      "heightMm": 89.9,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 21-skull-rose",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_22_wolf_head.pes",
+      "title": "늑대",
+      "titleEn": "Wolf",
+      "license": "CC0-1.0",
+      "sha256": "8a6f2942edca5d8cb13628818a0a30563d59507bfc23caaedf65be88083f09e5",
+      "stitches": 7050,
+      "colors": 1,
+      "widthMm": 85.0,
+      "heightMm": 90.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 22-wolf-head",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_23_eagle_wings.pes",
+      "title": "독수리",
+      "titleEn": "Eagle Wings",
+      "license": "CC0-1.0",
+      "sha256": "32841323a138fb43fc4a9bbf60c93adc6620ece9595cedb01bf4f9a686b3c7ce",
+      "stitches": 6578,
+      "colors": 1,
+      "widthMm": 98.0,
+      "heightMm": 74.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 23-eagle-wings",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_24_dragon.pes",
+      "title": "용",
+      "titleEn": "Dragon",
+      "license": "CC0-1.0",
+      "sha256": "a40503ac114d739d0b68bcf0a9eac07ddb2888bfe90f29950e61bcb2c9f14931",
+      "stitches": 8422,
+      "colors": 1,
+      "widthMm": 98.0,
+      "heightMm": 86.1,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 24-dragon",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_25_winged_heart.pes",
+      "title": "날개 하트",
+      "titleEn": "Winged Heart",
+      "license": "CC0-1.0",
+      "sha256": "962d1db8246f1e7af3d1105c5cacb4c453ffd201738e6aa99bc4862a1c65b006",
+      "stitches": 3154,
+      "colors": 3,
+      "widthMm": 60.1,
+      "heightMm": 28.2,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 25-winged-heart",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_26_dagger.pes",
+      "title": "단검",
+      "titleEn": "Dagger",
+      "license": "CC0-1.0",
+      "sha256": "096f7d68ff77c994b3c352da6c2b6be814505a84dc1b18d27a49c5b1ea8fa310",
+      "stitches": 4358,
+      "colors": 2,
+      "widthMm": 51.9,
+      "heightMm": 97.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 26-dagger",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_27_compass.pes",
+      "title": "나침반",
+      "titleEn": "Compass",
+      "license": "CC0-1.0",
+      "sha256": "658fc0fd4261b70ce2319a44d3cdae2fe9b95ac01582930b7bfc0109585dafe6",
+      "stitches": 13140,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 97.1,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 27-compass",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_28_pine_tree.pes",
+      "title": "소나무",
+      "titleEn": "Pine Tree",
+      "license": "CC0-1.0",
+      "sha256": "d62caaa6c071b0ef337f26a6252a2529a4be8de25cf6a4fc6b34a8d0e48754e8",
+      "stitches": 6876,
+      "colors": 1,
+      "widthMm": 86.0,
+      "heightMm": 98.0,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 28-pine-tree",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_29_wave.pes",
+      "title": "파도",
+      "titleEn": "Wave",
+      "license": "CC0-1.0",
+      "sha256": "31aa23678c157496cef66b69509cc82ada523d4d18dbffe87bf6100976adc54b",
+      "stitches": 7334,
+      "colors": 2,
+      "widthMm": 75.0,
+      "heightMm": 66.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 29-wave",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_30_crescent_star.pes",
+      "title": "초승달과 별",
+      "titleEn": "Crescent Moon and Star",
+      "license": "CC0-1.0",
+      "sha256": "452df20bc1ad87dc045e50994827ddd71d2a867ec05db170c614a276443ecd12",
+      "stitches": 3047,
+      "colors": 1,
+      "widthMm": 59.8,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 30-crescent-star",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_31_rainbow_cloud.pes",
+      "title": "무지개 구름",
+      "titleEn": "Rainbow Cloud",
+      "license": "CC0-1.0",
+      "sha256": "8a0146148d5e0dd14130518886f64f85c84eb1d15dadf15b9dbba9371460c5d5",
+      "stitches": 6209,
+      "colors": 5,
+      "widthMm": 90.0,
+      "heightMm": 50.6,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 31-rainbow-cloud",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_32_sunflower.pes",
+      "title": "해바라기",
+      "titleEn": "Sunflower",
+      "license": "CC0-1.0",
+      "sha256": "cb85d6ff7541890e6fdf5510ac851de0e689b17c213c9ba0e4daab1becba876f",
+      "stitches": 13584,
+      "colors": 5,
       "widthMm": 67.2,
-      "heightMm": 60.7,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "heightMm": 89.9,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 32-sunflower",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_heart_triple.pes",
-      "title": "하트 · 트리플",
+      "file": "sample_33_tulip.pes",
+      "title": "튤립",
+      "titleEn": "Tulip",
       "license": "CC0-1.0",
-      "sha256": "1a42b162ed195f88c1204a7eefd71babe3793d5089bb5921bd3aaa1d88399b11",
-      "stitches": 259,
+      "sha256": "202b4f8591df2e0e1d1ad268a67735072de9e2e35be021960a0c1f5a3a856ae7",
+      "stitches": 7473,
+      "colors": 3,
+      "widthMm": 47.5,
+      "heightMm": 74.9,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 33-tulip",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_34_four_leaf_clover.pes",
+      "title": "네잎클로버",
+      "titleEn": "Four Leaf Clover",
+      "license": "CC0-1.0",
+      "sha256": "b43226bb1bd5304ce8247cce92e60eb83dfc4bbbccf9153073fe55b6685ecc93",
+      "stitches": 3480,
       "colors": 1,
-      "widthMm": 67.2,
-      "heightMm": 60.7,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 49.2,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 34-four-leaf-clover",
+      "attribution": "myembro contributors",
+      "order": 6
+    },
+    {
+      "file": "sample_35_maple_leaf.pes",
+      "title": "단풍잎",
+      "titleEn": "Maple Leaf",
+      "license": "CC0-1.0",
+      "sha256": "1dd50eac6da81bd1c3bef84e0949aea367c1c2f1152114a0c960596fef594a75",
+      "stitches": 5748,
+      "colors": 2,
+      "widthMm": 56.8,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 35-maple-leaf",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_star_running.pes",
-      "title": "별 · 러닝",
+      "file": "sample_36_mushroom.pes",
+      "title": "버섯",
+      "titleEn": "Mushroom",
       "license": "CC0-1.0",
-      "sha256": "9611cd5e698f11acd8ade1ffdd1bd1036322df770b497496cf5a1bc31f491bad",
-      "stitches": 97,
+      "sha256": "2613c95d1a9399e9c9202345e63e0ebaa4dd4c7e9035ff152c004468edd073a4",
+      "stitches": 9243,
+      "colors": 4,
+      "widthMm": 74.8,
+      "heightMm": 74.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 36-mushroom",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_37_cherries.pes",
+      "title": "체리",
+      "titleEn": "Cherries",
+      "license": "CC0-1.0",
+      "sha256": "2b2f0f89840fdea8cd7429f4db5c8212e729ed1fea8fdafb96bcf4f7c98206bc",
+      "stitches": 9145,
+      "colors": 5,
+      "widthMm": 74.9,
+      "heightMm": 70.3,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 37-cherries",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_38_apple.pes",
+      "title": "사과",
+      "titleEn": "Apple",
+      "license": "CC0-1.0",
+      "sha256": "955344dc88d856ad6cccb0d3f52508e17823cff71575c3b39c4a99e43650621c",
+      "stitches": 5696,
+      "colors": 5,
+      "widthMm": 54.6,
+      "heightMm": 60.1,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 38-apple",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_39_watermelon_slice.pes",
+      "title": "수박",
+      "titleEn": "Watermelon",
+      "license": "CC0-1.0",
+      "sha256": "e8a14aa3eb383fc477c4bfdf57fa8eebc16b3458770a1bc17df12c6dc1178959",
+      "stitches": 7991,
+      "colors": 4,
+      "widthMm": 74.6,
+      "heightMm": 41.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 39-watermelon-slice",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_40_avocado.pes",
+      "title": "아보카도",
+      "titleEn": "Avocado",
+      "license": "CC0-1.0",
+      "sha256": "a2cc03296ddb703fea7bd57deab39adee1e7e2445a3903773cca3510950459be",
+      "stitches": 9307,
+      "colors": 6,
+      "widthMm": 66.2,
+      "heightMm": 75.1,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 40-avocado",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_41_donut.pes",
+      "title": "도넛",
+      "titleEn": "Donut",
+      "license": "CC0-1.0",
+      "sha256": "aaa512fed15f8fc632545a77defd5bcb44df8366e25ebd2f798ec4bacd5270de",
+      "stitches": 16198,
+      "colors": 6,
+      "widthMm": 89.7,
+      "heightMm": 82.1,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 41-donut",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_42_ice_cream_cone.pes",
+      "title": "아이스크림",
+      "titleEn": "Ice Cream",
+      "license": "CC0-1.0",
+      "sha256": "6cea57c7b5024de54228f2ee2785fed9c4d8128a2f294b80d00674917f2baccd",
+      "stitches": 7632,
+      "colors": 5,
+      "widthMm": 41.2,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 42-ice-cream-cone",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_43_cupcake.pes",
+      "title": "컵케이크",
+      "titleEn": "Cupcake",
+      "license": "CC0-1.0",
+      "sha256": "f49aba626700e86f2a844a97b67f82a693e5492043b25c9224bc6bebaabb5c61",
+      "stitches": 12033,
+      "colors": 6,
+      "widthMm": 65.3,
+      "heightMm": 89.9,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 43-cupcake",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_44_coffee_cup.pes",
+      "title": "커피잔",
+      "titleEn": "Coffee Cup",
+      "license": "CC0-1.0",
+      "sha256": "0fb64660fa56e83c89994008d6b357317cb66a4e50b8584845978ee20d817e88",
+      "stitches": 11953,
+      "colors": 5,
+      "widthMm": 89.1,
+      "heightMm": 90.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 44-coffee-cup",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_45_milk_carton.pes",
+      "title": "우유팩",
+      "titleEn": "Milk Carton",
+      "license": "CC0-1.0",
+      "sha256": "330ca9ab42f54223cd79be1fd7c6f70c785e06a9d554948299fdd520974c62ee",
+      "stitches": 14781,
+      "colors": 4,
+      "widthMm": 66.9,
+      "heightMm": 89.8,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 45-milk-carton",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_46_rice_ball.pes",
+      "title": "주먹밥",
+      "titleEn": "Rice Ball",
+      "license": "CC0-1.0",
+      "sha256": "7da52de5ba2101ba50db741742b476a9a45dc319475543c5e04624faa1511e7f",
+      "stitches": 10454,
+      "colors": 3,
+      "widthMm": 97.6,
+      "heightMm": 86.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 46-rice-ball",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_47_pizza_slice.pes",
+      "title": "피자",
+      "titleEn": "Pizza",
+      "license": "CC0-1.0",
+      "sha256": "3362e951abbb24d1065e110e53e3046139c891ad442751c64a6f3b06258786a6",
+      "stitches": 11668,
+      "colors": 6,
+      "widthMm": 90.1,
+      "heightMm": 88.5,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 47-pizza-slice",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_48_hamburger.pes",
+      "title": "햄버거",
+      "titleEn": "Hamburger",
+      "license": "CC0-1.0",
+      "sha256": "092f9e805da9314bed7ab71a0d2b1619da71642ef7ed91ae541936a96a14d105",
+      "stitches": 13852,
+      "colors": 7,
+      "widthMm": 90.0,
+      "heightMm": 79.7,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 48-hamburger",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_50_bicycle.pes",
+      "title": "자전거",
+      "titleEn": "Bicycle",
+      "license": "CC0-1.0",
+      "sha256": "7404e0fb73103edaae1473c511340007332d066bac743c29829d770a08c17833",
+      "stitches": 15447,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 54.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 50-bicycle",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_51_airplane.pes",
+      "title": "비행기",
+      "titleEn": "Airplane",
+      "license": "CC0-1.0",
+      "sha256": "5c63381fc9056d4e2e21ccee0e846672c53f52318145acd08fabfec7ca5ea002",
+      "stitches": 7196,
+      "colors": 5,
+      "widthMm": 75.0,
+      "heightMm": 40.3,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 51-airplane",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_52_sailboat.pes",
+      "title": "돛단배",
+      "titleEn": "Sailboat",
+      "license": "CC0-1.0",
+      "sha256": "41f827786d7d59d801ca27bc1a94eb43cfc329f19b4d5111e83666dbdb0ff543",
+      "stitches": 11521,
+      "colors": 7,
+      "widthMm": 86.4,
+      "heightMm": 89.6,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 52-sailboat",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_53_train.pes",
+      "title": "기차",
+      "titleEn": "Train",
+      "license": "CC0-1.0",
+      "sha256": "b42419788f985473b6b19edeec585d1d89dc7e81489ada3121b0ee51465f5b44",
+      "stitches": 8762,
+      "colors": 6,
+      "widthMm": 75.0,
+      "heightMm": 27.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 53-train",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_54_astronaut_helmet.pes",
+      "title": "우주비행사 헬멧",
+      "titleEn": "Astronaut Helmet",
+      "license": "CC0-1.0",
+      "sha256": "8e7cebe562171f78ceb9ccfeb372cb099b8fb502451ff5ea4a6f4901cd05d18b",
+      "stitches": 19984,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 95.4,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 54-astronaut-helmet",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_55_ringed_planet.pes",
+      "title": "고리 행성",
+      "titleEn": "Ringed Planet",
+      "license": "CC0-1.0",
+      "sha256": "d1cd1600ddbf9fd76d9f90131adf06047ce573076ac925f0de65158120cea7fa",
+      "stitches": 3847,
+      "colors": 3,
+      "widthMm": 60.0,
+      "heightMm": 36.4,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 55-ringed-planet",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_56_ufo.pes",
+      "title": "UFO",
+      "titleEn": "UFO",
+      "license": "CC0-1.0",
+      "sha256": "8ea6fad20a3f0d16a26e4041552f82be0ee756a96e6546b120e4e89b26362f59",
+      "stitches": 7146,
+      "colors": 6,
+      "widthMm": 74.8,
+      "heightMm": 52.7,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 56-ufo",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_57_robot_face.pes",
+      "title": "로봇",
+      "titleEn": "Robot",
+      "license": "CC0-1.0",
+      "sha256": "79d61d167b7706705beabc3c235911ec62b4ccf7da53c733726c96f55e99b721",
+      "stitches": 12978,
+      "colors": 5,
+      "widthMm": 97.8,
+      "heightMm": 93.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 57-robot-face",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_58_guitar.pes",
+      "title": "기타",
+      "titleEn": "Guitar",
+      "license": "CC0-1.0",
+      "sha256": "ed0dec01087d31bfe1b90d3f414fe60a25e774acf908288ea7d944bced3a04ef",
+      "stitches": 6544,
+      "colors": 2,
+      "widthMm": 74.6,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 58-guitar",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_59_music_note.pes",
+      "title": "음표",
+      "titleEn": "Music Note",
+      "license": "CC0-1.0",
+      "sha256": "8b1207febfed2ccd944c5203f5b6ae0048d260b8a671bc12f0d4a865cc5747ed",
+      "stitches": 2723,
       "colors": 1,
-      "widthMm": 63.6,
-      "heightMm": 60.7,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 55.8,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 59-music-note",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_star_triple.pes",
-      "title": "별 · 트리플",
+      "file": "sample_60_headphones.pes",
+      "title": "헤드폰",
+      "titleEn": "Headphones",
       "license": "CC0-1.0",
-      "sha256": "c94da680f8ec1b419fc61b1d004d25bcfacc7d1e8c656f12bb2e0819b1a0248f",
-      "stitches": 289,
+      "sha256": "4f389469c3caa44d66e96506331dbf42389183a247ebd9370ada69bc8fccc794",
+      "stitches": 6699,
+      "colors": 2,
+      "widthMm": 90.0,
+      "heightMm": 80.8,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 60-headphones",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_61_camera.pes",
+      "title": "카메라",
+      "titleEn": "Camera",
+      "license": "CC0-1.0",
+      "sha256": "0b8e417ec1e4777d7b6a7a2732dcd8146e45fcea11e109b33898cc6fdbcdef1a",
+      "stitches": 13332,
+      "colors": 7,
+      "widthMm": 90.0,
+      "heightMm": 68.8,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 61-camera",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_62_light_bulb.pes",
+      "title": "전구",
+      "titleEn": "Light Bulb",
+      "license": "CC0-1.0",
+      "sha256": "9cfc98c25d09891620df1ef9698af99e163e92652bfb22f2069040ec51298262",
+      "stitches": 5657,
+      "colors": 2,
+      "widthMm": 53.3,
+      "heightMm": 74.9,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 62-light-bulb",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_63_key.pes",
+      "title": "열쇠",
+      "titleEn": "Key",
+      "license": "CC0-1.0",
+      "sha256": "e518e61d1888f74362a1f3f2995ac768bcc25390a9486b74955a30831bb5e85f",
+      "stitches": 2615,
+      "colors": 2,
+      "widthMm": 60.0,
+      "heightMm": 58.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 63-key",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_64_padlock.pes",
+      "title": "자물쇠",
+      "titleEn": "Padlock",
+      "license": "CC0-1.0",
+      "sha256": "74157b094ba213d6146e68f88fa9b25784a50b107a296b5ff391fabc9cf668fb",
+      "stitches": 4429,
+      "colors": 3,
+      "widthMm": 46.4,
+      "heightMm": 58.7,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 64-padlock",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_65_umbrella.pes",
+      "title": "우산",
+      "titleEn": "Umbrella",
+      "license": "CC0-1.0",
+      "sha256": "45afb0429aa46084d3791ec4cb0955d44c33a6375d339906a084d86f6b730794",
+      "stitches": 8915,
+      "colors": 7,
+      "widthMm": 90.0,
+      "heightMm": 86.7,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 65-umbrella",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_66_cloud_rain.pes",
+      "title": "구름과 비",
+      "titleEn": "Rain Cloud",
+      "license": "CC0-1.0",
+      "sha256": "bdfb404762f5e9a5da28129403214f32b7b55257917fcf23dfd6d7a7ce1d972d",
+      "stitches": 3532,
+      "colors": 2,
+      "widthMm": 60.0,
+      "heightMm": 59.8,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 66-cloud-rain",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_67_snowflake.pes",
+      "title": "눈송이",
+      "titleEn": "Snowflake",
+      "license": "CC0-1.0",
+      "sha256": "68b7325239845ed19030b9006471d4afc0ce1e55c4ee9dddcf35fb4d547f74da",
+      "stitches": 3891,
       "colors": 1,
-      "widthMm": 63.6,
-      "heightMm": 60.7,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 54.6,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 67-snowflake",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_snowflake.pes",
-      "title": "눈꽃",
+      "file": "sample_68_sun.pes",
+      "title": "태양",
+      "titleEn": "Sun",
       "license": "CC0-1.0",
-      "sha256": "4e4db2f052f9dcca467b4bc7a523deb90701972e10eb6494fdc97b66f5eda26e",
-      "stitches": 199,
+      "sha256": "09d01bb1f48fdd2b33068eacaa75f41aa5e93c201b9f430aa338fc09cf90819d",
+      "stitches": 3720,
       "colors": 1,
-      "widthMm": 70.0,
-      "heightMm": 60.6,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 60.0,
+      "heightMm": 58.2,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 68-sun",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_mandala.pes",
-      "title": "만다라",
+      "file": "sample_69_rainbow.pes",
+      "title": "무지개",
+      "titleEn": "Rainbow",
       "license": "CC0-1.0",
-      "sha256": "c55530a9cd9c1cdf67016ef9166223d32d134832505d7e08ea2b91c47d8abdd4",
-      "stitches": 636,
+      "sha256": "19b98a717057f61c06f4ae0d88d497c7286d1d065579d65b71d28edcbbc5a890",
+      "stitches": 14474,
+      "colors": 7,
+      "widthMm": 98.0,
+      "heightMm": 55.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 69-rainbow",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_70_plump_star.pes",
+      "title": "통통한 별",
+      "titleEn": "Plump Star",
+      "license": "CC0-1.0",
+      "sha256": "c95e2b51484b83eda974086851ecc0fc23ac85b76cbddd3e1487e625e6781e2f",
+      "stitches": 3257,
       "colors": 1,
-      "widthMm": 65.6,
-      "heightMm": 65.8,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 60.0,
+      "heightMm": 56.4,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 70-plump-star",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_leaf.pes",
-      "title": "잎사귀",
+      "file": "sample_71_heart.pes",
+      "title": "하트",
+      "titleEn": "Heart",
       "license": "CC0-1.0",
-      "sha256": "17efb0a2f43945f6d13def885035c009938b8800d693e3d12426a5f5fc89751c",
-      "stitches": 116,
+      "sha256": "4015e16184a5e027c4127b1c794d89ed84052781ea5e214d3e10a7c7795dff26",
+      "stitches": 3528,
       "colors": 1,
-      "widthMm": 64.0,
-      "heightMm": 30.0,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 60.0,
+      "heightMm": 51.4,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 71-heart",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_leaf_sprig.pes",
-      "title": "잎사귀 가지",
+      "file": "sample_72_eye_amulet.pes",
+      "title": "눈 부적",
+      "titleEn": "Eye Amulet",
       "license": "CC0-1.0",
-      "sha256": "c180626ebc7656fff3812d80e5ff625ff29377fb39da121d0de926aa87447da5",
-      "stitches": 195,
+      "sha256": "2ec48a034d1df59172e7b33cc3a47fabe94dc2fdfef3655c591f20fde1f599f7",
+      "stitches": 5089,
+      "colors": 2,
+      "widthMm": 53.0,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 72-eye-amulet",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_73_peace_hand.pes",
+      "title": "브이 손",
+      "titleEn": "Peace Sign Hand",
+      "license": "CC0-1.0",
+      "sha256": "d9e50cc8645fa477770fa1ec787c25ec3aaa12176060364208c0ca986b09159d",
+      "stitches": 3066,
+      "colors": 1,
+      "widthMm": 32.4,
+      "heightMm": 60.0,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 73-peace-hand",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_75_whale_tail.pes",
+      "title": "고래 꼬리",
+      "titleEn": "Whale Tail",
+      "license": "CC0-1.0",
+      "sha256": "2100bfe48bf5136e3428471e201023302904571dbff8ef32f3594b8f1d82c507",
+      "stitches": 1707,
+      "colors": 1,
+      "widthMm": 60.0,
+      "heightMm": 36.2,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 75-whale-tail",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_76_shark.pes",
+      "title": "상어",
+      "titleEn": "Shark",
+      "license": "CC0-1.0",
+      "sha256": "258f5b4c3f6ea7e4f735d31b6bd1c22a0848896925cccd4d0096a05c8376ceca",
+      "stitches": 7250,
+      "colors": 4,
+      "widthMm": 75.0,
+      "heightMm": 46.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 76-shark",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_77_fish.pes",
+      "title": "물고기",
+      "titleEn": "Fish",
+      "license": "CC0-1.0",
+      "sha256": "13fe460decd1b24f57f9b319a91069f947b5e283420e04972b6b32662ba58aad",
+      "stitches": 7990,
+      "colors": 5,
+      "widthMm": 75.1,
+      "heightMm": 48.2,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 77-fish",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_78_crab.pes",
+      "title": "게",
+      "titleEn": "Crab",
+      "license": "CC0-1.0",
+      "sha256": "b21e0d8b0e053fced5bca498abfb555e0dd93821678c63e59094709adcd35c56",
+      "stitches": 11477,
+      "colors": 5,
+      "widthMm": 89.9,
+      "heightMm": 58.8,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 78-crab",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_79_snail.pes",
+      "title": "달팽이",
+      "titleEn": "Snail",
+      "license": "CC0-1.0",
+      "sha256": "9cf4cece05d26c4e871187df3a0264e8fb70324153b300ed46a414d89de6a771",
+      "stitches": 6175,
+      "colors": 4,
+      "widthMm": 60.0,
+      "heightMm": 43.8,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 79-snail",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_80_bee.pes",
+      "title": "벌",
+      "titleEn": "Bee",
+      "license": "CC0-1.0",
+      "sha256": "f57961c8417d286edca658ac64dec93e360075e472fe0610d51200200e10c440",
+      "stitches": 11679,
+      "colors": 4,
+      "widthMm": 90.0,
+      "heightMm": 80.2,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 80-bee",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_81_ladybug.pes",
+      "title": "무당벌레",
+      "titleEn": "Ladybug",
+      "license": "CC0-1.0",
+      "sha256": "235783003179be6626775aff37a83ee9863eae3d14687bebbe4d74e556f247c8",
+      "stitches": 11175,
+      "colors": 3,
+      "widthMm": 90.0,
+      "heightMm": 71.4,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 81-ladybug",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_82_butterfly.pes",
+      "title": "나비",
+      "titleEn": "Butterfly",
+      "license": "CC0-1.0",
+      "sha256": "3c826f8487755c9c74b66c32c460a22485a0ec9018d7a8fd648cd4c77e7ed8a6",
+      "stitches": 12280,
+      "colors": 4,
+      "widthMm": 89.8,
+      "heightMm": 73.4,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 82-butterfly",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_83_frog.pes",
+      "title": "개구리",
+      "titleEn": "Frog",
+      "license": "CC0-1.0",
+      "sha256": "cc496ad2a56c81d8aa3a6ea101cfbd5fdd3070c75c6e18715a6e12201d366b99",
+      "stitches": 15392,
+      "colors": 5,
+      "widthMm": 89.9,
+      "heightMm": 85.5,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 83-frog",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_84_duck.pes",
+      "title": "오리",
+      "titleEn": "Duck",
+      "license": "CC0-1.0",
+      "sha256": "24b5a8561db1350df665b01e09a2fe2cdb44d3c9c8d7bb0947def54a9b8dbada",
+      "stitches": 7220,
+      "colors": 3,
+      "widthMm": 59.1,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 84-duck",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_85_pig.pes",
+      "title": "돼지",
+      "titleEn": "Pig",
+      "license": "CC0-1.0",
+      "sha256": "8e8d195b9417406b88c41f4b8feab742b75e5e3d73a4b3080364c8757d40687a",
+      "stitches": 12907,
+      "colors": 4,
+      "widthMm": 89.2,
+      "heightMm": 78.3,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id 85-pig",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c01_minhwa_tiger_magpie.pes",
+      "title": "민화 호랑이와 까치",
+      "titleEn": "Minhwa Tiger and Magpie",
+      "license": "CC0-1.0",
+      "sha256": "b9baef00439fe5a3dc1d4505a09a095ea2c5c54eb41ff56291fc08de8b619b1e",
+      "stitches": 46384,
+      "colors": 6,
+      "widthMm": 120.0,
+      "heightMm": 121.8,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c01-minhwa-tiger-magpie",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c02_artdeco_swallow.pes",
+      "title": "아르데코 제비",
+      "titleEn": "Art Deco Swallow",
+      "license": "CC0-1.0",
+      "sha256": "cb3d413124a14861cb55d2dbabba8bf61a6c7920088c8c74ea183f9e35702674",
+      "stitches": 21249,
+      "colors": 4,
+      "widthMm": 97.8,
+      "heightMm": 96.1,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c02-artdeco-swallow",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c03_woodblock_wave_boat.pes",
+      "title": "목판화 파도와 배",
+      "titleEn": "Woodblock Wave and Boat",
+      "license": "CC0-1.0",
+      "sha256": "45fe0ad8974039c005e07d7853a1a62f486e5e190384225ff4b3a4734d3e5b21",
+      "stitches": 33764,
+      "colors": 4,
+      "widthMm": 120.0,
+      "heightMm": 115.0,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c03-woodblock-wave-boat",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c04_linocut_fox_moon.pes",
+      "title": "판화 여우와 달",
+      "titleEn": "Linocut Fox and Moon",
+      "license": "CC0-1.0",
+      "sha256": "2d060042edd2093481e10a1429794e408cdedc0ea27b1df1b2ab7d42803ce84d",
+      "stitches": 21559,
+      "colors": 4,
+      "widthMm": 90.0,
+      "heightMm": 88.8,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c04-linocut-fox-moon",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c05_whale_lighthouse.pes",
+      "title": "고래와 등대",
+      "titleEn": "Whale and Lighthouse",
+      "license": "CC0-1.0",
+      "sha256": "0baf5e30b25e7576c254531502377563438f32c400608d1d967cf386c1dbd893",
+      "stitches": 10392,
+      "colors": 6,
+      "widthMm": 120.0,
+      "heightMm": 88.4,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c05-whale-lighthouse",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c06_midcentury_bird.pes",
+      "title": "미드센추리 새",
+      "titleEn": "Mid-century Bird",
+      "license": "CC0-1.0",
+      "sha256": "89fd2f1ca8e554f30ed01affb08aa9e56578179fa30444f6d2227ca057f99de6",
+      "stitches": 7522,
+      "colors": 5,
+      "widthMm": 89.9,
+      "heightMm": 73.6,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c06-midcentury-bird",
+      "attribution": "myembro contributors",
+      "order": 5
+    },
+    {
+      "file": "sample_c07_stainedglass_hummingbird.pes",
+      "title": "스테인드글라스 벌새",
+      "titleEn": "Stained Glass Hummingbird",
+      "license": "CC0-1.0",
+      "sha256": "9367f38e7c207b0994612cd0845e6ffe70d7dbc1a789d92a0c8d03b511b073df",
+      "stitches": 47146,
+      "colors": 7,
+      "widthMm": 120.0,
+      "heightMm": 120.4,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c07-stainedglass-hummingbird",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c08_cabin_starry_badge.pes",
+      "title": "별밤 오두막 배지",
+      "titleEn": "Starry Cabin Badge",
+      "license": "CC0-1.0",
+      "sha256": "f302d14e9b22c726f21f94c7a7d14ba7cab68cf4686ed310ff3e71d40e5bfcde",
+      "stitches": 27378,
+      "colors": 3,
+      "widthMm": 98.1,
+      "heightMm": 97.3,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c08-cabin-starry-badge",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c09_celtic_heart.pes",
+      "title": "켈트 매듭 하트",
+      "titleEn": "Celtic Knot Heart",
+      "license": "CC0-1.0",
+      "sha256": "58323f71bb4655fa529a92b57622199b9965eee80e8ef8cf3084efd00d84ad36",
+      "stitches": 11369,
+      "colors": 1,
+      "widthMm": 98.0,
+      "heightMm": 86.3,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c09-celtic-heart",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c10_botanical_mushrooms.pes",
+      "title": "보태니컬 버섯",
+      "titleEn": "Botanical Mushrooms",
+      "license": "CC0-1.0",
+      "sha256": "9f8efb8bdba3c5fdf56162fe8bd137ba6ff4258b1b7b0ea2651f736660f7e42c",
+      "stitches": 47552,
+      "colors": 7,
+      "widthMm": 120.0,
+      "heightMm": 123.6,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c10-botanical-mushrooms",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c12_dancheong_pattern.pes",
+      "title": "단청 문양",
+      "titleEn": "Dancheong Pattern",
+      "license": "CC0-1.0",
+      "sha256": "1723516b001a84940d078dc579df3e4b1f73a20ff8830193ad80baa66e0b66dd",
+      "stitches": 13126,
+      "colors": 4,
+      "widthMm": 97.9,
+      "heightMm": 96.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c12-dancheong-pattern",
+      "attribution": "myembro contributors",
+      "order": 2
+    },
+    {
+      "file": "sample_c13_crane_pine_sun.pes",
+      "title": "학과 소나무와 해",
+      "titleEn": "Crane, Pine and Sun",
+      "license": "CC0-1.0",
+      "sha256": "3abcc4ab65f2b8d235651274eccff814890a0771d32e45d68412554814ca47b5",
+      "stitches": 25685,
+      "colors": 5,
+      "widthMm": 120.0,
+      "heightMm": 120.5,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c13-crane-pine-sun",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c14_jogakbo_heart.pes",
+      "title": "조각보 하트",
+      "titleEn": "Jogakbo Heart",
+      "license": "CC0-1.0",
+      "sha256": "0b24b3639f25ef0c6b7abaa83809af60b528223593dd0f4bc970cb1a3f39693b",
+      "stitches": 9215,
+      "colors": 7,
+      "widthMm": 75.0,
+      "heightMm": 72.3,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c14-jogakbo-heart",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c15_artdeco_peacock.pes",
+      "title": "아르데코 공작",
+      "titleEn": "Art Deco Peacock",
+      "license": "CC0-1.0",
+      "sha256": "7418461fc94fe4b6e93cc6a505924e4be96486c61185f20298233a2d208bc622",
+      "stitches": 35138,
+      "colors": 4,
+      "widthMm": 120.0,
+      "heightMm": 81.7,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c15-artdeco-peacock",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c16_linocut_owl.pes",
+      "title": "판화 부엉이",
+      "titleEn": "Linocut Owl",
+      "license": "CC0-1.0",
+      "sha256": "0b247b7f8438649c73ddb02847b533d593942f5948df1a2503ee573436e4ef9d",
+      "stitches": 25190,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 97.7,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c16-linocut-owl",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c17_midcentury_cat.pes",
+      "title": "미드센추리 고양이",
+      "titleEn": "Mid-century Cat",
+      "license": "CC0-1.0",
+      "sha256": "7c51e2b0b94bae5886c8ee9199dd6bb9b99a47fe61b59f9eddb0812c8b6cac13",
+      "stitches": 6455,
+      "colors": 3,
+      "widthMm": 56.1,
+      "heightMm": 89.7,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c17-midcentury-cat",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c18_retro_ocean_badge.pes",
+      "title": "레트로 바다 배지",
+      "titleEn": "Retro Ocean Badge",
+      "license": "CC0-1.0",
+      "sha256": "656a30f09777049f1f7d15639d02d583bc16a4ff06196f690bf22ba69900d0e7",
+      "stitches": 14636,
+      "colors": 4,
+      "widthMm": 90.0,
+      "heightMm": 88.9,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c18-retro-ocean-badge",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c19_stainedglass_butterfly.pes",
+      "title": "스테인드글라스 나비",
+      "titleEn": "Stained Glass Butterfly",
+      "license": "CC0-1.0",
+      "sha256": "4d270471b9668063520a13700219f95c25d8caeefbd1ee42498dc1fc9b9f654f",
+      "stitches": 32291,
+      "colors": 6,
+      "widthMm": 120.0,
+      "heightMm": 84.6,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c19-stainedglass-butterfly",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c20_surreal_fish_balloon.pes",
+      "title": "풍선 금붕어",
+      "titleEn": "Goldfish Balloon",
+      "license": "CC0-1.0",
+      "sha256": "083eb3da0e89e37607d72220cd3b00000b2ea90c36a62001d601f900620aa5f0",
+      "stitches": 22490,
+      "colors": 6,
+      "widthMm": 115.8,
+      "heightMm": 170.0,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c20-surreal-fish-balloon",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c21_paper_cut_rabbit_moon.pes",
+      "title": "종이 오리기 토끼와 달",
+      "titleEn": "Paper-cut Rabbit and Moon",
+      "license": "CC0-1.0",
+      "sha256": "dc6714f85f87c2bd55ea20a8488438d0b277b379e6992c22f9c51e08c0641a4a",
+      "stitches": 13538,
+      "colors": 2,
+      "widthMm": 97.8,
+      "heightMm": 92.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c21-paper-cut-rabbit-moon",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c22_woodblock_mount.pes",
+      "title": "목판화 산",
+      "titleEn": "Woodblock Mountain",
+      "license": "CC0-1.0",
+      "sha256": "a0930fbeb27cf7fba555003868ab18cd594aaddf805ae548301eedc7513a19aa",
+      "stitches": 15171,
+      "colors": 3,
+      "widthMm": 120.0,
+      "heightMm": 69.6,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c22-woodblock-mount",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c23_folk_horse.pes",
+      "title": "민속 말",
+      "titleEn": "Folk Horse",
+      "license": "CC0-1.0",
+      "sha256": "2cd0912a7a453cd0cb7f026802a26091cfbaefc9c43cf45350dc8476a412b03e",
+      "stitches": 16213,
+      "colors": 3,
+      "widthMm": 98.0,
+      "heightMm": 94.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c23-folk-horse",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c24_bauhaus_sun.pes",
+      "title": "바우하우스 해와 달",
+      "titleEn": "Bauhaus Sun and Moon",
+      "license": "CC0-1.0",
+      "sha256": "b31f83f980457784d54faf426c610551a61246d07245e9a33059059f2c510ec8",
+      "stitches": 7440,
+      "colors": 4,
+      "widthMm": 70.8,
+      "heightMm": 75.0,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c24-bauhaus-sun",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c25_botanical_fern_flat.pes",
+      "title": "고사리와 들꽃",
+      "titleEn": "Fern and Wildflowers",
+      "license": "CC0-1.0",
+      "sha256": "20b6f4550fad4b6463e1dd08ee792e29c0fc7e726f4ef77dd4dd021f62a29b5b",
+      "stitches": 38362,
+      "colors": 6,
+      "widthMm": 120.0,
+      "heightMm": 121.8,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c25-botanical-fern-flat",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c26_tattoo_panther.pes",
+      "title": "타투 표범",
+      "titleEn": "Tattoo Panther",
+      "license": "CC0-1.0",
+      "sha256": "5774b0ef0d92eafdb28daf0e082ff52e06735d66b3878f6cf6785690066646cf",
+      "stitches": 19426,
+      "colors": 4,
+      "widthMm": 98.0,
+      "heightMm": 86.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c26-tattoo-panther",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c27_tattoo_ship_banner.pes",
+      "title": "리본 문 제비",
+      "titleEn": "Swallow with Banner",
+      "license": "CC0-1.0",
+      "sha256": "0820dcd7f3b49a8addda29f380ec37463996216e81d7a8913810d6287c999e55",
+      "stitches": 10893,
+      "colors": 5,
+      "widthMm": 90.0,
+      "heightMm": 54.3,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c27-tattoo-ship-banner",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c28_cosmic_whale.pes",
+      "title": "밤하늘 고래",
+      "titleEn": "Cosmic Whale",
+      "license": "CC0-1.0",
+      "sha256": "1d9caa60776ea109e49d3b0260b63a2a9049046c681c39494b3de706930db1a0",
+      "stitches": 2957,
+      "colors": 3,
+      "widthMm": 75.0,
+      "heightMm": 42.7,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c28-cosmic-whale",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c29_mandala_lotus.pes",
+      "title": "연꽃 만다라",
+      "titleEn": "Lotus Mandala",
+      "license": "CC0-1.0",
+      "sha256": "37ad45b65717822d8c190d6a9c78d3847782fbce3a6250655e5b16447bfd03b4",
+      "stitches": 12749,
+      "colors": 2,
+      "widthMm": 98.0,
+      "heightMm": 93.2,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c29-mandala-lotus",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_c30_tiger_face_minimal.pes",
+      "title": "호랑이 얼굴",
+      "titleEn": "Minimal Tiger Face",
+      "license": "CC0-1.0",
+      "sha256": "4cee7c099e2ea76d49042f32de4b141984df982a89cbd0e4ad44b3bb34a7251b",
+      "stitches": 14987,
+      "colors": 3,
+      "widthMm": 91.8,
+      "heightMm": 97.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id c30-tiger-face-minimal",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_l01_sleeping_cat.pes",
+      "title": "잠자는 고양이 선화",
+      "titleEn": "Sleeping Cat Line Art",
+      "license": "CC0-1.0",
+      "sha256": "169feb7f4822e9517d39a230e87c92e8f223a93e2af82f46ca2eb44dff790d9c",
+      "stitches": 776,
       "colors": 1,
       "widthMm": 53.5,
-      "heightMm": 63.8,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "heightMm": 32.1,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l01-sleeping-cat",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_cloud.pes",
-      "title": "구름",
+      "file": "sample_l02_hand_flower.pes",
+      "title": "꽃을 든 손 선화",
+      "titleEn": "Hand with Flower Line Art",
       "license": "CC0-1.0",
-      "sha256": "8015ff2de2277fb61154ac79501b00881fe3b0ad49e0db64fc0a8a1035dbedc2",
-      "stitches": 223,
+      "sha256": "b835ce906856f79a4c0a28cc3849afc17896fc8210a05b9a89a3e5e1d40261ff",
+      "stitches": 1928,
       "colors": 1,
-      "widthMm": 68.0,
-      "heightMm": 32.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 33.4,
+      "heightMm": 86.5,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l02-hand-flower",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_petal_ring.pes",
-      "title": "꽃잎 원형 패턴",
+      "file": "sample_l03_mountain_moon.pes",
+      "title": "산과 달 선화",
+      "titleEn": "Mountains and Moon Line Art",
       "license": "CC0-1.0",
-      "sha256": "69a49fb2d30eb71fcb0acd0273e3f05faf61ad148c0a2db6eb3d3ed5dd62c24e",
-      "stitches": 398,
+      "sha256": "41fd9137b0b972719cf8e82899ef9b133d47260afd0994f1856538d22f97626e",
+      "stitches": 1854,
       "colors": 1,
-      "widthMm": 66.0,
-      "heightMm": 58.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 63.2,
+      "heightMm": 39.7,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l03-mountain-moon",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_frame_square.pes",
-      "title": "사각 프레임",
+      "file": "sample_l04_coffee_steam.pes",
+      "title": "김 나는 커피 선화",
+      "titleEn": "Steaming Coffee Line Art",
       "license": "CC0-1.0",
-      "sha256": "5f71c7a2a187b7a4433197b5fb394b797ea7d16a3e66c350bb49d690e4c146a6",
-      "stitches": 367,
+      "sha256": "6d0c810745186ba9bceb1184106ae5f40ca519ceded7e76b381f52e0e9561f09",
+      "stitches": 777,
       "colors": 1,
-      "widthMm": 76.0,
-      "heightMm": 76.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 58.9,
+      "heightMm": 66.5,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l04-coffee-steam",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_frame_circle.pes",
-      "title": "원형 프레임",
+      "file": "sample_l05_bicycle_basket.pes",
+      "title": "바구니 자전거 선화",
+      "titleEn": "Bicycle with Basket Line Art",
       "license": "CC0-1.0",
-      "sha256": "326266e458dc2e2f2ab6ef16f9f49b4e1e2d51aef439421e4569c743d32ea8cd",
-      "stitches": 187,
+      "sha256": "510d080401055edd0b62ec4cfd9346e29e155c86c090d821e86b66838f9b7477",
+      "stitches": 7191,
       "colors": 1,
-      "widthMm": 77.0,
-      "heightMm": 77.0,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 83.0,
+      "heightMm": 55.6,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l05-bicycle-basket",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_frame_scallop.pes",
-      "title": "물결 프레임",
+      "file": "sample_l06_whale.pes",
+      "title": "고래 선화",
+      "titleEn": "Whale Line Art",
       "license": "CC0-1.0",
-      "sha256": "8a67d010a6b0f4f8774d9ca841d6b9ca5f5008aa66ee438fad1e07cd5842a01e",
-      "stitches": 385,
+      "sha256": "f9d3cf8883e98b758d4370413d557ac6df1a510d2b4b649760d105e9896552ee",
+      "stitches": 1340,
       "colors": 1,
-      "widthMm": 76.0,
-      "heightMm": 74.2,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
+      "widthMm": 82.3,
+      "heightMm": 41.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l06-whale",
+      "attribution": "myembro contributors",
+      "order": 4
     },
     {
-      "file": "sample_fill_heart.pes",
-      "title": "하트 채움",
+      "file": "sample_l07_monstera.pes",
+      "title": "몬스테라 선화",
+      "titleEn": "Monstera Line Art",
       "license": "CC0-1.0",
-      "sha256": "dfc3c3557684d84a3fe8e338bf47eb2b61406a43650a2cc9a2d854937f4b9406",
-      "stitches": 1851,
+      "sha256": "2a6792b3cdcd413053a5139b67720afdb0856bf363d0b915a85f063cdbe29122",
+      "stitches": 2520,
       "colors": 1,
-      "widthMm": 57.6,
-      "heightMm": 51.6,
-      "technique": "scanline 0.4mm / 3mm / staggered 1.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 69.6,
+      "heightMm": 83.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l07-monstera",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_fill_star.pes",
-      "title": "별 채움",
+      "file": "sample_l08_face_line.pes",
+      "title": "얼굴 선화",
+      "titleEn": "Face Line Art",
       "license": "CC0-1.0",
-      "sha256": "a3650b4114fb43c81c2e0613873b04c9990e5f118cf0c05fffeb5d774b6251c3",
-      "stitches": 1323,
+      "sha256": "32f521fbe0831a87b0385f1f970f69290a2050de96d542d6e89a96b52cbf9d8e",
+      "stitches": 871,
       "colors": 1,
-      "widthMm": 56.4,
-      "heightMm": 54.0,
-      "technique": "scanline 0.4mm / 3mm / staggered 1.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 51.4,
+      "heightMm": 74.3,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l08-face-line",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_fill_circle.pes",
-      "title": "원 채움",
+      "file": "sample_l09_hummingbird.pes",
+      "title": "벌새 선화",
+      "titleEn": "Hummingbird Line Art",
       "license": "CC0-1.0",
-      "sha256": "5474cfc23c68bdcac84cd9c272c556171fe18046e73321dd4f9df027983a530b",
-      "stitches": 2397,
+      "sha256": "e31ffca6a20afda431daa242fd45b059706d942e77ef8367b5c389b65970e856",
+      "stitches": 3657,
       "colors": 1,
-      "widthMm": 57.0,
-      "heightMm": 56.4,
-      "technique": "scanline 0.4mm / 3mm / staggered 1.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 81.8,
+      "heightMm": 53.6,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l09-hummingbird",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_fill_diamond.pes",
-      "title": "마름모 채움",
+      "file": "sample_l10_potted_plant.pes",
+      "title": "화분 선화",
+      "titleEn": "Potted Plant Line Art",
       "license": "CC0-1.0",
-      "sha256": "cb3fdb6331fdcb3c05775c4b287ae79f238a594727969e6c453da425e90105aa",
-      "stitches": 1599,
+      "sha256": "c912a811163150ed13edd65125f37d970ba807e7a574d0adf074863907ab151f",
+      "stitches": 3051,
       "colors": 1,
-      "widthMm": 51.6,
-      "heightMm": 59.6,
-      "technique": "scanline 0.4mm / 3mm / staggered 1.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 55.4,
+      "heightMm": 86.5,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "line",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id l10-potted-plant",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_monogram_a.pes",
-      "title": "모노그램 A",
-      "license": "CC0-1.0 AND LicenseRef-Hershey",
-      "sha256": "4cceee3b34430cea2e0d0039235bf140db57585a5b144742023c92d45e85d94c",
-      "stitches": 114,
-      "colors": 1,
-      "widthMm": 26.6,
-      "heightMm": 35.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
-    },
-    {
-      "file": "sample_monogram_m.pes",
-      "title": "모노그램 M",
-      "license": "CC0-1.0 AND LicenseRef-Hershey",
-      "sha256": "a1678707dc0860012482de89c46bb5901b11c4f5fa3b6998ead6d02d313e00fa",
-      "stitches": 178,
-      "colors": 1,
-      "widthMm": 26.6,
-      "heightMm": 35.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
-    },
-    {
-      "file": "sample_monogram_ab.pes",
-      "title": "모노그램 AB",
-      "license": "CC0-1.0 AND LicenseRef-Hershey",
-      "sha256": "e9f729db4c4820164fb3d7bb315c1420edd62f9b5c2a0cf63d1ab8a22eaa667f",
-      "stitches": 282,
-      "colors": 1,
-      "widthMm": 60.8,
-      "heightMm": 35.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
-    },
-    {
-      "file": "sample_korean_embroidery.pes",
-      "title": "자수 · 외곽선",
+      "file": "sample_f_sheet_130x180.pes",
+      "title": "빈티지 타투 시트",
+      "titleEn": "Vintage Flash Sheet",
       "license": "CC0-1.0",
-      "sha256": "4a1cdbe1525380a55333e085de1172ee15a23572d7989693a55b95042a3531df",
-      "stitches": 154,
-      "colors": 1,
-      "widthMm": 70.9,
-      "heightMm": 34.9,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "sha256": "5f6587e2b04eff759bacbcfb1b9870c1c22259da4a9b2c88f165bbe99f26709c",
+      "stitches": 42560,
+      "colors": 4,
+      "widthMm": 117.4,
+      "heightMm": 170.0,
+      "fitMm": [
+        120,
+        170
+      ],
+      "plannedFitMm": [
+        120,
+        170
+      ],
+      "hoopMm": [
+        130,
+        180
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F-sheet-130x180",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_korean_love.pes",
-      "title": "사랑 · 외곽선",
+      "file": "sample_f01_rose.pes",
+      "title": "빈티지 장미",
+      "titleEn": "Vintage Rose",
       "license": "CC0-1.0",
-      "sha256": "4fdb444ee7ff3e82fa55de47e1bfa8cfd02020b505a5c6cf1d591c0b0429c9c6",
-      "stitches": 194,
-      "colors": 1,
-      "widthMm": 75.4,
-      "heightMm": 35.0,
-      "technique": "running 2.5mm",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
-    },
-    {
-      "file": "sample_rainbow_cloud.pes",
-      "title": "구름과 무지개 · 3색",
-      "license": "CC0-1.0",
-      "sha256": "aa3608797a81ea63b433c33eb6bcb0b93c426129c90b76b87ccb16bf8fcae8e5",
-      "stitches": 381,
+      "sha256": "90d9904e5521a40aaf5d8a760c6c1453f59bb98efe16490f45de333e7021bae8",
+      "stitches": 8093,
       "colors": 3,
-      "widthMm": 68.0,
-      "heightMm": 32.0,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
-      "attribution": "myembro contributors"
+      "widthMm": 58.3,
+      "heightMm": 90.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F01-rose",
+      "attribution": "myembro contributors",
+      "order": 3
     },
     {
-      "file": "sample_flower_garden.pes",
-      "title": "꽃 정원 · 4색",
+      "file": "sample_f02_swallow_red.pes",
+      "title": "빈티지 빨간 제비",
+      "titleEn": "Vintage Red Swallow",
       "license": "CC0-1.0",
-      "sha256": "38c61cb8f33e858ef7d1bed633ec327e49157d27ab6b46779395d5f6a9ff9281",
-      "stitches": 417,
+      "sha256": "ec743cef265356a8bbd3b71b53b83b39f06772f6629eb816ead8b72fee1e6091",
+      "stitches": 20509,
       "colors": 4,
-      "widthMm": 62.6,
-      "heightMm": 52.8,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 98.0,
+      "heightMm": 91.3,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F02-swallow-red",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_geometry_four_colors.pes",
-      "title": "기하학 · 4색",
+      "file": "sample_f03_swallow_blue.pes",
+      "title": "빈티지 파란 제비",
+      "titleEn": "Vintage Blue Swallow",
       "license": "CC0-1.0",
-      "sha256": "a417a0016dfc53a3cccc6be96125a0981f883ff502d1743a2dfa1eae5ad94450",
-      "stitches": 445,
+      "sha256": "8fd0a0e0245894d3a47cbe4cf80413eca597073cbcb8e6f9a679cb535aa204d7",
+      "stitches": 14492,
       "colors": 4,
-      "widthMm": 62.4,
-      "heightMm": 62.1,
-      "technique": "triple running",
-      "source": "tools/make_samples.py (original myembro sample geometry)",
+      "widthMm": 94.8,
+      "heightMm": 97.9,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F03-swallow-blue",
       "attribution": "myembro contributors"
     },
     {
-      "file": "sample_community_spiralbox.pes",
-      "title": "커뮤니티 · 나선 사각형",
-      "license": "MIT",
-      "sha256": "78266e7fb0c097765702e455d0592b547f56bd4cb0045137f941c10fa94b47d4",
-      "stitches": 279,
-      "colors": 16,
-      "widthMm": 35.8,
-      "heightMm": 35.8,
-      "technique": "running 2.5mm",
-      "source": "https://github.com/EmbroidePy/samples/blob/6e65f1ae8599b1e04d3e082aae1b86abed52ec9e/spiralbox.pes",
-      "attribution": "EmbroidePy, Copyright (c) 2019",
-      "sourceSha256": "4e6ca07e33132787c2211eb676443e8c9fc6629993e37be7b886bde21df3066c"
+      "file": "sample_f04_butterfly_front.pes",
+      "title": "빈티지 나비 (정면)",
+      "titleEn": "Vintage Butterfly (Front)",
+      "license": "CC0-1.0",
+      "sha256": "b540d3266c4c9c6909384f1552ce6239490656216e0648f01eec0f7439341fe3",
+      "stitches": 11908,
+      "colors": 4,
+      "widthMm": 96.8,
+      "heightMm": 74.6,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F04-butterfly-front",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f05_butterfly_profile.pes",
+      "title": "빈티지 나비 (옆)",
+      "titleEn": "Vintage Butterfly (Side)",
+      "license": "CC0-1.0",
+      "sha256": "9e7b13b6363a05ead390decfa44e5e6eb801f1112c1b37dae603dac8b85a7818",
+      "stitches": 8892,
+      "colors": 4,
+      "widthMm": 63.3,
+      "heightMm": 89.9,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F05-butterfly-profile",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f06_butterfly_angled.pes",
+      "title": "빈티지 나비 (비스듬히)",
+      "titleEn": "Vintage Butterfly (Angled)",
+      "license": "CC0-1.0",
+      "sha256": "45a921252079cde379a90496be86b0bc1588301374bbfcbcfe58615476598369",
+      "stitches": 15437,
+      "colors": 3,
+      "widthMm": 98.0,
+      "heightMm": 77.4,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F06-butterfly-angled",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f07_anchor.pes",
+      "title": "빈티지 닻",
+      "titleEn": "Vintage Anchor",
+      "license": "CC0-1.0",
+      "sha256": "667742e5b987d72e0dca4d830f17f887b62c801110074c8a99b967a94c09f59a",
+      "stitches": 11249,
+      "colors": 6,
+      "widthMm": 70.6,
+      "heightMm": 90.0,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F07-anchor",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f08_eagle.pes",
+      "title": "빈티지 독수리",
+      "titleEn": "Vintage Eagle",
+      "license": "CC0-1.0",
+      "sha256": "15bf70f791732858fbd577c1bf673c1a1529a9685d41741b15006f3e0814957e",
+      "stitches": 20557,
+      "colors": 3,
+      "widthMm": 98.0,
+      "heightMm": 96.8,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F08-eagle",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f10_heart.pes",
+      "title": "빈티지 하트",
+      "titleEn": "Vintage Heart",
+      "license": "CC0-1.0",
+      "sha256": "ff15f11019258e74a3910ddf9c9f33ce6a9f0535d69b3e1692bcdd2c71d7b05c",
+      "stitches": 2991,
+      "colors": 2,
+      "widthMm": 42.9,
+      "heightMm": 59.1,
+      "fitMm": [
+        60,
+        60
+      ],
+      "plannedFitMm": [
+        60,
+        60
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F10-heart",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f11_dagger.pes",
+      "title": "빈티지 단검",
+      "titleEn": "Vintage Dagger",
+      "license": "CC0-1.0",
+      "sha256": "d2cec297ff2677c7d5966dfbe538a943b27dfbbd57d9b4039ca4f37cac484fb0",
+      "stitches": 8183,
+      "colors": 4,
+      "widthMm": 30.9,
+      "heightMm": 97.6,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F11-dagger",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f12_sailing_ship.pes",
+      "title": "빈티지 범선",
+      "titleEn": "Vintage Sailing Ship",
+      "license": "CC0-1.0",
+      "sha256": "ae29ee05878198ee7a62512cae710afd25d49c8c391f15e37cf84b20c008cb18",
+      "stitches": 16942,
+      "colors": 5,
+      "widthMm": 55.6,
+      "heightMm": 98.0,
+      "fitMm": [
+        98,
+        98
+      ],
+      "plannedFitMm": [
+        98,
+        98
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F12-sailing-ship",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f13_horse_head.pes",
+      "title": "빈티지 말 머리",
+      "titleEn": "Vintage Horse Head",
+      "license": "CC0-1.0",
+      "sha256": "5044411a813a38cf999861cdca7096ae1ad3cfbb35c714487b46f3a732e90377",
+      "stitches": 14850,
+      "colors": 4,
+      "widthMm": 89.9,
+      "heightMm": 64.6,
+      "fitMm": [
+        90,
+        90
+      ],
+      "plannedFitMm": [
+        90,
+        90
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F13-horse-head",
+      "attribution": "myembro contributors"
+    },
+    {
+      "file": "sample_f15_floral_sprig.pes",
+      "title": "빈티지 꽃가지",
+      "titleEn": "Vintage Floral Sprig",
+      "license": "CC0-1.0",
+      "sha256": "d8dfc9e56ed9addb0f77c3da5475f8c7c3aaf3ae2476f9dfeb2c20131e5de8bf",
+      "stitches": 8288,
+      "colors": 3,
+      "widthMm": 75.0,
+      "heightMm": 39.6,
+      "fitMm": [
+        75,
+        75
+      ],
+      "plannedFitMm": [
+        75,
+        75
+      ],
+      "hoopMm": [
+        100,
+        100
+      ],
+      "technique": "fill",
+      "source": "AI-generated image (gpt image via Codex), converted by myembro; docs/samples/provenance.json id F15-floral-sprig",
+      "attribution": "myembro contributors"
     }
   ]
 }

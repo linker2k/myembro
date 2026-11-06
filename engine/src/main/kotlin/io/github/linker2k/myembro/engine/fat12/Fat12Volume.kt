@@ -9,7 +9,8 @@ import kotlin.math.min
 /** Independent implementation of the Microsoft FAT on-disk format (BPB, FAT12 and 32-byte entries).
  * Format reference: Microsoft FAT Specification, sections 3, 4 and 6:
  * https://www.scs.stanford.edu/~zyedidia/docs/_other/fat.pdf (Microsoft-authored specification).
- * Root files only; no format/repair API. Writes are verified by physical reads, not cached copies.
+ * Root files only; no format/repair API. New files get VFAT long-name slots (section 7) when a
+ * long name differs from the 8.3 alias. Writes are verified by physical reads, not cached copies.
  * Not journaled: disconnect/power loss can interrupt metadata updates. After any I/O failure this
  * instance is poisoned; remount and inspect rather than retrying writes against stale allocation.
  */
@@ -36,7 +37,7 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     }
 
     data class Entry(val name: String, val size: Long, val attributes: Int, val firstCluster: Int,
-        val rootIndex: Int, val longNameSlots: List<Int> = emptyList()) {
+        val rootIndex: Int, val longNameSlots: List<Int> = emptyList(), val longName: String? = null) {
         val isDirectory: Boolean get() = attributes and 0x10 != 0
         val isReadOnly: Boolean get() = attributes and 1 != 0
     }
@@ -102,7 +103,7 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
                 val extension = String(root, o + 8, 3, Charsets.ISO_8859_1).trimEnd()
                 val name = base + if (extension.isEmpty()) "" else ".$extension"
                 val slots = verifiedLongNames(lfn, o)
-                entries += Entry(name, u32(root, o + 28), attr, u16(root, o + 26), i, slots)
+                entries += Entry(name, u32(root, o + 28), attr, u16(root, o + 26), i, slots, decodeLongName(slots))
                 checkDisk(u16(root, o + 20) == 0, "Nonzero FAT12 high cluster word")
             }
             lfn = mutableListOf()
@@ -111,14 +112,12 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     }
 
     val freeBytes: Long @Synchronized get() { checkUsable(); return freeClusters().size.toLong() * geometry.clusterBytes }
-    val freeRootEntries: Int @Synchronized get() {
+    val freeRootEntries: Int @Synchronized get() { checkUsable(); return freeSlotMask().count { it } }
+
+    /** Root slot indices a new entry may use: deleted (0xE5) slots and every slot from the end marker on. */
+    val freeRootSlots: Set<Int> @Synchronized get() {
         checkUsable()
-        var ended = false
-        return (0 until geometry.rootEntryCount).count {
-            val first = u8(root, it * 32)
-            if (first == 0) ended = true
-            ended || first == 0xE5
-        }
+        return freeSlotMask().withIndex().filter { it.value }.map { it.index }.toSet()
     }
 
     /** Useful for revalidating a deletion confirmation after closing/reopening the USB device. */
@@ -129,12 +128,16 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    @Synchronized fun checkSpace(sizes: List<Int>) {
+    /** [longNames] pairs with [sizes] (null = 8.3 only). Root slots are checked as contiguous
+     * first-fit runs, exactly as [writeFile] allocates them in order. */
+    @Synchronized fun checkSpace(sizes: List<Int>, longNames: List<String?> = List(sizes.size) { null }) {
         checkUsable()
-        require(sizes.all { it >= 0 })
+        require(sizes.all { it >= 0 } && longNames.size == sizes.size)
         val required = sizes.sumOf { clustersFor(it.toLong()).toLong() * geometry.clusterBytes }
         val free = freeBytes
-        if (required > free || sizes.size > freeRootEntries) throw NoSpace(required, free, sizes.size, freeRootEntries)
+        val slots = longNames.map(::entrySlots)
+        if (required > free || !fitsRootSlots(freeSlotMask(), slots))
+            throw NoSpace(required, free, slots.sum(), freeRootEntries)
     }
 
     @Synchronized fun readFile(name: String): ByteArray {
@@ -152,27 +155,41 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         return bytes
     }
 
-    /** New file only; an existing name is never replaced. Returns the actual unique 8.3 filename. */
-    @Synchronized fun writeFile(originalName: String, bytes: ByteArray): Entry {
+    /** New file only; an existing name is never replaced. Returns the actual unique 8.3 alias.
+     * [longName] must be a valid, not yet used VFAT name; it is omitted when equal to the alias. */
+    @Synchronized fun writeFile(originalName: String, bytes: ByteArray, longName: String? = null): Entry {
         unchanged()
-        checkSpace(listOf(bytes.size))
-        val name = ShortNames.unique(originalName, listRoot().map { it.name })
-        val slot = (0 until geometry.rootEntryCount).first { u8(root, it * 32) in setOf(0, 0xE5) }
+        val existing = listRoot()
+        if (longName != null) {
+            require(LongNames.isValid(longName)) { "Invalid FAT long file name: $longName" }
+            require(existing.none { it.name.equals(longName, true) || it.longName.equals(longName, true) }) {
+                "FAT long file name already exists: $longName"
+            }
+        }
+        checkSpace(listOf(bytes.size), listOf(longName))
+        val name = ShortNames.unique(originalName, existing.flatMap { listOfNotNull(it.name, it.longName) })
+        val lfn = longName?.takeIf { it != name }
+        val count = entrySlots(lfn)
+        val start = checkNotNull(firstFit(freeSlotMask(), count)) // checkSpace guaranteed a run
+        val slot = start + count - 1
         val clusters = freeClusters().take(clustersFor(bytes.size.toLong()))
         val nextFat = fat.copyOf()
         clusters.forEachIndexed { i, cluster -> setFatEntry(nextFat, cluster, clusters.getOrNull(i + 1) ?: 0xFFF) }
         val nextRoot = root.copyOf()
         val o = slot * 32
+        val reachesEnd = (start..slot).any { u8(root, it * 32) == 0 }
+        val shortName = ShortNames.encode(name)
+        if (lfn != null) encodeLongName(lfn, shortChecksum(shortName, 0)).copyInto(nextRoot, start * 32)
         nextRoot.fill(0, o, o + 32)
-        ShortNames.encode(name).copyInto(nextRoot, o)
-        nextRoot[o + 11] = 0x20 // archive, no LFN
+        shortName.copyInto(nextRoot, o)
+        nextRoot[o + 11] = 0x20 // archive
         val now = LocalDateTime.now()
         val date = ((now.year.coerceIn(1980, 2107) - 1980) shl 9) or (now.monthValue shl 5) or now.dayOfMonth
         val time = (now.hour shl 11) or (now.minute shl 5) or (now.second / 2)
         put16(nextRoot, o + 14, time); put16(nextRoot, o + 16, date); put16(nextRoot, o + 18, date)
         put16(nextRoot, o + 22, time); put16(nextRoot, o + 24, date)
         put16(nextRoot, o + 26, clusters.firstOrNull() ?: 0); put32(nextRoot, o + 28, bytes.size.toLong())
-        if (u8(root, o) == 0 && slot + 1 < geometry.rootEntryCount) nextRoot[o + 32] = 0
+        if (reachesEnd && slot + 1 < geometry.rootEntryCount) nextRoot[o + 32] = 0
         mutation {
             clusters.forEachIndexed { i, cluster ->
                 val padded = ByteArray(geometry.clusterBytes)
@@ -235,10 +252,29 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
         }
     }
 
+    private fun freeSlotMask(): BooleanArray {
+        var ended = false
+        return BooleanArray(geometry.rootEntryCount) {
+            val first = u8(root, it * 32)
+            if (first == 0) ended = true
+            ended || first == 0xE5
+        }
+    }
+
+    private fun decodeLongName(slots: List<Int>): String? {
+        if (slots.isEmpty()) return null
+        val units = StringBuilder()
+        for (slot in slots.asReversed()) for (offset in LFN_CHAR_OFFSETS) {
+            val unit = u16(root, slot * 32 + offset)
+            if (unit == 0) return units.toString()
+            units.append(unit.toChar())
+        }
+        return units.toString()
+    }
+
     private fun verifiedLongNames(slots: List<Int>, shortOffset: Int): List<Int> {
         if (slots.isEmpty()) return emptyList()
-        var checksum = 0
-        for (i in 0..10) checksum = (((checksum and 1) shl 7) + (checksum shr 1) + u8(root, shortOffset + i)) and 255
+        val checksum = shortChecksum(root, shortOffset)
         val count = slots.size
         checkDisk(count <= 20 && slots.withIndex().all { (index, slot) ->
             val o = slot * 32
@@ -283,6 +319,60 @@ class Fat12Volume private constructor(private val device: BlockDevice, val geome
     private fun read(lba: Long, count: Int): ByteArray = checkedRead(device, lba, count)
 
     companion object {
+        /** UTF-16LE character positions inside one 32-byte LFN slot (fatgen103 section 7). */
+        private val LFN_CHAR_OFFSETS = intArrayOf(1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30)
+
+        /** Directory slots for one file: LFN slots plus the 8.3 entry. */
+        fun entrySlots(longName: String?): Int = 1 + (longName?.let(LongNames::slotsFor) ?: 0)
+
+        /** True when every run (in order) gets a contiguous first-fit span of free slots. */
+        fun fitsRootSlots(free: BooleanArray, runs: List<Int>): Boolean {
+            val mask = free.copyOf()
+            for (run in runs) {
+                val start = firstFit(mask, run) ?: return false
+                mask.fill(false, start, start + run)
+            }
+            return true
+        }
+
+        private fun firstFit(free: BooleanArray, run: Int): Int? {
+            var length = 0
+            for (i in free.indices) {
+                length = if (free[i]) length + 1 else 0
+                if (length == run) return i - run + 1
+            }
+            return null
+        }
+
+        /** fatgen103 section 7 "ChkSum": rotate right then add, over the 11 short-name bytes. */
+        private fun shortChecksum(bytes: ByteArray, offset: Int): Int {
+            var sum = 0
+            for (i in 0..10) sum = (((sum and 1) shl 7) + (sum shr 1) + u8(bytes, offset + i)) and 255
+            return sum
+        }
+
+        /** LFN slots in on-disk order (last ordinal first, 0x40 flag), ending right before the 8.3 entry.
+         * A name that does not fill its last slot is terminated by 0x0000 and padded with 0xFFFF. */
+        private fun encodeLongName(name: String, checksum: Int): ByteArray {
+            val count = LongNames.slotsFor(name)
+            val out = ByteArray(count * 32)
+            for (ordinal in 1..count) {
+                val o = (count - ordinal) * 32
+                out[o] = (ordinal or if (ordinal == count) 0x40 else 0).toByte()
+                out[o + 11] = 0x0F
+                out[o + 13] = checksum.toByte()
+                LFN_CHAR_OFFSETS.forEachIndexed { j, offset ->
+                    val index = (ordinal - 1) * LongNames.CHARS_PER_SLOT + j
+                    put16(out, o + offset, when {
+                        index < name.length -> name[index].code
+                        index == name.length -> 0
+                        else -> 0xFFFF
+                    })
+                }
+            }
+            return out
+        }
+
         fun mount(device: BlockDevice): Fat12Volume = mount(device, object : MountObserver {})
 
         /** Observes boot sectors already read by mounting, including a partition BPB that fails parsing. */
