@@ -25,12 +25,17 @@ class SvgPictureInputTest {
         val rows = File("../app/src/main/assets/emoji/bundled").listFiles()!!.filter { it.extension == "svg" }
             .map { SvgPictureInput.parse(it.readBytes()).metrics }
         assertEquals(30, rows.size)
-        assertEquals(SvgPictureInput.MAX_BYTES, rows.maxOf { it.bytes })
+        // Measured corpus maximum (lady-beetle.svg); the accepted limit is the larger user-set MAX_BYTES.
+        assertEquals(4788, rows.maxOf { it.bytes })
+        assertTrue(rows.maxOf { it.bytes } <= SvgPictureInput.MAX_BYTES)
         assertEquals(SvgPictureInput.MAX_ELEMENTS, rows.maxOf { it.elements })
-        assertEquals(SvgPictureInput.MAX_PATH_POINTS, rows.maxOf { it.pathPoints })
+        // Measured corpus maximum (teddy-bear.svg); the accepted limit is the larger user-set MAX_PATH_POINTS.
+        assertEquals(202, rows.maxOf { it.pathPoints })
+        assertTrue(rows.maxOf { it.pathPoints } <= SvgPictureInput.MAX_PATH_POINTS)
         println("SVG_CORPUS 30/30 PASS; maxima bytes=4788 elements=14 points=202")
     }
     @Test fun boundaries() {
+        assertEquals(200_000, SvgPictureInput.MAX_BYTES)
         for (size in listOf(SvgPictureInput.MAX_BYTES - 1, SvgPictureInput.MAX_BYTES, SvgPictureInput.MAX_BYTES + 1)) {
             val input = (valid + " ".repeat(size - valid.toByteArray().size)).toByteArray()
             if (size <= SvgPictureInput.MAX_BYTES) { assertEquals(size, SvgPictureInput.parse(input).metrics.bytes); assertEquals(size, SvgPictureInput.read(input.inputStream()).size) }
@@ -40,10 +45,11 @@ class SvgPictureInputTest {
             val input = start + "<g/>".repeat(n - 2) + "<rect width=\"2\" height=\"2\"/></svg>"
             if (n <= 14) assertEquals(n, SvgPictureInput.parse(input.toByteArray()).metrics.elements) else assertFails { SvgPictureInput.parse(input.toByteArray()) }
         }
-        for (n in listOf(201, 202, 203)) {
+        assertEquals(2_000, SvgPictureInput.MAX_PATH_POINTS)
+        for (n in listOf(SvgPictureInput.MAX_PATH_POINTS - 1, SvgPictureInput.MAX_PATH_POINTS, SvgPictureInput.MAX_PATH_POINTS + 1)) {
             val path = "M0 0 " + (1 until n).joinToString(" ") { "L${it % 100} ${it / 100}" }
             val input = "$start<path d=\"$path\"/></svg>".toByteArray()
-            if (n <= 202) assertEquals(n, SvgPictureInput.parse(input).metrics.pathPoints) else assertFails { SvgPictureInput.parse(input) }
+            if (n <= SvgPictureInput.MAX_PATH_POINTS) assertEquals(n, SvgPictureInput.parse(input).metrics.pathPoints) else assertFails { SvgPictureInput.parse(input) }
         }
         println("SVG_LIMITS bytes/elements/points n-1,n,n+1 PASS")
     }

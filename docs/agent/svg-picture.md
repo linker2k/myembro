@@ -9,21 +9,28 @@ trace algorithm, stitch settings, automatic sewing exception, or external servic
 Generic shared content named `.svg` is also recognized through its display name.
 `SvgPictureInput` validates the complete input **before** `VectorArt.parseSvg`.
 
-Limits are the exact measured maxima of the **30 locally bundled** entries in
+The element limit is the exact measured maximum of the **30 locally bundled** entries in
 `app/src/main/assets/emoji/bundled`, from the existing Fluent catalog pinned to
 `1ffb34c752ecf5d402f04cfb4b392c77f57c54bc`. This is a conservative local corpus,
 not a claim that all downloadable catalog entries fit these limits. Larger or
 more complex AI output falls back to PNG rather than raising limits speculatively.
+The byte limit is not a corpus maximum: it is a user decision (2026-11-05) of
+**200,000 bytes** (decimal, not KiB), inclusive. The corpus byte maximum is still 4788.
+The vertex limit is also a user decision (2026-11-06): **2,000** flattened vertices, inclusive,
+chosen from a local cost measurement (not committed) of 127 local pictures: 103 fit, desktop
+stitch generation for those took at most 8.4 s and none took over 20 s. Parsing and flattening
+stay under 0.4 s even far beyond this limit; stitch generation is the cost. The element limit
+stays 14 and also keeps nested groups shallow, so no separate depth guard is added.
 
 | Resource | Maximum (inclusive) | Source of maximum |
 |---|---:|---|
-| UTF-8 file bytes | 4788 | `lady-beetle.svg` |
+| UTF-8 file bytes | 200,000 | user decision 2026-11-05 (corpus maximum 4788, `lady-beetle.svg`) |
 | XML elements, including root | 14 | `lady-beetle.svg` |
-| Flattened path vertices across shapes | 202 | `teddy-bear.svg`, existing `SvgPath.flatten` default tolerance/transform |
+| Flattened path vertices across shapes | 2,000 | user decision 2026-11-06 (corpus maximum 202, `teddy-bear.svg`, existing `SvgPath.flatten` default tolerance/transform) |
 
 `SvgCorpusMeasureTest` prints measurements per file, while `SvgPictureInputTest`
 asserts the maxima and all 30 accepted entries. The input stream reads at most
-4789 bytes, detecting overflow without buffering the rest. Per-path point budgets
+200,001 bytes, detecting overflow without buffering the rest. Per-path point budgets
 are enforced during the existing flattening operation; the original global
 200000-emission guard and default behavior remain unchanged for existing callers.
 The aggregate cap counts the same stored vertices as the measured corpus.

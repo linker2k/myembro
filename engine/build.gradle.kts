@@ -135,7 +135,12 @@ tasks.register("koreanTtfSweepClasspath") {
 }
 
 // Release sweeps render many patterns in parallel.
-tasks.test { maxHeapSize = "3g" }
+tasks.test {
+    maxHeapSize = "3g"
+    // Local SVG cost measurement only (SvgCostMeasureTest); off unless -PsvgMeasure=true.
+    systemProperty("svgMeasure", providers.gradleProperty("svgMeasure").orElse("false").get())
+    systemProperty("svgCostGroups", providers.gradleProperty("svgCostGroups").orElse("").get())
+}
 
 tasks.register<JavaExec>("makeS4Samples") {
     group = "verification"
