@@ -19,6 +19,22 @@ import kotlin.test.*
 class ViewerRealisticPreviewTest {
     private val plan=ViewerRealisticPlan(600,400,.368f,0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
     private fun sha(b:ByteArray)=MessageDigest.getInstance("SHA-256").digest(b).toList()
+    @Test fun resolvedViewportPreservesFabricOutsideNativeDesignBounds() {
+        val fabric=Color.rgb(240,220,190);val outside=Color.rgb(100,110,120)
+        val pattern=EmbPattern(listOf(Stitch(-20,-20,Command.STITCH),Stitch(20,20,Command.STITCH)),listOf(EmbThread(Color.RED)))
+        for(scale in listOf(.5f,1.6f,3.2f)) {
+            val p=plan.copy(width=200,height=200,unitsToPixels=scale,hoopWidth=200f,hoopHeight=200f,background=outside,fabric=fabric)
+            val image=renderViewerRealistic(pattern,p){false}
+            try {
+                if(image.nativeCrop==null) {
+                    assertEquals(fabric,image.bitmap.getPixel(100,65))
+                    assertEquals(fabric,image.bitmap.getPixel(100,80))
+                    assertEquals(outside,image.bitmap.getPixel(0,0))
+                }
+            } finally {image.close()}
+        }
+    }
+
     @Test fun bundledPesAndModelAreByteIdenticalAfterRendering() {
         val bytes=RuntimeEnvironment.getApplication().assets.open("samples/sample_02_lightning.pes").use { it.readBytes() }
         val source=bytes.copyOf();val pattern=PatternReader.read(bytes,"sample_02_lightning.pes")
@@ -59,12 +75,12 @@ class ViewerRealisticPreviewTest {
         val huge=EmbPattern(listOf(Stitch(-1000,-2000,Command.STITCH),Stitch(2000,3000,Command.STITCH)),listOf(EmbThread(Color.RED)))
         val portrait=ViewerRealisticPlan(1080,2400,.92f,0f,0f,1000f,1000f,Color.WHITE,Color.WHITE)
         val native=nativePlan(huge,portrait)
-        assertEquals(3200,native.width);assertEquals(3200,native.height)
+        assertEquals(1600,native.width);assertEquals(1600,native.height)
         assertEquals(-500.0,native.leftUnits);assertEquals(-500.0,native.topUnits)
-        assertEquals(40_960_000L,native.outputBytes)
+        assertEquals(10_240_000L,native.outputBytes)
         assertEquals(native.width,nativePlan(huge,portrait.copy(width=2400,height=1080)).width)
         val small=EmbPattern(listOf(Stitch(-250,-250,Command.STITCH),Stitch(250,250,Command.STITCH)),listOf(EmbThread(Color.RED)))
-        assertEquals(1600,nativePlan(small,portrait).width)
+        assertEquals(800,nativePlan(small,portrait).width)
         val outside=EmbPattern(listOf(Stitch(900,900,Command.STITCH),Stitch(1000,1000,Command.STITCH)),listOf(EmbThread(Color.RED)))
         assertFalse(nativePlan(outside,portrait).renderContent)
     }

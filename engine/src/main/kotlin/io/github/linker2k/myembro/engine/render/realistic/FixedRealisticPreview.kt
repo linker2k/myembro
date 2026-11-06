@@ -5,8 +5,8 @@ import kotlin.math.*
 
 /** Resolution policy only; the e441a132 stitch shape/filter/composite equations are unchanged. */
 object FixedRealisticPreview {
-    // Owner decision2026-11-06: e441a132 at32 retains texture and box-resolved means across16/8/4.43.
-    const val PIXELS_PER_MM = 32.0
+    // 사용자 결정 2026-11-06: docs/realistic-speed-experiment.md result B (16px/mm, serial).
+    const val PIXELS_PER_MM = 16.0
     val svgScale get()=PIXELS_PER_MM/ThreadShape.SVG_PIXELS_PER_MM
     val dpi get()=(PIXELS_PER_MM*25.4).roundToInt()
 
@@ -17,19 +17,20 @@ object FixedRealisticPreview {
     }
 
     /** Exact rectangular area weights in native-pixel coordinates, averaging opaque sRGB bytes.
-     * left/top locate the viewport in the unchanged32px/mm original. Out-of-source area is background.
-     * row buffers are caller-owned/reused. No Android scaling, gamma change or renderer equation change.
+     * left/top locate the viewport in the fixed native-density original. Out-of-source area is background.
+     * row buffers are caller-owned/reused. backgroundRow optionally supplies the already-painted
+     * output backdrop, preserving hoop fabric outside a bounded native source. No Android scaling, gamma change or renderer equation change.
      */
     fun areaAverage(sourceWidth:Int,sourceHeight:Int,readRow:(Int,IntArray)->Unit,
                     left:Double,top:Double,step:Double,width:Int,height:Int,background:Int=-1,
-                    isCancelled:()->Boolean={false},onRow:(Int,IntArray)->Unit) {
+                    isCancelled:()->Boolean={false},backgroundRow:((Int,IntArray)->Unit)?=null,onRow:(Int,IntArray)->Unit) {
         require(sourceWidth>0&&sourceHeight>0&&width>0&&height>0)
         require(left.isFinite()&&top.isFinite()&&step.isFinite()&&step>=1.0)
-        val src=IntArray(sourceWidth);val out=IntArray(width)
+        val src=IntArray(sourceWidth);val out=IntArray(width);val backdrop=IntArray(width){background}
         val red=DoubleArray(width);val green=DoubleArray(width);val blue=DoubleArray(width)
         fun cancelled(){if(isCancelled())throw java.util.concurrent.CancellationException("Preview cancelled")}
         for(y in 0 until height) {
-            cancelled();red.fill(0.0);green.fill(0.0);blue.fill(0.0)
+            cancelled();backgroundRow?.invoke(y,backdrop);red.fill(0.0);green.fill(0.0);blue.fill(0.0)
             val y0=top+y*step;val y1=top+(y+1)*step
             for(sy in floor(y0).toInt() until ceil(y1).toInt()) {
                 cancelled();val insideY=sy in 0 until sourceHeight
@@ -39,7 +40,7 @@ object FixedRealisticPreview {
                     val x0=left+x*step;val x1=left+(x+1)*step
                     for(sx in floor(x0).toInt() until ceil(x1).toInt()) {
                         val weight=wy*(min(x1,sx+1.0)-max(x0,sx.toDouble()))
-                        val c=if(insideY&&sx in 0 until sourceWidth)src[sx] else background
+                        val c=if(insideY&&sx in 0 until sourceWidth)src[sx] else backdrop[x]
                         red[x]+=weight*(c ushr 16 and 255);green[x]+=weight*(c ushr 8 and 255);blue[x]+=weight*(c and 255)
                     }
                 }

@@ -74,6 +74,17 @@ private class AndroidThreadAlpha:ThreadAlphaRasterizer,AutoCloseable {
     override fun close() { bitmap?.recycle();bitmap=null }
 }
 
+/** Same background/rounded hoop fabric for the native source and the resolved viewport. */
+private fun drawViewerFabric(canvas:Canvas,plan:ViewerRealisticPlan) {
+    canvas.drawColor(plan.background)
+    val fit=plan.unitsToPixels
+    val fabric=Paint().apply { color=plan.fabric }
+    canvas.drawRoundRect(((plan.hoopCenterX-plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
+        ((plan.hoopCenterY-plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),
+        ((plan.hoopCenterX+plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
+        ((plan.hoopCenterY+plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),60f*fit,60f*fit,fabric)
+}
+
 /** Render only: never writes pattern, source bytes, sewing gates or export settings. */
 private fun renderNativeViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticPlan,isCancelled:()->Boolean):ViewerRealisticImage {
     require(plan.width>0&&plan.height>0&&plan.unitsToPixels>0)
@@ -81,13 +92,7 @@ private fun renderNativeViewerRealistic(pattern:EmbPattern,plan:ViewerRealisticP
     val bitmap=Bitmap.createBitmap(plan.width,plan.height,Bitmap.Config.ARGB_8888).apply { density=Bitmap.DENSITY_NONE }
     try {
         val canvas=Canvas(bitmap)
-        canvas.drawColor(plan.background)
-        val fit=plan.unitsToPixels
-        val fabric=Paint().apply { color=plan.fabric }
-        if(plan.renderContent)canvas.drawRoundRect(((plan.hoopCenterX-plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
-            ((plan.hoopCenterY-plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),
-            ((plan.hoopCenterX+plan.hoopWidth/2-plan.leftUnits)*fit).toFloat(),
-            ((plan.hoopCenterY+plan.hoopHeight/2-plan.topUnits)*fit).toFloat(),60f*fit,60f*fit,fabric)
+        drawViewerFabric(canvas,plan)
         var scratch=IntArray(0)
         var maxTile=0
         AndroidThreadAlpha().use { alpha ->
@@ -177,10 +182,11 @@ private fun resolveViewerRealistic(pattern:EmbPattern,base:ViewerRealisticPlan,o
         val bitmap=FixedRealisticPreview.output(ppm,master.bitmap) {
             val target=Bitmap.createBitmap(output.width,output.height,Bitmap.Config.ARGB_8888).apply { density=Bitmap.DENSITY_NONE }
             try {
+                drawViewerFabric(Canvas(target),output)
                 FixedRealisticPreview.areaAverage(master.bitmap.width,master.bitmap.height,
                     { y,row->master.bitmap.getPixels(row,0,row.size,0,y,row.size,1) },left,top,
                     FixedRealisticPreview.PIXELS_PER_MM/ppm,output.width,output.height,output.background,
-                    isCancelled) { y,row->target.setPixels(row,0,row.size,0,y,row.size,1) }
+                    isCancelled,backgroundRow={y,row->target.getPixels(row,0,row.size,0,y,row.size,1)}) { y,row->target.setPixels(row,0,row.size,0,y,row.size,1) }
                 target
             }catch(failure:Throwable){target.recycle();throw failure}
         }

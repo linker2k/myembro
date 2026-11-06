@@ -47,7 +47,16 @@ class FixedRealisticPreviewTest {
             FixedRealisticPreview.areaAverage(pixels,3,2,0.0,0.0,1.5,2,1))
         assertContentEquals(intArrayOf(pixels[1],pixels[2]),FixedRealisticPreview.areaAverage(pixels,3,2,1.0,0.0,1.0,2,1))
     }
+    @Test fun backdropRowsPreserveFabricOutsideTheBoundedSource() {
+        val rows=mutableListOf<IntArray>()
+        FixedRealisticPreview.areaAverage(1,1,{_,row->row[0]=0xff000000.toInt()},
+            -1.0,0.0,1.0,3,1,backgroundRow={_,row->
+                row[0]=0xff112233.toInt();row[1]=0xff445566.toInt();row[2]=0xff778899.toInt()
+            },onRow={_,row->rows+=row.copyOf()})
+        assertContentEquals(intArrayOf(0xff112233.toInt(),0xff000000.toInt(),0xff778899.toInt()),rows.single())
+    }
     @Test fun atOrAboveNativeDensityNeverCallsDownsampler() {
+        assertEquals(16.0,FixedRealisticPreview.PIXELS_PER_MM)
         val source=intArrayOf(1,2,3);var calls=0
         for(ppm in listOf(FixedRealisticPreview.PIXELS_PER_MM,FixedRealisticPreview.PIXELS_PER_MM*2)) {
             assertSame(source,FixedRealisticPreview.output(ppm,source){calls++;error("must not downsample")})
@@ -59,7 +68,7 @@ class FixedRealisticPreviewTest {
     }
     @Test fun outputResolutionChangesPatchMeanByAtMostOneCodeValue() {
         val (source,sw,sh)=FixedPreviewFixture.native(FixedPreviewFixture.patch(),FixedPreviewFixture.widthMm,FixedPreviewFixture.heightMm)
-        val means=listOf(4.43,8.0,16.0,FixedRealisticPreview.PIXELS_PER_MM).map { ppm->
+        val means=listOf(4.43,8.0,FixedRealisticPreview.PIXELS_PER_MM).map { ppm->
             val w=ceil(FixedPreviewFixture.widthMm*ppm).toInt();val h=ceil(FixedPreviewFixture.heightMm*ppm).toInt()
             val a=FixedRealisticPreview.output(ppm,source){FixedRealisticPreview.areaAverage(source,sw,sh,0.0,0.0,FixedRealisticPreview.PIXELS_PER_MM/ppm,w,h)}
             FixedPreviewFixture.mean(a,w,ppm,doubleArrayOf(10.0,34.0,7.0,25.0)).first.also { println("BOX_MEAN ppm=$ppm mean=$it") }
@@ -82,7 +91,7 @@ object FixedRealisticMeasurement {
             for((name,segments,size)in scenes) {
                 val started=System.nanoTime();val (source,sw,sh)=FixedPreviewFixture.native(segments,size.first,size.second)
                 val renderMs=(System.nanoTime()-started)/1e6
-                for(ppm in listOf(4.43,8.0,16.0,FixedRealisticPreview.PIXELS_PER_MM)) {
+                for(ppm in listOf(4.43,8.0,FixedRealisticPreview.PIXELS_PER_MM)) {
                     val w=ceil(size.first*ppm).toInt();val h=ceil(size.second*ppm).toInt();var calls=0
                     val then=System.nanoTime()
                     val a=FixedRealisticPreview.output(ppm,source){calls++;FixedRealisticPreview.areaAverage(source,sw,sh,0.0,0.0,FixedRealisticPreview.PIXELS_PER_MM/ppm,w,h)}
