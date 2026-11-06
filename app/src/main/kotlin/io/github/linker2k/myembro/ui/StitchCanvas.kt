@@ -3,7 +3,17 @@ package io.github.linker2k.myembro.ui
 
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Rect
+import kotlin.math.roundToInt
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -27,6 +37,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.res.stringResource
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.engine.sewout.Highlight
@@ -41,6 +53,7 @@ private const val THREAD_WIDTH = 4f
  * Draws the design sewn up to [progress] inside the [hoop] outline. Pinch to zoom, drag to pan,
  * double-tap to fit. Coordinates are drawn in design units (0.1 mm) so thread width scales with zoom.
  */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun StitchCanvas(
     data: RenderData,
@@ -57,6 +70,7 @@ fun StitchCanvas(
     focusRequest: Int = 0,
     blockerHighlights: List<Highlight> = emptyList(),
     onBlockerTap: ((Highlight) -> Unit)? = null,
+    realistic: Boolean = false,
 ) {
     val fabricColor = data.pattern.fabricColorArgb ?: MaterialTheme.colorScheme.surface.toArgb()
     val travelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f).toArgb()
@@ -110,8 +124,17 @@ fun StitchCanvas(
     val fabricPaint = remember { Paint().apply { style = Paint.Style.FILL } }
     val needlePaint = remember(needleColor) { Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = needleColor } }
 
+    val rasterFit = if(canvasSize.width>0&&canvasSize.height>0) viewerCanvasFit(bounds,
+        frame?.width?.toFloat() ?: hoop.widthMm*10f,frame?.height?.toFloat() ?: hoop.heightMm*10f,
+        preservePlacement,canvasSize.width.toFloat(),canvasSize.height.toFloat()) else 0f
+    val preview=rememberViewerRealistic(realistic,data,canvasSize,rasterFit,cx,cy,
+        frame?.width?.toFloat() ?: hoop.widthMm*10f,frame?.height?.toFloat() ?: hoop.heightMm*10f,backgroundColor,fabricColor,zoom,pan.x,pan.y)
+    val realisticLabel=stringResource(R.string.viewer_realistic)
+    val bitmapPaint=remember { Paint() } // Never ask Android to shrink/filter the preview.
+    Box(modifier.clipToBounds().onSizeChanged { canvasSize=it }.semantics { testTagsAsResourceId=true }) {
     Canvas(
-        modifier.clipToBounds().onSizeChanged { canvasSize = it }.semantics {
+        Modifier.fillMaxSize().testTag(if(preview.image!=null) "viewer_realistic_image" else "viewer_stitch_canvas").semantics {
+            if(preview.image!=null)stateDescription=realisticLabel
             if (blockerAreas.isNotEmpty()) contentDescription = blockerDescription
             else if (highlightArea != null) contentDescription = highlightDescription
         }
@@ -163,6 +186,38 @@ fun StitchCanvas(
             hoopPaint.strokeWidth = 3f / scale * 2
             canvas.drawRoundRect(cx - hoopW / 2, cy - hoopH / 2, cx + hoopW / 2, cy + hoopH / 2, 60f, 60f, hoopPaint)
 
+            val finished=preview.image
+            if(realistic&&finished!=null&&!finished.bitmap.isRecycled) {
+                val plan=finished.plan
+                canvas.save()
+                // Cancel only our world transform; retain the Compose parent's placement/clip.
+                canvas.translate(cx,cy);canvas.scale(1f/scale,1f/scale)
+                canvas.translate(-size.width/2f-pan.x,-size.height/2f-pan.y)
+                val crop=finished.nativeCrop
+                // A pending viewport keeps the prior image at its old world-space plan.
+                val displayLeft=((plan.leftUnits-cx)*scale+size.width/2f+pan.x).toFloat()
+                val displayTop=((plan.topUnits-cy)*scale+size.height/2f+pan.y).toFloat()
+                val displayWidth=plan.width*scale/plan.unitsToPixels
+                val displayHeight=plan.height*scale/plan.unitsToPixels
+                if(crop==null) {
+                    if(preview.current)canvas.drawBitmap(finished.bitmap,0f,0f,bitmapPaint)
+                    else canvas.drawBitmap(finished.bitmap,null,RectF(displayLeft,displayTop,
+                        displayLeft+displayWidth,displayTop+displayHeight),bitmapPaint)
+                } else {
+                    val requestedX=crop.left.roundToInt();val requestedY=crop.top.roundToInt()
+                    val requestedW=crop.width().roundToInt().coerceIn(1,plan.width)
+                    val requestedH=crop.height().roundToInt().coerceIn(1,plan.height)
+                    val l=maxOf(0,requestedX);val t=maxOf(0,requestedY)
+                    val r=minOf(finished.bitmap.width,requestedX+requestedW)
+                    val b=minOf(finished.bitmap.height,requestedY+requestedH)
+                    if(r>l&&b>t)canvas.drawBitmap(finished.bitmap,Rect(l,t,r,b),
+                        RectF(displayLeft+(l-requestedX)*displayWidth/requestedW,displayTop+(t-requestedY)*displayHeight/requestedH,
+                            displayLeft+(r-requestedX)*displayWidth/requestedW,displayTop+(b-requestedY)*displayHeight/requestedH),bitmapPaint)
+                }
+                canvas.restore()
+                // The still contains fabric, not UI overlays. Keep the hoop ring above the image.
+                canvas.drawRoundRect(cx-hoopW/2,cy-hoopH/2,cx+hoopW/2,cy+hoopH/2,60f,60f,hoopPaint)
+            } else {
             // Keep threads visible when zoomed far out.
             stitchPaint.strokeWidth = maxOf(THREAD_WIDTH, 1.2f / scale)
             val sewn = data.segmentsUpTo(data.stitchLineEnds, progress)
@@ -171,6 +226,8 @@ fun StitchCanvas(
                 val end = minOf(run.end, sewn)
                 stitchPaint.color = run.color
                 canvas.drawLines(data.stitchLines, run.start * 4, (end - run.start) * 4, stitchPaint)
+            }
+
             }
 
             if (showJumps) {
@@ -208,4 +265,9 @@ fun StitchCanvas(
             canvas.restore()
         }
     }
+    if(preview.busy) CircularProgressIndicator(Modifier.align(Alignment.Center).testTag("viewer_realistic_loading"))
+    if(preview.failed) Text(stringResource(R.string.viewer_realistic_failed),
+        Modifier.align(Alignment.BottomCenter).padding(12.dp),color=MaterialTheme.colorScheme.error)
+    }
+
 }
