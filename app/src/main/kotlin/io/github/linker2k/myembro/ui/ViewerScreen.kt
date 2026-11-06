@@ -250,7 +250,7 @@ private fun EmptyState(error: String?, onOpenFile: () -> Unit) {
 @Composable
 private fun Viewer(vm: ViewerViewModel, data: RenderData) {
     var fitRequest by remember { mutableIntStateOf(0) }
-    var realistic by remember(data) { mutableStateOf(false) }
+    var realistic by remember(data) { mutableStateOf(true) }
     LaunchedEffect(vm.playing) { if(vm.playing)realistic=false }
 
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { vm.pausePlayback() }

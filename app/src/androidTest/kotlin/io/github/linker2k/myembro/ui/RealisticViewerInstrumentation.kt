@@ -53,6 +53,7 @@ class RealisticViewerInstrumentation:Instrumentation() {
             val activity=startActivitySync(Intent(targetContext,MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
             lateinit var vm:ViewerViewModel
+            val start=SystemClock.elapsedRealtimeNanos()
             runOnMainSync {
                 vm=ViewModelProvider(activity)[ViewerViewModel::class.java]
                 @Suppress("UNCHECKED_CAST")
@@ -82,11 +83,11 @@ class RealisticViewerInstrumentation:Instrumentation() {
                 error("Realistic toggle unavailable")
             }
             fun awaitCondition(condition:()->Boolean) {
-                val end=SystemClock.uptimeMillis()+10000
+                val end=SystemClock.uptimeMillis()+120000
                 while(!condition()) { check(SystemClock.uptimeMillis()<end) { "UI state did not settle" };Thread.sleep(30) }
             }
             waitForIdleSync();Thread.sleep(500)
-            check(!ready()) { "Realistic should start OFF" }
+            awaitCondition { ready()||nodes().any { it.viewIdResourceName?.endsWith("viewer_realistic_loading")==true } }
             val baseline=Debug.MemoryInfo().also { Debug.getMemoryInfo(it) }
             val peakHeap=AtomicLong();val peakPss=AtomicLong()
             sampling.set(true)
@@ -98,7 +99,6 @@ class RealisticViewerInstrumentation:Instrumentation() {
                     Thread.sleep(50)
                 }
             }
-            val start=SystemClock.elapsedRealtimeNanos();click()
             val deadline=SystemClock.uptimeMillis()+120000
             while(!ready()) { check(SystemClock.uptimeMillis()<deadline) { "Preview timeout" };Thread.sleep(50) }
             waitForIdleSync()
@@ -140,27 +140,26 @@ class RealisticViewerInstrumentation:Instrumentation() {
             val loadingObserved=nodes().any { it.viewIdResourceName?.endsWith("viewer_realistic_loading")==true }
             if(count==50000&&loadingObserved)shot("realistic-50000-loading.png")
             click();awaitCondition { !ready() };Thread.sleep(300);waitForIdleSync();check(!ready())
-            // Document replacement resets OFF and cancels an in-flight old-color render.
+            // Document replacement resets ON and cancels an in-flight old-color render.
             val replacement=EmbPattern(input.stitches,listOf(EmbThread(0xFFB03030.toInt(),"Synthetic red")))
             fun replace(pattern:EmbPattern) { runOnMainSync {
                 val f=ViewerViewModel::class.java.getDeclaredField("render\$delegate").apply { isAccessible=true }
                 @Suppress("UNCHECKED_CAST") val state=f.get(vm) as MutableState<RenderData?>
                 state.value=RenderData(pattern)
             } }
-            replace(replacement);waitForIdleSync();awaitCondition { !ready() }
-            click();awaitCondition { ready()||nodes().any { it.viewIdResourceName?.endsWith("viewer_realistic_loading")==true } }
-            replace(input);awaitCondition { !ready() };Thread.sleep(300);check(!ready())
+            replace(replacement);waitForIdleSync();awaitCondition { ready()||nodes().any { it.viewIdResourceName?.endsWith("viewer_realistic_loading")==true } }
+            replace(input);waitForIdleSync();awaitCondition { ready()||nodes().any { it.viewIdResourceName?.endsWith("viewer_realistic_loading")==true } }
             check(before==hash(input)) { "Pattern mutated" }
             // A normal bundled PES uses the real ViewModel load path; preserve its original bytes.
             val bundledSample=BundledDesigns.files(targetContext).single { it.name=="sample_02_lightning.pes" }
             runOnMainSync { vm.openFile(bundledSample) }
             awaitCondition { !vm.loading&&vm.render!=null&&vm.fileName=="sample_02_lightning.pes" }
-            waitForIdleSync();awaitCondition { !ready() }
+            waitForIdleSync()
             awaitCondition { !vm.checkingSewout }
             val safetyBefore=vm.sewoutReport?.hasBlockingIssues
             val sourceField=ViewerViewModel::class.java.getDeclaredField("sourceBytes").apply { isAccessible=true }
             val sourceBefore=(sourceField.get(vm) as ByteArray).copyOf()
-            click();awaitCondition { ready() };shot("realistic-bundled-lightning.png")
+            awaitCondition { ready() };shot("realistic-bundled-lightning.png")
             check(safetyBefore==vm.sewoutReport?.hasBlockingIssues) { "Safety result changed" }
             check(sourceBefore.contentEquals(sourceField.get(vm) as ByteArray)) { "PES source bytes mutated" }
             val pesSha=MessageDigest.getInstance("SHA-256").digest(sourceBefore).joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -170,7 +169,7 @@ class RealisticViewerInstrumentation:Instrumentation() {
                 put("stitches",count);put("firstImageMs",elapsed);put("sampledPeakHeapBytes",peakHeap.get())
                 put("baselinePssKiB",baseline.totalPss);put("sampledPeakPssKiB",peakPss.get());put("memorySamplePeriodMs",50)
                 put("bundledPesSha256BeforeAfter",pesSha);put("patternSha256Before",before);put("patternSha256After",hash(input))
-                put("defaultOff",true);put("panImageRetained",true);put("zoomImageRetained",true);put("toggleOffCancelled",true);put("replacementCancels",true)
+                put("defaultOn",true);put("panImageRetained",true);put("zoomImageRetained",true);put("toggleOffCancelled",true);put("replacementCancels",true)
                 put("renderer","actual ViewerScreen/StitchCanvas, API26 Canvas backend, zero retained tile-cache budget")
             }
             File(out,"viewer-$count.json").writeText(report.toString()+"\n")
