@@ -463,6 +463,8 @@ There are three steps: crop, mode and result. Sharing a picture to myembro from 
 2. Fit the part you want inside the frame. You can zoom out so the whole picture shows.
 3. Tap **Next**.
 
+Any phone with Android 8.0 or later can pick pictures. On older phones **Photos** may open the file screen instead; you pick the same way.
+
 ### Step 2: Mode
 
 ![Color drawing mode](../images/manual/en/06b-photo-color.png)
