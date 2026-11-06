@@ -289,3 +289,18 @@ tasks.register<JavaExec>("probeRealisticCoverage") {
     args(providers.gradleProperty("previewCoverageRoot").orElse("/tmp/myembro-realistic-cpu-stage2/coverage-oracle").get(),
         providers.gradleProperty("previewCoverageOutput").orElse("/tmp/myembro-realistic-cpu-stage2/cairo-coverage").get())
 }
+
+// User-approved display contract (2026-11-06), deliberately red until the renderer is fixed.
+// Kept out of ordinary test/check/CI; assertions remain active in this explicit acceptance task.
+tasks.test { exclude("**/RealisticBrightnessAcceptanceTest*") }
+tasks.register<Test>("realisticBrightnessAcceptance") {
+    group = "verification"
+    description = "Assert synthetic same-thread order, resolution and row-end brightness invariance"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter { includeTestsMatching("*RealisticBrightnessAcceptanceTest") }
+    systemProperty("java.awt.headless", "true")
+    maxHeapSize = "512m"
+    testLogging { events("failed", "passed"); showStandardStreams = true }
+    outputs.upToDateWhen { false }
+}
