@@ -57,3 +57,5 @@ adb -s emulator-5556 shell am instrument -w io.github.linker2k.myembro.test/io.g
 ```
 
 JVM output: `BUILD SUCCESSFUL in 1s`, 8 tests, no failures; low-contrast witness asserts three distinct masks/PES, high-contrast control asserts one identical mask, plus six existing adapter/legacy regressions. APK/test APK build: `BUILD SUCCESSFUL in 1s` on the final incremental run. Logs: `/tmp/myembro-filter-difference-tests.log`, `/tmp/myembro-filter-difference-build.log`, `/tmp/myembro-filter-difference-smoke.log`.
+
+> 2026-11-07: The instrumentation was removed after the feature shipped; it was a one-time proof and no longer compiled (`changeDetail` was removed in baca489c). Ongoing coverage is `engine/.../image/PhotoCorrectionDifferenceTest.kt` in CI. The results above stay as the record.

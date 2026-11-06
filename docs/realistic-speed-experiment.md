@@ -70,6 +70,6 @@ python3 tools/realistic-speed/measure.py \
   --out /tmp/myembro-realistic-speed/final
 ```
 
-At this base, unrelated `PhotoFilterDifferenceInstrumentation.kt` still calls removed `changeDetail(0)`. For the local instrumentation build only, that single call was temporarily omitted and then restored byte-for-byte. It is not executed by this runner, and no workaround change is committed. The existing main issue must be fixed separately for an unmodified full androidTest build.
+At this base, unrelated `PhotoFilterDifferenceInstrumentation.kt` still calls removed `changeDetail(0)`. For the local instrumentation build only, that single call was temporarily omitted and then restored byte-for-byte. It is not executed by this runner, and no workaround change is committed. The existing main issue must be fixed separately for an unmodified full androidTest build. (2026-11-07: that instrumentation was removed; see docs/qa/photo-filter-difference.md.)
 
 Build output: `BUILD SUCCESSFUL`; `ViewerRealisticPreviewTest`: 6 tests, 0 failures, 0 errors. Raw build log: `/tmp/myembro-realistic-speed-final-build.log`.
