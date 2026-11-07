@@ -295,7 +295,7 @@ Tap the hoop chip to choose a hoop.
 
 - If you leave without saving, **Save your work?** appears. Choose **Save**, **Discard** or **Cancel**.
 - Your work is saved as a draft even if the app closes. Next time, **Restore unfinished work?** appears.
-- A design blocked by the sew-out check cannot be saved as PES (chapter 9).
+- A design blocked by the sew-out check cannot be saved in any format (chapter 9).
 
 ## 4. Block editing
 
@@ -616,10 +616,10 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
 1. Tap a design in the design list.
 2. Tap **Play**, or drag the stitch preview, to see the sewing order.
 3. Tap **Edit** to change it, or **Send to USB** to send it.
-4. Tap **Export design** to choose how to export.
-   - **Save as PES**: saves to a folder on your phone or connected storage.
-   - **Share PES file**: sends a copy using another app.
-   - **Export to USB**: sends it over USB (chapter 10).
+4. Tap **Export design**, pick a format (PES, DST, JEF, EXP or VP3), then choose how to export.
+   - **Save**: saves to a folder on your phone or connected storage.
+   - **Share file**: sends a copy using another app.
+   - **Export to USB**: always sends PES over USB (chapter 10).
 
 ![Export design sheet](../images/manual/en/08d-export-sheet.png)
 
