@@ -943,6 +943,12 @@
       0,
       "수정",
       "Edit"
+    ],
+    [
+      "^실사$|^Realistic$",
+      0,
+      "실사",
+      "Realistic"
     ]
   ],
   "09-sewout": [
@@ -1171,6 +1177,32 @@
       0,
       "적용",
       "Apply"
+    ]
+  ],
+  "08d-export-sheet": [
+    [
+      "^PES$",
+      0,
+      "형식",
+      "Format"
+    ],
+    [
+      "^PES로 저장$|^Save as PES$",
+      0,
+      "PES로 저장",
+      "Save as PES"
+    ],
+    [
+      "^PES 파일 공유$|^Share PES file$",
+      0,
+      "PES 파일 공유",
+      "Share PES file"
+    ],
+    [
+      "^USB로 내보내기$|^Export to USB$",
+      0,
+      "USB로 내보내기",
+      "Export to USB"
     ]
   ]
 }

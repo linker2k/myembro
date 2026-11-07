@@ -599,17 +599,18 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
 | 1 | Home | Goes to the home screen. |
 | 2 | Open file | Opens another file. |
 | 3 | Export design | Opens the export sheet. |
-| 4 | Fit to screen | Fits the whole design on the screen. |
-| 5 | Sewing check badge | Pass or Blocked. Tap it to open the sew-out check (chapter 9). |
-| 6 | Stitch preview | Drag to show the design up to that stitch. |
-| 7 | Play | Plays the sewing in order. |
-| 8 | Stitches | Total stitches. The color count is next to it. |
-| 9 | Est. time | Roughly how long it takes. |
-| 10 | Size | The design size. |
-| 11 | Center | Position from the hoop center, and whether it fits the hoop. |
-| 12 | Thread order | The order of thread changes. |
-| 13 | Send to USB | Sends it to the machine (chapter 10). |
-| 14 | Edit | Opens it in the editor. |
+| 4 | Realistic | Shows how the design looks in thread; it is on by default and turns off when tapped. |
+| 5 | Fit to screen | Fits the whole design on the screen. |
+| 6 | Sewing check badge | Pass or Blocked. Tap it to open the sew-out check (chapter 9). |
+| 7 | Stitch preview | Drag to show the design up to that stitch. |
+| 8 | Play | Plays the sewing in order. |
+| 9 | Stitches | Total stitches. The color count is next to it. |
+| 10 | Estimated time | Roughly how long it takes. |
+| 11 | Size | The design size. |
+| 12 | Center | Position from the hoop center, and whether it fits the hoop. |
+| 13 | Thread order | The order of thread changes. |
+| 14 | Send to USB | Sends it to the machine (chapter 10). |
+| 15 | Edit | Opens it in the editor. |
 
 **How to use it**
 
@@ -622,6 +623,13 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
    - **Export to USB**: always sends PES over USB (chapter 10).
 
 ![Export design sheet](../images/manual/en/08d-export-sheet.png)
+
+| No. | Name | What it does |
+|---|---|---|
+| 1 | Format | Chooses the file format for saving or sharing. |
+| 2 | Save as PES | Saves in the selected format to your phone or connected storage. |
+| 3 | Share PES file | Sends a copy in the selected format using another app. |
+| 4 | Export to USB | Always sends PES to USB (chapter 10). |
 
 **Good to know**
 
