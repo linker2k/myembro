@@ -612,6 +612,10 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
 | 14 | Send to USB | Sends it to the machine (chapter 10). |
 | 15 | Edit | Opens it in the editor. |
 
+![Zoomed realistic preview](../images/manual/en/08c2-realistic-zoom.png)
+
+Spread two fingers to zoom in on the realistic preview and see the thread texture.
+
 **How to use it**
 
 1. Tap a design in the design list.
