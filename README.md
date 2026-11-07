@@ -28,7 +28,8 @@ Free and open source.
 - 🔎 **Find free designs.** A list of free design sites with their terms of use.
 - ✂️ **Edit.** Place, resize and rotate designs and text on the hoop.
 - 🧩 **Block editing.** A hand-set fill angle shows as thin slanted lines, and blocks you do not want can be emptied so they are not sewn.
-- 👀 **View.** Open PES, PEC and DST files. See thread colors, play the stitches and check stitch count, size and time.
+- 👀 **View.** Open PES, PEC and DST files. See them as stitched thread (Realistic), play the stitches and check stitch count, size and time.
+- 📤 **Save in other formats.** Save and share as PES, DST, JEF, EXP or VP3.
 - 🔌 **Send to the machine.** 58 Brother embroidery models from the US and Korea. Send PES over a USB cable (SE400) or a USB flash drive.
 - 💾 **Back up.** Save designs, projects, fonts and settings in one ZIP and restore them later.
 
