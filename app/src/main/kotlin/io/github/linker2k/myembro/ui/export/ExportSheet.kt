@@ -46,7 +46,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.linker2k.myembro.R
-import io.github.linker2k.myembro.ui.theme.FormatBadge
+import io.github.linker2k.myembro.engine.io.ExportFormat
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.testTag
 import io.github.linker2k.myembro.ui.theme.MyembroShapes
 import io.github.linker2k.myembro.ui.EmbroideryTheme
 
@@ -59,8 +62,8 @@ import io.github.linker2k.myembro.ui.EmbroideryTheme
 @Composable
 fun ExportSheet(
     onDismissRequest: () -> Unit,
-    onSavePes: () -> Unit,
-    onShare: () -> Unit,
+    onSaveFile: (ExportFormat) -> Unit,
+    onShare: (ExportFormat) -> Unit,
     onExportUsb: (() -> Unit)? = null,
     designName: String? = null,
     busy: Boolean = false,
@@ -69,6 +72,7 @@ fun ExportSheet(
     preview: Bitmap? = null,
     designSummary: String? = null,
 ) {
+    var format by remember { mutableStateOf(ExportFormat.PES) }
     var actionTaken by remember { mutableStateOf(false) }
     val available = enabled && !busy && !actionTaken
     fun choose(action: () -> Unit) {
@@ -89,6 +93,16 @@ fun ExportSheet(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(stringResource(R.string.export_sheet_title), style = MaterialTheme.typography.headlineSmall)
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                    ExportFormat.entries.forEach { item ->
+                        Column(Modifier.weight(1f),horizontalAlignment=Alignment.CenterHorizontally) {
+                            FilterChip(selected=format==item,onClick={format=item},enabled=available,
+                                modifier=Modifier.fillMaxWidth().testTag("export_format_${item.name}"),
+                                label={Text(item.name,Modifier.fillMaxWidth(),textAlign=TextAlign.Center)})
+                            Text(item.brand,style=MaterialTheme.typography.labelSmall,maxLines=1,overflow=TextOverflow.Ellipsis)
+                        }
+                    }
+                }
                 Card(
                     shape = MyembroShapes.Card,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -102,12 +116,10 @@ fun ExportSheet(
                                 tint = MaterialTheme.colorScheme.primary)
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(designName?.substringBeforeLast('.')?.plus(".pes")
-                                ?: stringResource(R.string.export_default_name) + ".pes",
+                            Text(format.fileName(designName ?: stringResource(R.string.export_default_name)),
                                 style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             if (designSummary != null) Text(designSummary, style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            FormatBadge(stringResource(R.string.export_sheet_format))
                         }
                     }
                 }
@@ -118,10 +130,10 @@ fun ExportSheet(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.export_sheet_busy), style = MaterialTheme.typography.bodySmall)
                 } else if (!enabled) Text(stringResource(R.string.export_sheet_no_design), style = MaterialTheme.typography.bodySmall)
-                ExportAction(Icons.Default.SaveAlt, stringResource(R.string.export_sheet_save),
-                    stringResource(R.string.export_sheet_save_hint), available, primary = true) { choose(onSavePes) }
-                ExportAction(Icons.Default.Share, stringResource(R.string.export_sheet_share),
-                    stringResource(R.string.export_sheet_share_hint), available) { choose(onShare) }
+                ExportAction(Icons.Default.SaveAlt, stringResource(R.string.export_sheet_save,format.name),
+                    stringResource(R.string.export_sheet_save_hint), available, primary = true) { choose {onSaveFile(format)} }
+                ExportAction(Icons.Default.Share, stringResource(R.string.export_sheet_share,format.name),
+                    stringResource(R.string.export_sheet_share_hint), available) { choose {onShare(format)} }
                 ExportAction(Icons.Default.Usb, stringResource(R.string.export_sheet_usb),
                     stringResource(if (onExportUsb == null) R.string.export_sheet_usb_library_hint else R.string.export_sheet_usb_hint),
                     available && onExportUsb != null) { onExportUsb?.let(::choose) }

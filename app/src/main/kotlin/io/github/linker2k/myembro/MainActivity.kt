@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
                             clipData = ClipData.newRawUri(context.getString(R.string.share), shareUri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_pes)))
+                        context.startActivity(Intent.createChooser(send, context.getString(R.string.export_sheet_share,viewer.shareFormat.name)))
                     } catch (error: Exception) {
                         viewer.reportExportFailure(error)
                     }
@@ -135,8 +135,8 @@ class MainActivity : ComponentActivity() {
             }
             // Save/share run only after the machine check; warnings let the user continue or cancel.
             var preflight by remember { mutableStateOf<Pair<List<String>, () -> Unit>?>(null) }
-            val checked = { action: () -> Unit ->
-                val warnings = viewer.preflight()
+            val checked = { format: io.github.linker2k.myembro.engine.io.ExportFormat, action: () -> Unit ->
+                val warnings = viewer.preflight(format)
                 if (warnings.isEmpty()) action() else preflight = warnings to action
             }
             val back: () -> Unit = {
@@ -278,9 +278,9 @@ class MainActivity : ComponentActivity() {
                     Screen.VIEWER -> ViewerScreen(
                         viewer,
                         onOpenFile = openDocument,
-                        onSaveFile = {
-                            checked {
-                                viewer.prepareSave()?.let { name ->
+                        onSaveFile = { format ->
+                            checked(format) {
+                                viewer.prepareSave(format)?.let { name ->
                                     try {
                                         saveDocument.launch(name)
                                     } catch (error: Exception) {
@@ -289,7 +289,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
-                        onShareFile = { checked(viewer::share) },
+                        onShareFile = { format -> checked(format) {viewer.share(format)} },
                         onEdit = openPath?.let { path ->
                             {
                                 val file = File(path)

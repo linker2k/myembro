@@ -17,7 +17,8 @@ import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.export.ExportChecks
 import io.github.linker2k.myembro.library.DesignSourceResolver
 import io.github.linker2k.myembro.engine.edit.HoopSpec
-import io.github.linker2k.myembro.engine.io.PesExport
+import io.github.linker2k.myembro.engine.io.EmbroideryExport
+import io.github.linker2k.myembro.engine.io.ExportFormat
 import io.github.linker2k.myembro.ui.settings.SettingsPreferences
 import java.io.File
 import java.io.IOException
@@ -44,12 +45,14 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var shareUri by mutableStateOf<Uri?>(null)
         private set
+    var shareFormat by mutableStateOf(ExportFormat.PES)
+        private set
     val canExport: Boolean get() = render != null && !loading && !exporting && shareUri == null
 
-    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String, val generated: Boolean)
+    private class ExportRequest(val source: ByteArray, val sourceName: String, val fileName: String, val generated: Boolean, val format:ExportFormat)
     /** Bytes of the open design, so PES files can be exported unchanged. */
     private var sourceBytes: ByteArray? = null
-    /** Why an opened project cannot be saved or shared as PES (e.g. outside the hoop); it still opens. */
+    /** Why an opened project cannot be saved or shared (e.g. outside the hoop); it still opens. */
     private var exportBlocked: String? = null
     private var sourceName: String = ""
     private var openedFile: File? = null
@@ -184,9 +187,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Keep the selected design across the document picker and configuration changes. */
-    fun prepareSave(): String? {
+    fun prepareSave(format:ExportFormat=ExportFormat.PES): String? {
         if (refuseBlockedExport()) return null
-        val request = exportRequest(suggestCopy = true) ?: return null
+        val request = exportRequest(suggestCopy = true,format=format) ?: return null
         pendingSave = request
         exporting = true
         exportMessage = null
@@ -220,9 +223,9 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
         reportExportFailure(error)
     }
 
-    fun share() {
+    fun share(format:ExportFormat=ExportFormat.PES) {
         if (refuseBlockedExport()) return
-        val request = exportRequest() ?: return
+        val request = exportRequest(format=format) ?: return
         export(request, write = { bytes ->
             val app = getApplication<Application>()
             // Each share keeps its own file so a later share cannot overwrite a recipient's URI.
@@ -236,7 +239,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                 directory.deleteRecursively()
                 throw error
             }
-        }, onSuccess = { shareUri = it })
+        }, onSuccess = { shareFormat=request.format;shareUri = it })
     }
 
     fun consumeShare(uri: Uri) {
@@ -262,13 +265,13 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Machine warnings for the file save/share would produce; empty when nothing to check. */
-    fun preflight(): List<String> {
-        val request = exportRequest() ?: return emptyList()
+    fun preflight(format:ExportFormat=ExportFormat.PES): List<String> {
+        val request = exportRequest(format=format) ?: return emptyList()
         val pattern = render?.pattern ?: return emptyList()
         return ExportChecks.check(pattern, request.fileName, settingsPreferences.read(), resources = getApplication<Application>().resources)
     }
 
-    private fun exportRequest(suggestCopy: Boolean = false): ExportRequest? {
+    private fun exportRequest(suggestCopy: Boolean = false,format:ExportFormat=ExportFormat.PES): ExportRequest? {
         if (!canExport) return null
         val source = sourceBytes ?: return null
         val originalName = fileName.orEmpty().substringAfterLast('/').substringAfterLast('\\')
@@ -277,10 +280,10 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
             .trim().trim('.').take(100)
             .ifBlank { getApplication<Application>().getString(R.string.export_default_name) }
         val output = if (suggestCopy) suggestDesignName(name) {
-            File(getApplication<Application>().filesDir, "designs/$it.pes").exists()
+            File(getApplication<Application>().filesDir, "designs/$it.${format.extension}").exists()
         } else name
-        return ExportRequest(source, sourceName, "$output.pes",
-            render?.pattern?.let(SewoutCheck::originOf) == DesignOrigin.APP_GENERATED)
+        return ExportRequest(source, sourceName, "$output.${format.extension}",
+            render?.pattern?.let(SewoutCheck::originOf) == DesignOrigin.APP_GENERATED,format)
     }
 
     private fun <T> export(request: ExportRequest, write: (ByteArray) -> T, onSuccess: (T) -> Unit) {
@@ -292,7 +295,7 @@ class ViewerViewModel(app: Application) : AndroidViewModel(app) {
                     // Normalize/encode before opening the destination, so validation errors
                     // cannot truncate an existing document. Encoding and all writes run on IO.
                     val settings = settingsPreferences.read().writeSettings
-                    val bytes = PesExport.prepare(request.source, request.sourceName, settings).bytes
+                    val bytes = EmbroideryExport.prepare(request.source, request.sourceName, request.format, settings).bytes
                     val origins = io.github.linker2k.myembro.library.GeneratedPesOrigins(getApplication())
                     write(bytes).also { if (request.generated || origins.contains(request.source)) origins.record(bytes) }
                 }

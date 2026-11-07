@@ -28,9 +28,9 @@
     <string name="export_sheet_title">Export design</string>
     <string name="export_sheet_busy">Preparing export…</string>
     <string name="export_sheet_no_design">Open or select a design to export.</string>
-    <string name="export_sheet_save">Save as PES</string>
+    <string name="export_sheet_save">Save as %1$s</string>
     <string name="export_sheet_save_hint">Choose a folder on your phone or connected storage</string>
-    <string name="export_sheet_share">Share PES file</string>
+    <string name="export_sheet_share">Share %1$s file</string>
     <string name="export_sheet_share_hint">Send a copy using another app</string>
     <string name="export_sheet_usb">Export to USB</string>
     <string name="export_sheet_usb_hint">Connect USB/OTG: choose a mounted folder, or allow USB access for SE400 direct connection</string>

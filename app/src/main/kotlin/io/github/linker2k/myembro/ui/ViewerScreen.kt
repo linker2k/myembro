@@ -87,6 +87,7 @@ import io.github.linker2k.myembro.ui.format.dimensions
 import io.github.linker2k.myembro.ui.machines.FrameOption
 import io.github.linker2k.myembro.R
 import io.github.linker2k.myembro.ui.export.ExportSheet
+import io.github.linker2k.myembro.engine.io.ExportFormat
 import io.github.linker2k.myembro.library.Thumbnails
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -99,8 +100,8 @@ import io.github.linker2k.myembro.engine.model.EmbPattern
 fun ViewerScreen(
     vm: ViewerViewModel,
     onOpenFile: () -> Unit,
-    onSaveFile: () -> Unit,
-    onShareFile: () -> Unit,
+    onSaveFile: (ExportFormat) -> Unit,
+    onShareFile: (ExportFormat) -> Unit,
     onEdit: (() -> Unit)? = null,
     onExportUsb: (() -> Unit)? = null,
 ) {
@@ -112,8 +113,8 @@ fun ViewerScreen(
 private fun ViewerContent(
     vm: ViewerViewModel,
     onOpenFile: () -> Unit,
-    onSaveFile: () -> Unit,
-    onShareFile: () -> Unit,
+    onSaveFile: (ExportFormat) -> Unit,
+    onShareFile: (ExportFormat) -> Unit,
     onEdit: (() -> Unit)?,
     onExportUsb: (() -> Unit)?,
 ) {
@@ -208,7 +209,7 @@ private fun ViewerContent(
             preview = data?.let { withContext(Dispatchers.Default) { Thumbnails.render(it, 240) } }
         }
         ExportSheet(
-            onDismissRequest = { exportSheet = false }, onSavePes = onSaveFile, onShare = onShareFile,
+            onDismissRequest = { exportSheet = false }, onSaveFile = onSaveFile, onShare = onShareFile,
             onExportUsb = checkedUsb, designName = vm.fileName, busy = vm.exporting, enabled = vm.render != null,
             preview = preview,
             designSummary = data?.pattern?.let {

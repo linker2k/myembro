@@ -28,9 +28,9 @@
     <string name="export_sheet_title">도안 내보내기</string>
     <string name="export_sheet_busy">내보내기 준비 중…</string>
     <string name="export_sheet_no_design">내보낼 도안을 열거나 선택해 주세요.</string>
-    <string name="export_sheet_save">PES로 저장</string>
+    <string name="export_sheet_save">%1$s로 저장</string>
     <string name="export_sheet_save_hint">휴대폰이나 연결된 저장장치의 폴더에 저장</string>
-    <string name="export_sheet_share">PES 파일 공유</string>
+    <string name="export_sheet_share">%1$s 파일 공유</string>
     <string name="export_sheet_share_hint">다른 앱으로 도안 사본 보내기</string>
     <string name="export_sheet_usb">USB로 내보내기</string>
     <string name="export_sheet_usb_hint">USB/OTG 연결: 저장 폴더 선택 또는 SE400 직접 연결 권한 허용</string>

@@ -11,7 +11,7 @@ Reference: pyembroidery1.5.1 (MIT), installed into a new isolated venv during st
 | JEF | 127 /127 | true | Original JEF palette/red-mean match, repeat-color exclusion, STOP palette toggling and strict hoop selection; trims=false, trim_at3 |
 | VP3 | 3200 /255 | false | Original producer strings, block offsets, bounds/center arithmetic, strings, color blocks, skipped jump/stop records and explicit trim on END |
 
-The shared encoder now accepts a distinct stitch limit for VP3; the existing DST/EXP defaults and byte goldens stay unchanged. Only the six commands represented by the engine model are supported; no transforms, extra locks, or application export policy are invented by these low-level writers. There is no UI integration in this change.
+The shared encoder now accepts a distinct stitch limit for VP3; the existing DST/EXP defaults and byte goldens stay unchanged. Only the six commands represented by the engine model are supported; no transforms, extra locks, or application export policy are invented by these low-level writers. Stages1–2 did not include UI integration; stage3 is documented below.
 
 ### Nondeterministic or invalid inputs
 
@@ -51,3 +51,22 @@ PATH=/home/gosh2/.jdks/jdk-17.0.20.1+1/bin:$PATH \
 ```
 
 Recreate synthetic originals with `tools/format-writers/generate_oracle.py <repo>` using the same isolated venv. After a complete136-case sweep, `python3 tools/format-writers/freeze_representatives.py <repo> <out>` copies only the three named cases and their original outputs. The synthetic generator preserves those sample provenance entries. Source/test files and scripts are committed; the venv, all136-case JSON/byte outputs and private designs are not.
+
+## Viewer export sheet integration (stage3)
+
+The sheet has a single PES/DST/JEF/EXP/VP3 chip row with Brother/Tajima/Janome/Melco/Husqvarna captions. Its `remember` state defaults to PES and is removed with the sheet; no format preference is persisted. Save/share labels, suggested filename extensions and the share chooser title follow the selected format. Both the SAF contract and share intent use `application/octet-stream`; the cache file provider explicitly returns that MIME too, including VP3.
+
+`ViewerViewModel` snapshots the selected format into each pending save/share request. Its shared asynchronous export routine calls `EmbroideryExport.prepare` before opening a destination or creating a share directory. That boundary first calls the existing `PesExport.prepare`: existing PES retains its checked exact bytes; other source formats use the existing PES conversion/safety preparation. Non-PES writers receive the same decoded, validated PES wire pattern. PES bytes remain unchanged. Existing sewout and PEC viewport blockers therefore apply to every selection. USB has no format argument and still calls the unchanged PES library/USB preparation path; selecting DST does not change USB output.
+
+Verification command:
+
+```sh
+./gradlew --max-workers=4 :engine:test \
+  --tests '*EmbroideryExportTest' --tests '*PesExportTest' --tests '*PesExportSafetyTest' \
+  :app:testDebugUnitTest --tests '*ViewerFormatExportTest' --tests '*PesOutputRoutesTest' \
+  :app:assembleDebug
+```
+
+Observed `BUILD SUCCESSFUL`; engine9 tests and app7 tests,0 failures/errors. Checks include five writer byte/extension matches with the same validated pattern, generic MIME, corrupted header/truncated source rejection, density30 allowed/31 blocked for all formats, pending-save format snapshots, English/Korean labels and blocked Viewer shares creating no file or URI. Existing PES/USB output-route regression tests remain passing.
+
+On existing emulator5556, update installation only: an independent disposable UI probe opened the local skull, selected DST, observed `DST로 저장`/`DST 파일 공유`, captured `/tmp/myembro-format-ui/dst.png`, dismissed/reopened the sheet and observed the PES default. Probe output: `FORMAT_UI_PASS resetOnReopen=PES selected=DST saveLabel=DST shareLabel=DST noExportExecuted=true`, `INSTRUMENTATION_CODE: 0`. No save/share/USB action or emulator lifecycle operation was performed by that probe. The screenshot is disposable; no private design is committed.
