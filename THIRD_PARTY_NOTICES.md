@@ -66,6 +66,8 @@ derived from the following projects, whose notices are reproduced as their licen
 - Source: https://github.com/EmbroidePy/pyembroidery (version 1.5.1)
 - Ported files: `engine/.../io/PesReader.kt` (PesReader.py, PecReader.py),
   `engine/.../io/DstReader.kt` (DstReader.py), `engine/.../io/PecThreads.kt` (EmbThreadPec.py),
+  `engine/.../io/DstWriter.kt`, `engine/.../io/ExpWriter.kt` (DstWriter.py, ExpWriter.py),
+  `engine/.../io/LegacyWriterEncoder.kt` (EmbEncoder.py default paths for the six engine commands),
   `engine/.../io/PecWriter.kt` (PecWriter.py, PecGraphics.py, EmbThread.py),
   `engine/.../io/PesWriter.kt`, `engine/.../io/PesV6Writer.kt` (PesWriter.py,
   minimal/truncated v1 and full v6 header/CEmbOne/CSewSeg/addendum paths),

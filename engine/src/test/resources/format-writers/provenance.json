@@ -1,0 +1,61 @@
+{
+  "package": "pyembroidery",
+  "version": "1.5.1",
+  "source": "https://github.com/EmbroidePy/pyembroidery",
+  "license": "MIT",
+  "sources": {
+    "DstWriter.py": "f4653bffd9843ed3dcfebb3f936dbd100ea6eb20087c80813e522793e83517f9",
+    "ExpWriter.py": "cf0faf4a4e3d72edd44cbf55ed6df4045a316a947da59a37a8b069d26220ec1e",
+    "EmbEncoder.py": "9cbd78ecc94012c3ab437bfb6093d69d3113c690e51fcf026993bd1d6af0601f"
+  },
+  "outputs": {
+    "mono.dst": {
+      "bytes": 527,
+      "sha256": "1df38db14caa78644dac29c3084e2494671972fbd7834ff91172b246007bf052"
+    },
+    "mono.extended.dst": {
+      "bytes": 527,
+      "sha256": "ff5c97348f38406d628163e57799065c0f116ff882504399861fd56dce407504"
+    },
+    "mono.exp": {
+      "bytes": 12,
+      "sha256": "fa3b2032e7ac11ca8512597ebc9cded14445533cc4c1e85680411904571c6d3c"
+    },
+    "multicolor.dst": {
+      "bytes": 563,
+      "sha256": "12ad707b9383565c2aec9d2693fdc658debae4c421e9189bdae8e2332b03790c"
+    },
+    "multicolor.extended.dst": {
+      "bytes": 563,
+      "sha256": "f2a6f31c72942f1aa0982fa2ccc648b6946968a4ea4be41f85f5e79fe952c75c"
+    },
+    "multicolor.exp": {
+      "bytes": 56,
+      "sha256": "747715d9e34081e73681e91206787f3231c15a6e5f8574bea0f892194bf50a4b"
+    },
+    "split-trim.dst": {
+      "bytes": 575,
+      "sha256": "644510316b0d1d46a101c3807405cd086779e52bab4a8bbbd88b305e1c6fd6f4"
+    },
+    "split-trim.extended.dst": {
+      "bytes": 575,
+      "sha256": "9a141261ba2f55c107a1778541294eafdff867e654d685948272f016f481a1db"
+    },
+    "split-trim.exp": {
+      "bytes": 48,
+      "sha256": "f7378a438ec162eea5aebc8199abd26ccfc50178df4921a934740dc3281c79d9"
+    },
+    "empty.dst": {
+      "bytes": 515,
+      "sha256": "3209c271245e1b1ab6cbf9316e3e170df47adc138975711e1d45e789908667e5"
+    },
+    "empty.extended.dst": {
+      "bytes": 515,
+      "sha256": "3209c271245e1b1ab6cbf9316e3e170df47adc138975711e1d45e789908667e5"
+    },
+    "empty.exp": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}
