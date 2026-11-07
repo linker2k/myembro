@@ -3,9 +3,16 @@
   "version": "1.5.1",
   "source": "https://github.com/EmbroidePy/pyembroidery",
   "license": "MIT",
+  "testOnlyOverrides": {
+    "jefDate": "20000102030405",
+    "emptyVp3FillerRgb": "112233"
+  },
   "sources": {
     "DstWriter.py": "f4653bffd9843ed3dcfebb3f936dbd100ea6eb20087c80813e522793e83517f9",
     "ExpWriter.py": "cf0faf4a4e3d72edd44cbf55ed6df4045a316a947da59a37a8b069d26220ec1e",
+    "JefWriter.py": "bcb1b586768587454f5086c676a4ca8db29e805634e92c65aff2af8641b5d1ee",
+    "Vp3Writer.py": "6d098ee9002c4e052f3942201cd18b48aeb909a69028d95b802001e84e7b1251",
+    "EmbThreadJef.py": "a6484331c34f728f62464afacabadb070c8aa612d1bdb3b0eae4a04b508dbada",
     "EmbEncoder.py": "9cbd78ecc94012c3ab437bfb6093d69d3113c690e51fcf026993bd1d6af0601f"
   },
   "outputs": {
@@ -21,6 +28,14 @@
       "bytes": 12,
       "sha256": "fa3b2032e7ac11ca8512597ebc9cded14445533cc4c1e85680411904571c6d3c"
     },
+    "mono.jef": {
+      "bytes": 138,
+      "sha256": "bb97c79c5ea5f87dcabed3d9b0864999af051e36b5aa37be6241982323126b52"
+    },
+    "mono.vp3": {
+      "bytes": 290,
+      "sha256": "156bc1aaddd62a79b722b54fee82180ee4aa848ce849fd5c7999500c602eabe2"
+    },
     "multicolor.dst": {
       "bytes": 563,
       "sha256": "12ad707b9383565c2aec9d2693fdc658debae4c421e9189bdae8e2332b03790c"
@@ -32,6 +47,18 @@
     "multicolor.exp": {
       "bytes": 56,
       "sha256": "747715d9e34081e73681e91206787f3231c15a6e5f8574bea0f892194bf50a4b"
+    },
+    "multicolor.jef": {
+      "bytes": 194,
+      "sha256": "57465c0d09151c6095c022f938ad4d63870d1b3160bbd3a4fc3d2308a9e83027"
+    },
+    "multicolor.vp3": {
+      "bytes": 363,
+      "sha256": "7e8070e9d51331358e78389c297f557149d7dc1fb58af002aa600e02f4f8e38b"
+    },
+    "multicolor.trims.jef": {
+      "bytes": 206,
+      "sha256": "640cb1ebac1bdc0adec66f192710e6784f1520b42dacfabfb2b98fcf1d686e9d"
     },
     "split-trim.dst": {
       "bytes": 575,
@@ -45,6 +72,14 @@
       "bytes": 48,
       "sha256": "f7378a438ec162eea5aebc8199abd26ccfc50178df4921a934740dc3281c79d9"
     },
+    "split-trim.jef": {
+      "bytes": 170,
+      "sha256": "7c7694a104af62821a3c92f7b60bd5150813f8e0cffcaa8bd588ac71ab3c629c"
+    },
+    "split-trim.vp3": {
+      "bytes": 306,
+      "sha256": "baa9927e2a492169fdbae54bb913fba093a1692f692bdddd151b0b3aeb191092"
+    },
     "empty.dst": {
       "bytes": 515,
       "sha256": "3209c271245e1b1ab6cbf9316e3e170df47adc138975711e1d45e789908667e5"
@@ -56,6 +91,73 @@
     "empty.exp": {
       "bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "empty.jef": {
+      "error": "IndexError"
+    },
+    "empty.vp3": {
+      "bytes": 285,
+      "sha256": "230ecc5ca170a024116c608dcda7a9461f9cf52bc724b872895ff1e51764d47a"
+    },
+    "samples/sample_02_lightning.pes": {
+      "bytes": 4438,
+      "sha256": "1e8957122745684a683457455d071bd710ec53c7af44f1cd11dd11c095b8e893"
+    },
+    "samples/sample_02_lightning.dst": {
+      "bytes": 5669,
+      "sha256": "921b8c3fe82c164f1983d43e5806adf9d16746ac658b84dd0873fec3e0e09589"
+    },
+    "samples/sample_02_lightning.exp": {
+      "bytes": 3450,
+      "sha256": "bbfc5a134b7d56bb0f91bb3c446411b8d0bda0fce443697f0de81a38408330dd"
+    },
+    "samples/sample_02_lightning.jef": {
+      "bytes": 3576,
+      "sha256": "d931ccb01e7e6ce1fb90dc8d8b333c8014a22478be78ca94cfd4dea23d299a3d"
+    },
+    "samples/sample_02_lightning.vp3": {
+      "bytes": 3730,
+      "sha256": "49712e6faf651cb596c8fcecfd10d0b02c5131293a2c340605710a83b4d254f6"
+    },
+    "samples/sample_03_crown.pes": {
+      "bytes": 7107,
+      "sha256": "e89e6fc2f4eaab1bb5c8a7ab292b10e2c686503602dfa9364ffb89e3248b1605"
+    },
+    "samples/sample_03_crown.dst": {
+      "bytes": 9314,
+      "sha256": "1b01b028e5ccd27c78dfb40f823995ff3a75e3da408bdab6e405dcdd9804610e"
+    },
+    "samples/sample_03_crown.exp": {
+      "bytes": 5880,
+      "sha256": "37029ff2432630b7634cbee66d3386119ab9aa456eaa4e068fb33a1fa433d82c"
+    },
+    "samples/sample_03_crown.jef": {
+      "bytes": 6014,
+      "sha256": "b6abce2c9733d09d6db98b7f606b67d02b30e2fb0224a716e06ca45deb93ef3e"
+    },
+    "samples/sample_03_crown.vp3": {
+      "bytes": 6233,
+      "sha256": "a4f3db54939eeb8cdb7a6472a1fcf422d32683853b6da96b68c4ae10c5227202"
+    },
+    "samples/sample_05_rocket.pes": {
+      "bytes": 20201,
+      "sha256": "c80d08a6a695280e1a0faf7a05ce6fdcec2eaea182048efd0529aeb9c2cbd75e"
+    },
+    "samples/sample_05_rocket.dst": {
+      "bytes": 28328,
+      "sha256": "e0f6e80b8a0e42486bdafffc8bcf27b1d484f74504ef8d1c2ee6f116385cfddf"
+    },
+    "samples/sample_05_rocket.exp": {
+      "bytes": 18608,
+      "sha256": "75edb106e63362ddb9347d5a34fb78d36109956155017347139c546615384e2b"
+    },
+    "samples/sample_05_rocket.jef": {
+      "bytes": 18742,
+      "sha256": "02b15ddd715dc7334e4efede56a83f244bb5a4fa9c867023974df01f96400b62"
+    },
+    "samples/sample_05_rocket.vp3": {
+      "bytes": 19025,
+      "sha256": "42720e6a6c5b0ce4460b94c502203557a34318002813c2b4ba92bf23c4a3eb80"
     }
   }
 }

@@ -5,6 +5,7 @@ import io.github.linker2k.myembro.engine.io.ExpWriter
 import kotlin.test.*
 
 class ExpWriterTest {
+    @Test fun threeBundledCc0Representatives(){FormatWriterSamples.compare("exp"){ExpWriter.write(it)}}
     @Test fun defaultsMatchIsolatedPyembroidery151Oracle() {
         for((id,p)in FormatWriterFixtures.patterns)FormatWriterFixtures.compare("$id.exp",ExpWriter.write(p))
     }

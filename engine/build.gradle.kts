@@ -332,3 +332,14 @@ tasks.register<JavaExec>("detailSplitGrid") {
     maxHeapSize = "3g"
     args(providers.gradleProperty("detailSplitArgs").orElse("/tmp/myembro-detail-split").get().split(','))
 }
+
+// Explicit local four-format byte comparison. Bundled CC0 input only; outputs are disposable.
+tasks.register<JavaExec>("exportFormatWriterSamples") {
+    group = "verification"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.FormatWriterSampleCli")
+    maxHeapSize = "1g"
+    args(rootProject.file("app/src/main/assets/samples").path,
+        providers.gradleProperty("formatWriterOutput").orElse("/tmp/myembro-format-samples").get())
+}

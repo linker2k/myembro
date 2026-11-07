@@ -14,7 +14,7 @@ import kotlin.math.max
 internal object LegacyWriterEncoder {
     data class Point(val x:Double,val y:Double,val command:Command)
     data class Encoded(val stitches:List<Point>,val threads:List<EmbThread>)
-    fun encode(pattern:EmbPattern,maxLength:Int,fullJump:Boolean):Encoded {
+    fun encode(pattern:EmbPattern,maxLength:Int,fullJump:Boolean,maxStitch:Int=maxLength):Encoded {
         val out=mutableListOf<Point>();val threads=mutableListOf<EmbThread>()
         var x=0.0;var y=0.0;var trimmed=true;var order=-1
         fun add(command:Command,xx:Double=x,yy:Double=y){out+=Point(xx,yy,command)}
@@ -25,10 +25,10 @@ internal object LegacyWriterEncoder {
             if(order!=0)add(Command.COLOR_CHANGE)
             trimmed=true
         }
-        fun gap(xx:Double,yy:Double){
+        fun gap(xx:Double,yy:Double,limit:Int=maxLength){
             val dx=xx-x;val dy=yy-y
-            if(abs(dx)>maxLength||abs(dy)>maxLength){
-                val steps=max(ceil(abs(dx/maxLength)),ceil(abs(dy/maxLength))).toInt()
+            if(abs(dx)>limit||abs(dy)>limit){
+                val steps=max(ceil(abs(dx/limit)),ceil(abs(dy/limit))).toInt()
                 val sx=dx/steps;val sy=dy/steps
                 var qx=x;var qy=y
                 for(i in 1 until steps){qx+=sx;qy+=sy;add(Command.JUMP,qx,qy);x=qx;y=qy}
@@ -42,7 +42,7 @@ internal object LegacyWriterEncoder {
                         if(order==-1)change()
                         trimmed=false;gap(xx,yy)
                         if(fullJump&&(x!=xx||y!=yy)){add(Command.JUMP,xx,yy);x=xx;y=yy}
-                    }else gap(xx,yy)
+                    }else gap(xx,yy,maxStitch)
                     add(Command.STITCH,xx,yy);x=xx;y=yy
                 }
                 Command.JUMP->{gap(xx,yy);add(Command.JUMP,xx,yy);x=xx;y=yy}

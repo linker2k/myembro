@@ -10,7 +10,7 @@ Generated with **pyembroidery 1.5.1 (MIT)** from a new isolated venv, running `p
 - Default encoder: no tie-on/off, no explicit trim around color changes, long-stitch contingency `JUMP_NEEDLE`. Intermediate gaps retain fractional coordinates; writer deltas use Python round-to-even against the cumulative encoded position. These low-level ports preserve those defaults, including zero-length records where upstream emits them; they do not add the app's PES-specific normalization or export gate. No UI or export path is connected in this step.
 - DST header `ST` counts normalized commands, not just penetrations or expanded trim records, matching upstream. There is no invented recentering, header truncation, or header-size rejection. Missing thread entries use random filler colors upstream; extended output is deterministic only with specified threads, as in these fixtures.
 
-`provenance.json` records the installed source SHA-256 values, version, output sizes and SHA-256 values. All12 outputs occupy4,476bytes. Both test classes verify the frozen output SHA and byte equality, reporting `firstDifferentByteOffset` (−1 for equality), and verify input immutability. The engine model has no sequin, speed, matrix, or on-the-fly setting commands; only its representable six commands take the corresponding original default Transcoder paths.
+`provenance.json` records the installed source SHA-256 values, version, output sizes and SHA-256 values. The stage1 DST/EXP12 outputs occupy4,476bytes. Both test classes verify the frozen output SHA and byte equality, reporting `firstDifferentByteOffset` (−1 for equality), and verify input immutability. The engine model has no sequin, speed, matrix, or on-the-fly setting commands; only its representable six commands take the corresponding original default Transcoder paths.
 
 Recreate from a new empty directory (venv is disposable, not committed):
 
@@ -22,3 +22,12 @@ python3 -m venv /tmp/myembro-format-oracle/venv
 ```
 
 Source: https://github.com/EmbroidePy/pyembroidery, package version1.5.1; `DstWriter.py`, `ExpWriter.py`, `EmbEncoder.py`, and `EmbPattern.write_embroidery`. MIT notice: repository `THIRD_PARTY_NOTICES.md`. Kotlin implementations: `engine/.../io/{DstWriter,ExpWriter,LegacyWriterEncoder}.kt`.
+
+
+## JEF / VP3 and bundled sample comparison
+
+JEF uses the original127-unit maximums and full jumps; default trims=False and trim_at=3 are preserved. Its red-mean distance rounds the red midpoint to even, picks the later palette entry on a tie, and excludes the preceding palette slot for distinct threads that otherwise map to the same JEF color. Hoop comparisons retain the original strict `<` boundaries. Production date uses local current time; tests alone pass `20000102030405`. The optional trims=True path has an additional multicolor golden.
+
+VP3 uses max jump3200, max stitch255, full_jump=False, no source rounding. Block offsets, fixed producer strings, integer truncation, UTF-8/UTF-16 length fields and skipped jump/stop records follow the original. Empty VP3 has an upstream random filler thread: the oracle replaces `EmbPattern.get_random_thread` with RGB112233 only during fixture generation; Kotlin tests use an internal filler injection with the same value. Public production writing retains random fallback behavior. Original JEF rejects the completely empty pattern with IndexError, which is recorded as an error expectation in provenance and checked as IndexOutOfBoundsException; there is no fabricated empty JEF golden.
+
+The `samples/` directory contains only3 repository-owned CC0 bundle sources and their12 original-writer outputs: lightning(1 thread), crown(2), rocket(4). Source files and CC0 provenance are in `app/src/main/assets/samples/` (manifest and LICENSES.md). No personal files are used. All136 default-format outputs remain outside the repository. See [format-writers-parity.md](../../../../../docs/format-writers-parity.md) for the full136×4 comparison and commands. The 3 frozen cases are checked from their source PES through our PesReader on each test run, then compared to fixed original bytes and SHA values.

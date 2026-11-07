@@ -33,6 +33,7 @@ internal object FormatWriterFixtures {
 }
 
 class DstWriterTest {
+    @Test fun threeBundledCc0Representatives(){FormatWriterSamples.compare("dst"){DstWriter.write(it)}}
     @Test fun defaultsMatchIsolatedPyembroidery151Oracle() {
         for((id,p)in FormatWriterFixtures.patterns)FormatWriterFixtures.compare("$id.dst",DstWriter.write(p))
     }
