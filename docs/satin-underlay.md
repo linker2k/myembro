@@ -103,10 +103,8 @@ The corpus aggregate JSON is kept privately with the user's data.
 
 ## Follow-ups
 
-- `AndroidFontSnapshotTest.jvmPreparedObjectsAndPesMatchActualAppForTwoFonts`: the 4 pinned Hangul satin PES were
-  captured in the app before this change. Until a re-capture on emulator-5556 with this build
-  (`tools/font-snapshots/capture.sh`, then restore the plain comparison), the test matches them with
-  `autoUnderlay=false` (byte-exact) and checks that the default output differs and has no blocking finding.
+- `AndroidFontSnapshotTest`: the 4 Hangul satin app PES were re-captured on emulator-5556 with this build
+  (`tools/font-snapshots/capture.sh`); glyph snapshots, object JSON and the Latin fill PES were unchanged.
 - `KanaHangulInvarianceTest` (app, 30 rows): `sha256TopOnly` = the f1db5974 bytes, reproduced byte-exact with
   `autoUnderlay=false` (`HangulSatin`/`KanaSatin.generate` now honour it, as `TextObject` passes it);
   `sha256` = the default underlay output, refrozen.
