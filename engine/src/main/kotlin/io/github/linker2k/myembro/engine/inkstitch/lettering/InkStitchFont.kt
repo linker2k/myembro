@@ -154,9 +154,16 @@ class InkStitchFont(
     /** The file's "baseline" guide in px, null when absent (diagnostics). */
     val baselineGuide: Double? = null,
 ) {
-    /** Glyph whose ink height defines "letter height" (as for other fonts: 'H', else the tallest). */
+    /**
+     * Glyph whose ink height defines "letter height": Latin 'H', else the same capital in Greek or
+     * Cyrillic, else the tallest single-letter glyph (a lowercase-only or caseless script), else the
+     * tallest glyph. Ties go to the lowest code point, so the choice never depends on file order.
+     */
     val referenceGlyph: InkStitchGlyph? = REFERENCE.firstNotNullOfOrNull { c -> glyphs[c.toString()]?.takeIf { it.elements.isNotEmpty() } }
-        ?: glyphs.values.filter { it.elements.isNotEmpty() }.maxByOrNull { it.inkBottom - it.inkTop }
+        ?: tallest { it.name.length == 1 && it.name[0].isLetter() } ?: tallest { true }
+
+    private fun tallest(filter: (InkStitchGlyph) -> Boolean) = glyphs.values.filter { it.elements.isNotEmpty() && filter(it) }
+        .sortedBy { it.name }.maxByOrNull { it.inkBottom - it.inkTop }
 
     /** Ink height of [referenceGlyph] at scale 1, in mm. */
     val referenceHeightMm: Double? = referenceGlyph?.let { (it.inkBottom - it.inkTop) * MM_PER_PX }?.takeIf { it > 0 }
@@ -181,7 +188,8 @@ class InkStitchFont(
 
     companion object {
         const val MM_PER_PX = 25.4 / 96
-        private const val REFERENCE = "H"
+        /** Latin H, Greek capital eta U+0397, Cyrillic capital en U+041D. */
+        private const val REFERENCE = "H\u0397\u041D"
         /** Ink/Stitch default "minimum satin stroke width": thinner single-path satins sew as running. */
         private const val MIN_SATIN_STROKE_PX = 1.0 / MM_PER_PX
         // Ink/Stitch glyph.py@b0edd96311ece82ee48816dc93466274b12c2a9c uses str(inkex.paths.Path).
@@ -359,8 +367,15 @@ class InkStitchFont(
                                 .filter { it.points.size > 1 }
                             made += InkSatin(lines.map { it.points }, if (nodes.size == lines.size) nodes.map { it.points } else lines.map { it.points }, stroke, params)
                         }
+                        // update.py turns the legacy manual_stitch flag into stroke_method=manual_stitch.
+                        params["stroke_method"] == "manual_stitch" || params.bool("manual_stitch", false) -> {
+                            // Stroke.paths: manual stitch sews the path's nodes (strip_control_points), not its flattened curve.
+                            val nodes = runCatching { GeometrySvgPath.flatten(d, transform, NODES_ONLY, precision) }.getOrNull().orEmpty()
+                                .filter { it.points.size > 1 }
+                            val manual = InkStitchParams(params.names.mapNotNull { k -> params[k]?.let { k to it } }.toMap() + ("stroke_method" to "manual_stitch"))
+                            if (nodes.isNotEmpty()) made += InkRun(nodes, stroke, manual)
+                        }
                         (params["stroke_method"] ?: "running_stitch") !in RUNNING_DEFAULT -> note("stroke:${params["stroke_method"]}")
-                        params.bool("manual_stitch", false) -> note("stroke:manual_stitch")
                         lines.isNotEmpty() -> made += InkRun(lines, stroke, params)
                     }
                 }

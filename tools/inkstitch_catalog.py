@@ -8,7 +8,8 @@ usage: python3 -I tools/inkstitch_catalog.py <checkout> <survey.tsv> <out.json> 
 [sweep.json] comes from the engine test InkStitchFontSweep (SewoutCheck over min/mid/max heights):
 when given, a font is listed only with a passing height and its range is the passing run.
 <survey.tsv> comes from the engine test InkStitchSurveyTool (INKSTITCH_FONTS=<checkout>/src); it
-says which fonts this engine sews completely and gives the reference ('H') height at scale 1.
+says which fonts this engine sews completely and gives the reference glyph height at scale 1
+('H', else Greek/Cyrillic capital H, else the tallest letter: InkStitchFont.referenceGlyph).
 The license class of every folder is decided here by hand from its LICENSE file and font.json;
 the quoted evidence is written to [licenses.md] so the table can be re-checked.
 """
@@ -38,6 +39,10 @@ NO_DERIVATIVES = {"infinipicto"}
 # Shipped inside the APK for offline use (2026-10-24): per theme the smallest font whose every swept
 # height passes; files copied to app/src/main/assets/fonts/bundled/<id>/ by the same pinned commit.
 BUNDLED = {"sacramarif", "chicken_scratch", "chicken_little", "medium_font", "bathaus_FI"}
+
+
+LATIN = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+GREEK = {chr(c) for c in range(0x0391, 0x03CA) if chr(c).isalpha()}
 
 
 def classify(name, lic_text, json_license):
@@ -93,7 +98,11 @@ def main():
         cls, lic_name, note = classify(d.name, text, meta.get("font_license", ""))
         r = rows.get(d.name)
         svg = d / "ltr.svg"
-        has_h = svg.is_file() and 'inkscape:label="GlyphLayer-H"' in svg.read_text(errors="replace")
+        names = glyph_names(svg) if svg.is_file() else []
+        # Text the engine would lay out wrongly: right-to-left fonts (font.py reverses lines) and
+        # positional forms (font_variant.py picks name.init/.medi/.fina), neither ported yet.
+        rtl = meta.get("text_direction") == "rtl"
+        positional = any(n.rsplit(".", 1)[-1] in ("isol", "init", "medi", "fina") for n in names if "." in n[1:])
         # Commands (start/end positions), empty paths and text objects change no stitches that exist;
         # every other note is an element this engine cannot sew yet.
         missing = [u for u in (r["unsupported"].split(",") if r and r["unsupported"] else [])
@@ -101,9 +110,14 @@ def main():
         cid = "inkstitch-" + re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-")
         swept = sweep.get(cid) if sweep is not None else None
         gated = sweep is None or (swept is not None and "allowedMinMm" in swept)
-        sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_h and gated
+        # The reference glyph ('H', else Greek/Cyrillic capital, else the tallest letter) is the
+        # engine's InkStitchFont.referenceGlyph; the survey gives its height.
+        has_ref = r is not None and bool(r["refHeightMm"])
+        sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_ref and not rtl and not positional and gated
         reason = "" if sewable else ("ltr.svg 없음(여러 파일/RTL)" if not svg.is_file() else
-                                     "'H' 글리프 없음" if not has_h else
+                                     "오른쪽→왼쪽(RTL) 배치 미지원" if rtl else
+                                     "위치별 글자꼴(.init/.medi/.fina) 미지원" if positional else
+                                     "기준 글리프 없음" if r is not None and not has_ref else
                                      f"미지원 요소: {','.join(missing)}" if r and missing else
                                      f"봉제 실패: {r['error'] or r.get('rangeError')}" if r and (r['error'] or r.get('rangeError')) else
                                      "게이트: 통과하는 높이 없음(SewoutCheck 스윕)" if r else "조사 누락")
@@ -117,7 +131,8 @@ def main():
             "id": "inkstitch-" + re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-"),
             "name": meta.get("name", d.name),
             "kind": "inkstitch-svg",
-            "scripts": ["latin"],
+            # Latin unless the font has no Latin letters (ellenika is Greek only).
+            "scripts": ["latin"] if any(n in LATIN for n in names) or not any(n in GREEK for n in names) else ["greek"],
             "license": lic_name,
             "designer": "Ink/Stitch embroidery-fonts contributors" + (f"; original font: {meta['original_font'].strip()}" if (meta.get("original_font") or "").strip() else ""),
             "url": f"{REPO}/{commit}/{q('ltr.svg')}", "sha256": sha(svg), "size": svg.stat().st_size,
@@ -136,14 +151,15 @@ def main():
             # Theme for the lettering quick slots, from font.json keywords.
             "theme": theme(meta.get("keywords") or []),
             "bundled": d.name in BUNDLED,
-            "glyphs": glyph_names(svg),
+            "glyphs": names,
         })
     out.write_text(json.dumps({
         "version": 1,
         "source": f"https://github.com/inkstitch/embroidery-fonts/tree/{commit}",
         "note": "Pre-digitized Ink/Stitch fonts. Pinned commit; every file is checked against sha256. Only folders "
                 "classified 가능 in docs/inkstitch-fonts.md and sewn completely by this engine are listed. Heights are "
-                "the reference glyph 'H' ink height at the font's min_scale/max_scale. Generated by tools/inkstitch_catalog.py.",
+                "the reference glyph ink height ('H', else Greek/Cyrillic capital H, else the tallest letter) within "
+                "the font's min_scale/max_scale. Generated by tools/inkstitch_catalog.py.",
         "fonts": fonts,
     }, ensure_ascii=False, indent=1) + "\n")
     if md:

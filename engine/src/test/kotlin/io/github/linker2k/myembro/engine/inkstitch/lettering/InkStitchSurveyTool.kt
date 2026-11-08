@@ -98,7 +98,11 @@ class InkStitchSurveyTool {
         for (dir in src.listFiles().orEmpty().filter { File(it, "ltr.svg").isFile && (only == null || it.name in only) }.sortedBy { it.name }) {
             runCatching {
                 val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
-                val text = if (('a'..'c').all { it.toString() in font.glyphs }) "Abc" else "ABC"
+                val text = when {
+                    ('a'..'c').all { it.toString() in font.glyphs } -> "Abc"
+                    ('α'..'γ').all { it.toString() in font.glyphs } -> "Αβγ"
+                    else -> "ABC"
+                }
                 val pattern = InkStitchLettering.render(font, text, 10.0.coerceIn(font.minHeightMm ?: 10.0, font.maxHeightMm ?: 10.0))
                 val id = "inkstitch-" + dir.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
                 draw(pattern, File(out, "$id.png"), heightPx = 72, transparent = true)

@@ -32,7 +32,8 @@ import kotlinx.serialization.json.put
  * [INKSTITCH_SWEEP_STEP=2] [INKSTITCH_SWEEP_CAP=60] [INKSTITCH_SWEEP_THREADS=8]
  */
 class InkStitchFontSweep {
-    private val texts = listOf("Hamburg", "Jung Min", "2024", "가나다")
+    // Each font is judged on the samples it can sew; the Greek one covers Greek-only fonts (ellenika).
+    private val texts = listOf("Hamburg", "Jung Min", "2024", "가나다", "Αθήνα")
     private val placement = setOf(FindingCode.HOOP_EXCEEDED, FindingCode.MACHINE_AREA_EXCEEDED)
 
     @Test fun sweep() {
