@@ -26,7 +26,7 @@ data class DesignImportLimits(
 
 /**
  * Imports one design or a ZIP, flattening every entry name to a sanitized leaf file name.
- * PES/PEC/DST and MYEMBRO projects are extracted; nested archives and macOS resource forks are ignored.
+ * PES/PEC/DST/JEF/EXP/VP3 and MYEMBRO projects are extracted; nested archives and macOS resource forks are ignored.
  * All files are staged and parsed before publishing; a failed archive leaves no partial import.
  * Callers should close their stream with use and call on an IO dispatcher in Android UI.
  */

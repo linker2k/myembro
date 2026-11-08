@@ -2,7 +2,7 @@
     <string name="sources_title">Find free designs</string>
     <string name="sources_back">Back</string>
     <string name="sources_import_hint">Download a PES, then Share → myembro to add it to your design library.</string>
-    <string name="sources_link_only">Download on the designer’s site. PES, PEC, DST and ZIP are supported. Use each design under that site’s terms.</string>
+    <string name="sources_link_only">Download on the designer’s site. PES, PEC, DST, JEF, EXP, VP3 and ZIP are supported. Use each design under that site’s terms.</string>
     <string name="sources_open">Open website</string>
     <string name="sources_terms">Read usage terms</string>
     <string name="sources_pes_available">PES available</string>

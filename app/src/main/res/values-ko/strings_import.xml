@@ -1,6 +1,6 @@
 <resources>
     <string name="import_title">도안 가져오기</string>
-    <string name="import_supported">PES · PEC · DST · ZIP · MYEMBRO\n그림(PNG · JPG · SVG 등)은 그림 가져오기로 열려요.\n여러 파일을 한 번에 선택할 수 있어요.</string>
+    <string name="import_supported">PES · PEC · DST · JEF · EXP · VP3 · ZIP · MYEMBRO\n그림(PNG · JPG · SVG 등)은 그림 가져오기로 열려요.\n여러 파일을 한 번에 선택할 수 있어요.</string>
     <string name="import_files">파일 선택</string>
     <string name="import_folder">폴더 선택</string>
     <string name="import_folder_hint">하위 폴더까지 가져오며 이미 있는 도안의 처리 방법을 선택합니다.</string>

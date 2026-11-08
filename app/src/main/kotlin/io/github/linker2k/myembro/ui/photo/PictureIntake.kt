@@ -22,10 +22,10 @@ internal object PictureIntake {
             if(brands.any { it in setOf("heic","heix","hevc","hevx","mif1","msf1") }) return Kind.HEIF
         }
         // Recognized embroidery/archive bytes win even over a misleading .svg suffix.
-        if (ascii(0,"#PES") || ascii(0,"#PEC") || ascii(0,"LA:") || starts(80,75,3,4) || starts(80,75,5,6) || starts(80,75,7,8)) return Kind.DESIGN
+        if (ascii(0,"#PES") || ascii(0,"#PEC") || ascii(0,"%vsm%") || ascii(0,"LA:") || starts(80,75,3,4) || starts(80,75,5,6) || starts(80,75,7,8)) return Kind.DESIGN
         val text = prefix.toString(Charsets.UTF_8).removePrefix("\uFEFF")
         if (Regex("<svg(?:\\s|>)", RegexOption.IGNORE_CASE).containsMatchIn(text) || fileName?.endsWith(".svg", true) == true) return Kind.SVG
-        if (fileName?.substringAfterLast('.', "")?.lowercase(java.util.Locale.ROOT) in setOf("pes","pec","dst","zip","myembro")) return Kind.DESIGN
+        if (fileName?.substringAfterLast('.', "")?.lowercase(java.util.Locale.ROOT) in setOf("pes","pec","dst","jef","exp","vp3","zip","myembro")) return Kind.DESIGN
         return Kind.UNKNOWN
     }
     /** Every non-picture stays with the existing importer, including its existing error handling. */
