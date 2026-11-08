@@ -263,7 +263,7 @@ internal class RunningStitches(
                 if (TatamiLettering.methodForWidth(satinOptions.widthMm)==StitchStyle.FILL) {
                     satinGroups += TatamiLettering.groups(listOf(left+right.asReversed()),thread ?: EmbThread(0xff000000.toInt(),"Black"))
                 } else satinGroups += io.github.linker2k.myembro.engine.inkstitch.elements.InkSatin.element(
-                    points(left),points(right),satinOptions,color=thread).toStitchGroups(satinGroups.lastOrNull()?.stitches?.lastOrNull())
+                    points(left),points(right),satinOptions.copy(parameters=satinOptions.sewnParameters(satinOptions.widthMm)),color=thread).toStitchGroups(satinGroups.lastOrNull()?.stitches?.lastOrNull())
             }
             return
         }

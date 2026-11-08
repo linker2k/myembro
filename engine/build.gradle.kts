@@ -351,3 +351,14 @@ tasks.register<JavaExec>("exportFormatReaderSamples") {
     mainClass.set("io.github.linker2k.myembro.engine.FormatReaderSampleCli")
     args(rootProject.projectDir.path, providers.gradleProperty("formatReaderOutput").orElse("/tmp/myembro-format-readers-samples").get())
 }
+
+// Offline before/after measurement for default satin underlay (args: <svg-dir> <out> | png <out> <ids>).
+tasks.register<JavaExec>("satinUnderlayMeasure") {
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.lettering.SatinUnderlayMeasure")
+    workingDir = rootProject.projectDir
+    maxHeapSize = "3g"
+    systemProperty("java.awt.headless", "true")
+    args((providers.gradleProperty("measureArgs").orElse("/home/gosh2/myembro-archive/sample-svg-20261107 /tmp/myembro-satin-underlay/measure").get()).split(' '))
+}

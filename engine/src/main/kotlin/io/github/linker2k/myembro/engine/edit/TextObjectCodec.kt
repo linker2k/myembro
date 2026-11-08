@@ -46,6 +46,8 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             put("autoDensity", obj.satinOptions.autoDensity)
             put("contourUnderlay", obj.satinOptions.contourUnderlay)
             put("underlayInsetMm", obj.satinOptions.underlayInsetMm)
+            // Written only when opted out, so older readers and files are unchanged.
+            if (!obj.satinOptions.autoUnderlay) put("autoUnderlay", false)
         })
         obj.centerlineSatin?.let { source -> put("centerlineSatin",buildJsonObject {
             put("version",1)
@@ -146,6 +148,7 @@ object TextObjectCodec : TypedProjectObjectCodec<TextObject>("text", TextObject:
             contourUnderlay = satin["contourUnderlay"]?.jsonPrimitive?.boolean ?: false,
             underlayInsetMm = satin["underlayInsetMm"]?.jsonPrimitive?.double ?: 0.4,
             parameters = satin["parameters"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content }?.let(SatinParametersCodec::decode),
+            autoUnderlay = satin["autoUnderlay"]?.jsonPrimitive?.boolean ?: true,
         ) } ?: SatinOptions(autoDensity = false),
         contourBaseline = data["contourBaseline"]?.jsonPrimitive?.double ?: 0.0,
         contourSourceHeight = data["contourSourceHeight"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,

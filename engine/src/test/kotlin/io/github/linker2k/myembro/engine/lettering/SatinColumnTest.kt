@@ -10,7 +10,7 @@ import kotlin.math.*
 import kotlin.test.*
 
 class SatinColumnTest {
-    private fun column(width: Double = 4.0, options: SatinOptions = SatinOptions()) = SatinColumn.generate(
+    private fun column(width: Double = 4.0, options: SatinOptions = SatinOptions(autoUnderlay = false)) = SatinColumn.generate(
         listOf(0.0 to 0.0, 0.0 to 10.0), listOf(width to 0.0, width to 10.0), options,
     )
     private fun sewn(p: EmbPattern) = bodyStitches(p)
@@ -30,14 +30,14 @@ class SatinColumnTest {
         assertEquals(setOf(-20, 20), points.map { it.x }.toSet())
         points.filter { it.x == -20 }.zipWithNext().forEach { (a, b) -> assertEquals(4, b.y - a.y) }
         points.filter { it.x == 20 }.zipWithNext().forEach { (a, b) -> assertTrue(b.y - a.y in 2..4) }
-        assertEquals(101, sewn(column(options = SatinOptions(densityMm = 0.2))).size)
+        assertEquals(101, sewn(column(options = SatinOptions(autoUnderlay = false, densityMm = 0.2))).size)
         assertEquals(1, p.jumpCount)
         assertEquals(Command.END, p.stitches.last().command)
         assertLimit(p)
     }
 
     @Test fun pullCompensationExtendsEachSideAndDoesNotExtendTheColumnLength() {
-        val p = column(options = SatinOptions(pullCompensationMm = 0.3))
+        val p = column(options = SatinOptions(autoUnderlay = false, pullCompensationMm = 0.3))
         assertEquals(46, p.bounds!!.width)
         assertEquals(100, p.bounds!!.height)
         assertEquals(column().stitchCount, p.stitchCount)
@@ -52,14 +52,14 @@ class SatinColumnTest {
         val diagonal = SatinColumn.generate(listOf(0.0 to 0.0, 9.31 to 10.17), listOf(7.0 to 0.0, 16.31 to 10.17))
         assertLimit(diagonal)
         assertLimit(column(7.0)) // Hypotenuse is just greater than 7 mm.
-        assertLimit(column(6.0, SatinOptions(maxStitchLengthMm = 3.0)), 3.0)
+        assertLimit(column(6.0, SatinOptions(autoUnderlay = false, maxStitchLengthMm = 3.0)), 3.0)
     }
 
     @Test fun centerAndZigzagUnderlaysPrecedeTheSameTopLayerWithoutExtraJumps() {
         val top = sewn(column())
-        val center = column(options = SatinOptions(centerUnderlay = true))
-        val zigzag = column(options = SatinOptions(zigzagUnderlay = true))
-        val both = column(options = SatinOptions(centerUnderlay = true, zigzagUnderlay = true))
+        val center = column(options = SatinOptions(autoUnderlay = false, centerUnderlay = true))
+        val zigzag = column(options = SatinOptions(autoUnderlay = false, zigzagUnderlay = true))
+        val both = column(options = SatinOptions(autoUnderlay = false, centerUnderlay = true, zigzagUnderlay = true))
         val centerBody=sewn(center)
         assertEquals(9,centerBody.size - top.size) // Source center walk and return connection, excluding tagged locks.
         assertTrue(zigzag.stitchCount > column().stitchCount) // coarse zigzag, split underlay legs, center return, top
@@ -81,8 +81,8 @@ class SatinColumnTest {
     @Test fun differentRailSamplingAndReversedDirectionProduceTheSameColumn() {
         val a = listOf(0.0 to 0.0, 0.0 to 10.0)
         val b = listOf(4.0 to 0.0, 4.0 to 2.5, 4.0 to 10.0)
-        assertEquals(column().stitches, SatinColumn.generate(a, b.reversed()).stitches)
-        assertEquals(column().stitches, SatinColumn.generate(a + a.last(), b).stitches)
+        assertEquals(column().stitches, SatinColumn.generate(a, b.reversed(), SatinOptions(autoUnderlay = false)).stitches)
+        assertEquals(column().stitches, SatinColumn.generate(a + a.last(), b, SatinOptions(autoUnderlay = false)).stitches)
     }
 
     @Test fun offsetCurvesHaveRequestedWidthAndClosedSeamsRemainClosed() {
@@ -103,7 +103,7 @@ class SatinColumnTest {
     @Test fun letteringPersistsSatinSettingsAndRetainsStrokeAndColorSeparation() {
         val red = EmbThread(0xFFB5492A.toInt())
         val blue = EmbThread(0xFF0000FF.toInt())
-        val options = SatinOptions(widthMm = 3.0, densityMm = 0.5, maxStitchLengthMm = 6.0,
+        val options = SatinOptions(autoUnderlay = false, widthMm = 3.0, densityMm = 0.5, maxStitchLengthMm = 6.0,
             pullCompensationMm = 0.2, centerUnderlay = true, zigzagUnderlay = true,
             underlayStitchLengthMm = 2.0, underlayDensityMm = 1.0)
         // Ink/Stitch fonts carry their own stitch types; satin settings apply to the contour kinds.
@@ -133,9 +133,9 @@ class SatinColumnTest {
     @Test fun emptyDegenerateAndInvalidInputsAreHandled() {
         assertEquals(0, SatinColumn.generate(emptyList(), emptyList()).stitchCount)
         assertEquals(0, SatinColumn.strokeToSatin(listOf(1.0 to 1.0, 1.0 to 1.0), 2.0).stitchCount)
-        assertFailsWith<IllegalArgumentException> { SatinOptions(densityMm = 0.0) }
-        assertFailsWith<IllegalArgumentException> { SatinOptions(maxStitchLengthMm = 7.1) }
-        assertFailsWith<IllegalArgumentException> { SatinOptions(pullCompensationMm = Double.NaN) }
+        assertFailsWith<IllegalArgumentException> { SatinOptions(autoUnderlay = false, densityMm = 0.0) }
+        assertFailsWith<IllegalArgumentException> { SatinOptions(autoUnderlay = false, maxStitchLengthMm = 7.1) }
+        assertFailsWith<IllegalArgumentException> { SatinOptions(autoUnderlay = false, pullCompensationMm = Double.NaN) }
         assertFailsWith<IllegalArgumentException> { SatinColumn.rails(listOf(0.0 to 0.0, 1.0 to 0.0), -1.0) }
         assertFailsWith<IllegalArgumentException> { SatinColumn.generate(listOf(0.0 to Double.NaN), emptyList()) }
     }

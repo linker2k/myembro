@@ -57,7 +57,7 @@ object KanaSatin {
                         val started=if(path.first()==path.last())StrokeToSatin.setFirstNode(path,width)else path
                         StrokeToSatin.filteredRungs(requireNotNull(StrokeToSatin.convertPathToSatin(started,width)) { "Cannot convert kana centerline to satin" })
                     }
-                    val routed=AutoSatin.route(sections,color,parameters)
+                    val routed=AutoSatin.route(sections,color,io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy.withDefault(parameters,width/PIXELS_PER_MM))
                     require(routed.discardedSatins==0 && routed.groups.isNotEmpty()) { "Incomplete kana centerline satin" }
                     routed.groups
                 }
