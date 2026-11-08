@@ -110,6 +110,8 @@ class UsbExporter(private val context: Context) {
                 if (prepared.converted) converted++
             }.onFailure { failures += design.name to (it.message ?: it.javaClass.simpleName) }
         }
+        // Names already on the drive plus the files just written; listFiles() covers files and folders.
+        notices += UsbFolderAdvice.notices(DocumentsContract.getTreeDocumentId(tree), existing.size)
         return Report(exported, converted, failures, files = written, remainingBytes = availableBytes(tree), notices = notices)
     }
 

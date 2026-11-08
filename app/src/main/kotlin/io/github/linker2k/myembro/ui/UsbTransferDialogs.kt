@@ -103,6 +103,8 @@ private fun TransferResultDialog(record: UsbTransferRecord, persistent: Boolean,
             record.notices.forEach { notice -> Text(stringResource(when (notice) {
                 UsbTransferNotice.NAME_COLLISION -> R.string.usb_result_name_collision
                 UsbTransferNotice.FILESYSTEM -> R.string.usb_result_filesystem
+                UsbTransferNotice.NOT_ROOT_FOLDER -> R.string.usb_result_not_root_folder
+                UsbTransferNotice.MANY_ENTRIES -> R.string.usb_result_many_entries
             }), color = MaterialTheme.colorScheme.error) }
             TextButton(onClick = { details = !details }) {
                 Text(stringResource(if (details) R.string.usb_result_less else R.string.usb_result_details))
