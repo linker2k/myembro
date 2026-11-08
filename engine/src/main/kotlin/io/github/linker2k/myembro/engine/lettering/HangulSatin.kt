@@ -34,7 +34,7 @@ object HangulSatin {
         return StrokeWidthMeasurement.measure(region.geometry).medianMm/scale
     }
     fun generate(data:CenterlineSatinData,heightMm:Double,sourceHeight:Double,thread:EmbThread,
-        characterThreads:Map<Int,EmbThread> = emptyMap(),parameters:SatinParameters=SatinParameters()):EmbPattern {
+        characterThreads:Map<Int,EmbThread> = emptyMap(),parameters:SatinParameters=SatinParameters(),autoUnderlay:Boolean=true):EmbPattern {
         require(heightMm.isFinite() && heightMm>0 && sourceHeight.isFinite() && sourceHeight>0)
         val scale=heightMm/sourceHeight*PIXELS_PER_MM
         val groups=mutableListOf<StitchGroup>()
@@ -45,7 +45,7 @@ object HangulSatin {
                 val started=if(path.first()==path.last())StrokeToSatin.setFirstNode(path,width)else path
                 StrokeToSatin.filteredRungs(requireNotNull(StrokeToSatin.convertPathToSatin(started,width)) { "Cannot convert centerline to satin" })
             }
-            val routed=AutoSatin.route(sections,characterThreads[character] ?: thread,io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy.withDefault(parameters,width/PIXELS_PER_MM))
+            val routed=AutoSatin.route(sections,characterThreads[character] ?: thread,if(autoUnderlay)io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy.withDefault(parameters,width/PIXELS_PER_MM) else parameters)
             require(routed.discardedSatins==0 && routed.groups.isNotEmpty()) { "Incomplete centerline satin" }
             if(groups.isNotEmpty())groups[groups.lastIndex]=groups.last().copy(trimAfter=true)
             groups+=routed.groups

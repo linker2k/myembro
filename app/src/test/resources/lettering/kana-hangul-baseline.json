@@ -13,270 +13,331 @@
       "glyph": "가",
       "height": 15,
       "status": "PES",
-      "sha256": "fe85b1d48262224ec841f88783b8e3b63ee1d9539490a9912a005b2e10f5edac",
-      "bytes": 1432,
-      "stitches": 208
+      "sha256": "28881f99687dc778b0ef6a1390f743c62f424c8a5a832960473b7f6d02c4072f",
+      "bytes": 1492,
+      "sha256TopOnly": "fe85b1d48262224ec841f88783b8e3b63ee1d9539490a9912a005b2e10f5edac",
+      "bytesTopOnly": 1432,
+      "stitchesTopOnly": 208
     },
     {
       "codepoint": 44032,
       "glyph": "가",
       "height": 20,
       "status": "PES",
-      "sha256": "dd37b3ff59ac431f719d99b0ee4383f29007d026e1f8dc092317796ad539a22d",
-      "bytes": 1552,
-      "stitches": 268
+      "sha256": "3e569cc8ce98a7d639db2b80e6232ed94c49e4ac9a8955a73f9a28f776567851",
+      "bytes": 1628,
+      "sha256TopOnly": "dd37b3ff59ac431f719d99b0ee4383f29007d026e1f8dc092317796ad539a22d",
+      "bytesTopOnly": 1552,
+      "stitchesTopOnly": 268
     },
     {
       "codepoint": 44032,
       "glyph": "가",
       "height": 30,
       "status": "PES",
-      "sha256": "6f7a4ec9f505121d3019d7edd5d9b766821d6721434b87a05cfd060dcb7ad9eb",
-      "bytes": 1792,
-      "stitches": 388
+      "sha256": "b7b7780536e9c0a6304da39c1daea8e52f1899e843896b6ce3c5dd53ce3040da",
+      "bytes": 1896,
+      "sha256TopOnly": "6f7a4ec9f505121d3019d7edd5d9b766821d6721434b87a05cfd060dcb7ad9eb",
+      "bytesTopOnly": 1792,
+      "stitchesTopOnly": 388
     },
     {
       "codepoint": 45208,
       "glyph": "나",
       "height": 15,
       "status": "PES",
-      "sha256": "ff72dc6e11442ce87b2f1554eae6d617ecd956560fc9b5637118693d7b10c00f",
-      "bytes": 1402,
-      "stitches": 193
+      "sha256": "137185a7952e56f066f96244e77b98905b81719d4fce95e7b927d92f51d48b53",
+      "bytes": 1456,
+      "sha256TopOnly": "ff72dc6e11442ce87b2f1554eae6d617ecd956560fc9b5637118693d7b10c00f",
+      "bytesTopOnly": 1402,
+      "stitchesTopOnly": 193
     },
     {
       "codepoint": 45208,
       "glyph": "나",
       "height": 20,
       "status": "PES",
-      "sha256": "87aa6adc404541a41fdc15c9a9882e004d10097bf957514309fc6e361e9a20cc",
-      "bytes": 1516,
-      "stitches": 250
+      "sha256": "9157470f271aa4b65b9213d10796ef0c3bfc8006dfb1a2c1935c6aaca58c88cf",
+      "bytes": 1586,
+      "sha256TopOnly": "87aa6adc404541a41fdc15c9a9882e004d10097bf957514309fc6e361e9a20cc",
+      "bytesTopOnly": 1516,
+      "stitchesTopOnly": 250
     },
     {
       "codepoint": 45208,
       "glyph": "나",
       "height": 30,
       "status": "PES",
-      "sha256": "3e5ab06148016bc46e5dfe8390300e998498a3d4a87c7079eeef83b78eabdd74",
-      "bytes": 1744,
-      "stitches": 364
+      "sha256": "7ee7e9381f8b921dff5d93b28e95fbba697a1d4f56648bf994c54f6f5a42fb92",
+      "bytes": 1838,
+      "sha256TopOnly": "3e5ab06148016bc46e5dfe8390300e998498a3d4a87c7079eeef83b78eabdd74",
+      "bytesTopOnly": 1744,
+      "stitchesTopOnly": 364
     },
     {
       "codepoint": 45397,
       "glyph": "녕",
       "height": 15,
       "status": "PES",
-      "sha256": "f6a45af2439ef664f59c6465b2bc0bc38bd1758dc7e958daef655d41426c5015",
-      "bytes": 1666,
-      "stitches": 323
+      "sha256": "f5360436da2e52cde38bbbbc7f0e26999eed92ab2eb9332bfe73ec52edf5cb5a",
+      "bytes": 1766,
+      "sha256TopOnly": "f6a45af2439ef664f59c6465b2bc0bc38bd1758dc7e958daef655d41426c5015",
+      "bytesTopOnly": 1666,
+      "stitchesTopOnly": 323
     },
     {
       "codepoint": 45397,
       "glyph": "녕",
       "height": 20,
       "status": "PES",
-      "sha256": "13e79802a3a18a65f45e47b7ba55f09bb3e7e69a5446b892240f291a8315522c",
-      "bytes": 1860,
-      "stitches": 420
+      "sha256": "f31c53ab4a6b8e1a0899b597bdca717b4e73010be632078597545bf916ff4c98",
+      "bytes": 1972,
+      "sha256TopOnly": "13e79802a3a18a65f45e47b7ba55f09bb3e7e69a5446b892240f291a8315522c",
+      "bytesTopOnly": 1860,
+      "stitchesTopOnly": 420
     },
     {
       "codepoint": 45397,
       "glyph": "녕",
       "height": 30,
       "status": "PES",
-      "sha256": "64eb138b0b5e90f17f69ee365ee6803fab7d043c5d65d233c236b1f0e46809c5",
-      "bytes": 2226,
-      "stitches": 603
+      "sha256": "fb3d594591cab46853f03f00919a05441d50e269e5fbc6f388a632f463b2baf0",
+      "bytes": 2386,
+      "sha256TopOnly": "64eb138b0b5e90f17f69ee365ee6803fab7d043c5d65d233c236b1f0e46809c5",
+      "bytesTopOnly": 2226,
+      "stitchesTopOnly": 603
     },
     {
       "codepoint": 45796,
       "glyph": "다",
       "height": 15,
       "status": "PES",
-      "sha256": "6c9c45aa4eeba5380d54d09263efde069ef0e68b0141c430110d9764efae5a0d",
-      "bytes": 1466,
-      "stitches": 225
-    },
-    {
-      "codepoint": 45796,
-      "glyph": "다",
-      "height": 20,
-      "status": "PES",
-      "sha256": "f7f91462760d93715e1caaedce0e253e98c06a45296c315c9f7546a0dcf0bad3",
-      "bytes": 1606,
-      "stitches": 295
-    },
-    {
-      "codepoint": 45796,
-      "glyph": "다",
-      "height": 30,
-      "status": "PES",
-      "sha256": "325e98875a82fd7b9c43f75ec9072f8db5e3e8034576b2a8c0829cb862c1f91c",
-      "bytes": 1876,
-      "stitches": 430
-    },
-    {
-      "codepoint": 46972,
-      "glyph": "라",
-      "height": 15,
-      "status": "PES",
-      "sha256": "4c1a6f9c30ebcae1b82838147bb7904dd3a211e0e54b822e725a8a53f7c0c687",
+      "sha256": "fd5e14b7fc0a4fac2be085c21b3a26618f4e8eb43a554780aac20230054f3aa1",
       "bytes": 1524,
-      "stitches": 254
+      "sha256TopOnly": "6c9c45aa4eeba5380d54d09263efde069ef0e68b0141c430110d9764efae5a0d",
+      "bytesTopOnly": 1466,
+      "stitchesTopOnly": 225
+    },
+    {
+      "codepoint": 45796,
+      "glyph": "다",
+      "height": 20,
+      "status": "PES",
+      "sha256": "8d95fa420be6bf081a9fa92bedb95cc64a96ebaded75fb10b7843e9b7234d2bb",
+      "bytes": 1684,
+      "sha256TopOnly": "f7f91462760d93715e1caaedce0e253e98c06a45296c315c9f7546a0dcf0bad3",
+      "bytesTopOnly": 1606,
+      "stitchesTopOnly": 295
+    },
+    {
+      "codepoint": 45796,
+      "glyph": "다",
+      "height": 30,
+      "status": "PES",
+      "sha256": "441ad7e1bcff27602283359874a658c519e22d34306c9d8296d4073cb0e8e03d",
+      "bytes": 1986,
+      "sha256TopOnly": "325e98875a82fd7b9c43f75ec9072f8db5e3e8034576b2a8c0829cb862c1f91c",
+      "bytesTopOnly": 1876,
+      "stitchesTopOnly": 430
+    },
+    {
+      "codepoint": 46972,
+      "glyph": "라",
+      "height": 15,
+      "status": "PES",
+      "sha256": "91e04d932e23f65e13edeb9ccdbf2436474830b3b119982b12ba9aa0102b822b",
+      "bytes": 1596,
+      "sha256TopOnly": "4c1a6f9c30ebcae1b82838147bb7904dd3a211e0e54b822e725a8a53f7c0c687",
+      "bytesTopOnly": 1524,
+      "stitchesTopOnly": 254
     },
     {
       "codepoint": 46972,
       "glyph": "라",
       "height": 20,
       "status": "PES",
-      "sha256": "1d8aee62fc537f1d651a52f92e59a066d3474775a576a5b1b051b68238e42a91",
+      "sha256": "9f3b2b5f50b62ac08980f69c04e5665dd8910d428419086ae80a829134b4590a",
+      "bytes": 1778,
+      "sha256TopOnly": "1d8aee62fc537f1d651a52f92e59a066d3474775a576a5b1b051b68238e42a91",
+      "bytesTopOnly": 1682,
+      "stitchesTopOnly": 333
+    },
+    {
+      "codepoint": 46972,
+      "glyph": "라",
+      "height": 30,
+      "status": "PES",
+      "sha256": "2d9b01a8d17534449ce7eb0dbe86fa5c5ca01a7e7b08987293516ee2712b805f",
+      "bytes": 2118,
+      "sha256TopOnly": "2a45240abd0c45fd9cebc13374cc115532fd5962415c663b6f6eb4d89851f772",
+      "bytesTopOnly": 1990,
+      "stitchesTopOnly": 487
+    },
+    {
+      "codepoint": 47560,
+      "glyph": "마",
+      "height": 15,
+      "status": "PES",
+      "sha256": "a1d7596928bd3577c9250b67d5569db588a8237923760b547712d5a27604feaf",
+      "bytes": 1654,
+      "sha256TopOnly": "7407fbfeb1fd1f0731b45bf39f1736342fce37cc4775a1269deba2fef51b622d",
+      "bytesTopOnly": 1576,
+      "stitchesTopOnly": 280
+    },
+    {
+      "codepoint": 47560,
+      "glyph": "마",
+      "height": 20,
+      "status": "PES",
+      "sha256": "2a1f75fc2cbc363f017d52b0cf540e2b03b5c91c0a9b4f75aa8833b2e8a3062a",
+      "bytes": 1848,
+      "sha256TopOnly": "421e403cb5600dece440220d4e028f9ae71bc7642f53ec298893bcf1132b06e4",
+      "bytesTopOnly": 1746,
+      "stitchesTopOnly": 365
+    },
+    {
+      "codepoint": 47560,
+      "glyph": "마",
+      "height": 30,
+      "status": "PES",
+      "sha256": "2bbfd07c5ec9a7087fdb408d2c0a30f1499f46f8ab832d6e7a050b3b9bcf33d3",
+      "bytes": 2218,
+      "sha256TopOnly": "8e70e72effd7273c9ffa9d6eddfdc6c65abc0edaf8a723cb4f5925de7482e8cf",
+      "bytesTopOnly": 2080,
+      "stitchesTopOnly": 532
+    },
+    {
+      "codepoint": 48124,
+      "glyph": "민",
+      "height": 15,
+      "status": "PES",
+      "sha256": "fb05a9dfaac1b5fedd1fa3edf0f89b64fe9e56209ed7d90314f0504371d592e3",
+      "bytes": 1662,
+      "sha256TopOnly": "a5a7adf8164b5801014fe3f29021e98560cdb42618d6a2eefee520e346054cd9",
+      "bytesTopOnly": 1584,
+      "stitchesTopOnly": 282
+    },
+    {
+      "codepoint": 48124,
+      "glyph": "민",
+      "height": 20,
+      "status": "PES",
+      "sha256": "565ff29be1e7def5031f08c04edbb389bafd501aa8dcb9dcbecad59f5a36908a",
+      "bytes": 1840,
+      "sha256TopOnly": "4c4bb324f78d359899d4a0807e649b0ec69715aeeaf79bdefa15b9b7fb270348",
+      "bytesTopOnly": 1742,
+      "stitchesTopOnly": 361
+    },
+    {
+      "codepoint": 48124,
+      "glyph": "민",
+      "height": 30,
+      "status": "PES",
+      "sha256": "dbafc4f187b6f23e94c261195148f0663dbc93a2e0e1d281e48358ed65854a65",
+      "bytes": 2210,
+      "sha256TopOnly": "9468de93cb39c132d5cd3208a2fe61b136b5d9d0a869eee816f1edf8515e692e",
+      "bytesTopOnly": 2072,
+      "stitchesTopOnly": 526
+    },
+    {
+      "codepoint": 48148,
+      "glyph": "바",
+      "height": 15,
+      "status": "PES",
+      "sha256": "bf72c5a28c794dc878dabe1b7c46de42feb5280c6a109e68f03694516cd660c7",
+      "bytes": 1634,
+      "sha256TopOnly": "88607772a52577bd86df2500eaa789c6e7323f1b80b192b02f8ea7f027dc9209",
+      "bytesTopOnly": 1562,
+      "stitchesTopOnly": 273
+    },
+    {
+      "codepoint": 48148,
+      "glyph": "바",
+      "height": 20,
+      "status": "PES",
+      "sha256": "073ec705c291d05e2df0369b727b0d638d148a16147e36098a030f73e2aea17e",
+      "bytes": 1826,
+      "sha256TopOnly": "f6bbc25eb4787652c6469581d67bb6b551eb6fa7a031b6c26bcade25e5e81969",
+      "bytesTopOnly": 1722,
+      "stitchesTopOnly": 353
+    },
+    {
+      "codepoint": 48148,
+      "glyph": "바",
+      "height": 30,
+      "status": "PES",
+      "sha256": "e51a6193438343d0e69be0b4fe461492a6d16d6290bda2445ab4f0d639dfff91",
+      "bytes": 2174,
+      "sha256TopOnly": "1ad82a0f92ffdb891ec93152a5a2ee32db02e42e2e6f2ed41d939ba2b4b4a747",
+      "bytesTopOnly": 2038,
+      "stitchesTopOnly": 511
+    },
+    {
+      "codepoint": 50504,
+      "glyph": "안",
+      "height": 15,
+      "status": "PES",
+      "sha256": "2746e9fd994cff8f11f0350a9d0c0b96fd9fab91408fb5016eed458f73fdc961",
       "bytes": 1682,
-      "stitches": 333
-    },
-    {
-      "codepoint": 46972,
-      "glyph": "라",
-      "height": 30,
-      "status": "PES",
-      "sha256": "2a45240abd0c45fd9cebc13374cc115532fd5962415c663b6f6eb4d89851f772",
-      "bytes": 1990,
-      "stitches": 487
-    },
-    {
-      "codepoint": 47560,
-      "glyph": "마",
-      "height": 15,
-      "status": "PES",
-      "sha256": "7407fbfeb1fd1f0731b45bf39f1736342fce37cc4775a1269deba2fef51b622d",
-      "bytes": 1576,
-      "stitches": 280
-    },
-    {
-      "codepoint": 47560,
-      "glyph": "마",
-      "height": 20,
-      "status": "PES",
-      "sha256": "421e403cb5600dece440220d4e028f9ae71bc7642f53ec298893bcf1132b06e4",
-      "bytes": 1746,
-      "stitches": 365
-    },
-    {
-      "codepoint": 47560,
-      "glyph": "마",
-      "height": 30,
-      "status": "PES",
-      "sha256": "8e70e72effd7273c9ffa9d6eddfdc6c65abc0edaf8a723cb4f5925de7482e8cf",
-      "bytes": 2080,
-      "stitches": 532
-    },
-    {
-      "codepoint": 48124,
-      "glyph": "민",
-      "height": 15,
-      "status": "PES",
-      "sha256": "a5a7adf8164b5801014fe3f29021e98560cdb42618d6a2eefee520e346054cd9",
-      "bytes": 1584,
-      "stitches": 282
-    },
-    {
-      "codepoint": 48124,
-      "glyph": "민",
-      "height": 20,
-      "status": "PES",
-      "sha256": "4c4bb324f78d359899d4a0807e649b0ec69715aeeaf79bdefa15b9b7fb270348",
-      "bytes": 1742,
-      "stitches": 361
-    },
-    {
-      "codepoint": 48124,
-      "glyph": "민",
-      "height": 30,
-      "status": "PES",
-      "sha256": "9468de93cb39c132d5cd3208a2fe61b136b5d9d0a869eee816f1edf8515e692e",
-      "bytes": 2072,
-      "stitches": 526
-    },
-    {
-      "codepoint": 48148,
-      "glyph": "바",
-      "height": 15,
-      "status": "PES",
-      "sha256": "88607772a52577bd86df2500eaa789c6e7323f1b80b192b02f8ea7f027dc9209",
-      "bytes": 1562,
-      "stitches": 273
-    },
-    {
-      "codepoint": 48148,
-      "glyph": "바",
-      "height": 20,
-      "status": "PES",
-      "sha256": "f6bbc25eb4787652c6469581d67bb6b551eb6fa7a031b6c26bcade25e5e81969",
-      "bytes": 1722,
-      "stitches": 353
-    },
-    {
-      "codepoint": 48148,
-      "glyph": "바",
-      "height": 30,
-      "status": "PES",
-      "sha256": "1ad82a0f92ffdb891ec93152a5a2ee32db02e42e2e6f2ed41d939ba2b4b4a747",
-      "bytes": 2038,
-      "stitches": 511
-    },
-    {
-      "codepoint": 50504,
-      "glyph": "안",
-      "height": 15,
-      "status": "PES",
-      "sha256": "0a8d9932280df99f20e93a1bd4da4992c4823b3587141234ea5b4fc293261391",
-      "bytes": 1600,
-      "stitches": 290
+      "sha256TopOnly": "0a8d9932280df99f20e93a1bd4da4992c4823b3587141234ea5b4fc293261391",
+      "bytesTopOnly": 1600,
+      "stitchesTopOnly": 290
     },
     {
       "codepoint": 50504,
       "glyph": "안",
       "height": 20,
       "status": "PES",
-      "sha256": "b89d0898a491eb0ea2927724c3e2724f46e14d209432eeb440a1ddbfbce665f0",
-      "bytes": 1768,
-      "stitches": 374
+      "sha256": "10f5790d9a784806771b5ec54a344f26b6f399e3aebd2e288f3c9bb35b8ff3eb",
+      "bytes": 1862,
+      "sha256TopOnly": "b89d0898a491eb0ea2927724c3e2724f46e14d209432eeb440a1ddbfbce665f0",
+      "bytesTopOnly": 1768,
+      "stitchesTopOnly": 374
     },
     {
       "codepoint": 50504,
       "glyph": "안",
       "height": 30,
       "status": "PES",
-      "sha256": "bbcf77b21c876203ba2d43e079c1db593aef00f75286cd8cd29c940db0495c81",
-      "bytes": 2096,
-      "stitches": 538
+      "sha256": "aa9ea827144bf376bd2e8d1b13f3a9cb9de2ca8444b2baf0f699ba5f0b0c994e",
+      "bytes": 2226,
+      "sha256TopOnly": "bbcf77b21c876203ba2d43e079c1db593aef00f75286cd8cd29c940db0495c81",
+      "bytesTopOnly": 2096,
+      "stitchesTopOnly": 538
     },
     {
       "codepoint": 51221,
       "glyph": "정",
       "height": 15,
       "status": "PES",
-      "sha256": "a8a18f4a93106d59231d7e8dcf8ed0149ce4c75c230495067d4470a8a1ab9845",
-      "bytes": 1704,
-      "stitches": 342
+      "sha256": "12257ea3d28c3fec8d47e4c3bed101fb6d882a834959a6b8debf513480bf9b76",
+      "bytes": 1808,
+      "sha256TopOnly": "a8a18f4a93106d59231d7e8dcf8ed0149ce4c75c230495067d4470a8a1ab9845",
+      "bytesTopOnly": 1704,
+      "stitchesTopOnly": 342
     },
     {
       "codepoint": 51221,
       "glyph": "정",
       "height": 20,
       "status": "PES",
-      "sha256": "850037d1a3dbf1021275fd48ad7ea5dbd400ea6b2430a88148b16586d873b8e8",
-      "bytes": 1890,
-      "stitches": 435
+      "sha256": "acd95ec4477ba78c3604e48a7ed6554497433c6a55dfbc4bfb77740c4b0292d5",
+      "bytes": 2010,
+      "sha256TopOnly": "850037d1a3dbf1021275fd48ad7ea5dbd400ea6b2430a88148b16586d873b8e8",
+      "bytesTopOnly": 1890,
+      "stitchesTopOnly": 435
     },
     {
       "codepoint": 51221,
       "glyph": "정",
       "height": 30,
       "status": "PES",
-      "sha256": "1e0618513449c93e0a4a3c9fc2d56bb56f5ceaca730d5469df9ceb4fe1e82774",
-      "bytes": 2286,
-      "stitches": 633
+      "sha256": "beee7f8a9a9e1358e02b1f76da65161323b41627a62c9ffc6033f1fae6144e98",
+      "bytes": 2454,
+      "sha256TopOnly": "1e0618513449c93e0a4a3c9fc2d56bb56f5ceaca730d5469df9ceb4fe1e82774",
+      "bytesTopOnly": 2286,
+      "stitchesTopOnly": 633
     }
-  ]
+  ],
+  "underlay": "sha256/bytes: default width-based satin underlay (795d257d); *TopOnly: f1db5974 output, reproduced with autoUnderlay=false"
 }

@@ -17,7 +17,11 @@ import org.robolectric.annotation.GraphicsMode
 import java.security.MessageDigest
 import kotlin.test.*
 
-/** Frozen on untouched origin/main f1db5974, using the bundled OFL Noto Sans KR 400 family. */
+/**
+ * Frozen on untouched origin/main f1db5974, using the bundled OFL Noto Sans KR 400 family.
+ * sha256TopOnly = the f1db5974 bytes, reproduced with autoUnderlay=false; sha256 = the default
+ * width-based underlay (docs/satin-underlay.md), refrozen on 795d257d.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -37,9 +41,11 @@ class KanaHangulInvarianceTest {
                     mapOf(0 to HangulSatin.measuredWidthSource(AndroidGlyphOutlines.extract(glyph,face),reference)))
             }
             assertTrue(HangulSatin.applies(glyph));assertFalse(KanaSatin.applies(glyph))
-            val bytes=PesWriter.write(HangulSatin.generate(data,row.getDouble("height"),reference,EmbThread(0xff000000.toInt(),"Black 40wt")))
-            val sha=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
-            assertEquals(row.getString("sha256"),sha,"$glyph ${row.getDouble("height")}mm")
+            fun sha(autoUnderlay:Boolean)=MessageDigest.getInstance("SHA-256").digest(PesWriter.write(HangulSatin.generate(data,row.getDouble("height"),
+                reference,EmbThread(0xff000000.toInt(),"Black 40wt"),autoUnderlay=autoUnderlay))).joinToString("") { "%02x".format(it.toInt() and 255) }
+            // Without the default underlay the f1db5974 bytes must stay; the default output is frozen separately.
+            assertEquals(row.getString("sha256TopOnly"),sha(false),"$glyph ${row.getDouble("height")}mm top only")
+            assertEquals(row.getString("sha256"),sha(true),"$glyph ${row.getDouble("height")}mm")
         }
         assertEquals(30,rows.length())
     }

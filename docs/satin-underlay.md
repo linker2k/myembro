@@ -103,8 +103,13 @@ The corpus aggregate JSON is kept privately with the user's data.
 
 ## Follow-ups
 
-- `AndroidFontSnapshotTest.jvmPreparedObjectsAndPesMatchActualAppForTwoFonts` compares against PES captured
-  in the real app; the satin cases now differ by design and need a re-capture on a device with this build.
+- `AndroidFontSnapshotTest.jvmPreparedObjectsAndPesMatchActualAppForTwoFonts`: the 4 pinned Hangul satin PES were
+  captured in the app before this change. Until a re-capture on emulator-5556 with this build
+  (`tools/font-snapshots/capture.sh`, then restore the plain comparison), the test matches them with
+  `autoUnderlay=false` (byte-exact) and checks that the default output differs and has no blocking finding.
+- `KanaHangulInvarianceTest` (app, 30 rows): `sha256TopOnly` = the f1db5974 bytes, reproduced byte-exact with
+  `autoUnderlay=false` (`HangulSatin`/`KanaSatin.generate` now honour it, as `TextObject` passes it);
+  `sha256` = the default underlay output, refrozen.
 - The bundled sample pack (`app/src/main/assets/samples`) still holds the pre-underlay PES; regenerate it
   with `tools/samples/install_pack.py` before a release that includes this change.
 - Legacy lettering projects whose satin had no underlay now get the width default on reload (user decision);

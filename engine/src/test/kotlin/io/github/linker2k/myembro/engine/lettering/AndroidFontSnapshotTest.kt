@@ -69,10 +69,20 @@ class AndroidFontSnapshotTest {
             val objectJson=Project(objects=listOf(prepared.textObject)).toJson()
             val expectedJson=GZIPInputStream(bytes(field("file").removeSuffix(".pes")+".myembro.gz").inputStream()).bufferedReader().use { it.readText() }
             check(objectJson==expectedJson) { "Android/JVM TextObject JSON mismatch $id $text at ${objectJson.zip(expectedJson).indexOfFirst { it.first!=it.second }}" }
-            val raw=prepared.localPattern()
-            val pattern=if(raw.metadata[GeneratedPatternProcessor.FINISHED_KEY]=="v1")
-                GeneratedPatternProcessor.finish(raw,options=SewingOptions()) else raw
-            val actual=PesWriter.write(pattern);val expected=bytes(field("file"))
+            fun pes(p:PreparedText)=p.localPattern().let { raw->PesWriter.write(if(raw.metadata[GeneratedPatternProcessor.FINISHED_KEY]=="v1")
+                GeneratedPatternProcessor.finish(raw,options=SewingOptions()) else raw) }
+            // The pinned app PES predate the default satin underlay (795d257d): until a 5556 re-capture
+            // (tools/font-snapshots/capture.sh) they are matched by the same assembly with autoUnderlay=false,
+            // and the default output must differ from them and stay free of blocking sew-out findings.
+            val actual=if(style==StitchStyle.SATIN) {
+                val sewn=pes(prepared)
+                val report=io.github.linker2k.myembro.engine.sewout.SewoutCheck.checkPes(sewn,options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(
+                    hoop=HoopSpec.H100,origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED))
+                assertTrue(report.analysisComplete && !report.hasBlockingIssues,"$id $text default underlay blocked")
+                assertFalse(sewn.contentEquals(bytes(field("file"))),"$id $text default underlay missing")
+                pes(prepareText(request.copy(centerlineSatin=centerline,satinOptions=SatinOptions(autoUnderlay=false)),s.outline))
+            } else pes(prepared)
+            val expected=bytes(field("file"))
             if(!expected.contentEquals(actual)) {
                 val out=File("/tmp/myembro-font-snapshot-diff").apply { mkdirs() }
                 File(out,field("file")).writeBytes(actual)

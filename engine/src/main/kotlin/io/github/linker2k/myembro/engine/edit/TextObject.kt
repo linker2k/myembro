@@ -78,11 +78,11 @@ data class TextObject(
         if(kanaSatin!=null && stitchStyle==StitchStyle.SATIN) {
             require(arcDeg==0.0 && arcRadiusMm==null) { "Curved centerline lettering is not supported" }
             io.github.linker2k.myembro.engine.lettering.KanaSatin.generate(kanaSatin,heightMm,requireNotNull(contourSourceHeight),thread,characterThreads,
-                satinOptions.parameters ?: io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters(zigzag_spacing_mm=spacingMm))
+                satinOptions.parameters ?: io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters(zigzag_spacing_mm=spacingMm),satinOptions.autoUnderlay)
         } else if(centerlineSatin!=null && stitchStyle==StitchStyle.SATIN) {
             require(arcDeg==0.0 && arcRadiusMm==null) { "Curved centerline lettering is not supported" }
             io.github.linker2k.myembro.engine.lettering.HangulSatin.generate(centerlineSatin,heightMm,requireNotNull(contourSourceHeight),thread,characterThreads,
-                satinOptions.parameters ?: io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters(zigzag_spacing_mm=spacingMm))
+                satinOptions.parameters ?: io.github.linker2k.myembro.engine.inkstitch.elements.SatinParameters(zigzag_spacing_mm=spacingMm),satinOptions.autoUnderlay)
         } else when (fontKind) {
             FontKind.HERSHEY -> LetteringEngine.generate(text, fontId, heightMm, spacing, arcDeg, thread,
                 lineSpacing = lineSpacing, alignment = alignment, arcRadiusMm = arcRadiusMm, characterThreads = characterThreads,
