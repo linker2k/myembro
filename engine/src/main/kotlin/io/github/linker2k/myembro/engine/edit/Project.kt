@@ -134,6 +134,20 @@ data class HoopSpec(
         val H130x180 = HoopSpec("130×180", 1300, 1800)
         val H160x260 = HoopSpec("160×260", 1600, 2600)
         val ALL = listOf(H100, H130x180, H160x260)
+
+        /** Official Brother rectangular frames, W×H (docs/research/hoop-verification.md). Machine catalogs take
+         * sizes from here only; border, magnetic, cap, round and multi-position frames are not listed. */
+        val BROTHER_FRAMES: List<HoopSpec> = ALL + listOf(
+            60 to 20, 60 to 40, 150 to 150, 180 to 130, 180 to 300, 200 to 200, 200 to 300, 240 to 240,
+            240 to 360, 272 to 272, 272 to 408, 297 to 465, 300 to 200, 360 to 200,
+        ).map { (w, h) -> HoopSpec("${w}×${h}", w * 10, h * 10) }
+        /** SA434 coverage: repositioned 100×100 placements, never one continuous sewing field. */
+        val SA434_COVERAGE = HoopSpec("SA434 100×170", 1000, 1700)
+
+        /** An unlisted size is a catalog error, not a new hoop. */
+        fun brotherFrame(widthMm: Int, heightMm: Int): HoopSpec =
+            BROTHER_FRAMES.firstOrNull { it.width == widthMm * 10 && it.height == heightMm * 10 }
+                ?: error("No official Brother frame ${widthMm}×${heightMm}")
     }
 }
 

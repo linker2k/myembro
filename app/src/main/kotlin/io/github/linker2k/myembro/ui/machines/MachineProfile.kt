@@ -71,13 +71,19 @@ object MachineProfiles {
     // SA431: official H20 × W60 mm (nominal H1 × W2½ in). App coordinates use width × height.
     // https://www.brother-usa.com/p/hoops-stabilizers/SA431 (SE400, SE600 compatibility)
     // https://support.brother.com/g/b/sp/colist.aspx?c=us_ot&cao=hfemba&lang=en&prod=hf_se700eus
-    private val small = MachineHoop(HoopSpec("SA431 60×20", 600, 200))
+    private val small = MachineHoop(HoopSpec.brotherFrame(60, 20))
     // SA434: H170 × W100 mm; each position is at most 100×100 mm. Official sources consulted
     // did not establish the position count or numeric offsets: positionCount=null, positions=[].
     // https://www.brother-usa.com/p/hoops-stabilizers/SA434 (nominal 6¾ × 4 in; SE400/SE600)
     // https://help.brother-usa.com/app/answers/detail/a_id/72260/~/available-hoop-sizes (per-position limit)
     // SE700 compatibility: SE700_ACCESSORIES above. No automatic splitting here.
-    private val repositionable = MachineHoop(HoopSpec.H100, HoopSpec("SA434 100×170", 1000, 1700), true)
+    private val repositionable = MachineHoop(HoopSpec.H100, HoopSpec.SA434_COVERAGE, true)
+    // SA434/EF71 (H17×W10 cm) in the manual accessory table or support.brother.com accessory list
+    // (docs/research/hoop-verification.md). M370/M380D/LB7950/LB8950 manuals do not list it.
+    private val sa434Models = setOf(
+        "se425", "se625", "se630", "se725", "pe535", "pe550d", "pe545", "ns1750d",
+        "kr-lb6950", "kr-nv180", "kr-nv180d", "kr-nv180k", "kr-nv900", "kr-nv900d", "kr-nv950", "kr-nv980d", "kr-nv980k",
+    )
 
     // Operation Manual p.127: medium 100×100, small W60×H20, large W100×H170 (multiple placements).
     // Source: https://download.brother.com/welcome/doch000184/885v31_v32_v33_om04en.pdf
@@ -111,8 +117,7 @@ object MachineProfiles {
         emptyList(), emptySet(), sourceUrls = listOf("https://github.com/linker2k/myembro/blob/main/docs/machines.md#user-defined-machine"), region = MachineRegion.OTHER)
     private val additional = BrotherMachineCatalog.all.map { facts ->
         val hoops = facts.hoops.map { MachineHoop(it) }.toMutableList()
-        // This accessory is explicitly documented for these Korean 4x4 platform manuals only.
-        if (facts.id in setOf("kr-lb6950", "kr-nv180", "kr-nv180d", "kr-nv180k")) hoops += repositionable
+        if (facts.id in sa434Models) hoops += repositionable
         MachineProfile(facts.id, facts.displayName, facts.maximumArea, hoops,
             facts.transferMethods?.map { TransferMethod.valueOf(it.name) }?.toSet(),
             sourceUrls = facts.sourceUrls, region = facts.region, aliases = facts.aliases + setOf(facts.displayName,

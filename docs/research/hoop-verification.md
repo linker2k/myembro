@@ -125,7 +125,9 @@ fabric position", with no explicit 10×10-per-position footnote (same wording as
 
 ## Mismatch list (46)
 
-All are missing official hoops; no maximum area differs.
+All are missing official hoops; no maximum area differs. Applied on branch `feat/hoop-lists`
+(2026-11-08): the "App" columns above show the values before that change; current values are in
+[machines.md](../machines.md#united-states-and-korea-catalog-verified-2026-10-28).
 
 - Missing 60×20 and SA434 100×170: SE425, SE625, SE630, SE725, PE535, PE550D, PE545, NS1750D,
   이노비스 900, 900D, 950, 980D, 980K (13)

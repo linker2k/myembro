@@ -77,6 +77,7 @@ Pick your machine in **Settings → Machine model**. The list has 58 Brother emb
 
 - The SE400 is tested on a real machine, including direct transfer over a USB cable.
 - The other models use profiles from Brother manuals and product pages. Models larger than 100×100mm are marked **Not verified on a physical machine** in the app.
+- Each model lists every standard hoop Brother publishes for it, including optional ones.
 - Every model gets PES files. Send them over a USB cable (SE400) or a USB flash drive connected to the phone (OTG).
 - Full list with sources: [docs/machines.md](docs/machines.md).
 
