@@ -68,6 +68,7 @@ derived from the following projects, whose notices are reproduced as their licen
   `engine/.../io/DstReader.kt` (DstReader.py), `engine/.../io/PecThreads.kt` (EmbThreadPec.py),
   `engine/.../io/DstWriter.kt`, `engine/.../io/ExpWriter.kt` (DstWriter.py, ExpWriter.py),
   `engine/.../io/LegacyWriterEncoder.kt` (EmbEncoder.py default paths for the six engine commands),
+  `engine/.../io/JefReader.kt`, `engine/.../io/ExpReader.kt`, `engine/.../io/Vp3Reader.kt` (JefReader.py, ExpReader.py, Vp3Reader.py),
   `engine/.../io/JefWriter.kt`, `engine/.../io/JefThreads.kt` (JefWriter.py, EmbThreadJef.py, EmbThread.py),
   `engine/.../io/Vp3Writer.kt` (Vp3Writer.py),
   `engine/.../io/PecWriter.kt` (PecWriter.py, PecGraphics.py, EmbThread.py),

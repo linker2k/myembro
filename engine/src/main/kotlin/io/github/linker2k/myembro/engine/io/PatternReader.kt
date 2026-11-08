@@ -10,7 +10,10 @@ object PatternReader {
         return when {
             magic == "#PES" || magic == "#PEC" -> PesReader.read(data)
             fileName?.lowercase()?.endsWith(".dst") == true -> DstReader.read(data)
-            else -> throw EmbFormatException("Unsupported file: ${fileName ?: "unknown"} (PES, PEC and DST are supported)")
+            magic == "%vsm" -> Vp3Reader.read(data)
+            fileName?.lowercase()?.endsWith(".jef") == true -> JefReader.read(data)
+            fileName?.lowercase()?.endsWith(".exp") == true -> ExpReader.read(data)
+            else -> throw EmbFormatException("Unsupported file: ${fileName ?: "unknown"} (PES, PEC, DST, JEF, EXP and VP3 are supported)")
         }
     }
 }

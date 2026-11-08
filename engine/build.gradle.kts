@@ -343,3 +343,11 @@ tasks.register<JavaExec>("exportFormatWriterSamples") {
     args(rootProject.file("app/src/main/assets/samples").path,
         providers.gradleProperty("formatWriterOutput").orElse("/tmp/myembro-format-samples").get())
 }
+
+// Opt-in 12-golden + 136-bundle reader comparison, isolated Python is run separately.
+tasks.register<JavaExec>("exportFormatReaderSamples") {
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("io.github.linker2k.myembro.engine.FormatReaderSampleCli")
+    args(rootProject.projectDir.path, providers.gradleProperty("formatReaderOutput").orElse("/tmp/myembro-format-readers-samples").get())
+}

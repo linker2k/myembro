@@ -12,11 +12,11 @@ import io.github.linker2k.myembro.engine.inkstitch.stitch_plan.SewingOptions
 import java.io.File
 import java.util.Locale
 
-/** MIME hints narrow the SAF picker; extension AND content are checked after selection. */
+/** MIME hints narrow the SAF picker; extension and available format structure are checked after selection (EXP has no signature). */
 object DesignFormats {
-    val extensions = setOf("pes", "pec", "dst", "myembro")
+    val extensions = setOf("pes", "pec", "dst", "jef", "exp", "vp3", "myembro")
     val mimeTypes = arrayOf(
-        "application/octet-stream", "application/x-pes", "application/x-pec", "application/x-dst",
+        "application/octet-stream", "application/x-pes", "application/x-pec", "application/x-dst", "application/x-jef", "application/x-exp", "application/x-vp3",
         "application/vnd.brother.pes", "application/vnd.tajima.dst", "application/x-myembro",
         "application/json", "application/zip", "application/x-zip", "application/x-zip-compressed",
     )
@@ -50,6 +50,9 @@ object DesignFormats {
             "pec" -> prefix.startsWith("#PEC0001")
             // DST has a fixed 512-byte ASCII header, beginning with its LA: label.
             "dst" -> bytes.size >= 515 && prefix.startsWith("LA:")
+            "jef" -> bytes.size >= 116 // Header/palette/offset validated by JefReader.
+            "exp" -> bytes.isNotEmpty() && bytes.size % 2 == 0 // EXP has no signature.
+            "vp3" -> prefix.startsWith("%vsm%\u0000")
             "myembro" -> bytes.toString(Charsets.UTF_8).trimStart('\uFEFF', ' ', '\n', '\r', '\t').startsWith("{")
             else -> false
         }

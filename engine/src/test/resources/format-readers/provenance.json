@@ -1,0 +1,30 @@
+{
+  "package": "pyembroidery",
+  "version": "1.5.1",
+  "license": "MIT",
+  "sources": {
+    "pyembroidery.JefReader": "d2606e02133341ebd593a23ab4e6531354ce968234efb65550621b863481ba45",
+    "pyembroidery.ExpReader": "9df6a16c954611fe4a1242cbdaaa479026317948a07df8c9830de0adcfe4c1fd",
+    "pyembroidery.Vp3Reader": "4b4c884654af5b8b13d99dc72b68062576a81488c2b47e829fecf6a862cbe992"
+  },
+  "outputs": {
+    "001-flower.v6.pes.jef": "af4521c5195b68e3118171b7ebbb24982cb54e3fd3f30d9771c498f9ae8a79f5",
+    "001-flower.v6.pes.exp": "7823158d73418e5e1e524f0dd48e56a10aa3c873f7cf77642192fa0b98de21b7",
+    "001-flower.v6.pes.vp3": "10204649b998f267e5886d0916776ae0e770c31a091f27b9722599186ae65adc",
+    "004-long_moves.v6.pes.jef": "c8e7f22f149b27fa7b379d374706fcbe98aa017d57450d3c3987b5a330dbbcfb",
+    "004-long_moves.v6.pes.exp": "3bd5aeb03feef6dff4fc84f7edd2b8d62f79757a1a007f33b7d880690328480f",
+    "004-long_moves.v6.pes.vp3": "43990701feab6cc7067476f945a93fb969d74cebce87898af96bcc50ce4f93c2",
+    "007-stops.v6.pes.jef": "b9a7ecbbc964a7d0830cb4e3483f964faa73e14e51b9996bbe83f77085459ece",
+    "007-stops.v6.pes.exp": "ab9033e5cd6119baad25bc0922d85c46c5fde66898e9d4fccbb57a23c424ba3d",
+    "007-stops.v6.pes.vp3": "147cb745673da8ad52eb19507c263a6032644c363285864b1a8428b57dea8b5e",
+    "013-sample_02_lightning.pes.jef": "d931ccb01e7e6ce1fb90dc8d8b333c8014a22478be78ca94cfd4dea23d299a3d",
+    "013-sample_02_lightning.pes.exp": "bbfc5a134b7d56bb0f91bb3c446411b8d0bda0fce443697f0de81a38408330dd",
+    "013-sample_02_lightning.pes.vp3": "49712e6faf651cb596c8fcecfd10d0b02c5131293a2c340605710a83b4d254f6",
+    "014-sample_03_crown.pes.jef": "b6abce2c9733d09d6db98b7f606b67d02b30e2fb0224a716e06ca45deb93ef3e",
+    "014-sample_03_crown.pes.exp": "37029ff2432630b7634cbee66d3386119ab9aa456eaa4e068fb33a1fa433d82c",
+    "014-sample_03_crown.pes.vp3": "a4f3db54939eeb8cdb7a6472a1fcf422d32683853b6da96b68c4ae10c5227202",
+    "016-sample_05_rocket.pes.jef": "02b15ddd715dc7334e4efede56a83f244bb5a4fa9c867023974df01f96400b62",
+    "016-sample_05_rocket.pes.exp": "75edb106e63362ddb9347d5a34fb78d36109956155017347139c546615384e2b",
+    "016-sample_05_rocket.pes.vp3": "42720e6a6c5b0ce4460b94c502203557a34318002813c2b4ba92bf23c4a3eb80"
+  }
+}

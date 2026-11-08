@@ -52,7 +52,7 @@ The app opens on the home screen.
 |---|---|---|
 | 1 | Sample designs | Some of the 136 built-in designs. Tap one to copy it into your projects and open the editor. |
 | 2 | Quick start | Four common tasks. |
-| 3 | Import design | Adds PES, PEC or DST files from your phone to the design list. |
+| 3 | Import design | Adds PES, PEC, DST, JEF, EXP or VP3 files from your phone to the design list. |
 | 4 | Add lettering | Opens the lettering screen (chapter 5). |
 | 5 | Find free designs | Opens a list of free design sites (chapter 11). |
 | 6 | Photo to embroidery | Turns a photo or drawing into embroidery (chapter 6). |
@@ -562,7 +562,7 @@ In Color drawing, turn on **Thread texture** to sew the picture as layered threa
 |---|---|---|
 | 1 | Designs | Your saved designs and projects. |
 | 2 | Transfer history | Shows recent USB transfer results. |
-| 3 | Import designs | Adds PES, PEC or DST files from your phone. |
+| 3 | Import designs | Adds PES, PEC, DST, JEF, EXP or VP3 files from your phone. |
 | 4 | Find free designs | A list of free design sites (chapter 11). |
 | 5 | USB status | Shows the connected USB. Tap it for USB export instructions. |
 | 6 | Search | Search by design name. |
@@ -637,7 +637,7 @@ Spread two fingers to zoom in on the realistic preview and see the thread textur
 
 **Good to know**
 
-- You can open PES (v1–v10), PEC and DST files.
+- You can open PES (v1–v10), PEC, DST, JEF, EXP and VP3 files.
 
 ## 9. Sew-out check
 
@@ -802,7 +802,7 @@ If sending fails, the result window shows the reason with **Details**, **Copy di
 ### Good to know
 
 - You download designs from the designer's site yourself. The app does not download them for you.
-- PES, PEC, DST and ZIP are supported.
+- PES, PEC, DST, JEF, EXP, VP3 and ZIP are supported.
 - Follow each site's terms. Most do not allow sharing or selling the design files.
 
 ## 12. Settings

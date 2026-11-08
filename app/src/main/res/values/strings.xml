@@ -12,7 +12,7 @@
     <string name="export_unknown_error">Unknown error</string>
     <string name="export_default_name">design</string>
     <string name="empty_title">No design open</string>
-    <string name="empty_body">Open a Brother PES (or PEC / DST) file to preview its stitches.</string>
+    <string name="empty_body">Open a Brother PES (or PEC / DST / JEF / EXP / VP3) file to preview its stitches.</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="fit">Fit to screen</string>

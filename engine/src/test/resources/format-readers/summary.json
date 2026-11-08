@@ -1,0 +1,68 @@
+{
+  "jef": {
+    "source": {
+      "coordinates": 1565955,
+      "needleCoordinates": 0,
+      "colorBoundaryCoordinates": 0,
+      "commands": 33969,
+      "colorBoundaries": 364,
+      "rgb": 456,
+      "threadIdentity": 514
+    },
+    "oracle": {
+      "coordinates": 0,
+      "needleCoordinates": 0,
+      "colorBoundaryCoordinates": 0,
+      "commands": 0,
+      "colorBoundaries": 0,
+      "rgb": 0,
+      "threadIdentity": 0
+    },
+    "oracleMatches": 148,
+    "sourceMatches": 0
+  },
+  "exp": {
+    "source": {
+      "coordinates": 1565941,
+      "needleCoordinates": 0,
+      "colorBoundaryCoordinates": 4,
+      "commands": 33947,
+      "colorBoundaries": 370,
+      "rgb": 514,
+      "threadIdentity": 514
+    },
+    "oracle": {
+      "coordinates": 0,
+      "needleCoordinates": 0,
+      "colorBoundaryCoordinates": 0,
+      "commands": 0,
+      "colorBoundaries": 0,
+      "rgb": 0,
+      "threadIdentity": 0
+    },
+    "oracleMatches": 148,
+    "sourceMatches": 0
+  },
+  "vp3": {
+    "source": {
+      "coordinates": 1547377,
+      "needleCoordinates": 269769,
+      "colorBoundaryCoordinates": 107,
+      "commands": 16380,
+      "colorBoundaries": 370,
+      "rgb": 0,
+      "threadIdentity": 485
+    },
+    "oracle": {
+      "coordinates": 0,
+      "needleCoordinates": 0,
+      "colorBoundaryCoordinates": 0,
+      "commands": 0,
+      "colorBoundaries": 0,
+      "rgb": 0,
+      "threadIdentity": 0
+    },
+    "oracleMatches": 148,
+    "sourceMatches": 0
+  }
+}

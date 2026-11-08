@@ -37,6 +37,9 @@
                 <data android:scheme="content" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/x-jef" />
+                <data android:mimeType="application/x-exp" />
+                <data android:mimeType="application/x-vp3" />
                 <data android:mimeType="application/vnd.brother.pes" />
                 <data android:mimeType="image/*" />
                 <data android:mimeType="image/svg+xml" />
@@ -53,6 +56,9 @@
                 <data android:mimeType="application/x-zip" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/x-pes" />
+                <data android:mimeType="application/x-jef" />
+                <data android:mimeType="application/x-exp" />
+                <data android:mimeType="application/x-vp3" />
                 <data android:mimeType="application/vnd.brother.pes" />
                 <data android:mimeType="application/x-pec" />
                 <data android:mimeType="application/x-dst" />
