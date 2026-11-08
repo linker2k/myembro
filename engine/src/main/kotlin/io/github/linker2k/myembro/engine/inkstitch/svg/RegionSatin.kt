@@ -68,7 +68,9 @@ object RegionSatin {
             StrokeToSatin.convertPathToSatin(started, widthPx)?.let(StrokeToSatin::filteredRungs)
         }
         if (sections.isEmpty()) return null
-        val routed = AutoSatin.route(sections, thread, parameters)
+        // App-generated satin: default underlay chosen by the measured median width.
+        val routed = AutoSatin.route(sections, thread, io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy
+            .withDefault(parameters, Units.pixelsToMm(widthPx)))
         return routed.groups.takeIf { routed.discardedSatins == 0 && it.isNotEmpty() }
     }
 

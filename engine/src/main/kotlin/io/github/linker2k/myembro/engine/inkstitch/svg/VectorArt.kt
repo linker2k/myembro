@@ -359,7 +359,7 @@ object VectorArt {
                         for (line in subpaths(shape)) {
                             val section = requireNotNull(StrokeToSatin.convertPathToSatin(line.points.map { px(it.x, it.y) },
                                 Units.mmToPixels(w), StrokeToSatin.Style.fromSvg(shape.lineJoin)))
-                            made += section.column(SatinParameters(), thread).toStitchGroups(made.lastOrNull()?.stitches?.lastOrNull() ?: previous())
+                            made += section.column(io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy.withDefault(SatinParameters(), w), thread).toStitchGroups(made.lastOrNull()?.stitches?.lastOrNull() ?: previous())
                         }
                         made
                     }, running = { Stroke(subpaths(shape).map { it.points.map { q -> px(q.x, q.y) } }, thread).toStitchGroups(previous()) })

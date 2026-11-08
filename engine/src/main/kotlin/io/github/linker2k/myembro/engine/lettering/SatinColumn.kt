@@ -25,7 +25,12 @@ data class SatinOptions(
     val contourUnderlay: Boolean = false,
     val underlayInsetMm: Double = 0.4,
     val parameters: SatinParameters? = null,
+    /** With no underlay chosen, pick one by column width (SatinUnderlayPolicy). False: top layer only. */
+    val autoUnderlay: Boolean = true,
 ) {
+    /** Parameters actually sewn for a column of [widthMm]. */
+    fun sewnParameters(widthMm: Double): SatinParameters = if (!autoUnderlay) sourceParameters() else
+        io.github.linker2k.myembro.engine.inkstitch.elements.SatinUnderlayPolicy.withDefault(sourceParameters(), widthMm)
     /** Existing projects retain explicit legacy values; new UI satin selections store source defaults. */
     fun sourceParameters(): SatinParameters = parameters ?: SatinParameters(
         zigzag_spacing_mm = densityMm, max_stitch_length_mm = maxStitchLengthMm,
@@ -83,7 +88,7 @@ object SatinColumn {
         if(TatamiLettering.methodForWidth(if(kotlin.math.abs(width-6.0)<1e-9) 6.0 else width)==StitchStyle.FILL)
             return TatamiLettering.generateGlyphs(listOf(OutlineGlyph(listOf(leftRail+rightRail.asReversed()),thread)))
         val groups = if (left.size >= 2 && right.size >= 2)
-            InkSatin.element(left,right,options,rungs,thread).toStitchGroups(null) else emptyList()
+            InkSatin.element(left,right,options.copy(parameters=options.sewnParameters(width)),rungs,thread).toStitchGroups(null) else emptyList()
         return GeneratedPatternProcessor.fromGroups(groups).centeredGenerated()
     }
 
