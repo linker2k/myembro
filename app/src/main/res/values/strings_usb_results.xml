@@ -12,6 +12,8 @@
     <string name="usb_result_problem_other">Some files could not be sent. See details for the affected files and diagnostics.</string>
     <string name="usb_result_name_collision">An existing name was preserved; the new file was sent under a different name.</string>
     <string name="usb_result_filesystem">An unexpected disk condition needs checking. See details.</string>
+    <string name="usb_result_not_root_folder">Saved in a folder inside the drive. Some machines only find designs in the top (root) folder, so the root folder is recommended.</string>
+    <string name="usb_result_many_entries">The drive\'s top folder now holds 200 or more files and folders. Some machines read only up to 200, so remove ones you no longer need.</string>
     <string name="usb_result_details">Details ▾</string>
     <string name="usb_result_less">Hide details ▴</string>
     <string name="usb_result_close">Close</string>

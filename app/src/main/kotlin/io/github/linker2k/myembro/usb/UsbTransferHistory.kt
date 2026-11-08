@@ -16,7 +16,7 @@ data class UsbTransferredFile(val name: String, val size: Long,
     val automaticJumpTrim: Boolean? = null, val machineName: String? = null)
 
 enum class UsbTransferOutcome { SUCCESS, PARTIAL, FAILURE }
-enum class UsbTransferNotice { NAME_COLLISION, FILESYSTEM }
+enum class UsbTransferNotice { NAME_COLLISION, FILESYSTEM, NOT_ROOT_FOLDER, MANY_ENTRIES }
 enum class UsbTransferProblem { SPACE, VERIFY, PERMISSION, DISCONNECTED, NO_DEVICE, FOLDER, OTHER }
 
 data class UsbTransferRecord(

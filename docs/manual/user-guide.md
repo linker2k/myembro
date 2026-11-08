@@ -745,10 +745,32 @@ No computer is needed. Tested on a real Brother SE400 with a Galaxy Fold7. The S
 
 ### 10.2 Sending with a USB flash drive (other machines)
 
-1. Connect a USB flash drive to the phone (OTG).
-2. In **Designs**, touch and hold a design and select the designs to send (8.1).
-3. Tap **Export N to USB** and allow access to a folder on the drive.
-4. Eject the drive, then plug it into the machine.
+**What you need:** a USB flash drive formatted as **FAT32**, 32 GB or smaller. Brother's manuals name FAT32, and phones read FAT32 and exFAT, so FAT32 works on both. If the drive has no USB-C plug, use a USB-C OTG adapter.
+
+1. **Plug the USB flash drive into the phone.**
+   Success: the banner at the top of **Designs** shows **USB:** and the drive's name.
+
+2. **In Designs, touch and hold a design, then tap the others you want to send (8.1).**
+   Success: the bottom button reads **Export 2 to USB** (the number follows your selection).
+
+3. **Tap Export N to USB. The first time, the phone opens the drive's top folder: tap Use this folder, then Allow.**
+   Success: the app starts saving. Next time it saves to the same folder without asking.
+
+4. **Wait for the result.**
+   Success: **✔ … sent** appears with the file name. A file with the same name is kept, and the new one is saved under a different name.
+
+5. **Eject the drive from the phone, then plug it into the machine and open the USB designs.**
+   Success: the design appears in the machine's list.
+
+**Save in the top (root) folder.** Some machines only find designs there. Some machines also read only one folder level and up to 200 files and folders in total (Brother FAQ). The app tells you when the folder is not the top folder or when the top folder holds 200 or more items.
+
+**If you get stuck**
+
+- **The banner still says No USB drive connected:** check that the adapter is a data (OTG) adapter, then unplug the drive and plug it in again. Tap the banner, then **Refresh USB status**.
+- **The phone cannot open the drive:** the drive may use a format the phone does not read, such as NTFS. Format it as FAT32 on a computer (this erases it).
+- **The machine does not show the design:** check that the file is in the top folder and that its name uses letters, numbers, "-" or "_". Brother recommends these characters for file names.
+- **The machine does not see the drive:** format it as FAT32 or try another drive. Some drives do not work with some machines.
+- **Still not working:** in the result window tap **Details**, then **Copy diagnostics** or **Share**, and include it when you ask for help.
 
 ![Sending without a USB drive](../images/manual/en/10-usb-fail.png)
 

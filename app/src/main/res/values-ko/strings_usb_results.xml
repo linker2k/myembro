@@ -12,6 +12,8 @@
     <string name="usb_result_problem_other">보내지 못한 파일이 있습니다. 자세히에서 해당 파일과 진단을 확인하세요.</string>
     <string name="usb_result_name_collision">기존 파일을 보존하고 새 파일을 다른 이름으로 보냈습니다.</string>
     <string name="usb_result_filesystem">확인이 필요한 디스크 상태가 있습니다. 자세히를 확인하세요.</string>
+    <string name="usb_result_not_root_folder">USB 메모리 안의 폴더에 저장했습니다. 맨 위(루트) 폴더의 도안만 찾는 자수기가 있으니 루트 폴더를 권장합니다.</string>
+    <string name="usb_result_many_entries">USB 메모리 맨 위 폴더의 파일과 폴더가 200개 이상입니다. 200개까지만 읽는 자수기가 있으니 필요 없는 것은 지워 주세요.</string>
     <string name="usb_result_details">자세히 ▾</string>
     <string name="usb_result_less">접기 ▴</string>
     <string name="usb_result_close">닫기</string>
