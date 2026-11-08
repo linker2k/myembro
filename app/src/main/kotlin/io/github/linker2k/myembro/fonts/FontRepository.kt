@@ -8,6 +8,7 @@ import android.provider.OpenableColumns
 import io.github.linker2k.myembro.engine.lettering.FontQualityCache
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFont
 import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontRegistry
+import io.github.linker2k.myembro.engine.inkstitch.lettering.InkStitchFontInfo
 import io.github.linker2k.myembro.engine.lettering.SvgFont
 import java.io.File
 import java.io.IOException
@@ -58,7 +59,14 @@ data class CatalogFont(
     val theme: String? = null,
     /** Shipped in the APK (assets/fonts/bundled/<id>/): installed offline, never deleted. */
     val bundled: Boolean = false,
+    /** Ink/Stitch variant folders (the SVGs in ltr/): the files after [url], in parse order (later files win). */
+    val extraFiles: List<PinnedFile> = emptyList(),
 ) {
+    data class PinnedFile(val url: String, val sha256: String, val size: Long)
+
+    /** Download size of every font file. */
+    val totalSize: Long get() = size + extraFiles.sumOf { it.size }
+
     /** Theme used to pick a similar font: the embroidery font's own, else "script" for script TTFs. */
     val themeKey: String? get() = theme?.takeIf { it.isNotEmpty() } ?: if (style == "script") "script" else null
 
@@ -152,8 +160,14 @@ class FontRepository(context: Context) {
     /** Ink/Stitch layout metadata beside the SVG; null for other kinds. */
     fun metaFile(font: CatalogFont): File? = font.metaUrl?.let { File(dir, "${font.id}.font.json") }
 
+    /** The [CatalogFont.extraFiles] beside [fontFile], numbered from 1 in parse order. */
+    fun extraFiles(font: CatalogFont): List<File> = font.extraFiles.indices.map { File(dir, "${font.id}.${it + 1}.${font.kind.extension}") }
+
+    /** [fontFile] then [extraFiles]: every SVG of an Ink/Stitch font in parse order. */
+    fun fontFiles(font: CatalogFont): List<File> = listOf(fontFile(font)) + extraFiles(font)
+
     fun isInstalled(font: CatalogFont): Boolean =
-        fontFile(font).isFile && licenseFile(font).isFile && metaFile(font)?.isFile != false
+        fontFiles(font).all { it.isFile } && licenseFile(font).isFile && metaFile(font)?.isFile != false
 
     fun installedIds(): Set<String> = catalog.filter(::isInstalled).map { it.id }.toSet()
 
@@ -167,8 +181,15 @@ class FontRepository(context: Context) {
         val license = licenseFile(font)
         val tmp = File(dir, "${font.id}.part")
         val metaTmp = File(dir, "${font.id}.meta.part")
+        val extraTmps = font.extraFiles.indices.map { File(dir, "${font.id}.${it + 1}.part") }
         try {
-            fetch(font.url, tmp, font.sha256, font.id, font.size, onProgress)
+            val total = font.totalSize.coerceAtLeast(1).toFloat()
+            fetch(font.url, tmp, font.sha256, font.id, font.size) { onProgress(it * font.size / total) }
+            var done = font.size
+            for ((extra, part) in font.extraFiles.zip(extraTmps)) {
+                fetch(extra.url, part, extra.sha256, font.id, extra.size) { onProgress((done + it * extra.size) / total) }
+                done += extra.size
+            }
             font.metaUrl?.let { fetch(it, metaTmp, font.metaSha256, font.id, null) {} }
             val licenseText = if (font.licenseInFont) {
                 extractMetadata(tmp.readText()) ?: throw IOException("No license metadata in ${font.id}")
@@ -186,6 +207,7 @@ class FontRepository(context: Context) {
             ensureActive()
             license.writeText(licenseHeader(font) + licenseText)
             metaFile(font)?.let { meta -> if (!metaTmp.renameTo(meta)) metaTmp.copyTo(meta, overwrite = true) }
+            for ((part, file) in extraTmps.zip(extraFiles(font))) if (!part.renameTo(file)) part.copyTo(file, overwrite = true)
             InkStitchFontRegistry.invalidate(font.id)
             if (!tmp.renameTo(target)) {
                 tmp.copyTo(target, overwrite = true)
@@ -197,16 +219,19 @@ class FontRepository(context: Context) {
             target.delete()
             license.delete()
             metaFile(font)?.delete()
+            extraFiles(font).forEach { it.delete() }
             throw e
         } finally {
             tmp.delete()
             metaTmp.delete()
+            extraTmps.forEach { it.delete() }
         }
     }
 
     fun delete(font: CatalogFont) {
         if (font.bundled) return
         fontFile(font).delete()
+        extraFiles(font).forEach { it.delete() }
         licenseFile(font).delete()
         metaFile(font)?.delete()
         InkStitchFontRegistry.invalidate(font.id)
@@ -454,7 +479,9 @@ class FontRepository(context: Context) {
                 val repo = FontRepository(app)
                 repo.find(id)?.takeIf { it.kind == CatalogFont.Kind.INKSTITCH_SVG && repo.isInstalled(it) }?.let { font ->
                     runCatching {
-                        repo.fontFile(font).inputStream().buffered().use { InkStitchFont.parse(it, repo.metaFile(font)!!.readText()) }
+                        val streams = repo.fontFiles(font).map { it.inputStream().buffered() }
+                        try { InkStitchFont.parse(streams, InkStitchFontInfo.parse(repo.metaFile(font)!!.readText())) }
+                        finally { streams.forEach { it.close() } }
                     }.getOrNull()
                 }
             }

@@ -21,6 +21,24 @@ class InkStitchCatalogTest {
         assertTrue(fonts.map { it.id }.toSet().size == fonts.size)
     }
 
+    @Test fun variantFolderFontsPinEveryFileInParseOrder() {
+        val multi = fonts.filter { it.extraFiles.isNotEmpty() }
+        assertEquals(setOf("inkstitch-ags-garamond-latin-grec", "inkstitch-honoka", "inkstitch-roman-ags-bicolor", "inkstitch-sunset"),
+            multi.map { it.id }.toSet())
+        val commit = Regex("^https://raw\\.githubusercontent\\.com/inkstitch/embroidery-fonts/[0-9a-f]{40}/src/[^/]+/ltr/")
+        for (f in multi) {
+            val files = listOf(CatalogFont.PinnedFile(f.url, f.sha256, f.size)) + f.extraFiles
+            assertTrue(files.all { commit.containsMatchIn(it.url) && it.sha256.matches(Regex("[0-9a-f]{64}")) && it.size > 0 }, f.id)
+            // Same order as InkStitchFont.variantFiles: file names sorted, so later files win on shared glyphs.
+            val names = files.map { it.url.substringAfterLast('/') }
+            assertEquals(names.sorted(), names, f.id)
+            assertTrue(f.totalSize in 1..(32L shl 20), f.id)
+        }
+        val honoka = fonts.first { it.id == "inkstitch-honoka" }
+        assertEquals(listOf("ja"), honoka.scripts)
+        assertTrue(honoka.covers("ありがとう") && !honoka.covers("Abc"))
+    }
+
     @Test fun onlyRedistributableLicenses() {
         val allowed = setOf("OFL-1.1", "GPL-3.0", "Public domain / CC0", "CC BY 4.0", "CC BY-SA 4.0", "CC BY-SA 2.5")
         assertTrue(fonts.all { it.license in allowed }, fonts.map { it.license }.toSet().toString())

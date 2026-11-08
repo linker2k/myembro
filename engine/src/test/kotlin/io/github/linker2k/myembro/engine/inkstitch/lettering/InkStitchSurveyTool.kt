@@ -27,10 +27,10 @@ class InkStitchSurveyTool {
         val rows = arrayListOf(listOf("font", "glyphs", "satins", "fills", "runs", "unsupported", "sizeMm", "refHeightMm",
             "minScale", "maxScale", "baselineFromGuide", "guide", "refTop", "refBottom", "parseMs", "stitches", "trims", "colors", "maxStitchMm", "shortLt03",
             "renderMs", "lower", "upper", "digits", "hangul", "rangeError", "error").joinToString("\t"))
-        for (dir in src.listFiles().orEmpty().filter { File(it, "ltr.svg").isFile && File(it, "font.json").isFile }.sortedBy { it.name }) {
+        for (dir in src.listFiles().orEmpty().filter { InkStitchFont.variantFiles(it).isNotEmpty() && File(it, "font.json").isFile }.sortedBy { it.name }) {
             val row = runCatching {
                 val t0 = System.nanoTime()
-                val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
+                val font = InkStitchFont.parse(dir)
                 val t1 = System.nanoTime()
                 val elements = font.glyphs.values.flatMap { it.elements }
                 val ref = font.referenceGlyph
@@ -71,7 +71,7 @@ class InkStitchSurveyTool {
         val cases = arrayListOf<String>()
         for (name in fonts) {
             val dir = File(src, name)
-            val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
+            val font = InkStitchFont.parse(dir)
             for (h in heights) {
                 val pattern = InkStitchLettering.render(font, text, h, io.github.linker2k.myembro.engine.model.EmbThread(0xFF000000.toInt()))
                 val file = File(out, "$name/${h.toInt()}mm-satin.pes").apply { parentFile.mkdirs() }
@@ -95,12 +95,13 @@ class InkStitchSurveyTool {
         val out = System.getenv("INKSTITCH_PREVIEWS")?.let(::File) ?: return
         val only = System.getenv("INKSTITCH_PREVIEW_IDS")?.split(',')?.toSet()
         out.mkdirs()
-        for (dir in src.listFiles().orEmpty().filter { File(it, "ltr.svg").isFile && (only == null || it.name in only) }.sortedBy { it.name }) {
+        for (dir in src.listFiles().orEmpty().filter { InkStitchFont.variantFiles(it).isNotEmpty() && (only == null || it.name in only) }.sortedBy { it.name }) {
             runCatching {
-                val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
+                val font = InkStitchFont.parse(dir)
                 val text = when {
                     ('a'..'c').all { it.toString() in font.glyphs } -> "Abc"
                     ('α'..'γ').all { it.toString() in font.glyphs } -> "Αβγ"
+                    "あいう".all { it.toString() in font.glyphs } -> "あいう"
                     else -> "ABC"
                 }
                 val pattern = InkStitchLettering.render(font, text, 10.0.coerceIn(font.minHeightMm ?: 10.0, font.maxHeightMm ?: 10.0))

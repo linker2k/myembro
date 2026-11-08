@@ -283,7 +283,11 @@ class LetterFontGeometry(context: Context) {
 
 /** Sewn runs of [text] at 10 mm as polylines (+y down, mm): what the machine will stitch, for font cards. */
 fun inkStitchPreview(font: InkStitchFont, text: String): List<List<Pair<Double, Double>>> {
-    val pattern = InkStitchLettering.render(font, text.ifBlank { font.info.name }, 10.0, EmbThread(0xFF000000.toInt()))
+    fun sews(t: String) = t.isNotBlank() && t.filterNot(Char::isWhitespace).all { c ->
+        when (font.info.letterCase) { "upper" -> c.uppercaseChar(); "lower" -> c.lowercaseChar(); else -> c }.toString() in font.glyphs }
+    // A font without Latin letters (Greek, Japanese) shows a sample of its own script instead of its Latin name.
+    val shown = listOf(text, font.info.name, "Αβγ", "あいう").firstOrNull(::sews) ?: text.ifBlank { font.info.name }
+    val pattern = InkStitchLettering.render(font, shown, 10.0, EmbThread(0xFF000000.toInt()))
     val runs = ArrayList<List<Pair<Double, Double>>>()
     var run = ArrayList<Pair<Double, Double>>()
     for (s in pattern.stitches) {

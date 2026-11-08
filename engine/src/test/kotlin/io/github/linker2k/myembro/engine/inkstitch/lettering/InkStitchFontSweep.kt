@@ -32,8 +32,8 @@ import kotlinx.serialization.json.put
  * [INKSTITCH_SWEEP_STEP=2] [INKSTITCH_SWEEP_CAP=60] [INKSTITCH_SWEEP_THREADS=8]
  */
 class InkStitchFontSweep {
-    // Each font is judged on the samples it can sew; the Greek one covers Greek-only fonts (ellenika).
-    private val texts = listOf("Hamburg", "Jung Min", "2024", "가나다", "Αθήνα")
+    // Each font is judged on the samples it can sew; the Greek and Japanese ones cover fonts without Latin (ellenika, honoka).
+    private val texts = listOf("Hamburg", "Jung Min", "2024", "가나다", "Αθήνα", "ありがとう")
     private val placement = setOf(FindingCode.HOOP_EXCEEDED, FindingCode.MACHINE_AREA_EXCEEDED)
 
     @Test fun sweep() {
@@ -44,7 +44,7 @@ class InkStitchFontSweep {
         val cap = System.getenv("INKSTITCH_SWEEP_CAP")?.toDouble() ?: 60.0
         val threads = System.getenv("INKSTITCH_SWEEP_THREADS")?.toInt() ?: 8
         val perFont = File(out, "fonts").apply { mkdirs() }
-        val dirs = src.listFiles().orEmpty().filter { File(it, "ltr.svg").isFile && (only == null || it.name in only) }.sortedBy { it.name }
+        val dirs = src.listFiles().orEmpty().filter { InkStitchFont.variantFiles(it).isNotEmpty() && (only == null || it.name in only) }.sortedBy { it.name }
         val pool = Executors.newFixedThreadPool(threads)
         for (dir in dirs) pool.submit {
             val started = System.nanoTime()
@@ -62,7 +62,7 @@ class InkStitchFontSweep {
 
     private fun sweepFont(dir: File, step: Double, cap: Double): Triple<String, JsonObject, List<String>> {
         val id = "inkstitch-" + dir.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-        val font = File(dir, "ltr.svg").inputStream().use { InkStitchFont.parse(it, File(dir, "font.json").readText()) }
+        val font = InkStitchFont.parse(dir)
         val low = font.minHeightMm ?: error("no reference glyph")
         val high = min(font.maxHeightMm ?: low, cap)
         val heights = if (low > cap) emptyList() else

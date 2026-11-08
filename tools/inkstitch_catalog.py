@@ -45,6 +45,17 @@ LATIN = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 GREEK = {chr(c) for c in range(0x0391, 0x03CA) if chr(c).isalpha()}
 
 
+KANA = {chr(c) for c in range(0x3041, 0x30FF) if chr(c).isalpha()}
+
+
+def scripts(names, keywords):
+    latin = any(n in LATIN for n in names)
+    out = ["latin"] if latin else []
+    if any(n in GREEK for n in names) and ("greek" in keywords or not latin): out.append("greek")
+    if any(n in KANA for n in names): out.append("ja")
+    return out or ["latin"]
+
+
 def classify(name, lic_text, json_license):
     if name in NONCOMMERCIAL: return "Not permitted", "CC BY-NC-SA 4.0", "Noncommercial condition: incompatible with a GPL app (commercial redistribution permitted)"
     if name in NO_DERIVATIVES: return "Not permitted", "CC BY-ND 4.0", "No derivatives: resizing and stitch generation may constitute an adaptation"
@@ -72,10 +83,19 @@ def theme(keywords):
             "sans" if "sans_serif" in k else "display" if k & {"display", "monogram"} else "")
 
 
-def glyph_names(svg):
-    text = svg.read_text(errors="replace")
-    names = {unicodedata.normalize("NFC", html.unescape(m)) for m in re.findall(r'inkscape:label="GlyphLayer-([^"]*)"', text)}
+def glyph_names(svgs):
+    names = set()
+    for svg in svgs:
+        text = svg.read_text(errors="replace")
+        names |= {unicodedata.normalize("NFC", html.unescape(m)) for m in re.findall(r'inkscape:label="GlyphLayer-([^"]*)"', text)}
     return sorted(n for n in names if n)
+
+
+def variant_files(d):
+    """InkStitchFont.variantFiles: ltr.svg, else every .svg in ltr/ sorted by name (upstream: os.listdir order)."""
+    if (d / "ltr.svg").is_file():
+        return [d / "ltr.svg"]
+    return sorted((f for f in (d / "ltr").glob("*.svg") if f.is_file()), key=lambda f: f.name) if (d / "ltr").is_dir() else []
 
 
 def sha(path):
@@ -97,8 +117,8 @@ def main():
         text = lic.read_text(errors="replace")
         cls, lic_name, note = classify(d.name, text, meta.get("font_license", ""))
         r = rows.get(d.name)
-        svg = d / "ltr.svg"
-        names = glyph_names(svg) if svg.is_file() else []
+        svgs = variant_files(d)
+        names = glyph_names(svgs)
         # Text the engine would lay out wrongly: right-to-left fonts (font.py reverses lines) and
         # positional forms (font_variant.py picks name.init/.medi/.fina), neither ported yet.
         rtl = meta.get("text_direction") == "rtl"
@@ -114,7 +134,7 @@ def main():
         # engine's InkStitchFont.referenceGlyph; the survey gives its height.
         has_ref = r is not None and bool(r["refHeightMm"])
         sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_ref and not rtl and not positional and gated
-        reason = "" if sewable else ("no ltr.svg (multiple files/RTL)" if not svg.is_file() else
+        reason = "" if sewable else ("no left-to-right variant (RTL only)" if not svgs else
                                      "right-to-left layout not supported" if rtl else
                                      "positional glyph forms .init/.medi/.fina not supported" if positional else
                                      f"unsupported elements: {','.join(missing)}" if r and missing else
@@ -132,11 +152,14 @@ def main():
             "id": "inkstitch-" + re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-"),
             "name": meta.get("name", d.name),
             "kind": "inkstitch-svg",
-            # Latin unless the font has no Latin letters (ellenika is Greek only).
-            "scripts": ["latin"] if any(n in LATIN for n in names) or not any(n in GREEK for n in names) else ["greek"],
+            # Scripts the font writes: Greek only when it is not an accent set of a Latin font, Japanese ("ja") by kana.
+            "scripts": scripts(names, meta.get("keywords") or []),
             "license": lic_name,
             "designer": "Ink/Stitch embroidery-fonts contributors" + (f"; original font: {meta['original_font'].strip()}" if (meta.get("original_font") or "").strip() else ""),
-            "url": f"{REPO}/{commit}/{q('ltr.svg')}", "sha256": sha(svg), "size": svg.stat().st_size,
+            "url": f"{REPO}/{commit}/{q(svgs[0].relative_to(d).as_posix())}", "sha256": sha(svgs[0]), "size": svgs[0].stat().st_size,
+            # Variant folders (ltr/*.svg): the remaining files in parse order; later files win on shared glyphs.
+            **({"extraFiles": [{"url": f"{REPO}/{commit}/{q(f.relative_to(d).as_posix())}", "sha256": sha(f), "size": f.stat().st_size}
+                               for f in svgs[1:]]} if len(svgs) > 1 else {}),
             "metaUrl": f"{REPO}/{commit}/{q('font.json')}", "metaSha256": sha(d / "font.json"),
             "licenseUrl": f"{REPO}/{commit}/{q(lic.name)}", "licenseSha256": sha(lic),
             # The digitizer's tested range, on the app's 'H' ink-height basis (half-mm, rounded inward).

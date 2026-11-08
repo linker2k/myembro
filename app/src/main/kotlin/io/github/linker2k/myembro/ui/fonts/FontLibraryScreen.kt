@@ -643,8 +643,8 @@ private fun FontCard(
                     if (font.korean) add(stringResource(R.string.fonts_filter_korean))
                     if (font.latin) add(stringResource(R.string.fonts_filter_latin))
                 }.joinToString("·")
-                val size = if (font.size < 1_048_576) stringResource(R.string.fonts_size_kb, ((font.size + 1023) / 1024).toInt())
-                else stringResource(R.string.fonts_size_mb, String.format(Locale.ROOT, "%.1f", font.size / 1_048_576.0))
+                val size = if (font.totalSize < 1_048_576) stringResource(R.string.fonts_size_kb, ((font.totalSize + 1023) / 1024).toInt())
+                else stringResource(R.string.fonts_size_mb, String.format(Locale.ROOT, "%.1f", font.totalSize / 1_048_576.0))
                 Text(
                     "$kind · $scripts · ${font.license} · $size",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

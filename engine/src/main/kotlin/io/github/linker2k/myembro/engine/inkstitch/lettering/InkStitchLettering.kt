@@ -91,7 +91,7 @@ object InkStitchLettering {
                         val kern = info.kerning["$last ${glyph.name}"] ?: info.kerning[last + glyph.name] ?: 0.0
                         x += glyph.minX - kern + letterSpacing
                     }
-                    placed += Placement(glyph, (x - glyph.minX) * mmPerUnit, (y - font.baseline) * mmPerUnit, mmPerUnit)
+                    placed += Placement(glyph, (x - glyph.minX) * mmPerUnit, (y - (glyph.baseline ?: font.baseline)) * mmPerUnit, mmPerUnit)
                     left = min(left, x); right = max(right, x + glyph.maxX - glyph.minX)
                     x += (info.advances[glyph.name] ?: info.defaultAdvance ?: glyph.maxX) - glyph.minX
                     last = glyph.name

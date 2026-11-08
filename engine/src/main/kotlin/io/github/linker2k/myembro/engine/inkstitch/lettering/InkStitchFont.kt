@@ -138,6 +138,8 @@ data class InkStitchGlyph(
     val maxX: Double,
     val inkTop: Double,
     val inkBottom: Double,
+    /** Baseline guide of the glyph's own file in px (glyph.py reads its document's guides); null without one. */
+    val baseline: Double? = null,
 )
 
 /**
@@ -211,6 +213,26 @@ class InkStitchFont(
         fun parse(svg: InputStream, info: InkStitchFontInfo): InkStitchFont = parse(listOf(svg), info)
 
         /**
+         * The left-to-right variant files of an Ink/Stitch font folder, as FontVariant._get_variant_file_paths
+         * finds them: `ltr.svg`, else every `.svg` in `ltr/`. Upstream takes the folder in os.listdir order,
+         * which the OS leaves unspecified; file names sorted by code point make it reproducible (in
+         * roman_ags_bicolor the "zbi" file then replaces the shared letters of "mono", as its name suggests).
+         */
+        fun variantFiles(fontDir: java.io.File): List<java.io.File> {
+            java.io.File(fontDir, "ltr.svg").takeIf { it.isFile }?.let { return listOf(it) }
+            return java.io.File(fontDir, "ltr").listFiles { f -> f.isFile && f.name.endsWith(".svg") }.orEmpty().sortedBy { it.name }
+        }
+
+        /** Parses [variantFiles] of [fontDir] with its `font.json`. */
+        fun parse(fontDir: java.io.File): InkStitchFont {
+            val files = variantFiles(fontDir)
+            require(files.isNotEmpty()) { "No left-to-right variant in $fontDir" }
+            val streams = files.map { it.inputStream().buffered() }
+            return try { parse(streams, InkStitchFontInfo.parse(java.io.File(fontDir, "font.json").readText())) }
+            finally { streams.forEach { it.close() } }
+        }
+
+        /**
          * A font variant from its files (`ltr.svg`, or every `.svg` of a variant folder). Glyph
          * layers of later files replace earlier ones of the same name, as in Ink/Stitch.
          */
@@ -228,12 +250,13 @@ class InkStitchFont(
                     runCatching { factory.setFeature(feature, on) }
                 }
                 factory.newSAXParser().parse(svg, handler)
-                glyphs.putAll(handler.glyphs)
+                // Each glyph keeps its own file's baseline guide: variant files need not share one.
+                handler.glyphs.forEach { (name, g) -> glyphs[name] = g.copy(baseline = handler.baselineGuide) }
                 handler.unsupported.forEach { (k, v) -> unsupported[k] = (unsupported[k] ?: 0) + v }
                 if (guide == null) guide = handler.baselineGuide
             }
             val probe = InkStitchFont(info, glyphs, 0.0, unsupported)
-            // Ink/Stitch aligns by the guide. All glyphs share it, so only a missing guide needs a stand-in.
+            // Ink/Stitch aligns each glyph by its file's guide; only a file without a guide needs this stand-in.
             val baseline = guide ?: probe.referenceGlyph?.inkBottom ?: 0.0
             return InkStitchFont(info, glyphs, baseline, unsupported, guide)
         }

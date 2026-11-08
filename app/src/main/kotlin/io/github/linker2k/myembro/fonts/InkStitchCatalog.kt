@@ -39,6 +39,12 @@ object InkStitchCatalog {
                 letterCase = (o["letterCase"] as? JsonPrimitive)?.content.orEmpty(),
                 theme = (o["theme"] as? JsonPrimitive)?.content,
                 bundled = (o["bundled"] as? JsonPrimitive)?.booleanOrNull ?: false,
+                extraFiles = (o["extraFiles"] as? kotlinx.serialization.json.JsonArray)?.map { e ->
+                    val f = e.jsonObject
+                    CatalogFont.PinnedFile(f.getValue("url").jsonPrimitive.content, f.getValue("sha256").jsonPrimitive.content,
+                        f.getValue("size").jsonPrimitive.longOrNull ?: 0L)
+                        .also { require(it.url.startsWith("https://")) { "Only https downloads: ${s("id")}" } }
+                }.orEmpty(),
             )
         }
 }

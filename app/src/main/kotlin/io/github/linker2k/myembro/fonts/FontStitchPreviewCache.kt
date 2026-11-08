@@ -17,7 +17,8 @@ internal class FontStitchPreviewCache(private val context: Context) {
         val file = FontRepository(context).fontFile(font)
         val revision = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).hex()
         val sewing = SettingsPreferences(context).read().sewing
-        val sample = if (font.korean) SAMPLE else "Abc"
+        // A sample the font can sew: fonts without Latin letters (Greek, Japanese) get their own.
+        val sample = if (font.korean) SAMPLE else listOf("Abc", "Αβγ", "あいう").firstOrNull(font::covers) ?: "Abc"
         val backend = if (font.korean) HangulSatin.BACKEND else "outline-running-v1"
         val key = MessageDigest.getInstance("SHA-256").digest(
             "$revision:$backend:preview-v1:$sample:$HEIGHT_MM:$sewing".toByteArray()).hex()
