@@ -1,0 +1,816 @@
+[
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "00-base",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "01-shape=ring",
+  "wkt": "POLYGON ((0 0, 50 0, 50 50, 0 50, 0 0), (15 15, 15 35, 35 35, 35 15, 15 15))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "02-shape=neck",
+  "wkt": "POLYGON ((0 0, 20 0, 20 9, 40 9, 40 0, 60 0, 60 20, 40 20, 40 11, 20 11, 20 20, 0 20, 0 0))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "03-shape=negative",
+  "wkt": "POLYGON ((-37.2 -21.5, -5 -21.5, -5 8, -37.2 8, -37.2 -21.5))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "04-shape=disc",
+  "wkt": "POLYGON ((37.000000 20.000000, 36.854563 22.218945, 36.420739 24.399924, 35.705952 26.505618, 34.722432 28.500000, 33.487007 30.348944, 32.020815 32.020815, 30.348944 33.487007, 28.500000 34.722432, 26.505618 35.705952, 24.399924 36.420739, 22.218945 36.854563, 20.000000 37.000000, 17.781055 36.854563, 15.600076 36.420739, 13.494382 35.705952, 11.500000 34.722432, 9.651056 33.487007, 7.979185 32.020815, 6.512993 30.348944, 5.277568 28.500000, 4.294048 26.505618, 3.579261 24.399924, 3.145437 22.218945, 3.000000 20.000000, 3.145437 17.781055, 3.579261 15.600076, 4.294048 13.494382, 5.277568 11.500000, 6.512993 9.651056, 7.979185 7.979185, 9.651056 6.512993, 11.500000 5.277568, 13.494382 4.294048, 15.600076 3.579261, 17.781055 3.145437, 20.000000 3.000000, 22.218945 3.145437, 24.399924 3.579261, 26.505618 4.294048, 28.500000 5.277568, 30.348944 6.512993, 32.020815 7.979185, 33.487007 9.651056, 34.722432 11.500000, 35.705952 13.494382, 36.420739 15.600076, 36.854563 17.781055, 37.000000 20.000000))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "05-shape=islands",
+  "wkt": "MULTIPOLYGON (((0 0, 16 0, 16 16, 0 16, 0 0)), ((30 2, 46 2, 46 18, 30 18, 30 2)))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "06-shape=diagonal",
+  "wkt": "POLYGON ((0 0, 8 0, 40 32, 40 40, 32 40, 0 8, 0 0))"
+ },
+ {
+  "method": "simple cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "07-method=simplecross",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "08-method=simple_cross_flipped",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "upright_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "09-method=upright_cross",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "upright_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "10-method=upright_cross_flipped",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "dense_upright_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "11-method=dense_upright_cross",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "dense_upright_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "12-method=dense_upright_cross_flipped",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "double_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "13-method=double_cross",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "double_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "14-method=double_cross_flipped",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "smyrna_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "15-method=smyrna_cross",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "smyrna_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "16-method=smyrna_cross_flipped",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 2,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "17-thread_count=2",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 3,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "18-thread_count=3",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 6,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "19-thread_count=6",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": -4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "20-thread_count=-4",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   11.338582677165356,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "21-pattern=[11.338582677165356,7.559055118110237]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   11.338582677165356,
+   11.338582677165356
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "22-pattern=[11.338582677165356,11.338582677165356]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 25,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "23-coverage=25",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 90,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "24-coverage=90",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": true,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "25-canvas_grid_origin=True",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   1.5,
+   2.0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "26-offset=[1.5,2.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   1.5,
+   2.0
+  ],
+  "canvas_grid_origin": true,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": null,
+  "id": "27-canvas_grid_origin=True_offset=[1.5,2.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 5.0,
+  "start": null,
+  "end": null,
+  "id": "28-max_length=5.0",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   41.0,
+   31.0
+  ],
+  "end": null,
+  "id": "29-start=[41.0,31.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": null,
+  "end": [
+   2.0,
+   2.0
+  ],
+  "id": "30-end=[2.0,2.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   41.0,
+   31.0
+  ],
+  "end": [
+   2.0,
+   2.0
+  ],
+  "id": "31-start=[41.0,31.0]_end=[2.0,2.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   2.0,
+   5.0
+  ],
+  "end": [
+   39.0,
+   29.0
+  ],
+  "id": "32-start=[2.0,5.0]_end=[39.0,29.0]",
+  "wkt": "POLYGON ((3.3 4.1, 40.7 4.1, 40.7 30.2, 3.3 30.2, 3.3 4.1))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   61.0,
+   19.0
+  ],
+  "end": [
+   -1.0,
+   0.0
+  ],
+  "id": "33-shape=neck_start=[61.0,19.0]_end=[-1.0,0.0]",
+  "wkt": "POLYGON ((0 0, 20 0, 20 9, 40 9, 40 0, 60 0, 60 20, 40 20, 40 11, 20 11, 20 20, 0 20, 0 0))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   0.0,
+   0.0
+  ],
+  "end": [
+   1.0,
+   19.0
+  ],
+  "id": "34-shape=neck_start=[0.0,0.0]_end=[1.0,19.0]",
+  "wkt": "POLYGON ((0 0, 20 0, 20 9, 40 9, 40 0, 60 0, 60 20, 40 20, 40 11, 20 11, 20 20, 0 20, 0 0))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   47.0,
+   18.0
+  ],
+  "end": null,
+  "id": "35-shape=islands_start=[47.0,18.0]",
+  "wkt": "MULTIPOLYGON (((0 0, 16 0, 16 16, 0 16, 0 0)), ((30 2, 46 2, 46 18, 30 18, 30 2)))"
+ },
+ {
+  "method": "simple_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   0.0,
+   0.0
+  ],
+  "end": [
+   3.0,
+   15.0
+  ],
+  "id": "36-shape=islands_start=[0.0,0.0]_end=[3.0,15.0]",
+  "wkt": "MULTIPOLYGON (((0 0, 16 0, 16 16, 0 16, 0 0)), ((30 2, 46 2, 46 18, 30 18, 30 2)))"
+ },
+ {
+  "method": "double_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 2,
+  "max_length": 41.5748031496063,
+  "start": [
+   40.0,
+   40.0
+  ],
+  "end": null,
+  "id": "37-shape=diagonal_method=double_cross_thread_count=2_start=[40.0,40.0]",
+  "wkt": "POLYGON ((0 0, 8 0, 40 32, 40 40, 32 40, 0 8, 0 0))"
+ },
+ {
+  "method": "smyrna_cross",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   25.0,
+   0.0
+  ],
+  "end": [
+   25.0,
+   50.0
+  ],
+  "id": "38-shape=ring_method=smyrna_cross_start=[25.0,0.0]_end=[25.0,50.0]",
+  "wkt": "POLYGON ((0 0, 50 0, 50 50, 0 50, 0 0), (15 15, 15 35, 35 35, 35 15, 15 15))"
+ },
+ {
+  "method": "simple_cross_flipped",
+  "pattern": [
+   7.559055118110237,
+   7.559055118110237
+  ],
+  "coverage": 50,
+  "offset": [
+   0,
+   0
+  ],
+  "canvas_grid_origin": false,
+  "thread_count": 4,
+  "max_length": 41.5748031496063,
+  "start": [
+   -36.0,
+   7.0
+  ],
+  "end": [
+   -6.0,
+   -20.0
+  ],
+  "id": "39-shape=negative_method=simple_cross_flipped_start=[-36.0,7.0]_end=[-6.0,-20.0]",
+  "wkt": "POLYGON ((-37.2 -21.5, -5 -21.5, -5 8, -37.2 8, -37.2 -21.5))"
+ }
+]

@@ -35,6 +35,18 @@ class InkFontElementRegressionTest {
             .any { it.x in 35..65 && it.y in 35..65 }, "The even-odd hole must stay empty")
         assertEquals(PesWriter.prepareForOutput(pattern).stitchCount,PesReader.read(PesWriter.write(pattern)).stitchCount)
     }
+    @Test fun crossStitchFillUsesCrossPortAndPassesGate() {
+        val attrs="inkstitch:fill_method=\"cross_stitch\" inkstitch:pattern_size_mm=\"2\" inkstitch:canvas_grid_origin=\"False\" inkstitch:expand_mm=\"0.1\""
+        val f=font(attrs, "fill:#000000;stroke:none", "M0,0 L40,0 L40,40 L0,40 Z")
+        assertTrue(f.unsupported.isEmpty(), "${f.unsupported}")
+        val pattern=InkStitchLettering.render(f,"A",10.0)
+        assertTrue(pattern.stitchCount>100)
+        val check=io.github.linker2k.myembro.engine.sewout.SewoutCheck.check(pattern,options=io.github.linker2k.myembro.engine.sewout.SewoutOptions(
+            origin=io.github.linker2k.myembro.engine.sewout.DesignOrigin.APP_GENERATED))
+        assertTrue(check.findings.none { it.severity==io.github.linker2k.myembro.engine.sewout.Severity.BLOCKER }, "${check.findings}")
+        // Half crosses (tatami based) and grid rotation are not ported: counted, not sewn.
+        assertEquals(mapOf("fill:cross_stitch" to 1), font("$attrs inkstitch:cross_stitch_method=\"half_cross\"", "fill:#000000;stroke:none", "M0,0 L40,0 L40,40 Z").unsupported)
+    }
     /** Local released font data are read only and are never bundled as fixtures. */
     private fun actual(name:String) {
         val root=System.getenv("INKSTITCH_REGRESSION_ROOT")?.let(::File) ?: return

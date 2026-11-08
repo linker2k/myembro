@@ -339,7 +339,9 @@ class InkStitchFont(
                 val made = ArrayList<InkStitchElement>()
                 if (fill != null) {
                     val method = params["fill_method"] ?: "tatami_fill"
-                    if (method in FILL_METHODS) {
+                    val cross = method == "cross_stitch" &&
+                        io.github.linker2k.myembro.engine.inkstitch.stitches.CrossStitch.Settings.fromAttributes(params.names.mapNotNull { k -> params[k]?.let { k to it } }.toMap()).supported
+                    if (method in FILL_METHODS || cross) {
                         made += InkFill(paths, if (style["fill-rule"] == "evenodd") FillRule.EVEN_ODD else FillRule.NON_ZERO, fill, params)
                     } else note("fill:$method")
                 }
