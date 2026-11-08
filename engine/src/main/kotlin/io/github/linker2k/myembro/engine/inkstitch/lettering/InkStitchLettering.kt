@@ -50,7 +50,8 @@ object InkStitchLettering {
                 is InkRun -> Stroke(element.paths.map { path -> path.points.map(::px) }, color,
                     StrokeParameters.fromAttributes(attrs), lockStart=locks.start, lockEnd=locks.end)
                     .toStitchGroups(previous)
-                is InkFill -> FontTatami.stitchGroups(element, { q -> px(q) }, attrs, color, previous)
+                is InkFill -> if (attrs["fill_method"] == "cross_stitch") FontCrossStitch.stitchGroups(element, { q -> px(q) }, attrs, color, previous)
+                    else FontTatami.stitchGroups(element, { q -> px(q) }, attrs, color, previous)
 
             }
             groups+=made

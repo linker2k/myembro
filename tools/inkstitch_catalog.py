@@ -46,16 +46,16 @@ GREEK = {chr(c) for c in range(0x0391, 0x03CA) if chr(c).isalpha()}
 
 
 def classify(name, lic_text, json_license):
-    if name in NONCOMMERCIAL: return "불가", "CC BY-NC-SA 4.0", "비상업 조건: GPL 앱(상업 재배포 허용)과 양립 불가"
-    if name in NO_DERIVATIVES: return "불가", "CC BY-ND 4.0", "변경 금지: 크기 조정·땀 생성이 변형에 해당할 수 있음"
-    if name in CONDITIONAL: return "조건부", "CC BY-SA 4.0 + 원본 프리웨어 조건", "원본 폰트 권리자의 개별 허락(메일)·EULA에 의존"
-    if name in PUBLIC: return "가능", "Public domain / CC0", ""
-    if name in CC_BY: return "가능", "CC BY 4.0", "font.json은 CC-BY-SA 4.0이라 적었으나 LICENSE는 CC BY 4.0"
-    if name in GPL: return "가능", "GPL-3.0", "font.json은 OFL이라 적었으나 LICENSE는 GPL-3.0(원작자 허락 인용)"
+    if name in NONCOMMERCIAL: return "Not permitted", "CC BY-NC-SA 4.0", "Noncommercial condition: incompatible with a GPL app (commercial redistribution permitted)"
+    if name in NO_DERIVATIVES: return "Not permitted", "CC BY-ND 4.0", "No derivatives: resizing and stitch generation may constitute an adaptation"
+    if name in CONDITIONAL: return "Conditional", "CC BY-SA 4.0 + original freeware conditions", "Relies on individual permission (email) or EULA from the original font rights holder"
+    if name in PUBLIC: return "Permitted", "Public domain / CC0", ""
+    if name in CC_BY: return "Permitted", "CC BY 4.0", "font.json states CC-BY-SA 4.0, but LICENSE is CC BY 4.0"
+    if name in GPL: return "Permitted", "GPL-3.0", "font.json states OFL, but LICENSE is GPL-3.0 (quoting permission from the original author)"
     if name in CC_BY_SA_OK:
-        return "가능", ("CC BY-SA 2.5" if "2.5" in json_license else "CC BY-SA 4.0"), ""
+        return "Permitted", ("CC BY-SA 2.5" if "2.5" in json_license else "CC BY-SA 4.0"), ""
     if "open font license" in lic_text.lower():
-        return "가능", "OFL-1.1", ""
+        return "Permitted", "OFL-1.1", ""
     raise SystemExit(f"unclassified font folder: {name} ({json_license})")
 
 
@@ -114,15 +114,16 @@ def main():
         # engine's InkStitchFont.referenceGlyph; the survey gives its height.
         has_ref = r is not None and bool(r["refHeightMm"])
         sewable = r is not None and not missing and not r["error"] and not r.get("rangeError") and has_ref and not rtl and not positional and gated
-        reason = "" if sewable else ("ltr.svg 없음(여러 파일/RTL)" if not svg.is_file() else
-                                     "오른쪽→왼쪽(RTL) 배치 미지원" if rtl else
-                                     "위치별 글자꼴(.init/.medi/.fina) 미지원" if positional else
-                                     "기준 글리프 없음" if r is not None and not has_ref else
-                                     f"미지원 요소: {','.join(missing)}" if r and missing else
-                                     f"봉제 실패: {r['error'] or r.get('rangeError')}" if r and (r['error'] or r.get('rangeError')) else
-                                     "게이트: 통과하는 높이 없음(SewoutCheck 스윕)" if r else "조사 누락")
-        table.append((d.name, meta.get("font_license", ""), lic_name, cls, note, evidence(text), "예" if sewable else f"아니오 ({reason})"))
-        if cls != "가능" or not sewable: continue
+        reason = "" if sewable else ("no ltr.svg (multiple files/RTL)" if not svg.is_file() else
+                                     "right-to-left layout not supported" if rtl else
+                                     "positional glyph forms .init/.medi/.fina not supported" if positional else
+                                     f"unsupported elements: {','.join(missing)}" if r and missing else
+                                     f"sewing failed: {r['error'] or r.get('rangeError')}" if r and (r['error'] or r.get('rangeError')) else
+                                     "no reference glyph" if r is not None and not has_ref else
+                                     (f"not swept (license {cls.lower()})" if cls != "Permitted" else "not swept") if sweep is not None and swept is None else
+                                     "gate: no passing height (SewoutCheck sweep)" if r else "missing from survey")
+        table.append((d.name, meta.get("font_license", ""), lic_name, cls, note, evidence(text), "Yes" if sewable else f"No ({reason})"))
+        if cls != "Permitted" or not sewable: continue
         q = lambda f: urllib.parse.quote(f"src/{d.name}/{f}")
         ref = float(r["refHeightMm"])
         lo, hi = ref * float(r["minScale"]), ref * float(r["maxScale"])
@@ -157,17 +158,17 @@ def main():
         "version": 1,
         "source": f"https://github.com/inkstitch/embroidery-fonts/tree/{commit}",
         "note": "Pre-digitized Ink/Stitch fonts. Pinned commit; every file is checked against sha256. Only folders "
-                "classified 가능 in docs/inkstitch-fonts.md and sewn completely by this engine are listed. Heights are "
+                "classified Permitted in docs/inkstitch-fonts.md and sewn completely by this engine are listed. Heights are "
                 "the reference glyph ink height ('H', else Greek/Cyrillic capital H, else the tallest letter) within "
                 "the font's min_scale/max_scale. Generated by tools/inkstitch_catalog.py.",
         "fonts": fonts,
     }, ensure_ascii=False, indent=1) + "\n")
     if md:
-        lines = ["| 폴더 | font.json | LICENSE 판정 | 재배포 | 비고 | LICENSE 인용 | 우리 엔진으로 봉제 |", "|---|---|---|---|---|---|---|"]
+        lines = ["| Folder | font.json | LICENSE assessment | Redistribution | Notes | LICENSE quotation | Sewn by our engine |", "|---|---|---|---|---|---|---|"]
         lines += ["| " + " | ".join(str(c).replace("\n", " ") for c in t) + " |" for t in table]
         md.write_text(f"<!-- generated by tools/inkstitch_catalog.py from embroidery-fonts {commit} -->\n" + "\n".join(lines) + "\n")
-    print(len(fonts), "fonts listed;", sum(1 for t in table if t[3] == "가능"), "가능,",
-          sum(1 for t in table if t[3] == "조건부"), "조건부,", sum(1 for t in table if t[3] == "불가"), "불가")
+    print(len(fonts), "fonts listed;", sum(1 for t in table if t[3] == "Permitted"), "permitted,",
+          sum(1 for t in table if t[3] == "Conditional"), "conditional,", sum(1 for t in table if t[3] == "Not permitted"), "not permitted")
 
 
 if __name__ == "__main__":
