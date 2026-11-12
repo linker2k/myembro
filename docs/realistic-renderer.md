@@ -1,3 +1,4 @@
+<!-- SPDX-FileCopyrightText: 2026 HoonyJung -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later OR MIT -->
 
 # Realistic preview: original renderer at a fixed native density

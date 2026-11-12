@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 HoonyJung -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR MIT -->
 <resources>
     <string name="viewer_realistic">Realistic</string>
     <string name="viewer_realistic_failed">Preview unavailable</string>
