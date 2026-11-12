@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 HoonyJung -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR MIT -->
+
 # Realistic preview speed experiment
 
 Archived report copied from experiment commit `e6b768ea` on `agent/realistic-speed-exp`. Experiment code/flags and the reproduction commands below belong to that separate branch; they are not merged into `agent/realistic-fix`. The selected production policy is condition B (16px/mm serial).

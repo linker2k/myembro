@@ -147,4 +147,4 @@ tools/    테스트 픽스처·검사 스크립트
 
 - 제3자 고지와 라이선스 전문: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 - 주요 출처: [Ink/Stitch](https://github.com/inkstitch/inkstitch), [Potrace](https://potrace.sourceforge.net/), [AutoTrace](https://github.com/autotrace/autotrace), [pyembroidery](https://github.com/EmbroidePy/pyembroidery), [DrawingBotV3](https://github.com/SonarSonic/DrawingBotV3)
-- 라이선스: [GPL-3.0-or-later](LICENSE). 이슈와 풀 리퀘스트를 환영합니다.
+- 라이선스: [GPL-3.0-or-later](LICENSE). 실사 미리보기 중 직접 작성한 일부 코드는 MIT로도 쓸 수 있습니다([파일과 줄 범위](docs/licensing/realistic-preview-dual-license.md)). 제3자 렌더러를 포함한 나머지는 GPL만 적용됩니다. 이슈와 풀 리퀘스트를 환영합니다.

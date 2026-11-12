@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 HoonyJung
+// SPDX-License-Identifier: GPL-3.0-or-later OR MIT
 package io.github.linker2k.myembro.ui
 
 import android.app.Instrumentation

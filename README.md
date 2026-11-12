@@ -147,4 +147,4 @@ Stitch generation ports verified originals (Ink/Stitch, Potrace, AutoTrace, Wu q
 
 - Third-party notices and license texts: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 - Main sources: [Ink/Stitch](https://github.com/inkstitch/inkstitch), [Potrace](https://potrace.sourceforge.net/), [AutoTrace](https://github.com/autotrace/autotrace), [pyembroidery](https://github.com/EmbroidePy/pyembroidery), [DrawingBotV3](https://github.com/SonarSonic/DrawingBotV3)
-- License: [GPL-3.0-or-later](LICENSE). Issues and pull requests are welcome.
+- License: [GPL-3.0-or-later](LICENSE). Selected project-written realistic preview code is also available under MIT ([files and lines](docs/licensing/realistic-preview-dual-license.md)); everything else, including the third-party renderer, is GPL only. Issues and pull requests are welcome.
