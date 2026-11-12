@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR MIT -->
+
 # Realistic preview: original renderer at a fixed native density
 
 User decision2026-11-06: use **e441a132 unchanged**, render once at16px/mm without parallel tile baking, and resolve the original to the requested viewport. Fixed-grid shading, catalog normalization and analytic physical cross-section work were cancelled. None of those formulas are in this branch.
